@@ -20,10 +20,19 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
+import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.TrackingBackupRepository;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
@@ -122,4 +131,114 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   public String getBackupLocation() {
     return "/";
   }
+
+    @Override
+    @Test
+    public void testSkipConfigset() throws Exception {
+    setTestSuffix("testskipconfigset");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "-restore";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+      .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+    try (BackupRepository repository =
+      cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+        .setLocation(backupLocation)
+        .setBackupConfigset(false)
+        .setRepositoryName(BACKUP_REPO_NAME)
+        .processAndWait(cluster.getSolrClient(), 100);
+
+      assertFalse(
+        "Configset shouldn't be part of the backup but found:\n"
+          + TrackingBackupRepository.directoriesCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.directoriesCreated().stream()
+          .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertFalse(
+        "Configset shouldn't be part of the backup but found:\n"
+          + TrackingBackupRepository.outputsCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.outputsCreated().stream()
+          .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertFalse(
+        "solrconfig.xml shouldn't be part of the backup but found:\n"
+          + TrackingBackupRepository.outputsCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.outputsCreated().stream()
+          .anyMatch(f -> f.getPath().contains("solrconfig.xml")));
+      assertFalse(
+        "schema.xml shouldn't be part of the backup but found:\n"
+          + TrackingBackupRepository.outputsCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.outputsCreated().stream()
+          .anyMatch(f -> f.getPath().contains("schema.xml")));
+
+      CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+        .setLocation(backupLocation)
+        .setRepositoryName(BACKUP_REPO_NAME)
+        .processAndWait(solrClient, 500);
+
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
+      assertEquals(
+        numDocs,
+        cluster
+          .getSolrClient()
+          .query(restoreCollectionName, new SolrQuery("*:*"))
+          .getResults()
+          .getNumFound());
+    }
+
+    TrackingBackupRepository.clear();
+
+    try (BackupRepository repository =
+      cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+        .setLocation(backupLocation)
+        .setBackupConfigset(true)
+        .setRepositoryName(BACKUP_REPO_NAME)
+        .processAndWait(cluster.getSolrClient(), 100);
+
+      // S3 backups should never create explicit directory markers.
+      assertFalse(
+        "Configset directory creation should not happen for S3 backups:\n"
+          + TrackingBackupRepository.directoriesCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.directoriesCreated().stream()
+          .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertTrue(
+        "Configset should be part of the backup but not found:\n"
+          + TrackingBackupRepository.outputsCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.outputsCreated().stream()
+          .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertTrue(
+        "solrconfig.xml should be part of the backup but not found:\n"
+          + TrackingBackupRepository.outputsCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.outputsCreated().stream()
+          .anyMatch(f -> f.getPath().contains("solrconfig.xml")));
+      assertTrue(
+        "schema.xml should be part of the backup but not found:\n"
+          + TrackingBackupRepository.outputsCreated().stream()
+            .map(java.net.URI::toString)
+            .collect(Collectors.joining("\n")),
+        TrackingBackupRepository.outputsCreated().stream()
+          .anyMatch(f -> f.getPath().contains("schema.xml")));
+    }
+    }
 }
