@@ -83,7 +83,7 @@ public class ExternalPaths {
       }
 
       Path base = file.toAbsolutePath();
-      while (!Files.exists(base.resolve("solr/test-framework/build.gradle")) && null != base) {
+      while (null != base && !Files.exists(base.resolve("solr/test-framework/build.gradle"))) {
         base = base.getParent();
       }
       return (null == base) ? null : base.resolve("solr/").toAbsolutePath();
