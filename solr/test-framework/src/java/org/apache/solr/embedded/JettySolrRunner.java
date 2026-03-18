@@ -49,6 +49,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrClient;
@@ -676,7 +677,11 @@ public class JettySolrRunner {
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
-      server.stop();
+      try {
+        server.stop();
+      } catch (TimeoutException e) {
+        log.warn("Jetty server graceful stop timed out; proceeding with forceful cleanup", e);
+      }
 
       // stop timeout is 0, so we will interrupt right away
       while (!qtp.isStopped()) {
