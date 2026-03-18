@@ -102,7 +102,6 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
 
   private void dispatch(HttpServletRequest request, HttpServletResponse response, boolean retry)
       throws IOException, ServletException {
-    var span = getSpan(request);
     HttpSolrCall call = getHttpSolrCall(request, response, retry);
 
     // this flag LOOKS like it should be in RequiredSolrRequestFilter, but
@@ -113,12 +112,12 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
     try {
       switch (call.call()) {
         case RETRY -> {
-          span.addEvent("SolrDispatchFilter RETRY");
+          getSpan(request).addEvent("Action RETRY");
           // RECURSION
           dispatch(request, response, true);
         }
         case FORWARD -> {
-          span.addEvent("SolrDispatchFilter FORWARD");
+          getSpan(request).addEvent("Action FORWARD");
           request.getRequestDispatcher(call.getPath()).forward(request, response);
         }
         default -> {}
