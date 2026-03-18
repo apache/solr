@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -69,8 +68,6 @@ public class ZkContainer {
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
 
   private SolrMetricProducer metricProducer;
-
-  private List<AutoCloseable> toClose;
 
   public ZkContainer() {}
 
@@ -232,7 +229,6 @@ public class ZkContainer {
                           measurement.record(
                               metricsListener.getCumulativeChildrenFetched(), attributes);
                         }));
-                toClose = Collections.unmodifiableList(observables);
               }
 
               @Override
@@ -331,7 +327,6 @@ public class ZkContainer {
           zkServer.stop();
         }
       }
-      IOUtils.closeQuietly(toClose);
       IOUtils.closeQuietly(metricProducer);
     }
   }

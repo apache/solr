@@ -18,7 +18,6 @@ package org.apache.solr.blockcache;
 
 import io.opentelemetry.api.common.Attributes;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCacheBase;
@@ -51,8 +50,6 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   private SolrMetricsContext solrMetricsContext;
   private long previous = System.nanoTime();
 
-  private AutoCloseable toClose;
-
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
@@ -70,88 +67,80 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
         solrMetricsContext.doubleGaugeMeasurement(
             "solr_buffer_cache_stats", "Buffer cache per second stats");
 
-    this.toClose =
-        solrMetricsContext.batchCallback(
-            () -> {
-              long now = System.nanoTime();
-              long delta = Math.max(now - previous, 1);
-              double seconds = delta / 1000000000.0;
+    solrMetricsContext.batchCallback(
+        () -> {
+          long now = System.nanoTime();
+          long delta = Math.max(now - previous, 1);
+          double seconds = delta / 1000000000.0;
 
-              long hits_total = blockCacheHit.get();
-              long hits_delta = hits_total - blockCacheHit_last.get();
-              blockCacheHit_last.set(hits_total);
+          long hits_total = blockCacheHit.get();
+          long hits_delta = hits_total - blockCacheHit_last.get();
+          blockCacheHit_last.set(hits_total);
 
-              long miss_total = blockCacheMiss.get();
-              long miss_delta = miss_total - blockCacheMiss_last.get();
-              blockCacheMiss_last.set(miss_total);
+          long miss_total = blockCacheMiss.get();
+          long miss_delta = miss_total - blockCacheMiss_last.get();
+          blockCacheMiss_last.set(miss_total);
 
-              long evict_total = blockCacheEviction.get();
-              long evict_delta = evict_total - blockCacheEviction_last.get();
-              blockCacheEviction_last.set(evict_total);
+          long evict_total = blockCacheEviction.get();
+          long evict_delta = evict_total - blockCacheEviction_last.get();
+          blockCacheEviction_last.set(evict_total);
 
-              long storeFail_total = blockCacheStoreFail.get();
-              long storeFail_delta = storeFail_total - blockCacheStoreFail_last.get();
-              blockCacheStoreFail_last.set(storeFail_total);
+          long storeFail_total = blockCacheStoreFail.get();
+          long storeFail_delta = storeFail_total - blockCacheStoreFail_last.get();
+          blockCacheStoreFail_last.set(storeFail_total);
 
-              long lookups_delta = hits_delta + miss_delta;
-              long lookups_total = hits_total + miss_total;
+          long lookups_delta = hits_delta + miss_delta;
+          long lookups_total = hits_total + miss_total;
 
-              blockcacheStats.record(
-                  blockCacheSize.get(), baseAttributes.toBuilder().put(TYPE_ATTR, "size").build());
-              blockcacheStats.record(
-                  lookups_total, baseAttributes.toBuilder().put(TYPE_ATTR, "lookups").build());
-              blockcacheStats.record(
-                  hits_total, baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
-              blockcacheStats.record(
-                  hits_total, baseAttributes.toBuilder().put(TYPE_ATTR, "evictions").build());
-              blockcacheStats.record(
-                  storeFail_total,
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "store_fails").build());
-              perSecStats.record(
-                  getPerSecond(lookups_delta, seconds),
-                  baseAttributes.toBuilder()
-                      .put(TYPE_ATTR, "lookups")
-                      .build()); // lookups per second since the last call
-              perSecStats.record(
-                  getPerSecond(hits_delta, seconds),
-                  baseAttributes.toBuilder()
-                      .put(TYPE_ATTR, "hits")
-                      .build()); // hits per second since the last call
-              perSecStats.record(
-                  getPerSecond(evict_delta, seconds),
-                  baseAttributes.toBuilder()
-                      .put(TYPE_ATTR, "evictions")
-                      .build()); // evictions per second since the last call
-              perSecStats.record(
-                  getPerSecond(storeFail_delta, seconds),
-                  baseAttributes.toBuilder()
-                      .put(TYPE_ATTR, "store_fails")
-                      .build()); // evictions per second since the last call
-              hitRatio.record(
-                  calcHitRatio(lookups_delta, hits_delta),
-                  baseAttributes); // hit ratio since the last call
-              bufferCacheStats.record(
-                  getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds),
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "allocations").build());
-              bufferCacheStats.record(
-                  getPerSecond(shardBuffercacheLost.getAndSet(0), seconds),
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "lost").build());
-              previous = now;
-            },
-            blockcacheStats,
-            perSecStats,
-            hitRatio,
-            bufferCacheStats);
+          blockcacheStats.record(
+              blockCacheSize.get(), baseAttributes.toBuilder().put(TYPE_ATTR, "size").build());
+          blockcacheStats.record(
+              lookups_total, baseAttributes.toBuilder().put(TYPE_ATTR, "lookups").build());
+          blockcacheStats.record(
+              hits_total, baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
+          blockcacheStats.record(
+              hits_total, baseAttributes.toBuilder().put(TYPE_ATTR, "evictions").build());
+          blockcacheStats.record(
+              storeFail_total, baseAttributes.toBuilder().put(TYPE_ATTR, "store_fails").build());
+          perSecStats.record(
+              getPerSecond(lookups_delta, seconds),
+              baseAttributes.toBuilder()
+                  .put(TYPE_ATTR, "lookups")
+                  .build()); // lookups per second since the last call
+          perSecStats.record(
+              getPerSecond(hits_delta, seconds),
+              baseAttributes.toBuilder()
+                  .put(TYPE_ATTR, "hits")
+                  .build()); // hits per second since the last call
+          perSecStats.record(
+              getPerSecond(evict_delta, seconds),
+              baseAttributes.toBuilder()
+                  .put(TYPE_ATTR, "evictions")
+                  .build()); // evictions per second since the last call
+          perSecStats.record(
+              getPerSecond(storeFail_delta, seconds),
+              baseAttributes.toBuilder()
+                  .put(TYPE_ATTR, "store_fails")
+                  .build()); // evictions per second since the last call
+          hitRatio.record(
+              calcHitRatio(lookups_delta, hits_delta),
+              baseAttributes); // hit ratio since the last call
+          bufferCacheStats.record(
+              getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "allocations").build());
+          bufferCacheStats.record(
+              getPerSecond(shardBuffercacheLost.getAndSet(0), seconds),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "lost").build());
+          previous = now;
+        },
+        blockcacheStats,
+        perSecStats,
+        hitRatio,
+        bufferCacheStats);
   }
 
   private float getPerSecond(long value, double seconds) {
     return (float) (value / seconds);
-  }
-
-  @Override
-  public void close() {
-    IOUtils.closeQuietly(toClose);
-    IOUtils.closeQuietly(getSolrMetricsContext());
   }
 
   // SolrInfoBean methods

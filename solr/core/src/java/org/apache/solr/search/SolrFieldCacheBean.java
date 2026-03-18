@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -31,7 +30,6 @@ public class SolrFieldCacheBean implements SolrInfoBean {
       EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.enabled", true);
   private boolean enableJmxEntryList =
       EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.jmx.enabled", true);
-  private AutoCloseable toClose;
 
   private SolrMetricsContext solrMetricsContext;
 
@@ -64,25 +62,19 @@ public class SolrFieldCacheBean implements SolrInfoBean {
     var solrCacheSize =
         solrMetricsContext.longGaugeMeasurement(
             "solr_core_field_cache_size", "Size of field cache in bytes", OtelUnit.BYTES);
-    this.toClose =
-        solrMetricsContext.batchCallback(
-            () -> {
-              if (enableEntryList && enableJmxEntryList) {
-                UninvertingReader.FieldCacheStats fieldCacheStats =
-                    UninvertingReader.getUninvertedStats();
-                String[] entries = fieldCacheStats.info;
-                solrCacheStats.record(entries.length, attributes);
-                solrCacheSize.record(fieldCacheStats.totalSize, attributes);
-              } else {
-                solrCacheStats.record(UninvertingReader.getUninvertedStatsSize(), attributes);
-              }
-            },
-            solrCacheStats,
-            solrCacheSize);
-  }
-
-  @Override
-  public void close() {
-    IOUtils.closeQuietly(toClose);
+    solrMetricsContext.batchCallback(
+        () -> {
+          if (enableEntryList && enableJmxEntryList) {
+            UninvertingReader.FieldCacheStats fieldCacheStats =
+                UninvertingReader.getUninvertedStats();
+            String[] entries = fieldCacheStats.info;
+            solrCacheStats.record(entries.length, attributes);
+            solrCacheSize.record(fieldCacheStats.totalSize, attributes);
+          } else {
+            solrCacheStats.record(UninvertingReader.getUninvertedStatsSize(), attributes);
+          }
+        },
+        solrCacheStats,
+        solrCacheSize);
   }
 }

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -49,7 +48,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
@@ -118,7 +116,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   AttributedLongCounter rollbackCommands;
   AttributedLongCounter splitCommands;
-  List<AutoCloseable> toClose;
 
   // tracks when auto-commit should occur
   protected final CommitTracker commitTracker;
@@ -339,62 +336,57 @@ public class DirectUpdateHandler2 extends UpdateHandler
             Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 
     // Create observable metrics only for core registry
-    observables.add(
-        solrMetricsContext.observableLongCounter(
-            "solr_core_update_auto_commits",
-            "Current number of auto commits",
-            (observableLongMeasurement -> {
-              observableLongMeasurement.record(
-                  commitTracker.getCommitCount(),
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commits").build());
-              observableLongMeasurement.record(
-                  softCommitTracker.getCommitCount(),
-                  baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commits").build());
-            })));
+    solrMetricsContext.observableLongCounter(
+        "solr_core_update_auto_commits",
+        "Current number of auto commits",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(
+              commitTracker.getCommitCount(),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commits").build());
+          observableLongMeasurement.record(
+              softCommitTracker.getCommitCount(),
+              baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commits").build());
+        }));
 
-    observables.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_update_commit_stats",
-            "Metrics around commits",
-            (observableLongMeasurement -> {
-              if (commitTracker.getDocsUpperBound() > 0) {
-                observableLongMeasurement.record(
-                    commitTracker.getDocsUpperBound(),
-                    baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_docs").build());
-              }
-              if (commitTracker.getTLogFileSizeUpperBound() > 0) {
-                observableLongMeasurement.record(
-                    commitTracker.getTLogFileSizeUpperBound(),
-                    baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_size").build());
-              }
-              if (softCommitTracker.getDocsUpperBound() > 0) {
-                observableLongMeasurement.record(
-                    softCommitTracker.getDocsUpperBound(),
-                    baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commit_max_docs").build());
-              }
-              if (commitTracker.getTimeUpperBound() > 0) {
-                observableLongMeasurement.record(
-                    commitTracker.getTimeUpperBound(),
-                    baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_time").build());
-              }
-              if (softCommitTracker.getTimeUpperBound() > 0) {
-                observableLongMeasurement.record(
-                    softCommitTracker.getTimeUpperBound(),
-                    baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commit_max_time").build());
-              }
-            })));
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_commit_stats",
+        "Metrics around commits",
+        (observableLongMeasurement -> {
+          if (commitTracker.getDocsUpperBound() > 0) {
+            observableLongMeasurement.record(
+                commitTracker.getDocsUpperBound(),
+                baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_docs").build());
+          }
+          if (commitTracker.getTLogFileSizeUpperBound() > 0) {
+            observableLongMeasurement.record(
+                commitTracker.getTLogFileSizeUpperBound(),
+                baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_size").build());
+          }
+          if (softCommitTracker.getDocsUpperBound() > 0) {
+            observableLongMeasurement.record(
+                softCommitTracker.getDocsUpperBound(),
+                baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commit_max_docs").build());
+          }
+          if (commitTracker.getTimeUpperBound() > 0) {
+            observableLongMeasurement.record(
+                commitTracker.getTimeUpperBound(),
+                baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_time").build());
+          }
+          if (softCommitTracker.getTimeUpperBound() > 0) {
+            observableLongMeasurement.record(
+                softCommitTracker.getTimeUpperBound(),
+                baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commit_max_time").build());
+          }
+        }));
 
-    observables.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_update_docs_pending_commit",
-            "Current number of documents pending commit. Value is reset to 0 on commit.",
-            (observableLongMeasurement) -> {
-              observableLongMeasurement.record(
-                  numDocsPending.longValue(),
-                  baseAttributes.toBuilder().put(OPERATION_ATTR, "docs_pending").build());
-            }));
-
-    this.toClose = Collections.unmodifiableList(observables);
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_docs_pending_commit",
+        "Current number of documents pending commit. Value is reset to 0 on commit.",
+        (observableLongMeasurement) -> {
+          observableLongMeasurement.record(
+              numDocsPending.longValue(),
+              baseAttributes.toBuilder().put(OPERATION_ATTR, "docs_pending").build());
+        });
   }
 
   private void deleteAll() throws IOException {
@@ -1020,7 +1012,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     commitTracker.close();
     softCommitTracker.close();
-    IOUtils.closeQuietly(toClose);
     numDocsPending.reset();
     try {
       super.close();
