@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
+import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
 import java.net.URI;
@@ -180,6 +181,10 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
                 HttpResponse.BodyHandlers.ofString());
 
         assertEquals("Expected 503 SERVICE_UNAVAILABLE", 503, response.statusCode());
+        assertThat(
+            "v1 error response body must contain status=FAILURE so body-inspecting clients get a clear signal",
+            response.body(),
+            containsString("FAILURE"));
         assertTrue(
             "v1 error response body must contain status=FAILURE so body-inspecting clients get"
                 + " a clear signal; body was: "
