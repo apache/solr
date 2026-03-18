@@ -32,14 +32,13 @@ import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedInstrumentFactory;
@@ -78,19 +77,13 @@ public abstract class RequestHandlerBase
   protected boolean aggregateNodeLevelMetricsEnabled = false;
 
   protected SolrMetricsContext solrMetricsContext;
-  protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
-  private final long handlerStart;
+  protected HandlerMetrics metrics;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
 
   protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTimer.ENABLE_CPU_TIME);
-
-  @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
-  public RequestHandlerBase() {
-    handlerStart = System.currentTimeMillis();
-  }
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link
@@ -164,6 +157,7 @@ public abstract class RequestHandlerBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    IOUtils.closeQuietly(this.solrMetricsContext);
     this.solrMetricsContext = parentContext.getChildContext(this);
 
     metrics =
@@ -175,11 +169,6 @@ public abstract class RequestHandlerBase
 
   /** Metrics for this handler. */
   public static class HandlerMetrics {
-    public static final HandlerMetrics NO_OP =
-        new HandlerMetrics(
-            new SolrMetricsContext(new SolrMetricManager(null), "NO_OP"),
-            Attributes.empty(),
-            false);
 
     public AttributedLongCounter requests;
     public AttributedLongCounter numServerErrors;

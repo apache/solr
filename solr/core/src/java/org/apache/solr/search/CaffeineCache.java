@@ -325,8 +325,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void close() throws IOException {
-    cache.invalidateAll();
-    cache.cleanUp();
+    if (cache != null) {
+      cache.invalidateAll();
+      cache.cleanUp();
+    }
     if (executor instanceof ExecutorService) {
       ((ExecutorService) executor).shutdownNow();
     }

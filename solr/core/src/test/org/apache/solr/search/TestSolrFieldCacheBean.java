@@ -88,9 +88,8 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
   private FieldCacheMetrics getFieldCacheMetrics() {
     String registryName = TestUtil.randomSimpleString(random(), 1, 10);
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registryName);
-
-    try (SolrFieldCacheBean mbean = new SolrFieldCacheBean()) {
+    try (var solrMetricsContext = new SolrMetricsContext(metricManager, registryName);
+        SolrFieldCacheBean mbean = new SolrFieldCacheBean()) {
       mbean.initializeMetrics(
           solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
 

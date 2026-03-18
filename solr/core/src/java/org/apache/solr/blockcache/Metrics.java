@@ -151,6 +151,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   @Override
   public void close() {
     IOUtils.closeQuietly(toClose);
+    IOUtils.closeQuietly(getSolrMetricsContext());
   }
 
   // SolrInfoBean methods

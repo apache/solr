@@ -424,7 +424,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   @Override
   public void close() {
     isClosed = true;
-    overseerTaskProcessorMetricsContext.unregister();
+    overseerTaskProcessorMetricsContext.close();
     if (tpe != null) {
       if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);

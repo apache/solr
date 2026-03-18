@@ -537,6 +537,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   @Override
   public void close() throws IOException {
     interceptorRegistered = false;
+    super.close();
   }
 
   @VisibleForTesting

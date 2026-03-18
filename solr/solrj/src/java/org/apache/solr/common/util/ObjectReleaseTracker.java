@@ -51,7 +51,18 @@ public class ObjectReleaseTracker {
     // This is called from within constructors, be careful not to make assumptions about state of
     // object here
     Throwable submitter = ExecutorUtil.submitter.get(); // Could be null
-    OBJECTS.put(object, new ObjectTrackerException(object.getClass().getName(), submitter));
+    OBJECTS.put(
+        object,
+        new ObjectTrackerException(
+            object.getClass().getName() + "@" + object.hashCode(), submitter));
+    return true;
+  }
+
+  public static boolean track(Object object, String msg) {
+    // This is called from within constructors, be careful not to make assumptions about state of
+    // object here
+    Throwable submitter = ExecutorUtil.submitter.get(); // Could be null
+    OBJECTS.put(object, new ObjectTrackerException(msg, submitter));
     return true;
   }
 

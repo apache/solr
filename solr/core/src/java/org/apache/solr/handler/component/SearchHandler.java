@@ -94,7 +94,7 @@ public class SearchHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
+  private HandlerMetrics metricsShard; // nocommit NO_OP
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;

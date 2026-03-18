@@ -332,6 +332,7 @@ public class ZkContainer {
         }
       }
       IOUtils.closeQuietly(toClose);
+      IOUtils.closeQuietly(metricProducer);
     }
   }
 

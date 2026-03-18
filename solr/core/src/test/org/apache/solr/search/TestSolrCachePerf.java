@@ -110,8 +110,8 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       CacheRegenerator cr = new NoOpRegenerator();
       Object o = cache.init(params, null, cr);
       cache.setState(SolrCache.State.LIVE);
-      cache.initializeMetrics(
-          new SolrMetricsContext(metricManager, "foo"), Attributes.of(NAME_ATTR, "foo"));
+      SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, "foo");
+      cache.initializeMetrics(solrMetricsContext, Attributes.of(NAME_ATTR, "foo"));
       AtomicBoolean stop = new AtomicBoolean();
       SummaryStatistics perImplRatio =
           ratioStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
@@ -180,6 +180,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       perImplRatio.addValue(hitRatio);
       perImplTime.addValue((double) (stopTime - startTime));
       cache.close();
+      solrMetricsContext.close();
       metricManager.closeAllRegistries();
     }
   }

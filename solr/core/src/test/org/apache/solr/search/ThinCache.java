@@ -361,7 +361,9 @@ public class ThinCache<S, K, V> extends SolrCacheBase
 
   @Override
   public void close() throws IOException {
-    backing.unregister(scope);
+    if (backing != null) {
+      backing.unregister(scope);
+    }
     IOUtils.closeQuietly(toClose);
     SolrCache.super.close();
   }

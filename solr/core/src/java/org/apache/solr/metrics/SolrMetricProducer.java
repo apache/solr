@@ -19,6 +19,7 @@ package org.apache.solr.metrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
+import org.apache.solr.common.util.IOUtils;
 
 /** Used by objects that expose metrics through {@link SolrMetricManager}. */
 public interface SolrMetricProducer extends AutoCloseable {
@@ -80,9 +81,6 @@ public interface SolrMetricProducer extends AutoCloseable {
    */
   @Override
   default void close() throws IOException {
-    SolrMetricsContext context = getSolrMetricsContext();
-    if (context != null) {
-      context.unregister();
-    }
+    IOUtils.closeQuietly(getSolrMetricsContext());
   }
 }

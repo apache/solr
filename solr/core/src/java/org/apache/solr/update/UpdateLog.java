@@ -629,6 +629,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    IOUtils.closeQuietly(solrMetricsContext);
     final List<AutoCloseable> observables = new ArrayList<>();
     solrMetricsContext = parentContext.getChildContext(this);
 
@@ -1745,6 +1746,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       log.warn("exception releasing tlog dir", e);
     } finally {
       IOUtils.closeQuietly(toClose);
+      IOUtils.closeQuietly(solrMetricsContext);
     }
   }
 

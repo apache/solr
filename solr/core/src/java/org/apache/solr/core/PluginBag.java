@@ -285,7 +285,7 @@ public class PluginBag<T> implements AutoCloseable {
     PluginHolder<T> old = null;
     if (!disableHandler) old = registry.put(name, plugin);
     if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
-    if (plugin.isLoaded()) registerMBean(plugin.get(), core, name);
+    if (plugin.isLoaded() && !disableHandler) registerMBean(plugin.get(), core, name);
     // old instance has been replaced - close it to prevent mem leaks
     if (old != null && old != plugin) {
       closeQuietly(old);

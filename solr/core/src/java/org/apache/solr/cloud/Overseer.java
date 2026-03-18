@@ -642,6 +642,7 @@ public class Overseer implements SolrCloseable {
     public void close() {
       this.isClosed = true;
       IOUtils.closeQuietly(toClose);
+      IOUtils.closeQuietly(clusterStateUpdaterMetricContext);
     }
 
     @Override
@@ -836,6 +837,7 @@ public class Overseer implements SolrCloseable {
     }
     this.closed = true;
     doClose();
+    IOUtils.closeQuietly(solrMetricsContext);
 
     assert ObjectReleaseTracker.release(this);
   }

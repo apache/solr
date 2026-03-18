@@ -66,6 +66,7 @@ public class AttributedInstrumentFactory {
       this.nodeMetricsContext =
           new SolrMetricsContext(
               primaryMetricsContext.getMetricManager(), SolrMetricManager.NODE_REGISTRY);
+      primaryMetricsContext.registerCloseable(this.nodeMetricsContext);
       this.nodeAttributes = createNodeAttributes(primaryAttributes);
     } else {
       this.nodeMetricsContext = null;
