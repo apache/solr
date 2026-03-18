@@ -346,7 +346,6 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
           getFieldXPathPrefix("solr_s") + "[@name='index']");
     } finally {
       deleteCore();
-      System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
       initCore("solrconfig.xml", "schema12.xml");
     }
   }
