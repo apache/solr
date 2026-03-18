@@ -848,8 +848,8 @@ public class Utils {
     // Enums serialized as their declared name so that javabin/NamedList consumers
     // (e.g. HealthCheckHandlerTest comparing against CommonParams.OK == "OK") see
     // a plain string rather than "pkg.EnumClass:NAME".
-    if (o instanceof Enum) {
-      return ((Enum<?>) o).name();
+    if (o instanceof Enum<?> e) {
+      return e.name();
     }
     List<FieldWriter> fieldWriters = null;
     try {
