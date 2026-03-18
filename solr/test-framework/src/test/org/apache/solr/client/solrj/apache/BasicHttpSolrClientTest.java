@@ -98,10 +98,7 @@ public class BasicHttpSolrClientTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(SlowStreamServlet.class), "/slowStream/*")
             .build();
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Test

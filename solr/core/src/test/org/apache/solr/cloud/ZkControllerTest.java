@@ -250,7 +250,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
                   new CoreDescriptor(
                       collectionName,
                       TEST_PATH(),
-                      Collections.emptyMap(),
+                      Map.of(),
                       new Properties(),
                       zkControllerRef.get());
               // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates
@@ -784,7 +784,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
       this.shardHandlerFactory = httpShardHandlerFactory;
       this.coreAdminHandler = new CoreAdminHandler();
       this.metricManager = mock(SolrMetricManager.class);

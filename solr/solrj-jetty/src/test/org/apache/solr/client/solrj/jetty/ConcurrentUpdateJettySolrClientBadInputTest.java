@@ -38,11 +38,8 @@ public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrTestCaseJ4 
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(createTempDir());
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Test

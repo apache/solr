@@ -138,7 +138,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         }
         Map<String, Replica> replicaMap =
             replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
-        sliceMap.put(slice, new Slice(slice, replicaMap, Collections.emptyMap(), collection));
+        sliceMap.put(slice, new Slice(slice, replicaMap, Map.of(), collection));
       }
       @SuppressWarnings({"unchecked"})
       DocCollection col =

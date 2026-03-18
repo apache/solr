@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -137,14 +136,14 @@ public class ClusterStatus {
     if (withClusterProperties) {
       Map<String, Object> clusterProps = zkStateReader.getClusterProperties();
       if (clusterProps == null) {
-        clusterProps = Collections.emptyMap();
+        clusterProps = Map.of();
       }
       clusterStatus.add("properties", clusterProps);
     }
 
     // add the roles map
     if (withRoles) {
-      Map<?, ?> roles = Collections.emptyMap();
+      Map<?, ?> roles = Map.of();
       if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES)) {
         roles =
             (Map<?, ?>)
@@ -314,14 +313,13 @@ public class ClusterStatus {
   public static Map<String, Object> postProcessCollectionJSON(Map<String, Object> collection) {
     final Map<String, Map<String, Object>> shards =
         collection != null
-            ? (Map<String, Map<String, Object>>)
-                collection.getOrDefault("shards", Collections.emptyMap())
-            : Collections.emptyMap();
+            ? (Map<String, Map<String, Object>>) collection.getOrDefault("shards", Map.of())
+            : Map.of();
     final List<Health> healthStates = new ArrayList<>(shards.size());
     shards.forEach(
         (shardName, s) -> {
           final Map<String, Map<String, Object>> replicas =
-              (Map<String, Map<String, Object>>) s.getOrDefault("replicas", Collections.emptyMap());
+              (Map<String, Map<String, Object>>) s.getOrDefault("replicas", Map.of());
           int[] totalVsActive = new int[2];
           boolean hasLeader = false;
           for (Map<String, Object> r : replicas.values()) {

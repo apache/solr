@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
@@ -39,7 +38,6 @@ import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.LoggingHandler;
 import org.apache.solr.handler.admin.PropertiesRequestHandler;
-import org.apache.solr.handler.admin.SystemInfoHandler;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -55,7 +53,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
   private CoreAdminHandler mockCoresHandler;
   private InfoHandler infoHandler;
-  private SystemInfoHandler mockSystemInfoHandler;
   private LoggingHandler mockLoggingHandler;
   private PropertiesRequestHandler mockPropertiesHandler;
   private HealthCheckHandler mockHealthCheckHandler;
@@ -70,14 +67,12 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   public void setupApiBag() {
     mockCoresHandler = mock(CoreAdminHandler.class);
     infoHandler = mock(InfoHandler.class);
-    mockSystemInfoHandler = mock(SystemInfoHandler.class);
     mockLoggingHandler = mock(LoggingHandler.class);
     mockPropertiesHandler = mock(PropertiesRequestHandler.class);
     mockHealthCheckHandler = mock(HealthCheckHandler.class);
     mockThreadDumpHandler = mock(ThreadDumpHandler.class);
     queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
 
-    when(infoHandler.getSystemInfoHandler()).thenReturn(mockSystemInfoHandler);
     when(infoHandler.getLoggingHandler()).thenReturn(mockLoggingHandler);
     when(infoHandler.getPropertiesHandler()).thenReturn(mockPropertiesHandler);
     when(infoHandler.getHealthCheckHandler()).thenReturn(mockHealthCheckHandler);
@@ -147,16 +142,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSystemInfoApiAllProperties() throws Exception {
-    final ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add("anyParamName", "anyParamValue");
-    final SolrParams v1Params = captureConvertedSystemV1Params("/node/system", "GET", solrParams);
-
-    // All parameters are passed through to v1 API as-is.
-    assertEquals("anyParamValue", v1Params.get("anyParamName"));
-  }
-
-  @Test
   public void testHealthCheckApiAllProperties() throws Exception {
     final ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add("requireHealthyCores", "true");
@@ -173,11 +158,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
       throws Exception {
     return doCaptureParams(
         path, method, new ModifiableSolrParams(), v2RequestBody, mockCoresHandler);
-  }
-
-  private SolrParams captureConvertedSystemV1Params(
-      String path, String method, SolrParams inputParams) throws Exception {
-    return doCaptureParams(path, method, inputParams, null, mockSystemInfoHandler);
   }
 
   private SolrParams captureConvertedPropertiesV1Params(
@@ -215,7 +195,7 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
         new SolrQueryRequestBase(null, solrParams) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
+            if (v2RequestBody == null) return List.of();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
           }
@@ -232,7 +212,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
     apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
     apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
-    apiBag.registerObject(new NodeSystemInfoAPI(infoHandler.getSystemInfoHandler()));
     apiBag.registerObject(new NodeHealthAPI(infoHandler.getHealthCheckHandler()));
   }
 }

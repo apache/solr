@@ -21,7 +21,6 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -109,7 +108,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
     // enable coarse-grained metrics by default
-    metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
+    metricsInfo = new PluginInfo("metrics", Map.of(), null, null);
   }
 
   private ConfigNode get(String s) {

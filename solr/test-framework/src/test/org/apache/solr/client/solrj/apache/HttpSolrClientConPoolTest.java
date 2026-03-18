@@ -48,19 +48,13 @@ public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws SolrServerException, IOException {
-    solrTestRule.startSolr(createTempDir());
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     fooUrl = solrTestRule.getBaseUrl();
 
-    secondJetty.startSolr(createTempDir());
-    secondJetty
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    secondJetty.startSolr();
+    secondJetty.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     barUrl = secondJetty.getBaseUrl();
   }

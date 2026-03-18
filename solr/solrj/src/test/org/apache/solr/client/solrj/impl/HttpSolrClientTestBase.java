@@ -92,10 +92,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Override

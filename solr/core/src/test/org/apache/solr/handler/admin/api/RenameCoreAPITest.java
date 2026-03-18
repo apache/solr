@@ -46,10 +46,8 @@ public class RenameCoreAPITest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {    solrTestRule.startSolr(createTempDir());
-    solrTestRule
-        .newCollection(DEFAULT_TEST_CORENAME)
-        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET)
-        .create();
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }
 
   @Test

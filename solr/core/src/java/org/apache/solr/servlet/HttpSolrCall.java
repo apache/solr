@@ -19,6 +19,8 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
+import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
@@ -192,7 +194,7 @@ public class HttpSolrCall {
 
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
   public List<String> getCollectionsList() {
-    return collectionsList != null ? collectionsList : Collections.emptyList();
+    return collectionsList != null ? collectionsList : List.of();
   }
 
   @SuppressForbidden(
@@ -348,7 +350,7 @@ public class HttpSolrCall {
    */
   protected List<String> resolveCollectionListOrAlias(String collectionStr) {
     if (collectionStr == null || collectionStr.trim().isEmpty()) {
-      return Collections.emptyList();
+      return List.of();
     }
     List<String> result = null;
     LinkedHashSet<String> uniqueList = null;
@@ -422,9 +424,7 @@ public class HttpSolrCall {
 
     if (solrDispatchFilter.abortErrorMessage != null) {
       sendError(500, solrDispatchFilter.abortErrorMessage);
-      if (shouldAudit(EventType.ERROR)) {
-        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, getReq()));
-      }
+      cores.audit(() -> new AuditEvent(ERROR, getReq()), ERROR);
       return RETURN;
     }
 
@@ -482,21 +482,11 @@ public class HttpSolrCall {
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
             mustClearSolrRequestInfo = true;
             executeCoreRequest(solrRsp);
-            if (shouldAudit(cores)) {
-              EventType eventType =
-                  solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
-              if (shouldAudit(cores, eventType)) {
-                cores
-                    .getAuditLoggerPlugin()
-                    .doAudit(
-                        new AuditEvent(
-                            eventType,
-                            req,
-                            getAuthCtx(),
-                            solrReq.getRequestTimer().getTime(),
-                            solrRsp.getException()));
-              }
-            }
+            Exception exception = solrRsp.getException();
+            EventType eventType = exception == null ? COMPLETED : ERROR;
+            double time = solrReq.getRequestTimer().getTime();
+            cores.audit(
+                () -> new AuditEvent(eventType, req, getAuthCtx(), time, exception), eventType);
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
             while (headers.hasNext()) {
@@ -513,9 +503,7 @@ public class HttpSolrCall {
           return action;
       }
     } catch (Throwable ex) {
-      if (shouldAudit(EventType.ERROR)) {
-        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
-      }
+      cores.audit(() -> new AuditEvent(ERROR, ex, req), ERROR);
       sendError(ex);
       // walk the entire cause chain to search for an Error
       Throwable t = ex;
@@ -581,22 +569,6 @@ public class HttpSolrCall {
       coreOrColName = getCore().getName();
     }
     return coreOrColName;
-  }
-
-  public boolean shouldAudit() {
-    return shouldAudit(cores);
-  }
-
-  public boolean shouldAudit(AuditEvent.EventType eventType) {
-    return shouldAudit(cores, eventType);
-  }
-
-  public static boolean shouldAudit(CoreContainer cores) {
-    return cores.getAuditLoggerPlugin() != null;
-  }
-
-  public static boolean shouldAudit(CoreContainer cores, AuditEvent.EventType eventType) {
-    return shouldAudit(cores) && cores.getAuditLoggerPlugin().shouldLog(eventType);
   }
 
   private boolean shouldAuthorize() {
@@ -678,7 +650,7 @@ public class HttpSolrCall {
           solrParams = SolrRequestParsers.parseQueryString(req.getQueryString());
         } else {
           // we have no params at all, use empty ones:
-          solrParams = new MapSolrParams(Collections.emptyMap());
+          solrParams = new MapSolrParams(Map.of());
         }
         solrReq = new SolrQueryRequestBase(core, solrParams) {};
       }
@@ -741,20 +713,10 @@ public class HttpSolrCall {
         ResponseWritersRegistry.getWriter(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
-    if (shouldAudit()) {
-      EventType eventType = solrResp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
-      if (shouldAudit(eventType)) {
-        cores
-            .getAuditLoggerPlugin()
-            .doAudit(
-                new AuditEvent(
-                    eventType,
-                    req,
-                    getAuthCtx(),
-                    solrReq.getRequestTimer().getTime(),
-                    solrResp.getException()));
-      }
-    }
+    Exception ex = solrResp.getException();
+    EventType eventType = ex == null ? COMPLETED : ERROR;
+    double time = solrReq.getRequestTimer().getTime();
+    cores.audit(() -> new AuditEvent(eventType, req, getAuthCtx(), time, ex), eventType);
   }
 
   /**
@@ -1098,7 +1060,7 @@ public class HttpSolrCall {
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
-      if (contentStreams == null) parsedCommands = Collections.emptyList();
+      if (contentStreams == null) parsedCommands = List.of();
       else {
         parsedCommands =
             ApiBag.getCommandOperations(
@@ -1113,7 +1075,7 @@ public class HttpSolrCall {
   }
 
   protected Map<String, JsonSchemaValidator> getValidators() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   /**

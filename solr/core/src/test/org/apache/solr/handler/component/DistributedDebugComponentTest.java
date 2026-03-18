@@ -54,7 +54,7 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    solrTestRule.startSolr(createTempDir());
+    solrTestRule.startSolr();
 
     solrTestRule
         .newCollection("collection1")
