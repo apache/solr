@@ -73,8 +73,7 @@ public class SolrCLI implements CLIO {
       // select the version tool to be run
       args = new String[] {"version"};
     }
-    if (Arrays.asList(
-            "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
+    if (Arrays.asList("upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "updateacls")
         .contains(args[0])) {
       // remap our arguments to invoke the zk short tool help
       args = new String[] {"zk-tool-help", "--print-zk-subcommand-usage", args[0]};
@@ -194,7 +193,6 @@ public class SolrCLI implements CLIO {
     else if ("ls".equals(toolType)) return new ZkLsTool(runtime);
     else if ("cluster".equals(toolType)) return new ClusterTool(runtime);
     else if ("updateacls".equals(toolType)) return new UpdateACLTool(runtime);
-    else if ("linkconfig".equals(toolType)) return new LinkConfigTool(runtime);
     else if ("mkroot".equals(toolType)) return new ZkMkrootTool(runtime);
     else if ("assert".equals(toolType)) return new AssertTool(runtime);
     else if ("auth".equals(toolType)) return new AuthTool(runtime);

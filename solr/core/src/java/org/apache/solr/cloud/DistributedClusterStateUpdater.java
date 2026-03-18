@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -573,26 +572,20 @@ public class DistributedClusterStateUpdater {
      * enough... (we have to deal anyway with failures of conditional updates so trying to use non
      * fresh data is ok, a second attempt will be made)
      */
+    @SuppressWarnings("unchecked")
     private ClusterState fetchStateForCollection() throws KeeperException, InterruptedException {
       String collectionStatePath = DocCollection.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat);
+      Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(data);
 
-      // This factory method can detect a missing configName and supply it by reading it from the
-      // old ZK location.
-      // TODO in Solr 10 remove that factory method
-
-      ClusterState clusterState;
-      clusterState =
-          ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
-              stat.getVersion(),
-              data,
-              Set.of(),
-              updater.getCollectionName(),
-              zkStateReader.getZkClient(),
-              Instant.ofEpochMilli(stat.getCtime()));
-
-      return clusterState;
+      return ClusterState.createFromCollectionMap(
+          stat.getVersion(),
+          stateMap,
+          Set.of(),
+          Instant.ofEpochMilli(stat.getCtime()),
+          PerReplicaStatesOps.getZkClientPrsSupplier(
+              zkStateReader.getZkClient(), collectionStatePath));
     }
   }
 

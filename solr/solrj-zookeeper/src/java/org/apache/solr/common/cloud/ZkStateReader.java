@@ -1438,6 +1438,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
@@ -1445,19 +1446,16 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat);
+        Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(data);
 
-        // This factory method can detect a missing configName and supply it by reading it from the
-        // old ZK location.
-        // TODO in Solr 10 remove that factory method
-        ClusterState state =
-            ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
+        final var state =
+            ClusterState.createFromCollectionMap(
                 stat.getVersion(),
-                data,
-                Set.of(),
-                coll,
-                zkClient,
-                Instant.ofEpochMilli(stat.getCtime()));
-
+                stateMap,
+                liveNodes,
+                Instant.ofEpochMilli(stat.getCtime()),
+                PerReplicaStatesOps.getZkClientPrsSupplier(
+                    zkClient, DocCollection.getCollectionPath(coll)));
         return state.getCollectionOrNull(coll);
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
