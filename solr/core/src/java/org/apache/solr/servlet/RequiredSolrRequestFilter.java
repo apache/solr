@@ -16,12 +16,15 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.servlet.ServletUtils.closeShield;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
@@ -72,7 +75,12 @@ public class RequiredSolrRequestFilter extends CoreContainerAwareHttpFilter {
       // put the core container in request attribute
       // This is required for the LoadAdminUiServlet class. Removing it will cause 404
       req.setAttribute(CORE_CONTAINER_REQUEST_ATTRIBUTE, getCores());
-      chain.doFilter(req, res);
+
+      // we want to prevent any attempts to close our request or response prematurely
+      chain.doFilter(closeShield(req), closeShield(res));
+    } catch (SolrException e) {
+      // this must never escape without setting the code and reporting the message.
+      res.sendError(e.code(), e.getMessage());
     } finally {
       // cleanups for above stuff
       MDCLoggingContext.reset();

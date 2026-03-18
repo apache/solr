@@ -34,7 +34,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -369,7 +368,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
               backupSlice.getName(),
               new Slice(
                   backupSlice.getName(),
-                  Collections.emptyMap(),
+                  Map.of(),
                   backupSlice.getProperties(),
                   restoreCollectionName));
         }

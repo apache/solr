@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -256,7 +255,7 @@ public class PerReplicaStates implements ReflectMapWriter {
 
     /** fetch duplicates entries for this replica */
     List<State> getDuplicates() {
-      if (duplicate == null) return Collections.emptyList();
+      if (duplicate == null) return List.of();
       List<State> result = new ArrayList<>();
       State current = duplicate;
       while (current != null) {

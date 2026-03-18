@@ -23,7 +23,6 @@ import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import java.security.Principal;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,7 +226,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
             List.of(SANType.EMAIL.getValue(), "user1@example.com"),
             List.of(SANType.EMAIL.getValue(), "user2@example.com")),
         "san.email",
-        Collections.emptyList(),
+        List.of(),
         "*",
         "user1@example.com");
   }
@@ -322,9 +321,9 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
         sanData,
         null,
         path,
-        Collections.emptyList(),
+        List.of(),
         CertResolverPattern.CheckType.WILDCARD.toString(),
-        Collections.emptyMap(),
+        Map.of(),
         expectedValue);
   }
 
@@ -336,7 +335,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
       String expectedValue) {
 
     testCertificateCases(
-        sanData, null, path, filterValues, filterCheckType, Collections.emptyMap(), expectedValue);
+        sanData, null, path, filterValues, filterCheckType, Map.of(), expectedValue);
   }
 
   private void testCertificateCases(String dn, String path, String expectedValue) {
@@ -345,9 +344,9 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
         null,
         dn,
         path,
-        Collections.emptyList(),
+        List.of(),
         CertResolverPattern.CheckType.WILDCARD.toString(),
-        Collections.emptyMap(),
+        Map.of(),
         expectedValue);
   }
 

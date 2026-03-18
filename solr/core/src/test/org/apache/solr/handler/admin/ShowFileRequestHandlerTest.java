@@ -54,11 +54,8 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    solrTestRule.startSolr(createTempDir());
-    solrTestRule
-        .newCollection("collection1")
-        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET)
-        .create();
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }
 
   private GenericSolrRequest createShowFileRequest(SolrParams params) {

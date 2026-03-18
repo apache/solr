@@ -14,6 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.servlet;
 
-public class SolrAuthenticationException extends Exception {}
+/** Tests for code in the corresponding 'main' package */
+package org.apache.solr.schema.numericrange;

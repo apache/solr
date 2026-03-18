@@ -40,7 +40,7 @@ public class ParallelHttpShardHandlerTest extends SolrTestCaseJ4 {
     @Override
     public List<Runnable> shutdownNow() {
       shutdown = true;
-      return Collections.emptyList();
+      return List.of();
     }
 
     @Override

@@ -106,7 +106,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
           ClusterState.createFromJson(
-              1, COLL1_STATE.getBytes(UTF_8), Collections.emptySet(), Instant.now(), null);
+              1, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put(
@@ -346,7 +346,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   private DocCollection loadCollection(String collection, int version) throws Exception {
     ClusterState state =
         ClusterState.createFromJson(
-            version, COLL1_STATE.getBytes(UTF_8), Collections.emptySet(), Instant.now(), null);
+            version, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
     return state.getCollectionOrNull(collection);
   }
 
