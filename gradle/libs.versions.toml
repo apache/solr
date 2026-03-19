@@ -157,6 +157,7 @@ kotlinx-serialization = "1.9.0"
 # @keep used by spotless
 ktlint = "1.7.1"
 ktor = "3.2.2"
+kubernetes-client-java = "22.0.1"
 langchain4j-bom = "1.9.1"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -450,6 +451,8 @@ ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-htmlBuilder = { module = "io.ktor:ktor-server-html-builder", version.ref = "ktor" }
+kubernetes-client-java = { module = "io.kubernetes:client-java", version.ref = "kubernetes-client-java" }
+kubernetes-client-java-api = { module = "io.kubernetes:client-java-api", version.ref = "kubernetes-client-java" }
 langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core" }

@@ -1,0 +1,1 @@
+classpath resource content for KubernetesSolrResourceLoaderTest

@@ -1,0 +1,8 @@
+title: Introduce the Kubernetes Module and KubernetesConfigSetService
+type: added
+authors:
+  - name: Houston Putman
+  - name: Jan Høydahl
+links:
+  - name: SOLR-16739
+    url: https://issues.apache.org/jira/browse/SOLR-16739
