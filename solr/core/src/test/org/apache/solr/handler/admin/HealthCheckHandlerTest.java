@@ -110,7 +110,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
       RemoteSolrException e =
           expectThrows(RemoteSolrException.class, () -> runHealthcheckWithClient(solrClient));
-      assertTrue(e.getMessage(), e.getMessage().contains("Host Unavailable"));
+      assertThat(e.getMessage(), containsString("Host Unavailable"));
       assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
     } finally {
       newJetty.stop();
@@ -185,11 +185,6 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
             "v1 error response body must contain status=FAILURE so body-inspecting clients get a clear signal",
             response.body(),
             containsString("FAILURE"));
-        assertTrue(
-            "v1 error response body must contain status=FAILURE so body-inspecting clients get"
-                + " a clear signal; body was: "
-                + response.body(),
-            response.body().contains("FAILURE"));
       }
     } finally {
       newJetty.stop();
