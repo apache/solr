@@ -197,7 +197,7 @@ public class HighlightComponent extends SearchComponent
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.doHighlights) return;
 
-    // Turn on highlighting only only when retrieving fields
+    // Turn on highlighting only when retrieving fields
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       sreq.purpose |= ShardRequest.PURPOSE_GET_HIGHLIGHTS;
       // should already be true...
