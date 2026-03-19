@@ -1352,7 +1352,7 @@ public class SchemaDesignerAPI extends JerseyResource
   }
 
   protected void requireSchemaVersion(Integer schemaVersion) {
-    if (schemaVersion == null) {
+    if (schemaVersion == null || schemaVersion < 0) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, SCHEMA_VERSION_PARAM + " is a required parameter!");
     }
