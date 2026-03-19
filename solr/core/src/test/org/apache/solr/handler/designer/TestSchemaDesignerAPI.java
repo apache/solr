@@ -788,6 +788,28 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertTrue("errorDetails must contain the failing doc id", details.containsKey("doc1"));
   }
 
+  @Test
+  public void testRequireSchemaVersionRejectsNegativeValues() throws Exception {
+    String configSet = "schemaVersionValidation";
+    schemaDesignerAPI.prepNewSchema(configSet, null);
+
+    // null schemaVersion must be rejected
+    SolrException nullEx =
+        expectThrows(SolrException.class, () -> schemaDesignerAPI.addSchemaObject(configSet, null));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, nullEx.code());
+
+    // negative schemaVersion must be rejected (was previously bypassing validation)
+    SolrException negEx =
+        expectThrows(SolrException.class, () -> schemaDesignerAPI.addSchemaObject(configSet, -1));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, negEx.code());
+
+    // same contract must hold for updateSchemaObject
+    SolrException updateNegEx =
+        expectThrows(
+            SolrException.class, () -> schemaDesignerAPI.updateSchemaObject(configSet, -1));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, updateNegEx.code());
+  }
+
   protected void assertDesignerSettings(Map<String, Object> expected, Map<String, Object> actual) {
     for (String expKey : expected.keySet()) {
       Object expValue = expected.get(expKey);
