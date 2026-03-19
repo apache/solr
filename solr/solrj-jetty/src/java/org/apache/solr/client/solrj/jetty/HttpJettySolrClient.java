@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -109,6 +110,9 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
    * this client.
    */
   public static final String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.jetty.customizer";
+
+  /** System property to cap the maximum number of outstanding async HTTP requests. Default 1000. */
+  public static final String ASYNC_REQUESTS_MAX_SYSPROP = "solr.http.client.async_requests.max";
 
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
@@ -439,7 +443,17 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
           @Override
           public void onFailure(Response response, Throwable failure) {
             super.onFailure(response, failure);
-            future.completeExceptionally(new SolrServerException(failure.getMessage(), failure));
+            // Dispatch off the IO thread so any whenComplete retry won't block on
+            // semaphore.acquire().
+            try {
+              executor.execute(
+                  () ->
+                      future.completeExceptionally(
+                          new SolrServerException(failure.getMessage(), failure)));
+            } catch (RejectedExecutionException ree) {
+              // Executor shut down; safe to complete inline since retries will fail immediately.
+              future.completeExceptionally(new SolrServerException(failure.getMessage(), failure));
+            }
           }
         });
 
@@ -836,6 +850,18 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   private static class AsyncTracker {
     private static final int MAX_OUTSTANDING_REQUESTS = 1000;
 
+    /**
+     * Request attribute key used to mark that a semaphore permit has been acquired for a given
+     * request. Jetty can internally re-queue the same exchange object and re-fire {@code
+     * onRequestQueued} more than once (e.g. when retrying after a connection-level failure), while
+     * {@code onComplete} always fires exactly once. This attribute makes the queued/complete
+     * listeners idempotent: a second {@code onRequestQueued} for the same request is a no-op, and
+     * {@code onComplete} releases the permit only when one was actually acquired.
+     */
+    private static final String PERMIT_ACQUIRED_ATTR = "solr.async_tracker.permit_acquired";
+
+    private final int maxRequests;
+
     // wait for async requests
     private final Phaser phaser;
     // maximum outstanding requests left
@@ -844,34 +870,64 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     private final Response.CompleteListener completeListener;
 
     AsyncTracker() {
+      maxRequests = Integer.getInteger(ASYNC_REQUESTS_MAX_SYSPROP, MAX_OUTSTANDING_REQUESTS);
       // TODO: what about shared instances?
       phaser = new Phaser(1);
-      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
+      available = new Semaphore(maxRequests, false);
       queuedListener =
           request -> {
+            if (request.getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
+              return;
+            }
             phaser.register();
             try {
               available.acquire();
-            } catch (InterruptedException ignored) {
-
+            } catch (InterruptedException e) {
+              // Undo phaser registration: no permit was acquired so completeListener must not
+              // release.
+              phaser.arriveAndDeregister();
+              Thread.currentThread().interrupt();
+              return;
             }
+            request.attribute(PERMIT_ACQUIRED_ATTR, Boolean.TRUE);
           };
       completeListener =
           result -> {
-            phaser.arriveAndDeregister();
-            available.release();
+            if (result == null
+                || result.getRequest().getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
+              phaser.arriveAndDeregister();
+              available.release();
+            }
           };
     }
 
     int getMaxRequestsQueuedPerDestination() {
       // comfortably above max outstanding requests
-      return MAX_OUTSTANDING_REQUESTS * 3;
+      return maxRequests * 3;
+    }
+
+    int maxPermits() {
+      return maxRequests;
+    }
+
+    int availablePermits() {
+      return available.availablePermits();
     }
 
     public void waitForComplete() {
       phaser.arriveAndAwaitAdvance();
       phaser.arriveAndDeregister();
     }
+  }
+
+  /** Returns the configured maximum number of outstanding async requests. */
+  public int asyncTrackerMaxPermits() {
+    return asyncTracker.maxPermits();
+  }
+
+  /** Returns the number of currently available async-request permits. */
+  public int asyncTrackerAvailablePermits() {
+    return asyncTracker.availablePermits();
   }
 
   public static class Builder
