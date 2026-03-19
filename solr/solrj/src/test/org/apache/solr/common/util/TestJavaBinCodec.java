@@ -494,6 +494,16 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertSame(l1.get(1), l2.get(1));
   }
 
+  @Test
+  public void testBufferSize() {
+    assertEquals(512, JavaBinCodec.getBufferSize(1));
+    assertEquals(512, JavaBinCodec.getBufferSize(200));
+    assertEquals(512, JavaBinCodec.getBufferSize(500));
+    assertEquals(512, JavaBinCodec.getBufferSize(512));
+    assertEquals(1024, JavaBinCodec.getBufferSize(513));
+    assertEquals(2048, JavaBinCodec.getBufferSize(1500));
+  }
+
   public void genBinaryFiles() throws IOException {
 
     Object data = generateAllDataTypes();
