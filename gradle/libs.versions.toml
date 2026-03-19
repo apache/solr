@@ -58,7 +58,7 @@ bats-file = "0.3.0"
 bc-jose4j = "0.9.6"
 benmanes-caffeine = "3.2.2"
 benmanes-versions = "0.53.0"
-bouncycastle = "1.81"
+bouncycastle = "1.83"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
 bytebuddy = "1.18.3"
