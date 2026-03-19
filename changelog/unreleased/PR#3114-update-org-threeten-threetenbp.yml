@@ -1,0 +1,7 @@
+title: Update org.threeten:threetenbp to v1.7.2
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3114
+  url: https://github.com/apache/solr/pull/3114
