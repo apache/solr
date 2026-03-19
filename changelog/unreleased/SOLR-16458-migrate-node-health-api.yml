@@ -1,7 +1,8 @@
-title: "SolrJ now offers a SolrRequest class allowing users to perform single-node healthchecks: NodeApi.Healthcheck"
+title: "SolrJ now offers a SolrRequest class allowing users to perform v2 single-node healthchecks: NodeApi.Healthcheck"
 type: added
 authors:
   - name: Eric Pugh
+  - name: Jason Gerlowski
 links:
   - name: SOLR-16458
     url: https://issues.apache.org/jira/browse/SOLR-16458
