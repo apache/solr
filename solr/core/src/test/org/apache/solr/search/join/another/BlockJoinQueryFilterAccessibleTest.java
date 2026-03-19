@@ -17,7 +17,7 @@
 
 package org.apache.solr.search.join.another;
 
-import static org.apache.solr.search.join.BJQParserTest.createIndex;
+import static org.apache.solr.search.join.BlockJoinQueryParserTest.createIndex;
 
 import java.io.IOException;
 import org.apache.lucene.index.Term;
@@ -34,7 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.rules.TestRule;
 
-public class BJQFilterAccessibleTest extends SolrTestCaseJ4 {
+public class BlockJoinQueryFilterAccessibleTest extends SolrTestCaseJ4 {
 
   @ClassRule
   public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
