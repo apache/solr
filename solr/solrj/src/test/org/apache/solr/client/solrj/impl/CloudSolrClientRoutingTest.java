@@ -33,6 +33,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -162,14 +163,30 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
 
       assertEquals(1, client.query(new SolrQuery("id:" + docId)).getResults().getNumFound());
 
-      // Delete by ID without providing explicit route
-      // Should still delete via sending to all shards
-      UpdateRequest deleteRequest = new UpdateRequest();
-      deleteRequest.deleteById(docId);
-      deleteRequest.process(client);
-      client.commit();
+      try (LogListener warnLog =
+          LogListener.warn(CloudSolrClient.class)
+              .substring(
+                  "No routing info found for update to collection '"
+                      + collectionName
+                      + "', broadcasting to all shards.")) {
 
-      assertEquals(0, client.query(new SolrQuery("id:" + docId)).getResults().getNumFound());
+        // Delete by ID without providing explicit route
+        // Should still delete via sending to all shards and log a warning
+        UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById(docId);
+        deleteRequest.process(client);
+        client.commit();
+
+        assertEquals(0, client.query(new SolrQuery("id:" + docId)).getResults().getNumFound());
+
+        // Verify the warning was logged when routing info was missing
+        assertNotNull(
+            "Expected at least one warning about missing routing info for deleteById",
+            warnLog.pollMessage());
+
+        // Clear any remaining messages
+        warnLog.clearQueue();
+      }
     }
   }
 }
