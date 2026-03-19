@@ -52,12 +52,10 @@ public class NodeHealthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStandaloneMode_WithNegativeMaxGenerationLagReturnsFailure() {
-    // maxGenerationLag is a v1-only parameter: NodeHealth.healthcheck() (v2) hardcodes it to
-    // null and never forwards it from request params. NodeApi.Healthcheck therefore cannot be used
-    // to exercise this code path, so we call the JAX-RS implementation directly.
-    // FIXME: IInteresting!  Do we have a gap?
-    final var response = new NodeHealth(solrTestRule.getCoreContainer()).checkNodeHealth(null, -1);
+  public void testStandaloneMode_WithNegativeMaxGenerationLagReturnsFailure() throws Exception {
+    final var request = new NodeApi.Healthcheck();
+    request.setMaxGenerationLag(-1);
+    final var response = request.process(solrTestRule.getAdminClient());
 
     assertNotNull(response);
     assertEquals(FAILURE, response.status);

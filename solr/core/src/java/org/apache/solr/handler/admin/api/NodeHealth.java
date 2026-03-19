@@ -72,18 +72,7 @@ public class NodeHealth extends JerseyResource implements NodeHealthApi {
 
   @Override
   @PermissionName(HEALTH_PERM)
-  public NodeHealthResponse healthcheck(Boolean requireHealthyCores) {
-    return checkNodeHealth(requireHealthyCores, null);
-  }
-
-  /**
-   * Performs the node health check and returns the result as a {@link NodeHealthResponse}.
-   *
-   * <p>This overload is used by the v1 {@link
-   * org.apache.solr.handler.admin.HealthCheckHandler#handleRequestBody} path, which can supply the
-   * legacy {@code maxGenerationLag} parameter that is not exposed via the v2 endpoint.
-   */
-  public NodeHealthResponse checkNodeHealth(Boolean requireHealthyCores, Integer maxGenerationLag) {
+  public NodeHealthResponse healthcheck(Boolean requireHealthyCores, Integer maxGenerationLag) {
     if (coreContainer == null || coreContainer.isShutDown()) {
       throw new SolrException(
           SERVER_ERROR, "CoreContainer is either not initialized or shutting down");

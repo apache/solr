@@ -88,8 +88,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
         req.getParams().getInt(HealthCheckRequest.PARAM_MAX_GENERATION_LAG);
     try {
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-          rsp,
-          new NodeHealth(coreContainer).checkNodeHealth(requireHealthyCores, maxGenerationLag));
+          rsp, new NodeHealth(coreContainer).healthcheck(requireHealthyCores, maxGenerationLag));
     } catch (SolrException e) {
       final NodeHealthResponse failureResponse = new NodeHealthResponse();
       failureResponse.status = NodeHealthResponse.NodeStatus.FAILURE;

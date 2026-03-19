@@ -17,6 +17,7 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -30,5 +31,14 @@ public interface NodeHealthApi {
   @Operation(
       summary = "Determine the health of a Solr node.",
       tags = {"node"})
-  NodeHealthResponse healthcheck(@QueryParam("requireHealthyCores") Boolean requireHealthyCores);
+  NodeHealthResponse healthcheck(
+      @QueryParam("requireHealthyCores") Boolean requireHealthyCores,
+      @Parameter(
+              description =
+                  "Maximum number of index generations a follower replica may lag behind its"
+                      + " leader before the health check reports FAILURE. Only relevant when"
+                      + " running in legacy (non-SolrCloud) mode with leader/follower"
+                      + " replication.")
+          @QueryParam("maxGenerationLag")
+          Integer maxGenerationLag);
 }
