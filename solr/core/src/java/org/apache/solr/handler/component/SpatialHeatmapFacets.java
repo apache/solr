@@ -26,10 +26,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.facet.FacetHeatmap;
 import org.apache.solr.search.facet.FacetMerger;
 import org.apache.solr.search.facet.FacetRequest;
+import org.apache.solr.search.facet.OneFacetParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,14 +51,14 @@ public class SpatialHeatmapFacets {
   /** Called by {@link org.apache.solr.request.SimpleFacets} to compute heatmap facets. */
   @SuppressWarnings("unchecked")
   public static NamedList<Object> getHeatmapForField(
-      String fieldKey, String fieldName, ResponseBuilder rb, SolrParams params, DocSet docSet)
+          SimpleFacets simpleFacets, String fieldKey, String fieldName, ResponseBuilder rb, SolrParams params, DocSet docSet)
       throws IOException {
-    final FacetRequest facetRequest = createHeatmapRequest(fieldKey, fieldName, rb, params);
+    final FacetRequest facetRequest = createHeatmapRequest(simpleFacets, fieldKey, fieldName, rb, params);
     return (NamedList<Object>) facetRequest.process(rb.req, docSet);
   }
 
   private static FacetRequest createHeatmapRequest(
-      String fieldKey, String fieldName, ResponseBuilder rb, SolrParams params) {
+          OneFacetParser simpleFacets, String fieldKey, String fieldName, ResponseBuilder rb, SolrParams params) {
     Map<String, Object> jsonFacet = new HashMap<>();
     jsonFacet.put("type", "heatmap");
     jsonFacet.put("field", fieldName);
@@ -78,7 +80,7 @@ public class SpatialHeatmapFacets {
         FacetHeatmap.FORMAT_PARAM,
         params.getFieldParam(fieldKey, FacetParams.FACET_HEATMAP_FORMAT));
 
-    return FacetRequest.parseOneFacetReq(rb.req, jsonFacet);
+    return simpleFacets.parseOneFacetReq(rb.req, jsonFacet);
   }
 
   //
@@ -87,12 +89,12 @@ public class SpatialHeatmapFacets {
 
   /** Parses request to "HeatmapFacet" instances. */
   public static LinkedHashMap<String, HeatmapFacet> distribParse(
-      SolrParams params, ResponseBuilder rb) {
+          OneFacetParser facetRequestFactory, SolrParams params, ResponseBuilder rb) {
     final LinkedHashMap<String, HeatmapFacet> heatmapFacets = new LinkedHashMap<>();
     final String[] heatmapFields = params.getParams(FacetParams.FACET_HEATMAP);
     if (heatmapFields != null) {
       for (String heatmapField : heatmapFields) {
-        HeatmapFacet facet = new HeatmapFacet(rb, heatmapField);
+        HeatmapFacet facet = new HeatmapFacet(facetRequestFactory, rb, heatmapField);
         heatmapFacets.put(facet.getKey(), facet);
       }
     }
@@ -168,7 +170,7 @@ public class SpatialHeatmapFacets {
 
   /**
    * Goes in {@link org.apache.solr.handler.component.FacetComponent.FacetInfo#heatmapFacets},
-   * created by {@link #distribParse(org.apache.solr.common.params.SolrParams, ResponseBuilder)}.
+   * created by {@link #distribParse(OneFacetParser, SolrParams, ResponseBuilder)}.
    */
   public static class HeatmapFacet extends FacetComponent.FacetBase {
     // note: 'public' following-suit with FacetBase & existing subclasses... though should this
@@ -176,11 +178,11 @@ public class SpatialHeatmapFacets {
 
     public FacetMerger jsonFacetMerger;
 
-    public HeatmapFacet(ResponseBuilder rb, String facetStr) {
+    public HeatmapFacet(OneFacetParser facetRequestFactory, ResponseBuilder rb, String facetStr) {
       super(rb, FacetParams.FACET_HEATMAP, facetStr);
       // note: logic in super (FacetBase) is partially redundant with SimpleFacet.parseParams :-(
       final SolrParams params = SolrParams.wrapDefaults(localParams, rb.req.getParams());
-      final FacetRequest heatmapRequest = createHeatmapRequest(getKey(), facetOn, rb, params);
+      final FacetRequest heatmapRequest = createHeatmapRequest(facetRequestFactory, getKey(), facetOn, rb, params);
       jsonFacetMerger = heatmapRequest.createFacetMerger(null);
     }
   }

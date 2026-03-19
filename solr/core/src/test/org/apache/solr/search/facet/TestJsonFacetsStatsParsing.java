@@ -23,8 +23,10 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.function.FieldNameValueSource;
 import org.junit.BeforeClass;
 import org.noggit.ObjectBuilder;
@@ -56,35 +58,41 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc)));
   }
 
+  @SuppressWarnings("unchecked")
   public void testEquality() {
     try (SolrQueryRequest req =
         req(
             "custom_req_param", "foo_i",
             "overridden_param", "xxxxx_i")) {
 
-      @SuppressWarnings({"unchecked"})
+        FacetRequest result;
+        Map<String, Object> params = (Map<String, Object>)
+            Utils.fromJSONString(
+                "{ "
+                    +
+                    // with valuesource
+                    "  f1:'min(field(\"foo_i\"))', "
+                    + "  f2:'min(field($custom_req_param))', "
+                    +
+                    // with fieldName and query de-reference
+                    "  s1:'min(foo_i)', "
+                    + "  s2:'min($custom_req_param)', "
+                    + "  s3:{ func:'min($custom_req_param)' }, "
+                    + "  s4:{ type:func, func:'min($custom_req_param)' }, "
+                    + "  s5:{ type:func, func:'min($custom_local_param)', custom_local_param:foo_i }, "
+                    + "  s6:{ type:func, func:'min($overridden_param)', overridden_param:foo_i }, "
+                    +
+                    // test the test...
+                    "  diff:'min(field(\"bar_i\"))',"
+                    + "}");
+        FacetParserFactory facetParserFactory = new FacetParserFactory();
+        result = facetParserFactory.parseRequest(req,params);
+        // with valuesource
+        // with fieldName and query de-reference
+        // test the test...
+        @SuppressWarnings({"unchecked"})
       final FacetRequest fr =
-          FacetRequest.parse(
-              req,
-              (Map<String, Object>)
-                  Utils.fromJSONString(
-                      "{ "
-                          +
-                          // with valuesource
-                          "  f1:'min(field(\"foo_i\"))', "
-                          + "  f2:'min(field($custom_req_param))', "
-                          +
-                          // with fieldName and query de-reference
-                          "  s1:'min(foo_i)', "
-                          + "  s2:'min($custom_req_param)', "
-                          + "  s3:{ func:'min($custom_req_param)' }, "
-                          + "  s4:{ type:func, func:'min($custom_req_param)' }, "
-                          + "  s5:{ type:func, func:'min($custom_local_param)', custom_local_param:foo_i }, "
-                          + "  s6:{ type:func, func:'min($overridden_param)', overridden_param:foo_i }, "
-                          +
-                          // test the test...
-                          "  diff:'min(field(\"bar_i\"))',"
-                          + "}"));
+                result;
 
       final Map<String, AggValueSource> stats = fr.getFacetStats();
       assertEquals(9, stats.size());
@@ -121,12 +129,14 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
     // local params, but DebugAgg does not -- so use these to test that the
     // JSON Parsing doesn't pollute the local params the ValueSourceParser gets...
     try (SolrQueryRequest req = req("foo", "zzzz", "yaz", "zzzzz")) {
-      final FacetRequest fr =
-          FacetRequest.parse(
-              req,
-              (Map<String, Object>)
-                  ObjectBuilder.fromJSON(
-                      "{ x:{type:func, func:'debug()', foo:['abc','xyz'], bar:4.2 } }"));
+        FacetRequest result;
+        Map<String, Object> params = (Map<String, Object>)
+            ObjectBuilder.fromJSON(
+                "{ x:{type:func, func:'debug()', foo:['abc','xyz'], bar:4.2 } }");
+        FacetParserFactory facetParserFactory = new FacetParserFactory();
+        result = facetParserFactory.parseRequest(req,params);
+        final FacetRequest fr =
+                result;
 
       final Map<String, AggValueSource> stats = fr.getFacetStats();
       assertEquals(1, stats.size());

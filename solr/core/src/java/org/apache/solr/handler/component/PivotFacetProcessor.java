@@ -42,10 +42,12 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.FacetParserFactory;
+import org.apache.solr.search.facet.FacetRequest;
 import org.apache.solr.util.PivotListEntry;
 
 /** Processes all Pivot facet logic for a single node -- both non-distrib, and per-shard */
-public class PivotFacetProcessor extends SimpleFacets {
+public abstract class PivotFacetProcessor extends SimpleFacets {
   public static final String QUERY = "query";
   public static final String RANGE = "range";
   protected SolrParams params;
@@ -447,7 +449,7 @@ public class PivotFacetProcessor extends SimpleFacets {
     assert null != facetRanges;
 
     if (!facetQueries.isEmpty()) {
-      SimpleFacets facets = new SimpleFacets(req, docs, params);
+      SimpleFacets facets = newSimpleFacets(req, docs);
       NamedList<Integer> res = new SimpleOrderedMap<>();
       for (FacetComponent.FacetBase facetQuery : facetQueries) {
         try {
@@ -468,7 +470,13 @@ public class PivotFacetProcessor extends SimpleFacets {
       pivot.add(PivotListEntry.QUERIES.getName(), res);
     }
     if (!facetRanges.isEmpty()) {
-      RangeFacetProcessor rangeFacetProcessor = new RangeFacetProcessor(req, docs, params, null);
+      RangeFacetProcessor rangeFacetProcessor = new RangeFacetProcessor(req, docs, params, null){
+
+        @Override
+        public FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> jsonFacet) {
+          return PivotFacetProcessor.this.parseOneFacetReq(req,jsonFacet);
+        }
+      };
       NamedList<Object> resOuter = new SimpleOrderedMap<>();
       for (RangeFacetRequest rangeFacet : facetRanges) {
         try {
@@ -487,6 +495,16 @@ public class PivotFacetProcessor extends SimpleFacets {
       }
       pivot.add(PivotListEntry.RANGES.getName(), resOuter);
     }
+  }
+
+  protected SimpleFacets newSimpleFacets(
+          SolrQueryRequest req, DocSet docSet) {
+    return new SimpleFacets(req, docSet, req.getParams()) {
+      @Override
+      public FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> jsonFacet) {
+        return PivotFacetProcessor.this.parseOneFacetReq(req, jsonFacet);
+      }
+    };
   }
 
   private ParsedParams getParsedParams(
