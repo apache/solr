@@ -1,5 +1,5 @@
 title: Optimize the size of the internal buffer of JavaBin codec to reduce the number of allocations. This reduces GC pressure on SolrJ client under high indexing load.
-type: changed # Could be 'optimized' ??
+type: changed
 authors:
   - name: Pierre Salagnac
 links:
