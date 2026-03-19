@@ -679,7 +679,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     replayOpsCounter =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr.core.update_log.replay_ops", "Total number of log replay operations"),
+                "solr.core.update_log.replay.ops", "Total number of log replay operations"),
             baseAttributes);
 
     copyOverOldUpdatesCounter =
