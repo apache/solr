@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.FAILURE;
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.OK;
+import static org.hamcrest.Matchers.containsString;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
@@ -35,10 +36,7 @@ import org.junit.Test;
 
 public class NodeHealthTest extends SolrCloudTestCase {
 
-  /**
-   * A standalone (non-ZooKeeper) Jetty instance used by the legacy-mode tests. The
-   * {@code @ClassRule} ensures it is shut down after all tests in this class complete.
-   */
+  /** A standalone (non-ZooKeeper) Jetty instance used by the standalone specific tests. */
   @ClassRule public static SolrJettyTestRule standaloneJetty = new SolrJettyTestRule();
 
   @BeforeClass
@@ -85,9 +83,10 @@ public class NodeHealthTest extends SolrCloudTestCase {
       SolrException e =
           assertThrows(SolrException.class, () -> new NodeApi.Healthcheck().process(nodeClient));
       assertEquals(ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
-      assertTrue(
+      assertThat(
           "Expected 'Host Unavailable' in exception message",
-          e.getMessage().contains("Host Unavailable"));
+          e.getMessage(),
+          containsString(("Host Unavailable")));
     } finally {
       newJetty.stop();
     }
@@ -125,29 +124,31 @@ public class NodeHealthTest extends SolrCloudTestCase {
       SolrException e =
           assertThrows(SolrException.class, () -> new NodeApi.Healthcheck().process(nodeClient));
       assertEquals(ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
-      assertTrue(
+      assertThat(
           "Expected 'Not in live nodes' in exception message",
-          e.getMessage().contains("Not in live nodes"));
+          e.getMessage(),
+          containsString("Not in live nodes"));
     } finally {
       newJetty.stop();
     }
   }
 
   @Test
-  public void testLegacyMode_WithoutMaxGenerationLagReturnsOk() throws Exception {
+  public void testStandaloneMode_WithoutMaxGenerationLagReturnsOk() throws Exception {
 
     final var request = new NodeApi.Healthcheck();
     final var response = request.process(standaloneJetty.getAdminClient());
 
     assertNotNull(response);
     assertEquals(OK, response.status);
-    assertTrue(
+    assertThat(
         "Expected message about maxGenerationLag not being specified",
-        response.message.contains("maxGenerationLag isn't specified"));
+        response.message,
+        containsString("maxGenerationLag isn't specified"));
   }
 
   @Test
-  public void testLegacyMode_WithNegativeMaxGenerationLagReturnsFailure() {
+  public void testStandaloneMode_WithNegativeMaxGenerationLagReturnsFailure() {
     // maxGenerationLag is a v1-only parameter: NodeHealth.healthcheck() (v2) hardcodes it to
     // null and never forwards it from request params. NodeApi.Healthcheck therefore cannot be used
     // to exercise this code path, so we call the JAX-RS implementation directly.
@@ -157,8 +158,9 @@ public class NodeHealthTest extends SolrCloudTestCase {
 
     assertNotNull(response);
     assertEquals(FAILURE, response.status);
-    assertTrue(
+    assertThat(
         "Expected message about invalid maxGenerationLag",
-        response.message.contains("Invalid value of maxGenerationLag"));
+        response.message,
+        containsString("Invalid value of maxGenerationLag"));
   }
 }
