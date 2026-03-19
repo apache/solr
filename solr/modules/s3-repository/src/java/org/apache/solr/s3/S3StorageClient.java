@@ -44,6 +44,7 @@ import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.regions.Region;
@@ -92,6 +93,9 @@ public class S3StorageClient {
   /** The S3 bucket where we read/write all data. */
   private final String bucketName;
 
+  /** The HTTP client used by the S3 client. Needs to be closed separately. */
+  private final SdkHttpClient httpClient;
+
   S3StorageClient(
       String bucketName,
       String profile,
@@ -100,30 +104,19 @@ public class S3StorageClient {
       boolean proxyUseSystemSettings,
       String endpoint,
       boolean disableRetries) {
-    this(
-        createInternalClient(
-            profile, region, proxyUrl, proxyUseSystemSettings, endpoint, disableRetries),
-        bucketName);
+    this.bucketName = bucketName;
+    this.httpClient = createHttpClient(proxyUrl, proxyUseSystemSettings);
+    this.s3Client = createInternalClient(profile, region, endpoint, disableRetries, httpClient);
   }
 
   @VisibleForTesting
   S3StorageClient(S3Client s3Client, String bucketName) {
     this.s3Client = s3Client;
     this.bucketName = bucketName;
+    this.httpClient = null;
   }
 
-  private static S3Client createInternalClient(
-      String profile,
-      String region,
-      String proxyUrl,
-      boolean proxyUseSystemSettings,
-      String endpoint,
-      boolean disableRetries) {
-    S3Configuration.Builder configBuilder = S3Configuration.builder().pathStyleAccessEnabled(true);
-    if (StrUtils.isNotNullOrEmpty(profile)) {
-      configBuilder.profileName(profile);
-    }
-
+  private static SdkHttpClient createHttpClient(String proxyUrl, boolean proxyUseSystemSettings) {
     ApacheHttpClient.Builder sdkHttpClientBuilder = ApacheHttpClient.builder();
     // If configured, add proxy
     ProxyConfiguration.Builder proxyConfigurationBuilder = ProxyConfiguration.builder();
@@ -134,6 +127,20 @@ public class S3StorageClient {
     }
     sdkHttpClientBuilder.proxyConfiguration(proxyConfigurationBuilder.build());
     sdkHttpClientBuilder.useIdleConnectionReaper(false);
+
+    return sdkHttpClientBuilder.build();
+  }
+
+  private static S3Client createInternalClient(
+      String profile,
+      String region,
+      String endpoint,
+      boolean disableRetries,
+      SdkHttpClient httpClient) {
+    S3Configuration.Builder configBuilder = S3Configuration.builder().pathStyleAccessEnabled(true);
+    if (StrUtils.isNotNullOrEmpty(profile)) {
+      configBuilder.profileName(profile);
+    }
 
     /*
      * Retry logic
@@ -167,7 +174,7 @@ public class S3StorageClient {
             .credentialsProvider(credentialsProviderBuilder.build())
             .overrideConfiguration(builder -> builder.retryStrategy(retryStrategy))
             .serviceConfiguration(configBuilder.build())
-            .httpClient(sdkHttpClientBuilder.build());
+            .httpClient(httpClient);
 
     if (StrUtils.isNotNullOrEmpty(endpoint)) {
       clientBuilder.endpointOverride(URI.create(endpoint));
@@ -374,23 +381,27 @@ public class S3StorageClient {
       GetObjectRequest.Builder getBuilder =
           GetObjectRequest.builder().bucket(bucketName).key(s3Path);
       // This InputStream instance needs to be closed by the caller
-      return s3Client.getObject(
-          getBuilder.build(),
-          ResponseTransformer.unmanaged(
-              (response, inputStream) -> {
-                final long contentLength = response.contentLength();
-                return new ResumableInputStream(
-                    inputStream,
-                    bytesRead -> {
-                      if (contentLength > 0 && bytesRead >= contentLength) {
-                        // No more bytes to read
-                        return null;
-                      } else if (bytesRead > 0) {
-                        getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
-                      }
-                      return s3Client.getObject(getBuilder.build());
-                    });
-              }));
+      // Use Duration.ZERO to disable timeout and prevent response-input-stream-timeout-scheduler
+      // thread leak (see https://github.com/aws/aws-sdk-java-v2/issues/6567)
+      software.amazon.awssdk.core.ResponseInputStream<
+              software.amazon.awssdk.services.s3.model.GetObjectResponse>
+          responseStream =
+              s3Client.getObject(
+                  getBuilder.build(), ResponseTransformer.toInputStream(java.time.Duration.ZERO));
+      final long contentLength = responseStream.response().contentLength();
+      return new ResumableInputStream(
+          responseStream,
+          bytesRead -> {
+            if (contentLength > 0 && bytesRead >= contentLength) {
+              // No more bytes to read
+              return null;
+            } else if (bytesRead > 0) {
+              getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
+            }
+            // Use Duration.ZERO to disable timeout on resumed streams as well
+            return s3Client.getObject(
+                getBuilder.build(), ResponseTransformer.toInputStream(java.time.Duration.ZERO));
+          });
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -419,6 +430,9 @@ public class S3StorageClient {
   /** Override {@link Closeable} since we throw no exception. */
   void close() {
     s3Client.close();
+    if (httpClient != null) {
+      httpClient.close();
+    }
   }
 
   /** Any file path that specifies a non-existent file will not be treated as an error. */
@@ -544,7 +558,7 @@ public class S3StorageClient {
   }
 
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
-  String sanitizedPath(String path) throws S3Exception {
+  String sanitizedPath(String path) {
     // Trim space from start and end
     String sanitizedPath = path.trim();
 
@@ -580,7 +594,7 @@ public class S3StorageClient {
    * Ensures directory path adheres to some rules: -Overall Path rules from `sanitizedPath` -Add a
    * trailing slash if one does not exist
    */
-  String sanitizedDirPath(String path) throws S3Exception {
+  String sanitizedDirPath(String path) {
     // Trim space from start and end
     String sanitizedPath = sanitizedPath(path);
 
