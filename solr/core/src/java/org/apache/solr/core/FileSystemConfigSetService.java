@@ -206,7 +206,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     try {
       data = Files.readAllBytes(metadataPath);
     } catch (NoSuchFileException e) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     @SuppressWarnings("unchecked")
     Map<String, Object> metadata = (Map<String, Object>) Utils.fromJSON(data);

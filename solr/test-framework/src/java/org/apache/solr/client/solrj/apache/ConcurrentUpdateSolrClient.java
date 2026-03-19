@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentProducer;
 import org.apache.http.entity.EntityTemplate;
@@ -336,7 +337,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
           method = new HttpPost(basePath + "/update" + requestParams.toQueryString());
 
-          org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
+          RequestConfig.Builder requestConfigBuilder =
               HttpClientUtil.createDefaultRequestConfigBuilder();
           requestConfigBuilder.setSocketTimeout(soTimeout);
           requestConfigBuilder.setConnectTimeout(connectionTimeout);

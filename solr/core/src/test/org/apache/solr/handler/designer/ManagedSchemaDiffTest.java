@@ -50,11 +50,11 @@ public class ManagedSchemaDiffTest extends SolrCloudTestCase {
     ManagedIndexSchema schema = helper.loadLatestSchema(DEFAULT_CONFIGSET_NAME);
 
     Map<String, SchemaField> schema1FieldMap = new HashMap<>();
-    schema1FieldMap.put("strfield", schema.newField("strfield", "string", Collections.emptyMap()));
+    schema1FieldMap.put("strfield", schema.newField("strfield", "string", Map.of()));
     schema1FieldMap.put("boolfield", new SchemaField("boolfield", new BoolField()));
 
     Map<String, SchemaField> schema2FieldMap = new HashMap<>();
-    schema2FieldMap.put("strfield", schema.newField("strfield", "strings", Collections.emptyMap()));
+    schema2FieldMap.put("strfield", schema.newField("strfield", "strings", Map.of()));
     schema2FieldMap.put("intfield", new SchemaField("intfield", new IntPointField()));
 
     Map<String, Object> diff =

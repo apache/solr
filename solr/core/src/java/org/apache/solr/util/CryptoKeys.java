@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -256,7 +257,7 @@ public final class CryptoKeys {
         throw new AssertionError("JVM spec is required to support RSA", e);
       }
       keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
-      java.security.KeyPair keyPair = keyGen.genKeyPair();
+      KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
       keySizeInBytes = determineKeySizeInBytes(privateKey);
       publicKey = keyPair.getPublic();

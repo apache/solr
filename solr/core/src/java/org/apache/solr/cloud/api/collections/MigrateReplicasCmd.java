@@ -134,7 +134,7 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
   protected Set<String> getNodesFromParam(ZkNodeProps message, String paramName) {
     Object rawParam = message.get(paramName);
     if (rawParam == null) {
-      return Collections.emptySet();
+      return Set.of();
     } else if (rawParam instanceof Set) {
       return (Set<String>) rawParam;
     } else if (rawParam instanceof Collection) {

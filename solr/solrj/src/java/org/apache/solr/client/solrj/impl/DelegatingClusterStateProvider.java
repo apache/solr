@@ -46,7 +46,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getLiveNodes();
     } else {
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 
@@ -64,7 +64,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getAliasProperties(alias);
     } else {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 
@@ -100,7 +100,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getClusterProperties();
     } else {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 
@@ -137,6 +137,14 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   public String getQuorumHosts() {
     if (delegate != null) {
       return delegate.getQuorumHosts();
+    }
+    return null;
+  }
+
+  @Override
+  public String getUrlScheme() {
+    if (delegate != null) {
+      return delegate.getUrlScheme();
     }
     return null;
   }

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +34,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class ZkClientClusterStateProvider
     implements ClusterStateProvider, SolrZkClientTimeoutAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  private static final String SOLR_SSL_ENABLED = "solr.ssl.enabled";
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   private final String zkHost;
@@ -107,7 +107,7 @@ public class ZkClientClusterStateProvider
       SolrZkClient zkClient,
       Instant createTime) {
     if (bytes == null || bytes.length == 0) {
-      return new ClusterState(liveNodes, Collections.emptyMap());
+      return new ClusterState(liveNodes, Map.of());
     }
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
     Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
@@ -157,7 +157,7 @@ public class ZkClientClusterStateProvider
     if (clusterState != null) {
       return clusterState.getLiveNodes();
     } else {
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 
@@ -338,5 +338,21 @@ public class ZkClientClusterStateProvider
   @Override
   public void setZkClientTimeout(int zkClientTimeout) {
     this.zkClientTimeout = zkClientTimeout;
+  }
+
+  /**
+   * @return url scheme with the help of cluster property or environment variable.
+   */
+  @Override
+  public String getUrlScheme() {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool(SOLR_SSL_ENABLED);
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    final Object urlSchemeClusterProperty = getClusterProperty(ClusterState.URL_SCHEME);
+    if (urlSchemeClusterProperty != null) {
+      return urlSchemeClusterProperty.toString();
+    }
+    return "http";
   }
 }

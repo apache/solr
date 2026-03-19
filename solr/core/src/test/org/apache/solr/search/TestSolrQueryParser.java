@@ -26,7 +26,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -340,7 +339,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     sowTrueParamsMap.put("sow", "true");
     List<MapSolrParams> paramMaps =
         Arrays.asList(
-            new MapSolrParams(Collections.emptyMap()), // no sow param (i.e. the default sow value)
+            new MapSolrParams(Map.of()), // no sow param (i.e. the default sow value)
             new MapSolrParams(sowFalseParamsMap),
             new MapSolrParams(sowTrueParamsMap));
 

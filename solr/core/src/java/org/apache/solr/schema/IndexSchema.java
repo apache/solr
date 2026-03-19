@@ -49,6 +49,7 @@ import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
@@ -348,7 +349,7 @@ public class IndexSchema {
    * @return null if this schema has no unique key field
    * @see #printableUniqueKey
    */
-  public IndexableField getUniqueKeyField(org.apache.lucene.document.Document doc) {
+  public IndexableField getUniqueKeyField(Document doc) {
     return doc.getField(uniqueKeyFieldName); // this should return null if name is null
   }
 
@@ -357,7 +358,7 @@ public class IndexSchema {
    *
    * @return null if this schema has no unique key field
    */
-  public String printableUniqueKey(org.apache.lucene.document.Document doc) {
+  public String printableUniqueKey(Document doc) {
     IndexableField f = doc.getField(uniqueKeyFieldName);
     return f == null ? null : uniqueKeyFieldType.toExternal(f);
   }
@@ -1500,7 +1501,7 @@ public class IndexSchema {
   public List<String> getCopySources(String destField) {
     SchemaField f = getField(destField);
     if (!isCopyFieldTarget(f)) {
-      return Collections.emptyList();
+      return List.of();
     }
     List<String> fieldNames = new ArrayList<>();
     for (Map.Entry<String, List<CopyField>> cfs : copyFieldsMap.entrySet()) {
@@ -1555,7 +1556,7 @@ public class IndexSchema {
 
   /** Get a map of property name -&gt; value for the whole schema. */
   public Map<String, Object> getNamedPropertyValues() {
-    return getNamedPropertyValues(null, new MapSolrParams(Collections.emptyMap()));
+    return getNamedPropertyValues(null, new MapSolrParams(Map.of()));
   }
 
   public static class SchemaProps implements MapSerializable {
@@ -1800,7 +1801,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, boolean persist) {
-    return addFields(Collections.singletonList(newField), Collections.emptyMap(), persist);
+    return addFields(Collections.singletonList(newField), Map.of(), persist);
   }
 
   public IndexSchema addField(SchemaField newField) {
@@ -1831,7 +1832,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addFields(Collection<SchemaField> newFields) {
-    return addFields(newFields, Collections.<String, Collection<String>>emptyMap(), true);
+    return addFields(newFields, Map.of(), true);
   }
 
   /**

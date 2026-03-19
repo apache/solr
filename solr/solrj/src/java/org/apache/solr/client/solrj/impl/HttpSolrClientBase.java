@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -235,7 +236,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
                   .append("\n")
                   .append("request: ")
                   .append(responseMethod);
-          String reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
+          String reason = URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
           throw new RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
         } else {
           throw new RemoteSolrException(urlExceptionMessage, httpStatus, error);

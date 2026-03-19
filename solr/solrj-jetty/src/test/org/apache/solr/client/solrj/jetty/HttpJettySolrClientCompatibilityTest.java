@@ -17,13 +17,17 @@
 
 package org.apache.solr.client.solrj.jetty;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -56,7 +60,10 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .useOnlyHttp1(true)
             .build();
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
@@ -79,7 +86,10 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .useOnlyHttp1(false)
             .build();
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
@@ -105,7 +115,11 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .useOnlyHttp1(true)
             .build();
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     System.clearProperty("solr.http1");
     try (var client =

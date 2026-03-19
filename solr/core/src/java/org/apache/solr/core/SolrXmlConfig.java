@@ -165,10 +165,6 @@ public class SolrXmlConfig {
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
     configBuilder.setClusterPlugins(getClusterPlugins(loader, root));
-    // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
-    // <hiddenSysProps> is not provided under <solr>.
-    // Remove this line in 10.0
-    configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
     configBuilder.setCachesConfig(getCachesConfig(loader, root.get("caches")));
     configBuilder.setDefaultZkHost(defaultZkHost);
@@ -398,14 +394,14 @@ public class SolrXmlConfig {
 
   private static List<String> separateStrings(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptyList();
+      return List.of();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptySet();
+      return Set.of();
     }
     // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
     String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
@@ -745,26 +741,6 @@ public class SolrXmlConfig {
       }
     }
     return o;
-  }
-
-  /**
-   * Deprecated as of 9.3, will be removed in 10.0
-   *
-   * @param metrics configNode for the metrics
-   * @return a comma-separated list of hidden Sys Props
-   */
-  @Deprecated(forRemoval = true, since = "9.3")
-  private static String getHiddenSysProps(ConfigNode metrics) {
-    ConfigNode p = metrics.get("hiddenSysProps");
-    if (!p.exists()) return null;
-    Set<String> props = new HashSet<>();
-    p.forEachChild(
-        it -> {
-          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt()))
-            props.add(Pattern.quote(it.txt()));
-          return Boolean.TRUE;
-        });
-    return String.join(",", props);
   }
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {

@@ -1,0 +1,9 @@
+title: SOLR 17845 - Implement OAuth support in new UI
+type: added
+authors:
+  - name: Christos Malliaridis
+    nick: malliaridis
+    url: https://home.apache.org/phonebook.html?uid=malliaridis
+links:
+  - name: SOLR-17845
+    url: https://issues.apache.org/jira/browse/SOLR-17845

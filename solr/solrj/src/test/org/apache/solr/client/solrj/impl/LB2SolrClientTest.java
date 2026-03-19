@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
@@ -100,11 +101,7 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    for (SolrInstance aSolr : solr) {
-      if (aSolr != null) {
-        aSolr.tearDown();
-      }
-    }
+    IOUtils.close(solr); // closes all solr instances in 'solr[]', and throws if failed
     super.tearDown();
   }
 
@@ -286,7 +283,7 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static class SolrInstance {
+  private static class SolrInstance implements Closeable {
     String name;
     Path homeDir;
     Path dataDir;
@@ -339,9 +336,16 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       Files.createFile(homeDir.resolve("collection1/core.properties"));
     }
 
-    public void tearDown() throws Exception {
-      if (jetty != null) jetty.stop();
-      IOUtils.rm(homeDir);
+    @Override
+    public void close() throws IOException {
+      try {
+        if (jetty != null) jetty.stop();
+        IOUtils.rm(homeDir);
+      } catch (IOException | RuntimeException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
 
     public void startJetty() throws Exception {

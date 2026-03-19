@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the streaming update
@@ -36,16 +35,11 @@ import org.junit.BeforeClass;
  */
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-
   @Override
   public SolrClient createNewSolrClient() {
     // smaller queue size hits locks more often
-    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withQueueSize(2)
         .withThreadCount(5)
         .withResponseParser(new XMLResponseParser())
@@ -57,7 +51,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     // SOLR-3903
     // TODO these failures are not the same as recorded by the client
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = getCoreUrl();
+    final String serverUrl = solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
     try (ConcurrentUpdateSolrClient concurrentClient =
         new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl)
             .withQueueSize(2)

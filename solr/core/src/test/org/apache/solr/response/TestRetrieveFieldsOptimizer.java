@@ -479,7 +479,7 @@ class FieldHolder {
         storedMvFields.add(field);
       }
     }
-    return schema.addFields(fieldsToAdd, Collections.emptyMap(), false);
+    return schema.addFields(fieldsToAdd, Map.of(), false);
   }
 
   RetrieveField getTestField(String field) {

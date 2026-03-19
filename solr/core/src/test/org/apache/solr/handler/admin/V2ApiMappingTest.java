@@ -22,7 +22,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +115,7 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
         new SolrQueryRequestBase(null, new ModifiableSolrParams()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
+            if (v2RequestBody == null) return List.of();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
           }

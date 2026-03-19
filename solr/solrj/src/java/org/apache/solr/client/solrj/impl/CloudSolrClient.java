@@ -105,7 +105,7 @@ public abstract class CloudSolrClient extends SolrClient {
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   private final boolean parallelUpdates;
-  private ExecutorService threadPool =
+  private final ExecutorService threadPool =
       ExecutorUtil.newMDCAwareCachedThreadPool(
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
@@ -642,9 +642,8 @@ public abstract class CloudSolrClient extends SolrClient {
   public void close() {
     closed = true;
     collectionRefreshes.clear();
-    if (this.threadPool != null && !ExecutorUtil.isShutdown(this.threadPool)) {
+    if (!ExecutorUtil.isShutdown(this.threadPool)) {
       ExecutorUtil.shutdownAndAwaitTermination(this.threadPool);
-      this.threadPool = null;
     }
   }
 
@@ -1124,7 +1123,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     List<String> inputCollections =
-        collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
+        collection == null ? List.of() : StrUtils.splitSmart(collection, ",", true);
     return requestWithRetryOnStaleState(
         request,
         0,
@@ -1452,7 +1451,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final ClusterStateProvider provider = getClusterStateProvider();
-    final String urlScheme = provider.getClusterProperty(ClusterState.URL_SCHEME, "http");
+    final String urlScheme = provider.getUrlScheme();
     final Set<String> liveNodes = provider.getLiveNodes();
 
     final List<LBSolrClient.Endpoint> requestEndpoints =
@@ -1578,7 +1577,7 @@ public abstract class CloudSolrClient extends SolrClient {
    */
   private Set<String> resolveAliases(List<String> inputCollections) {
     if (inputCollections.isEmpty()) {
-      return Collections.emptySet();
+      return Set.of();
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
@@ -1658,41 +1657,34 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   private CompletableFuture<DocCollection> triggerCollectionRefresh(String collection) {
-    if (closed) {
-      ExpiringCachedDocCollection cacheEntry = collectionStateCache.peek(collection);
-      DocCollection cached = cacheEntry == null ? null : cacheEntry.cached;
-      return CompletableFuture.completedFuture(cached);
-    }
-    return collectionRefreshes.computeIfAbsent(
+    return collectionRefreshes.compute(
         collection,
-        key -> {
-          ExecutorService executor = threadPool;
-          CompletableFuture<DocCollection> future;
-          if (executor == null || ExecutorUtil.isShutdown(executor)) {
-            future = new CompletableFuture<>();
-            try {
-              future.complete(loadDocCollection(key));
-            } catch (Throwable t) {
-              future.completeExceptionally(t);
-            }
-          } else {
-            future =
-                CompletableFuture.supplyAsync(
-                    () -> {
-                      stateRefreshSemaphore.acquireUninterruptibly();
-                      try {
-                        return loadDocCollection(key);
-                      } finally {
-                        stateRefreshSemaphore.release();
-                      }
-                    },
-                    executor);
+        (key, existingFuture) -> {
+          // A refresh is still in progress; return it.
+          if (existingFuture != null && !existingFuture.isDone()) {
+            return existingFuture;
           }
-          future.whenCompleteAsync(
-              (result, error) -> {
-                collectionRefreshes.remove(key, future);
-              });
-          return future;
+          // No refresh is in-progress, so trigger it.
+
+          if (ExecutorUtil.isShutdown(threadPool)) {
+            assert closed; // see close() for the sequence
+            ExpiringCachedDocCollection cacheEntry = collectionStateCache.peek(key);
+            DocCollection cached = cacheEntry == null ? null : cacheEntry.cached;
+            return CompletableFuture.completedFuture(cached);
+          } else {
+            return CompletableFuture.supplyAsync(
+                () -> {
+                  stateRefreshSemaphore.acquireUninterruptibly();
+                  try {
+                    return loadDocCollection(key);
+                  } finally {
+                    stateRefreshSemaphore.release();
+                    // Remove the entry in case of many collections
+                    collectionRefreshes.remove(key);
+                  }
+                },
+                threadPool);
+          }
         });
   }
 

@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +40,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
@@ -49,7 +48,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.NamedList;
 
 /** Utility class that holds various helper methods for the CLI. */
 public final class CLIUtils {
@@ -198,7 +196,6 @@ public final class CLIUtils {
                 + ".");
       } else {
         try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkHost)) {
-          cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
           if (liveNodes.isEmpty())
             throw new IllegalStateException(
@@ -262,7 +259,7 @@ public final class CLIUtils {
     return zkHost;
   }
 
-  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
+  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
@@ -312,17 +309,17 @@ public final class CLIUtils {
       String solrUrl, String collection, String credentials) {
     boolean exists = false;
     try (var solrClient = getSolrClient(solrUrl, credentials)) {
-      NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
-      @SuppressWarnings("unchecked")
-      List<String> collections = (List<String>) existsCheckResult.get("collections");
-      exists = collections != null && collections.contains(collection);
+      var response = new CollectionsApi.ListCollections().process(solrClient);
+      exists =
+          response != null
+              && response.collections != null
+              && response.collections.contains(collection);
     } catch (Exception exc) {
       // just ignore it since we're only interested in a positive result here
     }
     return exists;
   }
 
-  @SuppressWarnings("unchecked")
   public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
     boolean exists = false;
     try (var solrClient = getSolrClient(solrUrl, credentials)) {
@@ -330,8 +327,13 @@ public final class CLIUtils {
       final long startWaitAt = System.nanoTime();
       do {
         if (wait) {
-          final int clamPeriodForStatusPollMs = 1000;
-          Thread.sleep(clamPeriodForStatusPollMs);
+          final int pollIntervalMs = 1000;
+          try {
+            TimeUnit.MILLISECONDS.sleep(pollIntervalMs);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            break;
+          }
         }
         final var coreStatusReq = new CoresApi.GetCoreStatus(coreName);
         final var coreStatusRsp = coreStatusReq.process(solrClient);
