@@ -150,7 +150,7 @@ kotlin = "2.2.0"
 # @keep for version alignment
 kotlinx-atomicfu = "0.29.0"
 # @keep for version alignment
-kotlinx-browser = "0.3"
+kotlinx-browser = "0.5.0"
 kotlinx-coroutines = "1.10.1"
 kotlinx-datetime = "0.7.1"
 kotlinx-serialization = "1.9.0"
