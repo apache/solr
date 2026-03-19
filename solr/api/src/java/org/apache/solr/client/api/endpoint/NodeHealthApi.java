@@ -37,8 +37,7 @@ public interface NodeHealthApi {
               description =
                   "Maximum number of index generations a follower replica may lag behind its"
                       + " leader before the health check reports FAILURE. Only relevant when"
-                      + " running in legacy (non-SolrCloud) mode with leader/follower"
-                      + " replication.")
+                      + " running in Standalone mode with leader/follower replication.")
           @QueryParam("maxGenerationLag")
           Integer maxGenerationLag);
 }

@@ -31,7 +31,12 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class NodeHealthTest extends SolrCloudTestCase {
+/**
+ * Tests for the node-health API, on SolrCloud clusters
+ *
+ * @see NodeHealthStandaloneTest
+ */
+public class NodeHealthSolrCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -77,10 +82,7 @@ public class NodeHealthTest extends SolrCloudTestCase {
       SolrException e =
           assertThrows(SolrException.class, () -> new NodeApi.Healthcheck().process(nodeClient));
       assertEquals(ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
-      assertThat(
-          "Expected 'Host Unavailable' in exception message",
-          e.getMessage(),
-          containsString(("Host Unavailable")));
+      assertThat(e.getMessage(), containsString(("Host Unavailable")));
     } finally {
       newJetty.stop();
     }
@@ -119,10 +121,7 @@ public class NodeHealthTest extends SolrCloudTestCase {
       SolrException e =
           assertThrows(SolrException.class, () -> new NodeApi.Healthcheck().process(nodeClient));
       assertEquals(ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
-      assertThat(
-          "Expected 'Not in live nodes' in exception message",
-          e.getMessage(),
-          containsString("Not in live nodes"));
+      assertThat(e.getMessage(), containsString("Not in live nodes"));
     } finally {
       newJetty.stop();
     }

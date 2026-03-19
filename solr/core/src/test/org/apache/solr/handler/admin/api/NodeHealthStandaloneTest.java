@@ -28,6 +28,11 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+/**
+ * Tests for the node-health API, on Standalone Solr
+ *
+ * @see NodeHealthSolrCloudTest
+ */
 public class NodeHealthStandaloneTest extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
@@ -45,10 +50,7 @@ public class NodeHealthStandaloneTest extends SolrTestCaseJ4 {
 
     assertNotNull(response);
     assertEquals(OK, response.status);
-    assertThat(
-        "Expected message about maxGenerationLag not being specified",
-        response.message,
-        containsString("maxGenerationLag isn't specified"));
+    assertThat(response.message, containsString("maxGenerationLag isn't specified"));
   }
 
   @Test
@@ -59,9 +61,6 @@ public class NodeHealthStandaloneTest extends SolrTestCaseJ4 {
 
     assertNotNull(response);
     assertEquals(FAILURE, response.status);
-    assertThat(
-        "Expected message about invalid maxGenerationLag",
-        response.message,
-        containsString("Invalid value of maxGenerationLag"));
+    assertThat(response.message, containsString("Invalid value of maxGenerationLag"));
   }
 }
