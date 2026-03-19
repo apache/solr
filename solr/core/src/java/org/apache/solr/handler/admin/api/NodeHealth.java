@@ -84,7 +84,7 @@ public class NodeHealth extends JerseyResource implements NodeHealthApi {
       if (log.isDebugEnabled()) {
         log.debug("Invoked HealthCheckHandler in legacy mode.");
       }
-      healthCheckLegacyMode(response, maxGenerationLag);
+      healthCheckStandaloneMode(response, maxGenerationLag);
     } else {
       if (log.isDebugEnabled()) {
         log.debug(
@@ -138,7 +138,7 @@ public class NodeHealth extends JerseyResource implements NodeHealthApi {
     return clusterState;
   }
 
-  private void healthCheckLegacyMode(NodeHealthResponse response, Integer maxGenerationLag) {
+  private void healthCheckStandaloneMode(NodeHealthResponse response, Integer maxGenerationLag) {
     List<String> laggingCoresInfo = new ArrayList<>();
     boolean allCoresAreInSync = true;
 

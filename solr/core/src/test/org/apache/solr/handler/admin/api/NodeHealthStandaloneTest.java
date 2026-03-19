@@ -38,7 +38,7 @@ public class NodeHealthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStandaloneMode_WithoutMaxGenerationLagReturnsOk() throws Exception {
+  public void testWithoutMaxGenerationLagReturnsOk() throws Exception {
 
     final var request = new NodeApi.Healthcheck();
     final var response = request.process(solrTestRule.getAdminClient());
@@ -52,7 +52,7 @@ public class NodeHealthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testStandaloneMode_WithNegativeMaxGenerationLagReturnsFailure() throws Exception {
+  public void testWithNegativeMaxGenerationLagReturnsFailure() throws Exception {
     final var request = new NodeApi.Healthcheck();
     request.setMaxGenerationLag(-1);
     final var response = request.process(solrTestRule.getAdminClient());
