@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.FAILURE;
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.OK;
 import static org.hamcrest.Matchers.containsString;
 
@@ -29,27 +28,21 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 public class NodeHealthTest extends SolrCloudTestCase {
 
-  /** A standalone (non-ZooKeeper) Jetty instance used by the standalone specific tests. */
-  @ClassRule public static SolrJettyTestRule standaloneJetty = new SolrJettyTestRule();
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
-    standaloneJetty.startSolr(createTempDir());
 
     CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf", 1, 1)
         .process(cluster.getSolrClient());
   }
 
   @Test
-  public void testCloudMode_HealthyNodeReturnsOkStatus() throws Exception {
+  public void testHealthyNodeReturnsOkStatus() throws Exception {
     final var request = new NodeApi.Healthcheck();
     final var response = request.process(cluster.getSolrClient());
 
@@ -59,7 +52,7 @@ public class NodeHealthTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCloudMode_RequireHealthyCoresReturnOkWhenAllCoresHealthy() throws Exception {
+  public void testRequireHealthyCoresReturnOkWhenAllCoresHealthy() throws Exception {
     final var request = new NodeApi.Healthcheck();
     request.setRequireHealthyCores(true);
     final var response = request.process(cluster.getSolrClient());
@@ -73,6 +66,7 @@ public class NodeHealthTest extends SolrCloudTestCase {
   public void testCloudMode_UnhealthyWhenZkClientClosed() throws Exception {
     // Use a fresh node so closing its ZK client does not break the primary cluster node
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
+    cluster.waitForNode(newJetty, 30);
     try (SolrClient nodeClient = newJetty.newClient()) {
       // Sanity check: the new node should start out healthy
       assertEquals(OK, new NodeApi.Healthcheck().process(nodeClient).status);
@@ -101,8 +95,9 @@ public class NodeHealthTest extends SolrCloudTestCase {
    * clusterState.getLiveNodes().contains(nodeName)}.
    */
   @Test
-  public void testCloudMode_NotInLiveNodes_ThrowsServiceUnavailable() throws Exception {
+  public void testNotInLiveNodes_ThrowsServiceUnavailable() throws Exception {
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
+    cluster.waitForNode(newJetty, 30);
     try (SolrClient nodeClient = newJetty.newClient()) {
       // Sanity check: the new node should start out healthy
       assertEquals(OK, new NodeApi.Healthcheck().process(nodeClient).status);
@@ -131,36 +126,5 @@ public class NodeHealthTest extends SolrCloudTestCase {
     } finally {
       newJetty.stop();
     }
-  }
-
-  @Test
-  public void testStandaloneMode_WithoutMaxGenerationLagReturnsOk() throws Exception {
-
-    final var request = new NodeApi.Healthcheck();
-    final var response = request.process(standaloneJetty.getAdminClient());
-
-    assertNotNull(response);
-    assertEquals(OK, response.status);
-    assertThat(
-        "Expected message about maxGenerationLag not being specified",
-        response.message,
-        containsString("maxGenerationLag isn't specified"));
-  }
-
-  @Test
-  public void testStandaloneMode_WithNegativeMaxGenerationLagReturnsFailure() {
-    // maxGenerationLag is a v1-only parameter: NodeHealth.healthcheck() (v2) hardcodes it to
-    // null and never forwards it from request params. NodeApi.Healthcheck therefore cannot be used
-    // to exercise this code path, so we call the JAX-RS implementation directly.
-    // FIXME: IInteresting!  Do we have a gap?
-    final var response =
-        new NodeHealth(standaloneJetty.getCoreContainer()).checkNodeHealth(null, -1);
-
-    assertNotNull(response);
-    assertEquals(FAILURE, response.status);
-    assertThat(
-        "Expected message about invalid maxGenerationLag",
-        response.message,
-        containsString("Invalid value of maxGenerationLag"));
   }
 }
