@@ -772,6 +772,9 @@ public abstract class CloudSolrClient extends SolrClient {
             "directUpdatesToLeadersOnly==true but could not find leader(s)");
       } else {
         // we could not find a leader or routes yet - use unoptimized general path
+        log.warn(
+            "No routing info found for update to collection '{}', broadcasting to all shards.",
+            collection);
         return null;
       }
     }
