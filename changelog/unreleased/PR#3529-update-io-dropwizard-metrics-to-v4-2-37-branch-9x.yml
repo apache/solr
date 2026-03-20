@@ -1,0 +1,7 @@
+title: Update io.dropwizard.metrics:* to v4.2.37 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3529
+  url: https://github.com/apache/solr/pull/3529
