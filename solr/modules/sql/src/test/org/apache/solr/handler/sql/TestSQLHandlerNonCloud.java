@@ -47,8 +47,7 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    Path solrHome = createSolrHome();
-    solrTestRule.startSolr(solrHome);
+    solrTestRule.startSolr(createSolrHome());
   }
 
   @Test
