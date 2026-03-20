@@ -503,9 +503,7 @@ public class JettySolrRunner implements SolrBackend {
     return (RateLimitFilter) rateLimitFilter.getFilter();
   }
 
-  /**
-   * @return the {@link CoreContainer} for this node
-   */
+  @Override
   public CoreContainer getCoreContainer() {
     final var solrDispatchFilter = getSolrDispatchFilter();
     if (solrDispatchFilter == null) {
