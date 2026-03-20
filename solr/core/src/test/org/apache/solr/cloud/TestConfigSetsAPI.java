@@ -84,7 +84,6 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
@@ -583,7 +582,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertEquals(
           400, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true, false));
 
-      for (String fileEnding : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
+      for (String fileEnding : ConfigSetService.DEFAULT_FORBIDDEN_FILE_TYPES) {
         String f = configPath + "/test." + fileEnding;
         assertFalse(
             "Expecting file " + f + " to not exist, because it has a forbidden file type",
@@ -804,7 +803,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
-      for (String fileType : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
+      for (String fileType : ConfigSetService.DEFAULT_FORBIDDEN_FILE_TYPES) {
         ignoreException("is forbidden for use in configSets");
         assertEquals(
             "Can't upload a configset file with a forbidden type: " + fileType,
@@ -1385,7 +1384,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     try (ZipOutputStream zout = new ZipOutputStream(out)) {
       if (Files.isRegularFile(fileOrDirectory)) {
         // Create entries with given file, one for each forbidden endding
-        for (String fileType : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
+        for (String fileType : ConfigSetService.DEFAULT_FORBIDDEN_FILE_TYPES) {
           zout.putNextEntry(new ZipEntry("test." + fileType));
 
           try (InputStream in = Files.newInputStream(fileOrDirectory)) {

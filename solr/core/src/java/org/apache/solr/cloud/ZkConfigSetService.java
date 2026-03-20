@@ -18,7 +18,11 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -168,6 +172,22 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public void uploadConfig(String configName, Path dir) throws IOException {
+    Files.walkFileTree(
+        dir,
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            String filename = file.getFileName().toString();
+            if (ConfigSetService.isFileForbiddenInConfigSets(filename)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "The file type provided for upload, '"
+                      + filename
+                      + "', is forbidden for use in uploading configsets.");
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
     zkClient.uploadToZK(
         dir, CONFIGS_ZKNODE + "/" + configName, ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
@@ -178,7 +198,7 @@ public class ZkConfigSetService extends ConfigSetService {
       throws IOException {
     String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
     try {
-      if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
+      if (ConfigSetService.isFileForbiddenInConfigSets(fileName)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "The file type provided for upload, '"
@@ -324,11 +344,11 @@ public class ZkConfigSetService extends ConfigSetService {
 
   private void copyData(String fromZkFilePath, String toZkFilePath)
       throws KeeperException, InterruptedException {
-    if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fromZkFilePath)) {
+    if (ConfigSetService.isFileForbiddenInConfigSets(fromZkFilePath)) {
       log.warn(
           "Skipping copy of file in ZK, as the source file is a forbidden type: {}",
           fromZkFilePath);
-    } else if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(toZkFilePath)) {
+    } else if (ConfigSetService.isFileForbiddenInConfigSets(toZkFilePath)) {
       log.warn(
           "Skipping download of file from ZK, as the target file is a forbidden type: {}",
           toZkFilePath);
