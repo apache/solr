@@ -81,6 +81,13 @@ public class SolrServlet extends HttpServlet {
   @Override
   protected void service(HttpServletRequest request, HttpServletResponse response)
       throws IOException, ServletException {
+    // Handle root path specially - forward to index.html to trigger welcome-file mechanism
+    String path = ServletUtils.getPathAfterContext(request);
+    if (path.isEmpty() || path.equals("/")) {
+      request.getRequestDispatcher("/index.html").forward(request, response);
+      return;
+    }
+
     // internal version that tracks if we are in a retry
     dispatch(request, response, false);
   }
