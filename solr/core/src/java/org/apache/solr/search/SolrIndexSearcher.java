@@ -2637,7 +2637,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     warmupTimer =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr.core.indexsearcher.warmup.time",
+                "solr.core.indexsearcher.warmup_time",
                 "Searcher warmup time (ms)",
                 OtelUnit.MILLISECONDS),
             baseAttributes);
