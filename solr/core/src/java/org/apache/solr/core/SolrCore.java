@@ -254,7 +254,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
   private AttributedLongTimer newSearcherTimer;
+
+  @Deprecated(
+      since = "10.1",
+      forRemoval = true) // Duplicate of solr.core.indexsearcher.warmup_time - remove
   private AttributedLongTimer newSearcherWarmupTimer;
+
   private List<AutoCloseable> toClose;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
@@ -1368,7 +1373,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         new AttributedLongTimer(
             parentContext.longHistogram(
                 "solr.core.indexsearcher.open.warmup_time",
-                "Time to warmup new searchers",
+                "DEPRECATED - Use solr.core.indexsearcher.warmup_time instead",
                 OtelUnit.MILLISECONDS),
             baseSearcherAttributes);
 

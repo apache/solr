@@ -287,6 +287,10 @@ Attention:
 
 == Solr 10.1
 
+=== OTEL metrics classified as BETA
+
+The new OTEL metrics system, naming and dashboard should be treated as a BETA. We reserve the right to make breaking changes in this space in minor versions.
+
 === OTLP Metric Names Changed to Dot-Separated Format
 
 *Breaking change for OTLP consumers.*
@@ -299,3 +303,7 @@ For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_ex
 
 *Workaround for OTLP consumers depending on the old names:*
 Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
+
+=== Metric solr_core_indexsearcher_open_warmup_time is deprecated
+
+If you use `solr_core_indexsearcher_open_warmup_time` in a dashboard, it duplicates `solr_core_indexsearcher_warmup_time` and is deprecated for removal in a later 10.x release.
