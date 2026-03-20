@@ -36,12 +36,8 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Solr's interface to Jetty.
- *
- * @since solr 1.2
- */
-public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServlet
+/** Solr's interface to Jetty. Formerly known as {@code SolrDispatchFilter}. */
+public class SolrServlet extends HttpServlet {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private HttpSolrCallFactory solrCallFactory;
@@ -49,7 +45,7 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
 
   public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
-  public SolrDispatchFilter() {}
+  public SolrServlet() {}
 
   @Override
   public void init(ServletConfig config) throws ServletException {
@@ -61,7 +57,7 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
       solrCallFactory =
           isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
-        log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+        log.trace("init(): {}", this.getClass().getClassLoader());
       }
     } catch (Throwable t) {
       // catch this so our servlet still works
@@ -70,7 +66,7 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
         throw (Error) t;
       }
     } finally {
-      log.trace("SolrDispatchFilter.init() done");
+      log.trace("init() done");
     }
   }
 
@@ -147,7 +143,7 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
   /** internal API */
   public interface HttpSolrCallFactory {
     default HttpSolrCall createInstance(
-        SolrDispatchFilter filter,
+        SolrServlet filter,
         String path,
         CoreContainer cores,
         HttpServletRequest request,

@@ -92,7 +92,7 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   /**
-   * @see SolrDispatchFilter#getCores()
+   * @see SolrServlet#getCores()
    */
   CoreContainer getCoreContainer() throws UnavailableException {
     checkReady();

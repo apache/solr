@@ -77,9 +77,8 @@ public class SolrXmlConfig {
    * wrapping the original Properties, with the 'zkHost' value set based on the value of the
    * corresponding System property (if set)
    *
-   * <p>In theory we only need this logic once, ideally in SolrDispatchFilter, but we put it here to
-   * re-use redundantly because of how much surface area our API has for various tests to poke at
-   * us.
+   * <p>In theory we only need this logic once, ideally in SolrServlet, but we put it here to re-use
+   * redundantly because of how much surface area our API has for various tests to poke at us.
    */
   public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
     if (null != props && StrUtils.isNotNullOrEmpty(props.getProperty(ZK_HOST))) {
@@ -104,8 +103,8 @@ public class SolrXmlConfig {
     // *directly* check the system
     // property if it's not specified.
     //
-    // (checking the sys prop here is really just for tests that by-pass SolrDispatchFilter. In
-    // non-test situations, SolrDispatchFilter will check the system property if needed in order to
+    // (checking the sys prop here is really just for tests that by-pass SolrServlet. In
+    // non-test situations, SolrServlet will check the system property if needed in order to
     // try and load solr.xml from ZK, and should have put the sys prop value in the node properties
     // for us)
     final String defaultZkHost =

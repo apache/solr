@@ -58,12 +58,12 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
 
   public CoordinatorHttpSolrCall(
       Factory factory,
-      SolrDispatchFilter solrDispatchFilter,
+      SolrServlet solrServlet,
       CoreContainer cores,
       HttpServletRequest request,
       HttpServletResponse response,
       boolean retry) {
-    super(solrDispatchFilter, cores, request, response, retry);
+    super(solrServlet, cores, request, response, retry);
     this.factory = factory;
   }
 
@@ -199,12 +199,12 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   }
 
   // The factory that creates an instance of HttpSolrCall
-  public static class Factory implements SolrDispatchFilter.HttpSolrCallFactory {
+  public static class Factory implements SolrServlet.HttpSolrCallFactory {
     private final Map<String, String> collectionVsCoreNameMapping = new ConcurrentHashMap<>();
 
     @Override
     public HttpSolrCall createInstance(
-        SolrDispatchFilter filter,
+        SolrServlet filter,
         String path,
         CoreContainer cores,
         HttpServletRequest request,
@@ -213,7 +213,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
       if ((path.startsWith("/____v2/") || path.equals("/____v2"))) {
         return new CoordinatorV2HttpSolrCall(this, filter, cores, request, response, retry);
       } else if (path.startsWith("/" + SYNTHETIC_COLL_PREFIX)) {
-        return SolrDispatchFilter.HttpSolrCallFactory.super.createInstance(
+        return SolrServlet.HttpSolrCallFactory.super.createInstance(
             filter, path, cores, request, response, retry);
       } else {
         return new CoordinatorHttpSolrCall(this, filter, cores, request, response, retry);

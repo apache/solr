@@ -65,7 +65,7 @@ import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.SolrServlet;
 import org.apache.solr.servlet.TracingFilter;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
@@ -441,7 +441,7 @@ public class JettySolrRunner {
 
       // This is our main workhorse - now a servlet instead of filter
       solrServlet = root.getServletHandler().newServletHolder(Source.EMBEDDED);
-      solrServlet.setHeldClass(SolrDispatchFilter.class);
+      solrServlet.setHeldClass(SolrServlet.class);
       root.addServlet(solrServlet, "/*");
 
       // Default servlet as a fall-through
@@ -492,18 +492,18 @@ public class JettySolrRunner {
   }
 
   /**
-   * @return the {@link SolrDispatchFilter} for this node
+   * @return the {@link SolrServlet} for this node
    */
-  public SolrDispatchFilter getSolrDispatchFilter() {
+  public SolrServlet getSolrServlet() {
     try {
-      return (SolrDispatchFilter) solrServlet.getServlet();
+      return (SolrServlet) solrServlet.getServlet();
     } catch (ServletException e) {
       throw new RuntimeException(e);
     }
   }
 
   /**
-   * @return the {@link SolrDispatchFilter} for this node
+   * @return the {@link RateLimitFilter} for this node
    */
   public RateLimitFilter getSolrRateLimitFilter() {
     return (RateLimitFilter) rateLimitFilter.getFilter();
@@ -513,12 +513,12 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
-    final var solrDispatchFilter = getSolrDispatchFilter();
-    if (solrDispatchFilter == null) {
+    final var servlet = getSolrServlet();
+    if (servlet == null) {
       return null;
     }
     try {
-      return solrDispatchFilter.getCores();
+      return servlet.getCores();
     } catch (UnavailableException e) {
       return null;
     }
@@ -899,7 +899,7 @@ public class JettySolrRunner {
 
   private void waitForLoadingCoresToFinish(long timeoutMs) {
     if (solrServlet != null) {
-      SolrDispatchFilter solrServlet = getSolrDispatchFilter();
+      SolrServlet solrServlet = getSolrServlet();
       CoreContainer cores;
       try {
         cores = solrServlet.getCores();

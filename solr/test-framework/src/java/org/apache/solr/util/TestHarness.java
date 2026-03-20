@@ -114,7 +114,7 @@ public class TestHarness extends BaseTestHarness {
 
   /**
    * Helper method to let us do some home sys prop check in delegated constructor. in "real" code
-   * SolrDispatchFilter takes care of checking this sys prop when building NodeConfig/CoreContainer
+   * SolrServlet takes care of checking this sys prop when building NodeConfig/CoreContainer
    */
   private static Path checkAndReturnSolrHomeSysProp() {
     final String SOLR_HOME = "solr.solr.home";

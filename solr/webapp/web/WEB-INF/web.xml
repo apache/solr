@@ -86,7 +86,7 @@
 
   <servlet>
     <servlet-name>SolrServlet</servlet-name>
-    <servlet-class>org.apache.solr.servlet.SolrDispatchFilter</servlet-class>
+    <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
   </servlet>
 
   <servlet-mapping>

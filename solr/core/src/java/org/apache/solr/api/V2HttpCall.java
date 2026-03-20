@@ -56,8 +56,8 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.apache.solr.servlet.SolrServlet;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -78,12 +78,12 @@ public class V2HttpCall extends HttpSolrCall {
   static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
   public V2HttpCall(
-      SolrDispatchFilter solrDispatchFilter,
+      SolrServlet solrServlet,
       CoreContainer cc,
       HttpServletRequest request,
       HttpServletResponse response,
       boolean retry) {
-    super(solrDispatchFilter, cc, request, response, retry);
+    super(solrServlet, cc, request, response, retry);
   }
 
   @Override
