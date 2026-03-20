@@ -1,5 +1,4 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: SolrDispatchFilter is now a Servlet, not a Filter
+title: SolrDispatchFilter is now SolrServlet; isn't a Filter
 type: other
 authors:
   - name: David Smiley
