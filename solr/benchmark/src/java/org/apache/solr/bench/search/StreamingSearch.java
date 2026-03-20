@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.SolrBenchState;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -34,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -67,7 +69,7 @@ public class StreamingSearch {
     private String zkHost;
     private ModifiableSolrParams params;
     private StreamContext streamContext;
-    private HttpJettySolrClient httpJettySolrClient;
+    private SolrClient httpSolrClient;
 
     @Setup(Level.Trial)
     public void setup(SolrBenchState solrBenchState) throws Exception {
@@ -95,11 +97,9 @@ public class StreamingSearch {
     @Setup(Level.Iteration)
     public void setupIteration(SolrBenchState solrBenchState)
         throws SolrServerException, IOException {
-      SolrClientCache solrClientCache;
-      // TODO tune params?
-      var client = new HttpJettySolrClient.Builder().useHttp1_1(useHttp1).build();
-      solrClientCache = new SolrClientCache(client);
-
+      var httpSolrClient = new HttpJettySolrClient.Builder().useHttp1_1(useHttp1).build();
+      this.httpSolrClient = httpSolrClient;
+      SolrClientCache solrClientCache = new SolrClientCache(httpSolrClient);
       streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
     }
@@ -107,9 +107,7 @@ public class StreamingSearch {
     @TearDown(Level.Iteration)
     public void teardownIt() {
       streamContext.getSolrClientCache().close();
-      if (httpJettySolrClient != null) {
-        httpJettySolrClient.close();
-      }
+      IOUtils.closeQuietly(httpSolrClient);
     }
   }
 
