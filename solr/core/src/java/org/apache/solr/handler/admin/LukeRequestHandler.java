@@ -244,6 +244,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   /** Per-field accumulation state across shards: aggregated response data and field validation. */
   private static class AggregatedFieldData {
+    // keyed by individual field info properties, i.e. type, schema, etc.
     final SimpleOrderedMap<Object> aggregated = new SimpleOrderedMap<>();
     final String originalShardAddr;
     final LukeResponse.FieldInfo originalFieldInfo;
