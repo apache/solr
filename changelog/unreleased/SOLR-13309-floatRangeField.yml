@@ -1,4 +1,4 @@
-title: Introduce new `FloatRangeField` field type and (experimental) `{!numericRange}` query parser for storing and querying float ranges
+title: Introduce new `FloatRangeField` field type for storing and querying float-based ranges
 type: added
 authors:
   - name: Jason Gerlowski
