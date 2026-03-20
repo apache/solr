@@ -19,9 +19,11 @@ package org.apache.solr.bench.search;
 import static org.apache.solr.bench.generators.SourceDSL.integers;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.stream.Collectors;
 import org.apache.solr.bench.BaseBenchState;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.SolrBenchState;
@@ -115,19 +117,21 @@ public class FilterCache {
     public void dumpMetrics(SolrBenchState solrBenchState) {
       // TODO add a verbose flag
 
-      String url =
-          solrBenchState.nodes.get(0)
-              + "/admin/metrics?prefix=CACHE.searcher.filterCache&omitHeader=true";
-      HttpURLConnection conn = null;
-      try {
-        conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
-        conn.connect();
-        BaseBenchState.log(
-            new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
-      } catch (IOException e) {
-        // ignored
-      } finally {
-        if (conn != null) conn.disconnect();
+      String url = solrBenchState.nodes.getFirst() + "/admin/metrics?category=CACHE?wt=prometheus";
+      try (HttpClient client = HttpClient.newHttpClient()) {
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Filter to only lines containing filterCache metrics
+        String filteredMetrics =
+            response
+                .body()
+                .lines()
+                .filter(line -> line.contains("filterCache"))
+                .collect(Collectors.joining("\n"));
+        BaseBenchState.log(filteredMetrics);
+      } catch (IOException | InterruptedException e) {
+        throw new RuntimeException(e);
       }
     }
   }
