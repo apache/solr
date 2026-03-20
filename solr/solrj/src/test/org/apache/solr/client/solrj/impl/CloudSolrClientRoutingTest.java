@@ -140,7 +140,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
   public void testDeleteWithoutRouteWithDirectUpdatesToLeadersOnly() throws Exception {
     final String collectionName = "delete_without_route_collection";
 
-    final String docId = TestUtil.randomRealisticUnicodeString(random());
+    final String docId = String.valueOf(random().nextInt(1000));
     final String routeValue = TestUtil.randomRealisticUnicodeString(random());
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
