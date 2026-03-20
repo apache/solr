@@ -1,0 +1,22 @@
+{
+  "class": "org.apache.solr.languagemodels.textvectorisation.model.CustomModel",
+  "name": "custom-1",
+  "params": {
+    "customUrl": "https://custom.api/text-custom",
+    "customVersion": 42,
+    "defaultEmbedding": [
+      0.0, 0.0, 0.0, 0.0, 0.0
+    ],
+    "customEmbeddings": {
+      "the queen bee": [
+         0.1, 0.2, 0.3, 0.4, 0.5
+      ],
+      "the hardest working bee": [
+        0.5, 0.6, 0.7, 0.8, 0.9
+      ],
+      "the bee that": [
+        0.3, 0.4, 0.0, 0.6, 0.7
+      ]
+    }
+  }
+}

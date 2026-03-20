@@ -211,6 +211,30 @@ public class TestModelManager extends TestLanguageModelBase {
   }
 
   @Test
+  public void loadModel_custom_shouldLoadModelConfig() throws Exception {
+    loadModel("custom-model.json");
+
+    final String modelName = "custom-1";
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedTextToVectorModelStore.REST_END_POINT,
+        "/models/[0]/params/customUrl=='https://custom.api/text-custom'");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/customVersion==42");
+    assertJQ(
+        ManagedTextToVectorModelStore.REST_END_POINT,
+        "/models/[0]/params/defaultEmbedding==[0.0,0.0,0.0,0.0,0.0]");
+    final String expectedCustomEmbeddings =
+        "{\"the queen bee\":[0.1,0.2,0.3,0.4,0.5],"
+            + "\"the hardest working bee\":[0.5,0.6,0.7,0.8,0.9],"
+            + "\"the bee that\":[0.3,0.4,0.0,0.6,0.7]}";
+    assertJQ(
+        ManagedTextToVectorModelStore.REST_END_POINT,
+        "/models/[0]/params/customEmbeddings/==" + expectedCustomEmbeddings);
+
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/" + modelName);
+  }
+
+  @Test
   public void loadModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
     loadModel("dummy-model-unsupported.json", "400");
   }

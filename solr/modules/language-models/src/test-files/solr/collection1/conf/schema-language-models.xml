@@ -36,6 +36,7 @@
   <field name="2048_byte_vector" type="high_dimensional_byte_knn_vector" indexed="true" stored="true" />
   <field name="2048_float_vector" type="high_dimensional_float_knn_vector" indexed="true" stored="true" />
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="text_field" type="text_general" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
   <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
