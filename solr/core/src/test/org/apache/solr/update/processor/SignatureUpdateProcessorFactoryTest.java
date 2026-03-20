@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -31,8 +31,8 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -292,7 +292,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       ureq.add(doc);
     }
 
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), mmparams);
     try {
       req.setContentStreams(
           Collections.singletonList(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));

@@ -1,0 +1,15 @@
+title: Upgrade to Lucene 10.3.1
+type: dependency_update
+authors:
+- name: Ishan Chattopadhyaya
+- name: noble
+- name: Jason Gerlowski
+- name: Eric Pugh
+- name: janhoy
+- name: Christine Poerschke
+- name: hossman
+links:
+- name: SOLR-17631
+  url: https://issues.apache.org/jira/browse/SOLR-17631
+- name: SOLR-17917
+  url: https://issues.apache.org/jira/browse/SOLR-17917

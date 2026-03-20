@@ -29,7 +29,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
@@ -49,7 +49,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome().toString());
+    System.setProperty("solr.solr.home", createTempDir().toString());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 
@@ -80,9 +80,6 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
       server.stop();
     } catch (Exception ex) {
     }
-    System.clearProperty("tests.shardhandler.randomSeed");
-    System.clearProperty("solr.data.dir");
-    System.clearProperty("solr.tests.doContainerStreamCloseAssert");
     super.tearDown();
   }
 

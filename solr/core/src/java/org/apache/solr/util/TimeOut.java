@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -29,6 +30,14 @@ public class TimeOut {
   // Internally, the time unit is nanosecond.
   private final long timeoutAt, startTime;
   private final TimeSource timeSource;
+
+  /**
+   * @param timeout after this maximum time, {@link #hasTimedOut()} will return true.
+   * @param timeSource the source of the time.
+   */
+  public TimeOut(Duration timeout, TimeSource timeSource) {
+    this(timeout.toNanos(), NANOSECONDS, timeSource);
+  }
 
   /**
    * @param timeout after this maximum time, {@link #hasTimedOut()} will return true.

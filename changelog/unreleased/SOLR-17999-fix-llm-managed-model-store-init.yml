@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix the Text to Vector Managed Model Store Initialization in LLM Module
+type: fixed
+authors:
+  - name: Ilaria Petreti
+  - name: Alessandro Benedetti
+links:
+  - name: SOLR-17999
+    url: https://issues.apache.org/jira/browse/SOLR-17999

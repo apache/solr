@@ -61,9 +61,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.index.updatelog.enabled");
+    solrTestRule.reset();
 
     if (restTestHarness != null) {
       restTestHarness.close();

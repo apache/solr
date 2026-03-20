@@ -91,10 +91,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -117,8 +117,8 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -179,7 +179,7 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final Http2SolrClient solrClient;
+  private final HttpJettySolrClient solrClient;
 
   private Integer soTimeout;
 
@@ -251,10 +251,10 @@ public class IndexFetcher {
   // It's crucial not to remove the authentication credentials as they are essential for User
   // managed replication.
   // GitHub PR #2276
-  private Http2SolrClient createSolrClient(
+  private HttpJettySolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final UpdateShardHandler updateShardHandler = core.getCoreContainer().getUpdateShardHandler();
-    return new Http2SolrClient.Builder(leaderBaseUrl)
+    return new HttpJettySolrClient.Builder(leaderBaseUrl)
         .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
         .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
         .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
@@ -358,7 +358,7 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     var req = createReplicationHandlerRequest(params);
     try {
-      return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -376,13 +376,12 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     var req = createReplicationHandlerRequest(params);
     try {
-      NamedList<?> response =
-          solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      NamedList<?> response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
       else {
-        filesToDownload = Collections.emptyList();
+        filesToDownload = List.of();
         log.error("No files to download for index generation: {}", gen);
       }
 
@@ -531,17 +530,17 @@ public class IndexFetcher {
           // we just clear ours and commit
           log.info("New index in Leader. Deleting mine...");
           RefCounted<IndexWriter> iw =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore, false);
           try {
             iw.get().deleteAll();
           } finally {
             iw.decref();
           }
           assert TestInjection.injectDelayBeforeFollowerCommitRefresh();
-          if (skipCommitOnLeaderVersionZero) {
+          if (skipCommitOnLeaderVersionZero || solrCore.readOnly) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
-            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+            SolrQueryRequest req = new SolrQueryRequestBase(solrCore, new ModifiableSolrParams());
             solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
           }
         }
@@ -625,7 +624,7 @@ public class IndexFetcher {
           // are successfully deleted
           solrCore.getUpdateHandler().newIndexWriter(true);
           RefCounted<IndexWriter> writer =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null, false);
           try {
             IndexWriter indexWriter = writer.get();
             int c = 0;
@@ -1474,7 +1473,7 @@ public class IndexFetcher {
       return Files.walk(dir).filter(Files::isRegularFile).collect(Collectors.toList());
     } catch (IOException e) {
       log.warn("Could not walk file tree", e);
-      return Collections.emptyList();
+      return List.of();
     }
   }
 
@@ -1533,8 +1532,7 @@ public class IndexFetcher {
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(
       List<Map<String, Object>> confFilesToDownload) {
-    if (confFilesToDownload == null || confFilesToDownload.isEmpty())
-      return Collections.emptyList();
+    if (confFilesToDownload == null || confFilesToDownload.isEmpty()) return List.of();
     // build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
     NamedList<String> names = new NamedList<>();
@@ -1556,7 +1554,7 @@ public class IndexFetcher {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }
-    return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
+    return nameVsFile.isEmpty() ? List.of() : nameVsFile.values();
   }
 
   static boolean delTree(Path dir) {
@@ -1601,25 +1599,25 @@ public class IndexFetcher {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     // create a new instance. or else iterator may fail
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesDownloaded() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesToDownload() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   // TODO: currently does not reflect conf files
@@ -1907,7 +1905,7 @@ public class IndexFetcher {
         var req = createReplicationHandlerRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+        response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
@@ -2050,7 +2048,7 @@ public class IndexFetcher {
     params.set("follower", false);
 
     var request = createReplicationHandlerRequest(params);
-    return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, request, leaderCoreName);
   }
 
   public void destroy() {

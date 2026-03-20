@@ -97,7 +97,6 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
         exporter.close();
         exporter = null;
       }
-      System.clearProperty("otel.traces.exporter");
     }
   }
 }

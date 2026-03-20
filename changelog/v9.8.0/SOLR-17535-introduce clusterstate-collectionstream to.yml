@@ -1,0 +1,8 @@
+title: Introduce ClusterState.collectionStream to replace getCollectionStates, getCollectionsMap,
+  and forEachCollection, which are now deprecated.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17535
+  url: https://issues.apache.org/jira/browse/SOLR-17535

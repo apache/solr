@@ -25,13 +25,13 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -108,10 +108,10 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
         for (String coreName : cc.getAllCoreNames()) {
           try (SolrCore core = cc.getCore(coreName)) {
             var addOpsDatapoint =
-                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                SolrMetricTestUtils.getCounterDatapoint(
                     core,
                     "solr_core_update_committed_ops",
-                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
                         .label("category", "UPDATE")
                         .label("ops", "adds")
                         .build());

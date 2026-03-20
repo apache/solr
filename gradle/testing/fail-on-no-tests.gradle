@@ -27,25 +27,25 @@ configure(allprojects) {
   }
 }
 
-gradle.taskGraph.whenReady { graph ->
+gradle.taskGraph.whenReady {graph ->
   def args = gradle.startParameter.taskNames
-  def filters = args.findAll({ arg ->
+  def filters = args.findAll({arg ->
     return arg == /--tests/
   })
 
   // Only apply the check if we are actually filtering.
   if (!filters.isEmpty()) {
-    def testTasks = graph.allTasks.findAll { task -> task instanceof Test }
+    def testTasks = graph.allTasks.findAll {task -> task instanceof Test}
     // ... and there are some test tasks in the execution graph.
     if (!testTasks.isEmpty()) {
       def executedTests = 0
       def executedTasks = 0
 
-      testTasks.each { task ->
+      testTasks.each {task ->
         task.doFirst {
           executedTasks++
         }
-        task.afterSuite { desc, result ->
+        task.afterSuite {desc, result ->
           executedTests += result.testCount
         }
       }

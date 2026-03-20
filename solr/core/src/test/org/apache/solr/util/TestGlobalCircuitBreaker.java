@@ -34,6 +34,9 @@ public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
 
+    // Deregister existing CBs so that they're re-populated on the next core load.
+    CircuitBreakerRegistry.deregisterGlobal();
+
     // Set a global update breaker for a low CPU, which will trip during indexing
     System.setProperty(CircuitBreakerRegistry.SYSPROP_UPDATE_LOADAVG, "0.1");
 
@@ -42,7 +45,6 @@ public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    System.clearProperty(CircuitBreakerRegistry.SYSPROP_UPDATE_LOADAVG);
     // Deregister the global breaker to not interfere with other tests
     CircuitBreakerRegistry.deregisterGlobal();
   }

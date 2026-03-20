@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -214,7 +215,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertTrue(client.isUpdatesToLeaders());
     }
     try (CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build()) {
       assertTrue(client.isUpdatesToLeaders());
@@ -245,7 +246,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
   public void testHttp2ClientThatDefaultsToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendUpdatesOnlyToShardLeaders()
             .build()) {
@@ -256,7 +257,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
   public void testHttp2ClientThatDoesNotDefaultToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendUpdatesToAnyReplica()
             .build()) {

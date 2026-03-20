@@ -201,7 +201,7 @@
          IndexWriter to write its info stream to solr's log. By default,
          this is enabled here, and controlled through log4j2.xml
       -->
-     <infoStream>true</infoStream>
+      <!-- <infoStream>false</infoStream> -->
   </indexConfig>
 
   <!-- The default high-performance update handler -->
@@ -655,13 +655,13 @@
   <!-- The following are some of the implicit Update Request Handlers
   <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
         <lst name="invariants">
-         <str name="stream.contentType">application/json</str>
-       </lst>
+          <str name="update.contentType">application/json</str>
+        </lst>
   </requestHandler>
   <requestHandler name="/update/csv" class="solr.UpdateRequestHandler">
         <lst name="invariants">
-         <str name="stream.contentType">application/csv</str>
-       </lst>
+          <str name="update.contentType">application/csv</str>
+        </lst>
   </requestHandler>
   -->
 

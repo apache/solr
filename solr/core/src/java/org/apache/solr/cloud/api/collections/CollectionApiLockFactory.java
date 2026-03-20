@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.cloud.DistributedCollectionLockFactory;
@@ -24,12 +25,15 @@ import org.apache.solr.cloud.DistributedLock;
 import org.apache.solr.cloud.DistributedMultiLock;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class implements a higher level locking abstraction for the Collection API using lower level
  * read and write locks.
  */
 public class CollectionApiLockFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final DistributedCollectionLockFactory lockFactory;
 
@@ -54,7 +58,8 @@ public class CollectionApiLockFactory {
    *     prevent other threads from locking.
    */
   DistributedMultiLock createCollectionApiLock(
-      CollectionParams.LockLevel lockLevel, String collName, String shardId, String replicaName) {
+      AdminCmdContext adminCmdContext, String collName, String shardId, String replicaName) {
+    CollectionParams.LockLevel lockLevel = adminCmdContext.getAction().lockLevel;
     if (lockLevel == CollectionParams.LockLevel.NONE) {
       return new DistributedMultiLock(List.of());
     }

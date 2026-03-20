@@ -75,6 +75,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrDocumentFetcher;
@@ -531,7 +532,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     Object fieldHighlights;
     if (schemaField == null) {
       fieldHighlights = null;
-    } else if (schemaField.getType() instanceof org.apache.solr.schema.TrieField) {
+    } else if (schemaField.getType() instanceof TrieField) {
       // TODO: highlighting numeric fields is broken (Lucene) - so we disable them until fixed (see
       // LUCENE-3080)!
       fieldHighlights = null;
@@ -815,7 +816,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     // Collect the Fields we will examine (could be more than one if multi-valued)
     Collection<Object> fieldValues = doc.getFieldValues(fieldName);
     if (fieldValues == null) {
-      return Collections.emptyList();
+      return List.of();
     }
     FieldType fieldType = req.getSchema().getFieldType(fieldName);
     List<String> result = new ArrayList<>();

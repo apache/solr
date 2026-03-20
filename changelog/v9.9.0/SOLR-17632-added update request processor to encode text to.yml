@@ -1,0 +1,8 @@
+title: Added update request processor to encode text to vector at indexing time through
+  external LLM services.
+type: added
+authors:
+- name: Alessandro Benedetti
+links:
+- name: SOLR-17632
+  url: https://issues.apache.org/jira/browse/SOLR-17632

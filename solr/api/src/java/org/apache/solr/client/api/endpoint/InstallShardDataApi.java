@@ -21,7 +21,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /** V2 API definition allowing users to import offline-constructed index into a shard. */
 @Path("/collections/{collName}/shards/{shardName}/install")
@@ -30,7 +30,7 @@ public interface InstallShardDataApi {
   @Operation(
       summary = "Install offline index into an existing shard",
       tags = {"shards"})
-  SolrJerseyResponse installShardData(
+  SubResponseAccumulatingJerseyResponse installShardData(
       @PathParam("collName") String collName,
       @PathParam("shardName") String shardName,
       InstallShardDataRequestBody requestBody)

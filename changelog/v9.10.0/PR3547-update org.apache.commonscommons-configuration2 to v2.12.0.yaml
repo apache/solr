@@ -1,0 +1,7 @@
+title: Update org.apache.commons:commons-configuration2 to v2.12.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3547
+  url: https://github.com/apache/solr/pull/3547

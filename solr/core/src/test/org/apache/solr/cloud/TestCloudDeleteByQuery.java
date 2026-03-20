@@ -212,7 +212,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       assertTrue(
           "shard routing prefixes don't seem to be aligned anymore, "
               + "did someone change the default routing rules? "
-              + "and/or the the default shard name rules? "
+              + "and/or the default shard name rules? "
               + "and/or the numShards used by this test? ... "
               + expected
               + " is ot the same as [shard] == '"

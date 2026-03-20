@@ -17,10 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.SolrJMetricTestUtils.getPrometheusMetricValue;
+import static org.apache.solr.util.SolrJMetricTestUtils.getPrometheusMetricValue;
 
 import java.util.Collections;
 import java.util.Optional;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -49,7 +50,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   public void testRetry() throws Exception {
 
     // Randomly decide to use either the Jetty Http Client or the JDK Http Client
-    var jettyClientBuilder = new Http2SolrClient.Builder();
+    var jettyClientBuilder = new HttpJettySolrClient.Builder();
 
     // forcing Http/1.1 to avoid an extra HEAD request with the first update.
     // (This causes the counts to be 1 greater than what we test for here.)
@@ -59,7 +60,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
             .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
 
     var cloudSolrclientBuilder =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
             Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
     cloudSolrclientBuilder.withHttpClientBuilder(
         random().nextBoolean() ? jettyClientBuilder : jdkClientBuilder);

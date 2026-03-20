@@ -33,9 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
@@ -181,7 +181,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @Test(expected = SolrException.class)
   public void validateEmptyResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
-      zsh.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
+      zsh.validateZkRawResponse(List.of(), "zoo1:2181", "mntr");
     } catch (IOException e) {
       fail("Error closing ZookeeperStatusHandler");
     }

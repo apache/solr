@@ -54,9 +54,9 @@ import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -64,8 +64,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.loader.XMLLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
@@ -977,7 +977,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private void indexSolrInputDocumentsDirectly(SolrInputDocument... docs) throws IOException {
-    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest coreReq = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams());
     AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
     for (SolrInputDocument doc : docs) {
       updateCmd.solrDoc = doc;

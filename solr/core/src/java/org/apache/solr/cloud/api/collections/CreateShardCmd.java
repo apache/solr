@@ -19,7 +19,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -45,7 +46,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
@@ -64,6 +65,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     } else {
       collectionName = extCollectionName;
     }
+    ClusterState clusterState = adminCmdContext.getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
 
     ReplicaCount numReplicas = ReplicaCount.fromMessage(message, collection, 1);
@@ -75,6 +77,8 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
               + "), there must be at least one leader-eligible replica");
     }
 
+    ZkNodeProps m = cloneZkPropsWithOperation(message, CREATESHARD);
+
     if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       // The message has been crafted by CollectionsHandler.CollectionOperation.CREATESHARD_OP and
       // defines the QUEUE_OPERATION to be CollectionParams.CollectionAction.CREATESHARD. Likely a
@@ -83,20 +87,20 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
       ccc.getDistributedClusterStateUpdater()
           .doSingleStateUpdate(
               DistributedClusterStateUpdater.MutatingCommand.CollectionCreateShard,
-              message,
+              m,
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
       // message contains extCollectionName that might be an alias. Unclear (to me) how this works
       // in that case.
-      ccc.offerStateUpdate(message);
+      ccc.offerStateUpdate(m);
     }
 
     // wait for a while until we see the shard and update the local view of the cluster state
     clusterState =
         CollectionHandlingUtils.waitForNewShard(collectionName, sliceName, ccc.getZkStateReader());
 
-    String async = message.getStr(ASYNC);
+    String async = adminCmdContext.getAsyncId();
     Map<String, Object> addReplicasProps =
         Utils.makeMap(
             COLLECTION_PROP,
@@ -110,14 +114,13 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     numReplicas.writeProps(addReplicasProps);
 
     CollectionHandlingUtils.addPropertyParams(message, addReplicasProps);
-    if (async != null) {
-      addReplicasProps.put(ASYNC, async);
-    }
     final NamedList<Object> addResult = new NamedList<>();
     try {
       new AddReplicaCmd(ccc)
           .addReplica(
-              clusterState,
+              adminCmdContext
+                  .subRequestContext(CollectionParams.CollectionAction.ADDREPLICA, async)
+                  .withClusterState(clusterState),
               new ZkNodeProps(addReplicasProps),
               addResult,
               () -> {
@@ -147,9 +150,13 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
               });
     } catch (Assign.AssignmentException e) {
       // clean up the slice that we created
-      ZkNodeProps deleteShard =
-          new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ASYNC, async);
-      new DeleteShardCmd(ccc).call(clusterState, deleteShard, results);
+      new DeleteShardCmd(ccc)
+          .call(
+              adminCmdContext
+                  .subRequestContext(CollectionParams.CollectionAction.DELETESHARD, async)
+                  .withClusterState(clusterState),
+              new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName),
+              results);
       throw e;
     }
 

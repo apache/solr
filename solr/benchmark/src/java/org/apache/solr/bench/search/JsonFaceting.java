@@ -24,7 +24,7 @@ import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.BaseBenchState;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -99,16 +99,15 @@ public class JsonFaceting {
     private ModifiableSolrParams params;
 
     @Setup(Level.Trial)
-    public void setup(
-        BenchmarkParams benchmarkParams, MiniClusterState.MiniClusterBenchState miniClusterState)
+    public void setup(BenchmarkParams benchmarkParams, SolrBenchState solrBenchState)
         throws Exception {
 
       System.setProperty("maxMergeAtOnce", "50");
       System.setProperty("segmentsPerTier", "50");
 
-      miniClusterState.startMiniCluster(nodeCount);
+      solrBenchState.startSolr(nodeCount);
 
-      miniClusterState.createCollection(collection, numShards, numReplicas);
+      solrBenchState.createCollection(collection, numShards, numReplicas);
 
       // Define random documents
       Docs docs =
@@ -132,12 +131,12 @@ public class JsonFaceting {
               .field(integers().allWithMaxCardinality(facetCard2))
               .field(integers().allWithMaxCardinality(facetCard2));
 
-      miniClusterState.index(collection, docs, docCount);
-      miniClusterState.forceMerge(collection, 25);
+      solrBenchState.index(collection, docs, docCount);
+      solrBenchState.forceMerge(collection, 25);
 
       params = new ModifiableSolrParams();
 
-      MiniClusterState.params(
+      SolrBenchState.params(
           params,
           "q",
           "*:*",
@@ -167,7 +166,7 @@ public class JsonFaceting {
         params.set("timeAllowed", "5000");
       }
 
-      // MiniClusterState.log("params: " + params + "\n");
+      // SolrBenchState.log("params: " + params + "\n");
     }
 
     @State(Scope.Thread)
@@ -185,20 +184,17 @@ public class JsonFaceting {
   @Benchmark
   @Timeout(time = 500, timeUnit = TimeUnit.SECONDS)
   public void jsonFacet(
-      MiniClusterState.MiniClusterBenchState miniClusterState,
+      SolrBenchState solrBenchState,
       BenchState state,
       BenchState.ThreadState threadState,
       Blackhole bh)
       throws Exception {
-    final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
+    final var url = solrBenchState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
     NamedList<Object> result =
-        miniClusterState
-            .client
-            .requestWithBaseUrl(url, state.collection, queryRequest)
-            .getResponse();
+        solrBenchState.client.requestWithBaseUrl(url, queryRequest, state.collection);
 
-    // MiniClusterState.log("result: " + result);
+    // SolrBenchState.log("result: " + result);
 
     bh.consume(result);
   }

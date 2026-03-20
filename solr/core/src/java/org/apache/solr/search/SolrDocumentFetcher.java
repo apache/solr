@@ -72,6 +72,7 @@ import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -245,7 +246,7 @@ public class SolrDocumentFetcher {
             SchemaField field = searcher.getSchema().getField(fieldName);
             if (field.stored()
                 && ((field.getType() instanceof org.apache.solr.schema.TextField)
-                    || (field.getType() instanceof org.apache.solr.schema.StrField))) {
+                    || (field.getType() instanceof StrField))) {
               storedHighlightFieldNames.add(fieldName);
             }
           } catch (RuntimeException e) {
@@ -634,7 +635,7 @@ public class SolrDocumentFetcher {
       case BINARY:
         BinaryDocValues bdv = e.getBinaryDocValues(localId, leafReader, readerOrd);
         if (bdv != null) {
-          return BytesRef.deepCopyOf(bdv.binaryValue()).bytes;
+          return e.schemaField.getType().toObject(e.schemaField, bdv.binaryValue());
         }
         return null;
       case SORTED:

@@ -1,7 +1,0 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Use logchange for changelog management
-type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
-authors:
-  - name: Jan Høydahl
-    nick: janhoy
-    url: https://home.apache.org/phonebook.html?uid=janhoy

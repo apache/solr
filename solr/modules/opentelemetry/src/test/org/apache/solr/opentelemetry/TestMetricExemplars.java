@@ -23,11 +23,9 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -79,13 +77,7 @@ public class TestMetricExemplars extends SolrCloudTestCase {
     var spans = getAndClearSpans();
     var expectedTrace = getRootTraceId(spans);
 
-    var req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET,
-            "/admin/metrics",
-            SolrRequest.SolrRequestType.ADMIN,
-            new ModifiableSolrParams().set("wt", "openmetrics"));
-    req.setResponseParser(new InputStreamResponseParser("openmetrics"));
+    var req = new MetricsRequest(new ModifiableSolrParams().set("wt", "openmetrics"));
     NamedList<Object> resp = cloudClient.request(req);
 
     try (InputStream in = (InputStream) resp.get("stream")) {

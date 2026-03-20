@@ -81,6 +81,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.LateInteractionVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
@@ -1359,6 +1360,31 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
 
     addParser("childfield", new ChildFieldValueSourceParser());
+
+    addParser(
+        "lateVector",
+        new ValueSourceParser() {
+
+          @Override
+          public ValueSource parse(final FunctionQParser fp) throws SyntaxError {
+
+            final String fieldName = fp.parseArg();
+            if (null == fieldName) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Invalid arguments. First argument must be a field name");
+            }
+            final FieldType ft = fp.getReq().getSchema().getFieldType(fieldName);
+            if (ft instanceof LateInteractionVectorField lift) {
+              return ValueSource.fromDoubleValuesSource(
+                  lift.parseLateInteractionValuesSource(fieldName, fp));
+            }
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Field name is not defined in schema as a StrFloatLateInteractionVectorField: "
+                    + fieldName);
+          }
+        });
   }
 
   ///////////////////////////////////////////////////////////////////////////////

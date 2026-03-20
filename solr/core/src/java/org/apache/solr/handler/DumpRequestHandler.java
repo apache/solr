@@ -29,17 +29,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAware {
-  private SolrCore solrCore;
+public class DumpRequestHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -127,17 +124,6 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    if (solrCore != null && solrCore.getSolrConfig().getRequestParsers().isEnableRemoteStreams()) {
-      log.warn(
-          "Dump request handler requires config-read permission when remote streams are enabled");
-      return Name.CONFIG_READ_PERM;
-    } else {
-      return Name.ALL;
-    }
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-    this.solrCore = core;
+    return Name.ALL;
   }
 }

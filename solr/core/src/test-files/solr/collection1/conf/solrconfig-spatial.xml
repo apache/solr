@@ -38,5 +38,12 @@
            initialSize="0"
            autowarmCount="100%"
            regenerator="solr.NoOpRegenerator"/>
+
+    <!-- Needed to trigger SOLR-18006 -->
+    <filterCache
+      size="512"
+      initialSize="512"
+      autowarmCount="2"
+      async="${solr.filterCache.async:false}"/>
   </query>
 </config>

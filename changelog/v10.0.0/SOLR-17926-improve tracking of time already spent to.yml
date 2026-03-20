@@ -1,0 +1,9 @@
+title: Improve tracking of time already spent to discount the limit for sub-requests
+  when `timeAllowed` is used.
+type: changed
+authors:
+- name: Andrzej Bialecki
+- name: hossman
+links:
+- name: SOLR-17926
+  url: https://issues.apache.org/jira/browse/SOLR-17926

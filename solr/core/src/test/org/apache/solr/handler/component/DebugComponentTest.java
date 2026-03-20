@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
@@ -31,8 +30,6 @@ import org.junit.Test;
 
 /** */
 public class DebugComponentTest extends SolrTestCaseJ4 {
-
-  private static final String ANY_RID = "ANY_RID";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -166,8 +163,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     List<SearchComponent> components = new ArrayList<>(1);
     components.add(component);
     for (int i = 0; i < 10; i++) {
-      SolrQueryRequest req =
-          req("q", "test query", "distrib", "true", CommonParams.REQUEST_ID, "123456-my_rid");
+      SolrQueryRequest req = req("q", "test query", "distrib", "true");
       SolrQueryResponse resp = new SolrQueryResponse();
       ResponseBuilder rb = new ResponseBuilder(req, resp, components);
       ShardRequest sreq = new ShardRequest();
@@ -192,8 +188,6 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       // the purpose must be added as readable param to be included in the shard logs
       assertEquals(
           "GET_FIELDS,GET_DEBUG,SET_TERM_STATS", sreq.params.get(CommonParams.REQUEST_PURPOSE));
-      // the rid must be added to be included in the shard logs
-      assertEquals("123456-my_rid", sreq.params.get(CommonParams.REQUEST_ID));
       // close requests - this method obtains a searcher in order to access its StatsCache
       req.close();
     }
@@ -210,7 +204,6 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       req = req("q", "test query", "distrib", "true");
       rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
       rb.isDistrib = true;
-      addRequestId(rb, ANY_RID);
 
       // expecting the same results with debugQuery=true or debug=track
       if (random().nextBoolean()) {
@@ -224,15 +217,13 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
         rb.setDebugResults(random().nextBoolean());
       }
       component.prepare(rb);
-      ensureTrackRecordsRid(rb, ANY_RID);
     }
 
-    req = req("q", "test query", "distrib", "true", CommonParams.REQUEST_ID, "123");
+    req = req("q", "test query", "distrib", "true");
     rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
     rb.isDistrib = true;
     rb.setDebug(true);
     component.prepare(rb);
-    ensureTrackRecordsRid(rb, "123");
   }
 
   //
@@ -285,21 +276,8 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
         "//str[@name='parsedquery'][contains(.,'3.0')]");
   }
 
-  @SuppressWarnings("unchecked")
-  private void ensureTrackRecordsRid(ResponseBuilder rb, String expectedRid) {
-    final String rid =
-        (String) ((NamedList<Object>) rb.getDebugInfo().get("track")).get(CommonParams.REQUEST_ID);
-    assertEquals("Expecting " + expectedRid + " but found " + rid, expectedRid, rid);
-  }
-
-  private void addRequestId(ResponseBuilder rb, String requestId) {
-    ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
-    params.add(CommonParams.REQUEST_ID, requestId);
-    rb.req.setParams(params);
-  }
-
   @Test
-  public void testDistributedStageResolution() throws IOException {
+  public void testDistributedStageResolution() {
     final DebugComponent debugComponent = new DebugComponent();
     assertEquals(
         "PARSE_QUERY", debugComponent.getDistributedStageName(ResponseBuilder.STAGE_PARSE_QUERY));

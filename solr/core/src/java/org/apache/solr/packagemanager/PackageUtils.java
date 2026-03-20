@@ -20,6 +20,7 @@ import static org.apache.solr.client.solrj.util.SolrIdentifierValidator.validate
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
@@ -39,9 +40,9 @@ import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -72,7 +73,7 @@ public class PackageUtils {
         Configuration.builder()
             .jsonProvider(jsonProvider)
             .mappingProvider(provider)
-            .options(com.jayway.jsonpath.Option.REQUIRE_PROPERTIES)
+            .options(Option.REQUIRE_PROPERTIES)
             .build();
     return c;
   }

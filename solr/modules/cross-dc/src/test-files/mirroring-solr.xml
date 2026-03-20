@@ -19,10 +19,8 @@
     <str name="collectionsHandler">org.apache.solr.crossdc.handler.MirroringCollectionsHandler</str>
     <str name="configSetsHandler">org.apache.solr.crossdc.handler.MirroringConfigSetsHandler</str>
     <solrcloud>
-        <str name="host">${host:}</str>
-        <int name="hostPort">${hostPort:0}</int>
-        <str name="hostContext">${hostContext:solr}</str>
-        <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
+        <str name="host">${solr.host.advertise:}</str>
+        <int name="hostPort">${solr.port.advertise:0}</int>
         <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
         <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
         <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>

@@ -41,8 +41,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.Before;
@@ -80,7 +80,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
       String zipResource)
       throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(solrCore, params);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(solrCore, params);
     params.set(ConfigSetParams.ACTION, action.toLower());
     String method = "GET";
     if (action == ConfigSetParams.ConfigSetAction.UPLOAD) {
@@ -91,7 +91,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
           List.of(new ContentStreamBase.ByteArrayStream(content, configSetName, "application/zip"));
       req.setContentStreams(streams);
     }
-    req.getContext().put("httpMethod", method);
+    req.getContext().put("httpMethod", SolrRequest.METHOD.fromString(method));
     return req;
   }
 
@@ -104,7 +104,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
     Mockito.when(zkController.getZkClient()).thenReturn(solrZkClient);
     Mockito.doAnswer(inv -> null)
         .when(solrZkClient)
-        .getData(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+        .getData(Mockito.anyString(), Mockito.any(), Mockito.any());
     captor = ArgumentCaptor.forClass(MirroredSolrRequest.class);
     Mockito.doNothing().when(sink).submit(captor.capture());
   }

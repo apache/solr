@@ -322,15 +322,11 @@ public class StatsField {
     String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
     this.facets = (null == facets) ? new String[0] : facets;
     String tagStr = localParams.get(CommonParams.TAG);
-    this.tagList =
-        (null == tagStr) ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+    this.tagList = (null == tagStr) ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
     // figure out if we need a special base DocSet
     String excludeStr = localParams.get(CommonParams.EXCLUDE);
-    this.excludeTagList =
-        (null == excludeStr)
-            ? Collections.<String>emptyList()
-            : StrUtils.splitSmart(excludeStr, ',');
+    this.excludeTagList = (null == excludeStr) ? List.of() : StrUtils.splitSmart(excludeStr, ',');
 
     assert ((null == this.valueSource) ^ (null == this.schemaField))
         : "exactly one of valueSource & schemaField must be null";
@@ -624,7 +620,7 @@ public class StatsField {
 
     // NOTE: this explanation linked to from the java-hll jdocs...
     // https://github.com/aggregateknowledge/postgresql-hll/blob/master/README.markdown#explanation-of-parameters-and-tuning
-    // ..if i'm understanding the regwidth chart correctly, a value of 6 should be a enough
+    // ..if i'm understanding the regwidth chart correctly, a value of 6 should be enough
     // to support any max cardinality given that we're always dealing with hashes and
     // the cardinality of the set of all long values is 2**64 == 1.9e19
     //

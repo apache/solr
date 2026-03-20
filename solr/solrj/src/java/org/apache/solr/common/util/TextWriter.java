@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -93,6 +94,8 @@ public interface TextWriter extends PushWriter {
       writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
     } else if (val instanceof Map) {
       writeMap(name, (Map) val, false, true);
+    } else if (val instanceof Collection<?> cval) { // very generic; keep towards the end
+      writeArray(name, cval.iterator(), cval.size(), raw);
     } else if (val instanceof Iterator) { // very generic; keep towards the end
       writeArray(name, (Iterator) val, raw);
     } else if (val instanceof Iterable) { // very generic; keep towards the end
@@ -128,6 +131,8 @@ public interface TextWriter extends PushWriter {
       throws IOException;
 
   void writeArray(String name, Iterator<?> val, boolean raw) throws IOException;
+
+  void writeArray(String name, Iterator<?> val, int size, boolean raw) throws IOException;
 
   void writeNull(String name) throws IOException;
 

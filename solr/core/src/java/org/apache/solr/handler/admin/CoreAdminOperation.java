@@ -38,6 +38,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SPLI
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SWAP;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UNLOAD;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 
 import java.lang.invoke.MethodHandles;
@@ -256,7 +257,8 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
-      });
+      }),
+  UPGRADECOREINDEX_OP(UPGRADECOREINDEX, new UpgradeCoreIndexOp());
 
   final CoreAdminParams.CoreAdminAction action;
   final CoreAdminOp fun;

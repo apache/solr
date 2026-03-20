@@ -131,7 +131,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
             (long) MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
             (CollectionStatePredicate)
-                (n, c) -> DocCollection.isFullyActive(n, c, CLUSTER_SIZE, 1));
+                (n, c) ->
+                    SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, CLUSTER_SIZE, 1));
 
     final JettySolrRunner extraJetty = cluster.startJettySolrRunner();
     final JettySolrRunner jettyToShutdown =
@@ -230,7 +231,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
             "waitforstate",
             (long) MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (CollectionStatePredicate) (n1, c1) -> DocCollection.isFullyActive(n1, c1, 1, 1));
+            (CollectionStatePredicate)
+                (n1, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n1, c1, 1, 1));
 
     // several goes, to check that we're not getting delayed state changes
     for (int i = 0; i < 10; i++) {
@@ -240,7 +242,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
                 "waitforstate",
                 (long) 1,
                 TimeUnit.SECONDS,
-                (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+                (CollectionStatePredicate)
+                    (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
       } catch (TimeoutException e) {
         fail("waitForState should return immediately if the predicate is already satisfied");
       }
@@ -256,7 +259,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
             "delayed",
             MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
 
     CollectionAdminRequest.createCollection("delayed", "config", 1, 1)
         .processAndWait(cluster.getSolrClient(), MAX_WAIT_TIMEOUT);
@@ -296,7 +299,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
             "falsepredicate",
             (long) MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+            (CollectionStatePredicate)
+                (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 4, 1));
 
     final CountDownLatch firstCall = new CountDownLatch(1);
 
@@ -313,7 +317,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
             TimeUnit.SECONDS,
             (liveNodes, collectionState) -> {
               firstCall.countDown();
-              return DocCollection.isFullyActive(liveNodes, collectionState, 4, 1);
+              return SolrCloudTestCase.replicasForCollectionAreFullyActive(
+                  liveNodes, collectionState, 4, 1);
             });
 
     // first, stop another node; the watch should not be fired after this!
@@ -345,7 +350,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
                   "no-such-collection",
                   (long) 10,
                   TimeUnit.MILLISECONDS,
-                  (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+                  (CollectionStatePredicate)
+                      (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
         });
 
     waitFor(

@@ -80,7 +80,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
 
       Map<String, Object> clusterPropsJson =
           (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
       byte[] configInput = Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY));
 
       if (configInput.length == 0) {

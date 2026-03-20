@@ -33,31 +33,33 @@ allprojects {
           // asserts, debug output.
           [propName: 'tests.verbose', value: false, description: "Enables verbose mode (emits full test outputs immediately)."],
           [propName: 'tests.workDir',
-           value: { -> project.relativePath(file("${buildDir}/tmp/tests-tmp")) },
-           description: "Working directory for forked test JVMs",
-           includeInReproLine: false
+              value: {-> project.relativePath(file("${buildDir}/tmp/tests-tmp"))},
+              description: "Working directory for forked test JVMs",
+              includeInReproLine: false
           ],
           // JVM settings
           [propName: 'tests.minheapsize', value: "256m", description: "Minimum heap size for test JVMs"],
           [propName: 'tests.heapsize', value: "512m", description: "Heap size for test JVMs"],
           // Test forks
           [propName: 'tests.jvms',
-           value: { -> ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) },
-           description: "Number of forked test JVMs",
-           includeInReproLine: false],
+              value: {->
+                ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0)))},
+              description: "Number of forked test JVMs",
+              includeInReproLine: false],
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
           // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
           [propName: 'tests.jvmargs',
-           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ActiveProcessorCount=1 -XX:ReservedCodeCacheSize=120m") },
-           description: "Arguments passed to each forked JVM."],
+              value: {->
+                propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ActiveProcessorCount=1 -XX:ReservedCodeCacheSize=120m")},
+              description: "Arguments passed to each forked JVM."],
           // Other settings.
           [propName: 'tests.neverUpToDate', value: true,
-           description: "Make test tasks always fail the up-to-date checks (rerun) even if the inputs have not changed."],
+              description: "Make test tasks always fail the up-to-date checks (rerun) even if the inputs have not changed."],
       ]
 
       // Resolves test option's value.
-      resolvedTestOption = { propName ->
-        def option = testOptions.find { entry -> entry.propName == propName }
+      resolvedTestOption = {propName ->
+        def option = testOptions.find {entry -> entry.propName == propName}
         if (option == null) {
           throw new GradleException("No such test option: " + propName)
         }
@@ -78,10 +80,11 @@ allprojects {
     if (verboseMode && !verboseModeHookInstalled) {
       verboseModeHookInstalled = true
       if (gradle.startParameter.maxWorkerCount > 1) {
-        gradle.taskGraph.whenReady { graph ->
-          def testTasks = graph.allTasks.findAll { task -> task instanceof Test }
+        gradle.taskGraph.whenReady {graph ->
+          def testTasks = graph.allTasks.findAll {task -> task instanceof Test}
           if (testTasks.size() > 1) {
-            throw new GradleException("Run your tests in verbose mode only with --max-workers=1 option passed to gradle.")
+            throw new GradleException(
+                "Run your tests in verbose mode only with --max-workers=1 option passed to gradle.")
           }
         }
       }
@@ -94,7 +97,7 @@ allprojects {
 
       // LUCENE-9660: Make it possible to always rerun tests, even if they're incrementally up-to-date.
       if (resolvedTestOption("tests.neverUpToDate").toBoolean()) {
-        outputs.upToDateWhen { false }
+        outputs.upToDateWhen {false}
       }
 
       maxParallelForks = resolvedTestOption("tests.jvms") as Integer
@@ -155,7 +158,8 @@ allprojects {
       }
 
       // Disable HTML report generation. The reports are big and slow to generate.
-      reports.html.required = Boolean.parseBoolean(providers.gradleProperty("tests.html").getOrElse("false"))
+      reports.html.required =
+          Boolean.parseBoolean(providers.gradleProperty("tests.html").getOrElse("false"))
 
       // Set up logging.
       testLogging {
@@ -174,7 +178,10 @@ allprojects {
       }
 
       def spillDir = getTemporaryDir().toPath()
-      def listener = buildinfra.newErrorReportingTestListener(test.testLogging, spillDir, testOutputsDir.toPath(), verboseMode)
+      def listener = buildinfra.newErrorReportingTestListener(test.testLogging,
+          spillDir,
+          testOutputsDir.toPath(),
+          verboseMode)
       addTestOutputListener(listener)
       addTestListener(listener)
 

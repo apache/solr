@@ -135,13 +135,13 @@ public class DeleteShardTest extends SolrCloudTestCase {
     String collectionRoot = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
 
     String leaderElectPath = collectionRoot + "/leader_elect/" + sliceId;
-    assertEquals(shouldExist, cluster.getZkClient().exists(leaderElectPath, true));
+    assertEquals(shouldExist, cluster.getZkClient().exists(leaderElectPath));
 
     String leaderPath = collectionRoot + "/leaders/" + sliceId;
-    assertEquals(shouldExist, cluster.getZkClient().exists(leaderPath, true));
+    assertEquals(shouldExist, cluster.getZkClient().exists(leaderPath));
 
     String termPath = collectionRoot + "/terms/" + sliceId;
-    assertEquals(shouldExist, cluster.getZkClient().exists(termPath, true));
+    assertEquals(shouldExist, cluster.getZkClient().exists(termPath));
 
     // Check if the shard name is present in any node under the collection root.
     // This way, new/unexpected stuff could be detected.

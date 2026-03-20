@@ -1,0 +1,7 @@
+title: Update net.sourceforge.argparse4j:argparse4j to v0.9.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#1406
+  url: https://github.com/apache/solr/pull/1406

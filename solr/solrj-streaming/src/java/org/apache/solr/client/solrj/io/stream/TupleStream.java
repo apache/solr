@@ -151,7 +151,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     try {
       CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zkHost);
       ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
-      Slice[] slices = CloudSolrStream.getSlices(collection, cloudSolrClient, true);
+      List<Slice> slices = CloudSolrStream.getSlices(collection, cloudSolrClient, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
 
       RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;

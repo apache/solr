@@ -1,0 +1,8 @@
+title: 'These SolrCloud commands no longer aquire locks (waiting or blocking on other
+  commands that do): COLLECTIONPROP, ADDREPLICAPROP, DELETEREPLICAPROP.'
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17963
+  url: https://issues.apache.org/jira/browse/SOLR-17963

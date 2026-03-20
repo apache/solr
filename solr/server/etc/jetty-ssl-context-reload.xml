@@ -6,7 +6,7 @@
         <Arg>
             <New id="keyStoreScanner" class="org.eclipse.jetty.util.ssl.KeyStoreScanner">
                 <Arg><Ref refid="sslContextFactory"/></Arg>
-                <Set name="scanInterval"><Property name="solr.jetty.sslContext.reload.scanInterval" default="30"/></Set>
+                <Set name="scanInterval"><Property name="solr.jetty.ssl.context.reload.scan.interval.secs" default="30"/></Set>
             </New>
         </Arg>
     </Call>

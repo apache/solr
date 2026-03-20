@@ -26,11 +26,11 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** Total disk space in GB. */
   public static final NodeMetricImpl<Double> TOTAL_DISK_GB =
-      new NodeMetricImpl<>("totaldisk", BYTES_TO_GB_CONVERTER);
+      new NodeMetricImpl<>("totaldisk", MB_TO_GB_CONVERTER);
 
   /** Free (usable) disk space in GB. */
   public static final NodeMetricImpl<Double> FREE_DISK_GB =
-      new NodeMetricImpl<>("freedisk", BYTES_TO_GB_CONVERTER);
+      new NodeMetricImpl<>("freedisk", MB_TO_GB_CONVERTER);
 
   /** Number of all cores. */
   public static final NodeMetricImpl<Integer> NUM_CORES =

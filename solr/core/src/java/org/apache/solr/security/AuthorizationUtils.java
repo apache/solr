@@ -21,7 +21,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.servlet.HttpSolrCall.shouldAudit;
+import static org.apache.solr.security.AuditEvent.EventType.ERROR;
+import static org.apache.solr.security.AuditEvent.EventType.REJECTED;
+import static org.apache.solr.security.AuditEvent.EventType.UNAUTHORIZED;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,23 +45,7 @@ public class AuthorizationUtils {
     /* Private ctor prevents instantiation */
   }
 
-  public static class AuthorizationFailure {
-    private final int statusCode;
-    private final String message;
-
-    public AuthorizationFailure(int statusCode, String message) {
-      this.statusCode = statusCode;
-      this.message = message;
-    }
-
-    public int getStatusCode() {
-      return statusCode;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-  }
+  public record AuthorizationFailure(int statusCode, String message) {}
 
   public static AuthorizationFailure authorize(
       HttpServletRequest servletReq,
@@ -89,11 +75,7 @@ public class AuthorizationUtils {
             servletReq.getHeader("Authorization"),
             servletReq.getUserPrincipal());
       }
-      if (shouldAudit(cores, AuditEvent.EventType.REJECTED)) {
-        cores
-            .getAuditLoggerPlugin()
-            .doAudit(new AuditEvent(AuditEvent.EventType.REJECTED, servletReq, context));
-      }
+      cores.audit(() -> new AuditEvent(REJECTED, servletReq, context), REJECTED);
       return new AuthorizationFailure(
           statusCode, "Authentication failed, Response code: " + statusCode);
     }
@@ -105,32 +87,22 @@ public class AuthorizationUtils {
             context,
             authResponse.getMessage()); // nowarn
       }
-      if (shouldAudit(cores, AuditEvent.EventType.UNAUTHORIZED)) {
-        cores
-            .getAuditLoggerPlugin()
-            .doAudit(new AuditEvent(AuditEvent.EventType.UNAUTHORIZED, servletReq, context));
-      }
+      cores.audit(() -> new AuditEvent(UNAUTHORIZED, servletReq, context), UNAUTHORIZED);
       return new AuthorizationFailure(
           statusCode, "Unauthorized request, Response code: " + statusCode);
     }
     if (!(statusCode == HttpStatus.ACCEPTED_202) && !(statusCode == HttpStatus.OK_200)) {
       log.warn(
           "ERROR {} during authentication: {}", statusCode, authResponse.getMessage()); // nowarn
-      if (shouldAudit(cores, AuditEvent.EventType.ERROR)) {
-        cores
-            .getAuditLoggerPlugin()
-            .doAudit(new AuditEvent(AuditEvent.EventType.ERROR, servletReq, context));
-      }
+      cores.audit(() -> new AuditEvent(ERROR, servletReq, context), ERROR);
       return new AuthorizationFailure(
           statusCode, "ERROR during authorization, Response code: " + statusCode);
     }
-
     // No failures! Audit if necessary and return
-    if (shouldAudit(cores, AuditEvent.EventType.AUTHORIZED)) {
-      cores
-          .getAuditLoggerPlugin()
-          .doAudit(new AuditEvent(AuditEvent.EventType.AUTHORIZED, servletReq, context));
-    }
+    cores.audit(
+        () -> new AuditEvent(AuditEvent.EventType.AUTHORIZED, servletReq, context),
+        AuditEvent.EventType.AUTHORIZED);
+
     return null;
   }
 

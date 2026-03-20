@@ -196,7 +196,7 @@ To link to this section from another part of the same `defining-fields.adoc` pag
 [source]
 See also the <<Field Properties>> section.
 +
-The section title will be used as the display text; to customize that add a comma after the the section title, then the text you want used for display.
+The section title will be used as the display text; to customize that add a comma after the section title, then the text you want used for display.
 
 More info: https://docs.asciidoctor.org/asciidoc/latest/macros/xref/#internal-cross-references
 

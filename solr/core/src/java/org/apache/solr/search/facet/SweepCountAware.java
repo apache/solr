@@ -162,8 +162,8 @@ interface SweepCountAware {
     /**
      * Maps accumulated per-segment term ords to global term ords and increments global slots on the
      * specified countAccs accordingly. The index of each CountSlotAcc in the specified countAccs
-     * array must correspond to the the static index of its associated count accumulation doc domain
-     * and per-seg count array.
+     * array must correspond to the static index of its associated count accumulation doc domain and
+     * per-seg count array.
      *
      * @param countAccs - global-scope CountSlotAccs (one for each domain) to be incremented for the
      *     most recently accumulated segment

@@ -22,8 +22,8 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;

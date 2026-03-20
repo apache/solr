@@ -14,8 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  -->
-# New changelog process
+# Apache Solr Changelog
 
-We are in the process of migrating to a new way of managing our changelog. Please see [dev-docs/changelog.adoc](../dev-docs/changelog.adoc) for details.
-
-In a transition period it is still possible to merge your changelog entry to `solr/CHANGES.txt`, but then you can only use the new process.
+This is the home of the Solr changelog, in logchange format.
+Please see [dev-docs/changelog.adoc](../dev-docs/changelog.adoc) for details.

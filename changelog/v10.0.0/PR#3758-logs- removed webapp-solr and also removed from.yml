@@ -1,0 +1,6 @@
+title: 'Logs: removed webapp=/solr and also removed from internal context map.'
+type: other
+authors: []
+links:
+- name: PR#3758
+  url: https://github.com/apache/solr/pull/3758

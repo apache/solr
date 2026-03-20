@@ -23,8 +23,6 @@ import org.apache.solr.cluster.placement.Metric;
 /** Base class for {@link Metric} implementations. */
 public abstract class MetricImpl<T> implements Metric<T> {
 
-  public static final double GB = 1024 * 1024 * 1024;
-
   /**
    * Identity converter. It returns the raw value unchanged IFF the value's type can be cast to the
    * generic type of this attribute, otherwise it returns null.
@@ -40,25 +38,25 @@ public abstract class MetricImpl<T> implements Metric<T> {
       };
 
   /**
-   * Bytes to gigabytes converter. Supports converting number or string representations of raw
-   * values expressed in bytes.
+   * Megabytes to gigabytes converter. Supports converting number or string representations of raw
+   * values expressed in megabytes.
    */
-  public static final Function<Object, Double> BYTES_TO_GB_CONVERTER =
+  public static final Function<Object, Double> MB_TO_GB_CONVERTER =
       v -> {
-        double sizeInBytes;
+        double sizeInMB;
         if (!(v instanceof Number)) {
           if (v == null) {
             return null;
           }
           try {
-            sizeInBytes = Double.parseDouble(String.valueOf(v));
+            sizeInMB = Double.parseDouble(String.valueOf(v));
           } catch (Exception nfe) {
             return null;
           }
         } else {
-          sizeInBytes = ((Number) v).doubleValue();
+          sizeInMB = ((Number) v).doubleValue();
         }
-        return sizeInBytes / GB;
+        return sizeInMB / 1024.0;
       };
 
   protected final String name;

@@ -31,11 +31,10 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.client.solrj.request.ClusterApi;
+import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -55,7 +54,7 @@ public class StatusTool extends ToolBase {
           .type(Integer.class)
           .deprecated() // Will make it a stealth option, not printed or complained about
           .desc("Wait up to the specified number of seconds to see Solr running.")
-          .build();
+          .get();
 
   public static final Option PORT_OPTION =
       Option.builder("p")
@@ -64,14 +63,14 @@ public class StatusTool extends ToolBase {
           .argName("PORT")
           .type(Integer.class)
           .desc("Port on localhost to check status for")
-          .build();
+          .get();
 
   public static final Option SHORT_OPTION =
       Option.builder()
           .longOpt("short")
           .argName("SHORT")
           .desc("Short format. Prints one URL per line for running instances")
-          .build();
+          .get();
 
   private final SolrProcessManager processMgr;
 
@@ -173,8 +172,8 @@ public class StatusTool extends ToolBase {
             String.format(
                 Locale.ROOT,
                 "\nSolr process %s running on port %s",
-                process.getPid(),
-                process.getPort()));
+                process.pid(),
+                process.port()));
         printStatusFromRunningSolr(pidUrl, cli);
       }
     }
@@ -292,63 +291,51 @@ public class StatusTool extends ToolBase {
 
   public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
     try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
-      return getStatus(solrClient);
+      return reportStatus(solrClient);
     }
   }
 
-  public Map<String, Object> getStatus(SolrClient solrClient) throws Exception {
-    Map<String, Object> status;
-
-    NamedList<Object> systemInfo =
-        solrClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-    // convert raw JSON into user-friendly output
-    status = reportStatus(systemInfo, solrClient);
-
-    return status;
-  }
-
-  public static Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
-      throws Exception {
+  public static Map<String, Object> reportStatus(SolrClient solrClient) throws Exception {
     Map<String, Object> status = new LinkedHashMap<>();
+    SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
+    status.put("solr_home", sysResponse.getSolrHome() != null ? sysResponse.getSolrHome() : "?");
+    status.put("version", sysResponse.getSolrImplVersion());
 
-    String solrHome = (String) info.get("solr_home");
-    status.put("solr_home", solrHome != null ? solrHome : "?");
-    status.put("version", info._getStr(List.of("lucene", "solr-impl-version"), null));
-    status.put("startTime", info._getStr(List.of("jvm", "jmx", "startTime"), null));
-    status.put("uptime", SolrCLI.uptime((Long) info._get(List.of("jvm", "jmx", "upTimeMS"), null)));
+    status.put("startTime", sysResponse.getJVMStartTime());
+    status.put("uptime", sysResponse.getJVMUpTimeMillis());
 
-    String usedMemory = info._getStr(List.of("jvm", "memory", "used"), null);
-    String totalMemory = info._getStr(List.of("jvm", "memory", "total"), null);
-    status.put("memory", usedMemory + " of " + totalMemory);
+    status.put(
+        "memory",
+        sysResponse.getHumanReadableJVMMemoryUsed()
+            + " of "
+            + sysResponse.getHumanReadableJVMMemoryTotal());
 
     // if this is a Solr in solrcloud mode, gather some basic cluster info
-    if ("solrcloud".equals(info.get("mode"))) {
-      String zkHost = (String) info.get("zkHost");
-      status.put("cloud", getCloudStatus(solrClient, zkHost));
+    if ("solrcloud".equals(sysResponse.getMode())) {
+      status.put("cloud", getCloudStatus(solrClient, sysResponse.getZkHost()));
     }
-
     return status;
   }
 
   /**
-   * Calls the CLUSTERSTATUS endpoint in Solr to get basic status information about the SolrCloud
-   * cluster.
+   * Calls V2 API endpoints to get basic status information about the SolrCloud cluster.
+   *
+   * <p>Uses GET /cluster/nodes for live node count and GET /collections for collection count.
    */
-  @SuppressWarnings("unchecked")
   private static Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
       throws Exception {
     Map<String, String> cloudStatus = new LinkedHashMap<>();
     cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
 
-    // TODO add booleans to request just what we want; not everything
-    NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
+    var nodesResponse = new ClusterApi.ListClusterNodes().process(solrClient);
+    var liveNodes = nodesResponse != null ? nodesResponse.nodes : null;
+    cloudStatus.put("liveNodes", String.valueOf(liveNodes != null ? liveNodes.size() : 0));
 
-    List<String> liveNodes = (List<String>) json._get(List.of("cluster", "live_nodes"), null);
-    cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
-
-    // TODO get this as a metric from the metrics API instead, or something else.
-    var collections = (Map<String, Object>) json._get(List.of("cluster", "collections"), null);
+    var collectionsResponse = new CollectionsApi.ListCollections().process(solrClient);
+    var collections =
+        collectionsResponse != null && collectionsResponse.collections != null
+            ? collectionsResponse.collections
+            : List.of();
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

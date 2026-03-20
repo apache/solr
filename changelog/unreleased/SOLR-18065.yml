@@ -1,0 +1,7 @@
+title: Added new ConcurrentUpdateJdkSolrClient that works with HttpJdkSolrClient
+type: added
+authors:
+  - name: James Dyer
+links:
+  - name: SOLR-18065
+    url: https://issues.apache.org/jira/browse/SOLR-18065

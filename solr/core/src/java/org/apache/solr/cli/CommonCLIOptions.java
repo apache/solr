@@ -24,10 +24,10 @@ public final class CommonCLIOptions {
   private CommonCLIOptions() {}
 
   public static final Option VERBOSE_OPTION =
-      Option.builder("v").longOpt("verbose").desc("Enable verbose command output.").build();
+      Option.builder("v").longOpt("verbose").desc("Enable verbose command output.").get();
 
   public static final Option HELP_OPTION =
-      Option.builder("h").longOpt("help").desc("Print this message.").build();
+      Option.builder("h").longOpt("help").desc("Print this message.").get();
 
   public static final Option ZK_HOST_OPTION =
       Option.builder("z")
@@ -38,7 +38,7 @@ public final class CommonCLIOptions {
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + DefaultValues.ZK_HOST
                   + '.')
-          .build();
+          .get();
 
   public static final Option SOLR_URL_OPTION =
       Option.builder("s")
@@ -49,10 +49,10 @@ public final class CommonCLIOptions {
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + CLIUtils.getDefaultSolrUrl()
                   + '.')
-          .build();
+          .get();
 
   public static final Option RECURSIVE_OPTION =
-      Option.builder("r").longOpt("recursive").desc("Apply the command recursively.").build();
+      Option.builder("r").longOpt("recursive").desc("Apply the command recursively.").get();
 
   public static final Option CREDENTIALS_OPTION =
       Option.builder("u")
@@ -61,7 +61,7 @@ public final class CommonCLIOptions {
           .argName("credentials")
           .desc(
               "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-          .build();
+          .get();
 
   public static final class DefaultValues {
 

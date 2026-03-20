@@ -45,7 +45,6 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ModuleUtils;
-import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,22 +52,11 @@ import org.xml.sax.SAXParseException;
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
 
-  private static String oldSolrHome;
   private static final String SOLR_HOME_PROP = "solr.solr.home";
 
   @BeforeClass
   public static void beforeClass() {
-    oldSolrHome = System.getProperty(SOLR_HOME_PROP);
     System.setProperty("configsets", getFile("solr/configsets").toAbsolutePath().toString());
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (oldSolrHome != null) {
-      System.setProperty(SOLR_HOME_PROP, oldSolrHome);
-    } else {
-      System.clearProperty(SOLR_HOME_PROP);
-    }
   }
 
   private CoreContainer init(String xml) throws Exception {
@@ -119,7 +107,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     } finally {
       cores.shutdown();
-      System.clearProperty("shareSchema");
     }
   }
 
@@ -466,8 +453,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
             SolrException.class,
             () -> init(tmpRoot, "<solr><str name=\"modules\">nope</str></solr>"));
     assertEquals("No module with name nope", ex.getMessage());
-
-    System.clearProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
   }
 
   @Test
@@ -506,7 +491,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   private static final String ALLOW_PATHS_SOLR_XML =
       "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
           + "<solr>\n"
-          + "<str name=\"allowPaths\">${solr.allowPaths:}</str>\n"
+          + "<str name=\"allowPaths\">${solr.security.allow.paths:}</str>\n"
           + "</solr>";
 
   private static final String CUSTOM_HANDLERS_SOLR_XML =
@@ -630,7 +615,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void assertAllowPathFromSolrXml() throws Exception {
     Assume.assumeFalse(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "/var/solr");
+    System.setProperty("solr.security.allow.paths", "/var/solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
     cc.assertPathAllowed(Path.of("/var/solr/foo"));
     try {
@@ -640,14 +625,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       /* Ignore */
     } finally {
       cc.shutdown();
-      System.clearProperty("solr.allowPaths");
     }
   }
 
   @Test
   public void assertAllowPathFromSolrXmlWin() throws Exception {
     Assume.assumeTrue(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "C:\\solr");
+    System.setProperty("solr.security.allow.paths", "C:\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
     cc.assertPathAllowed(Path.of("C:\\solr\\foo"));
     try {
@@ -657,7 +641,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       /* Ignore */
     } finally {
       cc.shutdown();
-      System.clearProperty("solr.allowPaths");
     }
   }
 
@@ -691,7 +674,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void assertAllowPathNormalization() throws Exception {
     Assume.assumeFalse(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "/var/solr/../solr");
+    System.setProperty("solr.security.allow.paths", "/var/solr/../solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
     cc.assertPathAllowed(Path.of("/var/solr/foo"));
     assertThrows(
@@ -701,13 +684,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
           cc.assertPathAllowed(Path.of("/tmp"));
         });
     cc.shutdown();
-    System.clearProperty("solr.allowPaths");
   }
 
   @Test
   public void assertAllowPathNormalizationWin() throws Exception {
     Assume.assumeTrue(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "C:\\solr\\..\\solr");
+    System.setProperty("solr.security.allow.paths", "C:\\solr\\..\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
     cc.assertPathAllowed(Path.of("C:\\solr\\foo"));
     assertThrows(
@@ -717,7 +699,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
           cc.assertPathAllowed(Path.of("C:\\tmp"));
         });
     cc.shutdown();
-    System.clearProperty("solr.allowPaths");
   }
 
   private static Set<Path> ALLOWED_PATHS = Set.of(Path.of("/var/solr"));

@@ -1,0 +1,8 @@
+title: Replaced NamedList.findRecursive usages with _get, which can do Map traversal,
+  and thus makes it easier to transition intermediate NamedLists to Maps.
+type: other
+authors:
+- name: Gaurav Tuli
+links:
+- name: SOLR-17625
+  url: https://issues.apache.org/jira/browse/SOLR-17625

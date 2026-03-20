@@ -21,6 +21,7 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logF
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
@@ -127,7 +128,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       CollectionAction action = getCollectionAction(operation);
       CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
       if (command != null) {
-        command.call(cloudManager.getClusterState(), message, results);
+        AdminCmdContext adminCmdContext = new AdminCmdContext(action, message.getStr(ASYNC));
+        adminCmdContext.withClusterState(cloudManager.getClusterState());
+        command.call(adminCmdContext, message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
       }

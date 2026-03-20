@@ -80,8 +80,7 @@ In order to support SSL over HTTP/2 connections, Solr uses ALPN.
 Java 8 does not include an implementation of ALPN, therefore Solr will start with HTTP/1 only when SSL is enabled and Java 8 is in use.
 
 ==== Client Changes for HTTP/2
-{solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
-with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
+`Http2SolrClient` with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
 `HttpSolrClient` and `ConcurrentUpdateSolrClient` for sending most internal requests (sent by
 `UpdateShardHandler` and `HttpShardHandler`).
 

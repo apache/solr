@@ -77,6 +77,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     syncStrategy.close();
   }
 
+  /**
+   * Internally check whether we should abort the election process. This returns true if either this
+   * context was explicitly closed, or Solr server is being shut down.
+   */
+  private boolean shouldAbort() {
+    return isClosed || cc.isShutDown();
+  }
+
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
@@ -103,8 +111,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * weAreReplacement: has someone else been the leader already?
    */
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart)
-      throws KeeperException, InterruptedException {
+  void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
@@ -155,7 +162,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         waitForReplicasToComeUp(leaderVoteWait);
       }
 
-      if (isClosed) {
+      if (shouldAbort()) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the
         // later, we cannot be sure we are still the leader, so we should bail out. The OnReconnect
         // handler will re-register the cores and handle a new leadership election.
@@ -186,7 +193,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
 
-        if (isClosed) {
+        if (shouldAbort()) {
           return;
         }
 
@@ -196,7 +203,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // first cancel any current recovery
         core.getUpdateHandler().getSolrCoreState().cancelRecovery();
 
-        if (weAreReplacement) {
+        if (weAreReplacement && !core.readOnly) {
           // wait a moment for any floating updates to finish
           try {
             Thread.sleep(2500);
@@ -268,7 +275,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
       }
 
-      if (!isClosed) {
+      if (!shouldAbort()) {
         try {
           if (replicaType.replicateFromLeader) {
             // stop replicate from old leader
@@ -296,7 +303,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
-          super.runLeaderProcess(weAreReplacement, 0);
+          super.runLeaderProcess(weAreReplacement);
           try (SolrCore core = cc.getCore(coreName)) {
             if (core != null) {
               core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
@@ -362,7 +369,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       ZkShardTerms zkShardTerms, String coreNodeName, int timeout) throws InterruptedException {
     long timeoutAt =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (!isClosed && !cc.isShutDown()) {
+    while (!shouldAbort()) {
       if (System.nanoTime() > timeoutAt) {
         log.warn(
             "After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
@@ -447,12 +454,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(collection);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     int cnt = 0;
-    while (!isClosed && !cc.isShutDown()) {
+    while (!shouldAbort()) {
       // wait for everyone to be up
       if (slices != null) {
         int found = 0;
         try {
-          found = zkClient.getChildren(shardsElectZkPath, null, true).size();
+          found = zkClient.getChildren(shardsElectZkPath, null).size();
         } catch (KeeperException e) {
           if (e instanceof KeeperException.SessionExpiredException) {
             // if the session has expired, then another election will be launched, so

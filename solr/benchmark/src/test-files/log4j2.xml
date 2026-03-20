@@ -24,7 +24,7 @@
       <PatternLayout>
         <Pattern>
             %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
-            %m%notEmpty{ =>%ex{short}}}{10240}%n
+            %m}{10240}%n
         </Pattern>
       </PatternLayout>
     </Console>
@@ -36,7 +36,7 @@
           <PatternLayout>
               <Pattern>
                   %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
-                  %m%notEmpty{ =>%ex{short}}}{10240}%n
+                  %m}{10240}%n
               </Pattern>
           </PatternLayout>
           <Policies>
@@ -53,7 +53,7 @@
           <PatternLayout>
               <Pattern>
                 %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
-                %m%notEmpty{ =>%ex{short}}}{10240}%n
+                %m}{10240}%n
               </Pattern>
           </PatternLayout>
         <Policies>
@@ -69,7 +69,7 @@
       <PatternLayout>
         <Pattern>
           %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
-          %m%notEmpty{ =>%ex{short}}}{10240}%n
+          %m}{10240}%n
         </Pattern>
       </PatternLayout>
     </RandomAccessFile>

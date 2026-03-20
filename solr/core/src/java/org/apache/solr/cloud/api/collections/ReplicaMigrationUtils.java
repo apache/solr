@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -37,6 +35,7 @@ import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
@@ -53,22 +52,22 @@ public class ReplicaMigrationUtils {
    * <p>If an error occurs during the creation of new replicas, all new replicas will be deleted.
    *
    * @param ccc The collection command context to use from the API that calls this method
+   * @param adminCmdContext The context of the originating admin request
    * @param movements a map from replica to the new node that the replica should live on
    * @param parallel whether the replica creations should be done in parallel
    * @param waitForFinalState wait for the final state of all newly created replicas before
    *     continuing
    * @param timeout the amount of time to wait for new replicas to be created
-   * @param asyncId If provided, the command will be run under the given asyncId
    * @param results push results (successful and failure) onto this list
    * @return whether the command was successful
    */
   static boolean migrateReplicas(
       CollectionCommandContext ccc,
+      AdminCmdContext adminCmdContext,
       Map<Replica, String> movements,
       boolean parallel,
       boolean waitForFinalState,
       int timeout,
-      String asyncId,
       NamedList<Object> results)
       throws IOException, InterruptedException, KeeperException {
     // how many leaders are we moving? for these replicas we have to make sure that either:
@@ -92,8 +91,6 @@ public class ReplicaMigrationUtils {
     SolrCloseableLatch replicasToRecover =
         new SolrCloseableLatch(numLeaders, ccc.getCloseableToLatchOn());
 
-    ClusterState clusterState = ccc.getZkStateReader().getClusterState();
-
     for (Map.Entry<Replica, String> movement : movements.entrySet()) {
       Replica sourceReplica = movement.getKey();
       String targetNode = movement.getValue();
@@ -111,12 +108,13 @@ public class ReplicaMigrationUtils {
               .toFullProps()
               .plus("parallel", String.valueOf(parallel))
               .plus(CoreAdminParams.NODE, targetNode);
-      if (asyncId != null) msg.getProperties().put(ASYNC, asyncId);
       NamedList<Object> nl = new NamedList<>();
       final ZkNodeProps addedReplica =
           new AddReplicaCmd(ccc)
               .addReplica(
-                  clusterState,
+                  adminCmdContext
+                      .subRequestContext(CollectionParams.CollectionAction.ADDREPLICA)
+                      .withClusterState(ccc.getZkStateReader().getClusterState()),
                   msg,
                   nl,
                   () -> {
@@ -213,7 +211,9 @@ public class ReplicaMigrationUtils {
         try {
           new DeleteReplicaCmd(ccc)
               .deleteReplica(
-                  ccc.getZkStateReader().getClusterState(),
+                  adminCmdContext
+                      .subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA)
+                      .withClusterState(ccc.getZkStateReader().getClusterState()),
                   createdReplica.plus("parallel", "true"),
                   deleteResult,
                   () -> {
@@ -241,16 +241,14 @@ public class ReplicaMigrationUtils {
 
     // we have reached this far, meaning all replicas should have been recreated.
     // now cleanup the original replicas
-    return cleanupReplicas(
-        results, ccc.getZkStateReader().getClusterState(), movements.keySet(), ccc, asyncId);
+    return cleanupReplicas(results, adminCmdContext, movements.keySet(), ccc);
   }
 
   static boolean cleanupReplicas(
       NamedList<Object> results,
-      ClusterState clusterState,
+      AdminCmdContext adminCmdContext,
       Collection<Replica> sourceReplicas,
-      CollectionCommandContext ccc,
-      String async)
+      CollectionCommandContext ccc)
       throws IOException, InterruptedException {
     SolrCloseableLatch cleanupLatch =
         new SolrCloseableLatch(sourceReplicas.size(), ccc.getCloseableToLatchOn());
@@ -268,10 +266,11 @@ public class ReplicaMigrationUtils {
       NamedList<Object> deleteResult = new NamedList<>();
       try {
         ZkNodeProps cmdMessage = sourceReplica.toFullProps();
-        if (async != null) cmdMessage = cmdMessage.plus(ASYNC, async);
         new DeleteReplicaCmd(ccc)
             .deleteReplica(
-                clusterState,
+                adminCmdContext
+                    .subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA)
+                    .withClusterState(ccc.getZkStateReader().getClusterState()),
                 cmdMessage.plus("parallel", "true"),
                 deleteResult,
                 () -> {

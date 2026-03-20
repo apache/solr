@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -137,16 +138,19 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         }
         Map<String, Replica> replicaMap =
             replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
-        sliceMap.put(slice, new Slice(slice, replicaMap, Collections.emptyMap(), collection));
+        sliceMap.put(slice, new Slice(slice, replicaMap, Map.of(), collection));
       }
       @SuppressWarnings({"unchecked"})
       DocCollection col =
-          new DocCollection(
+          DocCollection.create(
               collection,
               sliceMap,
               Collections.singletonMap(
                   ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT);
+              DocRouter.DEFAULT,
+              Integer.MAX_VALUE,
+              Instant.EPOCH,
+              null);
       collToState.put(collection, col);
     }
     // reverse map

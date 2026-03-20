@@ -1,0 +1,7 @@
+title: Switch from SysV init script to systemd service definition
+type: other
+authors:
+- name: Marius Ghita
+links:
+- name: SOLR-14410
+  url: https://issues.apache.org/jira/browse/SOLR-14410

@@ -1,0 +1,9 @@
+title: '"&lt;lib/&gt;" tags in solrconfig.xml are now quietly ignored by default unless
+  explicitly enabled with the `SOLR_CONFIG_LIB_ENABLED=true` enviroment variable (or
+  corresponding sysprop). These tags are now considered deprecated and will be removed
+  in Solr 10.'
+type: other
+authors: []
+links:
+- name: SOLR-16781
+  url: https://issues.apache.org/jira/browse/SOLR-16781

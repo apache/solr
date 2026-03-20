@@ -18,7 +18,6 @@ package org.apache.solr.update.processor;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -294,7 +293,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
   }
 
   static List<UpdateRequestProcessorFactory> getReqProcessors(String processor, SolrCore core) {
-    if (processor == null) return Collections.emptyList();
+    if (processor == null) return List.of();
     List<UpdateRequestProcessorFactory> result = new ArrayList<>();
     List<String> names = StrUtils.splitSmart(processor, ',');
     for (String s : names) {

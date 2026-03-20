@@ -1,0 +1,76 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.client.solrj.request;
+
+import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Collection;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.util.ContentStream;
+
+/**
+ * A RequestWriter which writes requests in the javabin format
+ *
+ * @see org.apache.solr.client.solrj.request.RequestWriter
+ * @since solr 1.4
+ */
+public class JavaBinRequestWriter extends RequestWriter {
+
+  @Override
+  public ContentWriter getContentWriter(SolrRequest<?> req) {
+    if (req instanceof UpdateRequest updateRequest) {
+      if (isEmpty(updateRequest)) return null;
+      return new ContentWriter() {
+        @Override
+        public void write(OutputStream os) throws IOException {
+          new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+        }
+
+        @Override
+        public String getContentType() {
+          return JAVABIN_MIME;
+        }
+      };
+    } else {
+      return req.getContentWriter(JAVABIN_MIME);
+    }
+  }
+
+  @Override
+  public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
+    if (req instanceof UpdateRequest updateRequest) {
+      if (isEmpty(updateRequest)) return null;
+      throw new RuntimeException("This Should not happen");
+    } else {
+      return req.getContentStreams();
+    }
+  }
+
+  @Override
+  public String getUpdateContentType() {
+    return JAVABIN_MIME;
+  }
+
+  @Override
+  public void write(SolrRequest<?> request, OutputStream os) throws IOException {
+    if (request instanceof UpdateRequest updateRequest) {
+      new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+    }
+  }
+}

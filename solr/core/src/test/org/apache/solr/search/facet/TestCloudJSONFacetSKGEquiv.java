@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -363,8 +363,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
       { // if we override 'dv' with 'hashdv' which doesn't sweep, our sweep debug should be empty,
         // even if the skg stat does ask for sweeping explicitly...
@@ -419,8 +419,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
     }
 
@@ -921,12 +921,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
     /** Assumes null for fore/back queries w/no options */
     public RelatednessFacet() {
-      this(null, null, Collections.emptyMap());
+      this(null, null, Map.of());
     }
 
     /** Assumes no options */
     public RelatednessFacet(final String foreQ, final String backQ) {
-      this(foreQ, backQ, Collections.emptyMap());
+      this(foreQ, backQ, Map.of());
     }
 
     public RelatednessFacet(
@@ -1316,7 +1316,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assertNotNull(client.getDefaultCollection());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 

@@ -1,0 +1,8 @@
+title: Exception in TransactionLog constructor deletes the file and does not block
+  subsequent updates.
+type: fixed
+authors:
+- name: Bruno Roustant
+links:
+- name: SOLR-17805
+  url: https://issues.apache.org/jira/browse/SOLR-17805

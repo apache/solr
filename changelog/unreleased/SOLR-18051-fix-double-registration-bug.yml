@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Improve HttpJettySolrClient.requestAsync (used in sharded/distributed-search and more) to increase throughput and prevent a rare deadlock.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: James Vanneman
+links:
+  - name: SOLR-18051
+    url: https://issues.apache.org/jira/browse/SOLR-18051

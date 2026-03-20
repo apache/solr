@@ -19,8 +19,8 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -36,6 +36,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.tika.sax.XHTMLContentHandler;
+import org.apache.tika.sax.xpath.Matcher;
+import org.apache.tika.sax.xpath.MatchingContentHandler;
+import org.apache.tika.sax.xpath.XPathParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.DefaultHandler;
@@ -118,7 +122,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       LinkedHashMap<Pattern, String> pwMap = null;
       String passwordsFile = params.get(ExtractingParams.PASSWORD_MAP_FILE);
       if (passwordsFile != null) {
-        try (java.io.InputStream is = core.getResourceLoader().openResource(passwordsFile)) {
+        try (InputStream is = core.getResourceLoader().openResource(passwordsFile)) {
           pwMap = RegexRulesPasswordProvider.parseRulesFile(is);
         }
       }
@@ -138,7 +142,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               .extractFormat(extractFormat)
               .tikaServerRecursive(tikaserverRecursive)
               .tikaServerTimeoutSeconds(tikaTimeoutSecs)
-              .tikaServerRequestHeaders(Collections.emptyMap())
+              .tikaServerRequestHeaders(Map.of())
               .build();
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
@@ -240,11 +244,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       DefaultHandler ch)
       throws Exception {
     if (xpathExpr != null) {
-      org.apache.tika.sax.xpath.XPathParser xparser =
-          new org.apache.tika.sax.xpath.XPathParser(
-              "xhtml", org.apache.tika.sax.XHTMLContentHandler.XHTML);
-      org.apache.tika.sax.xpath.Matcher matcher = xparser.parse(xpathExpr);
-      ch = new org.apache.tika.sax.xpath.MatchingContentHandler(ch, matcher);
+      XPathParser xparser = new XPathParser("xhtml", XHTMLContentHandler.XHTML);
+      Matcher matcher = xparser.parse(xpathExpr);
+      ch = new MatchingContentHandler(ch, matcher);
     }
     backend.extractWithSaxHandler(inputStream, extractionRequest, md, ch);
     return ch.toString();

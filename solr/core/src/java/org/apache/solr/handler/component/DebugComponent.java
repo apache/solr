@@ -73,7 +73,7 @@ public class DebugComponent extends SearchComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.isDebugTrack() && rb.isDistrib) {
       rb.setNeedDocList(true);
-      doDebugTrack(rb);
+      rb.addDebug(new SimpleOrderedMap<>(), "track");
     }
   }
 
@@ -140,11 +140,6 @@ public class DebugComponent extends SearchComponent {
     }
   }
 
-  private void doDebugTrack(ResponseBuilder rb) {
-    final String rid = rb.req.getParams().get(CommonParams.REQUEST_ID);
-    rb.addDebug(rid, "track", CommonParams.REQUEST_ID); // to see it in the response
-  }
-
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.isDebug()) return;
@@ -176,7 +171,6 @@ public class DebugComponent extends SearchComponent {
     }
     if (rb.isDebugTrack()) {
       sreq.params.add(CommonParams.DEBUG, CommonParams.TRACK);
-      sreq.params.set(CommonParams.REQUEST_ID, rb.req.getParams().get(CommonParams.REQUEST_ID));
       sreq.params.set(
           CommonParams.REQUEST_PURPOSE, SolrPluginUtils.getRequestPurpose(sreq.purpose));
     }
@@ -363,9 +357,9 @@ public class DebugComponent extends SearchComponent {
         }
 
         if (didx == -1) {
-          tmp.add(skey, merge(sval, null, Collections.emptySet()));
+          tmp.add(skey, merge(sval, null, Set.of()));
         } else {
-          dl.setVal(didx, merge(sval, dl.getVal(didx), Collections.emptySet()));
+          dl.setVal(didx, merge(sval, dl.getVal(didx), Set.of()));
         }
       }
       dl.addAll(tmp);

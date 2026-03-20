@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -324,8 +325,7 @@ public abstract class FieldType extends FieldProperties {
    * @param type {@link org.apache.lucene.document.FieldType}
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(
-      String name, String val, org.apache.lucene.index.IndexableFieldType type) {
+  protected IndexableField createField(String name, String val, IndexableFieldType type) {
     return new Field(name, val, type);
   }
 
@@ -348,7 +348,7 @@ public abstract class FieldType extends FieldProperties {
       throw new UnsupportedOperationException(
           "This field type does not support doc values: " + this);
     }
-    return f == null ? Collections.<IndexableField>emptyList() : Collections.singletonList(f);
+    return f == null ? List.of() : Collections.singletonList(f);
   }
 
   /**
@@ -366,6 +366,10 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Convert the stored-field format to an external (string, human readable) value
    *
+   * <p>This is the default method used for converting a stored field value into an external value
+   * to be returned to clients. See {@link ExternalizeStoredValuesAsObjects} for more details
+   *
+   * @see #toObject(IndexableField)
    * @see #toInternal
    */
   public String toExternal(IndexableField f) {
@@ -383,6 +387,10 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Convert the stored-field format to an external object.
    *
+   * <p>This method is not typically used for custom FieldTypes, see {@link
+   * ExternalizeStoredValuesAsObjects} for more details
+   *
+   * @see #toExternal
    * @see #toInternal
    * @since solr 1.3
    */
@@ -1459,6 +1467,22 @@ public abstract class FieldType extends FieldProperties {
     final byte[] bytes = Base64.getDecoder().decode(val);
     return new BytesRef(bytes);
   }
+
+  /**
+   * A marker interface that can be implemented by any FieldType to indicate that Solr should trust
+   * &amp; delegate to this field type's implementation of {@link
+   * FieldType#toObject(IndexableField)} when converted internal stored fields to an external
+   * representation that will be returned to clients.
+   *
+   * <p>The default behavior if this interface is not implemented, is to delegate to {@link
+   * FieldType#toExternal(IndexableField)}, unless the field type is (exactly equal to) one of a
+   * specific list of {@link org.apache.solr.response.DocsStreamer#KNOWN_TYPES}
+   *
+   * @see #toExternal
+   * @see #toObject(IndexableField)
+   * @see org.apache.solr.response.DocsStreamer#KNOWN_TYPES
+   */
+  public static interface ExternalizeStoredValuesAsObjects {}
 
   /**
    * An enumeration representing various options that may exist for selecting a single value from a

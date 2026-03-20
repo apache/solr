@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -56,7 +56,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private final Http2SolrClient clientToLeader;
+  private final HttpJettySolrClient clientToLeader;
   private final String coreName;
   private final String leaderBaseUrl;
 
@@ -354,7 +354,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
           new GenericSolrRequest(
                   SolrRequest.METHOD.GET, "/get", SolrRequest.SolrRequestType.QUERY, params)
               .setRequiresCollection(true);
-      var rsp = clientToLeader.requestWithBaseUrl(leaderBaseUrl, coreName, request);
+      var rsp = request.processWithBaseUrl(clientToLeader, leaderBaseUrl, coreName);
       Exception exception = rsp.getException();
       if (exception != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);

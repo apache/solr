@@ -34,7 +34,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -306,7 +305,7 @@ public class SchemaManager {
               mgr.managedIndexSchema.newField(
                   name, type, convertToMapExcluding(addFieldOp, propsToOmit));
           mgr.managedIndexSchema =
-              mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
+              mgr.managedIndexSchema.addFields(singletonList(field), Map.of(), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add field", e);
@@ -342,8 +341,7 @@ public class SchemaManager {
               mgr.managedIndexSchema.newDynamicField(
                   name, type, convertToMapExcluding(addDynFieldOp, propsToOmit));
           mgr.managedIndexSchema =
-              mgr.managedIndexSchema.addDynamicFields(
-                  singletonList(field), Collections.emptyMap(), false);
+              mgr.managedIndexSchema.addDynamicFields(singletonList(field), Map.of(), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add dynamic field", e);
@@ -520,10 +518,10 @@ public class SchemaManager {
       SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
       String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + schemaResourceName;
       try {
-        if (!zkClient.exists(managedSchemaPath, true)) {
+        if (!zkClient.exists(managedSchemaPath)) {
           String backupName =
               schemaResourceName + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
-          if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
+          if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName)) {
             log.warn(
                 "Unable to retrieve fresh managed schema, neither {} nor {} exist.",
                 schemaResourceName,

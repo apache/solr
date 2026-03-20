@@ -19,11 +19,16 @@ branch to avoid extra mailing list traffic etc.
 Periodically review https://github.com/apache/solr/branches/all to see if you have
 created a branch that can be deleted.
 
+=== Can I use an AI coding assistant?
+
+Yes, but you are responsible for reviewing all code and documentation, and to transparently
+declare the use of AI in your PR. See xref:how-to-contribute.adoc#_use_of_ai_coding_assistants[Use of AI coding Assistants].
+
 === How do I run Solr in Docker?
 
 You can review instructions for running Solr in Docker in the xref:running-in-docker.adoc[Running in Docker developer doc].
 
-=== Whats the fastest build lifecycle for frontend work on Solr Admin?
+=== What's the fastest build lifecycle for frontend work on Solr Admin?
 
 Run `gradle dev`, and then `cd ./packaging/build/dev/`.  Fire up your cluster
 via `bin/solr start -e cloud --no-prompt` and then as you make changes to assets in `/solr/webapp/web`,

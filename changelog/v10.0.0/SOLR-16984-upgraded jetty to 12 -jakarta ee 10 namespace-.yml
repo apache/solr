@@ -1,0 +1,10 @@
+title: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies
+  including amazon-awssdk to 2.28.11.
+type: dependency_update
+authors:
+- name: Sanjay Dutt
+- name: David Smiley
+- name: Kevin Risden
+links:
+- name: SOLR-16984
+  url: https://issues.apache.org/jira/browse/SOLR-16984

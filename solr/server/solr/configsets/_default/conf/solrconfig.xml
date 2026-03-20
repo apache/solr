@@ -199,7 +199,7 @@
          Setting The value to true will instruct the underlying Lucene
          IndexWriter to write its debugging info the specified file
       -->
-    <!-- <infoStream file="INFOSTREAM.txt">false</infoStream> -->
+    <!-- <infoStream>false</infoStream> -->
   </indexConfig>
 
   <!-- The default high-performance update handler -->

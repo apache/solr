@@ -190,7 +190,9 @@ public class InfoHandler extends RequestHandlerBase {
     if (handler != null) {
       return handler.getPermissionName(request);
     } else {
-      return null;
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to identify 'info' sub-handler for path " + path);
     }
   }
 }

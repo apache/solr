@@ -182,6 +182,19 @@ Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
     # Default behavior
     python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
 
+### validateChangelogs.py
+
+Validates changelog folder structure and feature distribution across development branches (main, stable, release). See dev-docs for more.
+
+### parseContributorsFromChanges.py
+
+Extracts unique author names from all YAML changelog files in a version folder and outputs them as a comma-separated list sorted alphabetically. Used by RM to assemble release notes.
+
+    usage: parseContributorsFromChanges.py <version>
+
+    # Example: Extract contributors for version 9.10.0
+    python3 dev-tools/scripts/parseContributorsFromChanges.py 9.10.0
+
 ### gitignore-gen.sh
 
 TBD

@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -146,6 +146,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     producerMetrics.getDocumentSize().record(estimatedDocSizeInBytes);
     final boolean tooLargeForKafka = estimatedDocSizeInBytes > maxMirroringDocSizeBytes;
     if (tooLargeForKafka && !indexUnmirrorableDocs) {
+      producerMetrics.getDocumentTooLarge().inc();
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Update exceeds the doc-size limit and is unmirrorable. id="
@@ -181,9 +182,11 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       try {
         requestMirroringHandler.mirror(mirrorRequest);
         producerMetrics.getSubmitted().inc();
+        producerMetrics.getSubmittedAdd().inc();
       } catch (Exception e) {
         log.error("mirror submit failed", e);
         producerMetrics.getSubmitError().inc();
+        producerMetrics.getSubmittedAddError().inc();
         throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
       }
     }
@@ -250,7 +253,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
     super.processDelete(cmd); // let this throw to prevent mirroring invalid requests
-
+    producerMetrics.getLocal().inc();
     if (doMirroring) {
       boolean isLeader = false;
       UpdateRequest mirrorRequest = createMirrorRequest();
@@ -271,8 +274,11 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
 
           try {
             requestMirroringHandler.mirror(mirrorRequest);
+            producerMetrics.getSubmitted().inc();
+            producerMetrics.getSubmittedDeleteById().inc();
           } catch (Exception e) {
             log.error("mirror submit failed", e);
+            producerMetrics.getSubmittedDeleteByIdError().inc();
             throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
           }
         }
@@ -289,8 +295,12 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
 
           try {
             requestMirroringHandler.mirror(mirrorRequest);
+            producerMetrics.getSubmitted().inc();
+            producerMetrics.getSubmittedDeleteByQuery().inc();
           } catch (Exception e) {
             log.error("mirror submit failed", e);
+            producerMetrics.getSubmitError().inc();
+            producerMetrics.getSubmittedDeleteByQueryError().inc();
             throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
           }
         }
@@ -390,7 +400,10 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     log.debug("process commit cmd={}", cmd);
-    if (next != null) next.processCommit(cmd);
+    if (next != null) {
+      next.processCommit(cmd);
+      producerMetrics.getLocal().inc();
+    }
     if (!mirrorCommits) {
       return;
     }
@@ -424,8 +437,12 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       log.debug(" --doMirroring commit req={}", req);
       try {
         requestMirroringHandler.mirror(req);
+        producerMetrics.getSubmitted().inc();
+        producerMetrics.getSubmittedCommit().inc();
       } catch (Exception e) {
         log.error("mirror submit failed", e);
+        producerMetrics.getSubmitError().inc();
+        producerMetrics.getSubmittedCommitError().inc();
         throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
       }
 

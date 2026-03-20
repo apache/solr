@@ -142,10 +142,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     String name = "test.eof";
     createFile(name, fsDir, directory);
     long fsLength = fsDir.fileLength(name);
-    long hdfsLength = directory.fileLength(name);
-    assertEquals(fsLength, hdfsLength);
+    long blockLength = directory.fileLength(name);
+    assertEquals(fsLength, blockLength);
     testEof(name, fsDir, fsLength);
-    testEof(name, directory, hdfsLength);
+    testEof(name, directory, blockLength);
     fsDir.close();
   }
 
@@ -189,11 +189,12 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     testRandomAccessWrites();
   }
 
-  private void assertInputsEquals(String name, Directory fsDir, Directory hdfs) throws IOException {
+  private void assertInputsEquals(String name, Directory fsDir, Directory blockDirectory)
+      throws IOException {
     int reads = random.nextInt(MAX_NUMBER_OF_READS);
     IndexInput fsInput = fsDir.openInput(name, IOContext.DEFAULT);
-    IndexInput hdfsInput = hdfs.openInput(name, IOContext.DEFAULT);
-    assertEquals(fsInput.length(), hdfsInput.length());
+    IndexInput blockInput = blockDirectory.openInput(name, IOContext.DEFAULT);
+    assertEquals(fsInput.length(), blockInput.length());
     int fileLength = (int) fsInput.length();
     for (int i = 0; i < reads; i++) {
       int rnd;
@@ -204,7 +205,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       }
 
       byte[] fsBuf = new byte[rnd + MIN_BUFFER_SIZE];
-      byte[] hdfsBuf = new byte[fsBuf.length];
+      byte[] blockBuf = new byte[fsBuf.length];
       int offset = random.nextInt(fsBuf.length);
       int length = random.nextInt(fsBuf.length - offset);
 
@@ -217,23 +218,24 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
       fsInput.seek(pos);
       fsInput.readBytes(fsBuf, offset, length);
-      hdfsInput.seek(pos);
-      hdfsInput.readBytes(hdfsBuf, offset, length);
+      blockInput.seek(pos);
+      blockInput.readBytes(blockBuf, offset, length);
       for (int f = offset; f < length; f++) {
-        if (fsBuf[f] != hdfsBuf[f]) {
+        if (fsBuf[f] != blockBuf[f]) {
           fail("read [" + i + "]");
         }
       }
     }
     fsInput.close();
-    hdfsInput.close();
+    blockInput.close();
   }
 
-  private void createFile(String name, Directory fsDir, Directory hdfs) throws IOException {
+  private void createFile(String name, Directory fsDir, Directory blockDirectory)
+      throws IOException {
     int writes = random.nextInt(MAX_NUMBER_OF_WRITES);
     int fileLength = random.nextInt(MAX_FILE_SIZE - MIN_FILE_SIZE) + MIN_FILE_SIZE;
     IndexOutput fsOutput = fsDir.createOutput(name, IOContext.DEFAULT);
-    IndexOutput hdfsOutput = hdfs.createOutput(name, IOContext.DEFAULT);
+    IndexOutput blockOutput = blockDirectory.createOutput(name, IOContext.DEFAULT);
     for (int i = 0; i < writes; i++) {
       byte[] buf =
           new byte
@@ -243,10 +245,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       int offset = random.nextInt(buf.length);
       int length = random.nextInt(buf.length - offset);
       fsOutput.writeBytes(buf, offset, length);
-      hdfsOutput.writeBytes(buf, offset, length);
+      blockOutput.writeBytes(buf, offset, length);
     }
     fsOutput.close();
-    hdfsOutput.close();
+    blockOutput.close();
   }
 
   private String getName() {
@@ -257,7 +259,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     try {
       IOUtils.rm(file);
     } catch (Throwable ignored) {
-      // TODO: should this class care if a file couldnt be deleted?
+      // TODO: should this class care if a file couldn't be deleted?
       // this just emulates previous behavior, where only SecurityException would be handled.
     }
   }

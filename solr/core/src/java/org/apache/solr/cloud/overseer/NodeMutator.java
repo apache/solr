@@ -72,7 +72,7 @@ public class NodeMutator {
     final Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
     List<Replica> replicasOnNode = docCollection.getReplicasOnNode(nodeName);
-    if (replicasOnNode == null || replicasOnNode.isEmpty()) {
+    if (replicasOnNode.isEmpty()) {
       return Optional.empty();
     }
     for (Replica replica : replicasOnNode) {

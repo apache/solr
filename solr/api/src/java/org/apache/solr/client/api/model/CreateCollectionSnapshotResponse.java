@@ -19,7 +19,7 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public class CreateCollectionSnapshotResponse extends AsyncJerseyResponse {
+public class CreateCollectionSnapshotResponse extends SubResponseAccumulatingJerseyResponse {
   @Schema(description = "The name of the collection.")
   public String collection;
 

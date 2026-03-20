@@ -1,0 +1,7 @@
+title: When the V2 API is receiving raw files, it could sometimes skip the first byte.
+type: fixed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17740
+  url: https://issues.apache.org/jira/browse/SOLR-17740

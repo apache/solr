@@ -33,7 +33,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
 
     String threadName = t.getName();
 
-    // due to netty - will stop on it's own
+    // due to netty - will stop on its own
     if (threadName.startsWith("globalEventExecutor")) {
       return true;
     }
@@ -43,7 +43,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    // These is a java pool for the collection stream api
+    // This is a java pool for the collection stream api
     if (threadName.startsWith("ForkJoinPool.")) {
       return true;
     }

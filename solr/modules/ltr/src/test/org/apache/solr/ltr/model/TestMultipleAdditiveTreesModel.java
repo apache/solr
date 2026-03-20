@@ -18,7 +18,7 @@ package org.apache.solr.ltr.model;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.After;
 import org.junit.Before;

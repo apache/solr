@@ -1,0 +1,8 @@
+title: 'chore(deps): update dependency com.github.spotbugs:spotbugs-annotations to
+  v4.8.6'
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#2129
+  url: https://github.com/apache/solr/pull/2129

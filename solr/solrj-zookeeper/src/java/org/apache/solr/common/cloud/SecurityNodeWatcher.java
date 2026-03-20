@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.emptyMap;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -47,7 +45,7 @@ class SecurityNodeWatcher implements Watcher {
           ZkStateReader.ConfigData cd = new ZkStateReader.ConfigData();
           cd.data =
               data.data == null || data.data.length == 0
-                  ? emptyMap()
+                  ? Map.of()
                   : Utils.getDeepCopy((Map) Utils.fromJSON(data.data), 4, false);
           cd.version = data.stat == null ? -1 : data.stat.getVersion();
           securityData = cd;
@@ -71,12 +69,9 @@ class SecurityNodeWatcher implements Watcher {
             new SolrZkClient.NodeData(new Stat(), "{}".getBytes(StandardCharsets.UTF_8));
         if (Event.EventType.NodeDeleted.equals(event.getType())) {
           // Node deleted, just recreate watch without attempting a read - SOLR-9679
-          zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, this, true);
+          zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, this);
         } else {
-          data =
-              zkStateReader
-                  .getZkClient()
-                  .getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, this, true);
+          data = zkStateReader.getZkClient().getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, this);
         }
         try {
           callback.call(data);
@@ -97,20 +92,20 @@ class SecurityNodeWatcher implements Watcher {
   }
 
   void register() throws InterruptedException, KeeperException {
-    zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, this, true);
+    zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, this);
     securityData = getSecurityProps(true);
   }
 
   @SuppressWarnings("unchecked")
   ZkStateReader.ConfigData getSecurityProps(boolean getFresh) {
     if (!getFresh) {
-      if (securityData == null) return new ZkStateReader.ConfigData(emptyMap(), -1);
+      if (securityData == null) return new ZkStateReader.ConfigData(Map.of(), -1);
       return new ZkStateReader.ConfigData(securityData.data, securityData.version);
     }
     try {
-      if (zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, true)) {
+      if (zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH)) {
         SolrZkClient.NodeData d =
-            zkStateReader.getZkClient().getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true);
+            zkStateReader.getZkClient().getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, null);
         return d != null && d.data.length > 0
             ? new ZkStateReader.ConfigData(
                 (Map<String, Object>) Utils.fromJSON(d.data), d.stat.getVersion())

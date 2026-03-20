@@ -19,22 +19,15 @@ package org.apache.solr.core;
 import io.opentelemetry.api.trace.TracerProvider;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestTracerConfigurator extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void setUpProperties() throws Exception {
+  public static void setUpProperties() {
     System.setProperty("otel.service.name", "something");
     System.setProperty("solr.otelDefaultConfigurator", "configuratorClassDoesNotExistTest");
-  }
-
-  @AfterClass
-  public static void clearProperties() throws Exception {
-    System.clearProperty("solr.otelDefaultConfigurator");
-    System.clearProperty("otel.service.name");
   }
 
   @Test
@@ -51,10 +44,6 @@ public class TestTracerConfigurator extends SolrTestCaseJ4 {
   @Test
   public void otelDisabledByProperty() {
     System.setProperty("otel.sdk.disabled", "true");
-    try {
-      assertFalse(OpenTelemetryConfigurator.shouldAutoConfigOTEL());
-    } finally {
-      System.clearProperty("otel.sdk.disabled");
-    }
+    assertFalse(OpenTelemetryConfigurator.shouldAutoConfigOTEL());
   }
 }

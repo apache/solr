@@ -37,7 +37,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -572,7 +572,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // create 10 more segments
     for (int i = 0; i < 10; i++) {
-      buildRandomIndex(101.0F, Collections.emptyList());
+      buildRandomIndex(101.0F, List.of());
     }
 
     index("id", id, "inplace_updatable_float", map("inc", "1"));

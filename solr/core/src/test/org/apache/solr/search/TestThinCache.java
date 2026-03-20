@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 
@@ -41,9 +42,14 @@ import org.junit.Test;
 /** Test for {@link ThinCache}. */
 public class TestThinCache extends SolrTestCaseJ4 {
 
-  @ClassRule public static EmbeddedSolrServerTestRule solrRule = new EmbeddedSolrServerTestRule();
+  @ClassRule
+  public static EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
+
   public static final String SOLR_NODE_LEVEL_CACHE_XML =
       "<solr>\n"
+          + "  <str name=\"allowPaths\">${"
+          + ALLOW_PATHS_SYSPROP
+          + ":}</str>"
           + "  <caches>\n"
           + "    <cache name='myNodeLevelCache'\n"
           + "      size='10'\n"
@@ -60,11 +66,12 @@ public class TestThinCache extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupSolrHome() throws Exception {
     Path home = createTempDir("home");
+    Path configSet = createTempDir("configSet");
+    System.setProperty(ALLOW_PATHS_SYSPROP, configSet.toAbsolutePath().toString());
     Files.writeString(home.resolve("solr.xml"), SOLR_NODE_LEVEL_CACHE_XML);
 
-    solrRule.startSolr(home);
+    solrTestRule.startSolr(home);
 
-    Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
@@ -81,16 +88,15 @@ public class TestThinCache extends SolrTestCaseJ4 {
                     + "      initialSize=\"5\"/>\n"
                     + "</query></config>"));
 
-    solrRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
     // legacy; get rid of this someday!
-    h = new TestHarness(solrRule.getCoreContainer());
+    h = new TestHarness(solrTestRule.getCoreContainer());
     lrf = h.getRequestFactory("/select", 0, 20);
   }
 
   SolrMetricManager metricManager = new SolrMetricManager(null);
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
-  String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
   public void testSimple() {
@@ -162,7 +168,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInitCore() throws Exception {
+  public void testInitCore() {
     String thinCacheName = "myNodeLevelCacheThin";
     String nodeCacheName = "myNodeLevelCache";
     for (int i = 0; i < 20; i++) {

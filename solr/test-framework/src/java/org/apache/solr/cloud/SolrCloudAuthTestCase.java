@@ -41,15 +41,15 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TimeOut;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,17 +78,9 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   @SuppressWarnings({"rawtypes"})
   public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
 
-  private static final List<String> AUDIT_METRICS_KEYS = Arrays.asList("count");
-  private static final List<String> AUDIT_METRICS_TO_COMPARE = Arrays.asList("count");
-
   @BeforeClass
   public static void enableMetrics() {
     System.setProperty("metricsEnabled", "true");
-  }
-
-  @AfterClass
-  public static void disableMetrics() {
-    System.clearProperty("metricsEnabled");
   }
 
   /** Used to check metric counts for PKI auth */
@@ -98,8 +90,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       int passThrough,
       int failWrongCredentials,
       int failMissingCredentials,
-      int errors)
-      throws InterruptedException {
+      int errors) {
     String handler = "/authentication/pki";
     String registryName = "solr.node";
     Labels labels =
@@ -111,7 +102,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
             "handler",
             handler,
             "plugin_name",
-            org.apache.solr.security.PKIAuthenticationPlugin.class.getSimpleName());
+            PKIAuthenticationPlugin.class.getSimpleName());
     assertAuthMetricsMinimumsPrometheus(
         handler,
         registryName,
@@ -137,8 +128,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       int passThrough,
       int failWrongCredentials,
       int failMissingCredentials,
-      int errors)
-      throws InterruptedException {
+      int errors) {
     String handler = "/authentication";
     String registryName = "solr.node";
     Labels labels =
@@ -371,8 +361,8 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    *
    * <p>This can be useful in a {@link TimeOut#waitFor} loop to monitor a cluster and "wait for" A
    * change in security settings to affect all nodes by comparing the objects in the current Map
-   * with the one in use prior to executing some test command. (providing a work around for the
-   * security user experienence limitations identified in <a
+   * with the one in use prior to executing some test command. (providing a workaround for the
+   * security user experience limitations identified in <a
    * href="https://issues.apache.org/jira/browse/SOLR-13464">SOLR-13464</a> )
    *
    * @param url A REST url (or any arbitrary String) ending in <code>"authentication"</code> or

@@ -398,7 +398,7 @@ public class Assign {
     default Map<Replica, String> computeReplicaBalancing(
         SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
         throws AssignmentException, IOException, InterruptedException {
-      return Collections.emptyMap();
+      return Map.of();
     }
 
     /**

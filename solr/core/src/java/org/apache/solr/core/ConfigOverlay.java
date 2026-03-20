@@ -41,13 +41,13 @@ public class ConfigOverlay implements MapSerializable {
 
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay(Map<String, Object> jsonObj, int version) {
-    if (jsonObj == null) jsonObj = Collections.emptyMap();
+    if (jsonObj == null) jsonObj = Map.of();
     this.version = version;
     data = Collections.unmodifiableMap(jsonObj);
     props = (Map<String, Object>) data.get("props");
-    if (props == null) props = Collections.emptyMap();
+    if (props == null) props = Map.of();
     userProps = (Map<String, Object>) data.get("userProps");
-    if (userProps == null) userProps = Collections.emptyMap();
+    if (userProps == null) userProps = Map.of();
   }
 
   public Object getXPathProperty(String xpath) {
@@ -242,7 +242,7 @@ public class ConfigOverlay implements MapSerializable {
   @SuppressWarnings({"unchecked"})
   public Map<String, Map<String, Object>> getNamedPlugins(String typ) {
     Map<String, Map<String, Object>> reqHandlers = (Map<String, Map<String, Object>>) data.get(typ);
-    if (reqHandlers == null) return Collections.emptyMap();
+    if (reqHandlers == null) return Map.of();
     return Collections.unmodifiableMap(reqHandlers);
   }
 

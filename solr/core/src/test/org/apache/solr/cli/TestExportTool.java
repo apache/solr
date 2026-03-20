@@ -33,11 +33,11 @@ import java.util.zip.GZIPInputStream;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -216,7 +216,7 @@ public class TestExportTool extends SolrCloudTestCase {
       long totalDocsFromCores = 0;
       for (Slice slice : coll.getSlices()) {
         Replica replica = slice.getLeader();
-        try (SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).build()) {
+        try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
           long count = ExportTool.getDocCount(replica.getCoreName(), client, "*:*");
           docCounts.put(replica.getCoreName(), count);
           totalDocsFromCores += count;
@@ -292,7 +292,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
   private void assertJavabinDocsCount(ExportTool.Info info, int expected) throws IOException {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
     try (FileInputStream fis = new FileInputStream(info.out)) {
       int[] count = new int[] {0};
       FastInputStream in = FastInputStream.wrap(fis);
@@ -309,14 +309,14 @@ public class TestExportTool extends SolrCloudTestCase {
 
   private void assertJsonDocsCount(ExportTool.Info info, int expected) {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
   }
 
   private void assertJsonDocsCount(
       ExportTool.Info info, int expected, Predicate<Map<String, Object>> predicate)
       throws IOException {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
     Reader rdr;
@@ -342,7 +342,7 @@ public class TestExportTool extends SolrCloudTestCase {
       ExportTool.Info info, int expected, Predicate<Map<String, Object>> predicate)
       throws IOException {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
     Reader rdr;

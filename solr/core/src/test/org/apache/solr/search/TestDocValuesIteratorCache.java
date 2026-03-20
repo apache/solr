@@ -42,7 +42,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
   private static final int DOC_COUNT = 1000;
 
   @ClassRule
-  public static final SolrClientTestRule solrClientTestRule =
+  public static final SolrClientTestRule solrTestRule =
       new EmbeddedSolrServerTestRule() {
         @Override
         protected void before() throws Throwable {
@@ -50,13 +50,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
           // existence of multiple segments; if the merge policy happens to combine into a single
           // segment, no OrdinalMap will be built, throwing off our tests
           systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-          startSolr(LuceneTestCase.createTempDir());
-        }
-
-        @Override
-        protected void after() {
-          systemClearPropertySolrTestsMergePolicyFactory();
-          super.after();
+          startSolr();
         }
       };
 
@@ -82,9 +76,9 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
             .replace(
                 "</schema>", fieldConfig(SINGLE, false) + fieldConfig(MULTI, true) + "</schema>"));
 
-    solrClientTestRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
 
     Random r = random();
     String[][] expectVals = indexDocs(client, r);

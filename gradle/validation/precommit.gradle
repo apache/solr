@@ -30,17 +30,19 @@ configure(rootProject) {
 
     // Attach all these tasks from all projects that have them.
     // This uses lazy collections as they may not yet be defined.
-    dependsOn allprojects.collect { prj ->
-      prj.tasks.matching { task -> task.name in [
-          "forbiddenApis",
-          "licenses",
-          "javadoc",
-          "rat",
-          "ecjLint",
-          "validateLogCalls",
-          "validateSourcePatterns",
-          "spotlessCheck"
-      ]}
+    dependsOn allprojects.collect {prj ->
+      prj.tasks.matching {task ->
+        task.name in [
+            "forbiddenApis",
+            "licenses",
+            "javadoc",
+            "rat",
+            "ecjLint",
+            "validateLogCalls",
+            "validateSourcePatterns",
+            "spotlessCheck"
+        ]
+      }
     }
   }
 

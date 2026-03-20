@@ -20,8 +20,8 @@ import static org.hamcrest.core.IsIterableContaining.hasItems;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;

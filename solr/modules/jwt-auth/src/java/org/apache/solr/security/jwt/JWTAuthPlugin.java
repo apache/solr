@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -257,7 +257,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
 
       Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
-      redirectUris = Collections.emptyList();
+      redirectUris = List.of();
       if (redirectUrisObj != null) {
         if (redirectUrisObj instanceof String) {
           redirectUris = Collections.singletonList((String) redirectUrisObj);
@@ -576,13 +576,15 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               for (Map.Entry<String, Pattern> entry : claimsMatchCompiled.entrySet()) {
                 String claim = entry.getKey();
                 if (jwtClaims.hasClaim(claim)) {
-                  if (!entry.getValue().matcher(jwtClaims.getStringClaimValue(claim)).matches()) {
+                  Object claimValue = jwtClaims.getClaimValue(claim);
+                  String claimValueStr = (claimValue != null) ? String.valueOf(claimValue) : "";
+                  if (!entry.getValue().matcher(claimValueStr).matches()) {
                     return new JWTAuthenticationResponse(
                         AuthCode.CLAIM_MISMATCH,
                         "Claim "
                             + claim
                             + "="
-                            + jwtClaims.getStringClaimValue(claim)
+                            + claimValueStr
                             + " does not match required regular expression "
                             + entry.getValue().pattern());
                   }
@@ -601,7 +603,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             }
 
             // Find scopes for user
-            Set<String> scopes = Collections.emptySet();
+            Set<String> scopes = Set.of();
             Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
             if (scopesObj != null) {
               if (scopesObj instanceof String) {
@@ -941,7 +943,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
   @Override
   protected boolean interceptInternodeRequest(Request request) {
-    Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
+    Object userToken = request.getAttributes().get(HttpJettySolrClient.REQ_PRINCIPAL_KEY);
     if (userToken instanceof JWTPrincipal jwtPrincipal) {
       request.headers(
           h -> h.put(HttpHeader.AUTHORIZATION.asString(), "Bearer " + jwtPrincipal.getToken()));

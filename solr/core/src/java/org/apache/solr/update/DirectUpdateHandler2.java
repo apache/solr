@@ -58,8 +58,8 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.instruments.AttributedInstrumentFactory;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongUpDownCounter;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -537,7 +537,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       // Add to the transaction log *after* successfully adding to the
       // index, if there was no error.
       // This ordering ensures that if we log it, it's definitely been
-      // added to the the index.
+      // added to the index.
       // This also ensures that if a commit sneaks in-between, that we
       // know everything in a particular
       // log version was definitely committed.
@@ -1038,7 +1038,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     boolean clearRequestInfo = false;
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
     SolrQueryResponse rsp = new SolrQueryResponse();
     if (SolrRequestInfo.getRequestInfo() == null) {
       clearRequestInfo = true;

@@ -65,8 +65,8 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
 
   @Test
   public void testGetTags() throws Exception {
-    try (var cloudHttp2SolrClient =
-        new CloudHttp2SolrClient.Builder(
+    try (var cloudSolrClient =
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build()) {
       int totalCores = 0;
@@ -75,7 +75,7 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
       // We should get same number than when we created the collection
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         String node = runner.getNodeName();
-        RemoteCallCtx ctx = new RemoteCallCtx(node, cloudHttp2SolrClient);
+        RemoteCallCtx ctx = new RemoteCallCtx(node, cloudSolrClient);
         NodeValueFetcher fetcher = new NodeValueFetcher();
 
         Set<String> requestedTags = Set.of("cores");

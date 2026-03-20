@@ -17,7 +17,8 @@
 
 apply plugin: 'java-library'
 
-description = 'Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF'
+description =
+    'Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF'
 
 ext {
   // Disable security manager for extraction module tests
@@ -37,9 +38,9 @@ dependencies {
 
   // For 'tikaserver' backend
   implementation libs.eclipse.jetty.client
-  permitUsedUndeclared libs.eclipse.jetty.http
-  permitUsedUndeclared libs.eclipse.jetty.util
-  permitUsedUndeclared libs.eclipse.jetty.io
+  implementation libs.eclipse.jetty.http
+  implementation libs.eclipse.jetty.util
+  implementation libs.eclipse.jetty.io
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
