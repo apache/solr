@@ -1,0 +1,7 @@
+title: Update org.apache.rat:apache-rat to v0.17
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3104
+  url: https://github.com/apache/solr/pull/3104
