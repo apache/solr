@@ -53,6 +53,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  *
  * @see IntRangeField
  * @see LongRangeField
+ * @see FloatRangeField
  */
 public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
 
@@ -82,8 +83,53 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
   protected static final Pattern SINGLE_BOUND_PATTERN =
       Pattern.compile("^" + COMMA_DELIMITED_NUMS + "$");
 
+  /**
+   * Regex fragment matching a comma-separated list of signed floating-point numbers (integers or
+   * floating-point literals).
+   */
+  protected static final String COMMA_DELIMITED_FP_NUMS =
+      "-?\\d+(?:\\.\\d+)?(?:\\s*,\\s*-?\\d+(?:\\.\\d+)?)*";
+
+  private static final String FP_RANGE_PATTERN_STR =
+      "\\[\\s*(" + COMMA_DELIMITED_FP_NUMS + ")\\s+TO\\s+(" + COMMA_DELIMITED_FP_NUMS + ")\\s*\\]";
+
+  /**
+   * Pre-compiled pattern matching {@code [min1,min2,... TO max1,max2,...]} range syntax where
+   * values may be floating-point numbers.
+   */
+  protected static final Pattern FP_RANGE_PATTERN_REGEX = Pattern.compile(FP_RANGE_PATTERN_STR);
+
+  /**
+   * Pre-compiled pattern matching a single (multi-dimensional) floating-point bound, e.g. {@code
+   * 1.5,2.0,3.14}.
+   */
+  protected static final Pattern FP_SINGLE_BOUND_PATTERN =
+      Pattern.compile("^" + COMMA_DELIMITED_FP_NUMS + "$");
+
   /** Configured number of dimensions for this field type; defaults to 1. */
   protected int numDimensions = 1;
+
+  /**
+   * Returns the regex {@link Pattern} used to match a full range value string of the form {@code
+   * [min TO max]}. Subclasses may override to use an alternative pattern (e.g. one that accepts
+   * floating-point numbers).
+   *
+   * @return the range pattern for this field type
+   */
+  protected Pattern getRangePattern() {
+    return RANGE_PATTERN_REGEX;
+  }
+
+  /**
+   * Returns the regex {@link Pattern} used to match a single multi-dimensional bound (e.g. {@code
+   * 1,2,3}). Subclasses may override to use an alternative pattern (e.g. one that accepts
+   * floating-point numbers).
+   *
+   * @return the single-bound pattern for this field type
+   */
+  protected Pattern getSingleBoundPattern() {
+    return SINGLE_BOUND_PATTERN;
+  }
 
   @Override
   protected boolean enableDocValuesByDefault() {
@@ -287,13 +333,13 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
     String trimmed = externalVal.trim();
 
     // Check if it's the full range syntax: [min1,min2 TO max1,max2]
-    if (RANGE_PATTERN_REGEX.matcher(trimmed).matches()) {
+    if (getRangePattern().matcher(trimmed).matches()) {
       final var rangeValue = parseRangeValue(trimmed);
       return newContainsQuery(field.getName(), rangeValue);
     }
 
     // Syntax sugar: also accept a single-bound (i.e pX,pY,pZ)
-    if (SINGLE_BOUND_PATTERN.matcher(trimmed).matches()) {
+    if (getSingleBoundPattern().matcher(trimmed).matches()) {
       final var singleBoundRange = parseSingleBound(trimmed);
 
       if (singleBoundRange.getDimensions() != numDimensions) {
