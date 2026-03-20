@@ -58,12 +58,11 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
 
   public CoordinatorHttpSolrCall(
       Factory factory,
-      SolrServlet solrServlet,
       CoreContainer cores,
       HttpServletRequest request,
       HttpServletResponse response,
       boolean retry) {
-    super(solrServlet, cores, request, response, retry);
+    super(cores, request, response, retry);
     this.factory = factory;
   }
 
@@ -204,19 +203,18 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
 
     @Override
     public HttpSolrCall createInstance(
-        SolrServlet filter,
         String path,
         CoreContainer cores,
         HttpServletRequest request,
         HttpServletResponse response,
         boolean retry) {
       if ((path.startsWith("/____v2/") || path.equals("/____v2"))) {
-        return new CoordinatorV2HttpSolrCall(this, filter, cores, request, response, retry);
+        return new CoordinatorV2HttpSolrCall(this, cores, request, response, retry);
       } else if (path.startsWith("/" + SYNTHETIC_COLL_PREFIX)) {
         return SolrServlet.HttpSolrCallFactory.super.createInstance(
-            filter, path, cores, request, response, retry);
+            path, cores, request, response, retry);
       } else {
-        return new CoordinatorHttpSolrCall(this, filter, cores, request, response, retry);
+        return new CoordinatorHttpSolrCall(this, cores, request, response, retry);
       }
     }
   }

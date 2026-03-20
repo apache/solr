@@ -103,11 +103,10 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
       throws UnavailableException {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     Set<String> coreNames = new HashSet<>();
-    SolrServlet solrServlet = jettySolrRunner.getSolrServlet();
     for (int i = 0; i < NUM_SHARD * REPLICA_FACTOR * 20; i++) {
       if (coreNames.size() == numCores) return;
       HttpSolrCall httpSolrCall =
-          new HttpSolrCall(solrServlet, solrServlet.getCores(), testRequest, newResponse(), false);
+          new HttpSolrCall(jettySolrRunner.getCoreContainer(), testRequest, newResponse(), false);
       try {
         httpSolrCall.init();
       } catch (Exception e) {

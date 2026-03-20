@@ -115,7 +115,6 @@ public class HttpSolrCall {
 
   public static final String INTERNAL_REQUEST_COUNT = "_forwardedCount";
 
-  protected final SolrServlet solrServlet;
   protected final CoreContainer cores;
   protected final HttpServletRequest req;
   protected final HttpServletResponse response;
@@ -159,12 +158,10 @@ public class HttpSolrCall {
   }
 
   public HttpSolrCall(
-      SolrServlet solrServlet,
       CoreContainer cores,
       HttpServletRequest request,
       HttpServletResponse response,
       boolean retry) {
-    this.solrServlet = solrServlet;
     this.cores = cores;
     this.req = request;
     this.response = response;

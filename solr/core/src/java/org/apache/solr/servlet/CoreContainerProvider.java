@@ -91,10 +91,8 @@ public class CoreContainerProvider implements ServletContextListener {
     // could remove ourselves from ctx but why bother
   }
 
-  /**
-   * @see SolrServlet#getCores()
-   */
-  CoreContainer getCoreContainer() throws UnavailableException {
+  /** The CoreContainer. Never null. */
+  public CoreContainer getCoreContainer() throws UnavailableException {
     checkReady();
     return cores;
   }

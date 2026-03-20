@@ -23,7 +23,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
 import org.apache.solr.servlet.HttpSolrCall;
-import org.apache.solr.servlet.SolrServlet;
 
 public class CoordinatorV2HttpSolrCall extends V2HttpCall {
   private String collectionName;
@@ -31,12 +30,11 @@ public class CoordinatorV2HttpSolrCall extends V2HttpCall {
 
   public CoordinatorV2HttpSolrCall(
       CoordinatorHttpSolrCall.Factory factory,
-      SolrServlet solrServlet,
       CoreContainer cc,
       HttpServletRequest request,
       HttpServletResponse response,
       boolean retry) {
-    super(solrServlet, cc, request, response, retry);
+    super(cc, request, response, retry);
     this.factory = factory;
   }
 

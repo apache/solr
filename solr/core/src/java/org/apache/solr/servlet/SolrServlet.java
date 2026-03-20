@@ -43,10 +43,6 @@ public class SolrServlet extends HttpServlet {
   private HttpSolrCallFactory solrCallFactory;
   private CoreContainerProvider containerProvider;
 
-  public final boolean isV2Enabled = V2ApiUtils.isEnabled();
-
-  public SolrServlet() {}
-
   @Override
   public void init(ServletConfig config) throws ServletException {
     try {
@@ -144,22 +140,23 @@ public class SolrServlet extends HttpServlet {
     } catch (UnavailableException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
-    return solrCallFactory.createInstance(this, path, cores, request, response, retry);
+    return solrCallFactory.createInstance(path, cores, request, response, retry);
   }
 
-  /** internal API */
+  /**
+   * @lucene.internal
+   */
   public interface HttpSolrCallFactory {
     default HttpSolrCall createInstance(
-        SolrServlet filter,
         String path,
         CoreContainer cores,
         HttpServletRequest request,
         HttpServletResponse response,
         boolean retry) {
-      if (filter.isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-        return new V2HttpCall(filter, cores, request, response, retry);
+      if (V2ApiUtils.isEnabled() && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+        return new V2HttpCall(cores, request, response, retry);
       } else {
-        return new HttpSolrCall(filter, cores, request, response, retry);
+        return new HttpSolrCall(cores, request, response, retry);
       }
     }
   }

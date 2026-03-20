@@ -493,17 +493,6 @@ public class JettySolrRunner {
   }
 
   /**
-   * @return the {@link SolrServlet} for this node
-   */
-  public SolrServlet getSolrServlet() {
-    try {
-      return (SolrServlet) solrServlet.getServlet();
-    } catch (ServletException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
    * @return the {@link RateLimitFilter} for this node
    */
   public RateLimitFilter getSolrRateLimitFilter() {
@@ -514,7 +503,12 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
-    final var servlet = getSolrServlet();
+    SolrServlet servlet;
+    try {
+      servlet = (SolrServlet) solrServlet.getServlet();
+    } catch (ServletException e1) {
+      throw new RuntimeException(e1);
+    }
     if (servlet == null) {
       return null;
     }
@@ -903,18 +897,11 @@ public class JettySolrRunner {
   }
 
   private void waitForLoadingCoresToFinish(long timeoutMs) {
-    if (solrServlet != null) {
-      SolrServlet solrServlet = getSolrServlet();
-      CoreContainer cores;
-      try {
-        cores = solrServlet.getCores();
-      } catch (UnavailableException e) {
-        throw new IllegalStateException("The CoreContainer is unavailable!");
-      }
-      cores.waitForLoadingCoresToFinish(timeoutMs);
-    } else {
-      throw new IllegalStateException("solrServlet is not set!");
+    CoreContainer cores = getCoreContainer();
+    if (cores == null) {
+      throw new IllegalStateException("solrServlet/coreContainer is not set/available!");
     }
+    cores.waitForLoadingCoresToFinish(timeoutMs);
   }
 
   static class Delay {
