@@ -1,0 +1,8 @@
+title: New 'skipLeaderRecovery' replica property allows PULL replicas with existing
+  indexes to immediately become ACTIVE
+type: added
+authors:
+- name: hossman
+links:
+- name: SOLR-17656
+  url: https://issues.apache.org/jira/browse/SOLR-17656

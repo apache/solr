@@ -484,7 +484,8 @@
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.ManagedStopFilterFactory" managed="english"/>
-      <filter class="solr.ManagedSynonymFilterFactory" managed="english"/>
+      <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
   </fieldType>
 
@@ -493,7 +494,8 @@
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.ManagedStopFilterFactory" managed="german"/>
-      <filter class="solr.ManagedSynonymFilterFactory" managed="german"/>
+      <filter class="solr.ManagedSynonymGraphFilterFactory" managed="german"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
   </fieldType>
 

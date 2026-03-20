@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -75,7 +75,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)

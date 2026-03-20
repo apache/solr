@@ -17,21 +17,19 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 /**
- * @see org.apache.solr.client.solrj.impl.JavaBinRequestWriter
+ * @see JavaBinRequestWriter
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
  */
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule
-        .newCollection()
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 }

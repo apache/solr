@@ -237,7 +237,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         // Perhaps that would make more sense in the 'overrequest' heuristic calc?
         //
         // Maybe we should look at how many buckets were fully populated in phase#1 AND
-        // already meet the 'mincount', and use the the difference between that number
+        // already meet the 'mincount', and use the difference between that number
         // and 'limit' to decide a scaling factor for 'overrefine' ?
 
       } else { // user requested an explicit amount of overrefinement

@@ -62,7 +62,7 @@ Solr's "modify collection" functionality uses partial update semantics, but the 
 
 For use within the v2 API, the four "popular" HTTP methods have the following semantics and implications:
 
-* `GET` - used for non-mutating (i.e. "read only") requests. Most often used to list elements of a particular resource type, or fetch information about about a specific named resource.
+* `GET` - used for non-mutating (i.e. "read only") requests. Most often used to list elements of a particular resource type, or fetch information about a specific named resource.
 * `POST` - used for non-idempotent resource modifications.
 * `PUT` - used for idempotent resource modifications.
 * `DELETE` - Used to delete or cleanup resource

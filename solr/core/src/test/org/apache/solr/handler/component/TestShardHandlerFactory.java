@@ -146,7 +146,6 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
     } finally {
       if (factory != null) factory.close();
       if (cc != null) cc.shutdown();
-      System.clearProperty(TEST_URL_ALLOW_LIST);
     }
   }
 

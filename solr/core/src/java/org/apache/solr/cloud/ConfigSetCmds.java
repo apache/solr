@@ -185,7 +185,8 @@ public class ConfigSetCmds {
 
     zkStateReader
         .getClusterState()
-        .forEachCollection(
+        .collectionStream()
+        .forEach(
             state -> {
               String configName = state.getConfigName();
               if (configSetName.equals(configName))

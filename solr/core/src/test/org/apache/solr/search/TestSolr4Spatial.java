@@ -68,7 +68,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema-spatial.xml");
+    initCore("solrconfig-spatial.xml", "schema-spatial.xml");
   }
 
   @Override
@@ -594,5 +594,47 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
       BBoxStrategy strategy = bbox.getStrategy("bbox");
       assertFalse(strategy.getFieldType().stored());
     }
+  }
+
+  @Test
+  public void testSOLR18006_GeodistDescWithFilterQuery() throws Exception { // AND SOLR-18016
+    assumeTrue("Test requires distance calculations", canCalcDistance);
+    assumeFalse("Test doesn't work with bbox", isBBoxField(fieldName));
+    // SOLR-18006: geodist() desc sorting causes NPE when spatial query is in filter query
+    // Reproduction from JIRA issue with exact coordinates and parameters
+
+    // Index sample documents from JIRA issue
+    assertU(adoc("id", "pt-001", fieldName, "48.106651,11.628476"));
+    assertU(adoc("id", "pt-002", fieldName, "48.113089,11.622016"));
+    assertU(adoc("id", "pt-003", fieldName, "48.137154,11.576124"));
+    assertU(adoc("id", "pt-004", fieldName, "48.135125,11.581981"));
+    assertU(adoc("id", "pt-005", fieldName, "48.121,11.612"));
+    assertU(adoc("id", "pt-006", fieldName, "48.09,11.64"));
+    assertU(commit());
+
+    // Test descending sort with filter query - exact query from JIRA that triggers NPE
+    // Expected order by distance DESC from pt=48.11308880280511,11.622015740056845:
+    // pt-003 (48.137154,11.576124) - farthest
+    // pt-004 (48.135125,11.581981)
+    // pt-006 (48.09,11.64)
+    // pt-005 (48.121,11.612)
+    // pt-001 (48.106651,11.628476)
+    // pt-002 (48.113089,11.622016) - closest
+    assertJQ(
+        req(
+            "q", "*:*",
+            "fq", "{!geofilt}",
+            "sfield", fieldName,
+            "pt", "48.11308880280511,11.622015740056845",
+            "d", "10",
+            "fl", "id",
+            "sort", "geodist() desc"),
+        "/response/numFound==6",
+        "/response/docs/[0]/id=='pt-003'", // farthest
+        "/response/docs/[1]/id=='pt-004'",
+        "/response/docs/[2]/id=='pt-006'",
+        "/response/docs/[3]/id=='pt-005'",
+        "/response/docs/[4]/id=='pt-001'",
+        "/response/docs/[5]/id=='pt-002'"); // closest
   }
 }

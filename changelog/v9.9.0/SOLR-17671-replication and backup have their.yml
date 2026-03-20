@@ -1,0 +1,9 @@
+title: Replication and backup have their DirectoryFactory.DirContext so the directory
+  they use is unwrapped when copying files.
+type: other
+authors:
+- name: Bruno Roustant
+- name: David Smiley
+links:
+- name: SOLR-17671
+  url: https://issues.apache.org/jira/browse/SOLR-17671

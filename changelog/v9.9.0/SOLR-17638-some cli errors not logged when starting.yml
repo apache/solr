@@ -1,0 +1,7 @@
+title: Some CLI errors not logged when starting prometheus exporter
+type: fixed
+authors:
+- name: Alex Deparvu
+links:
+- name: SOLR-17638
+  url: https://issues.apache.org/jira/browse/SOLR-17638

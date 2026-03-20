@@ -28,7 +28,7 @@ import org.apache.solr.client.api.endpoint.SyncShardApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -80,7 +80,7 @@ public class SyncShard extends AdminAPIBase implements SyncShardApi {
     Replica leader = docCollection.getLeader(shardName);
 
     try (SolrClient client =
-        new Http2SolrClient.Builder(leader.getBaseUrl())
+        new HttpJettySolrClient.Builder(leader.getBaseUrl())
             .withHttpClient(coreContainer.getDefaultHttpSolrClient())
             .withIdleTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {

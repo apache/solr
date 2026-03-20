@@ -1,0 +1,9 @@
+title: Implement `memAllowed` parameter to limit per-thread memory allocations during
+  request processing.
+type: added
+authors:
+- name: Andrzej Bialecki
+- name: Gus Heck
+links:
+- name: SOLR-17150
+  url: https://issues.apache.org/jira/browse/SOLR-17150

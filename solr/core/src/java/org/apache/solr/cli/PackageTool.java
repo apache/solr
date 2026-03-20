@@ -57,13 +57,13 @@ public class PackageTool extends ToolBase {
           .argName("COLLECTIONS")
           .desc(
               "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-          .build();
+          .get();
 
   private static final Option CLUSTER_OPTION =
       Option.builder()
           .longOpt("cluster")
           .desc("Specifies that this action should affect cluster-level plugins only.")
-          .build();
+          .get();
 
   private static final Option PARAM_OPTION =
       Option.builder()
@@ -71,13 +71,13 @@ public class PackageTool extends ToolBase {
           .hasArgs()
           .argName("PARAMS")
           .desc("List of parameters to be used with deploy command.")
-          .build();
+          .get();
 
   private static final Option UPDATE_OPTION =
       Option.builder()
           .longOpt("update")
           .desc("If a deployment is an update over a previous deployment.")
-          .build();
+          .get();
 
   private static final Option COLLECTION_OPTION =
       Option.builder("c")
@@ -85,13 +85,13 @@ public class PackageTool extends ToolBase {
           .hasArg()
           .argName("COLLECTION")
           .desc("The collection to apply the package to, not required.")
-          .build();
+          .get();
 
   private static final Option NO_PROMPT_OPTION =
       Option.builder("y")
           .longOpt("no-prompt")
           .desc("Don't prompt for input; accept all default choices, defaults to false.")
-          .build();
+          .get();
 
   public PackageTool(ToolRuntime runtime) {
     super(runtime);

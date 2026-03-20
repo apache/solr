@@ -17,14 +17,14 @@
 
 package org.apache.solr.core;
 
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 
 public class RateLimiterConfig {
   public static final String RL_CONFIG_KEY = "rate-limiters";
+  public static final int DEFAULT_CONCURRENT_REQUESTS =
+      (Runtime.getRuntime().availableProcessors()) * 3;
+  public static final long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
 
   public final SolrRequest.SolrRequestType requestType;
   public final boolean isEnabled;

@@ -49,20 +49,26 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.servlet.AuthenticationFilter;
 import org.apache.solr.servlet.CoreContainerProvider;
+import org.apache.solr.servlet.PathExclusionFilter;
+import org.apache.solr.servlet.RateLimitFilter;
+import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.TracingFilter;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -109,10 +115,14 @@ public class JettySolrRunner {
 
   private Server server;
 
-  volatile FilterHolder dispatchFilter;
   volatile FilterHolder debugFilter;
+  volatile FilterHolder pathExcludeFilter;
+  volatile FilterHolder requiredFilter;
+  volatile FilterHolder rateLimitFilter;
+  volatile FilterHolder authFilter;
+  volatile FilterHolder dispatchFilter;
+  private FilterHolder tracingFilter;
 
-  private boolean waitOnSolr = false;
   private int jettyPort = -1;
 
   private final JettyConfig config;
@@ -370,7 +380,7 @@ public class JettySolrRunner {
           new CoreContainerProvider() {
             @Override
             public void contextInitialized(ServletContextEvent event) {
-              // awkwardly, parts of Solr want to know the port but we don't know that until now
+              // awkwardly, parts of Solr want to know the port, but we don't know that until now
               jettyPort = getFirstConnectorPort();
               int port = jettyPort;
               if (proxyPort != -1) port = proxyPort;
@@ -399,14 +409,55 @@ public class JettySolrRunner {
       for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
         root.addServlet(entry.getKey(), entry.getValue());
       }
+      // TODO: This needs to be driven by a parsing of web.xml eventually
+      //  though we still want to avoid classpath scanning.
+
+      // this path excludes filter isn't actually necessary for any tests, but it's being
+      // added for parity with the live application.
+      pathExcludeFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      pathExcludeFilter.setHeldClass(PathExclusionFilter.class);
+      pathExcludeFilter.setInitParameter("excludePatterns", excludePatterns);
+
+      // required request setup
+      requiredFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      requiredFilter.setHeldClass(RequiredSolrRequestFilter.class);
+
+      // Ratelimit Requests
+      rateLimitFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      rateLimitFilter.setHeldClass(RateLimitFilter.class);
+
+      // Trace Requests
+      tracingFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      tracingFilter.setHeldClass(TracingFilter.class);
+
+      // Authenticate Requests
+      authFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      authFilter.setHeldClass(AuthenticationFilter.class);
+
+      // This is our main workhorse
       dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       dispatchFilter.setHeldClass(SolrDispatchFilter.class);
-      dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
+
       // Map dispatchFilter in same path as in web.xml
+      root.addFilter(pathExcludeFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(tracingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(authFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       // Default servlet as a fall-through
-      root.addServlet(Servlet404.class, "/");
+      ServletHolder defaultHolder = root.getServletHandler().newServletHolder(Source.EMBEDDED);
+
+      // considered adding DefaultServlet.class here but perhaps that might grant our unit tests
+      // the power to serve static resources on the build machines? Not sure, so I'll just give a
+      // name to our existing hack. The tests passed without this, but it will ensure that if anyone
+      // ever hits the PathExcludeFilter in the unit test they get a 404 as before not a 500
+      defaultHolder.setHeldClass(Servlet404.class);
+      defaultHolder.setName("default");
+      root.addServlet(defaultHolder, "/");
+
+      // TODO: end area that should be driven by web.xml and webdefault.xml
       chain = root;
     }
 
@@ -447,6 +498,13 @@ public class JettySolrRunner {
    */
   public SolrDispatchFilter getSolrDispatchFilter() {
     return (SolrDispatchFilter) dispatchFilter.getFilter();
+  }
+
+  /**
+   * @return the {@link SolrDispatchFilter} for this node
+   */
+  public RateLimitFilter getSolrRateLimitFilter() {
+    return (RateLimitFilter) rateLimitFilter.getFilter();
   }
 
   /**
@@ -514,7 +572,6 @@ public class JettySolrRunner {
 
       // if started before, make a new server
       if (startedBefore) {
-        waitOnSolr = false;
         init(port);
       } else {
         startedBefore = true;
@@ -627,7 +684,11 @@ public class JettySolrRunner {
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
-      server.stop();
+      try {
+        server.stop();
+      } catch (TimeoutException e) {
+        log.warn("Jetty server graceful stop timed out; proceeding with forceful cleanup", e);
+      }
 
       // stop timeout is 0, so we will interrupt right away
       while (!qtp.isStopped()) {
@@ -701,7 +762,7 @@ public class JettySolrRunner {
     }
   }
 
-  public void dumpCoresInfo(PrintStream pw) throws IOException {
+  public void dumpCoresInfo(PrintStream pw) {
     if (getCoreContainer() != null) {
       final var coreStatusReq = new CoresApi.GetAllCoreStatus();
       coreStatusReq.setIndexInfo(true);
@@ -755,7 +816,7 @@ public class JettySolrRunner {
   }
 
   /**
-   * Sets the port of a local socket proxy that sits infront of this server; if set then all client
+   * Sets the port of a local socket proxy that sits in front of this server; if set then all client
    * traffic will flow through the proxy, giving us the ability to simulate network partitions very
    * easily.
    */
@@ -767,9 +828,7 @@ public class JettySolrRunner {
   public URL getBaseUrl() {
     try {
       return new URI(protocol, null, host, jettyPort, "/solr", null, null).toURL();
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    } catch (MalformedURLException e) {
+    } catch (URISyntaxException | MalformedURLException e) {
       throw new RuntimeException(e);
     }
   }
@@ -777,9 +836,7 @@ public class JettySolrRunner {
   public URL getBaseURLV2() {
     try {
       return new URI(protocol, null, host, jettyPort, "/api", null, null).toURL();
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    } catch (URISyntaxException e) {
+    } catch (MalformedURLException | URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
@@ -791,9 +848,7 @@ public class JettySolrRunner {
   public URL getProxyBaseUrl() {
     try {
       return new URI(protocol, null, host, getLocalPort(), "/solr", null, null).toURL();
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    } catch (URISyntaxException e) {
+    } catch (MalformedURLException | URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }

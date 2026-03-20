@@ -374,7 +374,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   protected List<String> getShardUrls() throws IOException {
     try {
       var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+      List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 

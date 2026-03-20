@@ -1,0 +1,8 @@
+title: The HttpJdkSolrClient wasn't setting the connection timeout as per the builder
+  configuration.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17776
+  url: https://issues.apache.org/jira/browse/SOLR-17776

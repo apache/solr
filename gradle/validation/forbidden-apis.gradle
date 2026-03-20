@@ -21,26 +21,28 @@
 def resources = scriptResources(buildscript)
 
 // Only apply forbidden-apis to java projects.
-allprojects { prj ->
+allprojects {prj ->
   plugins.withId("java", {
     prj.apply plugin: libs.plugins.thetaphi.forbiddenapis.get().pluginId
 
     // This helper method appends signature files based on a set of true
     // dependencies from a given configuration.
-    def dynamicSignatures = { configuration, suffix ->
+    def dynamicSignatures = {configuration, suffix ->
       def resolvedMods = configuration.resolvedConfiguration.resolvedArtifacts
-          .collect { a -> a.moduleVersion.id }
+          .collect {a -> a.moduleVersion.id}
       def deps = resolvedMods
-          .collect { id -> [
-              "${id.group}.${id.name}.all.txt",
-              "${id.group}.${id.name}.${suffix}.txt",
-          ]}
+          .collect {id ->
+            [
+                "${id.group}.${id.name}.all.txt",
+                "${id.group}.${id.name}.${suffix}.txt",
+            ]
+          }
           .flatten()
           .sort()
 
       deps += ["defaults.all.txt", "defaults.${suffix}.txt"]
 
-      deps.each { sig ->
+      deps.each {sig ->
         def signaturesFile = file("${resources}/${sig}")
         if (signaturesFile.exists()) {
           logger.info("Signature file applied: ${sig}")
@@ -49,11 +51,11 @@ allprojects { prj ->
           logger.debug("Signature file omitted (does not exist): ${sig}")
         }
       }
-      
+
       // commons-io is special: forbiddenapis has a versioned bundledSignature.
       bundledSignatures += resolvedMods
-        .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
-        .collect { id -> "${id.name}-unsafe-${id.version}" as String }
+          .findAll {id -> id.group == 'commons-io' && id.name == 'commons-io'}
+          .collect {id -> "${id.name}-unsafe-${id.version}" as String}
     }
 
     // Configure defaults for all sourceSets (main and test)
@@ -87,7 +89,7 @@ allprojects { prj ->
     }
 
     // Configure defaults for sourceSets.tools (if present).
-    tasks.matching { it.name == "forbiddenApisTools" }.all {
+    tasks.matching {it.name == "forbiddenApisTools"}.all {
       bundledSignatures += [
           'jdk-unsafe',
           'jdk-deprecated',
@@ -137,7 +139,7 @@ allprojects { prj ->
     //
     // This is the simplest workaround possible: just point at all the rule files and indicate
     // them as inputs. This way if a rule is modified, checks will be reapplied.
-    configure([forbiddenApisMain, forbiddenApisTest]) { task ->
+    configure([forbiddenApisMain, forbiddenApisTest]) {task ->
       task.inputs.dir(file(resources))
     }
   })

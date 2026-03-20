@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -117,7 +116,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
             COLLECTION,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
 
     assertFalse(Files.isDirectory(oldIndexDir1));
     assertFalse(Files.isDirectory(oldIndexDir2));

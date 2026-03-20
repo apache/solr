@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Make solr bin/solr zk CLI tools read ZK_HOST environment as they did pre Solr 9.8.
+  With this regression fixed it is no longer necessary to pass the --zk-host option to the CLI tools if ZK_HOST is set.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-17690
+    url: https://issues.apache.org/jira/browse/SOLR-17690

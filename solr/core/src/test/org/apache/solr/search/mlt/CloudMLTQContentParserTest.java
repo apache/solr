@@ -18,7 +18,7 @@ package org.apache.solr.search.mlt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;

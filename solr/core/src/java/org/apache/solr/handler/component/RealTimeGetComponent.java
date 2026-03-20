@@ -74,8 +74,8 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
@@ -859,7 +859,7 @@ public class RealTimeGetComponent extends SearchComponent {
     if (resolution == Resolution.ROOT_WITH_CHILDREN
         && core.getLatestSchema().isUsableForChildDocs()) {
       SolrParams params = new ModifiableSolrParams().set("limit", "-1");
-      try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
+      try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, params)) {
         docTransformer = core.getTransformerFactory("child").create(null, params, req);
       }
     } else {
@@ -1374,7 +1374,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
   private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
     if (StrUtils.isNullOrEmpty(versionsStr)) {
-      return Collections.emptyList();
+      return List.of();
     }
 
     List<String> ranges = StrUtils.splitSmart(versionsStr, ",", true);
@@ -1457,7 +1457,7 @@ public class RealTimeGetComponent extends SearchComponent {
       final String ids[] = params.getParams("ids");
 
       if (id == null && ids == null) {
-        IdsRequested result = new IdsRequested(Collections.<String>emptyList(), true);
+        IdsRequested result = new IdsRequested(List.of(), true);
         req.getContext().put(contextKey, result);
         return result;
       }

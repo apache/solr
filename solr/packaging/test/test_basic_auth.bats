@@ -91,3 +91,9 @@ run solr create -c COLL_NAME
   #assert_output --partial "Deployment successful"
   #refute_output --partial "Invalid collection"
 }
+
+@test "admin UI static content is excepted from basic auth" {
+  run curl -I -s http://localhost:${SOLR_PORT}/solr/
+  assert_output --partial "HTTP/1.1 200"
+  assert_output --partial "Content-Type: text/html"
+}

@@ -446,7 +446,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   public static List<String> getSortedElectionNodes(SolrZkClient zk, String path)
       throws KeeperException, InterruptedException {
-    List<String> children = zk.getChildren(path, null, true);
+    List<String> children = zk.getChildren(path, null);
     LeaderElector.sortSeqs(children);
     return children;
   }
@@ -461,7 +461,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
       throws KeeperException, InterruptedException {
     byte[] data = null;
     try {
-      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat(), true);
+      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat());
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
@@ -477,9 +477,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     try {
       ZkNodeProps props =
           ZkNodeProps.load(
-              zkStateReader
-                  .getZkClient()
-                  .getData(Overseer.OVERSEER_ELECT + "/leader", null, null, true));
+              zkStateReader.getZkClient().getData(Overseer.OVERSEER_ELECT + "/leader", null, null));
       propsId = props.getStr(ID);
       if (myId.equals(propsId)) {
         return LeaderStatus.YES;

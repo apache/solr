@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,13 +46,8 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     PathUtils.touch(tmpSolrHome.resolve("core0/core.properties"));
     PathUtils.touch(tmpSolrHome.resolve("core1/core.properties"));
 
-    Files.copy(getFile("solr/solr.xml"), tmpSolrHome.resolve("solr.xml"));
-
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }
-
-  @AfterClass
-  public static void AfterClass() {}
 
   @Test
   public void testCorrectCore() {

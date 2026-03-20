@@ -32,7 +32,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.IndexInputInputStream;
 
 /**
  * Represents the shard-backup metadata file.
@@ -98,7 +98,7 @@ public class ShardBackupMetadata {
 
     try (IndexInput is =
         repository.openInput(dir, shardBackupMetadataFilename, IOContext.DEFAULT)) {
-      return from(new PropertiesInputStream(is));
+      return from(new IndexInputInputStream(is));
     }
   }
 

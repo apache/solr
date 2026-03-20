@@ -22,17 +22,28 @@ solrAdminServices.factory('System',
     return $resource('admin/info/system', {"wt":"json", "nodes": "@nodes", "_":Date.now()});
   }])
 .factory('Metrics',
-    ['$resource', function($resource) {
-      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "core":"@core", "_":Date.now()}, {
-        "prometheus": {
-          method: 'GET',
-          params: {wt: 'prometheus', core: '@core'},
-          transformResponse: function(data) {
-            return {data: data};
+  ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
+    return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
+      get: {
+        method: 'GET',
+        transformResponse: function(data) {
+          // Parse the merged Prometheus text response
+          try {
+            return {metrics: PrometheusParser.parse(data)};
+          } catch (e) {
+            return {metrics: {}, error: e.message};
           }
         }
-      });
-    }])
+      },
+      "raw": {
+        method: 'GET',
+        params: {wt: 'prometheus', core: '@core'},
+        transformResponse: function(data) {
+          return {data: data};
+        }
+      }
+    });
+  }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
@@ -89,16 +100,7 @@ solrAdminServices.factory('System',
       "simple": {},
       "liveNodes": {params: {path: '/live_nodes'}},
       "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
-      "detail": {params: {detail: "true", path: "@path"}},
-      "configs": {params: {detail:false, path: "/configs/"}},
-      "aliases": {params: {detail: "true", path: "/aliases.json"}, transformResponse:function(data) {
-        var znode = $.parseJSON(data).znode;
-        if (znode.data) {
-          return {aliases: $.parseJSON(znode.data).collection};
-        } else {
-          return {aliases: {}};
-        }
-      }}
+      "detail": {params: {detail: "true", path: "@path"}}
     });
   }])
 .factory('ZookeeperStatus',
@@ -126,9 +128,9 @@ solrAdminServices.factory('System',
       "command": {params: {}}
     });
   }])
-.factory('CoreSystem',
+.factory('CoreInfo',
   ['$resource', function($resource) {
-    return $resource(':core/admin/system', {wt:'json', core: "@core", _:Date.now()});
+    return $resource(':core/admin/info', {wt:'json', core: "@core", _:Date.now()});
   }])
 .factory('Update',
   ['$resource', function($resource) {
@@ -164,7 +166,11 @@ solrAdminServices.factory('System',
         $http.post(url, fd, {
             transformRequest: angular.identity,
             headers: {'Content-Type': undefined}
-        }).success(success).error(error);
+        }).then(function(response) {
+            success(response.data);
+        }, function(response) {
+            error(response.data);
+        });
     }
 })
 .filter('splitByComma', function() {

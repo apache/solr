@@ -19,7 +19,6 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.lucene.index.IndexReader;
@@ -60,7 +59,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public static final String SCORE_COMP = "score";
   public static final String FREQ_COMP = "freq";
 
-  protected org.apache.lucene.search.spell.SpellChecker spellChecker;
+  protected SpellChecker spellChecker;
 
   protected String sourceLocation;
   /*
@@ -142,7 +141,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
     for (Token token : options.tokens) {
       if (token.length() == 0) {
-        result.add(token, Collections.emptyList());
+        result.add(token, List.of());
         continue;
       }
       String tokenText = new String(token.buffer(), 0, token.length());
@@ -194,7 +193,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
             result.add(token, suggestions[i], reader.docFreq(term));
           }
         } else {
-          List<String> suggList = Collections.emptyList();
+          List<String> suggList = List.of();
           result.add(token, suggList);
         }
       } else {
@@ -205,7 +204,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
           }
           result.add(token, suggList);
         } else {
-          List<String> suggList = Collections.emptyList();
+          List<String> suggList = List.of();
           result.add(token, suggList);
         }
       }

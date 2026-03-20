@@ -111,7 +111,8 @@ public class SolrResourceLoader
     "security.cert.",
     "handler.sql.",
     "crossdc.handler.",
-    "crossdc.update.processor."
+    "crossdc.update.processor.",
+    "index."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final String SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM =

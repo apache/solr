@@ -78,12 +78,9 @@ public class PackageToolTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardown() throws Exception {
-    try {
-      if (repositoryServer != null) {
-        repositoryServer.stop();
-      }
-    } finally {
-      System.clearProperty("solr.packages.enabled");
+
+    if (repositoryServer != null) {
+      repositoryServer.stop();
     }
   }
 

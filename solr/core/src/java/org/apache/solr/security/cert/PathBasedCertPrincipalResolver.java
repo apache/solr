@@ -103,7 +103,7 @@ public class PathBasedCertPrincipalResolver extends PathBasedCertResolverBase
   public PathBasedCertPrincipalResolver(Map<String, Object> params) {
     this.pattern = createCertResolverPattern(params, CertUtil.SUBJECT_DN_PREFIX);
     Map<String, String> extractConfig =
-        (Map<String, String>) params.getOrDefault(PARAM_EXTRACT, Collections.emptyMap());
+        (Map<String, String>) params.getOrDefault(PARAM_EXTRACT, Map.of());
     this.startPattern = extractConfig.getOrDefault(PARAM_AFTER, "");
     this.endPattern = extractConfig.getOrDefault(PARAM_BEFORE, "");
   }
@@ -124,7 +124,7 @@ public class PathBasedCertPrincipalResolver extends PathBasedCertResolverBase
         getValuesFromPaths(certificate, Collections.singletonList(pattern));
     String basePrincipal = null;
     if (matches != null && !matches.isEmpty()) {
-      Set<String> fieldValues = matches.getOrDefault(pattern.getName(), Collections.emptySet());
+      Set<String> fieldValues = matches.getOrDefault(pattern.getName(), Set.of());
       basePrincipal = fieldValues.stream().findFirst().orElse(null);
     }
 

@@ -1,0 +1,8 @@
+title: COLSTATUS command was fetching details remotely from replicas when this information
+  wasn't asked for.
+type: changed
+authors:
+- name: Mathieu Marie
+links:
+- name: SOLR-17408
+  url: https://issues.apache.org/jira/browse/SOLR-17408

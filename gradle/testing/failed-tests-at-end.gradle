@@ -25,24 +25,26 @@ def genFailInfo(def task, TestDescriptor desc) {
   def historyUrl = "https://develocity.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className"
   if (!isSuite) { // is test method specific
     historyUrl += "&tests.test=$desc.name"
-    historyUrl += " http://fucit.org/solr-jenkins-reports/history-trend-of-recent-failures.html#series/$name"
+    historyUrl +=
+        " http://fucit.org/solr-jenkins-reports/history-trend-of-recent-failures.html#series/$name"
   }
   def logName = buildinfra.getOutputLogName(desc.parent ?: desc)
   def output = file("${task.testOutputsDir}/${logName}")
   def repro = "./gradlew ${task.project.path}:test --tests \"${name}\" ${task.project.testOptionsForReproduceLine}"
-  return ["name": name, "project": "${task.project.path}", "historyUrl": historyUrl, "output": output, "reproduce": repro]
+  return ["name": name, "project": "${task.project.path}", "historyUrl": historyUrl, "output":
+      output, "reproduce": repro]
 }
 
 allprojects {
   plugins.withType(JavaPlugin).configureEach {
-    tasks.withType(Test).configureEach { Test task ->
-      afterTest { desc, result ->
+    tasks.withType(Test).configureEach {Test task ->
+      afterTest {desc, result ->
         if (result.resultType == TestResult.ResultType.FAILURE) {
           failedTests << genFailInfo(task, desc)
         }
       }
 
-      afterSuite { desc, result ->
+      afterSuite {desc, result ->
         if (result.exceptions) {
           failedTests << genFailInfo(task, desc)
         }
@@ -51,11 +53,12 @@ allprojects {
   }
 }
 
-gradle.buildFinished { result ->
+gradle.buildFinished {result ->
   if (!failedTests) return
   def formatted = failedTests
-      .sort { a, b -> b.project <=> a.project }
-      .collect { e -> """
+      .sort {a, b -> b.project <=> a.project}
+      .collect {e ->
+        """
   - ${e.name} (${e.project})
     Test history: ${e.historyUrl}
     Test output: ${e.output}

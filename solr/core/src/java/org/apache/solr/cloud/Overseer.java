@@ -68,6 +68,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -406,7 +407,7 @@ public class Overseer implements SolrCloseable {
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
-    // to a invalid state or 'bad' message (in this case, we should remove that message from queue)
+    // to an invalid state or 'bad' message (in this case, we should remove that message from queue)
     private boolean isBadMessage(Exception e) {
       if (e instanceof KeeperException ke) {
         return ke.code() == KeeperException.Code.NONODE
@@ -461,11 +462,11 @@ public class Overseer implements SolrCloseable {
           && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
         return; // shutting down no need to go further
       }
-      org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
+      Stat stat = new Stat();
       final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
-        data = zkClient.getData(path, null, stat, true);
+        data = zkClient.getData(path, null, stat);
       } catch (IllegalStateException | KeeperException.NoNodeException e) {
         return;
       } catch (Exception e) {
@@ -480,7 +481,7 @@ public class Overseer implements SolrCloseable {
             log.warn(
                 "I (id={}) am exiting, but I'm still the leader",
                 overseerCollectionConfigSetProcessor.getId());
-            zkClient.delete(path, stat.getVersion(), true);
+            zkClient.delete(path, stat.getVersion());
           } catch (KeeperException.BadVersionException e) {
             // no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
@@ -602,7 +603,7 @@ public class Overseer implements SolrCloseable {
       String propsId = null;
       try {
         ZkNodeProps props =
-            ZkNodeProps.load(zkClient.getData(OVERSEER_ELECT + "/leader", null, null, true));
+            ZkNodeProps.load(zkClient.getData(OVERSEER_ELECT + "/leader", null, null));
         propsId = props.getStr(ID);
         if (myId.equals(propsId)) {
           return LeaderStatus.YES;
@@ -1027,7 +1028,7 @@ public class Overseer implements SolrCloseable {
 
   private void createOverseerNode(final SolrZkClient zkClient) {
     try {
-      zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT, true);
+      zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT);
     } catch (KeeperException.NodeExistsException e) {
       // ok
     } catch (InterruptedException e) {

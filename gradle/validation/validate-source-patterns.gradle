@@ -63,17 +63,17 @@ def extensions = [
 
 // Create source validation task local to each project
 allprojects {
-  task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
+  task validateSourcePatterns(type: ValidateSourcePatternsTask) {task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
 
     sourceFiles = fileTree(projectDir) {
-      extensions.each{
+      extensions.each {
         include "**/*.${it}"
       }
-      
+
       // Don't go into child projects (scanned separately).
-      childProjects.keySet().each{
+      childProjects.keySet().each {
         exclude "${it}/**"
       }
 
@@ -137,33 +137,33 @@ class ValidateSourcePatternsTask extends DefaultTask {
   ValidateSourcePatternsTask(ProgressLoggerFactory progressLoggerFactory) {
     this.progressLoggerFactory = progressLoggerFactory
   }
-  
+
   @TaskAction
   public void check() {
     def invalidPatterns = [
-      (~$/@author\b/$) : '@author javadoc tag',
-      (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
-      (~$/\bTOOD:/$) : 'TOOD instead TODO',
-      (~$/\t/$) : 'tabs instead spaces',
-      (~$/[\u202A-\u202E\u2066-\u2069]/$) : 'misuse of RTL/LTR (https://trojansource.codes)',
-      (~$/\Q/**\E((?:\s)|(?:\*))*\Q{@inheritDoc}\E((?:\s)|(?:\*))*\Q*/\E/$) : '{@inheritDoc} on its own is unnecessary',
-      (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
-      (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
-      (~$/\$$(?:LastChangedBy|Author)\b/$) : 'svn keyword',
-      (~$/\$$(?:Head)?URL\b/$) : 'svn keyword',
-      (~$/\$$Id\b/$) : 'svn keyword',
-      (~$/\$$Header\b/$) : 'svn keyword',
-      (~$/\$$Source\b/$) : 'svn keyword',
-      (~$/^\uFEFF/$) : 'UTF-8 byte order mark',
-      (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
+        (~$/@author\b/$): '@author javadoc tag',
+        (~$/(?i)\bno(n|)commit\b/$): 'nocommit',
+        (~$/\bTOOD:/$): 'TOOD instead TODO',
+        (~$/\t/$): 'tabs instead spaces',
+        (~$/[\u202A-\u202E\u2066-\u2069]/$): 'misuse of RTL/LTR (https://trojansource.codes)',
+        (~$/\Q/**\E((?:\s)|(?:\*))*\Q{@inheritDoc}\E((?:\s)|(?:\*))*\Q*/\E/$): '{@inheritDoc} on its own is unnecessary',
+        (~$/\$$(?:LastChanged)?Date\b/$): 'svn keyword',
+        (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$): 'svn keyword',
+        (~$/\$$(?:LastChangedBy|Author)\b/$): 'svn keyword',
+        (~$/\$$(?:Head)?URL\b/$): 'svn keyword',
+        (~$/\$$Id\b/$): 'svn keyword',
+        (~$/\$$Header\b/$): 'svn keyword',
+        (~$/\$$Source\b/$): 'svn keyword',
+        (~$/^\uFEFF/$): 'UTF-8 byte order mark',
+        (~$/import java\.lang\.\w+;/$): 'java.lang import is unnecessary'
     ]
 
     def invalidJavaOnlyPatterns = [
-      (~$/\n\s*var\s+.*=.*<>.*/$) : 'Diamond operators should not be used with var',
+        (~$/\n\s*var\s+.*=.*<>.*/$): 'Diamond operators should not be used with var',
     ]
 
     def violations = new TreeSet();
-    def reportViolation = { f, name ->
+    def reportViolation = {f, name ->
       logger.error('{}: {}', name, f);
       violations.add(name);
     }
@@ -180,12 +180,17 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
     def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
-    def isLicense = { matcher, ratDocument ->
+    def isLicense = {matcher, ratDocument ->
       licenseMatcher.reset()
-      return lineSplitter.split(matcher.group(1)).any { licenseMatcher.match(ratDocument, it) }
+      return lineSplitter.split(matcher.group(1)).any {licenseMatcher.match(ratDocument, it)}
     }
 
-    def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
+    def checkLicenseHeaderPrecedes = {f,
+        description,
+        contentPattern,
+        commentPattern,
+        text,
+        ratDocument ->
       def contentMatcher = contentPattern.matcher(text);
       if (contentMatcher.find()) {
         def contentStartPos = contentMatcher.start();
@@ -193,17 +198,18 @@ class ValidateSourcePatternsTask extends DefaultTask {
         while (commentMatcher.find()) {
           if (isLicense(commentMatcher, ratDocument)) {
             if (commentMatcher.start() < contentStartPos) {
-              break; // This file is all good, so break loop: license header precedes 'description' definition
+              break;
+              // This file is all good, so break loop: license header precedes 'description' definition
             } else {
-              reportViolation(f, description+' declaration precedes license header');
+              reportViolation(f, description + ' declaration precedes license header');
             }
           }
         }
       }
     }
 
-    def checkMockitoAssume = { f, text ->
-      if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
+    def checkMockitoAssume = {f, text ->
+      if (text.contains("mockito") && !(text.contains("assumeWorkingMockito()") || text.contains("extends MockV2APITest"))) {
         reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
       }
     }
@@ -211,12 +217,12 @@ class ValidateSourcePatternsTask extends DefaultTask {
     ProgressLogger progress = progressLoggerFactory.newOperation(this.class)
     progress.start(this.name, this.name)
 
-    sourceFiles.each{ f ->
+    sourceFiles.each {f ->
       progress.progress("Scanning ${f.name}")
       logger.debug('Scanning source file: {}', f);
 
       def text = f.getText('UTF-8');
-      invalidPatterns.each { pattern, name ->
+      invalidPatterns.each {pattern, name ->
         if (pattern.matcher(text).find()) {
           reportViolation(f, name);
         }
@@ -226,7 +232,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
       while (javadocsMatcher.find()) {
         if (isLicense(javadocsMatcher, ratDocument)) {
           reportViolation(f, String.format(Locale.ENGLISH, 'javadoc-style license header [%s]',
-            ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
+              ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
         }
       }
       if (f.name.endsWith('.java')) {
@@ -235,26 +241,36 @@ class ValidateSourcePatternsTask extends DefaultTask {
             if (text.contains("// nowarn_valid_logger")) {
               return
             }
-            reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
+            reportViolation(f,
+                'invalid logging pattern [not private static final, uses static class name]');
           }
           if (!validLoggerNamePattern.matcher(text).find()) {
             if (text.contains("// nowarn_valid_logger")) {
               return
             }
-            reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
+            reportViolation(f,
+                'invalid logger name [log, uses static class name, not specialized logger]')
           }
         }
         // make sure that SPI names of all tokenizers/charfilters/tokenfilters are documented
-        if (!f.name.contains("Test") && !f.name.contains("Mock") && !f.name.contains("Fake") && !text.contains("abstract class") &&
-            !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") && !f.name.equals("TokenFilterFactory.java") &&
+        if (!f.name.contains("Test") && !f.name.contains("Mock") && !f.name.contains("Fake") &&
+            !text.contains("abstract class") &&
+            !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") &&
+            !f.name.equals("TokenFilterFactory.java") &&
             (f.name.contains("TokenizerFactory") && text.contains("extends TokenizerFactory") ||
-                f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
+                f.name.contains("CharFilterFactory") &&
+                text.contains("extends CharFilterFactory") ||
                 f.name.contains("FilterFactory") && text.contains("extends TokenFilterFactory"))) {
           if (!validSPINameJavadocTag.matcher(text).find()) {
             reportViolation(f, 'invalid spi name documentation')
           }
         }
-        checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
+        checkLicenseHeaderPrecedes(f,
+            'package',
+            packagePattern,
+            javaCommentPattern,
+            text,
+            ratDocument);
         if (f.name.contains("Test")) {
           checkMockitoAssume(f, text);
         }
@@ -262,10 +278,11 @@ class ValidateSourcePatternsTask extends DefaultTask {
         if (f.name.equals("SolrTestCase.java") == false
             && f.name.equals("TestXmlQParser.java") == false) {
           if (extendsLuceneTestCasePattern.matcher(text).find()) {
-            reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
+            reportViolation(f,
+                "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
           }
         }
-        invalidJavaOnlyPatterns.each { pattern,name ->
+        invalidJavaOnlyPatterns.each {pattern, name ->
           if (pattern.matcher(text).find()) {
             reportViolation(f, name);
           }

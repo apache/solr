@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // This adds a root project task to install all artifacts to a build-local
 // Maven repository (so that pom files can be manually reviewed).
 
@@ -42,7 +41,7 @@ configure(rootProject) {
     delete mavenLocalDir
   }
 
-  configure(subprojects.findAll { it.path in rootProject.published }) {
+  configure(subprojects.findAll {it.path in rootProject.published}) {
     plugins.withType(PublishingPlugin) {
       publishing {
         repositories {
@@ -53,11 +52,11 @@ configure(rootProject) {
         }
       }
 
-      tasks.matching { it.name == "publishJarsPublicationToMavenLocal" }.all { task ->
+      tasks.matching {it.name == "publishJarsPublicationToMavenLocal"}.all {task ->
         mavenToLocalRepo.dependsOn task
       }
 
-      tasks.matching { it.name == "publishJarsPublicationToBuildRepository" }.all { task ->
+      tasks.matching {it.name == "publishJarsPublicationToBuildRepository"}.all {task ->
         // Clean local repo prior to republishing artifacts.
         task.dependsOn mavenLocalClean
         // Attach to root project's mavenLocal task.

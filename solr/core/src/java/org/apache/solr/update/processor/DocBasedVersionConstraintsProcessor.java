@@ -142,11 +142,10 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   }
 
   /**
-   * Returns true if the specified new version values are greater the the ones already known to
-   * exist for the document, or if the document does not already exist. Returns false if the
-   * specified new versions are not high enough but the processor has been configured with
-   * ignoreOldUpdates=true Throws a SolrException if the version is not high enough and
-   * ignoreOldUpdates=false
+   * Returns true if the specified new version values are greater the ones already known to exist
+   * for the document, or if the document does not already exist. Returns false if the specified new
+   * versions are not high enough but the processor has been configured with ignoreOldUpdates=true
+   * Throws a SolrException if the version is not high enough and ignoreOldUpdates=false
    */
   private boolean isVersionNewEnough(BytesRef indexedDocId, Object[] newUserVersions)
       throws IOException {

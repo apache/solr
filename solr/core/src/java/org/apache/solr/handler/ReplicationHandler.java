@@ -32,6 +32,7 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.BatchCallback;
+import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -110,10 +111,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.util.IndexInputInputStream;
 import org.apache.solr.util.NumberUtils;
-import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -377,9 +379,37 @@ public class ReplicationHandler extends RequestHandlerBase
   private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp) {
     params.required().get(NAME);
 
+    String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     String location = params.get(CoreAdminParams.BACKUP_LOCATION);
-    core.getCoreContainer().assertPathAllowed(location == null ? null : Path.of(location));
-    SnapShooter snapShooter = new SnapShooter(core, location, params.get(NAME));
+
+    // commitName is not documented in ref guide for the backup option.
+    // copying to here, an dit may be that both are just null?
+    String commitName = params.get(CoreAdminParams.COMMIT_NAME);
+
+    CoreContainer cc = core.getCoreContainer();
+    BackupRepository repo = null;
+    if (repoName != null) {
+      repo = cc.newBackupRepository(repoName);
+      location = repo.getBackupLocation(location);
+      if (location == null) {
+        throw new IllegalArgumentException("location is required");
+      }
+    } else {
+      repo = new LocalFileSystemRepository();
+      if (location == null) {
+        location = core.getDataDir();
+      } else {
+        location =
+            core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
+      }
+    }
+    if ("file".equals(repo.createURI("x").getScheme())) {
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
+    }
+
+    URI locationUri = repo.createDirectoryURI(location);
+    SnapShooter snapShooter =
+        new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
     snapShooter.validateDeleteSnapshot();
     snapShooter.deleteSnapAsync(this);
     rsp.add(STATUS, OK_STATUS);
@@ -850,59 +880,64 @@ public class ReplicationHandler extends RequestHandlerBase
             .build();
     super.initializeMetrics(parentContext, replicationAttributes);
 
-    ObservableLongMeasurement indexSizeMetric =
-        solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_index_size", "Size of the index in bytes", OtelUnit.BYTES);
+    ObservableDoubleMeasurement indexSizeMetric =
+        solrMetricsContext.doubleGaugeMeasurement(
+            "solr_core_replication_index_size",
+            "Size of the index in megabytes",
+            OtelUnit.MEGABYTES);
 
     ObservableLongMeasurement indexVersionMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_index_version", "Current index version");
+            "solr_core_replication_index_version", "Current index version");
 
     ObservableLongMeasurement indexGenerationMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_index_generation", "Current index generation");
+            "solr_core_replication_index_generation", "Current index generation");
 
     ObservableLongMeasurement isLeaderMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_is_leader", "Whether this node is a leader (1) or not (0)");
+            "solr_core_replication_is_leader", "Whether this node is a leader (1) or not (0)");
 
     ObservableLongMeasurement isFollowerMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_is_follower", "Whether this node is a follower (1) or not (0)");
+            "solr_core_replication_is_follower", "Whether this node is a follower (1) or not (0)");
 
     ObservableLongMeasurement replicationEnabledMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_is_enabled", "Whether replication is enabled (1) or not (0)");
+            "solr_core_replication_is_enabled", "Whether replication is enabled (1) or not (0)");
 
     ObservableLongMeasurement isPollingDisabledMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_is_polling_disabled", "Whether polling is disabled (1) or not (0)");
+            "solr_core_replication_is_polling_disabled",
+            "Whether polling is disabled (1) or not (0)");
 
     ObservableLongMeasurement isReplicatingMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_is_replicating", "Whether replication is in progress (1) or not (0)");
+            "solr_core_replication_is_replicating",
+            "Whether replication is in progress (1) or not (0)");
 
     ObservableLongMeasurement timeElapsedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_time_elapsed",
+            "solr_core_replication_time_elapsed",
             "Time elapsed during replication in seconds",
             OtelUnit.SECONDS);
 
     ObservableLongMeasurement bytesDownloadedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_downloaded_size",
+            "solr_core_replication_downloaded_size",
             "Total bytes downloaded during replication",
             OtelUnit.BYTES);
 
     ObservableLongMeasurement downloadSpeedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr_replication_download_speed", "Download speed in bytes per second");
+            "solr_core_replication_download_speed", "Download speed in bytes per second");
 
     metricsCallback =
         solrMetricsContext.batchCallback(
             () -> {
               if (core != null && !core.isClosed()) {
-                indexSizeMetric.record(core.getIndexSize(), replicationAttributes);
+                indexSizeMetric.record(
+                    MetricUtils.bytesToMegabytes(core.getIndexSize()), replicationAttributes);
 
                 CommitVersionInfo vInfo = getIndexVersion();
                 if (vInfo != null) {
@@ -1189,7 +1224,7 @@ public class ReplicationHandler extends RequestHandlerBase
         }
 
         try {
-          final InputStream is = new PropertiesInputStream(input);
+          final InputStream is = new IndexInputInputStream(input);
           Properties props = new Properties();
           props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
           return props;
@@ -1371,7 +1406,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
           // ensure the writer is initialized so that we have a list of commit points
           RefCounted<IndexWriter> iw =
-              core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+              core.getUpdateHandler().getSolrCoreState().getIndexWriter(core, false);
           iw.decref();
 
         } catch (IOException e) {
@@ -1498,7 +1533,11 @@ public class ReplicationHandler extends RequestHandlerBase
             if (numberToKeep < 1) {
               numberToKeep = Integer.MAX_VALUE;
             }
-            SnapShooter snapShooter = new SnapShooter(core, null, null);
+
+            URI locationUri = Path.of(core.getDataDir()).toUri();
+
+            SnapShooter snapShooter =
+                new SnapShooter(new LocalFileSystemRepository(), core, locationUri, null, null);
             snapShooter.validateCreateSnapshot();
             snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
           } catch (Exception e) {

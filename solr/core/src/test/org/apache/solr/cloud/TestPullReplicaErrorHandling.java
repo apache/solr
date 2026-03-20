@@ -28,10 +28,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -42,6 +41,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -305,19 +305,19 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     assertEquals(
         "Unexpected number of writer replicas: " + docCollection,
         numWriter,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of pull replicas: " + docCollection,
         numPassive,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of active replicas: " + docCollection,
         numActive,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     return docCollection;

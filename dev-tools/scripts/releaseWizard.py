@@ -56,7 +56,7 @@ try:
     import holidays
     import yaml
     from ics import Calendar, Event
-    from jinja2 import Environment
+    from jinja2 import Environment, Undefined
 except:
     print("You lack some of the module dependencies to run this script.")
     print("Please run 'pip3 install -r requirements.txt' and try again.")
@@ -73,6 +73,25 @@ editor = None
 state = None
 templates = None
 solr_news_file = None
+
+
+class ReadableUndefined(Undefined):
+    """Custom Undefined handler that renders undefined variables as {{ varname }}
+
+    This allows users to see which variables are not yet defined when displaying
+    command templates before execution, particularly useful for persist_vars
+    that haven't been captured yet.
+    """
+    def __str__(self):
+        return "{{ %s }}" % self._undefined_name
+
+    def __getattr__(self, name):
+        # Handle special Python attributes normally
+        if name[:2] == '__':
+            raise AttributeError(name)
+        # Chain undefined attribute access for nested vars like {{ todo_id.var_name }}
+        return ReadableUndefined(name="%s.%s" % (self._undefined_name, name))
+
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -141,7 +160,7 @@ def expand_jinja(text, vars=None):
     filled = replace_templates(text)
 
     try:
-        env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True)
+        env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True, undefined=ReadableUndefined)
         env.filters['path_join'] = lambda paths: os.path.join(*paths)
         env.filters['expanduser'] = lambda path: os.path.expanduser(path)
         env.filters['formatdate'] = lambda date: (datetime.strftime(date, "%-d %B %Y") if date else "<date>" )
@@ -1420,19 +1439,22 @@ def tail_file(file, lines):
                 break
 
 
-def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False, live=False, shell=None):
+def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False, live=False, shell=None, capture_output=False):
     fh = sys.stdout
     if logfile:
         logdir = os.path.dirname(logfile)
         if not os.path.exists(logdir):
             os.makedirs(logdir)
         fh = open(logfile, 'w')
-    rc = run_follow(command, cwd, fh=fh, tee=tee, live=live, shell=shell)
+
+    rc, captured_output = run_follow(command, cwd, fh=fh, tee=tee, live=live, shell=shell, capture_output=capture_output)
+
     if logfile:
         fh.close()
         if not tee and tail_lines and tail_lines > 0:
             tail_file(logfile, tail_lines)
-    return rc
+
+    return rc, captured_output
 
 
 def ask_yes_no(text):
@@ -1463,7 +1485,7 @@ def print_line_cr(line, linenum, stdout=True, tee=False):
             print(line.rstrip())
 
 
-def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=None):
+def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=None, capture_output=False):
     doShell = '&&' in command or '&' in command or shell is not None
     if not doShell and not isinstance(command, list):
         command = shlex.split(command)
@@ -1479,6 +1501,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
 
     endstdout = endstderr = False
     errlines = []
+    captured_lines = [] if capture_output else None
     while not (endstderr and endstdout):
         lines_before = lines_written
         if not endstdout:
@@ -1490,6 +1513,8 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                     else:
                         fh.write(chars)
                         fh.flush()
+                        if capture_output:
+                            captured_lines.append(chars)
                         if '\n' in chars:
                             lines_written += 1
                 else:
@@ -1499,6 +1524,8 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                     else:
                         fh.write("%s\n" % line.rstrip())
                         fh.flush()
+                        if capture_output:
+                            captured_lines.append(line)
                         lines_written += 1
                         print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
 
@@ -1536,7 +1563,12 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
         for line in errlines:
             fh.write("%s\n" % line.rstrip())
             fh.flush()
-    return rc
+
+    captured_output = None
+    if capture_output and captured_lines is not None:
+        captured_output = "".join(captured_lines)
+
+    return rc, captured_output
 
 
 def is_windows():
@@ -1637,6 +1669,7 @@ class Commands(SecretYamlObject):
                         logfilename = cmd.logfile
                         logfile = None
                         cmd_to_run = "%s%s" % ("echo Dry run, command is: " if dry_run else "", cmd.get_cmd())
+                        need_capture = cmd.persist_vars and not dry_run
                         if cmd.redirect:
                             try:
                                 out = run(cmd_to_run, cwd=cwd)
@@ -1645,6 +1678,7 @@ class Commands(SecretYamlObject):
                                     outfile.write(out)
                                     outfile.flush()
                                 print("Wrote %s bytes to redirect file %s" % (len(out), cmd.get_redirect()))
+                                cmd_output = out
                             except Exception as e:
                                 print("Command %s failed: %s" % (cmd_to_run, e))
                                 success = False
@@ -1668,8 +1702,8 @@ class Commands(SecretYamlObject):
                                 if cmd.comment:
                                     print("# %s\n" % cmd.get_comment())
                             start_time = time.time()
-                            returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25,
-                                                           live=cmd.live, shell=cmd.shell)
+                            returncode, cmd_output = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25,
+                                                                       live=cmd.live, shell=cmd.shell, capture_output=need_capture)
                             elapsed = time.time() - start_time
                             if not returncode == 0:
                                 if cmd.should_fail:
@@ -1684,9 +1718,23 @@ class Commands(SecretYamlObject):
                                     print("Expected command to fail, but it succeeded.")
                                     success = False
                                     break
-                                else:
-                                    if elapsed > 30:
-                                        print("Command completed in %s seconds" % elapsed)
+
+                        # Handle persist_vars: capture stdout and parse for --wizard-var markers
+                        if cmd.persist_vars and not dry_run and cmd_output:
+                            try:
+                                parsed_vars = parse_wizard_vars(cmd_output)
+                                if parsed_vars:
+                                    todo = state.get_todo_by_id(self.todo_id)
+                                    if todo:
+                                        for var_name, var_value in parsed_vars.items():
+                                            todo.state[var_name] = var_value
+                                        state.save()
+                                        for var_name, var_value in parsed_vars.items():
+                                            print("Saved variable '%s' = '%s'" % (var_name, var_value))
+                            except Exception as e:
+                                print("WARNING: Failed to persist variables: %s" % e)
+                        if elapsed > 30:
+                            print("Command completed in %s seconds" % elapsed)
             if not success:
                 print("WARNING: One or more commands failed, you may want to check the logs")
             return success
@@ -1719,7 +1767,7 @@ class Commands(SecretYamlObject):
             return None
         v = self.get_vars()
         if self.todo_id:
-            v.update(state.get_todo_by_id(self.todo_id).get_vars())
+            v.update(state.get_todo_by_id(self.todo_id).get_vars_and_state())
         if isinstance(data, list):
             if join:
                 return expand_jinja(" ".join(data), v)
@@ -1744,11 +1792,37 @@ def abbreviate_homedir(line):
         return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1~", line)
 
 
+def parse_wizard_vars(stdout_text):
+    """Parse --wizard-var markers from command stdout.
+
+    Format: --wizard-var KEY=VALUE
+
+    Returns a dict of extracted variables, with last value winning for duplicates.
+    """
+    variables = {}
+    if not stdout_text:
+        return variables
+
+    for line in stdout_text.splitlines():
+        # Check if line starts with --wizard-var marker
+        if line.startswith("--wizard-var "):
+            # Extract the KEY=VALUE part
+            var_part = line[len("--wizard-var "):].strip()
+            if '=' in var_part:
+                key, _, value = var_part.partition('=')
+                key = key.strip()
+                value = value.strip()
+                if key:  # Only store if key is not empty
+                    variables[key] = value
+
+    return variables
+
+
 class Command(SecretYamlObject):
     yaml_tag = u'!Command'
     hidden_fields = ['todo_id']
     def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, live=None, comment=None, vars=None,
-                 todo_id=None, should_fail=None, redirect=None, redirect_append=None, shell=None):
+                 todo_id=None, should_fail=None, redirect=None, redirect_append=None, shell=None, persist_vars=None):
         self.cmd = cmd
         self.cwd = cwd
         self.comment = comment
@@ -1762,6 +1836,7 @@ class Command(SecretYamlObject):
         self.todo_id = todo_id
         self.redirect_append = redirect_append
         self.redirect = redirect
+        self.persist_vars = persist_vars
         if tee and stdout:
             self.stdout = None
             print("Command %s specifies 'tee' and 'stdout', using only 'tee'" % self.cmd)
@@ -1806,7 +1881,7 @@ class Command(SecretYamlObject):
     def jinjaify(self, data, join=False):
         v = self.get_vars()
         if self.todo_id:
-            v.update(state.get_todo_by_id(self.todo_id).get_vars())
+            v.update(state.get_todo_by_id(self.todo_id).get_vars_and_state())
         if isinstance(data, list):
             if join:
                 return expand_jinja(" ".join(data), v)

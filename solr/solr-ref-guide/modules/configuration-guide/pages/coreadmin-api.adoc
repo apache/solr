@@ -193,7 +193,7 @@ Same as `name` on the `<core>` element.
 The directory where files for this core should be stored.
 Same as `instanceDir` on the `<core>` element.
 The default is the value specified for the `name` parameter if not supplied.
-This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
+This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.security.allow.paths`.
 
 `config`::
 +
@@ -223,7 +223,7 @@ See xref:schema-factory.adoc[] for details.
 |===
 +
 Name of the data directory relative to `instanceDir`.
-If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
+If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.security.allow.paths`.
 
 `configSet`::
 +
@@ -779,6 +779,94 @@ A commit is automatically called on the `core` index before it is split.
 This command is used as part of SolrCloud's xref:deployment-guide:shard-management.adoc#splitshard[SPLITSHARD] command but it can be used for cores in user-managed clusters as well.
 When used against a core in a user-managed cluster without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents.
 If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
+
+[[coreadmin-upgradecoreindex]]
+== UPGRADECOREINDEX
+
+The `UPGRADECOREINDEX` action upgrades an existing core's index in-place after a Solr major-version upgrade by reindexing documents from older-format segments.
+If a core is upgraded by this action, it ensures index compatibility with the next Solr major version (upon a future Solr upgrade) without having to re-create the index from source.
+
+This action is expensive and can take a while to complete on large indexes. Consider running with `async` option in such cases. 
+
+Note:
+
+* Only stored fields and fields with docValues enabled can be preserved during upgrade.
+Fields that are neither stored nor docValues-backed will lose their data, unless they are `copyField` targets. 
+* Not supported in SolrCloud mode. In order to achieve the same purpose in SolrCloud mode (aka upgrade index for compatibility with next Solr version), configure the `LatestVersionMergePolicyFactory` for the collection and reindex all documents through a client utility.
+* Indexes containing child/nested documents are not supported.
+
+It is recommended to test on a copy and have a backup before running on production data.
+
+=== UPGRADECOREINDEX Parameters
+
+`core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the core whose index should be upgraded.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be processed asynchronously.
+Use <<coreadmin-requeststatus,REQUESTSTATUS>> with the provided `requestid` to poll for completion and retrieve the operation response.
+
+`update.chain`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The update processor chain to use for reindexing.
+If omitted, Solr uses the chain configured for the `/update` handler, or the default update chain for the core (in that order).
+
+=== UPGRADECOREINDEX Response
+
+On success, the response includes:
+
+`core`::
+The core name.
+
+`numSegmentsEligibleForUpgrade`::
+The number of segments with an older Lucene format that were targeted.
+
+`numSegmentsUpgraded`::
+The number of segments successfully processed.
+
+`upgradeStatus`::
+One of `UPGRADE_SUCCESSFUL` or `NO_UPGRADE_NEEDED`.
+On failure, an exception is thrown with error details.
+
+=== UPGRADECOREINDEX Examples
+
+*Synchronous:*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=UPGRADECOREINDEX&core=techproducts
+----
+
+*Asynchronous (recommended for large cores):*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=UPGRADECOREINDEX&core=techproducts&async=upgrade_1
+----
+
+Then poll status:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=upgrade_1
+----
 
 [[coreadmin-requeststatus]]
 == REQUESTSTATUS

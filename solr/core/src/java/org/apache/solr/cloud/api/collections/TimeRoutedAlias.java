@@ -46,7 +46,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -590,7 +590,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   private List<Action> calcDeletes(List<Action> actions) {
     final String autoDeleteAgeMathStr = this.getAutoDeleteAgeMath();
     if (autoDeleteAgeMathStr == null || actions.size() == 0) {
-      return Collections.emptyList();
+      return List.of();
     }
     if (actions.size() > 1) {
       throw new IllegalStateException(
@@ -675,7 +675,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       String nextCol = calcNextCollection(parsed);
       return Collections.singletonList(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
     } else {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 

@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Restore actual infoStream logging when infoStream in solrconfig.xml is set to true.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-11373
+    url: https://issues.apache.org/jira/browse/SOLR-11373

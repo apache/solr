@@ -1,0 +1,7 @@
+title: Update plugin com.palantir.consistent-versions to v2.37.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3569
+  url: https://github.com/apache/solr/pull/3569

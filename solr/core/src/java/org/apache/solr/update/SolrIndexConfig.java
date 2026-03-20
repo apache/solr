@@ -20,7 +20,7 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.lang.invoke.VarHandle;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -34,6 +34,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -111,7 +112,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
     // enable coarse-grained metrics by default
-    metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
+    metricsInfo = new PluginInfo("metrics", Map.of(), null, null);
   }
 
   private ConfigNode get(String s) {
@@ -186,13 +187,8 @@ public class SolrIndexConfig implements MapSerializable {
     }
 
     if (get("infoStream").boolVal(false)) {
-      if (get("infoStream").attr("file") == null) {
-        log.info("IndexWriter infoStream solr logging is enabled");
-        infoStream = new LoggingInfoStream();
-      } else {
-        throw new IllegalArgumentException(
-            "Remove @file from <infoStream> to output messages to solr's logfile");
-      }
+      log.info("IndexWriter infoStream solr logging is enabled");
+      infoStream = new LoggingInfoStream();
     }
     mergedSegmentWarmerInfo =
         getPluginInfo(get("mergedSegmentWarmer"), def.mergedSegmentWarmerInfo);
@@ -259,7 +255,11 @@ public class SolrIndexConfig implements MapSerializable {
     if (ramBufferSizeMB != -1) iwc.setRAMBufferSizeMB(ramBufferSizeMB);
 
     if (ramPerThreadHardLimitMB != -1) {
-      iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+      if (ramPerThreadHardLimitMB > 2048) {
+        setPerThreadRAMLimitViaVarHandle(iwc, ramPerThreadHardLimitMB);
+      } else {
+        iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+      }
     }
 
     if (maxCommitMergeWaitMillis > 0) {
@@ -369,5 +369,34 @@ public class SolrIndexConfig implements MapSerializable {
     }
 
     return scheduler;
+  }
+
+  @SuppressForbidden(reason = "Need to override Lucene's 2GB per-thread limit for large datasets")
+  private static void setPerThreadRAMLimitViaVarHandle(IndexWriterConfig config, int limitMB) {
+    MethodHandles.Lookup lookup = MethodHandles.lookup();
+    VarHandle fieldHandle = null;
+    Class<?> currentClass = config.getClass();
+
+    // Traverse the hierarchy to find the field
+    while (currentClass != null && fieldHandle == null) {
+      try {
+        MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(currentClass, lookup);
+        fieldHandle = privateLookup.findVarHandle(currentClass, "perThreadHardLimitMB", int.class);
+      } catch (IllegalAccessException | NoSuchFieldException e) {
+        currentClass = currentClass.getSuperclass();
+      }
+    }
+
+    if (fieldHandle == null) {
+      log.error("Could not find VarHandle for perThreadHardLimitMB field");
+      return;
+    }
+
+    try {
+      fieldHandle.set(config, limitMB);
+      log.info("Set perThreadHardLimitMB to {} MB via VarHandle", limitMB);
+    } catch (RuntimeException | Error e) {
+      log.error("Failed to set per-thread RAM limit via VarHandle", e);
+    }
   }
 }

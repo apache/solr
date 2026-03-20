@@ -1,0 +1,8 @@
+title: Disable http2 request cancellation for Jetty 10, the cancellation can bleed
+  across to other requests.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17819
+  url: https://issues.apache.org/jira/browse/SOLR-17819

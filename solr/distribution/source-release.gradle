@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // Prepare the "source" distribution artifact. We use raw git export, no additional complexity needed.
 
 configure(project(":solr:distribution")) {
@@ -29,7 +28,7 @@ configure(project(":solr:distribution")) {
       destination = file("${buildDir}/packages/solr-${version}-src.tgz")
     }
 
-    inputs.property("git-revision", { -> rootProject.ext.gitRev })
+    inputs.property("git-revision", {-> rootProject.ext.gitRev})
     outputs.file destination
 
     doFirst {

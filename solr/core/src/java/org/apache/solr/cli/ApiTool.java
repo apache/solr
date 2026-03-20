@@ -22,8 +22,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
@@ -43,7 +43,7 @@ public class ApiTool extends ToolBase {
           .argName("URL")
           .required()
           .desc("Send a GET request to a Solr API endpoint.")
-          .build();
+          .get();
 
   public ApiTool(ToolRuntime runtime) {
     super(runtime);
@@ -77,7 +77,7 @@ public class ApiTool extends ToolBase {
     try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       // For path parameter we need the path without the root so from the second / char
       // (because root can be configured)
-      // E.g URL is http://localhost:8983/solr/admin/info/system path is
+      // E.g. URL is http://localhost:8983/solr/admin/info/system path is
       // /solr/admin/info/system and the path without root is /admin/info/system
       var req =
           new GenericSolrRequest(

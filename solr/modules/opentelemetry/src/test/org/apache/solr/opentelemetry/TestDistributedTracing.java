@@ -17,8 +17,6 @@
 
 package org.apache.solr.opentelemetry;
 
-import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
-
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
@@ -30,20 +28,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -136,9 +134,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   public void testAdminApi() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN);
-    request.setResponseParser(new InputStreamResponseParser(PROMETHEUS_METRICS_WT));
+    MetricsRequest request = new MetricsRequest();
+    request.setResponseParser(new InputStreamResponseParser(MetricUtils.PROMETHEUS_METRICS_WT));
     NamedList<Object> rsp = cloudClient.request(request);
     ((InputStream) rsp.get("stream")).close();
     var finishedSpans = getAndClearSpans();

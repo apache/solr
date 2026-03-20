@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -43,7 +44,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -56,7 +57,7 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@org.apache.solr.SolrTestCaseJ4.SuppressSSL()
+@SuppressSSL()
 public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
   private static final String support = "These guys help customers";
@@ -129,9 +130,9 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
 
     ZkStateReader zkStateReader = ZkStateReader.from(client);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
   }
 
   @SuppressWarnings("serial")

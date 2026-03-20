@@ -80,8 +80,8 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -446,6 +446,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // `init(UpdateHandler, SolrCore` is never actually called concurrently in application code
       // (`TestHdfsUpdateLog.testFSThreadSafety()`, introduced by SOLR-7113, seems to be the only
       // place that requires true thread safety from this method?).
+      // HDFS was removed in Solr 10, and therefore the test referenced is gone as well.
       if (debug) {
         log.debug(
             "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
@@ -509,8 +510,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   /**
    * Resolves any relative path wrt the highest core-scoped level (whatever that means for a
-   * particular implementation). For most filesystems, this will be the core instanceDir, but there
-   * are other cases; e.g., HdfsUpdateLog will resolve paths relative to the core dataDir.
+   * particular implementation). For most filesystems, this will be the core instanceDir, but that
+   * is not a hard and fast rule.
    *
    * <p>If the input path is already absolute, it will be returned unmodified.
    *
@@ -1555,7 +1556,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
     copyOverOldUpdatesCounter.inc();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
+    SolrQueryRequest req = new SolrQueryRequestBase(uhandler.core, new ModifiableSolrParams());
     TransactionLog.LogReader logReader = null;
     Object o = null;
     try {
@@ -1691,7 +1692,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         log.info("Recording current closed for {} log={}", uhandler.core, theLog);
         CommitUpdateCommand cmd =
             new CommitUpdateCommand(
-                new LocalSolrQueryRequest(
+                new SolrQueryRequestBase(
                     uhandler.core, new ModifiableSolrParams((SolrParams) null)),
                 false);
         theLog.writeCommit(cmd);
@@ -2123,7 +2124,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
-      req = new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+      req = new SolrQueryRequestBase(uhandler.core, BASE_REPLAY_PARAMS);
       rsp = new SolrQueryResponse();
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -2198,7 +2199,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 () -> {
                   // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
                   final var localRequest =
-                      new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+                      new SolrQueryRequestBase(uhandler.core, BASE_REPLAY_PARAMS);
                   var proc = processorChain.createProcessor(localRequest, rsp);
                   procPool.add(proc);
                   return proc;

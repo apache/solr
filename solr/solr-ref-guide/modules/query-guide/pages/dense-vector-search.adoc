@@ -47,11 +47,19 @@ The strategy implemented in Apache Lucene and used by Apache Solr is based on Na
 
 It provides efficient approximate nearest neighbor search for high dimensional vectors.
 
-See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs [2018]] for details.
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs (2014)] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs (2018)] for details.
 
 
-== Index Time
-This is the Apache Solr field type designed to support dense vector search:
+=== Late Interaction Retrieval
+
+Late Interaction Retrieval (LIR) is a method of encoding detailed semantic information into multiple dense vectors for finer grain representation.
+
+Across a large corpora, these "multi-vector" representations of the original semantic content are typically too large and unwieldy to index and search in navigable small-world graph in a useful manner.  Instead "Late Interaction" approaches are typically used to compute vector similarities scores against a subset of documents, after an initial pass of other search techniques.
+
+
+== Indexing Dense Vectors in Navigable Small-world Graphs
+
+Apache Solr supports multiple relative field types designed to support dense vector search with navigable small world graphs:
 
 === DenseVectorField
 The dense vector field gives the possibility of indexing and searching dense vectors of float elements.
@@ -76,9 +84,9 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Any integer.
+Any positive integer.
 
-`similarityFunction`::
+[[similarityFunction-caveats]]`similarityFunction`::
 +
 [%autowidth,frame=none]
 |===
@@ -87,21 +95,18 @@ Any integer.
 +
 Vector similarity function; used in search to return top K most similar vectors to a target vector.
 +
-Accepted values: `euclidean`, `dot_product`  or `cosine`.
-
+Accepted values:
++
 * `euclidean`: https://en.wikipedia.org/wiki/Euclidean_distance[Euclidean distance]
+* `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 * `dot_product`: https://en.wikipedia.org/wiki/Dot_product[Dot product]
 
 [NOTE]
-this similarity is intended as an optimized way to perform cosine similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results.
-
-* `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
-
-[NOTE]
-the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
-
-[NOTE]
-the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
+====
+* the preferred way to perform `cosine` similarity is to normalize all vectors to unit length, and instead use `doc_product`. You should only specify `cosine` if you need to preserve the original vectors and cannot normalize them in advance.
+* `dot_product` is intended as an optimized way to perform `cosine` similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results.
+* the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
+====
 
 To use the following advanced parameters that customise the codec format
 and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
@@ -109,7 +114,7 @@ and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-g
 Here's how `DenseVectorField` can be configured with the advanced hyperparameters:
 
 [source,xml]
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswMaxConnections="10" hnswBeamWidth="40"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswM="10" hnswEfConstruction="40"/>
 <field name="vector" type="knn_vector" indexed="true" stored="true"/>
 
 `knnAlgorithm`::
@@ -121,7 +126,6 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 +
 (advanced) Specifies the underlying knn algorithm to use
 +
-
 Accepted values: `hnsw`, `cagra_hnsw` (requires GPU acceleration setup).
 
 Please note that the `knnAlgorithm` accepted values may change in future releases.
@@ -135,11 +139,10 @@ Please note that the `knnAlgorithm` accepted values may change in future release
 +
 (advanced) Specifies the underlying encoding of the dense vector elements. This affects memory/disk impact for both the indexed and stored fields (if enabled)
 +
-
 Accepted values: `FLOAT32`, `BYTE`.
 
 
-`hnswMaxConnections`::
+`hnswM`::
 +
 [%autowidth,frame=none]
 |===
@@ -150,12 +153,12 @@ Accepted values: `FLOAT32`, `BYTE`.
 +
 Controls how many of the nearest neighbor candidates are connected to the new node.
 +
-It has the same meaning as `M` from the 2018 paper.
+For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `M` is defined.
 +
 Accepted values:
 Any integer.
 
-`hnswBeamWidth`::
+`hnswEfConstruction`::
 +
 [%autowidth,frame=none]
 |===
@@ -166,17 +169,14 @@ Any integer.
 +
 It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
 +
-It has the same meaning as `efConstruction` from the 2018 paper.
+For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `efConstruction` is defined.
 +
 Accepted values:
 Any integer.
 
-`DenseVectorField` supports the attributes: `indexed`, `stored`.
+`DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
 
-[NOTE]
-currently multivalue is not supported
-
-Here's how a `DenseVectorField` should be indexed:
+Here's how a `DenseVectorField` should be indexed when single valued:
 
 [tabs#densevectorfield-index]
 ======
@@ -236,6 +236,53 @@ d2.setField("id", "2");
 d2.setField("vector", Arrays.asList(1.5f, 5.5f, 6.7f, 65.1f));
 
 client.add(Arrays.asList(d1, d2));
+----
+====
+======
+
+Here's how a `DenseVectorField` should be indexed when multi-valued:
+
+[tabs#densevectorfield-index]
+======
+JSON::
++
+====
+[source,json]
+----
+[{ "id": "1",
+ "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+},
+{ "id": "2",
+ "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+}
+]
+----
+====
+
+SolrJ::
++
+====
+[source,java,indent=0]
+----
+final SolrClient client = getSolrClient();
+
+final SolrInputDocument d1 = new SolrInputDocument();
+d1.setField("id", "1");
+List<List<Float>> floatVectors1 = new ArrayList<>(2);
+floatVectors1.add(Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+floatVectors1.add(Arrays.asList(5.0f, 6.0f, 7.0f, 8.0f));
+d1.setField("vector_multivalued", floatVectors1);
+
+
+final SolrInputDocument d2 = new SolrInputDocument();
+d2.setField("id", "2");
+List<List<Float>> floatVectors2 = new ArrayList<>(2);
+floatVectors2.add(Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+floatVectors2.add(Arrays.asList(5.0f, 6.0f, 7.0f, 8.0f));
+d2.setField("vector_multivalued", floatVectors2);
+
+client.add(Arrays.asList(d1, d2));
+
 ----
 ====
 ======
@@ -341,13 +388,14 @@ BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField
 `similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
 param.
 
-== Query Time
+[[query-hnsw-fields]]
+== Querying Vectors in Navigable Small-world Graphs
 
-Apache Solr provides three query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `knn_text_to_vector` query parser.
+Apache Solr provides three query parsers that work with the `DenseVectorField` family of field types, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `knn_text_to_vector` query parser.
 
 All parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (without needing to compute their vector similarity distances).
 
-Common parameters for both query parsers are:
+Common parameters for all query parsers are:
 
 `f`::
 +
@@ -416,7 +464,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 |Optional |Default: `false`
 |===
 +
-Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search].
+Early termination is an HNSW optimization. Solr relies on the Lucene’s implementation of early termination for kNN queries, based on https://cs.uwaterloo.ca/~jimmylin/publications/Teofili_Lin_ECIR2025.pdf[Patience in Proximity: A Simple Early Termination Strategy for HNSW Graph Traversal in Approximate k-Nearest Neighbor Search (2025)].
 +
 When enabled (true), the search may exit early when the HNSW candidate queue remains saturated over a threshold (saturationThreshold) for more than a given number of iterations (patience). Refer to the two parameters below for more details.
 +
@@ -452,10 +500,110 @@ Our recommendation is to rely on the default value and change this parameter onl
 +
 This parameter must be used together with `saturationThreshold`; either specify both to customize the behavior, or omit both to rely on the default values.
 
+`efSearchScaleFactor`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: `1.0`
+|===
++
+(advanced) Multiplier factor for calculating how many candidates the HNSW algorithm examines during search.
++
+The effective `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Lower values fetch fewer candidates for faster performance but may miss some good matches. Higher values fetch more candidates, improving recall but slowing down the search.
++
+Accepted values:
+Any float >= 1.0.
+
 Here's an example of a `knn` search using the early termination with input parameters:
 
 [source,text]
-?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10 efSearchScaleFactor=3.0}[1.0, 2.0, 3.0, 4.0]
+
+`seedQuery`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A query seed to initiate the vector search, i.e. entry points in the HNSW graph exploration. Solr relies on Lucene’s implementation of {lucene-javadocs}/core/org/apache/lucene/search/SeededKnnVectorQuery.html[SeededKnnVectorQuery] based on https://arxiv.org/pdf/2307.16779[Lexically-Accelerated Dense Retrieval (2023)].
++
+The seedQuery is primarily intended to be a lexical query, guiding the vector search in a hybrid-like way through traditional query logic. Although a knn query can also be used as a seed — which might make sense in specific scenarios and has been verified by a dedicated test — this approach is not considered a best practice.
++
+The seedQuery can also be used in combination with earlyTermination.
+
+Here is an example of a `knn` search using a `seedQuery`:
+
+[source,text]
+?q={!knn f=vector topK=10 seedQuery='id:(1 4 10)'}[1.0, 2.0, 3.0, 4.0]
+
+The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`. Documents matching the query `id:(1 4 10)` are used as entry points for the ANN search. If no documents match the seed, Solr falls back to a regular knn search without seeding, starting instead from random entry points.
+
+`filteredSearchThreshold`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default:  {lucene-javadocs}/core/constant-values.html#org.apache.lucene.search.knn.KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD[Lucene default] |An integer value from 0 to 100
+|===
++
+ACORN is an algorithm designed to make hybrid searches consisting of a filter and a vector search more efficient.
+This approach tackles both the performance limitations of pre- and post- filtering.
+It modifies the construction of the HNSW graph and the search on it. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
++
+Solr relies on Lucene's implementation of the `filteredSearchThreshold` in the  {lucene-javadocs}/core/org/apache/lucene/search/knn/KnnSearchStrategy.html[KnnSearchStrategy].
++
+A suggested value is 60 based on a benchmark you can read more about in this Github https://github.com/apache/lucene/pull/14160#issue-2805145799[comment].
++
+The `filteredSearchThreshold` regulates this behavior. If the percentage of documents that satisfies the filter is less than the threshold ACORN will be used.
+
+Here is an example of a `knn` search using a `filteredSearchThreshold`:
+
+[source,text]
+?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]&fq=section:0
+
+`childrenOf`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|Mandatory if using 'parents.preFilter' parameter|Default: none
+|===
++
+A query that matches the set of ALL possible parent documents.
++
+This parameter is required to enable documents diversification per parent (to return maximum one document per parent).
++
+If you use it you can also add the 'parents.preFilter' parameter.
+
+Here is an example of a `knn` search using a `childrenOf`:
+
+[source,text]
+?q={!knn f=vector topK=3 childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'childrenOf' parameter must return all valid parents to guarantee the correct functioning of the query.
+
+`parents.preFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+This parameter is meant to be a filter query on parent document metadata.
+The knn search returns the top-k nearest children documents that satisfy the filter on the parent.
++
+Only one child per distinct parent is returned.
++
+When using it, you need to also specify the `childrenOf` param.
+
+Here is an example of a `knn` search using a `parents.preFilter`:
+
+[source,text]
+?q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+&someParents=color_s:RED
+
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
 
 === knn_text_to_vector Query Parser
 
@@ -490,6 +638,79 @@ The search results retrieved are the k=10 nearest documents to the vector encode
 
 For more details on how to work with vectorise text in Apache Solr, please refer to the dedicated page: xref:text-to-vector.adoc[Text to Vector]
 
+=== Handle multivalued vector fields at query time
+Behind the scenes a multivalued vector field is handled by Solr as nested documents with a single vector each (see the parameters for the knn query parser that deal with nested vectors 'parents.preFilter' and 'childrenOf').
+
+So you should query a multivalued vector fields following the same syntax:
+[source,text]
+?q={!parent which=$allParents score=max v=$children.q}
+&children.q={!knn f=vector_multivalued topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+&someParents=color_s:RED
+
+In terms of rendering the results, you need the child transformer if you want to output them flat (you can choose to only return the best vector per result or all vectors):
+
+All Children
+[source,text]
+fl=id,vector_multivalued,[child fl="vector_multivalued"]
+
+====
+[source,json]
+----
+"docs":[
+      {
+        "id":"1",
+        "vector_multivalued":[
+          [
+            1.0,2.0, 3.0, 4.0
+          ],
+          [
+            5.0,6.0, 7.0, 8.0
+          ]
+        ]
+      },
+      {
+        "id":"2",
+        "vector_multivalued":[
+          [
+            1.0,2.0, 3.0, 4.0
+          ],
+          [
+            5.0,6.0, 7.0, 8.0
+          ]
+        ]
+      }]
+----
+====
+
+Best Child
+[source,text]
+fl=id,vector_multivalued,[child fl="vector_multivalued" childFilter=$children.q]
+
+====
+[source,json]
+----
+"docs":[
+      {
+        "id":"1",
+        "vector_multivalued":[
+        [
+          1.0,2.0, 3.0, 4.0
+        ]
+      ]
+    },
+    {
+      "id":"2",
+      "vector_multivalued":[
+      [
+        1.0,2.0, 3.0, 4.0
+      ]
+    ]
+  }]
+----
+====
+
+
 === vectorSimilarity Query Parser
 
 The `vectorSimilarity` vector similarity query parser matches documents whose similarity with the target vector is a above a minimum threshold.
@@ -523,11 +744,11 @@ Here's an example of a simple `vectorSimilarity` search:
 The search results retrieved are all documents whose similarity with the input vector `[1.0, 2.0, 3.0, 4.0]` is at least `0.7` based on the `similarityFunction` configured at indexing time
 
 
-=== Which one to use?
+=== Which Query Parser to use?
 
 Let's see when to use each of the dense retrieval query parsers available:
 
-== knn Query Parser
+==== knn Query Parser
 
 You should use the `knn` query parser when:
 
@@ -536,7 +757,7 @@ You should use the `knn` query parser when:
 * you want to a have a fine-grained control over the way you encode text to vector and prefer to do it outside of Apache Solr
 
 
-== knn_text_to_vector Query Parser
+==== knn_text_to_vector Query Parser
 
 You should use the `knn_text_to_vector` query parser when:
 
@@ -550,7 +771,7 @@ Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to inte
 The integration is experimental and we are going to improve our stress-test and benchmarking coverage of this query parser in future iterations: if you care about raw performance you may prefer to encode the text outside of Solr
 ====
 
-== vectorSimilarity Query Parser
+==== vectorSimilarity Query Parser
 
 You should use the `vectorSimilarity` query parser when:
 
@@ -625,7 +846,7 @@ If we modify the above request to add tags to the `fq` parameters, we can specif
 &fq={!tag=for_knn}inStock:true
 ----
 
-In this example, only the `inStock:true` filter will be used for Pre-Filtering to find the the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
+In this example, only the `inStock:true` filter will be used for Pre-Filtering to find the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
 
 
 Some use cases where `includeTags` and/or `excludeTags` may be more useful then an explicit `preFilter` parameters:
@@ -657,6 +878,136 @@ The final ranked list of results will have the first pass score(main query `q`) 
 Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
 ====
 
+
+== Indexing Multi-Vectors for Late Interaction
+
+For Late Interaction usecases, Solr provides a `StrFloatLateInteractionVectorField` field type, which supports indexing a variable length "Multi-Vector" of Float vectors, serialized as as a single String value.
+
+For example: `"[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]"`
+
+Here's how `StrFloatLateInteractionVectorField` should be configured in the schema:
+
+[source,xml]
+<fieldType name="late_vectors" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4" similarityFunction="cosine"/>
+<field name="my_late_vectors" type="late_vectors" docValues="true" stored="true"/>
+
+
+`vectorDimension`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The dimension of the individual dense vectors that will be contained in the Multi-Vectors indexed in this field
++
+Accepted values:
+Any positive integer.
+
+`similarityFunction`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `euclidean`
+|===
++
+Vector similarity function; used in computing the similarity of indexed vectors to a target vector.
++
+Accepted values: `euclidean`, `dot_product`  or `cosine`.
++
+[NOTE]
+See <<similarityFunction-caveats,previous notes regarding `similarityFunction`>> in `DenseVectorField`, they are also applicable here.
+
+`scoreFunction`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `sum_min_max`
+|===
++
+Multi Vector scoring function, used to compute a single numeric score when computing the similarity of multiple indexed vectors to a multiple target vector.
++
+Accepted values: `sum_min_max`
+
+`StrFloatLateInteractionVectorField` also supports the standard attribute `stored`.
+
+[NOTE]
+====
+* `StrFloatLateInteractionVectorField` defaults to (and requires) `docValues="true" indexed="false" multivalued="false"`
+* Allthough the field type is used to index "Multi-Vectors", Only a _single_ string value (including the multiple vectors) may be indexed into each field.
+====
+
+Here's how a `StrFloatLateInteractionVectorField` named `my_late_vector` should be indexed:
+
+[tabs#latevectorfield-index]
+======
+JSON::
++
+====
+[source,json]
+----
+[{ "id": "1",
+"my_late_vector": "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]",
+},
+{ "id": "2",
+"my_late_vector": "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"
+}
+]
+----
+====
+
+XML::
++
+====
+[source,xml]
+----
+<add>
+<doc>
+<field name="id">1</field>
+<field name="my_late_vector">[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]</field>
+</doc>
+<doc>
+<field name="id">2</field>
+<field name="my_late_vector">[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]</field>
+</doc>
+</add>
+----
+====
+
+SolrJ::
++
+====
+[source,java,indent=0]
+----
+final SolrClient client = getSolrClient();
+
+final SolrInputDocument d1 = new SolrInputDocument();
+d1.setField("id", "1");
+d1.setField("my_late_vector", "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]"));
+
+final SolrInputDocument d2 = new SolrInputDocument();
+d2.setField("id", "2");
+d2.setField("my_late_vector", "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"));
+
+client.add(Arrays.asList(d1, d2));
+----
+====
+======
+
+[[late-vector-queries]]
+== Using Late Interaction Vectors in Re-Ranking
+
+Late Interaction vector fields are poorly suited for querying  (or filtering) documents, but they can be very useful for xref:query-guide:query-re-ranking.adoc[Re-Ranking] first pass results from other queries (even <<query-hnsw-fields,other dense vector queries>>) by using a `lateVector()` xref:query-guide:function-queries.adoc#latevector-function[function query].
+
+Here is an example of re-ranking a query using a `StrFloatLateInteractionVectorField` named `my_late_vector`:
+
+[source,text]
+?q=title:"Potato Chips"&rq={!rerank reRankQuery=$rqq}&rqq={!func}lateVector(my_late_vector,"[[1.0,-2.0,3.0,4.0],[[6.0,7,8.1,9.9]]")
+
+
+Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
+
+
 == GPU Acceleration
 
 [NOTE]
@@ -664,6 +1015,7 @@ This is feature is currently experimental.
 
 Building HNSW graphs, esp. with high dimensions and cardinality, is usually slow. If you have a NVIDIA GPU, then building HNSW based indexes can be sped up manifold. This is powered by the https://github.com/rapidsai/cuvs-lucene[cuVS-Lucene] library, a pluggable vectors format for Apache Lucene. It uses the state of the art https://arxiv.org/abs/2308.15136[CAGRA algorithm] for quickly building a fixed degree connected graph, which is then serialized into a HNSW graph. https://developer.nvidia.com/cuda-downloads[CUDA 13.0+] and https://jdk.java.net/archive/[JDK 22] are required to use this feature.
 
+You can know more about Nvidia's cuVS library here: https://developer.nvidia.com/cuvs
 
 To try this out, first copy the module jar files (found in the regular Solr tarball, not the slim one) before starting Solr.
 
@@ -676,36 +1028,29 @@ Define the `fieldType` in the schema, with knnAlgorithm set to `cagra_hnsw`:
 
 [source,xml]
 ----
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" />
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" cuvsWriterThreads="32" cuvsIntGraphDegree="128" cuvsGraphDegree="64" cuvsHnswLayers="1" cuvsHnswM="16" cuvsHnswEfConstruction="100"/>
 ----
 
 Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
 
 [source,xml]
 ----
-<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
-    <str name="cuvsWriterThreads">8</str>
-    <str name="intGraphDegree">128</str>
-    <str name="graphDegree">64</str>
-    <str name="hnswLayers">1</str>
-    <str name="maxConn">16</str>
-    <str name="beamWidth">100</str>
-</codecFactory>
+<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
 ----
 
 Where:
 
 * `cuvsWriterThreads` - number of threads to use
 
-* `intGraphDegree` - Intermediate graph degree for building the CAGRA index
+* `cuvsIntGraphDegree` - Intermediate graph degree for building the CAGRA index
 
-* `graphDegree` - Graph degree for building the CAGRA index
+* `cuvsGraphDegree` - Graph degree for building the CAGRA index
 
-* `hnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
+* `cuvsHnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `maxConn` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHnswM` - cuvsHnswM parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `beamWidth` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHnswEfConstruction` - cuvsHnswEfConstruction parameter passed to the fallback Lucene99HnswVectorsWriter
 
 === Example
 
@@ -824,7 +1169,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
     <luceneMatchVersion>10.0.0</luceneMatchVersion>
     <dataDir>${solr.data.dir:}</dataDir>
     <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
-    
+
     <updateHandler class="solr.DirectUpdateHandler2">
         <updateLog>
             <str name="dir">${solr.ulog.dir:}</str>
@@ -838,14 +1183,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
         </autoSoftCommit>
     </updateHandler>
 
-    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
-        <str name="cuvsWriterThreads">32</str>
-        <str name="intGraphDegree">128</str>
-        <str name="graphDegree">64</str>
-        <str name="hnswLayers">1</str>
-        <str name="maxConn">16</str>
-        <str name="beamWidth">100</str>
-    </codecFactory>
+    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
 
     <requestHandler name="/select" class="solr.SearchHandler">
         <lst name="defaults">
@@ -853,7 +1191,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
             <int name="rows">10</int>
         </lst>
     </requestHandler>
-    
+
     <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 </config>
 EOF
@@ -865,16 +1203,22 @@ cat > cuvs_configset/conf/managed-schema << 'EOF'
 <?xml version="1.0" ?>
 <schema name="schema-densevector" version="1.7">
     <fieldType name="string" class="solr.StrField" multiValued="true"/>
-    <fieldType name="knn_vector" class="solr.DenseVectorField" 
-               vectorDimension="8" 
-               knnAlgorithm="cagra_hnsw" 
-               similarityFunction="cosine" />
+    <fieldType name="knn_vector" class="solr.DenseVectorField"
+               vectorDimension="8"
+               knnAlgorithm="cagra_hnsw"
+               similarityFunction="cosine"
+               cuvsWriterThreads="32"
+               cuvsIntGraphDegree="128"
+               cuvsGraphDegree="64"
+               cuvsHnswLayers="1"
+               cuvsHnswM="16"
+               cuvsHnswEfConstruction="100"/>
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="article_vector" type="knn_vector" indexed="true" stored="true"/>
     <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
-    
+
     <uniqueKey>id</uniqueKey>
 </schema>
 EOF

@@ -47,7 +47,7 @@ public class RequestParams implements MapSerializable {
   private final int znodeVersion;
 
   public RequestParams(Map<String, Object> data, int znodeVersion) {
-    if (data == null) data = Collections.emptyMap();
+    if (data == null) data = Map.of();
     this.data = data;
     Map<?, ?> paramsets = (Map<?, ?>) data.get(NAME);
     if (paramsets != null) {
@@ -142,8 +142,7 @@ public class RequestParams implements MapSerializable {
             resourceLoader
                 .getZkController()
                 .getZkClient()
-                .exists(
-                    resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
+                .exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null);
         if (log.isDebugEnabled()) {
           log.debug(
               "latest version of {}/{} in ZK  is : {}",
@@ -152,7 +151,7 @@ public class RequestParams implements MapSerializable {
               stat == null ? "" : stat.getVersion());
         }
         if (stat == null) {
-          requestParams = new RequestParams(Collections.emptyMap(), -1);
+          requestParams = new RequestParams(Map.of(), -1);
         } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
           Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
           @SuppressWarnings("unchecked")
@@ -194,7 +193,7 @@ public class RequestParams implements MapSerializable {
 
     } catch (IOException e) {
       // no problem no overlay.json file
-      return new Object[] {Collections.emptyMap(), -1};
+      return new Object[] {Map.of(), -1};
     }
   }
 

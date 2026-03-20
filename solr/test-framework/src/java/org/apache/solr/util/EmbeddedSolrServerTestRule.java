@@ -19,10 +19,12 @@ package org.apache.solr.util;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
@@ -87,6 +89,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUpdateShardHandlerConfig(UpdateShardHandlerConfig.TEST_DEFAULT)
+        .setAllowPaths(Set.of(SolrPaths.ALL_PATH))
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 

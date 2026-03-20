@@ -24,7 +24,7 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;

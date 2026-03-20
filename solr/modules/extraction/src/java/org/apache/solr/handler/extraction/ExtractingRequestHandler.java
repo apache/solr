@@ -35,22 +35,14 @@ import org.slf4j.LoggerFactory;
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need
  * the text to be extracted first from the document.
  */
-@SuppressWarnings("removal")
 public class ExtractingRequestHandler extends ContentStreamHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
-  public static final String CONFIG_LOCATION = "tika.config";
-
-  protected String tikaConfigLoc;
-  protected ParseContextConfig parseContextConfig;
-
   protected SolrContentHandlerFactory factory;
   protected String defaultBackendName;
-  protected LocalTikaExtractionBackend localBackend;
-  protected TikaServerExtractionBackend tikaServerBackend; // may be null if not configured
+  protected TikaServerExtractionBackend tikaServerBackend;
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -60,85 +52,77 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
   @Override
   public void inform(SolrCore core) {
     try {
-      // Store tika config location (backend-specific)
-      this.tikaConfigLoc = (String) initArgs.get(CONFIG_LOCATION);
-
-      String parseContextConfigLoc = (String) initArgs.get(PARSE_CONTEXT_CONFIG);
-      if (parseContextConfigLoc == null) { // default:
-        parseContextConfig = new ParseContextConfig();
-      } else {
-        parseContextConfig =
-            new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
+      // Fail if using old unsupported configuration
+      if (initArgs.get("tika.config") != null || initArgs.get("parseContext.config") != null) {
+        if (log.isErrorEnabled()) {
+          log.error(
+              "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
+        }
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
       }
 
-      // Always create local backend
-      this.localBackend = new LocalTikaExtractionBackend(core, tikaConfigLoc, parseContextConfig);
-
-      // Optionally create Tika Server backend if URL configured
-      String tikaServerUrl = (String) initArgs.get(ExtractingParams.TIKASERVER_URL);
-      if (tikaServerUrl != null && !tikaServerUrl.trim().isEmpty()) {
-        int timeoutSecs = 0;
-        Object initTimeout = initArgs.get(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
-        if (initTimeout != null) {
-          try {
-            timeoutSecs = Integer.parseInt(String.valueOf(initTimeout));
-          } catch (NumberFormatException nfe) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Invalid value for '"
-                    + ExtractingParams.TIKASERVER_TIMEOUT_SECS
-                    + "': "
-                    + initTimeout,
-                nfe);
-          }
-        }
-        Object maxCharsObj = initArgs.get(ExtractingParams.TIKASERVER_MAX_CHARS);
-        long maxCharsLimit = TikaServerExtractionBackend.DEFAULT_MAXCHARS_LIMIT;
-        if (maxCharsObj != null) {
-          try {
-            maxCharsLimit = Long.parseLong(String.valueOf(maxCharsObj));
-          } catch (NumberFormatException nfe) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Invalid value for '"
-                    + ExtractingParams.TIKASERVER_MAX_CHARS
-                    + "': "
-                    + maxCharsObj);
-          }
-        }
-        this.tikaServerBackend =
-            new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs, initArgs, maxCharsLimit);
-      }
-
-      // Choose default backend name
+      // Handle backend selection
       String backendName = (String) initArgs.get(ExtractingParams.EXTRACTION_BACKEND);
       this.defaultBackendName =
           (backendName == null || backendName.trim().isEmpty())
-              ? LocalTikaExtractionBackend.NAME
+              ? TikaServerExtractionBackend.NAME
               : backendName;
 
-      // Validate backend and check configuration
-      switch (this.defaultBackendName) {
-        case LocalTikaExtractionBackend.NAME:
-          break;
-        case TikaServerExtractionBackend.NAME:
-          // Tika Server backend requires URL to be configured
-          if (this.tikaServerBackend == null) {
-            throw new SolrException(
-                ErrorCode.INVALID_STATE, "Tika Server backend requested but no URL configured");
-          }
-          break;
-        default:
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST,
-              "Invalid extraction backend: '"
-                  + this.defaultBackendName
-                  + "'. Must be one of: '"
-                  + LocalTikaExtractionBackend.NAME
-                  + "', '"
-                  + TikaServerExtractionBackend.NAME
-                  + "'");
+      // Validate backend name
+      if (!TikaServerExtractionBackend.NAME.equals(this.defaultBackendName)) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Invalid extraction backend: '"
+                + this.defaultBackendName
+                + "'. Only '"
+                + TikaServerExtractionBackend.NAME
+                + "' is supported");
       }
+
+      String tikaServerUrl = (String) initArgs.get(ExtractingParams.TIKASERVER_URL);
+      if (tikaServerUrl == null || tikaServerUrl.trim().isEmpty()) {
+        if (log.isErrorEnabled()) {
+          log.error(
+              "Tika Server URL must be configured via '{}' parameter",
+              ExtractingParams.TIKASERVER_URL);
+        }
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Tika Server URL must be configured via '"
+                + ExtractingParams.TIKASERVER_URL
+                + "' parameter");
+      }
+
+      int timeoutSecs = 0;
+      Object initTimeout = initArgs.get(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
+      if (initTimeout != null) {
+        try {
+          timeoutSecs = Integer.parseInt(String.valueOf(initTimeout));
+        } catch (NumberFormatException nfe) {
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "Invalid value for '"
+                  + ExtractingParams.TIKASERVER_TIMEOUT_SECS
+                  + "': "
+                  + initTimeout,
+              nfe);
+        }
+      }
+      Object maxCharsObj = initArgs.get(ExtractingParams.TIKASERVER_MAX_CHARS);
+      long maxCharsLimit = TikaServerExtractionBackend.DEFAULT_MAXCHARS_LIMIT;
+      if (maxCharsObj != null) {
+        try {
+          maxCharsLimit = Long.parseLong(String.valueOf(maxCharsObj));
+        } catch (NumberFormatException nfe) {
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "Invalid value for '" + ExtractingParams.TIKASERVER_MAX_CHARS + "': " + maxCharsObj);
+        }
+      }
+      this.tikaServerBackend =
+          new TikaServerExtractionBackend(tikaServerUrl, timeoutSecs, initArgs, maxCharsLimit);
     } catch (Exception e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Unable to initialize ExtractingRequestHandler", e);
@@ -157,19 +141,16 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
             : defaultBackendName;
 
     ExtractionBackend extractionBackend;
-    if (LocalTikaExtractionBackend.NAME.equals(nameToUse)) {
-      extractionBackend = localBackend;
-    } else if (TikaServerExtractionBackend.NAME.equals(nameToUse)) {
-      if (tikaServerBackend == null) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Tika Server backend requested but '"
-                + ExtractingParams.TIKASERVER_URL
-                + "' is not configured");
-      }
+    if (TikaServerExtractionBackend.NAME.equals(nameToUse)) {
       extractionBackend = tikaServerBackend;
     } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown extraction backend: " + nameToUse);
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Unknown extraction backend: '"
+              + nameToUse
+              + "'. Only '"
+              + TikaServerExtractionBackend.NAME
+              + "' is supported");
     }
 
     return new ExtractingDocumentLoader(req, processor, factory, extractionBackend);
@@ -183,19 +164,13 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   @Override
   public void close() throws IOException {
-    // Close our backends to release any shared resources (e.g., Jetty HttpClient)
+    // Close the backend to release any shared resources (e.g., Jetty HttpClient)
     try {
       if (tikaServerBackend != null) {
         tikaServerBackend.close();
       }
     } finally {
-      try {
-        if (localBackend != null) {
-          localBackend.close();
-        }
-      } finally {
-        super.close();
-      }
+      super.close();
     }
   }
 }

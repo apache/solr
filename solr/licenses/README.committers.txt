@@ -29,7 +29,7 @@ what changed with respect to licensing in the commit diff.
 
 ---
 
-Any changes made to this directory should be noted in CHANGES.txt,
+Any changes made to this directory should be noted in the changelog,
 along with the specific version information.  If the version is a
 "snapshot" of another Apache project, include the SVN revision number.
 

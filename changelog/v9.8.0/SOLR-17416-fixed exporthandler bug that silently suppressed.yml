@@ -1,0 +1,8 @@
+title: Fixed ExportHandler bug that silently suppressed errors and returned partial
+  results in some situations
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-17416
+  url: https://issues.apache.org/jira/browse/SOLR-17416

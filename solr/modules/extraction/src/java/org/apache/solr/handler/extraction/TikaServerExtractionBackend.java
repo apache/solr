@@ -19,7 +19,10 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -34,8 +37,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.handler.extraction.fromtika.BodyContentHandler;
 import org.apache.solr.util.RefCounted;
+import org.apache.tika.sax.BodyContentHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -45,7 +48,10 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** Extraction backend using the Tika Server. It uses a shared Jetty HttpClient. */
+/**
+ * Extraction backend using the Tika Server. It uses a shared Jetty HttpClient. TODO: Get rid of the
+ * import of org.apache.tika.sax.BodyContentHandler;
+ */
 public class TikaServerExtractionBackend implements ExtractionBackend {
   /**
    * Default maximum response size (100MB) to prevent excessive memory usage from large documents
@@ -79,7 +85,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
     // Validate URL format and scheme
     try {
-      java.net.URI uri = new java.net.URI(baseUrl);
+      URI uri = new URI(baseUrl);
       String scheme = uri.getScheme();
       if (scheme == null
           || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
@@ -87,7 +93,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
             "baseUrl must use http or https scheme, got: " + baseUrl);
       }
       uri.toURL(); // Additional validation that it's a valid URL
-    } catch (java.net.URISyntaxException | java.net.MalformedURLException e) {
+    } catch (URISyntaxException | MalformedURLException e) {
       throw new IllegalArgumentException("Invalid baseUrl: " + baseUrl, e);
     }
 
@@ -177,6 +183,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
             ? Duration.ofSeconds(request.tikaServerTimeoutSeconds)
             : defaultTimeout;
     req.timeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    // Also set idle timeout in case of heavy server side work like OCR
+    req.idleTimeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
     // Headers
     String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
@@ -249,12 +257,13 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
           || cause instanceof ClosedChannelException) {
         throw new SolrException(
             SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-            "Error communicating with TikaServer "
+            "Error communicating with TikaServer at "
                 + url
                 + ": "
                 + cause.getClass().getSimpleName()
                 + ": "
-                + cause.getMessage(),
+                + cause.getMessage()
+                + ". Check that a TikaServer is running.",
             cause);
       }
       throw new SolrException(

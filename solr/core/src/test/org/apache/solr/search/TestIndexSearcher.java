@@ -32,7 +32,11 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -41,11 +45,8 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestIndexSearcher extends SolrTestCaseJ4 {
@@ -58,11 +59,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     initCore("solrconfig.xml", "schema.xml");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Override
@@ -265,11 +261,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   }
 
   private void doQuery(SolrCore core) throws Exception {
-    DirectSolrConnection connection = new DirectSolrConnection(core);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    assertTrue(
-        connection.request("/select", params, null).contains("<int name=\"status\">0</int>"));
+    EmbeddedSolrServer server = new EmbeddedSolrServer(core);
+    SolrQuery query = new SolrQuery("*:*");
+    QueryResponse response = server.query(query);
+    assertEquals(0, response.getStatus());
   }
 
   public void testDontUseColdSearcher() throws Exception {
@@ -410,9 +405,11 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   }
 
   private void addDummyDoc(SolrCore core) throws Exception {
-    DirectSolrConnection connection = new DirectSolrConnection(core);
-    SolrRequestHandler handler = core.getRequestHandler("/update");
-    connection.request(handler, null, adoc("id", "1"));
+    EmbeddedSolrServer server = new EmbeddedSolrServer(core);
+
+    SolrInputDocument doc = sdoc("id", "1");
+    UpdateResponse response = server.add(doc);
+    assertEquals(0, response.getStatus());
   }
 
   public static class MockSearchComponent extends SearchComponent implements SolrCoreAware {

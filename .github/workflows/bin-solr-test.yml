@@ -17,9 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
-    env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
@@ -31,7 +28,7 @@ jobs:
 
     - name: Archive logs
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: logs
         path: solr/packaging/build/test-output

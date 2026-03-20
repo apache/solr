@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
@@ -61,7 +61,7 @@ public class TestConfigSetImmutable extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
+    solrTestRule.reset();
 
     if (restTestHarness != null) {
       restTestHarness.close();

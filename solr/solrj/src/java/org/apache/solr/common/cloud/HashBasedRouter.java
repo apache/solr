@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -69,7 +70,7 @@ public abstract class HashBasedRouter extends DocRouter {
   }
 
   protected Slice hashToSlice(int hash, DocCollection collection) {
-    final Slice[] slices = collection.getActiveSlicesArr();
+    final Collection<Slice> slices = collection.getActiveSlices();
     for (Slice slice : slices) {
       Range range = slice.getRange();
       if (range != null && range.includes(hash)) return slice;
@@ -93,6 +94,6 @@ public abstract class HashBasedRouter extends DocRouter {
 
     // use the shardKey as an id for plain hashing
     Slice slice = getTargetSlice(shardKey, null, null, params, collection);
-    return slice == null ? Collections.<Slice>emptyList() : Collections.singletonList(slice);
+    return slice == null ? List.of() : Collections.singletonList(slice);
   }
 }

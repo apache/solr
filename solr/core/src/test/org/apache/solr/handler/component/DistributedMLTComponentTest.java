@@ -27,7 +27,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.stats.ExactStatsCache;
 import org.apache.solr.search.stats.LRUStatsCache;
 import org.apache.solr.search.stats.LocalStatsCache;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -61,11 +60,6 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     } else {
       System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
     }
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solr.statsCache");
   }
 
   @Test

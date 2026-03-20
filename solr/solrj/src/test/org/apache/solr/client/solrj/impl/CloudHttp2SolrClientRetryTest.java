@@ -17,10 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.SolrJMetricTestUtils.getPrometheusMetricValue;
+import static org.apache.solr.util.SolrJMetricTestUtils.getPrometheusMetricValue;
 
 import java.util.Collections;
 import java.util.Optional;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -47,13 +48,28 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
   @Test
   public void testRetry() throws Exception {
-    String collectionName = "testRetry";
-    String prometheusMetric =
-        "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
-    try (CloudSolrClient solrClient =
-        new CloudHttp2SolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
+
+    // Randomly decide to use either the Jetty Http Client or the JDK Http Client
+    var jettyClientBuilder = new HttpJettySolrClient.Builder();
+
+    // forcing Http/1.1 to avoid an extra HEAD request with the first update.
+    // (This causes the counts to be 1 greater than what we test for here.)
+    var jdkClientBuilder =
+        new HttpJdkSolrClient.Builder()
+            .useHttp1_1(true)
+            .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
+
+    var cloudSolrclientBuilder =
+        new CloudSolrClient.Builder(
+            Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
+    cloudSolrclientBuilder.withHttpClientBuilder(
+        random().nextBoolean() ? jettyClientBuilder : jdkClientBuilder);
+
+    try (CloudSolrClient solrClient = cloudSolrclientBuilder.build()) {
+      String collectionName = "testRetry";
+      String prometheusMetric =
+          "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
+
       CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);
 
       solrClient.add(collectionName, new SolrInputDocument("id", "1"));

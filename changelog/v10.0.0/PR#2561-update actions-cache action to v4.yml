@@ -1,0 +1,7 @@
+title: Update actions/cache action to v4
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#2561
+  url: https://github.com/apache/solr/pull/2561

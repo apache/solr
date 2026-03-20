@@ -297,16 +297,11 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
   }
 
   public IndexSchema initCoreUsingSchemaVersion(final float ver) throws Exception {
-
-    try {
-      System.setProperty("solr.schema.test.ver", String.valueOf(ver));
-      initCore("solrconfig-basic.xml", "schema-behavior.xml");
-      IndexSchema s = h.getCore().getLatestSchema();
-      assertEquals(
-          "Schema version not set correctly", String.valueOf(ver), String.valueOf(s.getVersion()));
-      return s;
-    } finally {
-      System.clearProperty("solr.schema.test.ver");
-    }
+    System.setProperty("solr.schema.test.ver", String.valueOf(ver));
+    initCore("solrconfig-basic.xml", "schema-behavior.xml");
+    IndexSchema s = h.getCore().getLatestSchema();
+    assertEquals(
+        "Schema version not set correctly", String.valueOf(ver), String.valueOf(s.getVersion()));
+    return s;
   }
 }

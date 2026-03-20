@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Introducing support for nested vector search, enabling the retrieval of nested documents diversified by parent. This enables multi valued vectors scenarios and best child retrieval per parent.
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Alessandro Benedetti
+links:
+  - name: SOLR-17736
+    url: https://issues.apache.org/jira/browse/SOLR-17736

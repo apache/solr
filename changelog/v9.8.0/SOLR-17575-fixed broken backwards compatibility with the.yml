@@ -1,0 +1,9 @@
+title: Fixed broken backwards compatibility with the legacy "langid.whitelist" config
+  in Solr Langid.
+type: fixed
+authors:
+- name: Jan Høydahl
+- name: Alexander Zagniotov
+links:
+- name: SOLR-17575
+  url: https://issues.apache.org/jira/browse/SOLR-17575

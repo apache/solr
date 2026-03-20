@@ -1,0 +1,8 @@
+title: When Solr forwards/proxies requests to another node that can service the request,
+  it needs to pass authorization headers.
+type: fixed
+authors:
+- name: Timo Crabbé
+links:
+- name: SOLR-17789
+  url: https://issues.apache.org/jira/browse/SOLR-17789

@@ -145,7 +145,7 @@ image::math-expressions/zipf.png[]
 
 The `cumulativeProbability` function can be used with all probability distributions to calculate the cumulative probability of encountering a specific random variable within a specific distribution.
 
-Below is example of calculating the cumulative probability of a random variable within a normal distribution.
+Below is an example of calculating the cumulative probability of a random variable within a normal distribution.
 
 [source,text]
 ----

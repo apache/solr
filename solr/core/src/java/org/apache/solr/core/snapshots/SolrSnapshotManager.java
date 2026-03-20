@@ -74,7 +74,7 @@ public class SolrSnapshotManager {
       SolrZkClient zkClient, String collectionName, String commitName)
       throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.ofNullable(commitName));
-    return zkClient.exists(zkPath, true);
+    return zkClient.exists(zkPath);
   }
 
   /**
@@ -90,7 +90,7 @@ public class SolrSnapshotManager {
       SolrZkClient zkClient, String collectionName, CollectionSnapshotMetaData meta)
       throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.getName()));
-    zkClient.makePath(zkPath, Utils.toJSON(meta), CreateMode.PERSISTENT, true);
+    zkClient.makePath(zkPath, Utils.toJSON(meta), CreateMode.PERSISTENT);
   }
 
   /**
@@ -106,7 +106,7 @@ public class SolrSnapshotManager {
       SolrZkClient zkClient, String collectionName, CollectionSnapshotMetaData meta)
       throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.getName()));
-    zkClient.setData(zkPath, Utils.toJSON(meta), -1, true);
+    zkClient.setData(zkPath, Utils.toJSON(meta), -1);
   }
 
   /**
@@ -122,7 +122,7 @@ public class SolrSnapshotManager {
       SolrZkClient zkClient, String collectionName, String commitName)
       throws InterruptedException, KeeperException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(commitName));
-    zkClient.delete(zkPath, -1, true);
+    zkClient.delete(zkPath, -1);
   }
 
   /**
@@ -138,11 +138,11 @@ public class SolrSnapshotManager {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.empty());
     try {
       // Delete the meta-data for each snapshot.
-      Collection<String> snapshots = zkClient.getChildren(zkPath, null, true);
+      Collection<String> snapshots = zkClient.getChildren(zkPath, null);
       for (String snapshot : snapshots) {
         String path = getSnapshotMetaDataZkPath(collectionName, Optional.of(snapshot));
         try {
-          zkClient.delete(path, -1, true);
+          zkClient.delete(path, -1);
         } catch (KeeperException ex) {
           // Gracefully handle the case when the zk node doesn't exist
           if (ex.code() != KeeperException.Code.NONODE) {
@@ -152,7 +152,7 @@ public class SolrSnapshotManager {
       }
 
       // Delete the parent node.
-      zkClient.delete(zkPath, -1, true);
+      zkClient.delete(zkPath, -1);
     } catch (KeeperException ex) {
       // Gracefully handle the case when the zk node doesn't exist (e.g. if no snapshots were
       // created for this collection).
@@ -180,7 +180,7 @@ public class SolrSnapshotManager {
     try {
       @SuppressWarnings({"unchecked"})
       Map<String, Object> data =
-          (Map<String, Object>) Utils.fromJSON(zkClient.getData(zkPath, null, null, true));
+          (Map<String, Object>) Utils.fromJSON(zkClient.getData(zkPath, null, null));
       return Optional.of(new CollectionSnapshotMetaData(data));
     } catch (KeeperException ex) {
       // Gracefully handle the case when the zk node for a specific
@@ -208,7 +208,7 @@ public class SolrSnapshotManager {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.empty());
 
     try {
-      Collection<String> snapshots = zkClient.getChildren(zkPath, null, true);
+      Collection<String> snapshots = zkClient.getChildren(zkPath, null);
       for (String snapshot : snapshots) {
         Optional<CollectionSnapshotMetaData> s =
             getCollectionLevelSnapshot(zkClient, collectionName, snapshot);

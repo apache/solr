@@ -44,7 +44,7 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
   /**
    * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is
-   * used. Otherwise a default testing configuration is used.
+   * used. Otherwise, a default testing configuration is used.
    */
   public abstract void startSolr(Path solrHome);
 
@@ -79,9 +79,14 @@ public abstract class SolrClientTestRule extends ExternalResource {
         if (configSet.endsWith(confSuffix)) {
           configSet = configSet.substring(0, configSet.length() - confSuffix.length());
         }
+        this.configSet = configSet;
       }
 
-      this.configSet = configSet;
+      return this;
+    }
+
+    public NewCollectionBuilder withConfigSet(Path configSet) {
+      withConfigSet(configSet.toString());
       return this;
     }
 

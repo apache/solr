@@ -61,9 +61,6 @@ public class CoreDescriptor {
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
-  public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
-      "conf" + FileSystems.getDefault().getSeparator() + "solrcore.properties";
-
   /**
    * Get the standard properties in persistable form
    *
@@ -219,14 +216,16 @@ public class CoreDescriptor {
   /**
    * Load properties specified in an external properties file.
    *
-   * <p>The file to load can be specified in a {@code properties} property on the original
-   * Properties object used to create this CoreDescriptor. If this has not been set, then we look
-   * for {@code conf/solrcore.properties} underneath the instance dir.
+   * <p>The file to load is specified in a {@code properties} property on the original Properties
+   * object used to create this CoreDescriptor.
    *
    * <p>File paths are taken as read from the core's instance directory if they are not absolute.
    */
   protected void loadExtraProperties() {
-    String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
+    String filename = coreProperties.getProperty(CORE_PROPERTIES);
+    if (filename == null) {
+      return;
+    }
     Path propertiesFile = instanceDir.resolve(filename);
     if (Files.exists(propertiesFile)) {
       try (Reader r = Files.newBufferedReader(propertiesFile, StandardCharsets.UTF_8)) {

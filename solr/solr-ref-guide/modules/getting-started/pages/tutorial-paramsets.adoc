@@ -143,7 +143,7 @@ Search for 'harry potter' with Algorithm *B*:
 http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_b
 
 We are returning only the four Harry Potter movies, leading to more precise results!
-We can say that we believe Algorithm *B* is better then Algorithm *A*, at least for this one query. 
+We can say that we believe Algorithm *B* is better than Algorithm *A*, at least for this one query. 
 You can validate this hypothesis with online A/B testing to confirm with real users that Algorithm *B* is better overall.
 
 

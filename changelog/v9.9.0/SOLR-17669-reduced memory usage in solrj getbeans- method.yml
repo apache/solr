@@ -1,0 +1,8 @@
+title: Reduced memory usage in SolrJ getBeans() method when handling dynamic fields
+  with wildcards.
+type: changed
+authors:
+- name: Martin Anzinger
+links:
+- name: SOLR-17669
+  url: https://issues.apache.org/jira/browse/SOLR-17669

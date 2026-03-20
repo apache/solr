@@ -1,0 +1,8 @@
+title: Establish /solr as the only host context supported by Solr, removing legacy
+  ability to change this. Solr paths will only be either /solr or /api now.
+type: other
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-16911
+  url: https://issues.apache.org/jira/browse/SOLR-16911

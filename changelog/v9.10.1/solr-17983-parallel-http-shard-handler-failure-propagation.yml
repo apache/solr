@@ -1,0 +1,7 @@
+title: Ensure ParallelHttpShardHandler records submit failures so distributed requests don’t hang
+type: fixed
+authors:
+  - name: Mark Miller
+links:
+  - name: SOLR-17983
+    url: https://issues.apache.org/jira/browse/SOLR-17983

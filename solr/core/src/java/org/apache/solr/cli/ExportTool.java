@@ -56,17 +56,16 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.DocCollection;
@@ -94,7 +93,7 @@ public class ExportTool extends ToolBase {
           .hasArg()
           .argName("NAME")
           .desc("Name of the collection.")
-          .build();
+          .get();
 
   private static final Option OUTPUT_OPTION =
       Option.builder()
@@ -103,7 +102,7 @@ public class ExportTool extends ToolBase {
           .argName("PATH")
           .desc(
               "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
-          .build();
+          .get();
 
   private static final Option FORMAT_OPTION =
       Option.builder()
@@ -111,10 +110,10 @@ public class ExportTool extends ToolBase {
           .hasArg()
           .argName("FORMAT")
           .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
-          .build();
+          .get();
 
   private static final Option COMPRESS_OPTION =
-      Option.builder().longOpt("compress").desc("Compress the output. Defaults to false.").build();
+      Option.builder().longOpt("compress").desc("Compress the output. Defaults to false.").get();
 
   private static final Option LIMIT_OPTION =
       Option.builder()
@@ -122,7 +121,7 @@ public class ExportTool extends ToolBase {
           .hasArg()
           .argName("#")
           .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-          .build();
+          .get();
 
   private static final Option QUERY_OPTION =
       Option.builder()
@@ -130,7 +129,7 @@ public class ExportTool extends ToolBase {
           .hasArg()
           .argName("QUERY")
           .desc("A custom query, default is '*:*'.")
-          .build();
+          .get();
 
   private static final Option FIELDS_OPTION =
       Option.builder()
@@ -138,7 +137,7 @@ public class ExportTool extends ToolBase {
           .hasArg()
           .argName("FIELDA,FIELDB")
           .desc("Comma separated list of fields to export. By default all fields are fetched.")
-          .build();
+          .get();
 
   public ExportTool(ToolRuntime runtime) {
     super(runtime);
@@ -234,29 +233,21 @@ public class ExportTool extends ToolBase {
     }
 
     DocsSink getSink() {
-      DocsSink docSink = null;
-      switch (format) {
-        case JAVABIN:
-          docSink = new JavabinSink(this);
-          break;
-        case JSON:
-          docSink = new JsonSink(this);
-          break;
-        case "jsonl":
-          docSink = new JsonWithLinesSink(this);
-          break;
-      }
-      return docSink;
+      return switch (format) {
+        case JAVABIN -> new JavabinSink(this);
+        case JSON -> new JsonSink(this);
+        case "jsonl" -> new JsonWithLinesSink(this);
+        default -> null;
+      };
     }
 
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      Http2SolrClient.Builder builder =
-          new Http2SolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+      var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
+          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
               .withHttpClientBuilder(builder)
               .build();
       NamedList<Object> response =
@@ -292,7 +283,7 @@ public class ExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = null;
+    String url;
     if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
       if (!cli.hasOption(COLLECTION_NAME_OPTION)) {
         throw new IllegalArgumentException(
@@ -329,7 +320,7 @@ public class ExportTool extends ToolBase {
             if (s.equals("_version_") || s.equals("_roor_")) return;
             if (field instanceof List) {
               if (((List<?>) field).size() == 1) {
-                field = ((List<?>) field).get(0);
+                field = ((List<?>) field).getFirst();
               }
             }
             field = constructDateStr(field);
@@ -642,7 +633,7 @@ public class ExportTool extends ToolBase {
         this.replica = replica;
       }
 
-      boolean exportDocsFromCore() throws IOException, SolrServerException {
+      void exportDocsFromCore() throws IOException, SolrServerException {
         // reference the replica's node URL, not the baseUrl in scope, which could be anywhere
         try (SolrClient client = CLIUtils.getSolrClient(replica.getBaseUrl(), credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
@@ -667,8 +658,8 @@ public class ExportTool extends ToolBase {
           StreamingJavaBinResponseParser responseParser =
               new StreamingJavaBinResponseParser(getStreamer(wrapper));
           while (true) {
-            if (failed) return false;
-            if (docsWritten.get() > limit) return true;
+            if (failed) return;
+            if (docsWritten.get() > limit) return;
             params.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
             request = new QueryRequest(params);
             request.setResponseParser(responseParser);
@@ -685,9 +676,9 @@ public class ExportTool extends ToolBase {
                       StrUtils.formatString(
                           "Could not download all docs from core {0}, docs expected: {1}, received: {2}",
                           replica.getCoreName(), expectedDocs, receivedDocs.get()));
-                  return false;
+                  return;
                 }
-                return true;
+                return;
               }
               cursorMark = nextCursorMark;
               runtime.print(".");
@@ -698,7 +689,7 @@ public class ExportTool extends ToolBase {
                       + "/"
                       + replica.getCoreName());
               failed = true;
-              return false;
+              return;
             }
           }
         }

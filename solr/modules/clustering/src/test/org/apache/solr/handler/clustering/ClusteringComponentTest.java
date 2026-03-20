@@ -40,8 +40,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.carrot2.clustering.Cluster;
@@ -385,7 +385,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, reqParams)) {
+    try (SolrQueryRequest req = new SolrQueryRequestBase(core, reqParams)) {
       handler.handleRequest(req, rsp);
       NamedList<?> values = rsp.getValues();
       @SuppressWarnings("unchecked")

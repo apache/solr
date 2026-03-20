@@ -19,9 +19,9 @@ rootProject.name = 'build-infra'
 
 // Use project's version catalog for centralized dependency management
 dependencyResolutionManagement {
-    versionCatalogs {
-        libs {
-            from(files("../../gradle/libs.versions.toml"))
-        }
+  versionCatalogs {
+    libs {
+      from(files("../../gradle/libs.versions.toml"))
     }
+  }
 }

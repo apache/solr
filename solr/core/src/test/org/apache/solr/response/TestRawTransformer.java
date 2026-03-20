@@ -23,17 +23,17 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -80,10 +80,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
     final Path collDir = homeDir.resolve("collection1");
     final Path confDir = collDir.resolve("conf");
     Files.createDirectories(confDir);
-    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
-    String src_dir = TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(src_dir, "schema_latest.xml"), confDir.resolve("schema.xml"));
-    Files.copy(Path.of(src_dir, "solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
+    Path srcDir = TEST_HOME().resolve("collection1").resolve("conf");
+    Files.copy(srcDir.resolve("schema_latest.xml"), confDir.resolve("schema.xml"));
+    Files.copy(srcDir.resolve("solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
     for (String file :
         new String[] {
           "solrconfig.snippet.randomindexconfig.xml",
@@ -93,14 +92,12 @@ public class TestRawTransformer extends SolrCloudTestCase {
           "currency.xml",
           "enumsConfig.xml"
         }) {
-      Files.copy(Path.of(src_dir, file), confDir.resolve(file));
+      Files.copy(srcDir.resolve(file), confDir.resolve(file));
     }
     Files.createFile(collDir.resolve("core.properties"));
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
     JSR =
         new JettySolrRunner(
-            homeDir.toAbsolutePath().toString(), nodeProperties, JettyConfig.builder().build());
+            homeDir.toAbsolutePath().toString(), new Properties(), JettyConfig.builder().build());
   }
 
   private static void initCloud() throws Exception {
@@ -125,7 +122,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     if (CLIENT != null) {
-      org.apache.solr.common.util.IOUtils.closeQuietly(CLIENT);
+      IOUtils.closeQuietly(CLIENT);
       CLIENT = null;
     }
     if (JSR != null) {
@@ -184,7 +181,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
-                    new String[] {"xml"})));
+                    new String[] {"xml"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
     NamedList<Object> rsp = CLIENT.request(req, "collection1");
     String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -209,7 +208,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"author,content_type"},
                     "wt",
-                    new String[] {"xml"})));
+                    new String[] {"xml"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
     strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -232,7 +233,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
-                    new String[] {"json"})));
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
     strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -257,7 +260,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"subject:[json],links:[json]"},
                     "wt",
-                    new String[] {"json"})));
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     NamedList<Object> rsp = CLIENT.request(req, "collection1");
     String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -280,7 +285,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"id", "subject,links"},
                     "wt",
-                    new String[] {"json"})));
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
     strResponse = InputStreamResponseParser.consumeResponseToString(rsp);

@@ -32,9 +32,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -1519,10 +1520,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // SOLR 3161 ensure shards.qt=/update fails (anything but search handler really)
     // Also see TestRemoteStreaming#testQtUpdateFails()
 
-    // SolrException e = expectThrows(SolrException.class, () -> {
-    //  ignoreException("isShard is only acceptable");
-    //  query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
-    // });
     unIgnoreException("isShard is only acceptable");
 
     // test debugging
@@ -1550,6 +1547,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // Check Info is added to for each shard
     ModifiableSolrParams q = new ModifiableSolrParams();
     q.set("q", "*:*");
+    q.set("rows", "0");
     q.set(ShardParams.SHARDS_INFO, true);
     setDistributedParams(q);
     rsp = queryRandomShard(q);
@@ -1560,6 +1558,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertNotNull("missing shard info", sinfo);
     assertEquals(
         "should have an entry for each shard [" + sinfo + "] " + shards, cnt, sinfo.size());
+    // We are setting rows=0, so scores should not be collected
+    for (int i = 0; i < cnt; i++) {
+      String shard = sinfo.getName(i);
+      assertNull(
+          "should not have any score information (maxScore) in the shard info: " + shard,
+          ((Map<String, Object>) sinfo.get(shard)).get("maxScore"));
+    }
 
     // test shards.tolerant=true
 
@@ -1708,8 +1713,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           tdate_b,
           "stats.calcdistinct",
           "true");
-    } catch (SolrClient.RemoteSolrException e) {
-      if (e.getMessage().startsWith("java.lang.NullPointerException")) {
+    } catch (RemoteSolrException e) {
+      if (e.getMessage().contains("java.lang.NullPointerException")) {
         fail("NullPointerException with stats request on empty index");
       } else {
         throw e;

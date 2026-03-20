@@ -77,7 +77,7 @@ templates:
     Reason for fail is {{ reason }}.
     
     {% endif %}
-    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %} 
+    This vote has {% if passed %}PASSED{% else %}FAILED{% endif %}  
     ----
     {%- endmacro %}
   announce_solr: |
@@ -102,7 +102,7 @@ templates:
 
       <https://solr.apache.org/guide/solr/{{ release_version_refguide }}/upgrade-notes/solr-upgrade-notes.html>
 
-    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
+    Please read CHANGELOG.md for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
       <https://solr.apache.org/{{ release_version_underscore }}/changes/Changes.html>
   announce_solr_mail: |
@@ -161,6 +161,7 @@ templates:
 #     depends:  # One or more dependencies which will bar execution
 #     - todo_id1
 #     - todo_id2
+#     types: ['major', 'minor', 'bugfix'] # Limit TODO to specific release types
 #     vars:  # Dictionary of jinja2 variables local to this TODO, e.g.
 #       logfile_path: "{{ [rc_folder, 'logs'] | path_join }}"
 #       # Vars can contain global jinja vars or local vars earlier defined (ordered dict)
@@ -171,11 +172,14 @@ templates:
 #     function: my_python_function  # Will call the named function for complex tasks
 #     commands: !Commands   # A !Commands object holding commands to execute for this todo
 #       root_folder: '{{ git_checkout_folder }}' # path to where commands will run
-#       commands_text: Introduction text to be displayed just before the commands 
+#       commands_text: Introduction text to be displayed just before the commands
 #       enable_execute: true # Set to false to never offer to run commands automatically
 #       confirm_each_command: true # Set to false to run all commands without prompting
 #       remove_files: ['file1', 'folder2'] # List of files or folders that must be gone
 #       logs_prefix: prefix # Lets you prefix logs file names with this string
+#       run_text: Optional text to display before asking to run commands
+#       env: {} # Dictionary of environment variables to set before running commands
+#       vars: {} # Dictionary of local jinja2 variables for this Commands block
 #       commands:   # List of !Commands to execute
 #       - !Command  # One single command
 #         cmd: "ls {{ folder_to_ls }}"  # A single command. May reference jinja vars
@@ -183,13 +187,17 @@ templates:
 #         cwd: relative_path # Where to run command, relative to root_folder
 #         comment: # Will display a # or REM comment above the command in printouts
 #         vars: {} # Possible to define local vars for this command only
-#         logfile: my.og # Overrides log file name which may grow very long :)
+#         logfile: my.log # Overrides log file name which may grow very long :)
 #         tee: false       # If true, sends output to console and file
 #         stdout: false    # if true, sends output only to console, not log file
 #         live: false      # If true, sends output live byte-by-byte to console
 #         redirect: file.txt      # Send output to file. Use instead of >
 #         redirect_append: false  # Will cause output to be appended, like >>
-#         shell: false     $ Set to true to use built-in shell commands
+#         shell: false     # Set to true to use built-in shell commands
+#         should_fail: false # Set to true if command is expected to fail (for testing)
+#         persist_vars: false # If true, parses stdout for --wizard-var KEY=VALUE markers
+#                             # and persists them to TODO state.
+#                             # Format: --wizard-var var_name=value with spaces allowed in value
 #     user_input: # An array of !UserInput objects for requesting input from user
 #     - !UserInput
 #       prompt: Please enter your gpg key ID, e.g. 0D8D0B93
@@ -665,12 +673,16 @@ groups:
     - bugfix
   - !Todo
     id: dependency_updates_changes
-    title: Add dependency updates to CHANGES.txt
-    description: Bulk add all 'solrbot' dependency updates since last release
+    title: Add dependency updates to changelog
+    description: |
+      Bulk add all 'solrbot' dependency updates since last release.
+      NOTE: Work in progress to let each Solrbot PR add its own changes to changelog.
+      This step will be removed once that is done.
+      Until then, there may be a mix of PRs with and without changes to changelog.
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: We call out to a helper script that modifies CHANGES.txt, and then commit it.
+      commands_text: We call out to a helper script that compiles SolrBot changes into `changelog/unreleased`
       confirm_each_command: true
       commands:
       - !Command
@@ -680,14 +692,146 @@ groups:
         cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
         tee: true
       - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: |
-          Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok.
-          Look for duplicates, especially when a committer has manually added a similar entry for the same upgrade.
-        stdout: true
-      - !Command
-        cmd: git add -u .  && git commit -m "Add dependency updates to CHANGES for {{ release_version }}"  && git push
+        cmd: git add changelog  && git commit -m "Add dependency updates to changelog for {{ release_version }}"  && git push
         logfile: dependency-changes.log
+  - !Todo
+    id: logchange_release
+    title: Run logchange release to prepare changelog folder
+    description: |
+      This task will run `logchange release` to prepare the new `changelog/v{{ release_version }}` folder
+      and record it in two separate commits. These commits are then cherry-picked to the stable and unstable branches.
+      This task does not push anything upstream.
+
+      **IMPORTANT**: You must do each command in this TODO individually, as the cherry-pick command relies on there being two
+      new commits on the release-branch to cherry-pick from.
+    depends: dependency_updates_changes
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run `logchange release` to create the changelog folder
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: |
+          git checkout {{ release_branch }} && \
+          echo "Running logchange release" && \
+          {{ gradle_cmd }} logchangeRelease && \
+          echo "Recording in two commits" && \
+          git rm -r changelog/unreleased && \
+          git commit -m "Logchange release on {{ release_branch }} - rm changelog/unreleased" && \
+          echo "--wizard-var changelog_rm_sha=$(git rev-parse --short HEAD)" && \
+          git add changelog && \
+          git commit -m "Logchange release on {{ release_branch }} - add changelog/v{{ release_version }}" && \
+          echo "--wizard-var changelog_add_sha=$(git rev-parse --short HEAD)"
+        comment: Creates `changelog/v{{ release_version }}` folder and records it in two separate commits
+        logfile: logchange-release.log
+        shell: true
+        tee: true
+        persist_vars: true
+      - !Command
+        cmd: |
+          echo "--- Chery-picking to stable branch" && \
+          git checkout {{ stable_branch }} && \
+          git cherry-pick -X ours -X no-renames {{ changelog_rm_sha }} && \
+          git cherry-pick {{ changelog_add_sha }} && \
+          echo "--- Chery-picking to unstable branch" && \
+          git checkout main && \
+          git cherry-pick -X ours -X no-renames {{ changelog_rm_sha }} && \
+          git cherry-pick {{ changelog_add_sha }}
+        comment: Cherry-pick the release changelog commits to stable and unstable branches
+        logfile: cherry-pick-changelog-release.log
+        shell: true
+        tee: true
+  - !Todo
+    id: validate_changelog_unreleased
+    title: Validate changelog structure across branches
+    description: |
+      Validate that the changelog folder structure is correct and consistent across branches,
+      and verify that changelog entries are properly distributed (no released files in unreleased folder).
+      This ensures the CHANGELOG.md generation was successful and ready for the release.
+    depends: logchange_release
+    vars:
+      report_file: "{{ [rc_folder, 'changelog_validation_report.json'] | path_join }}"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run the changelog validation script to help assess state of changelog folder
+      confirm_each_command: false
+      commands:
+        - !Command
+          cmd: python3 -u dev-tools/scripts/validateChangelogs.py --report-file {{ report_file }} --format json --skip-sync-check
+          logfile: validateChangelogs.log
+          tee: true
+    post_description: |
+      Review the validation report at {{ report_file }}. If there are any errors, you may need to 
+      go back and fix the changelog entries and commit the fix to relevant branch. If there are only 
+      warnings, you can proceed. The validation ensures:
+      - All changelog/vX.Y.Z folders are identical across branches
+      - No released JIRAs exist in the unreleased folder
+      - You see a list of `changelog/unreleased/` files that are *new* to each version
+  - !Todo
+    id: logchange_generate
+    title: Generate CHANGELOG.md using logchange generate
+    description: |
+      This task will run `logchange generate` to generate the `/CHANGELOG.md` file
+      and commit it to the release branch. The generated CHANGELOG will be cherry-picked
+      to the stable and unstable branches afterward.
+    depends: validate_changelog_unreleased
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Generate `/CHANGELOG.md` using logchange
+      commands:
+      - !Command
+        cmd: |
+          git checkout {{ release_branch }} && \
+          echo "Running logchange generate" && \
+          {{ gradle_cmd }} logchangeGenerate && \
+          sed '/^\[unreleased\]$/,+3d' ./CHANGELOG.md >/tmp/CHANGELOG.md.tmp && \
+          mv /tmp/CHANGELOG.md.tmp CHANGELOG.md && \
+          rm -f changelog/unreleased/version-summary.md && \
+          git add CHANGELOG.md changelog && \
+          git commit -m "CHANGELOG.md generated for release v{{ release_version }}" && \
+          echo "--wizard-var changelog_md_sha=$(git rev-parse --short HEAD)"
+        comment: Generate `/CHANGELOG.md` and commit to {{ release_branch }}
+        logfile: logchange-generate.log
+        shell: true
+        tee: true
+        persist_vars: true
+      - !Command
+        cmd: |
+          generate_sha=$(git rev-parse --short HEAD) && \
+          echo "--- Chery-picking to stable branch" && \
+          git checkout {{ stable_branch }} && \
+          git cherry-pick {{ changelog_md_sha }} && \
+          echo "--- Chery-picking to unstable branch" && \
+          git checkout main && \
+          git cherry-pick {{ changelog_md_sha }}
+        comment: Cherry-pick the CHANGELOG generation commit to stable and unstable branches
+        logfile: cherry-pick-changelog-generate.log
+        shell: true
+        tee: true
+  - !Todo
+    id: push_changelog_to_branches
+    title: Push changelog edits to all branches
+    description: |
+      This task will push all the changelog edits (release, generate, and other changes)
+      to each branch (release, stable, and unstable) upstream to the git repository.
+
+      Perform this step after all changelog validations have passed and you're satisfied
+      with the changelog state on all branches.
+    depends: logchange_generate
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Push changelog commits to all branches
+      commands:
+      - !Command
+        cmd: |
+          for branch in {{ release_branch }} {{ stable_branch }} main; do  
+          git checkout $branch
+          git push origin $branch
+          done
+        comment: Push changelog commits to all branches
+        logfile: push-changelog-all-branches.log
+        shell: true
+        tee: true
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -695,7 +839,8 @@ groups:
       These are typically edited on the Wiki
 
       Clone a page for a previous version as a starting point for your release notes.
-      Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
+      Use the contents of `CHANGELOG.md` and `major-changes-in-solr-N.adoc` as input and write a more
+      concise format for public consumption.
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
@@ -1288,7 +1433,7 @@ groups:
     description: |
       Ensure that the reference Guide is updated for {{ release_version }}. In particular, the sections "Solr Upgrade Notes"
       and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
-      Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
+      Check that the Blocker JIRA issue created in the beginning of the release process is resolved.
   - !Todo
     id: build_ref_guide_htaccess
     title: Build the ref guide .htaccess file
@@ -1687,53 +1832,6 @@ groups:
         tee: true
       - !Command
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
-        logfile: commit-stable.log
-  - !Todo
-    id: synchronize_changes
-    title: Synchronize CHANGES.txt
-    description: |
-      Copy the CHANGES.txt section for this release back to the stable and unstable branches' 
-      CHANGES.txt files, removing any duplicate entries, but only from sections for as-yet 
-      unreleased versions; leave intact duplicate entries for already-released versions.
-
-      There is a script to generate a regex that will match JIRAs fixed in a release: 
-      `releasedJirasRegex.py`. The following examples will print regexes matching all JIRAs 
-      fixed in {{ release_version }}, which can then be used to find duplicates in unreleased 
-      version sections of the corresponding CHANGES.txt files.
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Synchronize CHANGES.txt
-      commands:
-      - !Command
-        cmd: git checkout {{ release_branch }}
-        comment: Go to release branch
-        logfile: checkout-release.log
-        stdout: true
-      - !Command
-        cmd: python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} solr/CHANGES.txt
-        tee: true
-        comment: Find version regexes
-      - !Command
-        cmd: git checkout main && git pull --ff-only && git clean -df && git checkout -- .
-        comment: Go to main branch
-        logfile: checkout-main.log
-      - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Edit CHANGES.txt for main branch, do necessary changes
-        stdout: true
-      - !Command
-        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
-        logfile: commit-main.log
-      - !Command
-        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
-        comment: Go to stable branch
-        logfile: checkout-stable.log
-      - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Edit CHANGES.txt for stable branch, do necessary changes
-        stdout: true
-      - !Command
-        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
         logfile: commit-stable.log
   - !Todo
     id: increment_release_version

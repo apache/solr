@@ -250,14 +250,6 @@ This alternative `curl` command performs equivalent operations but with minimal 
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 
-Short requests can also be sent using a HTTP GET command, if enabled in xref:configuration-guide:requestdispatcher.adoc#requestparsers-element[`requestParsers`] element of `solrconfig.xml`, URL-encoding the request, as in the following.
-Note the escaping of "<" and ">":
-
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update?stream.body=%3Ccommit/%3E&wt=xml
-----
-
 Responses from Solr take the form shown here:
 
 [source,xml]
@@ -493,7 +485,7 @@ In addition to the `/update` handler, there are a few additional JSON specific r
 [width="100%",options="header",]
 |===
 |Path |Default Parameters
-|`/update/json` |`stream.contentType=application/json`
+|`/update/json` |`update.contentType=application/json`
 |`/update/json/docs` a|
 `stream.contentType=application/json`
 
@@ -753,7 +745,7 @@ In addition to the `/update` handler, there is an additional CSV specific reques
 [cols=",",options="header",]
 |===
 |Path |Default Parameters
-|`/update/csv` |`stream.contentType=application/csv`
+|`/update/csv` |`update.contentType=application/csv`
 |===
 
 The `/update/csv` path may be useful for clients sending in CSV formatted update commands from applications where setting the Content-Type proves difficult.

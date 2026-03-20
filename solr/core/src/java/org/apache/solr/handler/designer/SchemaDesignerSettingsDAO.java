@@ -22,7 +22,6 @@ import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkP
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +71,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     }
 
     map.putIfAbsent(AUTO_CREATE_FIELDS, isFieldGuessingEnabled);
-    map.putIfAbsent(DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
+    map.putIfAbsent(DESIGNER_KEY + LANGUAGES_PARAM, List.of());
     map.putIfAbsent(DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true);
     map.putIfAbsent(DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false);
 
@@ -83,8 +82,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     boolean changed = false;
 
     ConfigOverlay overlay = getConfigOverlay(configSet);
-    Map<String, Object> storedUserProps =
-        overlay != null ? overlay.getUserProps() : Collections.emptyMap();
+    Map<String, Object> storedUserProps = overlay != null ? overlay.getUserProps() : Map.of();
     for (Map.Entry<String, Object> e : settings.toMap().entrySet()) {
       String key = e.getKey();
       Object propValue = e.getValue();
@@ -118,8 +116,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     } catch (IOException exc) {
       log.error("Failed to get config overlay for {}", configSet, exc);
     }
-    Map<String, Object> userProps =
-        overlay != null ? overlay.getUserProps() : Collections.emptyMap();
+    Map<String, Object> userProps = overlay != null ? overlay.getUserProps() : Map.of();
     return SchemaDesignerSettings.getSettingAsBool(userProps, DESIGNER_KEY + DISABLED, false);
   }
 
@@ -130,7 +127,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     byte[] data = null;
     Stat stat = new Stat();
     try {
-      data = cc.getZkController().getZkStateReader().getZkClient().getData(path, null, stat, true);
+      data = cc.getZkController().getZkStateReader().getZkClient().getData(path, null, stat);
     } catch (KeeperException.NoNodeException nne) {
       // ignore
     } catch (KeeperException | InterruptedException e) {

@@ -31,8 +31,8 @@ import org.junit.Test;
 
 public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
 
-  private static final String ENTRIES_METRIC_NAME = "solr_field_cache_entries";
-  private static final String SIZE_BYTES_METRIC_NAME = "solr_field_cache_size_bytes";
+  private static final String ENTRIES_METRIC_NAME = "solr_core_field_cache_entries";
+  private static final String SIZE_BYTES_METRIC_NAME = "solr_core_field_cache_size_bytes";
   private static final String DISABLE_ENTRY_LIST_PROPERTY = "disableSolrFieldCacheMBeanEntryList";
   private static final String DISABLE_ENTRY_LIST_JMX_PROPERTY =
       "disableSolrFieldCacheMBeanEntryListJmx";

@@ -1,0 +1,8 @@
+title: Uploading a configset with a symbolic link produces a IOException. Now a error
+  message to user generated instead.
+type: fixed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-12429
+  url: https://issues.apache.org/jira/browse/SOLR-12429

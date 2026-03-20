@@ -20,8 +20,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -35,7 +35,6 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -58,7 +57,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
@@ -73,7 +72,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     log.info("Delete shard invoked");
-    Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);
+    Slice slice = adminCmdContext.getClusterState().getCollection(collectionName).getSlice(sliceId);
     if (slice == null)
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -125,14 +124,11 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    String asyncId = message.getStr(ASYNC);
-
     try {
       List<ZkNodeProps> replicas = getReplicasForSlice(collectionName, slice);
       CountDownLatch cleanupLatch = new CountDownLatch(replicas.size());
       for (ZkNodeProps r : replicas) {
-        final ZkNodeProps replica =
-            r.plus(message.getProperties()).plus("parallel", "true").plus(ASYNC, asyncId);
+        final ZkNodeProps replica = r.plus(message.getProperties()).plus("parallel", "true");
         if (log.isInfoEnabled()) {
           log.info(
               "Deleting replica for collection={} shard={} on node={}",
@@ -144,7 +140,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
         try {
           new DeleteReplicaCmd(ccc)
               .deleteReplica(
-                  clusterState,
+                  adminCmdContext.subRequestContext(DELETEREPLICA),
                   replica,
                   deleteResult,
                   () -> {

@@ -63,7 +63,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @SuppressWarnings({"unchecked"})
   public static Map<String, Slice> loadAllFromMap(
       String collection, Map<String, Object> genericSlices) {
-    if (genericSlices == null) return Collections.emptyMap();
+    if (genericSlices == null) return Map.of();
     Map<String, Slice> result = CollectionUtil.newLinkedHashMap(genericSlices.size());
     for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
       String name = entry.getKey();

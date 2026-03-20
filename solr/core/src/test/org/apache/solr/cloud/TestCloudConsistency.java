@@ -32,14 +32,14 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -87,9 +87,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       proxies = null;
     }
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
 
     shutdownCluster();
   }
@@ -274,7 +271,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
     cluster.getJettySolrRunner(0).start();
     cluster.waitForAllNodes(30);
-    ;
+
     waitForState(
         "Timeout waiting for leader",
         collection,

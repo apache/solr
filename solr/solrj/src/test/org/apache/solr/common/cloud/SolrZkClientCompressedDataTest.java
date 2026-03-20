@@ -76,10 +76,10 @@ public class SolrZkClientCompressedDataTest extends SolrTestCase {
       byte[] arr = state.getBytes(StandardCharsets.UTF_8);
       byte[] compressedData = zLibStateCompression.compressBytes(arr);
       String path = ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json";
-      zkClient.create(path, compressedData, CreateMode.PERSISTENT, true);
+      zkClient.create(path, compressedData, CreateMode.PERSISTENT);
 
       byte[] data =
-          zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true);
+          zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
       Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
       assertEquals(arr.length, data.length);
       assertNotNull(map.get("c1"));

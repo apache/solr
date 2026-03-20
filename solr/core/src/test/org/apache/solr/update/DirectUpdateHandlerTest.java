@@ -35,12 +35,11 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.index.TieredMergePolicyFactory;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrMetricTestUtils;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,26 +51,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static String savedFactory;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     System.setProperty(
         "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     systemSetPropertySolrTestsMergePolicyFactory(TieredMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema12.xml");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicyFactory();
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
   }
 
   @Override
@@ -360,7 +346,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "id:A OR id:B");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
     assertQ(
         "\"B\" should not be found.",
         req,
@@ -424,7 +410,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "id:A OR id:B");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
     assertQ(
         "\"A\" and \"B\" should be found.",
         req,

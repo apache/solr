@@ -18,6 +18,7 @@ package org.apache.solr.crossdc.update.processor;
 
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.MirroringException;
@@ -51,7 +52,8 @@ public class KafkaRequestMirroringHandler implements RequestMirroringHandler {
     }
     // TODO: Enforce external version constraint for consistent update replication (cross-cluster)
     final MirroredSolrRequest<?> mirroredRequest =
-        new MirroredSolrRequest<>(MirroredSolrRequest.Type.UPDATE, 1, request, System.nanoTime());
+        new MirroredSolrRequest<>(
+            MirroredSolrRequest.Type.UPDATE, 1, request, TimeSource.CURRENT_TIME.getTimeNs());
     try {
       sink.submit(mirroredRequest);
     } catch (MirroringException exception) {

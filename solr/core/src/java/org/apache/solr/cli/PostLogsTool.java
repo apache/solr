@@ -32,13 +32,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -55,7 +54,7 @@ public class PostLogsTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the collection.")
-          .build();
+          .get();
 
   private static final Option ROOT_DIR_OPTION =
       Option.builder()
@@ -64,7 +63,7 @@ public class PostLogsTool extends ToolBase {
           .argName("DIRECTORY")
           .required()
           .desc("All files found at or below the root directory will be indexed.")
-          .build();
+          .get();
 
   public PostLogsTool(ToolRuntime runtime) {
     super(runtime);
@@ -86,7 +85,7 @@ public class PostLogsTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = null;
+    String url;
     if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
       url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
@@ -107,8 +106,8 @@ public class PostLogsTool extends ToolBase {
               + "] must point to a particular collection but appears to be a Solr base URL");
     }
 
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder(URLUtil.extractBaseUrl(baseUrl))
+    var builder =
+        new HttpJettySolrClient.Builder(URLUtil.extractBaseUrl(baseUrl))
             .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(baseUrl))
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
@@ -118,7 +117,7 @@ public class PostLogsTool extends ToolBase {
 
       List<Path> files;
       try (Stream<Path> stream = Files.walk(Path.of(root), Integer.MAX_VALUE)) {
-        files = stream.filter(Files::isRegularFile).collect(Collectors.toList());
+        files = stream.filter(Files::isRegularFile).toList();
       }
 
       for (Path file : files) {
@@ -186,24 +185,24 @@ public class PostLogsTool extends ToolBase {
 
   public static class LogRecordReader {
 
-    private BufferedReader bufferedReader;
+    private final BufferedReader bufferedReader;
     private String pushedBack = null;
     private boolean finished = false;
     private String cause;
-    private Pattern p =
+    private final Pattern p =
         Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
-    private Pattern minute =
+    private final Pattern minute =
         Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d)");
-    private Pattern tenSecond =
+    private final Pattern tenSecond =
         Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d:\\d)");
 
-    public LogRecordReader(BufferedReader bufferedReader) throws IOException {
+    public LogRecordReader(BufferedReader bufferedReader) {
       this.bufferedReader = bufferedReader;
     }
 
     public SolrInputDocument readRecord() throws IOException {
       while (true) {
-        String line = null;
+        String line;
 
         if (finished) {
           return null;

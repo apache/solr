@@ -20,7 +20,11 @@ apply plugin: 'java-library'
 description = 'cuVS plugin'
 
 dependencies {
-  implementation libs.cuvs.lucene
+  implementation(libs.cuvs.lucene) {
+    changing = true
+  }
+  implementation libs.cuvs.java
+  implementation libs.opentelemetry.api
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation libs.apache.lucene.core

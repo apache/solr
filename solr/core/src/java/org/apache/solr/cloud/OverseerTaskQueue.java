@@ -77,12 +77,12 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   public boolean containsTaskWithRequestId(String requestIdKey, String requestId)
       throws KeeperException, InterruptedException {
 
-    List<String> childNames = zookeeper.getChildren(dir, null, true);
+    List<String> childNames = zookeeper.getChildren(dir, null);
     stats.setQueueLength(childNames.size());
     for (String childName : childNames) {
       if (childName != null && childName.startsWith(PREFIX)) {
         try {
-          byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
+          byte[] data = zookeeper.getData(dir + "/" + childName, null, null);
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
@@ -124,7 +124,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
             dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
 
         try {
-          zookeeper.setData(responsePath, event.getBytes(), true);
+          zookeeper.setData(responsePath, event.getBytes());
         } catch (KeeperException.NoNodeException ignored) {
           // we must handle the race case where the node no longer exists
           log.info(
@@ -135,7 +135,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
       // Remove the request node
       try {
-        zookeeper.delete(path, -1, true);
+        zookeeper.delete(path, -1);
       } catch (KeeperException.NoNodeException ignored) {
       }
     } finally {
@@ -214,10 +214,10 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       throws KeeperException, InterruptedException {
     for (; ; ) {
       try {
-        return zookeeper.create(path, data, mode, true);
+        return zookeeper.create(path, data, mode);
       } catch (KeeperException.NoNodeException e) {
         try {
-          zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT, true);
+          zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException ne) {
           // someone created it
         }
@@ -239,7 +239,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       String watchID = createResponseNode();
 
       LatchWatcher watcher = new LatchWatcher();
-      Stat stat = zookeeper.exists(watchID, watcher, true);
+      Stat stat = zookeeper.exists(watchID, watcher);
 
       // create the request node
       createRequestNode(data, watchID);
@@ -248,11 +248,11 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         pendingResponses.incrementAndGet();
         watcher.await(timeout);
       }
-      byte[] bytes = zookeeper.getData(watchID, null, null, true);
+      byte[] bytes = zookeeper.getData(watchID, null, null);
       // create the event before deleting the node, otherwise we can get the deleted
       // event from the watcher.
       QueueEvent event = new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
-      zookeeper.delete(watchID, -1, true);
+      zookeeper.delete(watchID, -1);
       return event;
     } finally {
       time.stop();
@@ -313,9 +313,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         try {
           QueueEvent queueEvent =
               new QueueEvent(
-                  dir + "/" + headNode,
-                  zookeeper.getData(dir + "/" + headNode, null, null, true),
-                  null);
+                  dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode, null, null), null);
           return queueEvent.getId();
         } catch (KeeperException.NoNodeException e) {
           // Another client removed the node first, try next

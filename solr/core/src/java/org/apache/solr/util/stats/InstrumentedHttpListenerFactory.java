@@ -23,7 +23,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.client.solrj.impl.HttpListenerFactory;
+import org.apache.solr.client.solrj.jetty.HttpListenerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;

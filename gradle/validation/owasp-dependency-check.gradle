@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // This adds OWASP vulnerability validation of project dependencies
 
 // If -Pvalidation.owasp=true is set the validation will also run as part of the check task.

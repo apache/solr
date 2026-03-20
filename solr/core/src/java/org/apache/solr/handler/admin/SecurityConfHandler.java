@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +32,7 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.params.CommonParams;
@@ -42,6 +42,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
 import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyNoAuthPluginSecurityConfigAPI;
@@ -74,19 +75,19 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
       case "POST":
         return PermissionNameProvider.Name.SECURITY_EDIT_PERM;
       default:
-        return null;
+        throw SchemaHandler.getUnexpectedHttpMethodException(ctx.getHttpMethod());
     }
   }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
-    String httpMethod = (String) req.getContext().get("httpMethod");
+    final var httpMethod = (SolrRequest.METHOD) req.getContext().get("httpMethod");
     String path = (String) req.getContext().get("path");
     String key = path.substring(path.lastIndexOf('/') + 1);
-    if ("GET".equals(httpMethod)) {
+    if (SolrRequest.METHOD.GET.equals(httpMethod)) {
       getConf(rsp, key);
-    } else if ("POST".equals(httpMethod)) {
+    } else if (SolrRequest.METHOD.POST.equals(httpMethod)) {
       Object plugin = getPlugin(key);
       doEdit(req, rsp, path, key, plugin);
     }
@@ -212,7 +213,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
    * object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
-    private Map<String, Object> data = Collections.emptyMap();
+    private Map<String, Object> data = Map.of();
     private int version = -1;
 
     public SecurityConfig() {}

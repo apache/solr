@@ -17,10 +17,9 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.junit.BeforeClass;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the xml codec for
@@ -28,15 +27,11 @@ import org.junit.BeforeClass;
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleXMLTest extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+    return new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(new XMLRequestWriter())
         .withResponseParser(new XMLResponseParser())

@@ -46,17 +46,15 @@ import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.sdk.metrics.ExemplarFilter;
 import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
-import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
-import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -455,6 +453,7 @@ public class SolrMetricManager {
               var builder =
                   SdkMeterProvider.builder()
                       .registerMetricReader(reader)
+                      .setExemplarFilter(ExemplarFilter.traceBased())
                       .registerView(
                           InstrumentSelector.builder()
                               .setType(InstrumentType.HISTOGRAM)
@@ -470,7 +469,6 @@ public class SolrMetricManager {
                     PeriodicMetricReader.builder(metricExporter)
                         .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
                         .build());
-              SdkMeterProviderUtil.setExemplarFilter(builder, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(builder.build(), reader);
             })
         .sdkMeterProvider();
@@ -521,8 +519,7 @@ public class SolrMetricManager {
    *     to the name.
    */
   public static String mkName(String name, String... path) {
-    return makeName(
-        path == null || path.length == 0 ? Collections.emptyList() : Arrays.asList(path), name);
+    return makeName(path == null || path.length == 0 ? List.of() : Arrays.asList(path), name);
   }
 
   public static String makeName(List<String> path, String name) {

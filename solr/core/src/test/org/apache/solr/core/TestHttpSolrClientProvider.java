@@ -48,7 +48,7 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
   public void test_when_updateShardHandler_cfg_is_null() {
     try (var httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx); ) {
       assertEquals(
-          httpSolrClientProvider.getSolrClient().getIdleTimeout(),
+          httpSolrClientProvider.getSolrClient().getIdleTimeoutMillis(),
           SolrHttpConstants.DEFAULT_SO_TIMEOUT);
     }
   }
@@ -59,7 +59,7 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     assertNotEquals(idleTimeout, UpdateShardHandlerConfig.DEFAULT.getDistributedSocketTimeout());
     UpdateShardHandlerConfig cfg = new UpdateShardHandlerConfig(-1, -1, idleTimeout, -1, null, -1);
     try (var httpSolrClientProvider = new HttpSolrClientProvider(cfg, parentSolrMetricCtx); ) {
-      assertEquals(httpSolrClientProvider.getSolrClient().getIdleTimeout(), idleTimeout);
+      assertEquals(httpSolrClientProvider.getSolrClient().getIdleTimeoutMillis(), idleTimeout);
     }
   }
 }

@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.solr.languagemodels.textvectorisation.model.ExceptionThrowingEmbeddingModel",
+  "name": "exception-throwing-model",
+  "params": {
+  }
+}

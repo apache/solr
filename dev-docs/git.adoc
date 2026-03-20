@@ -229,5 +229,3 @@ $ ./gradlew check -x test # Run tests if you need to
 $ git show HEAD # This will show you the commit you are about to push, make sure it looks right
 $ git push apache branch_9x
 ----
-
-There has been some issue with Solr's CHANGES.txt file "cherry picking" all of the changes for trunk, so check this file especially.

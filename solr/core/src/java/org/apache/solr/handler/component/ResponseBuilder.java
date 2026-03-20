@@ -168,6 +168,16 @@ public class ResponseBuilder {
   public List<ShardRequest> outgoing; // requests to be sent
   public List<ShardRequest> finished; // requests that have received responses from all shards
   public String shortCircuitedURL;
+  private boolean forcedDistrib = false;
+
+  public boolean isForcedDistrib() {
+    return forcedDistrib;
+  }
+
+  /** Force distributed-search / coordinator logic when not a sub-shard request. */
+  public void setForcedDistrib(boolean forcedDistrib) {
+    this.forcedDistrib = forcedDistrib;
+  }
 
   /** This function will return true if this was a distributed search request. */
   public boolean isDistributed() {
@@ -334,6 +344,9 @@ public class ResponseBuilder {
   }
 
   public NamedList<Object> getDebugInfo() {
+    if (debugInfo == null) {
+      debugInfo = new SimpleOrderedMap<>();
+    }
     return debugInfo;
   }
 

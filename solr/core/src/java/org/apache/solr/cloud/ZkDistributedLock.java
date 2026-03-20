@@ -94,8 +94,7 @@ abstract class ZkDistributedLock implements DistributedLock {
                 + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR
                 + lockNodePrefix,
             null,
-            CreateMode.EPHEMERAL_SEQUENTIAL,
-            false);
+            CreateMode.EPHEMERAL_SEQUENTIAL);
 
     sequence = getSequenceFromNodename(lockNode);
   }
@@ -143,7 +142,7 @@ abstract class ZkDistributedLock implements DistributedLock {
       String nodeToWatch = nodeToWatch();
       while (nodeToWatch != null) {
         final DeletedNodeWatcher watcher = new DeletedNodeWatcher(nodeToWatch);
-        if (zkClient.exists(nodeToWatch, watcher, true) != null) {
+        if (zkClient.exists(nodeToWatch, watcher) != null) {
           watcher.await();
         }
         nodeToWatch = nodeToWatch();
@@ -159,7 +158,7 @@ abstract class ZkDistributedLock implements DistributedLock {
   @Override
   public void release() {
     try {
-      zkClient.delete(lockNode, -1, true);
+      zkClient.delete(lockNode, -1);
       released = true;
     } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -190,7 +189,7 @@ abstract class ZkDistributedLock implements DistributedLock {
    *     {@code null} if the lock is ours.
    */
   String nodeToWatch() throws KeeperException, InterruptedException {
-    List<String> locks = zkClient.getChildren(lockDir, null, true);
+    List<String> locks = zkClient.getChildren(lockDir, null);
     boolean foundSelf = false; // For finding bugs or ZK bad behavior
     // We deviate from the ZK recipe here: we do not sort the list of nodes, and we stop waiting on
     // the first one we find that blocks us. This is done in O(n), whereas sorting is more

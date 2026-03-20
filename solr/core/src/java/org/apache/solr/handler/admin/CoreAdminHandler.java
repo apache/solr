@@ -79,7 +79,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,18 +130,18 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     super.initializeMetrics(parentContext, attributes);
     coreAdminAsyncTracker.standardExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            solrMetricsContext,
-            getCategory(),
-            "parallelCoreAdminExecutor");
+            "solr_node_executor",
+            "asyncCoreAdminExecutor",
+            getCategory());
 
     coreAdminAsyncTracker.expensiveExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            solrMetricsContext,
-            getCategory(),
-            "parallelCoreExpensiveAdminExecutor");
+            "solr_node_executor",
+            "asyncCoreExpensiveAdminExecutor",
+            getCategory());
   }
 
   @Override

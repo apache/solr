@@ -1,0 +1,10 @@
+title: 'NamedList: deprecating methods: forEachEntry, forEachKey, abortableForEachKey,
+  abortableForEach, asMap (no-arg only), get(key, default). Added getOrDefault. Deprecated
+  the SimpleMap interface as well as the entirety of the SolrJ package org.apache.solr.cluster.api,
+  which wasn''t used except for SimpleMap.'
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-14680
+  url: https://issues.apache.org/jira/browse/SOLR-14680

@@ -25,6 +25,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -97,13 +98,18 @@ public class BinaryField extends FieldType {
   }
 
   @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    return BytesRef.deepCopyOf(term).bytes;
+  }
+
+  @Override
   public IndexableField createField(SchemaField field, Object val) {
     if (val == null) return null;
     if (!field.stored()) {
       log.trace("Ignoring unstored binary field: {}", field);
       return null;
     }
-    return new org.apache.lucene.document.StoredField(field.getName(), getBytesRef(val));
+    return new StoredField(field.getName(), getBytesRef(val));
   }
 
   private static BytesRef getBytesRef(Object val) {

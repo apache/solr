@@ -409,7 +409,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   private void getCheckpoints() throws IOException {
     var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     this.checkpoints = new HashMap<>();
-    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
     for (Slice slice : slices) {
@@ -489,7 +489,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   private void getPersistedCheckpoints() throws IOException {
     var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
-    Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
+    List<Slice> slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
@@ -523,7 +523,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   @Override
   protected void constructStreams() throws IOException {
     var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
-    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
     mParams.set(DISTRIB, "false"); // We are the aggregator.

@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -77,15 +77,15 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     Stat stat = new Stat();
     byte[] data = null;
     try {
-      data = client.getData(resPath, null, stat, true);
+      data = client.getData(resPath, null, stat);
     } catch (KeeperException.NoNodeException e) {
       data = "{}".getBytes(StandardCharsets.UTF_8);
       log.info("creating_node {}", resPath);
-      client.create(resPath, data, CreateMode.PERSISTENT, true);
+      client.create(resPath, data, CreateMode.PERSISTENT);
     }
     long startTime = System.nanoTime();
-    Stat newStat = client.setData(resPath, data, true);
-    client.setData("/configs/conf1", new byte[] {1}, true);
+    Stat newStat = client.setData(resPath, data);
+    client.setData("/configs/conf1", new byte[] {1});
     assertTrue(newStat.getVersion() > stat.getVersion());
     if (log.isInfoEnabled()) {
       log.info("new_version {}", newStat.getVersion());
