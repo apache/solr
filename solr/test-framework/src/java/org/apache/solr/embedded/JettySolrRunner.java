@@ -63,7 +63,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.AuthenticationFilter;
 import org.apache.solr.servlet.CoreContainerProvider;
-import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrServlet;
@@ -116,7 +115,6 @@ public class JettySolrRunner {
   private Server server;
 
   volatile FilterHolder debugFilter;
-  volatile FilterHolder pathExcludeFilter;
   volatile FilterHolder requiredFilter;
   volatile FilterHolder rateLimitFilter;
   volatile FilterHolder authFilter;
@@ -132,9 +130,6 @@ public class JettySolrRunner {
   private volatile boolean startedBefore = false;
 
   private List<FilterHolder> extraFilters;
-
-  private static final String excludePatterns =
-      "/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+";
 
   private int proxyPort = -1;
 
@@ -411,12 +406,6 @@ public class JettySolrRunner {
       // TODO: This needs to be driven by a parsing of web.xml eventually
       //  though we still want to avoid classpath scanning.
 
-      // this path excludes filter isn't actually necessary for any tests, but it's being
-      // added for parity with the live application.
-      pathExcludeFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-      pathExcludeFilter.setHeldClass(PathExclusionFilter.class);
-      pathExcludeFilter.setInitParameter("excludePatterns", excludePatterns);
-
       // required request setup
       requiredFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       requiredFilter.setHeldClass(RequiredSolrRequestFilter.class);
@@ -434,7 +423,6 @@ public class JettySolrRunner {
       authFilter.setHeldClass(AuthenticationFilter.class);
 
       // Map filters in same path as in web.xml
-      root.addFilter(pathExcludeFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(tracingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));

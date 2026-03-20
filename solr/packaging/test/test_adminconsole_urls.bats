@@ -43,6 +43,18 @@ teardown() {
   # Check that response body contains HTML
   local response_body=$(curl -s http://localhost:${SOLR_PORT}/solr/)
   [[ "$response_body" == *"<html"* ]] || [[ "$response_body" == *"<!DOCTYPE"* ]]
+
+  # Check that a CSS file returns 200
+  run curl -s -o /dev/null -w "%{http_code}" http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css
+  assert_output "200"
+
+  # Check Content-Type header is text/css
+  local content_type=$(curl -s -I http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css | grep -i "Content-Type:" | tr -d '\r')
+  [[ "$content_type" == *"text/css"* ]]
+
+  # Check that response body contains actual CSS content
+  local response_body=$(curl -s http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css)
+  [[ "$response_body" == *"{"* ]] && [[ "$response_body" == *"}"* ]]
 }
 
 @test "assert CSP header contains custom connect src URLs" {
