@@ -22,7 +22,7 @@ jobs:
       id: check-label
       run: |
         LABELS='${{ toJson(github.event.pull_request.labels) }}'
-        if echo "$LABELS" | grep -q "no-changelog"; then
+        if echo "$LABELS" | grep -q '"no-changelog"'; then
           echo "skip=true" >> $GITHUB_OUTPUT
         else
           echo "skip=false" >> $GITHUB_OUTPUT
