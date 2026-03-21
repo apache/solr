@@ -17,8 +17,8 @@
 
 package org.apache.solr.ui.preview.start
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.start.StartComponent

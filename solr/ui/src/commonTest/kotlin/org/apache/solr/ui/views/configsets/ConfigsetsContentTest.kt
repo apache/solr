@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Model
-import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
-import org.apache.solr.ui.components.navigation.TabNavigationComponent.Configuration
+import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
@@ -42,7 +42,7 @@ class ConfigsetsContentTest {
     @Test
     @Ignore // See why the placeholder text is not shown
     fun `GIVEN no configsets THEN no_configsets_placeholder is shown`() = runComposeUiTest {
-        val component = TestConfigsetsComponent()
+        val component = TestConfigsetsRouteComponent()
 
         setContent { ConfigsetsContent(component = component) }
 
@@ -54,12 +54,15 @@ class ConfigsetsContentTest {
     fun `GIVEN configsets WHEN a configset selected THEN onSelectConfigset called with configset`() = runComposeUiTest {
         val selectedConfigset = "gettingstarted"
         val expectedConfigsetSelection = "techproducts"
-        val component = TestConfigsetsComponent(
+        val testComponent = DummyConfigsetsComponent(
             model = Model(
                 configsets = listOf(selectedConfigset, expectedConfigsetSelection)
                     .map { Configset(it) },
                 selectedConfigset = selectedConfigset,
             ),
+        )
+        val component = TestConfigsetsRouteComponent(
+            configsetsComponent = testComponent,
         )
 
         setContent { ConfigsetsContent(component = component) }
@@ -71,35 +74,48 @@ class ConfigsetsContentTest {
         waitForIdle()
         assertEquals(
             expected = expectedConfigsetSelection,
-            actual = component.onSelectConfigset,
+            actual = testComponent.onSelectConfigset,
         )
     }
 }
 
-class TestConfigsetsComponent(
-    model: Model = Model(),
-) : ConfigsetsComponent {
+private class TestConfigsetsRouteComponent(
+    override val configsetsComponent: ConfigsetsComponent = DummyConfigsetsComponent(),
+) : ConfigsetsRouteComponent {
 
-    var onSelectConfigset: String? = model.selectedConfigset
-    override val model: StateFlow<Model> = MutableStateFlow(model)
-
-    private val overviewChild =
-        ConfigsetsComponent.Child.Overview(object : ConfigsetsOverviewComponent {})
-
-    override val tabSlot: Value<ChildSlot<Configuration<ConfigsetsTab>, ConfigsetsComponent.Child>> = MutableValue(
-        ChildSlot(
-            Child.Created(
-                configuration = Configuration(tab = ConfigsetsTab.Overview),
-                instance = overviewChild,
-            ),
-        ),
+    private val overviewChild = ConfigsetsRouteComponent.Child.Overview(
+        component = DummyConfigsetsOverviewComponent(),
     )
 
-    override fun onNavigate(tab: ConfigsetsTab) {
-        // Tested in TabNavigationTest (no need to test here)
-    }
+    override val tabSlot: Value<ChildSlot<ConfigsetsTab, ConfigsetsRouteComponent.Child>> =
+        MutableValue(
+            ChildSlot(
+                Child.Created(
+                    configuration = ConfigsetsTab.Overview,
+                    instance = overviewChild,
+                ),
+            ),
+        )
 
-    override fun onSelectConfigset(name: String) {
+    // Tested in TabNavigationTest (no need to test here)
+    override fun onNavigate(tab: ConfigsetsTab) = Unit
+}
+
+private class DummyConfigsetsComponent(model: Model = Model()) : ConfigsetsComponent {
+    var onSelectConfigset: String? = null
+    override val model: StateFlow<Model> = MutableStateFlow(model)
+
+    override fun onSelectConfigset(name: String, reload: Boolean) {
         onSelectConfigset = name
     }
+}
+
+private class DummyConfigsetsOverviewComponent : ConfigsetsOverviewComponent {
+    override val dialog: Value<ChildSlot<ConfigsetsOverviewComponent.CreateConfigsetDialogConfig, Unit>> =
+        MutableValue(ChildSlot())
+
+    override fun createConfigset() = Unit
+    override fun importConfigset() = Unit
+    override fun closeDialog() = Unit
+    override fun editSolrConfig(name: String) = Unit
 }

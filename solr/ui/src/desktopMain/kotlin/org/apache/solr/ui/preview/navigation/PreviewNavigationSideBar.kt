@@ -17,8 +17,8 @@
 
 package org.apache.solr.ui.preview.navigation
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.navigation.NavigationSideBar
 

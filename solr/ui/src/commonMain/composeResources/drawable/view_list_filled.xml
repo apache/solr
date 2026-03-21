@@ -1,0 +1,26 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  android:width="24dp"
+  android:height="24dp"
+  android:viewportWidth="960"
+  android:viewportHeight="960"
+  android:autoMirrored="true">
+  <path
+    android:fillColor="#000000"
+    android:pathData="M400,800Q383,800 371.5,788.5Q360,777 360,760L360,680Q360,663 371.5,651.5Q383,640 400,640L840,640Q857,640 868.5,651.5Q880,663 880,680L880,760Q880,777 868.5,788.5Q857,800 840,800L400,800ZM120,320Q103,320 91.5,308.5Q80,297 80,280L80,200Q80,183 91.5,171.5Q103,160 120,160L240,160Q257,160 268.5,171.5Q280,183 280,200L280,280Q280,297 268.5,308.5Q257,320 240,320L120,320ZM120,560Q103,560 91.5,548.5Q80,537 80,520L80,440Q80,423 91.5,411.5Q103,400 120,400L240,400Q257,400 268.5,411.5Q280,423 280,440L280,520Q280,537 268.5,548.5Q257,560 240,560L120,560ZM120,800Q103,800 91.5,788.5Q80,777 80,760L80,680Q80,663 91.5,651.5Q103,640 120,640L240,640Q257,640 268.5,651.5Q280,663 280,680L280,760Q280,777 268.5,788.5Q257,800 240,800L120,800ZM400,560Q383,560 371.5,548.5Q360,537 360,520L360,440Q360,423 371.5,411.5Q383,400 400,400L840,400Q857,400 868.5,411.5Q880,423 880,440L880,520Q880,537 868.5,548.5Q857,560 840,560L400,560ZM400,320Q383,320 371.5,308.5Q360,297 360,280L360,200Q360,183 371.5,171.5Q383,160 400,160L840,160Q857,160 868.5,171.5Q880,183 880,200L880,280Q880,297 868.5,308.5Q857,320 840,320L400,320Z"/>
+</vector>

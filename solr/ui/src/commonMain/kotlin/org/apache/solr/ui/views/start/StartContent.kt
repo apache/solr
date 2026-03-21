@@ -48,6 +48,7 @@ import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
 import org.apache.solr.ui.views.components.SolrButton
 import org.apache.solr.ui.views.components.SolrCard
 import org.apache.solr.ui.views.components.SolrLinearProgressIndicator
+import org.apache.solr.ui.views.components.SolrOutlinedTextField
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -96,7 +97,7 @@ fun StartContent(
                 style = MaterialTheme.typography.bodyMedium,
             )
 
-            OutlinedTextField(
+            SolrOutlinedTextField(
                 modifier = Modifier.fillMaxWidth().testTag("solr_url_input"),
                 value = model.url,
                 singleLine = true,

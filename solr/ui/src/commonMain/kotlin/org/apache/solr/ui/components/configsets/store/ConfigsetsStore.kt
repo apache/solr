@@ -20,15 +20,20 @@ import com.arkivanov.mvikotlin.core.store.Store
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
-import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
 
     sealed interface Intent {
         /**
          * Intent for selecting configset.
+         *
+         * @property configSetName Name of the configset to select.
+         * @property reload Whether to reload the configset before selecting.
          */
-        data class SelectConfigSet(val configSetName: String) : Intent
+        data class SelectConfigset(
+            val configSetName: String,
+            val reload: Boolean = false,
+        ) : Intent
     }
 
     data class State(

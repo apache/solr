@@ -27,8 +27,8 @@ import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.cluster.integration.DefaultClusterComponent
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
+import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsRouteComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.integration.DefaultEnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
@@ -44,7 +44,7 @@ class DefaultMainComponent internal constructor(
     storeFactory: StoreFactory,
     destination: String? = null,
     private val clusterComponent: (AppComponentContext) -> ClusterComponent,
-    private val configsetsComponent: (AppComponentContext) -> ConfigsetsComponent,
+    private val configsetsComponent: (AppComponentContext) -> ConfigsetsRouteComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: (AppComponentContext) -> LoggingComponent,
     private val output: (Output) -> Unit,
@@ -78,7 +78,7 @@ class DefaultMainComponent internal constructor(
             )
         },
         configsetsComponent = { childContext ->
-            DefaultConfigsetsComponent(
+            DefaultConfigsetsRouteComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
                 httpClient = httpClient,
@@ -116,7 +116,7 @@ class DefaultMainComponent internal constructor(
             "configsets" -> Configuration.Configsets
             "environment" -> Configuration.Environment
             "logging" -> Configuration.Logging
-            else -> Configuration.Environment
+            else -> Configuration.Configsets
         },
     )
 
