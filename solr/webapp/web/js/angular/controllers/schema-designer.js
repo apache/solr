@@ -1526,7 +1526,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     if (sessionStorage.getItem("auth.header")) {
       var fileName = $scope.currentSchema+"_configset.zip";
       var xhr = new XMLHttpRequest();
-      xhr.open("GET", "/api/schema-designer/download/"+fileName+"?wt=raw&configSet="+$scope.currentSchema, true);
+      xhr.open("GET", "/api/schema-designer/download?configSet="+$scope.currentSchema, true);
       xhr.setRequestHeader('Authorization', sessionStorage.getItem("auth.header"));
       xhr.responseType = 'blob';
       xhr.addEventListener('load',function() {
@@ -1543,7 +1543,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       })
       xhr.send();
     } else {
-      location.href = "/api/schema-designer/download/"+$scope.currentSchema+"_configset.zip?wt=raw&configSet=" + $scope.currentSchema;
+      location.href = "/api/schema-designer/download?configSet=" + $scope.currentSchema;
     }
   };
 
@@ -1834,6 +1834,11 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
 
     SchemaDesigner.get(params, function (data) {
+      if (data.updateError != null) {
+        $scope.onError(data.updateError, data.updateErrorCode, data.errorDetails);
+        return;
+      }
+
       $("#sort").trigger("chosen:updated");
       $("#ff").trigger("chosen:updated");
       $("#hl").trigger("chosen:updated");

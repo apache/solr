@@ -102,7 +102,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
               + MAX_STREAM_SIZE
               + " bytes is the max upload size for sample documents.");
     }
-    // use a byte stream for the parsers in case they need to re-parse using a different strategy
+    // use a byte stream for the parsers in case they need to reparse using a different strategy
     // e.g. JSON vs. JSON lines or different CSV strategies ...
     ContentStreamBase.ByteArrayStream byteStream =
         new ContentStreamBase.ByteArrayStream(uploadedBytes, fileSource, contentType);
@@ -153,7 +153,6 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
         .loadDocs(stream);
   }
 
-  @SuppressWarnings("unchecked")
   protected List<SolrInputDocument> loadJsonLines(
       ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     List<Map<String, Object>> docs = new ArrayList<>();
@@ -161,13 +160,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       BufferedReader br = new BufferedReader(r);
       String line;
       while ((line = br.readLine()) != null) {
-        line = line.trim();
-        if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
-          Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
-          if (jsonLine instanceof Map) {
-            docs.add((Map<String, Object>) jsonLine);
-          }
-        }
+        parseStringToJson(docs, line);
         if (maxDocsToLoad > 0 && docs.size() == maxDocsToLoad) {
           break;
         }
@@ -175,6 +168,19 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     }
 
     return docs.stream().map(JsonLoader::buildDoc).collect(Collectors.toList());
+  }
+
+  private void parseStringToJson(List<Map<String, Object>> docs, String line) throws IOException {
+    line = line.trim();
+    if (line.startsWith("{") && line.endsWith("}")) {
+      Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
+      if (jsonLine instanceof Map<?, ?> rawMap) {
+        // JSON object keys are always Strings; the cast is safe
+        @SuppressWarnings("unchecked")
+        Map<String, Object> typedMap = (Map<String, Object>) rawMap;
+        docs.add(typedMap);
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -204,7 +210,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       if (lines.length > 1) {
         for (String line : lines) {
           line = line.trim();
-          if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
+          if (line.startsWith("{") && line.endsWith("}")) {
             isJsonLines = true;
             break;
           }
@@ -294,17 +300,10 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     }
   }
 
-  @SuppressWarnings("unchecked")
   protected List<Map<String, Object>> loadJsonLines(String[] lines) throws IOException {
     List<Map<String, Object>> docs = new ArrayList<>(lines.length);
     for (String line : lines) {
-      line = line.trim();
-      if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
-        Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
-        if (jsonLine instanceof Map) {
-          docs.add((Map<String, Object>) jsonLine);
-        }
-      }
+      parseStringToJson(docs, line);
     }
     return docs;
   }
