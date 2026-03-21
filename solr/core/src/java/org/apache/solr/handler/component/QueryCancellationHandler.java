@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.api.CancelTaskAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -33,7 +33,7 @@ import org.apache.solr.security.PermissionNameProvider;
 
 /** Handles requests for query cancellation for cancellable queries */
 public class QueryCancellationHandler extends TaskManagementHandler {
-  // This can be a parent level member but we keep it here to allow future handlers to have
+  // This can be a parent level member, but we keep it here to allow future handlers to have
   // a custom list of components
   private List<SearchComponent> components;
 
@@ -94,7 +94,12 @@ public class QueryCancellationHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new CancelTaskAPI(this));
+    return List.of();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(CancelTaskAPI.class);
   }
 
   private List<SearchComponent> getComponentsList() {
