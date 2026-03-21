@@ -1,0 +1,7 @@
+title: Remove experimental 'solr.api.v2.enabled' sysprop, formerly used to disable the v2 API.
+type: removed
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-18163
+    url: https://issues.apache.org/jira/browse/SOLR-18163
