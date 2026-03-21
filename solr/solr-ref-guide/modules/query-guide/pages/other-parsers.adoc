@@ -1006,7 +1006,7 @@ For more information about the possibilities of nested queries, see Yonik Seeley
 
 NOTE: Syntax specifics of the `{!numericRange}` query parser are considered experimental and may change in the future.
 
-Allows users to search range fields (e.g. `IntRangeField`, `LongRangeField`) using a specified query-range.
+Allows users to search range fields (e.g. `IntRangeField`, `LongRangeField`, `FloatRangeField`) using a specified query-range.
 Multiple match semantics supported, see the `criteria` parameter below for more details.
 
 === Numeric Range Parameters
@@ -1019,7 +1019,7 @@ Multiple match semantics supported, see the `criteria` parameter below for more 
 |===
 +
 The field name to operate on.
-Must be a numeric range field type (e.g. `IntRangeField`, `LongRangeField`)
+Must be a numeric range field type (e.g. `IntRangeField`, `LongRangeField`, `FloatRangeField`)
 `criteria`::
 +
 [%autowidth,frame=none]

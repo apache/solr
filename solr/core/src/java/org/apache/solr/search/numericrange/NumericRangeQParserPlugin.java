@@ -25,6 +25,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.numericrange.AbstractNumericRangeField;
 import org.apache.solr.schema.numericrange.AbstractNumericRangeField.NumericRangeValue;
+import org.apache.solr.schema.numericrange.FloatRangeField;
 import org.apache.solr.schema.numericrange.IntRangeField;
 import org.apache.solr.schema.numericrange.LongRangeField;
 import org.apache.solr.search.QParser;
@@ -35,8 +36,9 @@ import org.apache.solr.search.SyntaxError;
 /**
  * Query parser for numeric range fields with support for different query relationship types.
  *
- * <p>This parser enables queries against {@link IntRangeField} and {@link LongRangeField} fields
- * with explicit control over the query relationship type (intersects, within, contains, crosses).
+ * <p>This parser enables queries against {@link IntRangeField}, {@link LongRangeField}, and {@link
+ * FloatRangeField} fields with explicit control over the query relationship type (intersects,
+ * within, contains, crosses).
  *
  * <h2>Parameters</h2>
  *
@@ -69,6 +71,10 @@ import org.apache.solr.search.SyntaxError;
  * {!numericRange criteria="intersects" field=long_range}[1000000000 TO 2000000000]
  * {!numericRange criteria="within" field=long_range}[0 TO 9999999999]
  *
+ * // FloatRangeField queries
+ * {!numericRange criteria="intersects" field=float_range}[1.0 TO 2.5]
+ * {!numericRange criteria="within" field=float_range}[0.0 TO 9.99]
+ *
  * // Multi-dimensional queries (bounding boxes, cubes, tesseracts)
  * {!numericRange criteria="intersects" field=bbox}[0,0 TO 10,10]
  * {!numericRange criteria="within" field=bbox}[-10,-10 TO 20,20]
@@ -76,6 +82,7 @@ import org.apache.solr.search.SyntaxError;
  *
  * @see IntRangeField
  * @see LongRangeField
+ * @see FloatRangeField
  * @lucene.experimental
  */
 public class NumericRangeQParserPlugin extends QParserPlugin {
