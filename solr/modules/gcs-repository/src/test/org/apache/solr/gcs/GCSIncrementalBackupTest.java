@@ -70,6 +70,9 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    // Enable parallel backup/restore for cloud storage tests
+    System.setProperty("solr.backup.maxparalleluploads", "2");
+    System.setProperty("solr.backup.maxparalleldownloads", "2");
 
     configureCluster(NUM_NODES) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
