@@ -25,7 +25,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -118,6 +120,24 @@ public class ZkShardTerms implements AutoCloseable {
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) {
     if (replicasNeedingRecovery.isEmpty()) return;
     mutate(terms -> terms.increaseTerms(leader, replicasNeedingRecovery));
+  }
+
+  /**
+   * Ensure that the given cores have the highest terms, even if they are not currently leader
+   * eligible. This operation should only be used when indexes are being loaded into cores, and
+   * therefore can only be done when a collection is in a read-only state.
+   *
+   * @param mostUpToDateCores the set of cores that should be leader-eligible
+   * @throws SolrServerException if the given collection is not in a read-only state
+   */
+  public void ensureHighestTerms(DocCollection collection, Set<String> mostUpToDateCores)
+      throws SolrServerException {
+    if (mostUpToDateCores.isEmpty()) return;
+    if (!collection.isReadOnly()) {
+      throw new SolrServerException(
+          "Cannot replace highest term cores when collection is not in read-only mode");
+    }
+    mutate(terms -> terms.setHighestTerms(mostUpToDateCores));
   }
 
   public ShardTerms getShardTerms() {
