@@ -47,36 +47,36 @@ public class ProducerMetrics {
 
     var localProcessed =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_local_processed",
+            "solr.core.crossdc.producer.local.processed",
             "The number of local documents processed (success or error)");
     var localSubmitted =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_submitted",
+            "solr.core.crossdc.producer.submitted",
             "The number of documents submitted to the Kafka topic (success or error)");
     var localSubmittedAdd =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_submitted_add",
+            "solr.core.crossdc.producer.submitted.add",
             "The number of add requests submitted to the Kafka topic (success or error)");
     var localSubmittedDbi =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_submitted_delete_by_id",
+            "solr.core.crossdc.producer.submitted.delete_by_id",
             "The number of Delete-By-Id requests submitted to the Kafka topic (success or error)");
     var localSubmittedDbq =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_submitted_delete_by_query",
+            "solr.core.crossdc.producer.submitted.delete_by_query",
             "The number of Delete-By-Query requests submitted to the Kafka topic (success or error)");
     var localSubmittedCommit =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_submitted_commit",
+            "solr.core.crossdc.producer.submitted.commit",
             "The number of standalone Commit requests submitted to the Kafka topic (success or error)");
     var histogramDocSizes =
         solrMetricsContext.longHistogram(
-            "solr_core_crossdc_producer_document_size",
+            "solr.core.crossdc.producer.document_size",
             "Histogram of the processed document sizes processed",
             OtelUnit.BYTES);
     var tooLargeErrors =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_doc_too_large_errors",
+            "solr.core.crossdc.producer.doc_too_large_errors",
             "The number of documents that were too large to send to the Kafka topic");
 
     this.local =
