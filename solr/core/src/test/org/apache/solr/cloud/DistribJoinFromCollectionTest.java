@@ -25,9 +25,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -36,10 +37,8 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,40 +55,50 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
   //    resetExceptionIgnores();
   private static String toColl = "to_2x2";
   private static String fromColl = "from_1x4";
-
+  private static String configName = "solrCloudCollectionConfig";
   private static String toDocId;
+  private static JettySolrRunner coordinatorJetty;
+  private static Set<String> dataNodes;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     final Path configDir = TEST_COLL1_CONF();
 
-    String configName = "solrCloudCollectionConfig";
-    int nodeCount = 5;
+    // Create 4 data nodes
+    int nodeCount = 4;
     configureCluster(nodeCount).addConfig(configName, configDir).configure();
+
+    // Start a coordinator-only node (no data role)
+    System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on,data:off");
+    try {
+      coordinatorJetty = cluster.startJettySolrRunner();
+    } finally {
+      System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+    }
 
     Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema.xml");
 
-    // create a collection holding data for the "to" side of the JOIN
+    // Collect data node names (exclude coordinator)
+    dataNodes = new HashSet<>();
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (jetty != coordinatorJetty) {
+        dataNodes.add(jetty.getNodeName());
+      }
+    }
 
+    // create a collection holding data for the "to" side of the JOIN
     int shards = 2;
     int replicas = 2;
     CollectionAdminRequest.createCollection(toColl, configName, shards, replicas)
+        .setCreateNodeSet(String.join(",", dataNodes))
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    // get the set of nodes where replicas for the "to" collection exist
-    Set<String> nodeSet = new HashSet<>();
-    ZkStateReader zkStateReader = cluster.getZkStateReader();
-    ClusterState cs = zkStateReader.getClusterState();
-    for (Slice slice : cs.getCollection(toColl).getActiveSlices())
-      for (Replica replica : slice.getReplicas()) nodeSet.add(replica.getNodeName());
-    assertTrue(nodeSet.size() > 0);
-
     // deploy the "from" collection to all nodes where the "to" collection exists
     CollectionAdminRequest.createCollection(fromColl, configName, 1, 4)
-        .setCreateNodeSet(String.join(",", nodeSet))
+        .setCreateNodeSet(String.join(",", dataNodes))
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
@@ -100,15 +109,39 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testScore() throws Exception {
+  public void testScoreCoordinator() throws Exception {
     // without score
-    testJoins(toColl, fromColl, toDocId, true);
+    testJoins(toColl, fromColl, toDocId, true, List.of(coordinatorJetty.getNodeName()));
   }
 
   @Test
-  public void testNoScore() throws Exception {
+  public void testNoScoreCoordinator() throws Exception {
     // with score
-    testJoins(toColl, fromColl, toDocId, false);
+    testJoins(toColl, fromColl, toDocId, false, List.of(coordinatorJetty.getNodeName()));
+  }
+
+  @Test
+  public void testScoreDataNodes() throws Exception {
+    // without score
+    testJoins(toColl, fromColl, toDocId, true, dataNodes.stream().toList());
+  }
+
+  @Test
+  public void testNoScoreDataNodes() throws Exception {
+    // with score
+    testJoins(toColl, fromColl, toDocId, false, dataNodes.stream().toList());
+  }
+
+  @Test
+  public void testCoordinatorWithoutJoin() throws Exception {
+    // Verify that a simple query (no join) works through the coordinator node
+    SolrClient client = cluster.getSolrClient();
+    QueryRequest qr =
+        new QueryRequest(params("collection", toColl, "q", "*:*", "fl", "id,get_s"));
+    qr.setPreferredNodes(List.of(coordinatorJetty.getNodeName()));
+    QueryResponse rsp = qr.process(client);
+    SolrDocumentList hits = rsp.getResults();
+    assertEquals("Expected 1 doc", 1, hits.getNumFound());
   }
 
   @AfterClass
@@ -132,11 +165,11 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
     log.info("DistribJoinFromCollectionTest succeeded ... shutting down now!");
   }
 
-  private void testJoins(String toColl, String fromColl, String toDocId, boolean isScoresTest)
+  private void testJoins(String toColl, String fromColl, String toDocId, boolean isScoresTest, List<String> targetNodes)
       throws SolrServerException, IOException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
-    CloudSolrClient client = cluster.getSolrClient();
+    SolrClient cloudClient = cluster.getSolrClient();
     {
       final String joinQ =
           "{!join "
@@ -147,7 +180,8 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
               + fromQ;
       QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      QueryResponse rsp = qr.process(client);
+      qr.setPreferredNodes(targetNodes);
+      QueryResponse rsp = qr.process(cloudClient);
       SolrDocumentList hits = rsp.getResults();
       assertEquals("Expected 1 doc, got " + hits, 1, hits.getNumFound());
       SolrDocument doc = hits.get(0);
@@ -161,7 +195,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
 
     // create an alias for the fromIndex and then query through the alias
     String alias = fromColl + "Alias";
-    CollectionAdminRequest.createAlias(alias, fromColl).process(client);
+    CollectionAdminRequest.createAlias(alias, fromColl).process(cloudClient);
 
     {
       final String joinQ =
@@ -173,7 +207,8 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
               + fromQ;
       final QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      final QueryResponse rsp = qr.process(client);
+      qr.setPreferredNodes(targetNodes);
+      final QueryResponse rsp = qr.process(cloudClient);
       final SolrDocumentList hits = rsp.getResults();
       assertEquals("Expected 1 doc", 1, hits.getNumFound());
       SolrDocument doc = hits.get(0);
@@ -195,7 +230,8 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
               + " to=join_s}match_s:d";
       final QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      final QueryResponse rsp = qr.process(client);
+      qr.setPreferredNodes(targetNodes);
+      final QueryResponse rsp = qr.process(cloudClient);
       final SolrDocumentList hits = rsp.getResults();
       assertEquals("Expected no hits", 0, hits.getNumFound());
     }
