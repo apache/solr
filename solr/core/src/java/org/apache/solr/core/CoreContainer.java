@@ -124,7 +124,6 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
@@ -721,7 +720,7 @@ public class CoreContainer {
     return objectCache;
   }
 
-  private void registerV2ApiIfEnabled(Object apiObject) {
+  private void registerV2Api(Object apiObject) {
     if (apiObject == null || containerHandlers.getApiBag() == null) {
       return;
     }
@@ -729,7 +728,7 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(apiObject);
   }
 
-  private void registerV2ApiIfEnabled(Class<? extends JerseyResource> clazz) {
+  private void registerV2Api(Class<? extends JerseyResource> clazz) {
     if (containerHandlers.getJerseyEndpoints() == null) {
       return;
     }
@@ -839,12 +838,12 @@ public class CoreContainer {
           Attributes.builder().put(HANDLER_ATTR, "/authentication/pki").build());
 
       fileStore = new DistribFileStore(this);
-      registerV2ApiIfEnabled(ClusterFileStore.class);
+      registerV2Api(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-      registerV2ApiIfEnabled(ZookeeperRead.class);
+      registerV2Api(packageLoader.getPackageAPI().editAPI);
+      registerV2Api(packageLoader.getPackageAPI().readAPI);
+      registerV2Api(ZookeeperRead.class);
     }
 
     MDCLoggingContext.setNode(this);
@@ -866,11 +865,11 @@ public class CoreContainer {
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
-    registerV2ApiIfEnabled(clusterAPI);
-    registerV2ApiIfEnabled(clusterAPI.commands);
+    registerV2Api(clusterAPI);
+    registerV2Api(clusterAPI.commands);
 
     if (isZooKeeperAware()) {
-      registerV2ApiIfEnabled(new SchemaDesignerAPI(this));
+      registerV2Api(new SchemaDesignerAPI(this));
     } // else Schema Designer not available in standalone (non-cloud) mode
 
     /*
@@ -1021,8 +1020,8 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
-      registerV2ApiIfEnabled(pluginsSource.getReadApi());
-      registerV2ApiIfEnabled(pluginsSource.getEditApi());
+      registerV2Api(pluginsSource.getReadApi());
+      registerV2Api(pluginsSource.getEditApi());
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry
@@ -1045,51 +1044,49 @@ public class CoreContainer {
               });
     }
 
-    if (V2ApiUtils.isEnabled()) {
-      final CoreContainer thisCCRef = this;
-      // Init the Jersey app once all CC endpoints have been registered
-      containerHandlers
-          .getJerseyEndpoints()
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
-                      .to(CoreContainer.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
-                      .to(SolrNodeKeyPair.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
-                      .to(DistribFileStore.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(
-                          new InjectionFactories.SingletonFactory<>(
-                              coreAdminHandler.getCoreAdminAsyncTracker()))
-                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
-                      .in(Singleton.class);
-                }
-              });
-      jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
-    }
+    final CoreContainer thisCCRef = this;
+    // Init the Jersey app once all CC endpoints have been registered
+    containerHandlers
+        .getJerseyEndpoints()
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
+                    .to(CoreContainer.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                    .to(SolrNodeKeyPair.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
+                    .to(DistribFileStore.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(
+                        new InjectionFactories.SingletonFactory<>(
+                            coreAdminHandler.getCoreAdminAsyncTracker()))
+                    .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                    .in(Singleton.class);
+              }
+            });
+    jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
 
     // Do Node setup logic after all handlers have been registered.
     if (isZooKeeperAware()) {

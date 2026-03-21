@@ -32,7 +32,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +47,6 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   protected String abortErrorMessage = null;
 
   private HttpSolrCallFactory solrCallFactory;
-
-  public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
   /**
    * Enum to define action that needs to be processed. PASSTHROUGH: Pass through to another filter
@@ -189,7 +186,7 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
         HttpServletRequest request,
         HttpServletResponse response,
         boolean retry) {
-      if (filter.isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+      if (path.startsWith("/____v2/") || path.equals("/____v2")) {
         return new V2HttpCall(filter, cores, request, response, retry);
       } else {
         return new HttpSolrCall(filter, cores, request, response, retry);

@@ -41,7 +41,6 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.jersey.APIConfigProvider;
 import org.apache.solr.jersey.APIConfigProviderBinder;
@@ -89,7 +88,7 @@ public class PluginBag<T> implements AutoCloseable {
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
-    if (klass == SolrRequestHandler.class && V2ApiUtils.isEnabled()) {
+    if (klass == SolrRequestHandler.class) {
       this.loadV2ApisIfPresent = true;
       this.apiBag = new ApiBag(core != null);
       this.jaxrsResourceRegistry = new JaxrsResourceToHandlerMappings();
@@ -243,7 +242,7 @@ public class PluginBag<T> implements AutoCloseable {
           if (registerApi == null) registerApi = apiSupport.registerV2();
           if (disableHandler == null) disableHandler = !apiSupport.registerV1();
 
-          if (registerApi && V2ApiUtils.isEnabled()) {
+          if (registerApi) {
             Collection<Api> apis = apiSupport.getApis();
             if (apis != null) {
               Map<String, String> nameSubstitutes = singletonMap(HANDLER_NAME, name);
