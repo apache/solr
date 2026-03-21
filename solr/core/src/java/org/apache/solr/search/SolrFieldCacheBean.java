@@ -31,8 +31,6 @@ public class SolrFieldCacheBean implements SolrInfoBean {
   private boolean enableJmxEntryList =
       EnvUtils.getPropertyAsBool("solr.metrics.fieldcache.entries.jmx.enabled", true);
 
-  private SolrMetricsContext solrMetricsContext;
-
   @Override
   public String getName() {
     return this.getClass().getName();
@@ -50,19 +48,20 @@ public class SolrFieldCacheBean implements SolrInfoBean {
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
+    // Return null because we don't create a child context - we use the parent context directly.
+    // This prevents the default SolrMetricProducer.close() from trying to close our parent.
+    return null;
   }
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.solrMetricsContext = parentContext;
     var solrCacheStats =
-        solrMetricsContext.longGaugeMeasurement(
+        parentContext.longGaugeMeasurement(
             "solr_core_field_cache_entries", "Number of field cache entries");
     var solrCacheSize =
-        solrMetricsContext.longGaugeMeasurement(
+        parentContext.longGaugeMeasurement(
             "solr_core_field_cache_size", "Size of field cache in bytes", OtelUnit.BYTES);
-    solrMetricsContext.batchCallback(
+    parentContext.batchCallback(
         () -> {
           if (enableEntryList && enableJmxEntryList) {
             UninvertingReader.FieldCacheStats fieldCacheStats =
