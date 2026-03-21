@@ -19,8 +19,8 @@ package org.apache.solr.search.mlt;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -57,7 +57,7 @@ public class MLTContentQParserPlugin extends QParserPlugin {
     if (fieldNames.length == 1) {
       return moreLikeThis.like(fieldNames[0], new StringReader(content));
     } else {
-      Collection<Object> streamValue = Collections.singleton(content);
+      Collection<Object> streamValue = Set.of(content);
       Map<String, Collection<Object>> multifieldDoc = CollectionUtil.newHashMap(fieldNames.length);
       for (String field : fieldNames) {
         multifieldDoc.put(field, streamValue);

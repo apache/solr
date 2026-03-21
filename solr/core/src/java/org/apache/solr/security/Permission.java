@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 
 class Permission {
@@ -92,7 +93,7 @@ class Permission {
                           it.startsWith("REGEX:")
                               ? Pattern.compile(it.substring("REGEX:".length()))
                               : it)
-                  .collect(Collectors.toList());
+                  .toList();
           p.params.put(
               e.getKey(),
               val -> {
@@ -115,6 +116,9 @@ class Permission {
   }
 
   /** This checks for the defaults available other rules for the keys */
+  @SuppressForbidden(
+      reason =
+          "Collections.singleton(null) is intentional — null is a sentinel value meaning 'core admin / collection admin request' (no collection)")
   private static Set<String> readSetSmart(String permissionName, Map<?, ?> m, String key) {
     if (PermissionNameProvider.values.containsKey(permissionName)
         && !m.containsKey(key)
@@ -128,7 +132,7 @@ class Permission {
       }
       return set;
     }
-    return set == null ? singleton(null) : set;
+    return set == null ? Collections.singleton(null) : set;
   }
 
   /**
@@ -137,6 +141,9 @@ class Permission {
    * @param m the map from which to lookup
    * @param key the key with which to do lookup
    */
+  @SuppressForbidden(
+      reason =
+          "Collections.singleton(null) is intentional — null is a sentinel value meaning 'core admin / collection admin request' (no collection)")
   static Set<String> readValueAsSet(Map<?, ?> m, String key) {
     Set<String> result = new HashSet<>();
     Object val = m.get(key);
@@ -144,7 +151,7 @@ class Permission {
       if ("collection".equals(key)) {
         // for collection collection: null means a core admin/ collection admin request
         // otherwise it means a request where collection name is ignored
-        return m.containsKey(key) ? singleton(null) : singleton("*");
+        return m.containsKey(key) ? singleton(null) : Set.of("*");
       }
       return null;
     }
