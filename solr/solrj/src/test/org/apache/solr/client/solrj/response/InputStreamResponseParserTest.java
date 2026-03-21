@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +29,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -51,8 +48,6 @@ public class InputStreamResponseParserTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }

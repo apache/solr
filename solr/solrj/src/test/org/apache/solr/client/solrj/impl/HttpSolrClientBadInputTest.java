@@ -17,14 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -42,9 +39,6 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP,
-        ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
     solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }

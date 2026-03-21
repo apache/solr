@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
@@ -34,7 +32,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -52,8 +49,6 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }

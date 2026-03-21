@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj;
 
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -77,7 +76,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.ExternalPaths;
@@ -101,8 +99,6 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }

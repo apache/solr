@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.Matchers.containsString;
 
 import java.nio.charset.StandardCharsets;
@@ -26,7 +25,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -48,8 +46,6 @@ public class RenameCoreAPITest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }
