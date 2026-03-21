@@ -148,7 +148,7 @@ junit = "4.13.2"
 junit-jupiter = "5.13.4"
 kotlin = "2.2.0"
 # @keep for version alignment
-kotlinx-atomicfu = "0.29.0"
+kotlinx-atomicfu = "0.31.0"
 # @keep for version alignment
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
