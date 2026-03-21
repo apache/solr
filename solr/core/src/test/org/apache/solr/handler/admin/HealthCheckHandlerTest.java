@@ -18,11 +18,17 @@
 package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
+import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -30,10 +36,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
-import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterStateMockUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -44,6 +48,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.admin.api.NodeHealth;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -104,12 +109,8 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
       RemoteSolrException e =
-          expectThrows(
-              RemoteSolrException.class,
-              () -> {
-                runHealthcheckWithClient(solrClient);
-              });
-      assertTrue(e.getMessage(), e.getMessage().contains("Host Unavailable"));
+          expectThrows(RemoteSolrException.class, () -> runHealthcheckWithClient(solrClient));
+      assertThat(e.getMessage(), containsString("Host Unavailable"));
       assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
     } finally {
       newJetty.stop();
@@ -135,37 +136,56 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     }
   }
 
+  /**
+   * Verifies that the v1 health-check response body contains {@code "status":"FAILURE"} when the
+   * node is absent from ZooKeeper's live-nodes set.
+   *
+   * <p>This is a regression test for the refactoring that delegated health-check logic to {@link
+   * NodeHealth}: after that change, {@link SolrException} thrown by {@link NodeHealth} would escape
+   * {@link HealthCheckHandler#handleRequestBody} before the {@code status} field was written to the
+   * response, leaving callers without a machine-readable failure indicator in the body.
+   *
+   * <p>The node's ZK session is kept alive so that only the live-nodes check fires, not the "not
+   * connected to ZK" check, isolating the specific code path under test.
+   */
   @Test
-  public void testHealthCheckV2Api() throws Exception {
-    V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());
-    assertEquals(0, res.getStatus());
-    assertEquals(CommonParams.OK, res.getResponse().get(CommonParams.STATUS));
-
-    // add a new node for the purpose of negative testing
+  public void testV1FailureResponseIncludesStatusField() throws Exception {
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
     try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+      // Sanity check: the new node is initially healthy.
+      assertEquals(CommonParams.OK, runHealthcheckWithClient(solrClient).getNodeStatus());
 
-      // positive check that our (new) "healthy" node works with direct http client
-      assertEquals(
-          CommonParams.OK,
-          new V2Request.Builder("/node/health")
-              .build()
-              .process(solrClient)
-              .getResponse()
-              .get(CommonParams.STATUS));
+      String nodeName = newJetty.getCoreContainer().getZkController().getNodeName();
 
-      // now "break" our (new) node
-      newJetty.getCoreContainer().getZkController().getZkClient().close();
+      // Remove the node from ZooKeeper's live_nodes without closing the ZK session.
+      // This ensures the "ZK not connected" check passes and only the "not in live nodes"
+      // check fires, exercising the specific failure branch we fixed.
+      newJetty.getCoreContainer().getZkController().removeEphemeralLiveNode();
 
-      // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
-      RemoteSolrException e =
-          expectThrows(
-              RemoteSolrException.class,
-              () -> {
-                new V2Request.Builder("/node/health").build().process(solrClient);
-              });
-      assertTrue(e.getMessage(), e.getMessage().contains("Host Unavailable"));
-      assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
+      // Wait for the node's own ZkStateReader to reflect the removal before querying.
+      newJetty
+          .getCoreContainer()
+          .getZkController()
+          .getZkStateReader()
+          .waitForLiveNodes(10, TimeUnit.SECONDS, missingLiveNode(nodeName));
+
+      // Use a raw HTTP request so we can inspect the full response body.
+      // SolrJ's HealthCheckRequest throws RemoteSolrException on non-200 responses and does
+      // not expose the response body, so we go below SolrJ here.
+      try (HttpClient httpClient = HttpClient.newHttpClient()) {
+        HttpResponse<String> response =
+            httpClient.send(
+                HttpRequest.newBuilder()
+                    .uri(URI.create(newJetty.getBaseUrl() + HEALTH_CHECK_HANDLER_PATH))
+                    .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        assertEquals("Expected 503 SERVICE_UNAVAILABLE", 503, response.statusCode());
+        assertThat(
+            "v1 error response body must contain status=FAILURE so body-inspecting clients get a clear signal",
+            response.body(),
+            containsString("FAILURE"));
+      }
     } finally {
       newJetty.stop();
     }
@@ -193,7 +213,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
               mockCD("invalid", "invalid", "slice1", false, Replica.State.RECOVERING),
               // A core for a slice that is not an active slice will not fail the check
               mockCD("collection1", "invalid_replica1", "invalid", true, Replica.State.DOWN));
-      long unhealthy1 = HealthCheckHandler.findUnhealthyCores(node1Cores, clusterState);
+      long unhealthy1 = NodeHealth.findUnhealthyCores(node1Cores, clusterState);
       assertEquals(2, unhealthy1);
 
       // Node 2
@@ -203,7 +223,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
               mockCD("collection1", "slice1_replica4", "slice1", true, Replica.State.DOWN),
               mockCD(
                   "collection2", "slice1_replica1", "slice1", true, Replica.State.RECOVERY_FAILED));
-      long unhealthy2 = HealthCheckHandler.findUnhealthyCores(node2Cores, clusterState);
+      long unhealthy2 = NodeHealth.findUnhealthyCores(node2Cores, clusterState);
       assertEquals(1, unhealthy2);
     }
   }
