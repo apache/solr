@@ -69,8 +69,9 @@ task writeChangelog {
 
 # type:
 #  `added` for new features/improvements, opt-in by the user typically documented in the ref guide
-#  `changed` for improvements; not opt-in
+#  `changed` for behavior improvements; not opt-in
 #  `fixed` for improvements that are deemed to have fixed buggy behavior
+#  `optimized` for performance improvements with no functional changes
 #  `deprecated` for marking things deprecated
 #  `removed` for code removed
 #  `dependency_update` for updates to dependencies
