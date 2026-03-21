@@ -140,6 +140,10 @@ environment variables starting with `SOLR_CROSSDC_KAFKA_` or system properties s
 `solr.crossdc.kafka.`. For example, to adjust the `max.poll.records` property specific to the Kafka client
 library you can set either `SOLR_CROSSDC_KAFKA_MAX_POLL_RECORDS` environment variable or `solr.crossdc.kafka.max.poll.records`
 system property.
+Property names from environment variables are normalized by stripping the prefix, converting to lowercase, and replacing `_` with `.`.
+Values from `solr.crossdc.kafka.` system properties override values from `SOLR_CROSSDC_KAFKA_` environment variables when they map to the same Kafka key.
+Already-populated explicit CrossDC settings are preserved and are not overridden by pass-through values.
+Blank values and empty normalized keys are ignored.
 
 === CrossDC Manager
 
