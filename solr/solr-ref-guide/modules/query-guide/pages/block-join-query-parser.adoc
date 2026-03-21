@@ -51,10 +51,40 @@ The example usage of the query parsers below assumes the following documents hav
 
 This parser wraps a query that matches some parent documents and returns the children of those documents.
 
-The syntax for this parser is: `q={!child of=<blockMask>}<someParents>`.
+=== Using `parentPath`
 
-* The inner subordinate query string (`someParents`) must be a query that will match some parent documents
-* The `of` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
+If your schema supports xref:indexing-guide:indexing-nested-documents.adoc[nested documents], you _should_ specify `parentPath`.
+Specify the path at which the parent documents live:
+
+[source,text]
+q={!child parentPath=<path>}<someParents>
+
+Key points about `parentPath`:
+
+* Must start with `/`.
+* Use `parentPath="/"` to treat root-level documents as the parents.
+* A trailing `/` is stripped automatically (e.g., `"/skus/"` is treated as `"/skus"`).
+* `parentPath` and `of` are mutually exclusive; specifying both returns a `400 Bad Request` error.
+* Optionally, use `childPath` to narrow the returned children to docs at exactly `parentPath/childPath`. Without `childPath`, all descendants of parents at `parentPath` are returned.
+
+For example, using the deeply nested documents described in xref:searching-nested-documents.adoc[], the following query returns all children of root-level product documents that match a description query:
+
+[source,text]
+q={!child parentPath="/"}description_t:staplers
+
+To return only `skus` children of root documents matching a description query (excluding other child types):
+
+[source,text]
+q={!child parentPath="/" childPath="skus"}description_t:staplers
+
+=== Using the `of` Parameter
+
+This approach is used with anonymous child documents (schemas without `_nest_path_`).
+It is more verbose and has some <<block-mask,gotchas>>.
+The syntax is: `q={!child of=<blockMask>}<someParents>`.
+
+* The inner subordinate query string (`someParents`) must be a query that will match some parent documents.
+* The `of` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents.
 
 The resulting query will match all documents which do _not_ match the `<blockMask>` query and are children (or descendents) of the documents matched by `<someParents>`.
 
@@ -111,10 +141,40 @@ More precisely, `q={!child of=<blockMask>}` is equivalent to `q=\*:* -<blockMask
 
 This parser takes a query that matches child documents and returns their parents.
 
-The syntax for this parser is similar to the `child` parser: `q={!parent which=<blockMask>}<someChildren>`.
+=== Using `parentPath`
 
-* The inner subordinate query string (`someChildren`) must be a query that will match some child documents
-* The `which` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
+If your schema supports xref:indexing-guide:indexing-nested-documents.adoc[nested documents], you _should_ specify `parentPath`.
+Specify the path at which the parent documents live:
+
+[source,text]
+q={!parent parentPath=<path>}<someChildren>
+
+Key points about `parentPath`:
+
+* Must start with `/`.
+* Use `parentPath="/"` to treat root-level documents as the parents.
+* A trailing `/` is stripped automatically (e.g., `"/skus/"` is treated as `"/skus"`).
+* `parentPath` and `which` are mutually exclusive; specifying both returns a `400 Bad Request` error.
+* Optionally, use `childPath` to constrain the child query to docs at exactly `parentPath/childPath`. Without `childPath`, all descendants of `parentPath` are eligible as children.
+
+For example, using the deeply nested documents described in xref:searching-nested-documents.adoc[], the following query returns the root-level product documents that are ancestors of manuals with exactly one page:
+
+[source,text]
+q={!parent parentPath="/"}pages_i:1
+
+To instead return the `skus` that are ancestors of one-page _manuals_ (only manuals, not other sku children):
+
+[source,text]
+q={!parent parentPath="/skus" childPath="manuals"}pages_i:1
+
+=== Using the `which` Parameter
+
+This approach is used with anonymous child documents (schemas without `_nest_path_`).
+It is more verbose and has some <<block-mask,gotchas>>.
+The syntax is: `q={!parent which=<blockMask>}<someChildren>`.
+
+* The inner subordinate query string (`someChildren`) must be a query that will match some child documents.
+* The `which` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents.
 
 The resulting query will match all documents which _do_ match the `<blockMask>` query and are parents (or ancestors) of the documents matched by `<someChildren>`.
 

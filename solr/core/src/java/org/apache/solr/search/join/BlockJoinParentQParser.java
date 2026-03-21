@@ -20,13 +20,21 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScorerSupplier;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.QueryBitSetProducer;
@@ -34,17 +42,41 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
 
+/** Matches parent documents based on child doc criteria. */
 public class BlockJoinParentQParser extends FiltersQParser {
   /** implementation detail subject to change */
   public static final String CACHE_NAME = "perSegFilter";
+
+  /**
+   * Optional local-param that, when specified, makes this parser natively aware of the {@link
+   * IndexSchema#NEST_PATH_FIELD_NAME} field to automatically derive the parent filter (the {@code
+   * which} param). The value must be an absolute path starting with {@code /} using {@code /} as
+   * separator, e.g. {@code /} for root-level parents or {@code /skus} for parents nested at that
+   * path. When specified, the {@code which} param must not also be specified.
+   *
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-14687">SOLR-14687</a>
+   */
+  public static final String PARENT_PATH_PARAM = "parentPath";
+
+  /**
+   * Optional local-param, only valid together with {@link #PARENT_PATH_PARAM} on the {@code parent}
+   * parser. When specified, the subordinate (child) query is constrained to docs at exactly the
+   * path formed by concatenating {@code parentPath + "/" + childPath}, instead of the default
+   * behavior of matching all descendants. For example, {@code parentPath="/skus"
+   * childPath="manuals"} constrains children to docs whose {@code _nest_path_} is exactly {@code
+   * /skus/manuals}.
+   */
+  public static final String CHILD_PATH_PARAM = "childPath";
 
   protected String getParentFilterLocalParamName() {
     return "which";
@@ -58,6 +90,175 @@ public class BlockJoinParentQParser extends FiltersQParser {
   BlockJoinParentQParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
+  }
+
+  @Override
+  public Query parse() throws SyntaxError {
+    String parentPath = localParams.get(PARENT_PATH_PARAM);
+    if (parentPath != null) {
+      if (localParams.get(getParentFilterLocalParamName()) != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            PARENT_PATH_PARAM
+                + " and "
+                + getParentFilterLocalParamName()
+                + " local params are mutually exclusive");
+      }
+      if (!parentPath.startsWith("/")) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, PARENT_PATH_PARAM + " must start with '/'");
+      }
+      // strip trailing slash (except for root "/")
+      if (parentPath.length() > 1 && parentPath.endsWith("/")) {
+        parentPath = parentPath.substring(0, parentPath.length() - 1);
+      }
+
+      String childPath = localParams.get(CHILD_PATH_PARAM);
+      if (childPath != null) {
+        if (childPath.startsWith("/")) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " must not start with '/'");
+        }
+        if (childPath.isEmpty()) {
+          childPath = null; // treat empty as not specified
+        }
+      }
+      return parseUsingParentPath(parentPath, childPath);
+    }
+
+    // NO parentPath; use classic/advanced/DIY code path:
+
+    if (localParams.get(CHILD_PATH_PARAM) != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " requires " + PARENT_PATH_PARAM);
+    }
+    return super.parse();
+  }
+
+  /**
+   * Parses the query using the {@code parentPath} localparam to automatically derive the parent
+   * filter and child query constraints from {@link IndexSchema#NEST_PATH_FIELD_NAME}.
+   *
+   * <p>For the {@code parent} parser with {@code parentPath="/a/b/c"}:
+   *
+   * <pre>NEW: q={!parent parentPath="/a/b/c"}c_title:son
+   *
+   * OLD: q=(+{!field f="_nest_path_" v="/a/b/c"} +{!parent which=$ff v=$vv})
+   *      ff=(*:* -{!prefix f="_nest_path_" v="/a/b/c/"})
+   *      vv=(+c_title:son +{!prefix f="_nest_path_" v="/a/b/c/"})</pre>
+   *
+   * <p>For {@code parentPath="/"}:
+   *
+   * <pre>NEW: q={!parent parentPath="/"}c_title:son
+   *
+   * OLD: q=(+(*:* -_nest_path_:*) +{!parent which=$ff v=$vv})
+   *      ff=(*:* -_nest_path_:*)
+   *      vv=(+c_title:son +_nest_path_:*)</pre>
+   *
+   * @param parentPath the normalized parent path (starts with "/", no trailing slash except for
+   *     root "/")
+   * @param childPath optional path constraining the children relative to parentPath
+   */
+  protected Query parseUsingParentPath(String parentPath, String childPath) throws SyntaxError {
+    final BooleanQuery parsedChildQuery = parseImpl();
+
+    if (parsedChildQuery.clauses().isEmpty()) { // i.e. all children
+      // no block-join needed; just return all "parent" docs at this level
+      return wrapWithParentPathConstraint(parentPath, new MatchAllDocsQuery());
+    }
+
+    // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
+    // For root: (*:* -_nest_path_:*)
+    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
+
+    // constrain child query: (+<original_child> +{!prefix f="_nest_path_" v="<parentPath>/"})
+    // For root: (+<original_child> +_nest_path_:*)
+    // If childPath specified: (+<original_child> +{!term f="_nest_path_"
+    // v="<parentPath>/<childPath>"})
+    final Query constrainedChildQuery =
+        wrapWithChildPathConstraint(parentPath, childPath, parsedChildQuery);
+
+    final String scoreMode = localParams.get("score", ScoreMode.None.name());
+    final Query parentJoinQuery = createQuery(allParentsFilter, constrainedChildQuery, scoreMode);
+
+    // wrap result: (+<parent_join> +{!field f="_nest_path_" v="<parentPath>"})
+    // For root: (+<parent_join> -_nest_path_:*)
+    return wrapWithParentPathConstraint(parentPath, parentJoinQuery);
+  }
+
+  /**
+   * Builds the "all parents" filter query from the given {@code parentPath}. This query matches all
+   * documents that are NOT strictly below (nested inside) the given path. This includes:
+   *
+   * <ul>
+   *   <li>documents without any {@code _nest_path_} (root-level, non-nested docs)
+   *   <li>documents at the same level as {@code parentPath} (i.e. with exactly that path)
+   *   <li>documents at levels above {@code parentPath}
+   *   <li>documents at completely orthogonal paths (e.g. {@code /x/y/z} when parentPath is {@code
+   *       /a/b/c})
+   * </ul>
+   *
+   * <p>Equivalent to: {@code (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})} For root ({@code
+   * /}): {@code (*:* -_nest_path_:*)}
+   */
+  protected static Query buildAllParentsFilterFromPath(String parentPath) {
+    final Query excludeQuery;
+    if (parentPath.equals("/")) {
+      excludeQuery = new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
+    } else {
+      excludeQuery = new PrefixQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath + "/"));
+    }
+    return new BooleanQuery.Builder()
+        .add(new MatchAllDocsQuery(), Occur.MUST)
+        .add(excludeQuery, Occur.MUST_NOT)
+        .build();
+  }
+
+  /**
+   * Wraps the given query with a constraint ensuring only docs at exactly {@code parentPath} are
+   * matched.
+   */
+  protected static Query wrapWithParentPathConstraint(String parentPath, Query query) {
+    final BooleanQuery.Builder builder = new BooleanQuery.Builder().add(query, Occur.MUST);
+    if (parentPath.equals("/")) {
+      builder.add(new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME), Occur.MUST_NOT);
+    } else {
+      final Query constraint =
+          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath));
+      if (query instanceof MatchAllDocsQuery) {
+        return new ConstantScoreQuery(constraint);
+      }
+      builder.add(constraint, Occur.FILTER);
+    }
+    return builder.build();
+  }
+
+  /**
+   * Wraps the sub-query with a constraint ensuring only docs that are descendants of {@code
+   * parentPath} are matched. If {@code childPath} is non-null, further narrows to docs at exactly
+   * {@code parentPath/childPath}.
+   */
+  protected static Query wrapWithChildPathConstraint(
+      String parentPath, String childPath, Query subQuery) {
+    final Query nestPathConstraint;
+    if (childPath != null) {
+      String effectiveChildPath =
+          parentPath.equals("/") ? "/" + childPath : parentPath + "/" + childPath;
+      nestPathConstraint =
+          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, effectiveChildPath));
+    } else if (parentPath.equals("/")) {
+      nestPathConstraint = new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
+    } else {
+      nestPathConstraint =
+          new PrefixQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath + "/"));
+    }
+    if (subQuery instanceof MatchAllDocsQuery) {
+      return new ConstantScoreQuery(nestPathConstraint);
+    }
+    return new BooleanQuery.Builder()
+        .add(subQuery, Occur.MUST)
+        .add(nestPathConstraint, Occur.FILTER)
+        .build();
   }
 
   protected Query parseParentFilter() throws SyntaxError {
@@ -76,19 +277,33 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
   @Override
   protected Query noClausesQuery() throws SyntaxError {
+    assert false : "dead code";
     return new BitSetProducerQuery(getBitSetProducer(parseParentFilter()));
   }
 
-  protected Query createQuery(final Query parentList, Query query, String scoreMode)
+  /**
+   * Create the block-join query, the core Query of the QParser.
+   *
+   * @param parentList the "parent" query. The result will internally be cached.
+   * @param fromQuery source/from query. For {!parent}, this is a child, otherwise it's a parent
+   * @param scoreMode see {@link ScoreMode}
+   * @return non-null
+   * @throws SyntaxError Only if scoreMode doesn't parse
+   */
+  protected Query createQuery(final Query parentList, Query fromQuery, String scoreMode)
       throws SyntaxError {
     return new AllParentsAware(
-        query, getBitSetProducer(parentList), ScoreModeParser.parse(scoreMode), parentList);
+        fromQuery, getBitSetProducer(parentList), ScoreModeParser.parse(scoreMode), parentList);
   }
 
   BitSetProducer getBitSetProducer(Query query) {
     return getCachedBitSetProducer(req, query);
   }
 
+  /**
+   * Returns a Lucene {@link BitSetProducer}, typically cached by query. Note that BSP itself
+   * internally caches a per-segment {@link BitSet}.
+   */
   public static BitSetProducer getCachedBitSetProducer(
       final SolrQueryRequest request, Query query) {
     @SuppressWarnings("unchecked")
@@ -105,6 +320,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
     }
   }
 
+  /** A {@link ToParentBlockJoinQuery} exposing the query underlying the {@link BitSetProducer}. */
   static final class AllParentsAware extends ToParentBlockJoinQuery {
     private final Query parentQuery;
 

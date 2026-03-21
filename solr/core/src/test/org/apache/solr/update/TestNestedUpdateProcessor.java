@@ -438,6 +438,97 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "//result/@numFound=1",
               "//doc/str[@name='id'][.='" + ancestorId + "']");
 
+          // additionally test childPath: find the immediate parent of descendentId and use
+          // childPath to constrain to that exact child path level
+          final String directParentPath =
+              doc_path.contains("/")
+                  ? (doc_path.lastIndexOf("/") == 0
+                      ? "/"
+                      : doc_path.substring(0, doc_path.lastIndexOf("/")))
+                  : "/";
+          final String childSegment = doc_path.substring(doc_path.lastIndexOf("/") + 1);
+          // find the ancestor ID whose path is directParentPath
+          for (Object candAncestorId : allAncestorIds) {
+            final String candPath =
+                allDocs.get(candAncestorId.toString()).getFieldValue("test_path_s").toString();
+            if (candPath.equals(directParentPath)) {
+              // childPath constrains the child query to exactly doc_path, so we should find
+              // the direct parent
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!parent parentPath='"
+                              + directParentPath
+                              + "' childPath='"
+                              + childSegment
+                              + "'}id:"
+                              + descendentId),
+                      "_trace_childPath_tested",
+                      directParentPath + "/" + childSegment,
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "//result/@numFound=1",
+                  "//doc/str[@name='id'][.='" + candAncestorId + "']");
+              // a childPath that doesn't match descendentId's path should return 0 results
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!parent parentPath='"
+                              + directParentPath
+                              + "' childPath='xxx_yyy'}id:"
+                              + descendentId),
+                      "_trace_childPath_tested",
+                      directParentPath + "/xxx_yyy",
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "//result/@numFound=0");
+              // childPath for {!child}: constrain returned children to exactly doc_path
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!child parentPath='"
+                              + directParentPath
+                              + "' childPath='"
+                              + childSegment
+                              + "'}id:"
+                              + candAncestorId),
+                      "_trace_child_childPath_tested",
+                      directParentPath + "/" + childSegment,
+                      "rows",
+                      "9999",
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "count(//doc)>=1",
+                  "//doc/str[@name='id'][.='" + descendentId + "']");
+              // a childPath that doesn't match should return 0 results
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!child parentPath='"
+                              + directParentPath
+                              + "' childPath='xxx_yyy'}id:"
+                              + candAncestorId),
+                      "_trace_child_childPath_tested",
+                      directParentPath + "/xxx_yyy",
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "//result/@numFound=0");
+              break;
+            }
+          }
+
           // meanwhile, a 'child' query wrapped around a query for the ancestorId, using the
           // ancestor_path, should match all of its descendents (for simplicity we'll check just
           // the numFound and the 'descendentId' we started with)
@@ -544,7 +635,14 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams parentQueryMaker(String parent_path, String inner_child_query) {
       assertValidPathSyntax(parent_path);
-      final boolean verbose = random().nextBoolean();
+      final int variant = random().nextInt(3);
+
+      if (variant == 2) {
+        // new parentPath sugar
+        return params("q", "{!parent parentPath='" + parent_path + "'}" + inner_child_query);
+      } // else old-style with explicit which/of...
+
+      final boolean verbose = variant == 1;
 
       if (parent_path.equals("/")) {
         if (verbose) {
@@ -632,7 +730,14 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams childQueryMaker(String parent_path, String inner_parent_query) {
       assertValidPathSyntax(parent_path);
-      final boolean verbose = random().nextBoolean();
+      final int variant = random().nextInt(3);
+
+      if (variant == 2) {
+        // new parentPath sugar
+        return params("q", "{!child parentPath='" + parent_path + "'}" + inner_parent_query);
+      } // else old-style with explicit which/of...
+
+      final boolean verbose = variant == 1;
 
       if (parent_path.equals("/")) {
         if (verbose) {

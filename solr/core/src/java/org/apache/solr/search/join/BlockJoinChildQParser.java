@@ -25,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SyntaxError;
 
+/** Matches child documents based on parent doc criteria. */
 public class BlockJoinChildQParser extends BlockJoinParentQParser {
 
   public BlockJoinChildQParser(
@@ -33,8 +34,8 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   }
 
   @Override
-  protected Query createQuery(Query parentListQuery, Query query, String scoreMode) {
-    return new ToChildBlockJoinQuery(query, getBitSetProducer(parentListQuery));
+  protected Query createQuery(Query parentListQuery, Query fromQuery, String scoreMode) {
+    return new ToChildBlockJoinQuery(fromQuery, getBitSetProducer(parentListQuery));
   }
 
   @Override
@@ -51,5 +52,59 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
             .add(parents, Occur.MUST_NOT)
             .build();
     return new BitSetProducerQuery(getBitSetProducer(notParents));
+  }
+
+  /**
+   * Parses the query using the {@code parentPath} local-param for the child parser.
+   *
+   * <p>For the {@code child} parser with {@code parentPath="/a/b/c"}:
+   *
+   * <pre>NEW: q={!child parentPath="/a/b/c"}p_title:dad
+   *
+   * OLD: q={!child of=$ff v=$vv}
+   *      ff=(*:* -{!prefix f="_nest_path_" v="/a/b/c/"})
+   *      vv=(+p_title:dad +{!field f="_nest_path_" v="/a/b/c"})</pre>
+   *
+   * <p>For {@code parentPath="/"}:
+   *
+   * <pre>NEW: q={!child parentPath="/"}p_title:dad
+   *
+   * OLD: q={!child of=$ff v=$vv}
+   *      ff=(*:* -_nest_path_:*)
+   *      vv=(+p_title:dad -_nest_path_:*)</pre>
+   *
+   * <p>The optional {@code childPath} local-param narrows the returned children to docs at exactly
+   * {@code parentPath/childPath}.
+   *
+   * @param parentPath the normalized parent path (starts with "/", no trailing slash except for
+   *     root "/")
+   * @param childPath optional path constraining the children relative to parentPath
+   */
+  @Override
+  protected Query parseUsingParentPath(String parentPath, String childPath) throws SyntaxError {
+
+    final BooleanQuery parsedParentQuery = parseImpl();
+
+    if (parsedParentQuery.clauses().isEmpty()) { // i.e. match all parents
+      // no block-join needed; just filter to certain children
+      return wrapWithChildPathConstraint(parentPath, childPath, new MatchAllDocsQuery());
+    }
+
+    // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
+    // For root: (*:* -_nest_path_:*)
+    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
+
+    // constrain the parent query to only match docs at exactly parentPath
+    // (+<original_parent> +{!field f="_nest_path_" v="<parentPath>"})
+    // For root: (+<original_parent> -_nest_path_:*)
+    Query constrainedParentQuery = wrapWithParentPathConstraint(parentPath, parsedParentQuery);
+
+    Query joinQuery = createQuery(allParentsFilter, constrainedParentQuery, null);
+    // matches all children of matching parents
+    if (childPath == null) {
+      return joinQuery;
+    }
+    // need to constrain to certain children
+    return wrapWithChildPathConstraint(parentPath, childPath, joinQuery);
   }
 }
