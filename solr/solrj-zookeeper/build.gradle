@@ -30,7 +30,6 @@ dependencies {
   }
 
   implementation project(':solr:solrj')
-  implementation project(':solr:solrj-jetty')
   implementation project(':solr:api')
 
   implementation libs.slf4j.api
