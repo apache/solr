@@ -109,6 +109,22 @@ public class ObjectReleaseTracker {
     return error.toString();
   }
 
+  /**
+   * Returns a list of all tracked objects that are instances of the specified class.
+   *
+   * @param clazz the class to filter by
+   * @return list of tracked objects of the specified type
+   */
+  public static <T> List<T> getTrackedObjectsOfType(Class<T> clazz) {
+    List<T> result = new ArrayList<>();
+    for (Object object : OBJECTS.keySet()) {
+      if (clazz.isInstance(object)) {
+        result.add(clazz.cast(object));
+      }
+    }
+    return result;
+  }
+
   public static void tryClose() {
     for (Object object : OBJECTS.keySet()) {
       if (object instanceof Closeable) {
