@@ -518,7 +518,7 @@
 
   <!-- Request Dispatcher
 
-       This section contains instructions for how the SolrDispatchFilter
+       This section contains instructions for how the SolrServlet
        should behave when processing requests for this SolrCore.
 
     -->

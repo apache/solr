@@ -66,7 +66,7 @@ import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.SolrServlet;
 import org.apache.solr.servlet.TracingFilter;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
@@ -120,7 +120,7 @@ public class JettySolrRunner {
   volatile FilterHolder requiredFilter;
   volatile FilterHolder rateLimitFilter;
   volatile FilterHolder authFilter;
-  volatile FilterHolder dispatchFilter;
+  volatile ServletHolder solrServlet;
   private FilterHolder tracingFilter;
 
   private int jettyPort = -1;
@@ -387,9 +387,8 @@ public class JettySolrRunner {
               nodeProperties.setProperty("hostPort", Integer.toString(port));
 
               root.getServletContext()
-                  .setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
-              root.getServletContext()
-                  .setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
+                  .setAttribute(CoreContainerProvider.SOLR_PROPERTIES, nodeProperties);
+              root.getServletContext().setAttribute(CoreContainerProvider.SOLR_SOLR_HOME, solrHome);
 
               SSLConfigurationsFactory.current().init(); // normally happens in jetty-ssl.xml
 
@@ -434,17 +433,17 @@ public class JettySolrRunner {
       authFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       authFilter.setHeldClass(AuthenticationFilter.class);
 
-      // This is our main workhorse
-      dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-      dispatchFilter.setHeldClass(SolrDispatchFilter.class);
-
-      // Map dispatchFilter in same path as in web.xml
+      // Map filters in same path as in web.xml
       root.addFilter(pathExcludeFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(tracingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(authFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
-      root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+
+      // This is our main workhorse - now a servlet instead of filter
+      solrServlet = root.getServletHandler().newServletHolder(Source.EMBEDDED);
+      solrServlet.setHeldClass(SolrServlet.class);
+      root.addServlet(solrServlet, "/*");
 
       // Default servlet as a fall-through
       ServletHolder defaultHolder = root.getServletHandler().newServletHolder(Source.EMBEDDED);
@@ -494,14 +493,7 @@ public class JettySolrRunner {
   }
 
   /**
-   * @return the {@link SolrDispatchFilter} for this node
-   */
-  public SolrDispatchFilter getSolrDispatchFilter() {
-    return (SolrDispatchFilter) dispatchFilter.getFilter();
-  }
-
-  /**
-   * @return the {@link SolrDispatchFilter} for this node
+   * @return the {@link RateLimitFilter} for this node
    */
   public RateLimitFilter getSolrRateLimitFilter() {
     return (RateLimitFilter) rateLimitFilter.getFilter();
@@ -511,12 +503,17 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
-    final var solrDispatchFilter = getSolrDispatchFilter();
-    if (solrDispatchFilter == null) {
+    SolrServlet servlet;
+    try {
+      servlet = (SolrServlet) solrServlet.getServlet();
+    } catch (ServletException e1) {
+      throw new RuntimeException(e1);
+    }
+    if (servlet == null) {
       return null;
     }
     try {
-      return solrDispatchFilter.getCores();
+      return servlet.getCores();
     } catch (UnavailableException e) {
       return null;
     }
@@ -530,13 +527,13 @@ public class JettySolrRunner {
   }
 
   public boolean isRunning() {
-    return server.isRunning() && dispatchFilter != null && dispatchFilter.isRunning();
+    return server.isRunning() && solrServlet != null && solrServlet.isRunning();
   }
 
   public boolean isStopped() {
-    return (server.isStopped() && dispatchFilter == null)
+    return (server.isStopped() && solrServlet == null)
         || (server.isStopped()
-            && dispatchFilter.isStopped()
+            && solrServlet.isStopped()
             && ((QueuedThreadPool) server.getThreadPool()).isStopped());
   }
 
@@ -584,7 +581,7 @@ public class JettySolrRunner {
           server.start();
         }
       }
-      assert dispatchFilter.isRunning();
+      assert solrServlet.isRunning();
 
       if (config.waitForLoadingCoresToFinishMs != null
           && config.waitForLoadingCoresToFinishMs > 0L) {
@@ -900,18 +897,11 @@ public class JettySolrRunner {
   }
 
   private void waitForLoadingCoresToFinish(long timeoutMs) {
-    if (dispatchFilter != null) {
-      SolrDispatchFilter solrFilter = (SolrDispatchFilter) dispatchFilter.getFilter();
-      CoreContainer cores;
-      try {
-        cores = solrFilter.getCores();
-      } catch (UnavailableException e) {
-        throw new IllegalStateException("The CoreContainer is unavailable!");
-      }
-      cores.waitForLoadingCoresToFinish(timeoutMs);
-    } else {
-      throw new IllegalStateException("The dispatchFilter is not set!");
+    CoreContainer cores = getCoreContainer();
+    if (cores == null) {
+      throw new IllegalStateException("solrServlet/coreContainer is not set/available!");
     }
+    cores.waitForLoadingCoresToFinish(timeoutMs);
   }
 
   static class Delay {

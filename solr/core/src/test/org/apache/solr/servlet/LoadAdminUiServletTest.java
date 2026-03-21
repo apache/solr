@@ -52,6 +52,7 @@ public class LoadAdminUiServletTest extends SolrTestCaseJ4 {
   @Mock private ServletConfig servletConfig;
   @Mock private ServletContext mockServletContext;
   @Mock private ServletOutputStream mockOutputStream;
+  @Mock private CoreContainerProvider coreContainerProvider;
 
   private static final Set<String> CSP_URLS =
       Set.of(
@@ -72,6 +73,9 @@ public class LoadAdminUiServletTest extends SolrTestCaseJ4 {
     InputStream mockInputStream =
         new ByteArrayInputStream("mock content".getBytes(StandardCharsets.UTF_8));
     when(mockServletContext.getResourceAsStream(anyString())).thenReturn(mockInputStream);
+    when(mockServletContext.getAttribute(CoreContainerProvider.class.getName()))
+        .thenReturn(coreContainerProvider);
+    when(coreContainerProvider.getCoreContainer()).thenReturn(coreContainer);
   }
 
   @BeforeClass

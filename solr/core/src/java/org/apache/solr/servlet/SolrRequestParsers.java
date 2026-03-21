@@ -468,7 +468,7 @@ public class SolrRequestParsers {
     public InputStream getStream() throws IOException {
       // we explicitly protect this servlet stream from being closed
       // so that it does not trip our test assert in our close shield
-      // in SolrDispatchFilter - we must allow closes from getStream
+      // in SolrServlet - we must allow closes from getStream
       // due to the other impls of ContentStream
       return new CloseShieldInputStream(inputStream);
     }
@@ -671,7 +671,7 @@ public class SolrRequestParsers {
           "Solr requires that request parameters sent using application/x-www-form-urlencoded "
               + "content-type can be read through the request input stream. Unfortunately, the "
               + "stream was empty / not available. This may be caused by another servlet filter calling "
-              + "ServletRequest.getParameter*() before SolrDispatchFilter, please remove it.");
+              + "ServletRequest.getParameter*() before SolrServlet, please remove it.");
     }
 
     public boolean isFormData(HttpServletRequest req) {

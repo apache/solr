@@ -21,13 +21,12 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.FORWARD;
+import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
+import static org.apache.solr.servlet.HttpSolrCall.Action.REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.RETRY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
@@ -99,7 +98,6 @@ import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationUtils;
 import org.apache.solr.security.HttpServletAuthorizationContext;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
@@ -117,7 +115,6 @@ public class HttpSolrCall {
 
   public static final String INTERNAL_REQUEST_COUNT = "_forwardedCount";
 
-  protected final SolrDispatchFilter solrDispatchFilter;
   protected final CoreContainer cores;
   protected final HttpServletRequest req;
   protected final HttpServletResponse response;
@@ -143,13 +140,28 @@ public class HttpSolrCall {
 
   protected RequestType requestType;
 
+  /** Enum to define action that needs to be processed. */
+  public enum Action {
+    /** Forwards the request via {@link jakarta.servlet.RequestDispatcher}. */
+    FORWARD,
+    /**
+     * Returns the control, and no further specific processing is needed. This is generally when an
+     * error is set and returned.
+     */
+    RETURN,
+    /** Retry the request. Currently used when a core isn't found, we refresh state, and retry. */
+    RETRY,
+    ADMIN,
+    REMOTEPROXY,
+    PROCESS,
+    ADMIN_OR_REMOTEPROXY
+  }
+
   public HttpSolrCall(
-      SolrDispatchFilter solrDispatchFilter,
       CoreContainer cores,
       HttpServletRequest request,
       HttpServletResponse response,
       boolean retry) {
-    this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
     this.req = request;
     this.response = response;
@@ -304,9 +316,11 @@ public class HttpSolrCall {
         return; // we are done with a valid handler
       }
     }
-    log.debug("no handler or core retrieved for {}, follow through...", path);
 
-    action = PASSTHROUGH;
+    String msg = "no handler, collection, or core for " + path;
+    sendError(404, msg);
+    log.info(msg); // not "error" since Solr isn't necessarily at fault
+    action = RETURN;
   }
 
   /**
@@ -419,12 +433,6 @@ public class HttpSolrCall {
 
     if (cores == null) {
       sendError(503, "Server is shutting down or failed to initialize");
-      return RETURN;
-    }
-
-    if (solrDispatchFilter.abortErrorMessage != null) {
-      sendError(500, solrDispatchFilter.abortErrorMessage);
-      cores.audit(() -> new AuditEvent(ERROR, getReq()), ERROR);
       return RETURN;
     }
 
