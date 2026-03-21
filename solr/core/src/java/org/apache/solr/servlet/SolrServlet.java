@@ -94,7 +94,6 @@ public class SolrServlet extends HttpServlet {
   For over a decade this class did anything and everything
   In late 2021 SOLR-15590 moved container startup to CoreContainerProvider
   In late 2025 SOLR-18040 moved request wrappers to independent ServletFilters
-    such as PathExclusionFilter see web.xml for a full, up-to-date list
 
   This class is only handling dispatch, please think twice before adding anything else to it.
    */

@@ -60,7 +60,6 @@ public final class LoadAdminUiServlet extends HttpServlet {
     response.addHeader(
         "X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
-    // This attribute is set by the SolrServlet
     String admin = request.getRequestURI().substring(request.getContextPath().length());
     try (InputStream in = getServletContext().getResourceAsStream(admin)) {
       CoreContainerProvider.serviceForContext(getServletConfig().getServletContext())
