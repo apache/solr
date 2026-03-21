@@ -575,6 +575,63 @@ A snapshot with the name `snapshot._name_` must exist or an error will be return
 `location`::: The location where the snapshot is created.
 
 
+[[monitoring-follower-replication-lag]]
+== Monitoring Follower Replication Lag
+
+In a leader-follower deployment it is important to know whether followers are keeping pace with the leader.
+Solr's health-check endpoint supports a `maxGenerationLag` request parameter that lets you assert that each follower core is within a specified number of Lucene commit generations of its leader.
+When the follower is lagging more than the allowed number of generations the endpoint returns HTTP 503 (Service Unavailable), making it straightforward to integrate into load-balancer health probes or monitoring systems.
+
+The `maxGenerationLag` parameter is an integer representing the maximum acceptable number of commit generations by which a follower is allowed to trail its leader.
+A value of `0` requires the follower to be fully up to date.
+If the parameter is omitted, the health check returns `OK` regardless of replication lag.
+
+[WARNING]
+====
+Because a follower's generation can only increase when a replication from the leader actually completes, `maxGenerationLag=0` may return `FAILURE` immediately after a follower starts or after a period of network instability even though the follower will catch up on the next poll cycle.
+Use a small positive value (for example `2`) for production monitoring unless you require strict freshness guarantees.
+====
+
+Use the health endpoint as follows:
+
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://_follower_host:port_/solr/admin/info/health?maxGenerationLag=<_max_lag_>
+----
+====
+
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+http://_follower_host:port_/api/node/health?maxGenerationLag=<_max_lag_>
+----
+====
+
+A healthy response looks like:
+
+[source,json]
+----
+{
+  "status": "OK",
+  "message": "All the followers are in sync with leader (within maxGenerationLag: 2) or the cores are acting as leader"
+}
+----
+
+When a follower is lagging too far behind, the response is HTTP 503 and the body identifies the lagging cores:
+
+[source,json]
+----
+{
+  "status": "FAILURE",
+  "message": "Cores violating maxGenerationLag:2.\nCore collection1 is lagging by 5 generations"
+}
+----
+
 == Optimizing Distributed Indexes
 
 Optimizing an index is not something most users should generally worry about - but in particular users should be aware of the impacts of optimizing an index when using the `ReplicationHandler`.
