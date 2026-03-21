@@ -42,7 +42,7 @@ apache-opennlp = "2.5.6"
 apache-rat = "0.15"
 apache-tika = "3.2.3"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.4"
+apache-zookeeper = "3.9.5"
 # @keep for version alignment
 apiguardian = "1.1.2"
 # @keep Asciidoctor mathjax version used in ref-guide
