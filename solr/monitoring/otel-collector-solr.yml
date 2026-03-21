@@ -1,0 +1,112 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# otel-collector-solr.yml
+#
+# Drop-in OpenTelemetry Collector configuration snippet for Solr 10.x.
+#
+# This file shows how to:
+#   1. Receive Solr metrics via OTLP (pushed from Solr's OTel module) or scrape
+#      Solr's /api/metrics Prometheus endpoint.
+#   2. Normalize the otel_scope_name label so both ingestion paths produce
+#      identical label sets in Prometheus.
+#   3. Promote OTel resource attributes (deployment.environment, service.namespace)
+#      to Prometheus metric labels so the "environment" and "cluster" Grafana
+#      dashboard variables work on the OTLP path.
+#   4. Export to a Prometheus remote-write endpoint or expose a scrape endpoint.
+#
+# Merge relevant sections into your existing collector config, or use this file
+# as a complete standalone config for testing.
+
+receivers:
+  # Option A: Solr pushes metrics via OTLP (recommended when the OTel module is
+  # enabled in Solr). Configure Solr with:
+  #   OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+  # Option B: Collector scrapes Solr's native Prometheus endpoint directly.
+  # Use this instead of (or in addition to) the OTLP receiver.
+  prometheus/solr:
+    config:
+      scrape_configs:
+        - job_name: solr
+          metrics_path: /api/metrics
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["solr:8983"]
+          # Add environment and cluster labels to scraped metrics:
+          relabel_configs:
+            - target_label: environment
+              replacement: prod          # change per environment
+            - target_label: cluster
+              replacement: cluster-1     # change per cluster
+
+processors:
+  # Normalize otel_scope_name for metrics arriving via OTLP.
+  # This ensures that both the OTLP path and the native Prometheus scrape path
+  # produce the same label set in Prometheus, allowing the dashboard to work
+  # regardless of which ingestion path you use.
+  # The dashboard must NOT filter on otel_scope_name — this transform merely
+  # normalizes it for consistency; it is not required for dashboard correctness.
+  transform/solr_scope:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["otel_scope_name"], "org.apache.solr")
+            where resource.attributes["service.name"] == "solr"
+
+  # Convert resource attributes to metric labels (for Prometheus exporter).
+  # This makes deployment.environment and service.namespace available as
+  # Prometheus labels named "environment" and "cluster".
+  transform/promote_resource_attrs:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["environment"], resource.attributes["deployment.environment"])
+            where resource.attributes["deployment.environment"] != nil
+          - set(attributes["cluster"], resource.attributes["service.namespace"])
+            where resource.attributes["service.namespace"] != nil
+
+  batch: {}
+
+exporters:
+  # Export metrics in Prometheus exposition format (scrape endpoint).
+  # Grafana can scrape this endpoint directly as a Prometheus datasource.
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: ""
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # Alternatively, push to a Prometheus remote-write endpoint:
+  # prometheusremotewrite:
+  #   endpoint: "http://prometheus:9090/api/v1/write"
+
+service:
+  pipelines:
+    metrics/solr_otlp:
+      receivers: [otlp]
+      processors: [transform/solr_scope, transform/promote_resource_attrs, batch]
+      exporters: [prometheus]
+
+    metrics/solr_scrape:
+      receivers: [prometheus/solr]
+      processors: [batch]
+      exporters: [prometheus]

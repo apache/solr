@@ -1,0 +1,54 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# prometheus-local.yml — Prometheus config for scraping a locally-running Solr instance.
+#
+# Used when the monitoring stack is started with: ./start.sh --local-solr
+#
+# 'host.docker.internal' resolves to the host machine from inside Docker (Mac, Windows,
+# and Linux with Docker 20.10+).  The docker-compose.yml adds the necessary extra_hosts
+# entry so this works on Linux as well.
+#
+# Both :8983 and :8984 are listed to match a two-node local SolrCloud setup.
+# If you are running only one node, the :8984 target will show scrape errors in Prometheus —
+# that is harmless.  Edit the targets list below to match your actual setup.
+#
+# metrics_path is /api/metrics (Solr 10.1+ built from source).
+# Change to /solr/admin/metrics for a released Solr 10.0 build.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/solr-alerts.yml
+
+scrape_configs:
+  - job_name: solr
+    metrics_path: /api/metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['host.docker.internal:8983', 'host.docker.internal:8984']
+    # Uncomment and adjust the relabel_configs block below to add "environment"
+    # and "cluster" labels to all Solr metrics. These labels are required for
+    # the Grafana dashboard's $environment and $cluster template variables to
+    # show meaningful values. Without them, both dropdowns show "All" which
+    # still works — all panels match all series.
+    #
+    # relabel_configs:
+    #   - target_label: environment
+    #     replacement: dev         # change to: dev, staging, prod, etc.
+    #   - target_label: cluster
+    #     replacement: local       # change to a unique name for this Solr cluster

@@ -59,6 +59,7 @@
 ** xref:configuring-logging.adoc[]
 ** xref:ping.adoc[]
 ** xref:metrics-reporting.adoc[]
+** xref:monitoring-with-prometheus-and-grafana.adoc[]
 ** xref:performance-statistics-reference.adoc[]
 ** xref:plugins-stats-screen.adoc[]
 ** xref:jmx-with-solr.adoc[]
