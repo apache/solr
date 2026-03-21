@@ -45,24 +45,56 @@ public class SolrZkServer {
   // Per ZooKeeper, "0" means no limit for max client connections.
   public static final String ZK_MAX_CNXNS_DEFAULT = "0";
 
-  boolean zkRun = false;
   String zkHost;
 
   int solrPort;
   Properties props;
   SolrZkServerProps zkProps;
 
-  private Thread zkThread; // the thread running a zookeeper server, only if zkRun is true
+  private Thread zkThread; // the thread running a zookeeper server, only if zkServerEnabled is true
 
   private Path dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
 
-  public SolrZkServer(boolean zkRun, String zkHost, Path dataHome, String confHome, int solrPort) {
-    this.zkRun = zkRun;
+  public SolrZkServer(String zkHost, Path dataHome, String confHome, int solrPort) {
     this.zkHost = zkHost;
     this.dataHome = dataHome;
     this.confHome = confHome;
     this.solrPort = solrPort;
+  }
+
+  /**
+   * Creates and initializes a SolrZkServer instance for standalone (non-quorum) mode.
+   *
+   * @param zkHost the ZooKeeper host string (chroot will be stripped)
+   * @param solrHome the Solr home directory path
+   * @param solrHostPort the Solr host port
+   * @return initialized and started SolrZkServer instance
+   */
+  public static SolrZkServer createAndStart(String zkHost, Path solrHome, int solrHostPort) {
+    String zkDataHome =
+        EnvUtils.getProperty(
+            "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
+    String zkConfHome = EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
+
+    String strippedZkHost = stripChroot(zkHost);
+    SolrZkServer zkServer =
+        new SolrZkServer(strippedZkHost, Path.of(zkDataHome), zkConfHome, solrHostPort);
+    zkServer.parseConfig();
+    zkServer.start();
+
+    return zkServer;
+  }
+
+  /**
+   * Strips the chroot portion from a ZooKeeper host string.
+   *
+   * @param zkRun the ZooKeeper host string (e.g., "localhost:2181/solr")
+   * @return the host string without chroot (e.g., "localhost:2181")
+   */
+  private static String stripChroot(String zkRun) {
+    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
+    return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
   public String getClientString() {
@@ -71,11 +103,6 @@ public class SolrZkServer {
     }
 
     if (zkProps == null) {
-      return null;
-    }
-
-    // if the string wasn't passed as zkHost, then use the standalone server we started
-    if (!zkRun) {
       return null;
     }
 
@@ -97,7 +124,6 @@ public class SolrZkServer {
       // set default data dir
       // TODO: use something based on IP+port???  support ensemble all from same solr home?
       zkProps.setDataDir(dataHome);
-      zkProps.zkRun = zkRun;
       zkProps.solrPort = Integer.toString(solrPort);
     }
 
@@ -116,7 +142,7 @@ public class SolrZkServer {
 
     try {
       props = SolrZkServerProps.getProperties(zooCfgPath);
-      SolrZkServerProps.injectServers(props, zkRun, zkHost);
+      SolrZkServerProps.injectServers(props, zkHost);
       // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
       // "127.0.0.1".
       props.setProperty(
@@ -126,9 +152,8 @@ public class SolrZkServer {
       }
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
-      if (zkRun) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -137,9 +162,6 @@ public class SolrZkServer {
   }
 
   public void start() {
-    if (!zkRun) {
-      return;
-    }
 
     ensureZkMaxCnxnsConfigured();
     if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
@@ -167,20 +189,11 @@ public class SolrZkServer {
             },
             "embeddedZkServer");
 
-    if (zkProps.getServers().size() > 1) {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
-    } else {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
+    if (log.isInfoEnabled()) {
+      log.info(
+          "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
+          zkProps.getClientPortAddress().getPort(),
+          zkProps.getClientPortAddress().getAddress().getHostAddress());
     }
 
     zkThread.setDaemon(true);
@@ -207,9 +220,7 @@ public class SolrZkServer {
   }
 
   public void stop() {
-    if (!zkRun) {
-      return;
-    }
+
     zkThread.interrupt();
   }
 
@@ -224,7 +235,6 @@ class SolrZkServerProps extends QuorumPeerConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String solrPort; // port that Solr is listening on
-  boolean zkRun;
 
   /**
    * Parse a ZooKeeper configuration file
@@ -253,10 +263,10 @@ class SolrZkServerProps extends QuorumPeerConfig {
   // Given zkHost=localhost:1111,localhost:2222 this will inject
   // server.0=localhost:1112:1113
   // server.1=localhost:2223:2224
-  public static void injectServers(Properties props, boolean zkRun, String zkHost) {
+  public static void injectServers(Properties props, String zkHost) {
 
     // if clientPort not already set, use zkRun
-    if (zkRun && props.getProperty("clientPort") == null) {
+    if (props.getProperty("clientPort") == null) {
       // int portIdx = zkRun.lastIndexOf(':');
       int portIdx = "".lastIndexOf(':');
       if (portIdx > 0) {
