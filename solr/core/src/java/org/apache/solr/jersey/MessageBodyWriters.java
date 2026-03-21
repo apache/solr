@@ -49,7 +49,9 @@ import org.apache.solr.response.XMLResponseWriter;
  */
 public class MessageBodyWriters {
 
-  // Jersey has a default MessageBodyWriter for JSON so we don't need to declare one here
+  // JacksonJsonProvider (registered in JerseyApplications) handles JSON writing — no need to
+  // declare a JsonMessageBodyWriter here. All other formats use the legacy QueryResponseWriter
+  // path.
   // Which other response-writer formats are worth carrying forward into v2?
 
   @Produces(MediaType.APPLICATION_XML)
