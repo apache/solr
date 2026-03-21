@@ -27,6 +27,7 @@ dependencies {
   implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core
+  implementation libs.apache.lucene.highlighter
 
   implementation libs.langchain4j.core
   runtimeOnly libs.langchain4j.cohere

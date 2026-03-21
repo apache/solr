@@ -91,4 +91,6 @@
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
 
+ <searchComponent class="org.apache.solr.languagemodels.textvectorisation.handler.component.SemanticHighlightComponent" name="highlight"/>
+ 
 </config>
