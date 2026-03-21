@@ -138,7 +138,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.LocalStatsCache;
@@ -1124,14 +1123,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
-
-      SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
-      // this is registered at the CONTAINER level because it's not core-specific - for now we
-      // also register it here for back-compat
-      coreMetricManager.registerMetricProducer(
-          solrFieldCacheBean,
-          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build());
-      infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
       this.slowQueryThresholdMillis = solrConfig.slowQueryThresholdMillis;
