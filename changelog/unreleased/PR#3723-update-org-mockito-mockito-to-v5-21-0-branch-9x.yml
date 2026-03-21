@@ -1,0 +1,7 @@
+title: Update org.mockito:mockito* to v5.21.0 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3723
+  url: https://github.com/apache/solr/pull/3723
