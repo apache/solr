@@ -32,7 +32,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -71,7 +70,6 @@ public abstract class StatsCache implements PluginInfoInitialized, SolrInfoBean 
   public static final String FIELDS_KEY = "solr.stats.fields";
 
   private SolrMetricsContext solrMetricsContext;
-  private AutoCloseable toClose;
 
   public static final class StatsCacheMetrics {
     public final LongAdder lookups = new LongAdder();
@@ -328,68 +326,58 @@ public abstract class StatsCache implements PluginInfoInitialized, SolrInfoBean 
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
-    this.solrMetricsContext = solrMetricsContext;
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
     var cacheBaseAttribute =
         attributes.toBuilder()
             .put(SolrMetricProducer.CATEGORY_ATTR, Category.CACHE.toString())
             .build();
-    this.toClose =
-        solrMetricsContext.observableLongGauge(
-            "solr_core_indexsearcher_termstats_cache",
-            "Operation counts for the searcher term statistics cache, reported per operation type",
-            obs -> {
-              var cacheMetrics = getCacheMetrics();
-              obs.record(
-                  cacheMetrics.lookups.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "lookups")
-                      .build());
-              obs.record(
-                  cacheMetrics.missingGlobalFieldStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "missing_global_field")
-                      .build());
-              obs.record(
-                  cacheMetrics.missingGlobalTermStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "missing_global_term")
-                      .build());
-              obs.record(
-                  cacheMetrics.mergeToGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "merge_to_global")
-                      .build());
-              obs.record(
-                  cacheMetrics.retrieveStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "retrieve")
-                      .build());
-              obs.record(
-                  cacheMetrics.returnLocalStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "return_local")
-                      .build());
-              obs.record(
-                  cacheMetrics.sendGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "send_global")
-                      .build());
-              obs.record(
-                  cacheMetrics.useCachedGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "use_cached_global")
-                      .build());
-              obs.record(
-                  cacheMetrics.receiveGlobalStats.sum(),
-                  cacheBaseAttribute.toBuilder()
-                      .put(SolrMetricProducer.TYPE_ATTR, "receive_global")
-                      .build());
-            });
-  }
-
-  @Override
-  public void close() throws IOException {
-    IOUtils.closeQuietly(toClose);
+    solrMetricsContext.observableLongGauge(
+        "solr_core_indexsearcher_termstats_cache",
+        "Operation counts for the searcher term statistics cache, reported per operation type",
+        obs -> {
+          var cacheMetrics = getCacheMetrics();
+          obs.record(
+              cacheMetrics.lookups.sum(),
+              cacheBaseAttribute.toBuilder().put(SolrMetricProducer.TYPE_ATTR, "lookups").build());
+          obs.record(
+              cacheMetrics.missingGlobalFieldStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "missing_global_field")
+                  .build());
+          obs.record(
+              cacheMetrics.missingGlobalTermStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "missing_global_term")
+                  .build());
+          obs.record(
+              cacheMetrics.mergeToGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "merge_to_global")
+                  .build());
+          obs.record(
+              cacheMetrics.retrieveStats.sum(),
+              cacheBaseAttribute.toBuilder().put(SolrMetricProducer.TYPE_ATTR, "retrieve").build());
+          obs.record(
+              cacheMetrics.returnLocalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "return_local")
+                  .build());
+          obs.record(
+              cacheMetrics.sendGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "send_global")
+                  .build());
+          obs.record(
+              cacheMetrics.useCachedGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "use_cached_global")
+                  .build());
+          obs.record(
+              cacheMetrics.receiveGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "receive_global")
+                  .build());
+        });
   }
 }

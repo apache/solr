@@ -764,6 +764,10 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+
+    initGpuMetricsService(); // Initialize GPU metrics service
+
     ClusterPluginsSource pluginsSource =
         ClusterPluginsSource.loadClusterPluginsSource(this, loader);
     containerPluginsRegistry =
@@ -780,10 +784,12 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
-
-    // Initialize GPU metrics service
-    initGpuMetricsService();
+    // PublicKeyHandler was added to containerHandlers in the constructor before metrics were ready
+    containerHandlers
+        .get(PublicKeyHandler.PATH)
+        .initializeMetrics(
+            solrMetricsContext,
+            Attributes.builder().put(HANDLER_ATTR, PublicKeyHandler.PATH).build());
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -1279,14 +1285,6 @@ public class CoreContainer {
 
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
 
-      // Shutdown GPU metrics service if it was initialized
-      shutdownGpuMetricsService();
-
-      if (metricManager != null) {
-        // Close all OTEL meter providers and metrics
-        metricManager.closeAllRegistries();
-      }
-
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
       }
@@ -1340,6 +1338,14 @@ public class CoreContainer {
 
     // It should be safe to close the authentication plugin at this point.
     try {
+      if (pkiAuthenticationSecurityBuilder != null) {
+        pkiAuthenticationSecurityBuilder.close();
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing PKI authentication plugin.", e);
+    }
+
+    try {
       if (authenticationPlugin != null) {
         authenticationPlugin.plugin.close();
         authenticationPlugin = null;
@@ -1362,6 +1368,14 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
+
+    containerHandlers.close();
+
+    shutdownGpuMetricsService(); // Shutdown GPU metrics service if it was initialized
+
+    IOUtils.closeQuietly(solrMetricsContext);
+
+    metricManager.closeAllRegistries(); // Close all OTEL meter providers and metrics
   }
 
   public void cancelCoreRecoveries() {

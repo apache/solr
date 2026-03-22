@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.util.IOFunction;
@@ -100,7 +99,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private boolean async;
 
   private SolrMetricsContext solrMetricsContext;
-  private AutoCloseable toClose;
 
   private long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
@@ -325,13 +323,14 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void close() throws IOException {
-    cache.invalidateAll();
-    cache.cleanUp();
+    if (cache != null) {
+      cache.invalidateAll();
+      cache.cleanUp();
+    }
     if (executor instanceof ExecutorService) {
       ((ExecutorService) executor).shutdownNow();
     }
     ramBytes.reset();
-    IOUtils.closeQuietly(toClose);
     SolrCache.super.close();
   }
 
@@ -499,42 +498,40 @@ public class CaffeineCache<K, V> extends SolrCacheBase
         solrMetricsContext.longGaugeMeasurement(
             metricName + "_warmup_time", "Cache warmup time (most recent)", OtelUnit.MILLISECONDS);
 
-    this.toClose =
-        solrMetricsContext.batchCallback(
-            () -> {
-              if (cache == null) {
-                return;
-              }
-              CacheStats stats = cache.stats();
-              long hitCount = stats.hitCount() + hits.sum();
-              long lookupCount = stats.requestCount() + lookups.sum();
-              long insertCount = inserts.sum();
+    solrMetricsContext.batchCallback(
+        () -> {
+          if (cache == null) {
+            return;
+          }
+          CacheStats stats = cache.stats();
+          long hitCount = stats.hitCount() + hits.sum();
+          long lookupCount = stats.requestCount() + lookups.sum();
+          long insertCount = inserts.sum();
 
-              sizeMetric.record(cache.asMap().size(), cacheAttributes);
-              ramBytesUsedMetric.record(ramBytesUsed(), cacheAttributes);
-              warmupTimeMetric.record(warmupTime, cacheAttributes);
+          sizeMetric.record(cache.asMap().size(), cacheAttributes);
+          ramBytesUsedMetric.record(ramBytesUsed(), cacheAttributes);
+          warmupTimeMetric.record(warmupTime, cacheAttributes);
 
-              CacheStats cumulativeStats = priorStats.plus(stats);
-              long cumLookups = priorLookups + lookupCount;
-              long cumHits = priorHits + hitCount;
+          CacheStats cumulativeStats = priorStats.plus(stats);
+          long cumLookups = priorLookups + lookupCount;
+          long cumHits = priorHits + hitCount;
 
-              cacheLookupsMetric.record(
-                  cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
-              cacheLookupsMetric.record(
-                  cumLookups - cumHits,
-                  cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
+          cacheLookupsMetric.record(
+              cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
+          cacheLookupsMetric.record(
+              cumLookups - cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
 
-              cacheOperationMetric.record(
-                  priorInserts + insertCount,
-                  cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
-              cacheOperationMetric.record(
-                  cumulativeStats.evictionCount(),
-                  cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
-            },
-            cacheLookupsMetric,
-            cacheOperationMetric,
-            sizeMetric,
-            ramBytesUsedMetric,
-            warmupTimeMetric);
+          cacheOperationMetric.record(
+              priorInserts + insertCount,
+              cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
+          cacheOperationMetric.record(
+              cumulativeStats.evictionCount(),
+              cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
+        },
+        cacheLookupsMetric,
+        cacheOperationMetric,
+        sizeMetric,
+        ramBytesUsedMetric,
+        warmupTimeMetric);
   }
 }

@@ -63,6 +63,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
       if (SolrInfoBean.class.isAssignableFrom(clazz)) {
         try {
           SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
+          solrMetricsContext.registerCloseable(info);
           info.initializeMetrics(solrMetricsContext, Attributes.empty());
 
           // System.out.println( info.getClass() );
@@ -82,6 +83,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
         }
       }
     }
+    solrMetricsContext.close();
     assertTrue(
         "there are at least 10 SolrInfoBean that should be found in the classpath, found "
             + checked,

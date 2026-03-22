@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import org.apache.http.HttpRequestInterceptor;
@@ -154,8 +155,9 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
       HttpClientUtil.removeRequestInterceptor(interceptor);
+      super.close();
     }
   }
 }

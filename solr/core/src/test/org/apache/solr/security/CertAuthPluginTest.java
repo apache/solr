@@ -44,6 +44,7 @@ import org.junit.Test;
 
 public class CertAuthPluginTest extends SolrTestCaseJ4 {
   private CertAuthPlugin plugin;
+  private SolrMetricsContext solrMetricsContext;
 
   @BeforeClass
   public static void setupMockito() {
@@ -59,8 +60,7 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
             "collection1", "data", "solrconfig-basic.xml", "schema.xml");
     String registryName = "solr.core.collection1";
     plugin = new CertAuthPlugin();
-    SolrMetricsContext solrMetricsContext =
-        new SolrMetricsContext(coreContainer.getMetricManager(), registryName);
+    solrMetricsContext = new SolrMetricsContext(coreContainer.getMetricManager(), registryName);
     plugin.initializeMetrics(solrMetricsContext, Attributes.empty());
     plugin.init(Map.of());
   }
@@ -68,6 +68,8 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
+    plugin.close();
+    solrMetricsContext.close();
     deleteCore();
     super.tearDown();
   }

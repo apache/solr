@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -50,7 +49,6 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
 
   private final ExecutorService delegate;
   private final String executorName;
-  private final List<AutoCloseable> observableMetrics;
   private final AttributedLongCounter submitted;
   private final AttributedLongUpDownCounter running;
   private final AttributedLongCounter completed;
@@ -65,7 +63,6 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
       SolrInfoBean.Category category) {
     this.delegate = delegate;
     this.executorName = executorName;
-    this.observableMetrics = new ArrayList<>();
 
     Attributes attrs =
         Attributes.builder()
@@ -99,64 +96,57 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
 
     if (delegate instanceof ThreadPoolExecutor) {
       ThreadPoolExecutor threadPool = (ThreadPoolExecutor) delegate;
-      observableMetrics.add(
-          ctx.observableLongGauge(
-              metricPrefix + "_thread_pool_size",
-              "Thread pool size",
-              measurement -> {
-                measurement.record(
-                    threadPool.getPoolSize(), attrs.toBuilder().put(TYPE_ATTR, "size").build());
-                measurement.record(
-                    threadPool.getCorePoolSize(), attrs.toBuilder().put(TYPE_ATTR, "core").build());
-                measurement.record(
-                    threadPool.getMaximumPoolSize(),
-                    attrs.toBuilder().put(TYPE_ATTR, "max").build());
-              }));
+      ctx.observableLongGauge(
+          metricPrefix + "_thread_pool_size",
+          "Thread pool size",
+          measurement -> {
+            measurement.record(
+                threadPool.getPoolSize(), attrs.toBuilder().put(TYPE_ATTR, "size").build());
+            measurement.record(
+                threadPool.getCorePoolSize(), attrs.toBuilder().put(TYPE_ATTR, "core").build());
+            measurement.record(
+                threadPool.getMaximumPoolSize(), attrs.toBuilder().put(TYPE_ATTR, "max").build());
+          });
 
       final BlockingQueue<Runnable> taskQueue = threadPool.getQueue();
-      observableMetrics.add(
-          ctx.observableLongGauge(
-              metricPrefix + "_thread_pool_tasks",
-              "Thread pool task counts",
-              measurement -> {
-                measurement.record(
-                    threadPool.getActiveCount(),
-                    attrs.toBuilder().put(TYPE_ATTR, "active").build());
-                measurement.record(
-                    threadPool.getCompletedTaskCount(),
-                    attrs.toBuilder().put(TYPE_ATTR, "completed").build());
-                measurement.record(
-                    taskQueue.size(), attrs.toBuilder().put(TYPE_ATTR, "queued").build());
-                measurement.record(
-                    taskQueue.remainingCapacity(),
-                    attrs.toBuilder().put(TYPE_ATTR, "capacity").build());
-              }));
+      ctx.observableLongGauge(
+          metricPrefix + "_thread_pool_tasks",
+          "Thread pool task counts",
+          measurement -> {
+            measurement.record(
+                threadPool.getActiveCount(), attrs.toBuilder().put(TYPE_ATTR, "active").build());
+            measurement.record(
+                threadPool.getCompletedTaskCount(),
+                attrs.toBuilder().put(TYPE_ATTR, "completed").build());
+            measurement.record(
+                taskQueue.size(), attrs.toBuilder().put(TYPE_ATTR, "queued").build());
+            measurement.record(
+                taskQueue.remainingCapacity(),
+                attrs.toBuilder().put(TYPE_ATTR, "capacity").build());
+          });
     } else if (delegate instanceof ForkJoinPool) {
       ForkJoinPool forkJoinPool = (ForkJoinPool) delegate;
-      observableMetrics.add(
-          ctx.observableLongGauge(
-              metricPrefix + "_fork_join_pool_tasks",
-              "Fork join pool task counts",
-              measurement -> {
-                measurement.record(
-                    forkJoinPool.getStealCount(),
-                    attrs.toBuilder().put(TYPE_ATTR, "stolen").build());
-                measurement.record(
-                    forkJoinPool.getQueuedTaskCount(),
-                    attrs.toBuilder().put(TYPE_ATTR, "queued").build());
-              }));
-      observableMetrics.add(
-          ctx.observableLongGauge(
-              metricPrefix + "_fork_join_pool_threads",
-              "Fork join pool thread counts",
-              measurement -> {
-                measurement.record(
-                    forkJoinPool.getActiveThreadCount(),
-                    attrs.toBuilder().put(TYPE_ATTR, "active").build());
-                measurement.record(
-                    forkJoinPool.getRunningThreadCount(),
-                    attrs.toBuilder().put(TYPE_ATTR, "running").build());
-              }));
+      ctx.observableLongGauge(
+          metricPrefix + "_fork_join_pool_tasks",
+          "Fork join pool task counts",
+          measurement -> {
+            measurement.record(
+                forkJoinPool.getStealCount(), attrs.toBuilder().put(TYPE_ATTR, "stolen").build());
+            measurement.record(
+                forkJoinPool.getQueuedTaskCount(),
+                attrs.toBuilder().put(TYPE_ATTR, "queued").build());
+          });
+      ctx.observableLongGauge(
+          metricPrefix + "_fork_join_pool_threads",
+          "Fork join pool thread counts",
+          measurement -> {
+            measurement.record(
+                forkJoinPool.getActiveThreadCount(),
+                attrs.toBuilder().put(TYPE_ATTR, "active").build());
+            measurement.record(
+                forkJoinPool.getRunningThreadCount(),
+                attrs.toBuilder().put(TYPE_ATTR, "running").build());
+          });
     }
   }
 
@@ -216,13 +206,11 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
   @Override
   public void shutdown() {
     delegate.shutdown();
-    IOUtils.closeQuietly(observableMetrics);
   }
 
   @Override
   public List<Runnable> shutdownNow() {
     List<Runnable> tasks = delegate.shutdownNow();
-    IOUtils.closeQuietly(observableMetrics);
     return tasks;
   }
 

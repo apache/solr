@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 
@@ -86,6 +87,11 @@ public class SolrCoreMetricManager implements Closeable {
    * resetting its state and recreating its attributes for all tracked registered producers.
    */
   public void reregisterCoreMetrics() {
+    // Close old contexts before re-creating
+    IOUtils.closeQuietly(solrMetricsContext);
+    registeredProducers.forEach(
+        metricProducer -> IOUtils.closeQuietly(metricProducer.producer.getSolrMetricsContext()));
+
     this.solrMetricsContext =
         new SolrMetricsContext(
             metricManager,
@@ -139,7 +145,7 @@ public class SolrCoreMetricManager implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    solrMetricsContext.unregister();
+    solrMetricsContext.close();
   }
 
   public SolrMetricsContext getSolrMetricsContext() {

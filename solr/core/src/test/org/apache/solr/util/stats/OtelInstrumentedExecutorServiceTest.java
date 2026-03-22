@@ -36,6 +36,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.SolrMetricTestUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +52,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
   @Before
   public void setUpMetrics() {
     metricsContext = new SolrMetricsContext(new SolrMetricManager(null), REGISTRY_NAME);
+  }
+
+  @After
+  public void tearDownMetrics() {
+    metricsContext.close();
   }
 
   @Test

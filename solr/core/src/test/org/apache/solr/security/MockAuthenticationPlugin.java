@@ -68,7 +68,4 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
     }
     chain.doFilter(req, rsp);
   }
-
-  @Override
-  public void close() {}
 }

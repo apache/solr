@@ -419,7 +419,7 @@ public class SolrIndexWriter extends IndexWriter {
       }
 
       if (solrMetricsContext != null) {
-        solrMetricsContext.unregister();
+        solrMetricsContext.close();
       }
     }
   }

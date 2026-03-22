@@ -23,6 +23,7 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.DYNAMIC_FIE
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELDS;
 import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -47,6 +48,7 @@ import org.apache.solr.handler.admin.api.GetSchema;
 import org.apache.solr.handler.admin.api.GetSchemaField;
 import org.apache.solr.handler.admin.api.UpdateSchema;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -65,6 +67,7 @@ public class SchemaHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
   private SolrRequestHandler managedResourceRequestHandler;
+  private SolrMetricsContext parentMetricsContext;
 
   // java.util factory collections do not accept null values, so we roll our own
   private static final Map<String, String> level2 = new HashMap<>();
@@ -306,9 +309,27 @@ public class SchemaHandler extends RequestHandlerBase
   }
 
   @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    // Store parent context so we can use it in inform() to initialize sub-handlers as siblings
+    this.parentMetricsContext = parentContext;
+    super.initializeMetrics(parentContext, attributes);
+  }
+
+  @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
-    this.managedResourceRequestHandler = new ManagedResourceRequestHandler(core.getRestManager());
+    // Only create and initialize the sub-handler if we haven't already
+    if (managedResourceRequestHandler == null) {
+      this.managedResourceRequestHandler = new ManagedResourceRequestHandler(core.getRestManager());
+      // Initialize metrics for the sub-handler as a sibling (using parent context)
+      // This matches the pattern used in InfoHandler
+      // parentMetricsContext should have been set by initializeMetrics() which is called before
+      // inform()
+      if (parentMetricsContext != null) {
+        managedResourceRequestHandler.initializeMetrics(parentMetricsContext, Attributes.empty());
+        getSolrMetricsContext().registerCloseable(managedResourceRequestHandler);
+      }
+    }
   }
 
   @Override
