@@ -49,3 +49,8 @@ GEMINI.md
 # WANT TO ADD MORE?  You can tell Git without adding to this file:
 # See https://git-scm.com/docs/gitignore
 # In particular, if you have tools you use, add to $GIT_DIR/info/exclude or use core.excludesFile
+
+# Azure Blob Storage testing artifacts (local testing only)
+AzuriteConfig
+__azurite_db_*.json
+__blobstorage__/

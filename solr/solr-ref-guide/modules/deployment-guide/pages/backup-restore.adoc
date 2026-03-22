@@ -383,7 +383,7 @@ If the status is anything other than "success", an error message will explain wh
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
 For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, or in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
-Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `GCSBackupRepository`, `S3BackupRepository`, and `AzureBlobBackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
 
 Users can define any number of repositories in their `solr.xml` file.
 The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
@@ -794,3 +794,116 @@ https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html[These optio
 * Retries
 ** RetryMode (`LEGACY`, `STANDARD`, `ADAPTIVE`)
 ** Max Attempts
+
+=== AzureBlobBackupRepository
+
+Stores and retrieves backup files in a Microsoft Azure Blob Storage container.
+
+This is provided via the `azure-blob-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+This plugin supports multiple authentication methods: connection strings, account keys, SAS tokens, and Azure Identity (Managed Identity, Service Principal, Azure CLI).
+For Azure Identity, ensure the identity has the "Storage Blob Data Contributor" role on the storage account.
+
+[source,xml]
+----
+<backup>
+  <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+    <str name="azure.blob.container.name">solr-backup</str>
+    <str name="azure.blob.connection.string">DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net</str>
+  </repository>
+</backup>
+----
+
+AzureBlobBackupRepository accepts the following options for configuration:
+
+`azure.blob.container.name`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The name of the Azure Blob Storage container. The container must exist before performing backup operations.
+
+`azure.blob.connection.string`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Complete Azure Storage connection string. Mutually exclusive with other authentication methods.
+
+`azure.blob.account.name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Azure Storage account name. Used with account key or SAS token authentication.
+
+`azure.blob.account.key`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Azure Storage account access key. Mutually exclusive with SAS token and Azure Identity.
+
+`azure.blob.sas.token`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+SAS token for time-limited access. Must include `srt=sco` and `sp=rwdlac` permissions.
+The `&` characters must be XML-escaped as `&amp;`.
+
+`azure.blob.endpoint`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Azure Blob Storage endpoint URL (e.g., `https://myaccount.blob.core.windows.net`).
+Required for Azure Identity authentication.
+
+`azure.blob.tenant.id`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Azure AD tenant ID for Service Principal authentication.
+
+`azure.blob.client.id`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Azure AD application (client) ID for Service Principal authentication.
+
+`azure.blob.client.secret`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Azure AD application secret for Service Principal authentication.
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Default path prefix within the container for backup storage.
