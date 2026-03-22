@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Distributed Luke
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Luke Kot-Zaniewski
+links:
+  name: PR#4149
+  url: https://github.com/apache/solr/pull/4149
