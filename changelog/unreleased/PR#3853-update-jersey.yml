@@ -1,0 +1,7 @@
+title: Update jersey to v4
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3853
+  url: https://github.com/apache/solr/pull/3853
