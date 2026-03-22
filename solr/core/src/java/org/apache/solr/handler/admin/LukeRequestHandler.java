@@ -563,9 +563,8 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     String currentStr = currentVal != null ? currentVal.toString() : null;
     String expectedStr = expectedVal != null ? expectedVal.toString() : null;
     if (!Objects.equals(currentStr, expectedStr)) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR,
-          "Field '"
+      String error =
+          "FIELD CONFIGURATION MISMATCH! Field '"
               + fieldName
               + "' has inconsistent '"
               + attrName
@@ -577,7 +576,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
               + currentStr
               + "' (from "
               + currentShardAddr
-              + ")");
+              + ")";
+      log.error(error);
+      throw new SolrException(ErrorCode.SERVER_ERROR, error);
     }
   }
 

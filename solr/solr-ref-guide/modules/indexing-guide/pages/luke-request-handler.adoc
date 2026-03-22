@@ -131,7 +131,7 @@ http://localhost:8983/solr/techproducts/admin/luke?fl=manu&docId=0
 
 From SolrJ, you can access /luke using the {solr-javadocs}/solrj/org/apache/solr/client/solrj/request/LukeRequest.html[`LukeRequest`] object.
 
-== Distributed Mode (SolrCloud)
+== Distributed Mode (multiple shards)
 
 When running in SolrCloud, the Luke handler can aggregate results from all shards in a collection by setting `distrib=true`.
 By default, `distrib` is `false` and the handler inspects only the local shard's index.

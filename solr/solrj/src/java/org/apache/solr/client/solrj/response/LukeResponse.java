@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * This is an incomplete representation of the data returned from Luke
@@ -266,12 +267,13 @@ public class LukeResponse extends SolrResponseBase {
     }
 
     // Parse shards section (present in distributed responses)
-    NamedList<Object> shardsNL = (NamedList<Object>) res.get("shards");
+    SimpleOrderedMap<NamedList<Object>> shardsNL =
+        (SimpleOrderedMap<NamedList<Object>>) res.get("shards");
     if (shardsNL != null) {
       shardResponses = new LinkedHashMap<>();
-      for (Map.Entry<String, Object> entry : shardsNL) {
+      for (Map.Entry<String, NamedList<Object>> entry : shardsNL) {
         LukeResponse shardRsp = new LukeResponse();
-        shardRsp.setResponse((NamedList<Object>) entry.getValue());
+        shardRsp.setResponse(entry.getValue());
         shardResponses.put(entry.getKey(), shardRsp);
       }
     }
