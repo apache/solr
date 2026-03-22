@@ -47,9 +47,14 @@ sealed interface CreateConfigsetResult {
 
     enum class Error {
         /**
-         * Error for indicating an invalid configset name.
+         * Error for indicating that the configset name contains invalid characters.
          */
-        InvalidConfigsetName,
+        ConfigsetNameContainsInvalidCharacters,
+
+        /**
+         * Error for indicating that the configset name is too long.
+         */
+        ConfigsetNameTooLong,
 
         /**
          * Error for indicating that the configset with the given name already exists.

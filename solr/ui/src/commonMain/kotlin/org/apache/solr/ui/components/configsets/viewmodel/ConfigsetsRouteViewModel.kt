@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets
+package org.apache.solr.ui.components.configsets.viewmodel
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 
-class ConfigsetsSceneViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
+// TODO Make savedStateHandle mandatory
+class ConfigsetsRouteViewModel(
+    savedStateHandle: SavedStateHandle? = null,
+) : ViewModel() {
 
     private val initialTab = savedStateHandle
-        .get<String>("tab")
-        ?.let { ConfigsetTab.valueOf(it) }
-        ?: ConfigsetTab.ConfigsetOverview
+        ?.get<String>("tab")
+        ?.let { ConfigsetsTab.valueOf(it) }
+        ?: ConfigsetsTab.Overview
+
+    val backStack: SnapshotStateList<ConfigsetsTab> =
+        mutableStateListOf(initialTab)
 
     /**
      * The dialog that is currently open, if any.
@@ -41,16 +50,20 @@ class ConfigsetsSceneViewModel(savedStateHandle: SavedStateHandle) : ViewModel()
      *
      * @param tab The tab to select.
      */
-    fun selectTab(tab: ConfigsetTab) = uiState.update { it.copy(selectedTab = tab) }
+    fun selectTab(tab: ConfigsetsTab) = uiState.update { it.copy(selectedTab = tab) }
 }
 
 data class ConfigsetsSceneUiState(
-    val selectedTab: ConfigsetTab = ConfigsetTab.ConfigsetOverview,
+    val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
 )
 
-enum class ConfigsetTab {
-    ConfigsetOverview,
-    Placeholder,
-
-    // TODO Add additional Configset tabs
+@Serializable
+enum class ConfigsetsTab {
+    Overview,
+    Files,
+    Schema,
+    UpdateConfig,
+    IndexQuery,
+    Handlers,
+    SearchComponents,
 }

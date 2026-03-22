@@ -44,7 +44,7 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigsetsDropdown(
-    selectedConfigSet: String,
+    selectedConfigSet: String?,
     selectConfigset: (String) -> Unit,
     availableConfigsets: List<Configset>,
     modifier: Modifier = Modifier,
@@ -59,7 +59,7 @@ fun ConfigsetsDropdown(
         modifier = modifier,
     ) {
         OutlinedTextField(
-            value = selectedConfigSet,
+            value = selectedConfigSet ?: "",
             onValueChange = {},
             readOnly = true,
             enabled = enabled,
@@ -74,7 +74,7 @@ fun ConfigsetsDropdown(
                 }
             },
             trailingIcon = {
-                if (enableReset && selectedConfigSet.isNotEmpty()) {
+                if (enableReset && !selectedConfigSet.isNullOrEmpty()) {
                     IconButton(onClick = { selectConfigset("") }) {
                         Icon(
                             painter = painterResource(Res.drawable.close),

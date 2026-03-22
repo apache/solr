@@ -23,68 +23,68 @@ import com.arkivanov.decompose.Child
 import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent.Model
-import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
-import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent.CreateConfigsetDialogConfig
-import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
-import org.apache.solr.ui.components.configsets.CreateConfigsetComponent
+import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
+import org.apache.solr.ui.components.configsets.domain.ImportConfigsetUseCase
+import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
+import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewModel
+import org.apache.solr.ui.components.files.domain.SelectFileUseCase
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.configsets.ConfigsetsContent
-import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 @Preview
 @Composable
 private fun PreviewConfigsetsContentEmptyConfigsets() = PreviewContainer {
-    ConfigsetsContent(component = SimplePreviewConfigsetsRouteComponent())
+    ConfigsetsContent(component = PreviewConfigsetsComponent())
 }
 
-@Preview
-@Composable
-private fun PreviewConfigsetsContentWithConfigsetSelected() = PreviewContainer {
-    val configset = "techproducts"
-    ConfigsetsContent(
-        component = SimplePreviewConfigsetsRouteComponent(
-            configsetsComponent = SimplePreviewConfigsetsComponent(
-                model = Model(
-                    configsets = listOf(configset, "getting_started").map { Configset(name = it) },
-                    selectedConfigset = configset,
-                ),
-            ),
-        ),
+private class PreviewConfigsetsComponent(configsets: List<Configset> = emptyList()) : ConfigsetsComponent {
+
+    override val configsetsRepository: ConfigsetsRepository = error("Not used in previews")
+
+    override val createConfigsetUseCase: CreateConfigsetUseCase = error("Not used in previews")
+
+    override val importConfigsetUseCase: ImportConfigsetUseCase = error("Not used in previews")
+
+    override val loadConfigsetsUseCase: LoadConfigsetsUseCase = object : LoadConfigsetsUseCase {
+        override suspend fun invoke(): Result<List<Configset>> = Result.success(configsets)
+    }
+
+    override val selectFileUseCase: SelectFileUseCase = error("Not used in previews")
+
+    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel =
+        ConfigsetsRouteViewModel()
+
+    override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(
+        loadConfigsetsUseCase = loadConfigsetsUseCase,
+        ioDispatcher = Dispatchers.Default,
     )
-}
 
-private class SimplePreviewConfigsetsRouteComponent(
-    override val configsetsComponent: ConfigsetsComponent = SimplePreviewConfigsetsComponent(),
-) : ConfigsetsRouteComponent {
-    override val tabSlot: Value<ChildSlot<ConfigsetsTab, ConfigsetsRouteComponent.Child>>
-        get() = MutableValue(
-            initialValue = ChildSlot(
-                Child.Created(
-                    configuration = ConfigsetsTab.Overview,
-                    instance = ConfigsetsRouteComponent.Child.Overview(PreviewConfigsetsOverviewComponent),
-                ),
-            ),
+    override fun createCreateConfigsetViewModel(): CreateConfigsetViewModel =
+        CreateConfigsetViewModel(
+            createConfigsetUseCase = createConfigsetUseCase,
+            loadConfigsetsUseCase = loadConfigsetsUseCase,
+            ioDispatcher = Dispatchers.Default
         )
 
-    override fun onNavigate(tab: ConfigsetsTab) = Unit
-}
+    override fun createImportConfigsetViewModel(): ImportConfigsetViewModel =
+        ImportConfigsetViewModel(
+            importConfigsetUseCase = importConfigsetUseCase,
+            selectFileUseCase = selectFileUseCase,
+            ioDispatcher = Dispatchers.Default,
+        )
 
-private class SimplePreviewConfigsetsComponent(model: Model = Model()) : ConfigsetsComponent {
-    override val model: StateFlow<Model> = MutableStateFlow(model)
-    override fun onSelectConfigset(name: String, reload: Boolean) = Unit
-}
+    override fun createConfigsetsOverviewViewModel(): ConfigsetsOverviewViewModel =
+        ConfigsetsOverviewViewModel()
 
-private object PreviewConfigsetsOverviewComponent : ConfigsetsOverviewComponent {
-    override val dialog: Value<ChildSlot<CreateConfigsetDialogConfig, CreateConfigsetComponent>> =
-        MutableValue(ChildSlot())
-
-    override fun createConfigset() = Unit
-    override fun importConfigset() = Unit
-    override fun closeDialog() = Unit
-    override fun editSolrConfig(name: String) = Unit
 }

@@ -14,17 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.views.navigation.configsets
 
-import kotlinx.serialization.Serializable
+package org.apache.solr.ui.components.configsets.domain
 
-@Serializable
-enum class ConfigsetsTab {
-    Overview,
-    Files,
-    Schema,
-    UpdateConfig,
-    IndexQuery,
-    Handlers,
-    SearchComponents,
+import org.apache.solr.ui.domain.Configset
+
+sealed interface CreateConfigsetEvent {
+
+    /**
+     * Event that is omitted when a configset was successfully created.
+     *
+     * @property configset The configset that has been created.
+     */
+    data class ConfigsetCreated(val configset: Configset) : CreateConfigsetEvent
+
+    /**
+     * Event that is omitted when the creation process failed with an error.
+     *
+     * @property error The error that was thrown during the creation process.
+     */
+    data class ConfigsetCreationFailed(val error: Exception) : CreateConfigsetEvent
 }

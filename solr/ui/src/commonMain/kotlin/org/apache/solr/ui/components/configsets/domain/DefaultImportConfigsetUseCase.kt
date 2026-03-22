@@ -24,7 +24,14 @@ import org.apache.solr.ui.domain.PickedFile
 internal class DefaultImportConfigsetUseCase(
     private val repository: ConfigsetsRepository,
 ) : ImportConfigsetUseCase {
-    override suspend fun invoke(configsetName: String, file: PickedFile): Result<Configset> {
-        TODO("Not yet implemented")
+    override suspend fun invoke(configsetName: String, file: PickedFile): ImportConfigsetResult {
+        // TODO Validate input data
+        repository.importConfigset(configsetName, file).onSuccess {
+            return ImportConfigsetResult.Success(configset = it)
+        }.onFailure {
+            // TODO Handle failure correctly
+            return ImportConfigsetResult.UnexpectedFailure(cause = it)
+        }
+        return ImportConfigsetResult.UnexpectedFailure(Error("Unknown error"))
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets
+package org.apache.solr.ui.components.configsets.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,65 +26,67 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetResult
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetUseCase
+import org.apache.solr.ui.components.files.domain.FileSelectorEvent
 import org.apache.solr.ui.components.files.domain.SelectFileResult
 import org.apache.solr.ui.components.files.domain.SelectFileUseCase
+import org.apache.solr.ui.components.files.viewmodel.FileSelectorStateHolder
 import org.apache.solr.ui.domain.PickedFile
 
 class ImportConfigsetViewModel(
     private val importConfigsetUseCase: ImportConfigsetUseCase,
-    private val selectFileUseCase: SelectFileUseCase,
+    selectFileUseCase: SelectFileUseCase,
     private val ioDispatcher: CoroutineDispatcher, // TODO Change to AppDispatchers instead
 ) : ViewModel() {
+
+    private val fileSelectorState = FileSelectorStateHolder(
+        scope = viewModelScope,
+        selectFileUseCase = selectFileUseCase,
+    )
+
     /**
-     * State of the configset create form.
+     * State of the configset import form.
      */
     val uiState: StateFlow<ImportConfigsetUiState>
         field = MutableStateFlow(ImportConfigsetUiState())
 
     /**
-     * Events emitted by the viewmodel.
+     * State of the file selector.
+     */
+    val fileSelectorUiState = fileSelectorState.uiState
+
+    /**
+     * Events emitted by the viewmodel. This events flow uses the same events as
+     * [CreateConfigsetViewModel] for simplicity.
      */
     val events: SharedFlow<CreateConfigsetEvent>
         field = MutableSharedFlow<CreateConfigsetEvent>(extraBufferCapacity = 1)
 
-    fun changeConfigsetName(name: String) = uiState.update {
-        it.copy(configsetName = name, configsetNameChanged = true)
-    }
-
-    fun selectFile(extensions: List<String>) {
-        uiState.update { it.copy(fileError = null) }
+    init {
         viewModelScope.launch {
-            when (val result = selectFileUseCase(extensions)) {
-                is SelectFileResult.Aborted -> Unit // Ignore
-                is SelectFileResult.Success -> uiState.update {
-                    it.copy(
-                        configsetName = if (it.configsetNameChanged) it.configsetName
-                        else result.file.name
-                            .removeSuffix(".${result.file.extension}")
-                            .removeSuffix("_configset"),
-                        file = result.file,
-                    )
-                }
-
-                is SelectFileResult.ValidationFailure -> uiState.update { it.copy(fileError = result.error) }
-                is SelectFileResult.UnexpectedFailure -> {
-                    // TODO Handle general error
+            fileSelectorState.events.collect { event ->
+                when (event) {
+                    is FileSelectorEvent.FileSelected -> if(!uiState.value.configsetNameChanged) {
+                        setFileNameAsConfigset(event.file)
+                    }
                 }
             }
         }
     }
 
-    fun clearFile() {
-        uiState.update { it.copy(file = null) }
+    fun changeConfigsetName(name: String) = uiState.update {
+        it.copy(configsetName = name, configsetNameChanged = true)
     }
 
+    fun selectFile() = fileSelectorState.selectFile(SUPPORTED_CONFIGSET_IMPORT_FILE_EXTENSIONS)
+
+    fun clearFile() = fileSelectorState.clearFile()
+
     fun importConfigset() {
-        val file = uiState.value.file ?: run {
-            uiState.update { it.copy(fileError = SelectFileResult.Error.FileNotSelected) }
-            return
-        }
+        val file = fileSelectorState.validateAndGetFile() ?: return
+
         uiState.update { it.copy(isLoading = true) }
         // TODO Validate input data or let use case validate data
 
@@ -106,13 +108,31 @@ class ImportConfigsetViewModel(
             }
         }
     }
+
+    /**
+     * Update the configset name to use the file name as configset name, removing the
+     */
+    private fun setFileNameAsConfigset(file: PickedFile) {
+        uiState.update {
+            it.copy(
+                configsetName = file.name
+                    .removeSuffix(".${file.extension ?: "zip"}")
+                    .removeSuffix("_configset"),
+            )
+        }
+    }
 }
+
+/**
+ * A list of the supported file extensions for configsets that can be imported.
+ *
+ * Currently only zip files are supported.
+ */
+private val SUPPORTED_CONFIGSET_IMPORT_FILE_EXTENSIONS = listOf("zip")
 
 data class ImportConfigsetUiState(
     val configsetName: String = "",
     val configsetNameError: ImportConfigsetResult.Error? = null,
     val configsetNameChanged: Boolean = false,
-    val file: PickedFile? = null,
-    val fileError: SelectFileResult.Error? = null,
     val isLoading: Boolean = false,
 )

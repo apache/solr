@@ -18,22 +18,23 @@
 package org.apache.solr.ui.views.configsets
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import org.apache.solr.ui.components.configsets.ImportConfigsetComponent
+import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
+import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewModel
+import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_cancel
 import org.apache.solr.ui.generated.resources.action_create_configset
@@ -49,13 +50,23 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ImportConfigsetDialog(
-    component: ImportConfigsetComponent,
+    viewModel: ImportConfigsetViewModel,
     onDismissRequest: () -> Unit,
-    onCreate: () -> Unit,
+    onToggle: () -> Unit,
+    onCreated: (Configset) -> Unit,
     modifier: Modifier = Modifier,
 ) = Dialog(onDismissRequest = onDismissRequest) {
-    val model by component.model.collectAsState()
-    val filePickerModel by component.filePicker.model.collectAsState()
+    val model by viewModel.uiState.collectAsState()
+    val fileSelectorModel by viewModel.fileSelectorUiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is CreateConfigsetEvent.ConfigsetCreated -> onCreated(event.configset)
+                else -> Unit
+            }
+        }
+    }
 
     SolrCard(
         modifier = modifier,
@@ -73,17 +84,19 @@ fun ImportConfigsetDialog(
         ) {
             FileSelector(
                 modifier = Modifier.weight(1f),
-                component = component.filePicker,
+                file = fileSelectorModel.file,
+                onSelectFile = viewModel::selectFile,
+                onClearSelection = viewModel::clearFile,
                 label = stringResource(Res.string.label_select_configset_file),
                 selectFileText = stringResource(Res.string.label_select_configset_file),
             )
             val configsetName = model.configsetName.ifBlank {
-                filePickerModel.selectedFile?.name ?: ""
+                fileSelectorModel.file?.name ?: ""
             }
             OutlinedTextField(
                 modifier = Modifier.weight(1f),
                 value = configsetName,
-                onValueChange = component::onConfigsetNameChange,
+                onValueChange = viewModel::changeConfigsetName,
                 label = { Text(stringResource(Res.string.label_configset_name)) },
                 singleLine = true,
             )
@@ -94,7 +107,7 @@ fun ImportConfigsetDialog(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             // Dialog actions
-            SolrTextButton(onClick = onCreate) {
+            SolrTextButton(onClick = onToggle) {
                 Text(stringResource(Res.string.action_create_configset))
             }
 
@@ -103,8 +116,8 @@ fun ImportConfigsetDialog(
                     Text(stringResource(Res.string.action_cancel))
                 }
                 SolrButton(
-                    onClick = component::onImportConfigset,
-                    enabled = filePickerModel.selectedFile != null && !model.isLoading,
+                    onClick = viewModel::importConfigset,
+                    enabled = fileSelectorModel.file != null && !model.isLoading,
                 ) {
                     Text(stringResource(Res.string.action_import_configset))
                 }

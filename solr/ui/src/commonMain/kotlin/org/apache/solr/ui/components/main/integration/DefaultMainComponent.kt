@@ -27,8 +27,8 @@ import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.cluster.integration.DefaultClusterComponent
-import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
-import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsRouteComponent
+import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.di.DefaultConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.integration.DefaultEnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
@@ -44,7 +44,7 @@ class DefaultMainComponent internal constructor(
     storeFactory: StoreFactory,
     destination: String? = null,
     private val clusterComponent: (AppComponentContext) -> ClusterComponent,
-    private val configsetsComponent: (AppComponentContext) -> ConfigsetsRouteComponent,
+    private val configsetsComponent: () -> ConfigsetsComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: (AppComponentContext) -> LoggingComponent,
     private val output: (Output) -> Unit,
@@ -77,13 +77,7 @@ class DefaultMainComponent internal constructor(
                 componentContext = childContext,
             )
         },
-        configsetsComponent = { childContext ->
-            DefaultConfigsetsRouteComponent(
-                componentContext = childContext,
-                storeFactory = storeFactory,
-                httpClient = httpClient,
-            )
-        },
+        configsetsComponent = { DefaultConfigsetsComponent(httpClient = httpClient) },
         environmentComponent = { childContext ->
             DefaultEnvironmentComponent(
                 componentContext = childContext,
@@ -138,7 +132,7 @@ class DefaultMainComponent internal constructor(
         // Configuration.Security ->
         //     NavigationComponent.Child.Security(securityComponent(componentContext))
 
-        Configuration.Configsets -> Child.Configsets(configsetsComponent(componentContext))
+        Configuration.Configsets -> Child.Configsets(configsetsComponent())
 
         // TODO Uncomment once Collections available
         // Configuration.Collections ->

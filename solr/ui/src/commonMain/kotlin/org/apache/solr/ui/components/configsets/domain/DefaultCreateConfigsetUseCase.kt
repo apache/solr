@@ -18,14 +18,35 @@
 package org.apache.solr.ui.components.configsets.domain
 
 import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.utils.MAX_CONFIGSET_NAME_LENGTH
+import org.apache.solr.ui.utils.configsetNameRegex
 
 internal class DefaultCreateConfigsetUseCase(
     private val repository: ConfigsetsRepository,
 ) : CreateConfigsetUseCase {
     override suspend fun invoke(
         configsetName: String,
-        baseConfigset: String?
+        baseConfigset: String?,
     ): CreateConfigsetResult {
-        TODO("Not yet implemented")
+        if (!configsetName.matches(configsetNameRegex)) {
+            return CreateConfigsetResult.ValidationFailure(
+                error = CreateConfigsetResult.Error.ConfigsetNameContainsInvalidCharacters
+            )
+        }
+
+        if (configsetName.length > MAX_CONFIGSET_NAME_LENGTH) {
+            return CreateConfigsetResult.ValidationFailure(
+                error = CreateConfigsetResult.Error.ConfigsetNameTooLong
+            )
+        }
+
+        // TODO v2 API requires baseConfigSet to be set,
+        //  remove fallback to _default once it is truly optional
+        repository.createConfigset(configsetName, baseConfigset ?: "_default")
+            .onSuccess {
+                return CreateConfigsetResult.Success(configset = it)
+            }
+            .onFailure { return CreateConfigsetResult.UnexpectedFailure(cause = it) }
+        return CreateConfigsetResult.UnexpectedFailure(cause = Error("Unknown error"))
     }
 }

@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets
+package org.apache.solr.ui.components.configsets.viewmodel
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -28,10 +27,11 @@ import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.domain.Configset
 
-class ConfigsetsViewModel(
+class ConfigsetsStateHolder(
+    private val scope: CoroutineScope,
     private val loadConfigsetsUseCase: LoadConfigsetsUseCase,
     private val ioDispatcher: CoroutineDispatcher // TODO Change to AppDispatchers instead
-): ViewModel() {
+) {
 
     /**
      * State of the configset create form.
@@ -48,7 +48,9 @@ class ConfigsetsViewModel(
      *
      * @param configset The configset to select.
      */
-    fun selectConfigset(configset: String) = uiState.update { it.copy(selectedConfigset = configset) }
+    fun selectConfigset(configset: String) = uiState.update {
+        it.copy(selectedConfigset = configset)
+    }
 
     /**
      * Clears the currently selected configset, if any.
@@ -58,15 +60,17 @@ class ConfigsetsViewModel(
     /**
      * Reloads the configsets.
      */
-    fun reloadConfigsets() = loadConfigsets(clearOnFailure = true)
+    fun reloadConfigsets() {
+        loadConfigsets(clearOnFailure = true)
+    }
 
-    private fun loadConfigsets(clearOnFailure: Boolean = false) = viewModelScope.launch {
+    private fun loadConfigsets(clearOnFailure: Boolean = false) = scope.launch {
         withContext(ioDispatcher) {
             loadConfigsetsUseCase()
         }.onSuccess { configsets ->
-            uiState.update { it.copy(configsets = configsets) }
+            uiState.update { it.copy(configsets = configsets.sortedBy(Configset::name)) }
             if (configsets.none { it.name == uiState.value.selectedConfigset }) {
-                // Unselect corrent configset
+                // Unselect current configset
                 clearSelectedConfigset()
             }
         }.onFailure {

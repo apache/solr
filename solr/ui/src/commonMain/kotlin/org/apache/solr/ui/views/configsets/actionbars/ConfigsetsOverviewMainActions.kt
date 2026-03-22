@@ -15,58 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.files
+package org.apache.solr.ui.views.configsets.actionbars
 
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.apache.solr.ui.domain.PickedFile
 import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.cd_clear_field
-import org.apache.solr.ui.generated.resources.close
-import org.apache.solr.ui.generated.resources.upload
+import org.apache.solr.ui.generated.resources.action_create_configset
+import org.apache.solr.ui.generated.resources.action_edit_solrconfig
+import org.apache.solr.ui.generated.resources.add
+import org.apache.solr.ui.generated.resources.edit
 import org.apache.solr.ui.views.components.SolrTextButton
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun FileSelector(
-    file: PickedFile?,
-    onSelectFile: () -> Unit,
-    onClearSelection: () -> Unit,
-    label: String,
-    selectFileText: String,
-    modifier: Modifier = Modifier,
+fun RowScope.ConfigsetsOverviewMainActions(
+    onCreateConfigset: () -> Unit,
+    onEditSolrConfig: (configset: String) -> Unit,
+    selectedConfigset: String? = null,
 ) {
-    if (file != null) {
-        OutlinedTextField(
-            modifier = modifier,
-            value = file.name,
-            label = { Text(label) },
-            onValueChange = {},
-            readOnly = true,
-            singleLine = true,
-            leadingIcon = { FileTypeIcon(file.extension ?: "") },
-            trailingIcon = {
-                IconButton(onClick = onClearSelection) {
-                    Icon(
-                        painter = painterResource(Res.drawable.close),
-                        contentDescription = stringResource(Res.string.cd_clear_field),
-                    )
-                }
-            },
-        )
-    } else {
-        SolrTextButton(modifier = modifier, onClick = onSelectFile) {
-            Icon(painter = painterResource(Res.drawable.upload), contentDescription = null)
+    SolrTextButton(onClick = onCreateConfigset) {
+        Icon(painter = painterResource(Res.drawable.add), contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(stringResource(Res.string.action_create_configset))
+    }
+    if (!selectedConfigset.isNullOrBlank()) {
+        SolrTextButton(onClick = { onEditSolrConfig(selectedConfigset) }) {
+            Icon(painter = painterResource(Res.drawable.edit), contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = selectFileText)
+            Text(stringResource(Res.string.action_edit_solrconfig))
         }
     }
 }

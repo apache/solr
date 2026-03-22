@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets
+package org.apache.solr.ui.utils
 
-import org.apache.solr.ui.domain.Configset
+/**
+ * Regex that configset names must match in order to be valid.
+ *
+ * Note that this regex is only used in the UI and does not represent the actual allowed
+ * name regex for configsets, as this has not yet been defined.
+ */
+internal val configsetNameRegex = "[a-zA-Z0-9._-]+".toRegex()
 
-sealed interface CreateConfigsetEvent {
-
-    /**
-     * Event that is omitted when a configset was successfully created.
-     *
-     * @property configset The configset that has been created.
-     */
-    data class ConfigsetCreated(val configset: Configset) : CreateConfigsetEvent
-
-    /**
-     * Event that is omitted when the creation process failed with an error.
-     *
-     * @property error The error that was thrown during the creation process.
-     */
-    data class ConfigsetCreationFailed(val error: Exception) : CreateConfigsetEvent
-}
+/**
+ * The maximum length a configset name may have.
+ *
+ * Note that this is a maximum length used in the UI only and does not represent the actual allowed
+ * length for configset names.
+ */
+internal val MAX_CONFIGSET_NAME_LENGTH = 256

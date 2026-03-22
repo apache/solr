@@ -26,13 +26,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import org.apache.solr.ui.components.configsets.CreateConfigsetComponent
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
+import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
+import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_cancel
 import org.apache.solr.ui.generated.resources.action_create_configset
@@ -46,12 +51,24 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CreateConfigsetDialog(
-    component: CreateConfigsetComponent,
+    viewModel: CreateConfigsetViewModel,
+    onCreated: (Configset) -> Unit,
     onDismissRequest: () -> Unit,
     onImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) = Dialog(onDismissRequest = onDismissRequest) {
-    val model by component.model.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val configsetsState by viewModel.configsetsUiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is CreateConfigsetEvent.ConfigsetCreated -> onCreated(event.configset)
+                else -> Unit
+            }
+        }
+    }
+
     SolrCard(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -67,16 +84,16 @@ fun CreateConfigsetDialog(
         ) {
             OutlinedTextField(
                 modifier = Modifier.weight(1f).height(64.dp),
-                value = model.configsetName,
-                onValueChange = component::onConfigsetNameChange,
+                value = state.configsetName,
+                onValueChange = viewModel::changeConfigsetName,
                 label = { Text(stringResource(Res.string.label_configset_name)) },
                 singleLine = true,
             )
             ConfigsetsDropdown(
                 modifier = Modifier.weight(1f),
-                selectedConfigSet = model.selectedBaseConfigset,
-                selectConfigset = component::onBaseConfigsetChange,
-                availableConfigsets = model.configsets,
+                selectedConfigSet = configsetsState.selectedConfigset,
+                selectConfigset = viewModel::changeBaseConfigset,
+                availableConfigsets = configsetsState.configsets,
                 enableReset = true,
             )
         }
@@ -95,8 +112,8 @@ fun CreateConfigsetDialog(
                     Text(stringResource(Res.string.action_cancel))
                 }
                 SolrButton(
-                    onClick = component::onCreateConfigset,
-                    enabled = model.configsetName.isNotBlank(),
+                    onClick = viewModel::createConfigset,
+                    enabled = state.configsetName.isNotBlank(),
                 ) {
                     Text(stringResource(Res.string.action_create_configset))
                 }

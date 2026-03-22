@@ -19,9 +19,10 @@ package org.apache.solr.ui.components.configsets.di
 
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
-import org.apache.solr.ui.components.configsets.CreateConfigsetViewModel
-import org.apache.solr.ui.components.configsets.ConfigsetsOverviewViewModel
-import org.apache.solr.ui.components.configsets.ConfigsetsViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.components.configsets.data.HttpConfigsetsRepository
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.DefaultCreateConfigsetUseCase
@@ -30,59 +31,52 @@ import org.apache.solr.ui.components.configsets.domain.DefaultLoadConfigsetsUseC
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewModel
+import org.apache.solr.ui.components.files.domain.DefaultSelectFileUseCase
+import org.apache.solr.ui.components.files.domain.SelectFileUseCase
 
 /**
- * The configsets component keeps record of the currently available configsets, and a selected
- * configset that may be used for additional operations.
+ * Default implementation of [ConfigsetsComponent].
+ *
+ * This implementation is using HTTP for configsets operations.
+ *
+ * @param  httpClient The pre-configured HTTP client to use for user registration operations.
  */
 class DefaultConfigsetsComponent(httpClient: HttpClient) : ConfigsetsComponent {
 
     private val ioDispatcher by lazy { Dispatchers.Unconfined } // TODO Change to platformDispatchers
 
-    /**
-     * Dependencies provided by the application.
-     */
     override val configsetsRepository: ConfigsetsRepository by lazy {
         HttpConfigsetsRepository(httpClient)
     }
 
-    /**
-     * Use case responsible for creating a new configset.
-     */
     override val createConfigsetUseCase: CreateConfigsetUseCase by lazy {
         DefaultCreateConfigsetUseCase(configsetsRepository)
     }
 
-    /**
-     * Use case responsible for importing a configset from a file.
-     */
     override val importConfigsetUseCase: ImportConfigsetUseCase by lazy {
         DefaultImportConfigsetUseCase(configsetsRepository)
     }
 
-    /**
-     * Use case responsible for loading the available configsets.
-     */
+    //TODO Consider implementing special SelectFileUseCase for configsets import cases
+    override val selectFileUseCase: SelectFileUseCase by lazy { DefaultSelectFileUseCase() }
+
     override val loadConfigsetsUseCase: LoadConfigsetsUseCase by lazy {
         DefaultLoadConfigsetsUseCase(configsetsRepository)
     }
 
-    /**
-     * Factory method to create a [ConfigsetsViewModel] instance.
-     */
+    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel =
+        ConfigsetsRouteViewModel()
+
     override fun createConfigsetsViewModel(): ConfigsetsViewModel =
         ConfigsetsViewModel(loadConfigsetsUseCase, ioDispatcher)
 
-    /**
-     * Factory method to create a [CreateConfigsetViewModel] instance.
-     */
     override fun createCreateConfigsetViewModel(): CreateConfigsetViewModel =
-        CreateConfigsetViewModel(createConfigsetUseCase, ioDispatcher)
-    // TODO See how to populate configsets for selection here too
+        CreateConfigsetViewModel(createConfigsetUseCase, loadConfigsetsUseCase, ioDispatcher)
 
-    /**
-     * Factory method to create a [ConfigsetsOverviewViewModel] instance.
-     */
+    override fun createImportConfigsetViewModel(): ImportConfigsetViewModel =
+        ImportConfigsetViewModel(importConfigsetUseCase, selectFileUseCase, ioDispatcher)
+
     override fun createConfigsetsOverviewViewModel(): ConfigsetsOverviewViewModel =
         ConfigsetsOverviewViewModel()
 }

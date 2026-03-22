@@ -17,13 +17,16 @@
 
 package org.apache.solr.ui.components.configsets.di
 
-import org.apache.solr.ui.components.configsets.CreateConfigsetViewModel
-import org.apache.solr.ui.components.configsets.ConfigsetsOverviewViewModel
-import org.apache.solr.ui.components.configsets.ConfigsetsViewModel
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewModel
+import org.apache.solr.ui.components.files.domain.SelectFileUseCase
 
 /**
  * The configsets component keeps record of the currently available configsets, and a selected
@@ -52,17 +55,32 @@ interface ConfigsetsComponent {
     val loadConfigsetsUseCase: LoadConfigsetsUseCase
 
     /**
-     * Factory method to create a [org.apache.solr.ui.components.configsets.ConfigsetsViewModel] instance.
+     * Use case responsible for selecting a configset file.
+     */
+    val selectFileUseCase: SelectFileUseCase
+
+    /**
+     * Factory method to create a [ConfigsetsRouteViewModel] instance.
+     */
+    fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel
+
+    /**
+     * Factory method to create a [ConfigsetsViewModel] instance.
      */
     fun createConfigsetsViewModel(): ConfigsetsViewModel
 
     /**
-     * Factory method to create a [org.apache.solr.ui.components.configsets.CreateConfigsetViewModel] instance.
+     * Factory method to create a [CreateConfigsetViewModel] instance.
      */
     fun createCreateConfigsetViewModel(): CreateConfigsetViewModel
 
     /**
-     * Factory method to create a [org.apache.solr.ui.components.configsets.ConfigsetsOverviewViewModel] instance.
+     * Factory method to create a [ImportConfigsetViewModel] instance.
+     */
+    fun createImportConfigsetViewModel(): ImportConfigsetViewModel
+
+    /**
+     * Factory method to create a [ConfigsetsOverviewViewModel] instance.
      */
     fun createConfigsetsOverviewViewModel(): ConfigsetsOverviewViewModel
 }

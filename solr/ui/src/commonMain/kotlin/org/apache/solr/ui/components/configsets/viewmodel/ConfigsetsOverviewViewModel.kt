@@ -15,12 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets
+package org.apache.solr.ui.components.configsets.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.navigation3.runtime.NavKey
+import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
 
 class ConfigsetsOverviewViewModel : ViewModel() {
 
@@ -34,20 +41,20 @@ class ConfigsetsOverviewViewModel : ViewModel() {
      * Initiates the creation of a new configset.
      */
     fun createConfigset() = uiState.update {
-        it.copy(dialogState = DialogState.CreateConfigsetDialog)
+        it.copy(configsetDialog = ConfigsetDialog.CreateConfigsetDialog)
     }
 
     /**
      * Initiates the import of a configset.
      */
     fun importConfigset() = uiState.update {
-        it.copy(dialogState = DialogState.ImportConfigsetDialog)
+        it.copy(configsetDialog = ConfigsetDialog.ImportConfigsetDialog)
     }
 
     /**
      * Closes any opened dialog.
      */
-    fun closeDialog() = uiState.update { it.copy(dialogState = null) }
+    fun closeDialog() = uiState.update { it.copy(configsetDialog = null) }
 
     /**
      * Edit solrconfig.xml for the configset with the given [name].
@@ -60,13 +67,31 @@ class ConfigsetsOverviewViewModel : ViewModel() {
 }
 
 data class ConfigsetsOverviewUiState(
-    val dialogState: DialogState? = null,
+    val configsetDialog: ConfigsetDialog? = null,
 )
 
-sealed interface DialogState {
+@Serializable
+sealed interface ConfigsetDialog : NavKey {
+
+    @Serializable
+    data object None: ConfigsetDialog
 
     // TODO Consider adding configsets and current configset selection as values to this class
-    data object CreateConfigsetDialog : DialogState
+    @Serializable
+    data object CreateConfigsetDialog : ConfigsetDialog
 
-    data object ImportConfigsetDialog : DialogState
+    @Serializable
+    data object ImportConfigsetDialog : ConfigsetDialog
+
+    companion object {
+        val config = SavedStateConfiguration {
+            serializersModule = SerializersModule {
+                polymorphic(NavKey::class) {
+                    subclass(None::class, None.serializer())
+                    subclass(CreateConfigsetDialog::class, CreateConfigsetDialog.serializer())
+                    subclass(ImportConfigsetDialog::class, ImportConfigsetDialog.serializer())
+                }
+            }
+        }
+    }
 }

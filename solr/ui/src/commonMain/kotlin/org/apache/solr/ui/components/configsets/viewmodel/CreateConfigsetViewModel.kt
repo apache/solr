@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets
+package org.apache.solr.ui.components.configsets.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,30 +26,33 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetResult
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
-import org.apache.solr.ui.domain.Configset
 
 class CreateConfigsetViewModel(
     private val createConfigsetUseCase: CreateConfigsetUseCase,
-    private val loadConfigsetsUseCase: LoadConfigsetsUseCase,
+    loadConfigsetsUseCase: LoadConfigsetsUseCase,
     private val ioDispatcher: CoroutineDispatcher, // TODO Change to AppDispatchers instead
-    configsets: List<Configset> = emptyList(),
-    selectedBaseConfigSet: String? = null,
 ) : ViewModel() {
+
+    private val configsetsState = ConfigsetsStateHolder(
+        scope = viewModelScope,
+        loadConfigsetsUseCase = loadConfigsetsUseCase,
+        ioDispatcher = ioDispatcher,
+    )
 
     /**
      * State of the configset create form.
      */
     val uiState: StateFlow<CreateConfigsetFormUiState>
-        field = MutableStateFlow(
-            value = CreateConfigsetFormUiState(
-                configsets = configsets,
-                selectedBaseConfigset = selectedBaseConfigSet,
-            ),
-        )
+        field = MutableStateFlow(CreateConfigsetFormUiState())
+
+    /**
+     * Configset state that holds the currently selected base configset.
+     */
+    val configsetsUiState = configsetsState.uiState
 
     /**
      * Events emitted by the viewmodel.
@@ -57,17 +60,12 @@ class CreateConfigsetViewModel(
     val events: SharedFlow<CreateConfigsetEvent>
         field = MutableSharedFlow<CreateConfigsetEvent>(extraBufferCapacity = 1)
 
-    init {
-        loadConfigsets()
-    }
-
     fun changeConfigsetName(configsetName: String) = uiState.update {
         it.copy(configsetName = configsetName)
     }
 
-    fun changeBaseConfigset(baseConfigset: String) = uiState.update {
-        it.copy(selectedBaseConfigset = baseConfigset)
-    }
+    fun changeBaseConfigset(baseConfigset: String) =
+        configsetsState.selectConfigset(baseConfigset)
 
     fun createConfigset() {
         uiState.update { it.copy(isLoading = true) }
@@ -76,7 +74,7 @@ class CreateConfigsetViewModel(
         viewModelScope.launch(context = ioDispatcher) {
             when (val result = createConfigsetUseCase(
                 configsetName = uiState.value.configsetName,
-                baseConfigset = uiState.value.selectedBaseConfigset,
+                baseConfigset = configsetsState.uiState.value.selectedConfigset,
             )) {
                 is CreateConfigsetResult.Success ->
                     events.emit(CreateConfigsetEvent.ConfigsetCreated(result.configset))
@@ -87,25 +85,11 @@ class CreateConfigsetViewModel(
         }
     }
 
-    fun clearBaseConfigset() = uiState.update { it.copy(selectedBaseConfigset = null) }
-
-    private fun loadConfigsets() {
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                loadConfigsetsUseCase()
-            }.onSuccess { configsets ->
-                uiState.update { it.copy(configsets = configsets) }
-            }.onFailure {
-                // TODO Add proper error handling
-            }
-        }
-    }
+    fun clearBaseConfigset() = configsetsState.clearSelectedConfigset()
 }
 
 data class CreateConfigsetFormUiState(
     val configsetName: String = "",
     val configsetNameError: CreateConfigsetResult.Error? = null,
-    val configsets: List<Configset> = emptyList(),
-    val selectedBaseConfigset: String? = null,
     val isLoading: Boolean = false,
 )
