@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
@@ -25,6 +26,7 @@ import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.logging.DeprecationLog;
 
 public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public static final String BITS_PARAM = "bits"; //
@@ -45,13 +47,19 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   /**
    * Confidence interval to use for scalar quantization Default is calculated as
    * `1-1/(vector_dimensions + 1)`
+   *
+   * @deprecated Since Solr 10.1. No longer used by the underlying Lucene codec.
    */
+  @Deprecated(since = "10.1")
   private Float confidenceInterval;
 
   /**
    * When enabled, in conjunction with 4 bit size, will pair values into single bytes for 50%
    * reduction in memory usage (comes at the cost of some decode speed penalty)
+   *
+   * @deprecated Since Solr 10.1. No longer used by the underlying Lucene codec.
    */
+  @Deprecated(since = "10.1")
   private boolean compress;
 
   public ScalarQuantizedDenseVectorField() {
@@ -75,22 +83,42 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public void init(IndexSchema schema, Map<String, String> args) {
     this.bits = ofNullable(args.remove(BITS_PARAM)).map(Integer::parseInt).orElse(DEFAULT_BITS);
 
-    // Retain parsing of these ("compress", "confidenceInterval") legacy Solr 10 schema params for
-    // compatibility even though
-    // Lucene 10.4's scalar-quantized vector format no longer consumes them directly. They are no-op
-    // going forward.
-    this.compress =
-        ofNullable(args.remove(COMPRESS_PARAM)).map(Boolean::parseBoolean).orElse(false);
+    // These params ("compress", "confidenceInterval", "dynamicConfidenceInterval") are deprecated
+    // since Solr 10.1. Lucene 10.4's scalar-quantized vector format no longer consumes them
+    // directly. They are parsed for backward compatibility but are no-ops going forward.
+    String compressStr = args.remove(COMPRESS_PARAM);
+    if (compressStr != null) {
+      this.compress = Boolean.parseBoolean(compressStr);
+      DeprecationLog.log(
+          COMPRESS_PARAM,
+          "The '"
+              + COMPRESS_PARAM
+              + "' parameter for ScalarQuantizedDenseVectorField is deprecated since Solr 10.1"
+              + " and will be ignored. Please remove it from your schema.");
+    }
 
-    this.confidenceInterval =
-        ofNullable(args.remove(CONFIDENCE_INTERVAL_PARAM))
-            .map(Float::parseFloat)
-            .orElse(DEFAULT_CONFIDENCE_INTERVAL);
+    String confidenceIntervalStr = args.remove(CONFIDENCE_INTERVAL_PARAM);
+    if (confidenceIntervalStr != null) {
+      this.confidenceInterval = Float.parseFloat(confidenceIntervalStr);
+      DeprecationLog.log(
+          CONFIDENCE_INTERVAL_PARAM,
+          "The '"
+              + CONFIDENCE_INTERVAL_PARAM
+              + "' parameter for ScalarQuantizedDenseVectorField is deprecated since Solr 10.1"
+              + " and will be ignored. Please remove it from your schema.");
+    } else {
+      this.confidenceInterval = DEFAULT_CONFIDENCE_INTERVAL;
+    }
 
-    if (ofNullable(args.remove(DYNAMIC_CONFIDENCE_INTERVAL_PARAM))
-        .map(Boolean::parseBoolean)
-        .orElse(false)) {
+    String dynamicConfidenceIntervalStr = args.remove(DYNAMIC_CONFIDENCE_INTERVAL_PARAM);
+    if (Boolean.parseBoolean(dynamicConfidenceIntervalStr)) {
       this.confidenceInterval = 0f;
+      DeprecationLog.log(
+          DYNAMIC_CONFIDENCE_INTERVAL_PARAM,
+          "The '"
+              + DYNAMIC_CONFIDENCE_INTERVAL_PARAM
+              + "' parameter for ScalarQuantizedDenseVectorField is deprecated since Solr 10.1"
+              + " and will be ignored. Please remove it from your schema.");
     }
 
     super.init(schema, args);
@@ -123,11 +151,21 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     return bits;
   }
 
-  public boolean useCompression() {
+  /**
+   * @deprecated Since Solr 10.1. No longer used by the underlying Lucene codec.
+   */
+  @Deprecated(since = "10.1")
+  @VisibleForTesting
+  boolean useCompression() {
     return compress;
   }
 
-  public Float getConfidenceInterval() {
+  /**
+   * @deprecated Since Solr 10.1. No longer used by the underlying Lucene codec.
+   */
+  @Deprecated(since = "10.1")
+  @VisibleForTesting
+  Float getConfidenceInterval() {
     return confidenceInterval;
   }
 }
