@@ -1,0 +1,7 @@
+title: Update org.glassfish.jersey.containers:jersey-container-jetty-http to v4
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3137
+  url: https://github.com/apache/solr/pull/3137
