@@ -235,7 +235,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
   }
 
   private void createMetrics(Attributes baseAttributes, boolean aggregateToNodeRegistry) {
-    final List<AutoCloseable> observables = new ArrayList<>();
 
     AttributedInstrumentFactory factory =
         new AttributedInstrumentFactory(
