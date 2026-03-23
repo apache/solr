@@ -802,52 +802,53 @@ def _dockerAvailable():
   return os.system('docker info > /dev/null 2>&1') == 0
 
 
-def testMavenBuild(mavenDir, tmpDir, version, javaHome=None):
+def testMavenBuild(mavenDir, tmpDir, version):
   """
-  Runs the test-external-client project with Maven or Gradle to verify that the published
-  POMs for solr-solrj and solr-test-framework declare correct transitive dependencies.
+  Runs the test-external-client project with both Maven and Gradle to verify that the
+  published POMs for solr-solrj and solr-test-framework declare correct transitive
+  dependencies.
 
   mavenDir: root of the local Maven repository (contains org/apache/solr/...)
   tmpDir: temp directory for log files
   version: Solr version string (e.g. "10.0.0")
-  javaHome: optional path to a Java 21+ home directory; if None the JAVA_HOME env var is used
   """
-  print('    test Maven project build (verify POMs are consumable)...')
+  print('    test external client project (verify POMs are consumable)...')
 
   scriptDir = os.path.dirname(os.path.abspath(__file__))
   projectDir = os.path.normpath(os.path.join(scriptDir, '..', '..', 'test-external-client'))
   if not os.path.isdir(projectDir):
     raise RuntimeError('test-external-client directory not found at: %s' % projectDir)
 
-  javaHomePrefix = ('JAVA_HOME="%s" ' % javaHome) if javaHome else ''
-  logFile = os.path.join(tmpDir, 'maven-build.log')
-
+  # Run Maven build
   mvnCmd = findMaven()
   if mvnCmd is not None:
     print('      using local Maven: %s' % mvnCmd)
-    run('%s%s -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" test'
-        % (javaHomePrefix, mvnCmd, projectDir, version, mavenDir), logFile)
+    run('%s -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" test'
+        % (mvnCmd, projectDir, version, mavenDir), os.path.join(tmpDir, 'maven-build.log'))
   elif _dockerAvailable():
     print('      Maven not found; using Docker Maven image...')
-    # Note: the Docker image already includes Java 21; javaHome is not needed
+    # Note: the Docker image already includes Java 21
     # Project is mounted writable so Maven can write its build output directory
     run('docker run --rm'
         ' -v "%s":/project'
         ' -v "%s":/solr-local-release:ro'
         ' maven:3.9-eclipse-temurin-21'
         ' mvn -B -f /project/pom.xml -Dsolr.version="%s" -Dlocal.solr.repo=/solr-local-release test'
-        % (projectDir, mavenDir, version), logFile)
+        % (projectDir, mavenDir, version), os.path.join(tmpDir, 'maven-build.log'))
   else:
-    # Fall back to Gradle via the gradlew wrapper in the repo root
-    gradlew = os.path.normpath(os.path.join(projectDir, '..', 'gradlew'))
-    print('      Maven not found; using Gradle: %s' % gradlew)
-    run('%s"%s" --no-daemon -p "%s" -Psolr.version="%s" -Plocal.solr.repo="%s" test'
-        % (javaHomePrefix, gradlew, projectDir, version, mavenDir), logFile)
+    print('      WARNING: Neither Maven nor Docker found; skipping Maven build.')
+    print('               Install Maven or Docker to enable this check.')
 
-  print('    Maven project build: SUCCESS')
+  # Also run Gradle build
+  gradlew = os.path.normpath(os.path.join(projectDir, '..', 'gradlew'))
+  print('      using Gradle: %s' % gradlew)
+  run('"%s" --no-daemon -p "%s" -Psolr.version="%s" -Plocal.solr.repo="%s" test'
+      % (gradlew, projectDir, version, mavenDir), os.path.join(tmpDir, 'gradle-build.log'))
+
+  print('    external client project: SUCCESS')
 
 
-def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile, javaHome=None):
+def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   print('    download artifacts')
   artifacts = []
   artifactsURL = '%s/maven/org/apache/solr/' % baseURL
@@ -868,7 +869,7 @@ def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile, javaHo
 
   checkAllJARs('%s/maven/org/apache/solr' % tmpDir, gitRevision, version)
 
-  testMavenBuild('%s/maven' % tmpDir, tmpDir, version, javaHome=javaHome)
+  testMavenBuild('%s/maven' % tmpDir, tmpDir, version)
 
 
 def getBinaryDistFiles(tmpDir, version, baseURL):
@@ -1241,7 +1242,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
-    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile, javaHome=java.java_home)
+    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
   else:
     print("Solr test done (--download-only specified)")
 
