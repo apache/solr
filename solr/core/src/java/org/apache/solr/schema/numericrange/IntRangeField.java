@@ -16,25 +16,14 @@
  */
 package org.apache.solr.schema.numericrange;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.lucene.document.IntRange;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.PrimitiveFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
-import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
  * Field type for integer ranges with support for 1-4 dimensions.
@@ -84,49 +73,9 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * therefore can't be used for sorting, faceting, etc.
  *
  * @see IntRange
- * @see org.apache.solr.search.numericrange.IntRangeQParserPlugin
+ * @see org.apache.solr.search.numericrange.NumericRangeQParserPlugin
  */
-public class IntRangeField extends PrimitiveFieldType {
-
-  private static final String COMMA_DELIMITED_INTS = "-?\\d+(?:\\s*,\\s*-?\\d+)*";
-  private static final String RANGE_PATTERN =
-      "\\[\\s*(" + COMMA_DELIMITED_INTS + ")\\s+TO\\s+(" + COMMA_DELIMITED_INTS + ")\\s*\\]";
-  private static final Pattern RANGE_PATTERN_REGEX = Pattern.compile(RANGE_PATTERN);
-  private static final Pattern SINGLE_BOUND_PATTERN =
-      Pattern.compile("^" + COMMA_DELIMITED_INTS + "$");
-
-  private int numDimensions = 1;
-
-  @Override
-  protected boolean enableDocValuesByDefault() {
-    return false; // IntRange does not support docValues
-  }
-
-  @Override
-  protected void init(IndexSchema schema, Map<String, String> args) {
-    super.init(schema, args);
-
-    String numDimensionsStr = args.remove("numDimensions");
-    if (numDimensionsStr != null) {
-      numDimensions = Integer.parseInt(numDimensionsStr);
-      if (numDimensions < 1 || numDimensions > 4) {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR,
-            "numDimensions must be between 1 and 4, but was ["
-                + numDimensions
-                + "] for field type "
-                + typeName);
-      }
-    }
-
-    // IntRange does not support docValues - validate this wasn't explicitly set
-    if (hasProperty(DOC_VALUES)) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR,
-          "docValues=true enabled but IntRangeField does not support docValues for field type "
-              + typeName);
-    }
-  }
+public class IntRangeField extends AbstractNumericRangeField {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
@@ -140,58 +89,6 @@ public class IntRangeField extends PrimitiveFieldType {
     return new IntRange(field.getName(), rangeValue.mins, rangeValue.maxs);
   }
 
-  @Override
-  public List<IndexableField> createFields(SchemaField field, Object value) {
-    IndexableField indexedField = createField(field, value);
-    List<IndexableField> fields = new ArrayList<>();
-
-    if (indexedField != null) {
-      fields.add(indexedField);
-    }
-
-    if (field.stored()) {
-      String valueStr = value.toString();
-      fields.add(getStoredField(field, valueStr));
-    }
-
-    return fields;
-  }
-
-  @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-    writer.writeStr(name, toExternal(f), false);
-  }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    throw new SolrException(
-        ErrorCode.BAD_REQUEST, "Cannot sort on IntRangeField: " + field.getName());
-  }
-
-  @Override
-  public Type getUninversionType(SchemaField sf) {
-    return null; // No field cache support
-  }
-
-  @Override
-  public String toInternal(String val) {
-    // Validate format and return as-is
-    parseRangeValue(val);
-    return val;
-  }
-
-  @Override
-  public String toExternal(IndexableField f) {
-    return f.stringValue();
-  }
-
-  @Override
-  public Object toNativeType(Object val) {
-    if (val == null) return null;
-    if (val instanceof RangeValue) return val;
-    return parseRangeValue(val.toString());
-  }
-
   /**
    * Parse a range value string into a RangeValue object.
    *
@@ -199,6 +96,7 @@ public class IntRangeField extends PrimitiveFieldType {
    * @return parsed RangeValue
    * @throws SolrException if value format is invalid
    */
+  @Override
   public RangeValue parseRangeValue(String value) {
     if (value == null || value.trim().isEmpty()) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Range value cannot be null or empty");
@@ -254,6 +152,12 @@ public class IntRangeField extends PrimitiveFieldType {
     return new RangeValue(mins, maxs);
   }
 
+  @Override
+  public NumericRangeValue parseSingleBound(String value) {
+    final var singleBoundTyped = parseIntArray(value, "single bound values");
+    return new RangeValue(singleBoundTyped, singleBoundTyped);
+  }
+
   /**
    * Parse a comma-separated string of integers into an array.
    *
@@ -279,60 +183,28 @@ public class IntRangeField extends PrimitiveFieldType {
     return result;
   }
 
-  protected StoredField getStoredField(SchemaField sf, Object value) {
-    return new StoredField(sf.getName(), value.toString());
+  @Override
+  public Query newContainsQuery(String fieldName, NumericRangeValue rangeValue) {
+    final var rangeValueTyped = (RangeValue) rangeValue;
+    return IntRange.newContainsQuery(fieldName, rangeValueTyped.mins, rangeValueTyped.maxs);
   }
 
-  /**
-   * Creates a query for this field that matches docs where the query-range is fully contained by
-   * the field value.
-   *
-   * <p>Queries requiring other match semantics can use {@link
-   * org.apache.solr.search.numericrange.IntRangeQParserPlugin}
-   *
-   * @param parser The {@link org.apache.solr.search.QParser} calling the method
-   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
-   * @param externalVal The String representation of the value to search. Supports both a
-   *     (multi-)dimensional range of the form [1,2 TO 3,4], or a single (multi-)dimensional bound
-   *     (e.g. 1,2). In the latter case, the single bound will be used as both the min and max. Both
-   *     formats use "contains" query semantics to find indexed ranges that contain the query range.
-   * @return Query for this field using contains semantics
-   */
   @Override
-  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (externalVal == null || externalVal.trim().isEmpty()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Query value cannot be null or empty");
-    }
+  public Query newIntersectsQuery(String fieldName, NumericRangeValue rangeValue) {
+    final var rv = (RangeValue) rangeValue;
+    return IntRange.newIntersectsQuery(fieldName, rv.mins, rv.maxs);
+  }
 
-    String trimmed = externalVal.trim();
+  @Override
+  public Query newWithinQuery(String fieldName, NumericRangeValue rangeValue) {
+    final var rv = (RangeValue) rangeValue;
+    return IntRange.newWithinQuery(fieldName, rv.mins, rv.maxs);
+  }
 
-    // Check if it's the full range syntax: [min1,min2 TO max1,max2]
-    if (RANGE_PATTERN_REGEX.matcher(trimmed).matches()) {
-      RangeValue rangeValue = parseRangeValue(trimmed);
-      return IntRange.newContainsQuery(field.getName(), rangeValue.mins, rangeValue.maxs);
-    }
-
-    // Syntax sugar: also accept a single-bound (i.e pX,pY,pZ)
-    if (SINGLE_BOUND_PATTERN.matcher(trimmed).matches()) {
-      int[] bound = parseIntArray(trimmed, "single bound values");
-
-      if (bound.length != numDimensions) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Single bound dimensions ("
-                + bound.length
-                + ") do not match field type numDimensions ("
-                + numDimensions
-                + ")");
-      }
-
-      return IntRange.newContainsQuery(field.getName(), bound, bound);
-    }
-
-    throw new SolrException(
-        ErrorCode.BAD_REQUEST,
-        "Invalid query format. Expected either a range [min TO max] or a single bound to search for, got: "
-            + externalVal);
+  @Override
+  public Query newCrossesQuery(String fieldName, NumericRangeValue rangeValue) {
+    final var rv = (RangeValue) rangeValue;
+    return IntRange.newCrossesQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
@@ -385,8 +257,8 @@ public class IntRangeField extends PrimitiveFieldType {
     }
   }
 
-  /** Simple holder class for parsed range values. */
-  public static class RangeValue {
+  /** Simple holder class for parsed integer range values. */
+  public static class RangeValue implements AbstractNumericRangeField.NumericRangeValue {
     public final int[] mins;
     public final int[] maxs;
 
@@ -395,6 +267,7 @@ public class IntRangeField extends PrimitiveFieldType {
       this.maxs = maxs;
     }
 
+    @Override
     public int getDimensions() {
       return mins.length;
     }

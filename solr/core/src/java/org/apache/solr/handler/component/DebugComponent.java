@@ -357,9 +357,9 @@ public class DebugComponent extends SearchComponent {
         }
 
         if (didx == -1) {
-          tmp.add(skey, merge(sval, null, Collections.emptySet()));
+          tmp.add(skey, merge(sval, null, Set.of()));
         } else {
-          dl.setVal(didx, merge(sval, dl.getVal(didx), Collections.emptySet()));
+          dl.setVal(didx, merge(sval, dl.getVal(didx), Set.of()));
         }
       }
       dl.addAll(tmp);

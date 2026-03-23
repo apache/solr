@@ -257,7 +257,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
 
       Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
-      redirectUris = Collections.emptyList();
+      redirectUris = List.of();
       if (redirectUrisObj != null) {
         if (redirectUrisObj instanceof String) {
           redirectUris = Collections.singletonList((String) redirectUrisObj);
@@ -603,7 +603,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             }
 
             // Find scopes for user
-            Set<String> scopes = Collections.emptySet();
+            Set<String> scopes = Set.of();
             Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
             if (scopesObj != null) {
               if (scopesObj instanceof String) {

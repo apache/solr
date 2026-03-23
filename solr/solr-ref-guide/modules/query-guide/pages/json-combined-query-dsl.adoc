@@ -25,6 +25,42 @@ It is extending JSON Query DSL ultimately enabling Hybrid Search.
 This feature is currently unsupported for grouping and Cursors.
 ====
 
+[IMPORTANT]
+====
+This feature works in both Standalone and SolrCloud modes and always performs distributed search execution.
+In Standalone (user-managed) mode, shard URLs must be explicitly allow-listed using the *allowUrls* parameter, otherwise Solr returns HTTP 403. For example:
+
+```
+"-Dsolr.security.allow.urls=http://localhost:8983/solr/"
+```
+
+====
+
+== Configuration Requirements
+
+Combined Query Feature has a separate handler with class `solr.CombinedQuerySearchHandler` which can be configured as below:
+
+```
+<requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
+.....
+</requestHandler>
+```
+
+In addition, the `QueryComponent` has been extended to create a new `CombinedQueryComponent`, which must be declared as a search component:
+```
+<searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+    <int name="maxCombinerQueries">2</int>
+</searchComponent>
+```
+
+
+The Search Component also accepts parameters as below:
+
+`maxCombinerQueries`::
+This parameter can be set to enforce an upper limit on the number of queries defined in `combiner.query`.
+It defaults to `5` if not set.
+
+
 == Query DSL Structure
 The query structure is similar to JSON Query DSL except for how multiple queries are defined along with their parameters.
 
@@ -71,37 +107,45 @@ Below is a sample JSON query payload:
 }
 ```
 
-== Search Handler Configuration
+== Combiner Algorithm Plugin
 
-Combined Query Feature has a separate handler with class `solr.CombinedQuerySearchHandler` which can be configured as below:
+As mentioned xref:json-combined-query-dsl.adoc#query-dsl-structure[above], custom algorithms can be configured to combine the results across multiple queries using a https://solr.apache.org/guide/solr/latest/configuration-guide/solr-plugins.html[Solr plugin].
 
-```
-<requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
-.....
-</requestHandler>
-```
+The class to implement the custom logic has to extend `org.apache.solr.handler.component.combine.QueryAndResponseCombiner`, which is an abstract base class that provides a framework for implementing various algorithms used to merge ranked lists and shard documents.
 
-The Search Handler also accepts parameters as below:
+The Combined Query Component definition takes the `combiners` parameter, where the custom class can be declared by specifying a name and the custom parameters required by the custom algorithm.
 
-`maxCombinerQueries`::
-  This parameter can be set to put upper limit check on the maximum number of queries can be executed defined in `combiner.query`.
-  It defaults to `5` if not set.
-
-=== Combiner Algorithm Plugin
-
-As mentioned xref:json-combined-query-dsl.adoc#query-dsl-structure[above], custom algorithms can be configured to combine the results across multiple queries.
-The Combined Query Search Handler definition takes parameter `combiners` where a custom class can be used to define the algorithm by giving a name and the parameters required.
-
-Example of the Search Handler as below:
+Example of the Search Component as below:
 ```
 <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
-        <int name="maxCombinerQueries">2</int>
+    <int name="maxCombinerQueries">2</int>
         <lst name="combiners">
-            <lst name="customAlgorithm">
-                <str name="class">org.apache.solr.search.combine.CustomCombiner</str>
-                <int name="var1">35</int>
-                <str name="var2">customValue</str>
+           <lst name="customAlgorithm">
+                <str name="class">org.apache.solr.handler.component.combine.CustomCombiner</str>
+                <int name="customParam1">35</int>
+                <str name="customParam2">customValue</str>
             </lst>
         </lst>
-    </searchComponent>
+</searchComponent>
 ```
+
+Then, when executing the combined query, the only thing that changes in the JSON query payload is the value specified in the `combiner.algorithm` parameter:
+
+```
+    ...
+    "params": {
+        "combiner": true,
+        "combiner.query": ["lexical1", "vector"],
+        "combiner.algorithm": "customAlgorithm"
+    }
+...
+```
+
+In this case, `customAlgorithm` is specified which is the name defined in the configuration; the RRF-specific parameters do not need to be provided.
+
+== Additional Resources
+
+Blog posts:
+
+* https://sease.io/2026/03/hybrid-search-with-reciprocal-rank-fusion-in-apache-solr.html[Hybrid Search with Reciprocal Rank Fusion in Apache Solr]
+* https://sease.io/2026/03/hybrid-search-using-a-custom-algorithm-in-apache-solr.html[Hybrid Search using a Custom Algorithm in Apache Solr]

@@ -39,7 +39,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
         @Override
         protected void before() {
           System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
-          solrTestRule.startSolr(LuceneTestCase.createTempDir());
+          solrTestRule.startSolr();
         }
       };
 

@@ -351,7 +351,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                 Thread.sleep(1000);
                 retries++;
               }
-              return Collections.emptyList();
+              return List.of();
             });
 
     when(workQueueMock.getTailId())

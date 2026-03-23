@@ -168,8 +168,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     responseMap.put(SCHEMA_VERSION_PARAM, configSetHelper.getCurrentSchemaVersion(mutableId));
     responseMap.put(
-        "collections",
-        exists ? configSetHelper.listCollectionsForConfig(configSet) : Collections.emptyList());
+        "collections", exists ? configSetHelper.listCollectionsForConfig(configSet) : List.of());
 
     // don't fail if loading sample docs fails
     try {
@@ -657,7 +656,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     if (languages != null) {
       langs =
           languages.length == 0 || (languages.length == 1 && "*".equals(languages[0]))
-              ? Collections.emptyList()
+              ? List.of()
               : Arrays.asList(languages);
       if (!langs.equals(settings.getLanguages())) {
         settings.setLanguages(langs);
@@ -866,7 +865,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // collect the fields to add ... adding all fields at once is faster than one-at-a-time
     List<SchemaField> fieldsToAdd = new ArrayList<>();
     for (String field : docs.keySet()) {
-      List<Object> sampleValues = docs.getOrDefault(field, Collections.emptyList());
+      List<Object> sampleValues = docs.getOrDefault(field, List.of());
 
       // Collapse all whitespace in fields to a single underscore
       String normalizedField = field.trim().replaceAll("\\s+", "_");

@@ -732,7 +732,7 @@ public class ZkTestServer {
     if (!FourLetterCommands.isEnabled(stat)) {
       final String original = System.getProperty(ZK_WHITELIST_PROPERTY);
       try {
-        log.error(
+        log.warn(
             "ZkTestServer requires the 'stat' command, temporarily manipulating your whitelist");
         System.setProperty(ZK_WHITELIST_PROPERTY, "*");
         FourLetterCommands.resetWhiteList();

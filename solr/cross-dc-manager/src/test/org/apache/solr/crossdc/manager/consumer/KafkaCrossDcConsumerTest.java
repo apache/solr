@@ -227,7 +227,7 @@ public class KafkaCrossDcConsumerTest {
         .when(kafkaConsumerMock)
         .subscribe(anyList());
 
-    when(kafkaConsumerMock.poll(any())).thenReturn(new ConsumerRecords<>(Collections.emptyMap()));
+    when(kafkaConsumerMock.poll(any())).thenReturn(new ConsumerRecords<>(Map.of()));
 
     ExecutorService consumerThreadExecutor =
         ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("CrossDCConsumer"));
