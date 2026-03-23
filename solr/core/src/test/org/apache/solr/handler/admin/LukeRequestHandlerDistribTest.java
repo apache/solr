@@ -220,7 +220,8 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   @ShardsFixed(num = 12)
   public void testSparseShards() throws Exception {
     // Index a single doc on shard 0
-    index_specific(0, "id", "100", "name", "sparse test", "subject", "subject value", "cat_s", "category");
+    index_specific(
+        0, "id", "100", "name", "sparse test", "subject", "subject value", "cat_s", "category");
     commit();
 
     LukeResponse rsp = requestLuke();
@@ -416,8 +417,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     // Write the same document directly to two shard cores via UpdateHandler,
     // completely bypassing the distributed update processor chain.
     for (int i = 0; i < 2; i++) {
-      try (SolrCore core =
-          jettys.get(i).getCoreContainer().getCore("collection1")) {
+      try (SolrCore core = jettys.get(i).getCoreContainer().getCore("collection1")) {
         SolrInputDocument solrDoc = new SolrInputDocument();
         solrDoc.addField("id", dupId);
         solrDoc.addField("name", "dup_copy_" + i);
@@ -484,8 +484,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     fields = rsp.getFieldInfo();
     assertNotNull("fields should be present", fields);
     assertNotNull(
-        "only_on_shard0_s SHOULD be present when querying shard 0",
-        fields.get("only_on_shard0_s"));
+        "only_on_shard0_s SHOULD be present when querying shard 0", fields.get("only_on_shard0_s"));
   }
 
   @Test
@@ -505,8 +504,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     LukeResponse rsp = new LukeResponse();
     rsp.setResponse(raw);
 
-    assertNotNull(
-        "index info should be present", rsp.getIndexInfo());
+    assertNotNull("index info should be present", rsp.getIndexInfo());
     assertEquals("should see the 1 doc we indexed", 1, rsp.getNumDocsAsLong().longValue());
     assertNotNull(
         "shards section should be present when targeting a shard via shards param",

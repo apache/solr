@@ -319,6 +319,10 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     ResponseBuilder rb = new ResponseBuilder(req, rsp, Collections.emptyList());
     shardHandler.prepDistributed(rb);
 
+    // When prepDistributed short-circuits (e.g. single-shard collection where this node
+    // hosts the shard), it returns early without populating rb.shards — caught by the null
+    // check. We check length == 0 rather than <= 1 because a single remote shard targeted
+    // via the shards param must still be fanned out to, not handled locally.
     String[] shards = rb.shards;
     if (shards == null || shards.length == 0) {
       return false;

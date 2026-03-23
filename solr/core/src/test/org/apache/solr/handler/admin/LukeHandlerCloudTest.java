@@ -39,9 +39,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Cloud-specific Luke tests that require SolrCloud features like managed schema and Schema API.
- */
+/** Cloud-specific Luke tests that require SolrCloud features like managed schema and Schema API. */
 public class LukeHandlerCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
