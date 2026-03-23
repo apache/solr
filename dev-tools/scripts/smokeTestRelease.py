@@ -633,7 +633,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   #     in_root_folder.remove(fileName)
 
   if isSrc:
-    expected_src_root_folders = ['build-tools', 'changelog', 'dev-docs', 'dev-tools', 'gradle', 'solr']
+    expected_src_root_folders = ['build-tools', 'changelog', 'dev-docs', 'dev-tools', 'gradle', 'solr', 'test-external-client']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'settings-gradle.lockfile', 'versions.lock']
     expected_src_solr_files = ['build.gradle']
     expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'cross-dc-manager', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'server', 'solr-ref-guide', 'solrj', 'solrj-jetty', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
@@ -788,122 +788,6 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
   os.chdir(old_cwd)
 
 
-MAVEN_TEST_POM_TEMPLATE = '''\
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Licensed to the Apache Software Foundation (ASF) under one or more
-  contributor license agreements.  See the NOTICE file distributed with
-  this work for additional information regarding copyright ownership.
-  The ASF licenses this file to You under the Apache License, Version 2.0
-  (the "License"); you may not use this file except in compliance with
-  the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-<!-- Minimal Maven project to smoke-test that Solr published POMs have correct dependencies. -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.solr.smoketest</groupId>
-  <artifactId>solrj-maven-test</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <properties>
-    <!-- Use Java 21 to match solr-test-framework's target JDK -->
-    <maven.compiler.release>21</maven.compiler.release>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Overridden at build time with -Dlocal.repo.path=<path> -->
-    <local.repo.path/>
-  </properties>
-  <repositories>
-    <!-- Local Solr Maven artifacts (from release staging or local build) -->
-    <repository>
-      <id>solr-local-release</id>
-      <url>file://${local.repo.path}</url>
-    </repository>
-  </repositories>
-  <dependencies>
-    <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-solrj</artifactId>
-      <version>%(version)s</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-test-framework</artifactId>
-      <version>%(version)s</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-</project>
-'''
-
-MAVEN_TEST_MAIN_JAVA = '''\
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package org.apache.solr.smoketest;
-
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.common.SolrInputDocument;
-
-/** Smoke-test that solr-solrj can be consumed from Maven. */
-public class UseSolrJ {
-  void test() throws Exception {
-    try (SolrClient client = new Http2SolrClient.Builder("http://localhost:8983/solr").build()) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "1");
-    }
-  }
-}
-'''
-
-MAVEN_TEST_TEST_JAVA = '''\
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package org.apache.solr.smoketest;
-
-import org.apache.solr.SolrTestCase;
-
-/** Smoke-test that solr-test-framework can be consumed from Maven. */
-public class UseSolrTestFramework extends SolrTestCase {}
-'''
-
-
 def findMaven():
   """Find the mvn executable in PATH. Returns the command path, or None if not found."""
   import shutil as shutil_util
@@ -918,61 +802,52 @@ def _dockerAvailable():
   return os.system('docker info > /dev/null 2>&1') == 0
 
 
-def testMavenBuild(mavenDir, tmpDir, version):
+def testMavenBuild(mavenDir, tmpDir, version, javaHome=None):
   """
-  Creates a minimal Maven project that depends on solr-solrj and solr-test-framework,
-  then compiles it to verify the published POMs declare correct transitive dependencies.
+  Runs the test-external-client project with Maven or Gradle to verify that the published
+  POMs for solr-solrj and solr-test-framework declare correct transitive dependencies.
 
   mavenDir: root of the local Maven repository (contains org/apache/solr/...)
-  tmpDir: temp directory for the generated test project files
+  tmpDir: temp directory for log files
   version: Solr version string (e.g. "10.0.0")
+  javaHome: optional path to a Java 21+ home directory; if None the JAVA_HOME env var is used
   """
   print('    test Maven project build (verify POMs are consumable)...')
 
-  projectDir = os.path.join(tmpDir, 'maven-test-project')
-  if os.path.exists(projectDir):
-    shutil.rmtree(projectDir)
+  scriptDir = os.path.dirname(os.path.abspath(__file__))
+  projectDir = os.path.normpath(os.path.join(scriptDir, '..', '..', 'test-external-client'))
+  if not os.path.isdir(projectDir):
+    raise RuntimeError('test-external-client directory not found at: %s' % projectDir)
 
-  mainSrcDir = os.path.join(projectDir, 'src', 'main', 'java',
-                            'org', 'apache', 'solr', 'smoketest')
-  testSrcDir = os.path.join(projectDir, 'src', 'test', 'java',
-                            'org', 'apache', 'solr', 'smoketest')
-  os.makedirs(mainSrcDir)
-  os.makedirs(testSrcDir)
-
-  with open(os.path.join(projectDir, 'pom.xml'), 'w', encoding='UTF-8') as f:
-    f.write(MAVEN_TEST_POM_TEMPLATE % {'version': version})
-
-  with open(os.path.join(mainSrcDir, 'UseSolrJ.java'), 'w', encoding='UTF-8') as f:
-    f.write(MAVEN_TEST_MAIN_JAVA)
-
-  with open(os.path.join(testSrcDir, 'UseSolrTestFramework.java'), 'w', encoding='UTF-8') as f:
-    f.write(MAVEN_TEST_TEST_JAVA)
-
+  javaHomePrefix = ('JAVA_HOME="%s" ' % javaHome) if javaHome else ''
   logFile = os.path.join(tmpDir, 'maven-build.log')
 
   mvnCmd = findMaven()
   if mvnCmd is not None:
     print('      using local Maven: %s' % mvnCmd)
-    run('%s -B -f "%s/pom.xml" -Dlocal.repo.path="%s" test-compile'
-        % (mvnCmd, projectDir, mavenDir), logFile)
+    run('%s%s -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" test'
+        % (javaHomePrefix, mvnCmd, projectDir, version, mavenDir), logFile)
   elif _dockerAvailable():
     print('      Maven not found; using Docker Maven image...')
+    # Note: the Docker image already includes Java 21; javaHome is not needed
+    # Project is mounted writable so Maven can write its build output directory
     run('docker run --rm'
         ' -v "%s":/project'
-        ' -v "%s":/solr-local-release'
+        ' -v "%s":/solr-local-release:ro'
         ' maven:3.9-eclipse-temurin-21'
-        ' mvn -B -f /project/pom.xml -Dlocal.repo.path=/solr-local-release test-compile'
-        % (projectDir, mavenDir), logFile)
+        ' mvn -B -f /project/pom.xml -Dsolr.version="%s" -Dlocal.solr.repo=/solr-local-release test'
+        % (projectDir, mavenDir, version), logFile)
   else:
-    print('      WARNING: Neither Maven nor Docker found; skipping Maven build test.')
-    print('               Install Maven or Docker to enable this check.')
-    return
+    # Fall back to Gradle via the gradlew wrapper in the repo root
+    gradlew = os.path.normpath(os.path.join(projectDir, '..', 'gradlew'))
+    print('      Maven not found; using Gradle: %s' % gradlew)
+    run('%s"%s" --no-daemon -p "%s" -Psolr.version="%s" -Plocal.solr.repo="%s" test'
+        % (javaHomePrefix, gradlew, projectDir, version, mavenDir), logFile)
 
   print('    Maven project build: SUCCESS')
 
 
-def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
+def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile, javaHome=None):
   print('    download artifacts')
   artifacts = []
   artifactsURL = '%s/maven/org/apache/solr/' % baseURL
@@ -993,7 +868,7 @@ def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
 
   checkAllJARs('%s/maven/org/apache/solr' % tmpDir, gitRevision, version)
 
-  testMavenBuild('%s/maven' % tmpDir, tmpDir, version)
+  testMavenBuild('%s/maven' % tmpDir, tmpDir, version, javaHome=javaHome)
 
 
 def getBinaryDistFiles(tmpDir, version, baseURL):
@@ -1366,7 +1241,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
-    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
+    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile, javaHome=java.java_home)
   else:
     print("Solr test done (--download-only specified)")
 

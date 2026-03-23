@@ -16,20 +16,23 @@
 # limitations under the License.
 
 """
-Standalone smoke-test for Solr Maven artifacts: verifies that a basic Maven project
-consuming solr-solrj and solr-test-framework can be compiled from the published POMs.
+Standalone smoke-test for Solr Maven artifacts: builds the test-external-client project
+against locally published Solr artifacts to verify that solr-solrj and solr-test-framework
+can be consumed from their published POMs.
 
 This test can be run independently of the full smokeTestRelease.py suite.
+It uses the test-external-client project checked into the repository root, which has
+both Maven (pom.xml) and Gradle (build.gradle.kts) build files.
 
 Usage examples:
 
-  # Test against a local Maven repository (e.g. produced by "gradlew mavenToLocalFolder"):
-  python3 checkMavenBuild.py --maven-dir solr/build/maven-local 10.0.0
+  # Test against a local Maven repository (produced by "gradlew mavenToLocalFolder"):
+  python3 checkMavenBuild.py --maven-dir build/maven-local 10.0.0
 
   # Test against a release-candidate Maven staging URL (artifacts are downloaded):
   python3 checkMavenBuild.py --url https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-abc1234/maven 10.0.0
 
-Requirements: Maven (mvn) or Docker must be available in PATH.
+Requirements: Maven (mvn), Docker, or Gradle (gradlew) must be available.
 """
 
 import argparse
@@ -47,13 +50,13 @@ def parse_config():
   epilog = textwrap.dedent('''
     Examples:
       # Use locally published Maven artifacts (run "gradlew mavenToLocalFolder" first):
-      python3 checkMavenBuild.py --maven-dir solr/build/maven-local 10.0.0
+      python3 checkMavenBuild.py --maven-dir build/maven-local 10.0.0
 
       # Download Maven artifacts from a release-candidate staging URL:
       python3 checkMavenBuild.py --url https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-abc1234/maven 10.0.0
   ''')
   parser = argparse.ArgumentParser(
-    description='Verify Solr Maven artifacts can be consumed by a basic Maven project.',
+    description='Verify Solr Maven artifacts can be consumed by the test-external-client project.',
     epilog=epilog,
     formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -69,8 +72,12 @@ def parse_config():
                            '(artifacts will be downloaded into --tmp-dir)')
 
   parser.add_argument('--tmp-dir', metavar='DIR',
-                      help='Temporary directory for downloaded artifacts and the '
-                           'generated test project (default: auto-generated under /tmp)')
+                      help='Temporary directory for downloaded artifacts and log files '
+                           '(default: auto-generated under /tmp)')
+
+  parser.add_argument('--java-home', metavar='DIR',
+                      help='Path to a Java 21+ home directory (default: uses the JAVA_HOME '
+                           'environment variable)')
 
   return parser.parse_args()
 
@@ -86,6 +93,8 @@ def main():
 
   print('Using tmp dir: %s' % tmp_dir)
 
+  java_home = c.java_home or os.environ.get('JAVA_HOME')
+
   if c.maven_dir:
     maven_dir = os.path.abspath(c.maven_dir)
     print('Using local Maven repository: %s' % maven_dir)
@@ -99,7 +108,7 @@ def main():
     smokeTestRelease.crawl([], artifacts_url, target_dir)
     print()
 
-  smokeTestRelease.testMavenBuild(maven_dir, tmp_dir, c.version)
+  smokeTestRelease.testMavenBuild(maven_dir, tmp_dir, c.version, javaHome=java_home)
 
   print('\nSUCCESS!')
 
@@ -109,3 +118,4 @@ if __name__ == '__main__':
     main()
   except KeyboardInterrupt:
     print('Keyboard interrupt...exiting')
+
