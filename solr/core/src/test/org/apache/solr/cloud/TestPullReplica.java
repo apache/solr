@@ -60,6 +60,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -310,10 +311,10 @@ public class TestPullReplica extends SolrCloudTestCase {
         for (String coreName : cc.getAllCoreNames()) {
           try (SolrCore core = cc.getCore(coreName)) {
             var addOpsDatapoint =
-                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                SolrMetricTestUtils.getCounterDatapoint(
                     core,
                     "solr_core_update_committed_ops",
-                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
                         .label("category", "UPDATE")
                         .label("ops", "adds")
                         .build());

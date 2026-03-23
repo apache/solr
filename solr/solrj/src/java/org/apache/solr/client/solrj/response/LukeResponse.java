@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.response;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -45,7 +44,7 @@ public class LukeResponse extends SolrResponseBase {
 
     public FieldTypeInfo(String name) {
       this.name = name;
-      fields = Collections.emptyList();
+      fields = List.of();
     }
 
     public String getAnalyzer() {

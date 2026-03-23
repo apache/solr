@@ -70,8 +70,7 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    Path solrHome = createSolrHome();
-    solrTestRule.startSolr(solrHome);
+    solrTestRule.startSolr(createSolrHome());
 
     collection1 = solrTestRule.getSolrClient("collection1");
 

@@ -416,13 +416,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
 
     // Collect the files that we'll write to the config directories.
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    String min_schema = Files.readString(Path.of(top, "schema-tiny.xml"), StandardCharsets.UTF_8);
+    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
+    String min_schema = Files.readString(top.resolve("schema-tiny.xml"), StandardCharsets.UTF_8);
     String min_config =
-        Files.readString(Path.of(top, "solrconfig-minimal.xml"), StandardCharsets.UTF_8);
+        Files.readString(top.resolve("solrconfig-minimal.xml"), StandardCharsets.UTF_8);
     String rand_snip =
         Files.readString(
-            Path.of(top, "solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
+            top.resolve("solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
 
     // Now purposely mess up the config files, introducing stupid syntax errors.
     String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
@@ -449,9 +449,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private void copyGoodConf(String coreName, String srcName, String dstName) throws IOException {
     Path coreRoot = solrHomeDirectory.resolve(coreName);
     Path subHome = coreRoot.resolve("conf");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    Files.copy(
-        Path.of(top, srcName), subHome.resolve(dstName), StandardCopyOption.REPLACE_EXISTING);
+    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
+    Files.copy(top.resolve(srcName), subHome.resolve(dstName), StandardCopyOption.REPLACE_EXISTING);
   }
 
   // If ok==true, we shouldn't be seeing any failure cases.

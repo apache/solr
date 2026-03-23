@@ -68,6 +68,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -461,7 +462,7 @@ public class Overseer implements SolrCloseable {
           && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
         return; // shutting down no need to go further
       }
-      org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
+      Stat stat = new Stat();
       final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {

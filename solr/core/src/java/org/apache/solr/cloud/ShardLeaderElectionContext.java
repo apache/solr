@@ -77,6 +77,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     syncStrategy.close();
   }
 
+  /**
+   * Internally check whether we should abort the election process. This returns true if either this
+   * context was explicitly closed, or Solr server is being shut down.
+   */
+  private boolean shouldAbort() {
+    return isClosed || cc.isShutDown();
+  }
+
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
@@ -154,7 +162,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         waitForReplicasToComeUp(leaderVoteWait);
       }
 
-      if (isClosed) {
+      if (shouldAbort()) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the
         // later, we cannot be sure we are still the leader, so we should bail out. The OnReconnect
         // handler will re-register the cores and handle a new leadership election.
@@ -185,7 +193,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
 
-        if (isClosed) {
+        if (shouldAbort()) {
           return;
         }
 
@@ -267,7 +275,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
       }
 
-      if (!isClosed) {
+      if (!shouldAbort()) {
         try {
           if (replicaType.replicateFromLeader) {
             // stop replicate from old leader
@@ -361,7 +369,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       ZkShardTerms zkShardTerms, String coreNodeName, int timeout) throws InterruptedException {
     long timeoutAt =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (!isClosed && !cc.isShutDown()) {
+    while (!shouldAbort()) {
       if (System.nanoTime() > timeoutAt) {
         log.warn(
             "After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
@@ -446,7 +454,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(collection);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     int cnt = 0;
-    while (!isClosed && !cc.isShutDown()) {
+    while (!shouldAbort()) {
       // wait for everyone to be up
       if (slices != null) {
         int found = 0;

@@ -38,6 +38,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.junit.Before;
@@ -303,7 +304,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   }
 
   private void setMinVersionForSegments(SolrCore core, Set<String> segments, Version minVersion) {
-    RefCounted<org.apache.solr.search.SolrIndexSearcher> searcherRef = core.getSearcher();
+    RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
     try {
       final List<LeafReaderContext> leaves = searcherRef.get().getTopReaderContext().leaves();
       for (LeafReaderContext ctx : leaves) {

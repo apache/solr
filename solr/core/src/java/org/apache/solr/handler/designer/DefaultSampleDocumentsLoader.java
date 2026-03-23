@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -270,7 +271,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       final int event;
       try {
         event = parser.next();
-      } catch (java.util.NoSuchElementException noSuchElementException) {
+      } catch (NoSuchElementException noSuchElementException) {
         return docs;
       }
       switch (event) {

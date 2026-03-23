@@ -21,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -229,8 +231,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
    * "solr_core_indexsearcher_termstats_cache{...type="lookups",...}" -> "lookups"
    */
   private String extractTypeAttribute(String line) {
-    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\btype=\"([^\"]+)\"");
-    java.util.regex.Matcher matcher = pattern.matcher(line);
+    Pattern pattern = Pattern.compile("\\btype=\"([^\"]+)\"");
+    Matcher matcher = pattern.matcher(line);
     if (matcher.find()) {
       return matcher.group(1);
     }

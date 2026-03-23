@@ -437,8 +437,7 @@ public class DocumentBuilder {
   }
 
   /** Convert a lucene Document to a SolrInputDocument */
-  public static SolrInputDocument toSolrInputDocument(
-      org.apache.lucene.document.Document doc, IndexSchema schema) {
+  public static SolrInputDocument toSolrInputDocument(Document doc, IndexSchema schema) {
     SolrInputDocument out = new SolrInputDocument();
     for (IndexableField f : doc.getFields()) {
       String fname = f.name();

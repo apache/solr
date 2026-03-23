@@ -61,13 +61,14 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Creates {@link HttpShardHandler} instances */
 public class HttpShardHandlerFactory extends ShardHandlerFactory
-    implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
+    implements PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
 

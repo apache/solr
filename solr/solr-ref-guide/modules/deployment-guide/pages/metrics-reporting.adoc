@@ -98,6 +98,21 @@ The `JVM Registry` gathers metrics from the JVM using the OpenTelemetry instrume
 
 JVM metrics are enabled by default but can be disabled by setting either the system property `-Dsolr.metrics.jvm.enabled=false` or the environment variable `SOLR_METRICS_JVM_ENABLED=false`.
 
+==== Physical Memory Metrics
+
+Solr exposes a gauge for host or container physical memory, registered under the `solr.jvm` registry:
+
+[cols="2,1,3",options="header"]
+|===
+| Prometheus Metric Name | Type | Description
+| `jvm_system_memory_bytes{state="total"}` | gauge | Total physical memory of the host or container in bytes. On Linux with cgroup memory limits, reflects the container limit rather than host RAM.
+| `jvm_system_memory_bytes{state="free"}` | gauge | Free (unused) physical memory of the host or container in bytes.
+|===
+
+NOTE: These metrics are available when the JVM provides the `com.sun.management.OperatingSystemMXBean` interface (this includes most HotSpot-derived JVMs). On JVMs that do not provide `com.sun.management.OperatingSystemMXBean`, the metrics are silently absent.
+
+NOTE: On Linux containers with cgroup v1 or v2 memory limits set, the JDK reports the container memory limit as the total, not the host's physical RAM. This is the correct value for calculating MMap cache efficiency in containerised deployments.
+
 === Overseer Registry
 
 The `Overseer Registry` is initialized when running in SolrCloud mode and includes the following information:

@@ -22,7 +22,6 @@ import static org.hamcrest.Matchers.containsString;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -306,7 +305,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     assertTrue( // we expected at least one query for every "real" path,
         // but there will be more because we'll try lots of sub-paths that have no docs
         docs.numDocsDescendentFromPath.keySet().size()
-            < docs.recursiveCheckParentQueryOfAllChildren(Collections.<String>emptyList()));
+            < docs.recursiveCheckParentQueryOfAllChildren(List.of()));
     // check: path that is guaranteed not to exist...
     assertEquals(1, docs.recursiveCheckParentQueryOfAllChildren(Arrays.asList("xxx", "yyy")));
 
@@ -315,7 +314,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     assertTrue( // we expected at least one query for every "real" path,
         // but there will be more because we'll try lots of sub-paths that have no docs
         docs.numDocsWithPathWithKids.keySet().size()
-            < docs.recursiveCheckChildQueryOfAllParents(Collections.<String>emptyList()));
+            < docs.recursiveCheckChildQueryOfAllParents(List.of()));
     // check: path that is guaranteed not to exist...
     assertEquals(1, docs.recursiveCheckChildQueryOfAllParents(Arrays.asList("xxx", "yyy")));
 
@@ -334,7 +333,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     private int idCounter = 0;
 
     public synchronized SolrInputDocument buildRandomDoc() {
-      return buildRandomDoc(null, Collections.<String>emptyList(), 15);
+      return buildRandomDoc(null, List.of(), 15);
     }
 
     private static String joinPath(List<String> test_path) {

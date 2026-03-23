@@ -18,7 +18,6 @@
 package org.apache.solr.search.join;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -92,7 +91,7 @@ public class FiltersQParser extends QParser {
     if (tagMap != null && !tagMap.isEmpty() && !tagsToExclude.isEmpty()) {
       excludeSet = excludeSet(tagMap, tagsToExclude);
     } else {
-      excludeSet = Collections.emptySet();
+      excludeSet = Set.of();
     }
     clauses.removeAll(excludeSet);
   }

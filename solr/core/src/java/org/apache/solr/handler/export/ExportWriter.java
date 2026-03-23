@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -347,7 +348,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                       mw.put("docs", (IteratorWriter) iw -> writeDocs(req, os, iw, sort));
                     });
           });
-    } catch (java.io.EOFException e) {
+    } catch (EOFException e) {
       log.info("Caught Eof likely caused by early client disconnect");
     }
 
