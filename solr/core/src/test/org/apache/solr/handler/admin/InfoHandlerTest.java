@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -70,12 +71,10 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     // Initialize metrics for these test handlers before setting them on InfoHandler
     // Use a core's metrics context since we don't have direct access to container's context
     var metricsContext = h.getCore().getCoreMetricManager().getSolrMetricsContext();
-    propHandler.initializeMetrics(metricsContext, io.opentelemetry.api.common.Attributes.empty());
-    threadHandler.initializeMetrics(metricsContext, io.opentelemetry.api.common.Attributes.empty());
-    loggingHandler.initializeMetrics(
-        metricsContext, io.opentelemetry.api.common.Attributes.empty());
-    systemInfoHandler.initializeMetrics(
-        metricsContext, io.opentelemetry.api.common.Attributes.empty());
+    propHandler.initializeMetrics(metricsContext, Attributes.empty());
+    threadHandler.initializeMetrics(metricsContext, Attributes.empty());
+    loggingHandler.initializeMetrics(metricsContext, Attributes.empty());
+    systemInfoHandler.initializeMetrics(metricsContext, Attributes.empty());
 
     // set the request handlers
     infoHandler.setPropertiesHandler(propHandler);
