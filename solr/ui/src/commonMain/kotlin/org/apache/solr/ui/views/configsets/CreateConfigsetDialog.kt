@@ -33,8 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
 import org.apache.solr.ui.domain.Configset
@@ -91,9 +89,9 @@ fun CreateConfigsetDialog(
             )
             ConfigsetsDropdown(
                 modifier = Modifier.weight(1f),
-                selectedConfigSet = configsetsState.selectedConfigset,
+                selectedConfigset = configsetsState.selectedConfigset,
                 selectConfigset = viewModel::changeBaseConfigset,
-                availableConfigsets = configsetsState.configsets,
+                configsets = configsetsState.configsets,
                 enableReset = true,
             )
         }

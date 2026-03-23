@@ -18,8 +18,6 @@
 package org.apache.solr.ui.components.configsets.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavKey
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,14 +38,14 @@ class ConfigsetsOverviewViewModel : ViewModel() {
     /**
      * Initiates the creation of a new configset.
      */
-    fun createConfigset() = uiState.update {
+    fun openCreateConfigsetDialog() = uiState.update {
         it.copy(configsetDialog = ConfigsetDialog.CreateConfigsetDialog)
     }
 
     /**
      * Initiates the import of a configset.
      */
-    fun importConfigset() = uiState.update {
+    fun openImportConfigsetDialog() = uiState.update {
         it.copy(configsetDialog = ConfigsetDialog.ImportConfigsetDialog)
     }
 

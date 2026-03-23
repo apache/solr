@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -36,8 +37,17 @@ class ConfigsetsRouteViewModel(
         ?.let { ConfigsetsTab.valueOf(it) }
         ?: ConfigsetsTab.Overview
 
-    val backStack: SnapshotStateList<ConfigsetsTab> =
-        mutableStateListOf(initialTab)
+    val backStack: SnapshotStateList<ConfigsetsScene> = mutableStateListOf(
+        when(initialTab) {
+            ConfigsetsTab.Overview -> ConfigsetsScene.Overview
+            ConfigsetsTab.Files -> ConfigsetsScene.Files
+            ConfigsetsTab.Schema -> ConfigsetsScene.Schema
+            ConfigsetsTab.UpdateConfig -> ConfigsetsScene.UpdateConfig
+            ConfigsetsTab.IndexQuery -> ConfigsetsScene.IndexQuery
+            ConfigsetsTab.Handlers -> ConfigsetsScene.Handlers
+            ConfigsetsTab.SearchComponents -> ConfigsetsScene.SearchComponents
+        },
+    )
 
     /**
      * The dialog that is currently open, if any.
@@ -56,6 +66,31 @@ class ConfigsetsRouteViewModel(
 data class ConfigsetsSceneUiState(
     val selectedTab: ConfigsetsTab = ConfigsetsTab.Overview,
 )
+
+@Serializable
+sealed interface ConfigsetsScene : NavKey {
+
+    @Serializable
+    data object Overview : ConfigsetsScene
+
+    @Serializable
+    data object Files : ConfigsetsScene
+
+    @Serializable
+    data object Schema : ConfigsetsScene
+
+    @Serializable
+    data object UpdateConfig : ConfigsetsScene
+
+    @Serializable
+    data object IndexQuery : ConfigsetsScene
+
+    @Serializable
+    data object Handlers : ConfigsetsScene
+
+    @Serializable
+    data object SearchComponents : ConfigsetsScene
+}
 
 @Serializable
 enum class ConfigsetsTab {

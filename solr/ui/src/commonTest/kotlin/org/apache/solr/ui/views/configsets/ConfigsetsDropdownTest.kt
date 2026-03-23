@@ -34,8 +34,8 @@ class ConfigsetsDropdownTest {
         setContent {
             ConfigsetsDropdown(
                 selectConfigset = {},
-                availableConfigsets = emptyList(),
-                selectedConfigSet = "",
+                configsets = emptyList(),
+                selectedConfigset = "",
             )
         }
 
@@ -49,8 +49,8 @@ class ConfigsetsDropdownTest {
         setContent {
             ConfigsetsDropdown(
                 selectConfigset = {},
-                availableConfigsets = emptyList(),
-                selectedConfigSet = "",
+                configsets = emptyList(),
+                selectedConfigset = "",
             )
         }
 
@@ -65,9 +65,9 @@ class ConfigsetsDropdownTest {
         setContent {
             ConfigsetsDropdown(
                 selectConfigset = {},
-                availableConfigsets = listOf(selectedConfigset, "techproducts")
+                configsets = listOf(selectedConfigset, "techproducts")
                     .map { Configset(it) },
-                selectedConfigSet = selectedConfigset,
+                selectedConfigset = selectedConfigset,
             )
         }
 

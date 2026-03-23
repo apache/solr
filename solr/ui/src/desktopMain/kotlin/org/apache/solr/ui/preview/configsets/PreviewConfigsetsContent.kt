@@ -19,14 +19,7 @@ package org.apache.solr.ui.preview.configsets
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.arkivanov.decompose.Child
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.MutableValue
-import com.arkivanov.decompose.value.Value
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetUseCase
@@ -40,12 +33,12 @@ import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewMod
 import org.apache.solr.ui.components.files.domain.SelectFileUseCase
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.preview.PreviewContainer
-import org.apache.solr.ui.views.configsets.ConfigsetsContent
+import org.apache.solr.ui.views.configsets.ConfigsetsScene
 
 @Preview
 @Composable
 private fun PreviewConfigsetsContentEmptyConfigsets() = PreviewContainer {
-    ConfigsetsContent(component = PreviewConfigsetsComponent())
+    ConfigsetsScene(component = PreviewConfigsetsComponent())
 }
 
 private class PreviewConfigsetsComponent(configsets: List<Configset> = emptyList()) : ConfigsetsComponent {
