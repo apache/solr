@@ -1,0 +1,11 @@
+title: solr-test-framework isn't usable outside Solr, a 10.0 regression.
+type: fixed
+authors:
+  - name: Dawid Weiss
+  - name: David Smiley
+  - name: Eric Pugh
+links:
+  - name: SOLR-18171
+    url: https://issues.apache.org/jira/browse/SOLR-18171
+
+
