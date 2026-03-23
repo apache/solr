@@ -243,7 +243,7 @@ Solr 10 has migrated from Dropwizard metrics to OpenTelemetry (OTEL) for observa
 
 [IMPORTANT]
 ====
-The new Open Telemetry metrics are to be considered experimental / BETA. We reserve the right to make breaking changes even in minor releases.
+Solr 10 introduced significant changes to metrics, including new metric names and API endpoints. These metrics are currently considered Beta and may change in minor releases without notice.
 ====
 
 === Docker

@@ -20,7 +20,7 @@ Solr supports both a pull-based Prometheus-formatted API and an OTLP push export
 
 [IMPORTANT]
 ====
-Version 10 brought large changes to metrics, with different naming and endpoints. These new metrics are to be considered experimental / BETA. We reserve the right to make breaking changes even in minor releases.
+Solr 10 introduced significant changes to metrics, including new metric names and API endpoints. These metrics are currently considered Beta and may change in minor releases without notice.
 ====
 
 All metrics natively include attributes/labels, providing users with powerful ways to aggregate metrics in their preferred backend, as well as descriptions to help understand what each metric represents.
