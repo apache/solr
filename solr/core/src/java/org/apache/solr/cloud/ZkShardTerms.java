@@ -55,11 +55,14 @@ import org.slf4j.LoggerFactory;
  * <p>The values correspond to replicas are called terms. Only replicas with highest term value are
  * considered up to date and be able to become leader and serve queries.
  *
- * <p>Terms can only updated in two strict ways:
+ * <p>Terms can only be updated in three strict ways:
  *
  * <ul>
  *   <li>A replica sets its term equals to leader's term
  *   <li>The leader increase its term and some other replicas by 1
+ *   <li>A subset of replicas can be set to a higher term than the leader, if the collection is in
+ *       read-only mode. This ensures that the leader-increase command cannot occur at the same
+ *       time.
  * </ul>
  *
  * This class should not be reused after {@link
