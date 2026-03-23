@@ -1,6 +1,5 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Add Maven build smoke-test to verify published POMs for solr-solrj and solr-test-framework
-type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+title: Add Maven build smoke-test to verify published POMs for solr-solrj and solr-test-framework, as well as some basic test framework usage.
+type: other
 authors:
   - name: David Smiley
 links:
