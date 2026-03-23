@@ -116,9 +116,8 @@ public class LukeResponse extends SolrResponseBase {
     String name;
     String type;
     String schema;
-    int docs;
+    Long docs;
     int distinct;
-    Long docsAsLong;
     EnumSet<FieldFlag> flags;
     boolean cacheableFaceting;
     NamedList<Integer> topTerms;
@@ -138,11 +137,7 @@ public class LukeResponse extends SolrResponseBase {
         } else if ("schema".equals(entry.getKey())) {
           schema = (String) entry.getValue();
         } else if ("docs".equals(entry.getKey())) {
-          docs = (Integer) entry.getValue();
-          docsAsLong = (long) docs; // widen, lossless
-        } else if ("docsAsLong".equals(entry.getKey())) {
-          // Don't set docs — narrowing Long→int is lossy
-          docsAsLong = (Long) entry.getValue();
+          docs = ((Number) entry.getValue()).longValue();
         } else if ("distinct".equals(entry.getKey())) {
           distinct = (Integer) entry.getValue();
         } else if ("cacheableFaceting".equals(entry.getKey())) {
@@ -183,12 +178,8 @@ public class LukeResponse extends SolrResponseBase {
       return distinct;
     }
 
-    public int getDocs() {
+    public Long getDocs() {
       return docs;
-    }
-
-    public Long getDocsAsLong() {
-      return docsAsLong;
     }
 
     public String getName() {

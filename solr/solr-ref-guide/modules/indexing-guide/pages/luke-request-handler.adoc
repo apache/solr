@@ -133,18 +133,18 @@ From SolrJ, you can access /luke using the {solr-javadocs}/solrj/org/apache/solr
 
 == Distributed Mode (multiple shards)
 
-When running in SolrCloud, the Luke handler can aggregate results from all shards in a collection by setting `distrib=true`.
-By default, `distrib` is `false` and the handler inspects only the local shard's index.
+When running in SolrCloud, the Luke handler automatically distributes requests across all shards in the collection, the same as search requests.
+To inspect only the local shard's index, set `distrib=false`.
 
 To get a collection-wide view:
 
 [source,text]
-http://localhost:8983/solr/techproducts/admin/luke?distrib=true
+http://localhost:8983/solr/techproducts/admin/luke
 
 To get detailed field statistics across all shards for a specific field:
 
 [source,text]
-http://localhost:8983/solr/techproducts/admin/luke?distrib=true&fl=manu
+http://localhost:8983/solr/techproducts/admin/luke?fl=manu
 
 === Response Structure
 
@@ -163,6 +163,7 @@ In distributed mode, the response contains:
 
 Field `type`, `schema` flags, and `dynamicBase` are validated for consistency across shards.
 If a mismatch is detected, the handler returns an error identifying the field, the conflicting values, and the shard addresses involved.
+You can use `distrib=false` to query individual shards and compare their field configurations when troubleshooting mismatches.
 The `index` flags are index-derived (not schema-derived) and may legitimately differ across shards; the first non-null value is used.
 If the same document `id` is found on multiple shards (indicating index corruption), the handler returns an error.
 

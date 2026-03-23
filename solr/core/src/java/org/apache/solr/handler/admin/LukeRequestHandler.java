@@ -77,6 +77,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -137,7 +138,6 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private static final String KEY_TYPE = "type";
   private static final String KEY_SCHEMA_FLAGS = "schema";
   private static final String KEY_DOCS = "docs";
-  private static final String KEY_DOCS_AS_LONG = "docsAsLong";
   private static final String KEY_DISTINCT = "distinct";
   private static final String KEY_TOP_TERMS = "topTerms";
   private static final String KEY_DYNAMIC_BASE = "dynamicBase";
@@ -176,9 +176,12 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
 
-    if (params.getBool(DISTRIB, false)
-        && req.getCoreContainer().isZooKeeperAware()
-        && handleDistributed(req, rsp)) {
+    boolean isDistrib = params.getBool(DISTRIB, req.getCoreContainer().isZooKeeperAware());
+    if (!isDistrib) {
+      String shards = params.get(ShardParams.SHARDS);
+      isDistrib = shards != null && shards.indexOf('/') > 0;
+    }
+    if (isDistrib && handleDistributed(req, rsp)) {
       return;
     }
 
@@ -493,7 +496,11 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       fieldData = new AggregatedFieldData(shardAddr, fi);
       aggregatedFields.put(fieldName, fieldData);
 
-      // First shard to report this field: populate aggregated with schema-derived attrs
+      // First shard to report this field — populate response keys:
+      //   "type"        → field type name (e.g. "string", "text_general")
+      //   "schema"      → schema flags string (e.g. "I-S-M-----OF-----l")
+      //   "dynamicBase" → dynamic field glob if this is a dynamic field (e.g. "*_s")
+      //   "index"       → index-derived flags from the first shard that has them
       fieldData.aggregated.add(KEY_TYPE, fi.getType());
       fieldData.aggregated.add(KEY_SCHEMA_FLAGS, fi.getSchema());
       Object dynBase = fi.getExtras().get(KEY_DYNAMIC_BASE);
@@ -504,7 +511,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
         fieldData.aggregated.add(KEY_INDEX_FLAGS, fieldData.indexFlags);
       }
     } else {
-      // Subsequent shards: validate consistency
+      // Subsequent shards: validate that "type", "schema", and "dynamicBase" match
       validateFieldAttr(
           fieldName,
           KEY_TYPE,
@@ -545,10 +552,11 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    Long docsAsLong = fi.getDocsAsLong();
-    if (docsAsLong != null) {
+    // "docs" → sum of per-shard doc counts (number of documents containing this field)
+    Long docsLong = fi.getDocs();
+    if (docsLong != null) {
       fieldData.aggregated.compute(
-          KEY_DOCS_AS_LONG, (key, val) -> val == null ? docsAsLong : (Long) val + docsAsLong);
+          KEY_DOCS, (key, val) -> val == null ? docsLong : (Long) val + docsLong);
     }
   }
 
@@ -576,7 +584,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
               + currentStr
               + "' (from "
               + currentShardAddr
-              + ")";
+              + "). Use distrib=false to query individual shards and compare field configurations.";
       log.error(error);
       throw new SolrException(ErrorCode.SERVER_ERROR, error);
     }
@@ -836,7 +844,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
             }
           }
         }
-        fieldMap.add(KEY_DOCS, terms.getDocCount());
+        fieldMap.add(KEY_DOCS, (long) terms.getDocCount());
       }
       if (fields != null && (fields.contains(fieldName) || fields.contains("*"))) {
         getDetailedFieldInfo(req, fieldName, fieldMap);
