@@ -61,6 +61,7 @@ git add solr/licenses
   * inner classes becoming outer classes
 * codec changes (if any)
   * conceptually `s/org.apache.lucene.codecs.lucene10x.Lucene10x/org.apache.lucene.codecs.lucene104.Lucene104`
+  * if the Lucene codec version changed, add an entry in `solr/solr-ref-guide/modules/upgrade-notes/pages/major-changes-in-solr-10.adoc` noting the codec change and warning users that downgrading to a prior Solr version after this upgrade may require a full reindex
 
 ## Test
 
