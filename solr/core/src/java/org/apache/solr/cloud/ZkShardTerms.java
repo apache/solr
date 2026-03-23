@@ -61,8 +61,11 @@ import org.slf4j.LoggerFactory;
  *   <li>A replica sets its term equals to leader's term
  *   <li>The leader increase its term and some other replicas by 1
  *   <li>A subset of replicas can be set to a higher term than the leader, if the collection is in
- *       read-only mode. This ensures that the leader-increase command cannot occur at the same
- *       time.
+ *       read-only mode. <br>
+ *       This will initiate a leader-election. The read-only check ensures that updates cannot be
+ *       distributed while this term update is taking place. Therefore, there is no concern around
+ *       updates being handled by a replica that is no longer leader-eligible before that replica
+ *       gets the ZkShardTerms updates and realizes that it should give-up leadership.
  * </ul>
  *
  * This class should not be reused after {@link
