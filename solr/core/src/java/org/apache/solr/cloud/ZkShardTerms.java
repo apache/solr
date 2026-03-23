@@ -133,6 +133,7 @@ public class ZkShardTerms implements AutoCloseable {
    * eligible. This operation should only be used when indexes are being loaded into cores, and
    * therefore can only be done when a collection is in a read-only state.
    *
+   * @param collection the collection to ensure is read-only
    * @param mostUpToDateCores the set of cores that should be leader-eligible
    * @throws SolrServerException if the given collection is not in a read-only state
    */
