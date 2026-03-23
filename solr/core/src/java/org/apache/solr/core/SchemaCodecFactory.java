@@ -26,8 +26,8 @@ import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.KnnVectorsReader;
 import org.apache.lucene.codecs.KnnVectorsWriter;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene103.Lucene103Codec;
-import org.apache.lucene.codecs.lucene103.Lucene103Codec.Mode;
+import org.apache.lucene.codecs.lucene104.Lucene104Codec;
+import org.apache.lucene.codecs.lucene104.Lucene104Codec.Mode;
 import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -97,7 +97,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       log.debug("Using default compressionMode: {}", compressionMode);
     }
     codec =
-        new Lucene103Codec(compressionMode) {
+        new Lucene104Codec(compressionMode) {
           @Override
           public PostingsFormat getPostingsFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
