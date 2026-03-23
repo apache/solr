@@ -17,12 +17,14 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene102.Lucene102HnswBinaryQuantizedVectorsFormat;
+import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
+import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding;
 
 public class BinaryQuantizedDenseVectorField extends DenseVectorField {
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene102HnswBinaryQuantizedVectorsFormat(getHnswM(), getHnswEfConstruction());
+    return new Lucene104HnswScalarQuantizedVectorsFormat(
+        ScalarEncoding.SINGLE_BIT_QUERY_NIBBLE, getHnswM(), getHnswEfConstruction());
   }
 }

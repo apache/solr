@@ -284,3 +284,15 @@ Attention:
 
 * The `llm` module has been renamed to `language-models`.
 * The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
+
+== Solr 10.1
+
+=== Lucene Codec Change
+
+Solr 10.1 upgrades the underlying Lucene library from 10.3 to 10.4, which introduces a new index codec (`Lucene104`).
+New index segments will be written using the `Lucene104` codec format.
+Existing segments written with older codecs (e.g. `Lucene103`) will continue to be readable.
+
+WARNING: After upgrading to Solr 10.1, downgrading to an earlier Solr 10.0.x version may fail because the older version does not include the `Lucene104` codec needed to read the newly written segments.
+If you require the ability to roll back, back up your indexes before upgrading.
+A full reindex would be needed to downgrade after new segments have been written in Solr 10.1.

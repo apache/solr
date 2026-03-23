@@ -318,50 +318,10 @@ The number of bits to use for each quantized dimension value
 +
 Accepted values: 4 (half byte) or 7 (unsigned byte).
 
-`confidenceInterval`::
-+
-[%autowidth,frame=none]
-|===
-s|Optional |Default: `dimension-scaled`
-|===
-+
-Statistically, outlier values are rarely meaningfully relevant to searches, so to increase the size of each bucket for
-quantization (and therefore information gain) we can scale the quantization intervals to the middle n % of values and place the remaining
-outliers in the outermost intervals.
-+
-For example: 0.9 means scale interval sizes to the middle 90% of values
-+
-If this param is omitted a default is used; scaled to the number of dimensions according to `1-1/(vector_dimensions + 1)`
-+
-Accepted values: `FLOAT32`  (within 0.9 and 1.0)
-
-`dynamicConfidenceInterval`::
-+
-[%autowidth,frame=none]
-|===
-s|Optional |Default: `false`
-|===
-+
-If set to true, enables dynamically determining confidence interval (per dimension) by sampling values each time a merge occurs.
-+
-`NOTE: when this is enabled, it will take precedence over any value configured for confidenceInterval`
-+
-Accepted values: `BOOLEAN`
-
-`compress`::
-+
-[%autowidth,frame=none]
-|===
-s|Optional |Default: `false`
-|===
-+
-If set to true, this will further pack multiple dimension values within a one byte alignment. This further decreases the
-quantized vector disk storage size by 50% at some decode penalty. This does not affect the raw vector which is always
-preserved when `stored` is true.
-+
-`NOTE: this can only be enabled when bits=4`
-+
-Accepted values: `BOOLEAN`
+`NOTE:` Existing Solr 10 schemas may still contain legacy scalar-quantization parameters such as
+`confidenceInterval`, `dynamicConfidenceInterval`, or `compress`. They are deprecated (i.e. parsed and ignored but not used) for backward
+compatibility, but new schema definitions should use `bits` and the standard `DenseVectorField`
+parameters.
 
 === BinaryQuantizedDenseVectorField
 
