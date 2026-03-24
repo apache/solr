@@ -115,7 +115,7 @@ public class LukeResponse extends SolrResponseBase {
     String name;
     String type;
     String schema;
-    Long docs;
+    long docs;
     int distinct;
     EnumSet<FieldFlag> flags;
     boolean cacheableFaceting;
@@ -177,7 +177,7 @@ public class LukeResponse extends SolrResponseBase {
       return distinct;
     }
 
-    public Long getDocs() {
+    public long getDocs() {
       return docs;
     }
 

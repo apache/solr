@@ -125,7 +125,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     assertEquals(
         "aggregated docs count for 'name' should equal total docs",
         NUM_DOCS,
-        nameField.getDocs().longValue());
+        nameField.getDocs());
 
     LukeResponse.FieldInfo idField = fields.get("id");
     assertNotNull("'id' field should be present", idField);
@@ -256,7 +256,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     assertNotNull("'name' field should be present", nameField);
     assertNotNull("name type", nameField.getType());
     assertNotNull("name schema flags", nameField.getSchema());
-    assertEquals("name docs should be 1", 1, nameField.getDocs().longValue());
+    assertEquals("name docs should be 1", 1, nameField.getDocs());
 
     // Dynamic field — should have dynamicBase in extras
     LukeResponse.FieldInfo catField = fields.get("cat_s");

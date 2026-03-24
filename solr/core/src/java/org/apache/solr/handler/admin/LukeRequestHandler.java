@@ -30,7 +30,6 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -316,13 +315,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, Collections.emptyList());
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, List.of());
     shardHandler.prepDistributed(rb);
 
-    // When prepDistributed short-circuits (e.g. single-shard collection where this node
-    // hosts the shard), it returns early without populating rb.shards — caught by the null
-    // check. We check length == 0 rather than <= 1 because a single remote shard targeted
-    // via the shards param must still be fanned out to, not handled locally.
     String[] shards = rb.shards;
     if (shards == null || shards.length == 0) {
       return false;
