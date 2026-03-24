@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import org.apache.solr.common.cloud.SolrZkClient;
 
@@ -41,7 +41,7 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
     Objects.requireNonNull(configSetName, "configSetName can't be null");
 
     String lockPath = getLockPath(configSetName);
-    return doCreateLock(isWriteLock, lockPath, Collections.emptyList());
+    return doCreateLock(isWriteLock, lockPath, List.of());
   }
 
   /**

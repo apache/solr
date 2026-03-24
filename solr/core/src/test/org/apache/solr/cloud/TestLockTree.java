@@ -26,7 +26,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.SP
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -43,36 +42,26 @@ public class TestLockTree extends SolrTestCaseJ4 {
   public void testLocks() throws Exception {
     LockTree lockTree = new LockTree();
     Lock coll1Lock =
-        lockTree
-            .getSession()
-            .lock(CollectionAction.CREATE, Arrays.asList("coll1"), Collections.emptyList());
+        lockTree.getSession().lock(CollectionAction.CREATE, Arrays.asList("coll1"), List.of());
     assertNotNull(coll1Lock);
     assertNull(
         "Should not be able to lock coll1/shard1",
         lockTree
             .getSession()
             .lock(
-                CollectionAction.BALANCESHARDUNIQUE,
-                Arrays.asList("coll1", "shard1"),
-                Collections.emptyList()));
+                CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"), List.of()));
 
     coll1Lock.unlock();
     Lock shard1Lock =
         lockTree
             .getSession()
-            .lock(
-                CollectionAction.BALANCESHARDUNIQUE,
-                Arrays.asList("coll1", "shard1"),
-                Collections.emptyList());
+            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"), List.of());
     assertNotNull(shard1Lock);
     shard1Lock.unlock();
     Lock replica1Lock =
         lockTree
             .getSession()
-            .lock(
-                ADDREPLICAPROP,
-                Arrays.asList("coll1", "shard1", "core_node2"),
-                Collections.emptyList());
+            .lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2"), List.of());
     assertNotNull(replica1Lock);
 
     List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
@@ -95,8 +84,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
       List<Lock> locks = new CopyOnWriteArrayList<>();
       List<Thread> threads = new ArrayList<>();
       for (Pair<CollectionAction, List<String>> operation : operations) {
-        final Lock lock =
-            session.lock(operation.first(), operation.second(), Collections.emptyList());
+        final Lock lock = session.lock(operation.first(), operation.second(), List.of());
         if (lock != null) {
           Thread thread = new Thread(getRunnable(completedOps, operation, locks, lock));
           threads.add(thread);
@@ -125,17 +113,13 @@ public class TestLockTree extends SolrTestCaseJ4 {
   public void testCallingLockIdSubLocks() throws Exception {
     LockTree lockTree = new LockTree();
     Lock coll1Lock =
-        lockTree
-            .getSession()
-            .lock(CollectionAction.CREATE, List.of("coll1"), Collections.emptyList());
+        lockTree.getSession().lock(CollectionAction.CREATE, List.of("coll1"), List.of());
     assertNotNull(coll1Lock);
 
     // Test sub-locks at the same level
     assertNull(
         "Should not be able to lock coll1 without using a callingLockId",
-        lockTree
-            .getSession()
-            .lock(CollectionAction.RELOAD, List.of("coll1"), Collections.emptyList()));
+        lockTree.getSession().lock(CollectionAction.RELOAD, List.of("coll1"), List.of()));
     Lock coll1Lock2 =
         lockTree
             .getSession()
@@ -198,18 +182,12 @@ public class TestLockTree extends SolrTestCaseJ4 {
     Lock shard1Lock1 =
         lockTree
             .getSession()
-            .lock(
-                CollectionAction.INSTALLSHARDDATA,
-                List.of("coll1", "shard1"),
-                Collections.emptyList());
+            .lock(CollectionAction.INSTALLSHARDDATA, List.of("coll1", "shard1"), List.of());
     assertNotNull(shard1Lock1);
     Lock shard1Lock2 =
         lockTree
             .getSession()
-            .lock(
-                CollectionAction.INSTALLSHARDDATA,
-                List.of("coll2", "shard1"),
-                Collections.emptyList());
+            .lock(CollectionAction.INSTALLSHARDDATA, List.of("coll2", "shard1"), List.of());
     assertNotNull(shard1Lock2);
     assertNull(
         "Should not be able to lock coll1/shard1 since our callingLockId is coll2",
@@ -229,9 +207,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
     // Test difference at a higher level
     assertNull(
         "Should not be able to lock coll1 since we have no callingLockId and shard1 is already locked. Cannot move up",
-        lockTree
-            .getSession()
-            .lock(CollectionAction.RELOAD, List.of("coll1"), Collections.emptyList()));
+        lockTree.getSession().lock(CollectionAction.RELOAD, List.of("coll1"), List.of()));
     assertNull(
         "Should not be able to lock coll1 since our callingLockId is coll1/shard1. Cannot move up",
         lockTree
