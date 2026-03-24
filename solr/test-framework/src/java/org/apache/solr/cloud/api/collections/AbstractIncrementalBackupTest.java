@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -572,7 +573,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", (useUUID ? java.util.UUID.randomUUID().toString() : i));
+      doc.addField("id", (useUUID ? UUID.randomUUID().toString() : i));
       doc.addField("shard_s", "shard" + (1 + random.nextInt(NUM_SHARDS))); // for implicit router
       docs.add(doc);
     }

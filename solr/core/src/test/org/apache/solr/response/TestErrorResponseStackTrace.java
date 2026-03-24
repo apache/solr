@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -67,7 +66,7 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
                     + "  </requestHandler>\n"
                     + "</config>"));
 
-    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(configSet).create();
   }
 

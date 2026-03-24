@@ -142,7 +142,7 @@ public class PluginBag<T> implements AutoCloseable {
 
   /** Check if any of the mentioned names are missing. If yes, return the Set of missing names */
   public Set<String> checkContains(Collection<String> names) {
-    if (names == null || names.isEmpty()) return Collections.emptySet();
+    if (names == null || names.isEmpty()) return Set.of();
     HashSet<String> result = new HashSet<>();
     for (String s : names) if (!this.registry.containsKey(s)) result.add(s);
     return result;
@@ -202,7 +202,7 @@ public class PluginBag<T> implements AutoCloseable {
    * Fetches a plugin by name , or the default
    *
    * @param name name using which it is registered
-   * @param useDefault Return the default , if a plugin by that name does not exist
+   * @param useDefault Return the default, if a plugin by that name does not exist
    */
   public T get(String name, boolean useDefault) {
     T result = get(name);

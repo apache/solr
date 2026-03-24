@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -148,7 +149,8 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     } else {
       stream = new ContentStreamBase.ByteArrayStream(streamBytes, source, "text/csv");
     }
-    return (new SampleCSVLoader(new CSVRequest(params), maxDocsToLoad)).loadDocs(stream);
+    return (new SampleCSVLoader(new SolrQueryRequestBase(null, params), maxDocsToLoad))
+        .loadDocs(stream);
   }
 
   @SuppressWarnings("unchecked")
@@ -269,7 +271,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       final int event;
       try {
         event = parser.next();
-      } catch (java.util.NoSuchElementException noSuchElementException) {
+      } catch (NoSuchElementException noSuchElementException) {
         return docs;
       }
       switch (event) {
@@ -333,19 +335,13 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     }
   }
 
-  private static class CSVRequest extends SolrQueryRequestBase {
-    CSVRequest(SolrParams params) {
-      super(null, params);
-    }
-  }
-
   private static class SampleCSVLoader extends CSVLoaderBase {
     List<SolrInputDocument> docs = new ArrayList<>();
-    CSVRequest req;
+    SolrQueryRequestBase req;
     int maxDocsToLoad;
     String multiValueDelimiter;
 
-    SampleCSVLoader(CSVRequest req, int maxDocsToLoad) {
+    SampleCSVLoader(SolrQueryRequestBase req, int maxDocsToLoad) {
       super(req, new NoOpUpdateRequestProcessor());
       this.req = req;
       this.maxDocsToLoad = maxDocsToLoad;

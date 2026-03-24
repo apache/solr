@@ -80,8 +80,8 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -1556,7 +1556,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
     copyOverOldUpdatesCounter.inc();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
+    SolrQueryRequest req = new SolrQueryRequestBase(uhandler.core, new ModifiableSolrParams());
     TransactionLog.LogReader logReader = null;
     Object o = null;
     try {
@@ -1692,7 +1692,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         log.info("Recording current closed for {} log={}", uhandler.core, theLog);
         CommitUpdateCommand cmd =
             new CommitUpdateCommand(
-                new LocalSolrQueryRequest(
+                new SolrQueryRequestBase(
                     uhandler.core, new ModifiableSolrParams((SolrParams) null)),
                 false);
         theLog.writeCommit(cmd);
@@ -2124,7 +2124,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
-      req = new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+      req = new SolrQueryRequestBase(uhandler.core, BASE_REPLAY_PARAMS);
       rsp = new SolrQueryResponse();
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -2199,7 +2199,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 () -> {
                   // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
                   final var localRequest =
-                      new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+                      new SolrQueryRequestBase(uhandler.core, BASE_REPLAY_PARAMS);
                   var proc = processorChain.createProcessor(localRequest, rsp);
                   procPool.add(proc);
                   return proc;

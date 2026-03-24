@@ -229,8 +229,6 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   @Test
   public void getBaseUrl() {
     assertEquals("http://myserver/mypath", EVENT_WITH_URL.getBaseUrl());
-    // Deprecated
-    assertEquals("http://myserver/mypath", EVENT_WITH_URL.getRequestUrl().toString());
   }
 
   @Test

@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -234,8 +233,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
         assertEquals(String.valueOf(subject), String.valueOf(d.getFieldValue("subject")));
         assertEquals(String.valueOf(cat), String.valueOf(d.getFieldValue("cat")));
         assertEquals(
-            Objects.requireNonNullElse(d.getChildDocuments(), Collections.emptyList()).size(),
-            children.size());
+            Objects.requireNonNullElse(d.getChildDocuments(), List.of()).size(), children.size());
         @SuppressWarnings({"unchecked"})
         List<Long> l = (List<Long>) d.getFieldValue("longs");
         if (l != null) {

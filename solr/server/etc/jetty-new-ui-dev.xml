@@ -26,15 +26,24 @@
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-     <Ref refid="RewriteHandler">
-      <Call name="addRule">
-        <Arg>
-          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">/solr/ui/*</Set>
-            <Set name="headerName">Content-Security-Policy</Set>
-            <Set name="headerValue">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; worker-src 'self';</Set>
-          </New>
-        </Arg>
-      </Call>
-     </Ref>
+  <Ref refid="RewriteHandler">
+    <!-- SPA fallback: redirect all /solr/ui/* routes to index.html -->
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
+          <Set name="regex">^(/solr/ui/[^.?]*)(\?.*)?$</Set>
+          <Set name="replacement">/solr/ui/index.html</Set>
+        </New>
+      </Arg>
+    </Call>
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+          <Set name="pattern">/solr/ui/*</Set>
+          <Set name="headerName">Content-Security-Policy</Set>
+          <Set name="headerValue">default-src 'none'; base-uri 'none'; connect-src *; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; worker-src 'self';</Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
 </Configure>

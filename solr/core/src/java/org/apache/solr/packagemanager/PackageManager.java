@@ -250,15 +250,14 @@ public class PackageManager implements Closeable {
                       false) /* Making a collection request, but already baked into path */);
       packages =
           (Map<String, String>)
-              Objects.requireNonNullElse(
-                  result._get("/response/params/PKG_VERSIONS"), Collections.emptyMap());
+              Objects.requireNonNullElse(result._get("/response/params/PKG_VERSIONS"), Map.of());
     } catch (PathNotFoundException ex) {
       // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by
       // the package manager.
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
-    if (packages == null) return Collections.emptyMap();
+    if (packages == null) return Map.of();
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     for (String packageName : packages.keySet()) {
       if (!StrUtils.isNullOrEmpty(packageName)
@@ -289,7 +288,7 @@ public class PackageManager implements Closeable {
       Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
       if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
-        result = Collections.emptyMap();
+        result = Map.of();
       } else {
         result = response.asShallowMap();
       }
@@ -298,8 +297,7 @@ public class PackageManager implements Closeable {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> clusterPlugins =
-        (Map<String, Object>)
-            result.getOrDefault(ContainerPluginsApi.PLUGIN, Collections.emptyMap());
+        (Map<String, Object>) result.getOrDefault(ContainerPluginsApi.PLUGIN, Map.of());
     for (Map.Entry<String, Object> entry : clusterPlugins.entrySet()) {
       PluginMeta pluginMeta;
       try {
@@ -615,7 +613,7 @@ public class PackageManager implements Closeable {
           }
           if (clusterprops != null) {
             Object pkg =
-                ((Map<String, Object>) clusterprops.getOrDefault("plugin", Collections.emptyMap()))
+                ((Map<String, Object>) clusterprops.getOrDefault("plugin", Map.of()))
                     .get(packageInstance.name + ":" + plugin.name);
             if (pkg != null) {
               printRed(
@@ -737,12 +735,12 @@ public class PackageManager implements Closeable {
                       false) /* Making a collection-request, but already baked into path */);
       return (Map<String, String>)
           Objects.requireNonNullElse(
-              response._get("/response/params/packages/" + packageName), Collections.emptyMap());
+              response._get("/response/params/packages/" + packageName), Map.of());
 
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
       log.warn("There are no parameters to return for package: {}", packageName);
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 
@@ -997,14 +995,11 @@ public class PackageManager implements Closeable {
                     PackageUtils.resolve(
                         getMapper().writeValueAsString(cmd.payload),
                         deployedPackage.parameterDefaults,
-                        Collections.emptyMap(),
+                        Map.of(),
                         systemParams);
                 String path =
                     PackageUtils.resolve(
-                        cmd.path,
-                        deployedPackage.parameterDefaults,
-                        Collections.emptyMap(),
-                        systemParams);
+                        cmd.path, deployedPackage.parameterDefaults, Map.of(), systemParams);
                 printGreen("Executing " + payload + " for path:" + path);
                 SolrCLI.postJsonToSolr(solrClient, path, payload);
               } catch (Exception ex) {

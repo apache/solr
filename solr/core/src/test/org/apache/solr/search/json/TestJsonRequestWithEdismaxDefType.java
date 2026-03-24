@@ -32,7 +32,7 @@ public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseJ4 {
   @ClassRule public static final SolrClientTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   public void test() throws Exception {
-    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.startSolr();
 
     Path configSet = LuceneTestCase.createTempDir();
     SolrTestCaseJ4.copyMinConf(configSet);

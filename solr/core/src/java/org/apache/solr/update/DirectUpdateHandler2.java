@@ -58,8 +58,8 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.instruments.AttributedInstrumentFactory;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongUpDownCounter;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -1038,7 +1038,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     boolean clearRequestInfo = false;
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
     SolrQueryResponse rsp = new SolrQueryResponse();
     if (SolrRequestInfo.getRequestInfo() == null) {
       clearRequestInfo = true;

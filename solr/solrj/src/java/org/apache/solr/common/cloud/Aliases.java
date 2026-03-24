@@ -43,8 +43,7 @@ public class Aliases {
    * aliases are removed. The -1 version makes it subordinate to any real version, and furthermore
    * we never "set" this EMPTY instance into ZK.
    */
-  public static final Aliases EMPTY =
-      new Aliases(Collections.emptyMap(), Collections.emptyMap(), -1);
+  public static final Aliases EMPTY = new Aliases(Map.of(), Map.of(), -1);
 
   // These two constants correspond to the top level elements in aliases.json. The first one denotes
   // a section containing a list of aliases and their attendant collections, the second contains a
@@ -97,11 +96,11 @@ public class Aliases {
     Map<String, Map> aliasMap = (Map<String, Map>) Utils.fromJSON(bytes);
 
     @SuppressWarnings({"rawtypes"})
-    Map colAliases = aliasMap.getOrDefault(COLLECTION, Collections.emptyMap());
+    Map colAliases = aliasMap.getOrDefault(COLLECTION, Map.of());
     colAliases = convertMapOfCommaDelimitedToMapOfList(colAliases); // also unmodifiable
 
     Map<String, Map<String, String>> colMeta =
-        aliasMap.getOrDefault(COLLECTION_METADATA, Collections.emptyMap());
+        new LinkedHashMap<>(aliasMap.getOrDefault(COLLECTION_METADATA, Map.of()));
     colMeta.replaceAll((k, metaMap) -> Collections.unmodifiableMap(metaMap));
 
     return new Aliases(colAliases, colMeta, zNodeVersion);
@@ -190,7 +189,7 @@ public class Aliases {
    */
   public Map<String, String> getCollectionAliasProperties(String alias) {
     // Note: map is already unmodifiable; it can be shared safely
-    return collectionAliasProperties.getOrDefault(alias, Collections.emptyMap());
+    return collectionAliasProperties.getOrDefault(alias, Map.of());
   }
 
   /**
@@ -460,7 +459,7 @@ public class Aliases {
     Map<String, Map<String, String>> newColProperties =
         new LinkedHashMap<>(this.collectionAliasProperties); // clone to modify
     Map<String, String> newMetaMap =
-        new LinkedHashMap<>(newColProperties.getOrDefault(alias, Collections.emptyMap()));
+        new LinkedHashMap<>(newColProperties.getOrDefault(alias, Map.of()));
     for (Map.Entry<String, String> metaEntry : properties.entrySet()) {
       if (metaEntry.getValue() != null) {
         newMetaMap.put(metaEntry.getKey(), metaEntry.getValue());

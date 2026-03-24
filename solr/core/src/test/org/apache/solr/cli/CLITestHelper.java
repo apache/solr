@@ -108,6 +108,7 @@ public class CLITestHelper {
       }
 
       printer.flush();
+      assert writer != null;
       writer.getBuffer().setLength(0);
     }
 
@@ -117,6 +118,7 @@ public class CLITestHelper {
       }
 
       printer.flush();
+      assert writer != null;
       return writer.toString();
     }
 
@@ -125,6 +127,7 @@ public class CLITestHelper {
         fail("TestingRuntime was created without capturing output");
       }
 
+      assert writer != null;
       return new StringReader(writer.toString());
     }
 

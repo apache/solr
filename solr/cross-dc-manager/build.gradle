@@ -24,14 +24,18 @@ description = 'Cross-DC Manager'
 
 dependencies {
   implementation platform(project(':platform'))
+  implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
   implementation project(':solr:modules:cross-dc')
+  implementation project(':solr:modules:opentelemetry')
 
-  implementation libs.dropwizard.metrics.core
-  implementation libs.dropwizard.metrics.servlets
+  implementation platform(libs.opentelemetry.bom)
+  implementation libs.opentelemetry.api
+  implementation libs.opentelemetry.sdk.metrics
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
+  implementation libs.jakarta.servlet.api
   implementation libs.slf4j.api
   runtimeOnly libs.google.protobuf.javautils
   runtimeOnly libs.commonscodec.commonscodec
@@ -49,6 +53,7 @@ dependencies {
   testImplementation project(':solr:solrj-jetty')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.commonsio.commonsio
   testImplementation libs.junit.junit
   // The explicit dependency on bytebuddy is required for Java 25 support
   // Once Mockito upgrades its dependency on ByteBuddy to 1.16.1, we should

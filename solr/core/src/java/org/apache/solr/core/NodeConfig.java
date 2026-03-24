@@ -22,7 +22,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -187,7 +186,7 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
-    this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
+    this.cachesConfig = cachesConfig == null ? Map.of() : cachesConfig;
     this.tracerConfig = tracerConfig;
     this.clusterPlugins = clusterPlugins;
     this.defaultZkHost = defaultZkHost;
@@ -581,7 +580,7 @@ public class NodeConfig {
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
-    private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
+    private Map<String, String> coreAdminHandlerActions = Map.of();
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
     private String healthCheckHandlerClass = DEFAULT_HEALTHCHECKHANDLERCLASS;
     private String infoHandlerClass = DEFAULT_INFOHANDLERCLASS;
@@ -599,8 +598,8 @@ public class NodeConfig {
     private PluginInfo tracerConfig;
     private PluginInfo[] clusterPlugins;
     private String defaultZkHost;
-    private Set<Path> allowPaths = Collections.emptySet();
-    private List<String> allowUrls = Collections.emptyList();
+    private Set<Path> allowPaths = Set.of();
+    private List<String> allowUrls = List.of();
     private boolean hideStackTrace =
         !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
@@ -845,7 +844,7 @@ public class NodeConfig {
           hiddenSysProps = fromProps;
         }
       }
-      Set<String> hiddenSysPropSet = Collections.emptySet();
+      Set<String> hiddenSysPropSet = Set.of();
       if (hiddenSysProps != null) {
         hiddenSysPropSet =
             StrUtils.splitSmart(hiddenSysProps, ',').stream()

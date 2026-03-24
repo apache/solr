@@ -18,6 +18,7 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
 
@@ -320,6 +321,19 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     if (path == null) {
       path = "";
     }
+
+    // Ensure 'getFrom' points to a node in this cluster
+    final var zkStateReader = coreContainer.getZkController().getZkStateReader();
+    if (StrUtils.isNotBlank(getFrom)
+        && !getFrom.equals("*")
+        && !zkStateReader.isNodeLive(getFrom)) {
+      throw new SolrException(
+          BAD_REQUEST,
+          "File store cannot fetch from source node ["
+              + getFrom
+              + "] as it does not appear in live-nodes");
+    }
+
     pullFileFromNode(coreContainer, fileStore, path, getFrom);
     return response;
   }
