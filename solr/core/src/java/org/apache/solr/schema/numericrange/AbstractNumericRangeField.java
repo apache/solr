@@ -84,11 +84,12 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
       Pattern.compile("^" + COMMA_DELIMITED_NUMS + "$");
 
   /**
-   * Regex fragment matching a comma-separated list of signed floating-point numbers (integers or
-   * floating-point literals).
+   * Regex fragment matching a comma-separated list of signed floating-point numbers (integers,
+   * floating-point literals, or values in scientific notation such as {@code 1.2e3} or {@code
+   * -4.5E-6}).
    */
   protected static final String COMMA_DELIMITED_FP_NUMS =
-      "-?\\d+(?:\\.\\d+)?(?:\\s*,\\s*-?\\d+(?:\\.\\d+)?)*";
+      "-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?(?:\\s*,\\s*-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)*";
 
   private static final String FP_RANGE_PATTERN_STR =
       "\\[\\s*(" + COMMA_DELIMITED_FP_NUMS + ")\\s+TO\\s+(" + COMMA_DELIMITED_FP_NUMS + ")\\s*\\]";

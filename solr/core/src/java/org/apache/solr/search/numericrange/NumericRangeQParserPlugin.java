@@ -75,9 +75,8 @@ import org.apache.solr.search.SyntaxError;
  * {!numericRange criteria="intersects" field=float_range}[1.0 TO 2.5]
  * {!numericRange criteria="within" field=float_range}[0.0 TO 9.99]
  *
- * // Multi-dimensional queries (bounding boxes, cubes, tesseracts)
- * {!numericRange criteria="intersects" field=bbox}[0,0 TO 10,10]
- * {!numericRange criteria="within" field=bbox}[-10,-10 TO 20,20]
+ * // Multi-dimensional queries (2D, 3D, 4D)
+ * {!numericRange criteria="within" field=bounding_cube}[-10,-10,-4 TO 20,20,18]
  * </pre>
  *
  * @see IntRangeField

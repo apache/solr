@@ -319,6 +319,47 @@ public class FloatRangeFieldTest extends SolrTestCase {
     assertEquals("[1.0,2.0 TO 3.0,4.0]", str);
   }
 
+  public void testScientificNotation() {
+    FloatRangeField fieldType = createFieldType(1);
+
+    // Integer mantissa with positive exponent
+    FloatRangeField.RangeValue range = fieldType.parseRangeValue("[123e4 TO 567e8]");
+    assertEquals(123e4f, range.mins[0], 0.0f);
+    assertEquals(567e8f, range.maxs[0], 0.0f);
+
+    // Decimal mantissa with negative exponent
+    range = fieldType.parseRangeValue("[-1.2e-4 TO 3.4e-2]");
+    assertEquals(-1.2e-4f, range.mins[0], 0.0f);
+    assertEquals(3.4e-2f, range.maxs[0], 0.0f);
+
+    // Uppercase E
+    range = fieldType.parseRangeValue("[1.5E3 TO 2.5E3]");
+    assertEquals(1.5e3f, range.mins[0], 0.0f);
+    assertEquals(2.5e3f, range.maxs[0], 0.0f);
+
+    // Explicit positive exponent sign
+    range = fieldType.parseRangeValue("[1.0e+2 TO 9.9e+2]");
+    assertEquals(1.0e+2f, range.mins[0], 0.0f);
+    assertEquals(9.9e+2f, range.maxs[0], 0.0f);
+
+    // Negative mantissa with negative exponent
+    range = fieldType.parseRangeValue("[-9.9E-9 TO -1.1E-9]");
+    assertEquals(-9.9e-9f, range.mins[0], 0.0f);
+    assertEquals(-1.1e-9f, range.maxs[0], 0.0f);
+
+    // Multi-dimensional with scientific notation
+    FloatRangeField fieldType2D = createFieldType(2);
+    range = fieldType2D.parseRangeValue("[1e2,2.0e1 TO 3e2,4.0e1]");
+    assertEquals(1e2f, range.mins[0], 0.0f);
+    assertEquals(2.0e1f, range.mins[1], 0.0f);
+    assertEquals(3e2f, range.maxs[0], 0.0f);
+    assertEquals(4.0e1f, range.maxs[1], 0.0f);
+
+    // Single-bound scientific notation via toInternal
+    String val = "[1.2e3 TO 4.5e3]";
+    assertEquals(val, fieldType.toInternal(val));
+  }
+
   public void testExtremeValues() {
     FloatRangeField fieldType = createFieldType(1);
 
