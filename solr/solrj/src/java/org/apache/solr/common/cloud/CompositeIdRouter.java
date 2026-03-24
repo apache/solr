@@ -276,7 +276,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     int max = range.max;
 
     assert max >= min;
-    if (partitions == 0) return Collections.emptyList();
+    if (partitions == 0) return List.of();
     long rangeSize = (long) max - (long) min;
     long rangeStep = Math.max(1, rangeSize / partitions);
 

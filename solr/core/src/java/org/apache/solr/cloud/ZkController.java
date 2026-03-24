@@ -1297,6 +1297,9 @@ public class ZkController implements Closeable {
             });
   }
 
+  /**
+   * @return the "live node" name of this Solr process, in the form "${host}:${port}_solr"
+   */
   public String getNodeName() {
     return nodeName;
   }

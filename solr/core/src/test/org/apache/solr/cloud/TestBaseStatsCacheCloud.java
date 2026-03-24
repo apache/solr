@@ -21,13 +21,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -132,7 +133,6 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
         var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-        req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
         NamedList<Object> resp = client.request(req);
         try (InputStream in = (InputStream) resp.get("stream")) {
@@ -231,8 +231,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
    * "solr_core_indexsearcher_termstats_cache{...type="lookups",...}" -> "lookups"
    */
   private String extractTypeAttribute(String line) {
-    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\btype=\"([^\"]+)\"");
-    java.util.regex.Matcher matcher = pattern.matcher(line);
+    Pattern pattern = Pattern.compile("\\btype=\"([^\"]+)\"");
+    Matcher matcher = pattern.matcher(line);
     if (matcher.find()) {
       return matcher.group(1);
     }

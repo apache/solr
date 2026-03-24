@@ -48,11 +48,14 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -219,11 +222,13 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     }
 
     private TupleStream createCloudSolrStream(SolrClientCache solrClientCache) throws IOException {
+      ZkController zkController = searcher.getCore().getCoreContainer().getZkController();
+
       String streamZkHost;
       if (zkHost != null) {
         streamZkHost = zkHost;
       } else {
-        streamZkHost = searcher.getCore().getCoreContainer().getZkController().getZkServerAddress();
+        streamZkHost = zkController.getZkServerAddress();
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams(otherParams);
@@ -239,6 +244,21 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
+      streamContext.setRequestParams(new ModifiableSolrParams(otherParams));
+      if (zkController != null) {
+        RequestReplicaListTransformerGenerator rltg =
+            new RequestReplicaListTransformerGenerator(
+                zkController
+                    .getZkStateReader()
+                    .getClusterProperties()
+                    .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+                    .toString(),
+                zkController.getNodeName(),
+                zkController.getBaseUrl(),
+                zkController.getHostName(),
+                zkController.getSysPropsCacher());
+        streamContext.setRequestReplicaListTransformerGenerator(rltg);
+      }
 
       TupleStream cloudSolrStream = new CloudSolrStream(streamZkHost, collection, params);
       TupleStream uniqueStream = new UniqueStream(cloudSolrStream, new FieldEqualitor(fromField));

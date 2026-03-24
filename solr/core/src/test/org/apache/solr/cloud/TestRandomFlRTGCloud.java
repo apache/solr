@@ -1416,7 +1416,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         final SolrDocument actual,
         final String wt) {
       assertNull(fl, actual.getFirstValue(fieldName));
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 

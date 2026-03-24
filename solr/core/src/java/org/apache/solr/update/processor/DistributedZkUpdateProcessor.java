@@ -554,19 +554,19 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         Replica leaderReplica =
             zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
         // DBQ forwarded to NRT and TLOG replicas
-        List<Replica> replicaProps =
+        List<Replica> foundReplicas =
             zkController
                 .getZkStateReader()
-                .getReplicaProps(
+                .getReplicas(
                     collection,
                     myShardId,
                     leaderReplica.getName(),
                     null,
                     Replica.State.DOWN,
                     EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-        if (replicaProps != null) {
-          final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(replicaProps.size());
-          for (Replica replica : replicaProps) {
+        if (foundReplicas != null) {
+          final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(foundReplicas.size());
+          for (Replica replica : foundReplicas) {
             myReplicas.add(new SolrCmdDistributor.StdNode(replica, collection, myShardId));
           }
           cmdDistrib.distribDelete(
@@ -631,7 +631,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       List<Replica> replicas =
           zkController
               .getZkStateReader()
-              .getReplicaProps(
+              .getReplicas(
                   collection,
                   shardId,
                   leaderReplica.getName(),
@@ -1282,7 +1282,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         List<Replica> myReplicas =
             zkController
                 .getZkStateReader()
-                .getReplicaProps(collection, cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
+                .getReplicas(collection, cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
         boolean foundErrorNodeInReplicaList = false;
         if (myReplicas != null) {
           for (Replica replica : myReplicas) {

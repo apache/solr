@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -277,7 +276,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
           }
         }
       }
-      return Collections.emptyList();
+      return List.of();
     }
 
     /**

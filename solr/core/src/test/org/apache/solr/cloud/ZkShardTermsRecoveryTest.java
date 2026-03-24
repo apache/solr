@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.in;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -52,8 +53,8 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .getStatus());
     cluster.waitForActiveCollection(COLLECTION, 10, TimeUnit.SECONDS, 2, NUM_SHARDS * NUM_REPLICAS);
-
     UpdateRequest up = new UpdateRequest();
+
     for (int i = 0; i < 200; i++) {
       up.add("id", "id-" + i);
     }
@@ -62,7 +63,9 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
   }
 
   @Before
-  public void waitForActiveState() {
+  public void waitForActiveState() throws Exception {
+    CollectionAdminRequest.modifyCollection(COLLECTION, Map.of("readOnly", false))
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 10, TimeUnit.SECONDS, 2, NUM_SHARDS * NUM_REPLICAS);
   }
 
@@ -77,41 +80,32 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       }
       up.process(cluster.getSolrClient(), COLLECTION);
       NUM_DOCS += 1000;
+      if (random().nextBoolean()) {
+        cluster.getSolrClient().commit(COLLECTION);
+      }
     }
+    CollectionAdminRequest.modifyCollection(COLLECTION, Map.of("readOnly", true))
+        .process(cluster.getSolrClient());
 
     DocCollection docCollection = cluster.getZkStateReader().getCollection(COLLECTION);
     JettySolrRunner jetty = cluster.getRandomJetty(random());
 
-    Slice shard1 = docCollection.getSlice(shard);
-    Replica leader = shard1.getLeader();
-    Replica replica = shard1.getReplicas(r -> !r.isLeader()).getFirst();
+    Slice shard2 = docCollection.getSlice(shard);
+    Replica leader = shard2.getLeader();
+    Replica replica = shard2.getReplicas(r -> !r.isLeader()).getFirst();
     List<Replica> recoveryReplicas =
-        shard1.getReplicas(
+        shard2.getReplicas(
             r -> r.getType().leaderEligible && !(r.equals(leader) || r.equals(replica)));
 
     ZkShardTerms shardTerms =
         jetty.getCoreContainer().getZkController().getShardTerms(COLLECTION, shard);
     // Increase the leader and another replica's shardTerms
-    shardTerms.ensureHighestTerms(Set.of(leader.getName(), replica.getName()));
-
-    waitForState(
-        "Waiting for replicas to go into recovery",
-        COLLECTION,
-        5,
-        TimeUnit.SECONDS,
-        state -> {
-          Slice shardState = state.getSlice(shard);
-          for (Replica r : recoveryReplicas) {
-            if (shardState.getReplica(r.name).getState() != Replica.State.RECOVERING) {
-              return false;
-            }
-          }
-          return true;
-        });
-    shardTerms.refreshTerms();
+    shardTerms.ensureHighestTerms(docCollection, Set.of(leader.getName(), replica.getName()));
+    ShardTerms shardTermsSnapshot = shardTerms.getShardTerms();
     for (Replica r : recoveryReplicas) {
-      assertTrue(shardTerms.isRecovering(r.getName()));
+      assertFalse(shardTermsSnapshot.canBecomeLeader(r.getName()));
     }
+    waitForReplicasToGoIntoRecovery(shard, recoveryReplicas);
 
     // Recovery should succeed relatively quickly
     cluster.waitForActiveCollection(COLLECTION, 5, TimeUnit.SECONDS, 2, NUM_SHARDS * NUM_REPLICAS);
@@ -122,8 +116,7 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       assertEquals(maxTerm, shardTerms.getTerm(r.getName()));
     }
 
-    new UpdateRequest().commit(cluster.getSolrClient(), COLLECTION);
-    waitForNumDocsInAllReplicas(NUM_DOCS, shard1.getReplicas(), "*:*");
+    waitForNumDocsInAllReplicas(NUM_DOCS, shard2.getReplicas(), "*:*");
   }
 
   @Test
@@ -137,13 +130,19 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       }
       up.process(cluster.getSolrClient(), COLLECTION);
       NUM_DOCS += 1000;
+      if (random().nextBoolean()) {
+        cluster.getSolrClient().commit(COLLECTION);
+      }
     }
+    CollectionAdminRequest.modifyCollection(COLLECTION, Map.of("readOnly", true))
+        .process(cluster.getSolrClient());
 
     DocCollection docCollection = cluster.getZkStateReader().getCollection(COLLECTION);
     JettySolrRunner jetty = cluster.getRandomJetty(random());
 
     // Increase the leader and another replica's shardTerms
     Slice shard1 = docCollection.getSlice(shard);
+    Replica leader = shard1.getLeader();
     Set<String> replicasToSetHighest =
         shard1.getReplicas(r -> !r.isLeader()).subList(1, 3).stream()
             .map(Replica::getName)
@@ -152,24 +151,17 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
         shard1.getReplicas(r -> !replicasToSetHighest.contains(r.getName()));
     ZkShardTerms shardTerms =
         jetty.getCoreContainer().getZkController().getShardTerms(COLLECTION, shard);
-    shardTerms.ensureHighestTerms(replicasToSetHighest);
-    waitForState(
-        "Wait for leadership to be given up", COLLECTION, dc -> dc.getLeader(shard) == null);
-    waitForState(
-        "Waiting for replicas to go into recovery",
-        COLLECTION,
-        5,
-        TimeUnit.SECONDS,
-        state -> {
-          Slice shardState = state.getSlice(shard);
-          for (Replica r : recoveryReplicas) {
-            if (shardState.getReplica(r.name).getState() != Replica.State.RECOVERING) {
-              return false;
-            }
-          }
-          return true;
-        });
-    waitForState("Wait for leadership to be taken", COLLECTION, dc -> dc.getLeader(shard) != null);
+    shardTerms.ensureHighestTerms(docCollection, replicasToSetHighest);
+    ShardTerms shardTermsSnapshot = shardTerms.getShardTerms();
+    for (Replica r : recoveryReplicas) {
+      assertFalse(shardTermsSnapshot.canBecomeLeader(r.getName()));
+    }
+
+    waitForReplicasToGoIntoRecovery(shard, recoveryReplicas);
+    Replica newLeader = getCollectionState(COLLECTION).getLeader(shard);
+    assertNotNull(newLeader);
+    assertNotEquals(newLeader, leader);
+
     cluster.waitForActiveCollection(COLLECTION, 5, TimeUnit.SECONDS, 2, NUM_SHARDS * NUM_REPLICAS);
     // Make sure that a leader election took place
     assertThat(
@@ -182,7 +174,6 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       assertEquals(maxTerm, shardTerms.getTerm(r.getName()));
     }
 
-    new UpdateRequest().commit(cluster.getSolrClient(), COLLECTION);
     waitForNumDocsInAllReplicas(NUM_DOCS, shard1.getReplicas(), "*:*");
   }
 
@@ -199,5 +190,25 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
             replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
       }
     }
+  }
+
+  private void waitForReplicasToGoIntoRecovery(String shard, Collection<Replica> recoveryReplicas) {
+    Set<String> remainingReplicasToRecover =
+        recoveryReplicas.stream().map(Replica::getName).collect(Collectors.toSet());
+
+    waitForState(
+        "Waiting for replicas to go into recovery",
+        COLLECTION,
+        5,
+        TimeUnit.SECONDS,
+        state -> {
+          Slice shardState = state.getSlice(shard);
+          for (Replica r : recoveryReplicas) {
+            if (shardState.getReplica(r.getName()).getState() == Replica.State.RECOVERING) {
+              remainingReplicasToRecover.remove(r.getName());
+            }
+          }
+          return remainingReplicasToRecover.isEmpty();
+        });
   }
 }

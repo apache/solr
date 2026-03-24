@@ -151,6 +151,7 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
           .forEach(replicasToStartRecovery::add);
       log.info("Putting the unsuccessful replicas into recovery: {}", replicasToStartRecovery);
       shardTerms.ensureHighestTerms(
+          installCollection,
           successfulReplicas.stream().map(Replica::getName).collect(Collectors.toSet()));
       ccc.getZkStateReader()
           .waitForState(

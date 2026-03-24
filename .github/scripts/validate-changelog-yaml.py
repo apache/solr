@@ -30,6 +30,7 @@ Checks:
 - Each author has a 'name' field (non-empty string)
 - Contains either 'links' or 'issues' field (or both)
 - If 'issues' is present, it must be an integer not exceeding 17000
+- Comment block is removed
 """
 
 import sys
@@ -41,10 +42,12 @@ def validate_changelog_yaml(file_path):
     valid_types = ['added', 'changed', 'fixed', 'deprecated', 'removed', 'dependency_update', 'security', 'other']
     valid_keys = ['title', 'type', 'issues', 'links', 'important_notes', 'modules', 'authors']
     deprecated_keys = ['merge_requests', 'configurations']
+    not_allowed_text = ['DELETE ALL COMMENTS UP HERE', 'Most such changes are too small']
 
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = yaml.safe_load(f)
+            raw_content = f.read()
+            data = yaml.safe_load(raw_content)
 
         # Check if file contains a mapping (dictionary)
         if not isinstance(data, dict):
@@ -118,6 +121,12 @@ def validate_changelog_yaml(file_path):
                 return False
             if data['issues'] > 17000:
                 print(f"::error file={file_path}::Field 'issues' value {data['issues']} points to a non-existing github PR. Did you intend to reference a JIRA issue, please use 'links'.")
+                return False
+
+        # Validate that comments are removed
+        for not_allowed in not_allowed_text:
+            if not_allowed in raw_content:
+                print(f"::error file={file_path}::File still contains commented template text. Please remove the comment block at the top of the file.")
                 return False
 
         # All validations passed

@@ -238,7 +238,7 @@ public class CollectionHandlingUtils {
           parentShardLeader.getName(),
           updateResponse,
           slice,
-          Collections.emptySet(),
+          Set.of(),
           null);
     } catch (Exception e) {
       CollectionHandlingUtils.processResponse(
@@ -248,7 +248,7 @@ public class CollectionHandlingUtils {
           parentShardLeader.getCoreName(),
           updateResponse,
           slice,
-          Collections.emptySet(),
+          Set.of(),
           null);
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -757,7 +757,7 @@ public class CollectionHandlingUtils {
         ShardHandler shardHandler,
         boolean abortOnError,
         String msgOnError) {
-      processResponses(results, shardHandler, abortOnError, msgOnError, Collections.emptySet());
+      processResponses(results, shardHandler, abortOnError, msgOnError, Set.of());
     }
 
     void processResponses(

@@ -1275,13 +1275,13 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // some tidbits for handling zk data here are swiped from Aliases.json
     Map<String, Map> aliasMap;
     if (data == null || data.length == 0) {
-      aliasMap = Collections.emptyMap();
+      aliasMap = Map.of();
     } else {
       aliasMap = (Map<String, Map>) Utils.fromJSON(data);
     }
     assertNotEquals(0, aliasMap.size());
 
-    Map colAliases = aliasMap.getOrDefault("collection", Collections.emptyMap());
+    Map colAliases = aliasMap.getOrDefault("collection", Map.of());
     assertNotEquals(0, colAliases.size());
 
     String singleInitialCollection = (String) colAliases.get(alias);

@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -117,16 +116,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
   private Enumerable<Object> query(final Properties properties) {
     return query(
-        properties,
-        Collections.emptyList(),
-        null,
-        Collections.emptyList(),
-        Collections.emptyList(),
-        Collections.emptyList(),
-        null,
-        null,
-        null,
-        null);
+        properties, List.of(), null, List.of(), List.of(), List.of(), null, null, null, null);
   }
 
   /**

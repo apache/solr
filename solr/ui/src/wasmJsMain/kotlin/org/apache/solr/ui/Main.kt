@@ -27,6 +27,7 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import io.ktor.http.Url
+import kotlin.js.unsafeCast
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,7 @@ import org.apache.solr.ui.utils.DefaultAppComponentContext
 import org.apache.solr.ui.utils.getDefaultClient
 import org.apache.solr.ui.views.root.RootContent
 import org.apache.solr.ui.views.theme.SolrTheme
+import org.w3c.dom.Window
 
 /**
  * Entry point of the Compose application for all wasmJs (browser) targets.
@@ -54,6 +56,17 @@ fun main() {
 
     val url = Url(window.location.href)
     val destination = url.parameters["dest"]
+
+    // TODO Extend the path and query params analysis for deep links and page reloads
+    if (url.rawSegments.last() == "callback") {
+        // This is a callback request from an authentication attempt,
+        // notify other tab of same origin and close window.
+        // Note that this is a simple way to handle deep links for OAuth callbacks
+        window.opener?.unsafeCast<Window>()
+            ?.postMessage(window.location.search.toJsString(), window.location.origin)
+        window.close()
+        return
+    }
 
     // TODO Set default request url to values from window location
     val httpClient = getDefaultClient()

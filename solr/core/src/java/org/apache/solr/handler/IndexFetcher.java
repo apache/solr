@@ -117,8 +117,8 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -381,7 +381,7 @@ public class IndexFetcher {
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
       else {
-        filesToDownload = Collections.emptyList();
+        filesToDownload = List.of();
         log.error("No files to download for index generation: {}", gen);
       }
 
@@ -540,7 +540,7 @@ public class IndexFetcher {
           if (skipCommitOnLeaderVersionZero || solrCore.readOnly) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
-            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+            SolrQueryRequest req = new SolrQueryRequestBase(solrCore, new ModifiableSolrParams());
             solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
           }
         }
@@ -1462,7 +1462,7 @@ public class IndexFetcher {
       return Files.walk(dir).filter(Files::isRegularFile).collect(Collectors.toList());
     } catch (IOException e) {
       log.warn("Could not walk file tree", e);
-      return Collections.emptyList();
+      return List.of();
     }
   }
 
@@ -1521,8 +1521,7 @@ public class IndexFetcher {
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(
       List<Map<String, Object>> confFilesToDownload) {
-    if (confFilesToDownload == null || confFilesToDownload.isEmpty())
-      return Collections.emptyList();
+    if (confFilesToDownload == null || confFilesToDownload.isEmpty()) return List.of();
     // build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
     NamedList<String> names = new NamedList<>();
@@ -1544,7 +1543,7 @@ public class IndexFetcher {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }
-    return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
+    return nameVsFile.isEmpty() ? List.of() : nameVsFile.values();
   }
 
   static boolean delTree(Path dir) {
@@ -1589,25 +1588,25 @@ public class IndexFetcher {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     // create a new instance. or else iterator may fail
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesDownloaded() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesToDownload() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   // TODO: currently does not reflect conf files
