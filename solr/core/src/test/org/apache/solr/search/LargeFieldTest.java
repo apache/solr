@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -70,7 +71,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
             Arrays.asList(
                 schema.newField(LAZY_FIELD, "textType", map()),
                 schema.newField(BIG_FIELD, "textType", map("large", true))),
-            Collections.emptyMap(),
+            Map.of(),
             PERSIST_FALSE);
 
     h.getCore().setLatestSchema(schema);

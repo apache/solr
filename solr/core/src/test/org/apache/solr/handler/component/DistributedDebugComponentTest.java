@@ -59,7 +59,7 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
     systemSetPropertyEnableUrlAllowList(false);
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    solrTestRule.startSolr(createTempDir());
+    solrTestRule.startSolr();
 
     solrTestRule
         .newCollection("collection1")

@@ -69,7 +69,7 @@ public class TestPackageManager extends SolrCloudTestCase {
                 "1.0",
                 new SolrPackage.Manifest(),
                 Collections.singletonList(plugin),
-                Collections.emptyMap()),
+                Map.of()),
             Collections.singletonList(COLLECTION_NAME),
             plugin.type.equals("cluster"),
             new String[0]);
@@ -91,7 +91,7 @@ public class TestPackageManager extends SolrCloudTestCase {
 
     @Override
     Map<String, String> getPackageParams(String packageName, String collection) {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 }

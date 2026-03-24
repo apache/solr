@@ -584,9 +584,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       schema =
           (ManagedIndexSchema)
               schema.addField(
-                  schema.newField(
-                      NEST_PATH_FIELD_NAME, NEST_PATH_FIELD_NAME, Collections.emptyMap()),
-                  false);
+                  schema.newField(NEST_PATH_FIELD_NAME, NEST_PATH_FIELD_NAME, Map.of()), false);
       madeChanges = true;
     }
 

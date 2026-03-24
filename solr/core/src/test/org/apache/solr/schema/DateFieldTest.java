@@ -17,8 +17,8 @@
 package org.apache.solr.schema;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
@@ -37,7 +37,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     IndexSchema schema =
         IndexSchemaFactory.buildIndexSchema(testConfHome.resolve("schema.xml").toString(), config);
     f = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) ? new DatePointField() : new TrieDateField();
-    f.init(schema, Collections.<String, String>emptyMap());
+    f.init(schema, new HashMap<String, String>());
   }
 
   // NOTE: Many other tests were moved to DateMathParserTest

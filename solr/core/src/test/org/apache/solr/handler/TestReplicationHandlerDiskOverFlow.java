@@ -25,7 +25,6 @@ import static org.apache.solr.handler.TestReplicationHandler.createAndStartJetty
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
@@ -213,10 +212,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
     assertEquals("Replication command status", "OK", response._getStr("status"));
 
-    assertEquals(
-        "threads encountered failures (see logs for when)",
-        Collections.emptyList(),
-        threadFailures);
+    assertEquals("threads encountered failures (see logs for when)", List.of(), threadFailures);
 
     response = followerClient.query(new SolrQuery().setQuery("*:*").setRows(0));
     assertEquals("docs in follower", docsInLeader, response.getResults().getNumFound());

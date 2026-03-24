@@ -51,11 +51,8 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP,
         ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
-    solrTestRule.startSolr(createTempDir());
-    solrTestRule
-        .newCollection("collection1")
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   static final int numdocs = 1000;

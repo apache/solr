@@ -258,9 +258,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
           @Override
           protected Map<String, JsonSchemaValidator> getValidators() {
-            return currentApi[0] == null
-                ? Collections.emptyMap()
-                : currentApi[0].getCommandSchema();
+            return currentApi[0] == null ? Map.of() : currentApi[0].getCommandSchema();
           }
 
           @Override
@@ -307,7 +305,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         new SolrQueryRequestBase(null, SolrParams.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            return Collections.emptyList();
+            return List.of();
           }
         };
 

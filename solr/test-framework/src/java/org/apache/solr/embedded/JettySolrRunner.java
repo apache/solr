@@ -46,6 +46,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.SolrBackend;
@@ -62,6 +63,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.servlet.AuthenticationFilter;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.RateLimitFilter;
@@ -119,6 +121,7 @@ public class JettySolrRunner implements SolrBackend {
   volatile FilterHolder pathExcludeFilter;
   volatile FilterHolder requiredFilter;
   volatile FilterHolder rateLimitFilter;
+  volatile FilterHolder authFilter;
   volatile FilterHolder dispatchFilter;
   private FilterHolder tracingFilter;
 
@@ -427,9 +430,13 @@ public class JettySolrRunner implements SolrBackend {
       rateLimitFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       rateLimitFilter.setHeldClass(RateLimitFilter.class);
 
-      // Ratelimit Requests
+      // Trace Requests
       tracingFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       tracingFilter.setHeldClass(TracingFilter.class);
+
+      // Authenticate Requests
+      authFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      authFilter.setHeldClass(AuthenticationFilter.class);
 
       // This is our main workhorse
       dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
@@ -440,6 +447,7 @@ public class JettySolrRunner implements SolrBackend {
       root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(tracingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(authFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       // Default servlet as a fall-through
@@ -681,7 +689,11 @@ public class JettySolrRunner implements SolrBackend {
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
-      server.stop();
+      try {
+        server.stop();
+      } catch (TimeoutException e) {
+        log.warn("Jetty server graceful stop timed out; proceeding with forceful cleanup", e);
+      }
 
       // stop timeout is 0, so we will interrupt right away
       while (!qtp.isStopped()) {

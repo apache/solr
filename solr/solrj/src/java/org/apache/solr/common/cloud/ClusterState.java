@@ -217,7 +217,7 @@ public class ClusterState implements MapWriter {
       Instant creationTime,
       DocCollection.PrsSupplier prsSupplier) {
     if (bytes == null || bytes.length == 0) {
-      return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
+      return new ClusterState(liveNodes, Map.of());
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
@@ -273,7 +273,7 @@ public class ClusterState implements MapWriter {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection
       // shards.
       slices = Slice.loadAllFromMap(name, objs);
-      props = Collections.emptyMap();
+      props = Map.of();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
       objs.remove(CollectionStateProps.SHARDS);

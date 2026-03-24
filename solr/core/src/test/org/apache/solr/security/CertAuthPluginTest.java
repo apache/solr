@@ -30,7 +30,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
+import java.util.Map;
 import javax.security.auth.x500.X500Principal;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
@@ -62,7 +62,7 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
     SolrMetricsContext solrMetricsContext =
         new SolrMetricsContext(coreContainer.getMetricManager(), registryName);
     plugin.initializeMetrics(solrMetricsContext, Attributes.empty());
-    plugin.init(Collections.emptyMap());
+    plugin.init(Map.of());
   }
 
   @Override

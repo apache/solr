@@ -14,6 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.servlet;
+package org.apache.solr.client.api.endpoint;
 
-public class SolrAuthenticationException extends Exception {}
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import org.apache.solr.client.api.model.NodeSystemResponse;
+
+/** V2 API definitions to fetch node system info, analogous to the v1 /admin/info/system. */
+@Path("/node/system")
+public interface NodeSystemInfoApi {
+
+  @GET
+  @Operation(
+      summary = "Retrieve all node system info.",
+      tags = {"system"})
+  NodeSystemResponse getNodeSystemInfo(@QueryParam(value = "nodes") String nodes);
+}

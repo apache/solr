@@ -18,7 +18,6 @@ package org.apache.solr.cloud.api.collections;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -125,7 +124,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
         ClusterState.createFromCollectionMap(
                 0,
                 (Map<String, Object>) Utils.fromJSON(node.data),
-                Collections.emptySet(),
+                Set.of(),
                 Instant.EPOCH,
                 () ->
                     PerReplicaStatesOps.fetch(
