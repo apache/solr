@@ -36,6 +36,12 @@
   <fieldType name="longrange3d" class="solr.numericrange.LongRangeField" numDimensions="3"/>
   <fieldType name="longrange4d" class="solr.numericrange.LongRangeField" numDimensions="4"/>
 
+  <!-- FloatRangeField types with different dimensions -->
+  <fieldType name="floatrange" class="solr.numericrange.FloatRangeField" numDimensions="1"/>
+  <fieldType name="floatrange2d" class="solr.numericrange.FloatRangeField" numDimensions="2"/>
+  <fieldType name="floatrange3d" class="solr.numericrange.FloatRangeField" numDimensions="3"/>
+  <fieldType name="floatrange4d" class="solr.numericrange.FloatRangeField" numDimensions="4"/>
+
   <!-- Field definitions -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
   <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
@@ -66,6 +72,19 @@
 
   <!-- 4D LongRangeField (tesseract) -->
   <field name="long_range_4d" type="longrange4d" indexed="true" stored="true"/>
+
+  <!-- 1D FloatRangeField -->
+  <field name="float_range" type="floatrange" indexed="true" stored="true"/>
+  <field name="float_range_multi" type="floatrange" indexed="true" stored="true" multiValued="true"/>
+
+  <!-- 2D FloatRangeField (bounding box) -->
+  <field name="float_range_2d" type="floatrange2d" indexed="true" stored="true"/>
+
+  <!-- 3D FloatRangeField (bounding cube) -->
+  <field name="float_range_3d" type="floatrange3d" indexed="true" stored="true"/>
+
+  <!-- 4D FloatRangeField (tesseract) -->
+  <field name="float_range_4d" type="floatrange4d" indexed="true" stored="true"/>
 
   <!-- Required by Solr -->
   <uniqueKey>id</uniqueKey>
