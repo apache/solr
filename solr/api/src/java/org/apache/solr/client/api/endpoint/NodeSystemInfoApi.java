@@ -26,7 +26,7 @@ import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.api.util.Constants;
 
 /** V2 API definitions to fetch node system info, analogous to the v1 /admin/info/system. */
-@Path(Constants.NODE_INFO_SYSTEM_PATH)
+@Path("/node/system")
 public interface NodeSystemInfoApi {
 
   @GET

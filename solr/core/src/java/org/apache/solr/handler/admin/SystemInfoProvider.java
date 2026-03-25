@@ -113,38 +113,41 @@ public class SystemInfoProvider {
 
   /** Fill-out the provided response with all system info. */
   public NodeSystemResponse getNodeSystemInfo(NodeSystemResponse response) {
+    NodeSystemResponse.NodeSystemInfo nodeInfo = new NodeSystemResponse.NodeSystemInfo ();
+    
     if (cc != null) {
-      response.nodeInfo.solrHome = cc.getSolrHome().toString();
-      response.nodeInfo.coreRoot = cc.getCoreRootDirectory().toString();
+      nodeInfo.solrHome = cc.getSolrHome().toString();
+      nodeInfo.coreRoot = cc.getCoreRootDirectory().toString();
     }
 
     boolean solrCloudMode = cc != null && cc.isZooKeeperAware();
-    response.nodeInfo.mode = solrCloudMode ? "solrcloud" : "std";
+    nodeInfo.mode = solrCloudMode ? "solrcloud" : "std";
     if (solrCloudMode) {
-      response.nodeInfo.zkHost = cc.getZkController().getZkServerAddress();
-      response.nodeInfo.node = cc.getZkController().getNodeName();
+      nodeInfo.zkHost = cc.getZkController().getZkServerAddress();
+      nodeInfo.node = cc.getZkController().getNodeName();
     }
 
-    response.nodeInfo.lucene = getLuceneInfo();
+    nodeInfo.lucene = getLuceneInfo();
 
-    response.nodeInfo.jvm = getJvmInfo();
+    nodeInfo.jvm = getJvmInfo();
 
-    response.nodeInfo.security = getSecurityInfo();
-    response.nodeInfo.system = getSystemInfo();
-    response.nodeInfo.gpu = getGpuInfo();
+    nodeInfo.security = getSecurityInfo();
+    nodeInfo.system = getSystemInfo();
+    nodeInfo.gpu = getGpuInfo();
 
     SolrEnvironment env =
         SolrEnvironment.getFromSyspropOrClusterprop(
             solrCloudMode ? cc.getZkController().zkStateReader : null);
     if (env.isDefined()) {
-      response.nodeInfo.environment = env.getCode();
+      nodeInfo.environment = env.getCode();
       if (env.getLabel() != null) {
-        response.nodeInfo.environmentLabel = env.getLabel();
+        nodeInfo.environmentLabel = env.getLabel();
       }
       if (env.getColor() != null) {
-        response.nodeInfo.environmentColor = env.getColor();
+        nodeInfo.environmentColor = env.getColor();
       }
     }
+    response.nodeInfo = nodeInfo;
     return response;
   }
 

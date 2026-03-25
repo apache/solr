@@ -51,7 +51,7 @@ public class GetNodeSystemInfoTest extends SolrTestCaseJ4 {
     final var infoRsp = req.process(solrTestRule.getSolrClient(null));
 
     // Test a few values, majority of field-level validation occurs in NodeSystemInfoProviderTest
-    assertEquals(0, infoRsp.nodeInfo.responseHeader.status);
+    assertEquals(0, infoRsp.responseHeader.status);
     assertEquals("std", infoRsp.nodeInfo.mode);
     assertEquals(Version.LATEST.toString(), infoRsp.nodeInfo.lucene.luceneSpecVersion);
   }

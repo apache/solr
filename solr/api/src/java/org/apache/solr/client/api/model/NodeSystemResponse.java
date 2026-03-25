@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Response from /node/info/system */
+/** Response from /node/system */
 public class NodeSystemResponse extends SolrJerseyResponse {
 
   @JsonProperty public NodeSystemInfo nodeInfo;

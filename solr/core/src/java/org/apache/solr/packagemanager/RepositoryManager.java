@@ -143,7 +143,7 @@ public class RepositoryManager {
 
     // put the public key into package store's trusted key store and request a sync.
     String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Path.of(sysResponse.solrHome));
+    PackageUtils.uploadKey(key, path, Path.of(sysResponse.nodeInfo.solrHome));
     final var syncRequest = new FileStoreApi.SyncFile(path);
     final var syncResponse = syncRequest.process(solrClient);
     final var status = syncResponse.responseHeader.status;
