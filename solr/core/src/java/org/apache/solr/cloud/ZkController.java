@@ -2378,46 +2378,6 @@ public class ZkController implements Closeable {
     return leaderProps;
   }
 
-  public static void linkConfSet(SolrZkClient zkClient, String collection, String confSetName)
-      throws KeeperException, InterruptedException {
-    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
-    log.debug("Load collection config from:{}", path);
-    byte[] data;
-    try {
-      data = zkClient.getData(path, null, null);
-    } catch (NoNodeException e) {
-      // if there is no node, we will try and create it
-      // first try to make in case we are pre-configuring
-      ZkNodeProps props = new ZkNodeProps(CONFIGNAME_PROP, confSetName);
-      try {
-
-        zkClient.makePath(path, Utils.toJSON(props), CreateMode.PERSISTENT, null, true);
-      } catch (KeeperException e2) {
-        // it's okay if the node already exists
-        if (e2.code() != KeeperException.Code.NODEEXISTS) {
-          throw e;
-        }
-        // if we fail creating, setdata
-        // TODO: we should consider using version
-        zkClient.setData(path, Utils.toJSON(props));
-      }
-      return;
-    }
-    // we found existing data, let's update it
-    ZkNodeProps props = null;
-    if (data != null) {
-      props = ZkNodeProps.load(data);
-      Map<String, Object> newProps = new HashMap<>(props.getProperties());
-      newProps.put(CONFIGNAME_PROP, confSetName);
-      props = new ZkNodeProps(newProps);
-    } else {
-      props = new ZkNodeProps(CONFIGNAME_PROP, confSetName);
-    }
-
-    // TODO: we should consider using version
-    zkClient.setData(path, Utils.toJSON(props));
-  }
-
   public ZkDistributedQueue getOverseerJobQueue() {
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       throw new IllegalStateException(
