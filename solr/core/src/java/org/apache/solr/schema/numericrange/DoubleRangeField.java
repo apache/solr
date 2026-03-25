@@ -18,7 +18,7 @@ package org.apache.solr.schema.numericrange;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.lucene.document.FloatRange;
+import org.apache.lucene.document.DoubleRange;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -27,11 +27,11 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 
 /**
- * Field type for float ranges with support for 1-4 dimensions.
+ * Field type for double ranges with support for 1-4 dimensions.
  *
- * <p>This field type wraps Lucene's {@link FloatRange} to provide storage and querying of float
- * range values. Ranges can be 1-dimensional (simple ranges), 2-dimensional (bounding boxes),
- * 3-dimensional (bounding cubes), or 4-dimensional (tesseracts).
+ * <p>This field type wraps Lucene's {@link DoubleRange} to provide storage and querying of
+ * double-precision floating-point range values. Ranges can be 1-dimensional (simple ranges),
+ * 2-dimensional (bounding boxes), 3-dimensional (bounding cubes), or 4-dimensional (tesseracts).
  *
  * <h2>Value Format</h2>
  *
@@ -46,15 +46,15 @@ import org.apache.solr.search.QParser;
  *
  * As the name suggests minimum values (those on the left) must always be less than or equal to the
  * maximum value for the corresponding dimension. Integer values (e.g. {@code [10 TO 20]}) are also
- * accepted and parsed as floats.
+ * accepted and parsed as doubles.
  *
  * <h2>Schema Configuration</h2>
  *
  * <pre>
- * &lt;fieldType name="floatrange" class="org.apache.solr.schema.numericrange.FloatRangeField" numDimensions="1"/&gt;
- * &lt;fieldType name="floatrange2d" class="org.apache.solr.schema.numericrange.FloatRangeField" numDimensions="2"/&gt;
- * &lt;field name="price_range" type="floatrange" indexed="true" stored="true"/&gt;
- * &lt;field name="my_2d_range" type="floatrange2d" indexed="true" stored="true"/&gt;
+ * &lt;fieldType name="doublerange" class="org.apache.solr.schema.numericrange.DoubleRangeField" numDimensions="1"/&gt;
+ * &lt;fieldType name="doublerange2d" class="org.apache.solr.schema.numericrange.DoubleRangeField" numDimensions="2"/&gt;
+ * &lt;field name="price_range" type="doublerange" indexed="true" stored="true"/&gt;
+ * &lt;field name="my_2d_range" type="doublerange2d" indexed="true" stored="true"/&gt;
  * </pre>
  *
  * <h2>Querying</h2>
@@ -74,10 +74,10 @@ import org.apache.solr.search.QParser;
  * The main limitation of this field type is that it doesn't support docValues or uninversion, and
  * therefore can't be used for sorting, faceting, etc.
  *
- * @see FloatRange
+ * @see DoubleRange
  * @see org.apache.solr.search.numericrange.NumericRangeQParserPlugin
  */
-public class FloatRangeField extends AbstractNumericRangeField {
+public class DoubleRangeField extends AbstractNumericRangeField {
 
   @Override
   protected Pattern getRangePattern() {
@@ -98,7 +98,7 @@ public class FloatRangeField extends AbstractNumericRangeField {
     String valueStr = value.toString();
     RangeValue rangeValue = parseRangeValue(valueStr);
 
-    return new FloatRange(field.getName(), rangeValue.mins, rangeValue.maxs);
+    return new DoubleRange(field.getName(), rangeValue.mins, rangeValue.maxs);
   }
 
   /**
@@ -118,15 +118,15 @@ public class FloatRangeField extends AbstractNumericRangeField {
     if (!matcher.matches()) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
-          "Invalid range format. Expected: [min1,min2,... TO max1,max2,...] where min and max values are floats, but got: "
+          "Invalid range format. Expected: [min1,min2,... TO max1,max2,...] where min and max values are doubles, but got: "
               + value);
     }
 
     String minPart = matcher.group(1).trim();
     String maxPart = matcher.group(2).trim();
 
-    float[] mins = parseFloatArray(minPart, "min values");
-    float[] maxs = parseFloatArray(maxPart, "max values");
+    double[] mins = parseDoubleArray(minPart, "min values");
+    double[] maxs = parseDoubleArray(maxPart, "max values");
 
     if (mins.length != maxs.length) {
       throw new SolrException(
@@ -166,28 +166,28 @@ public class FloatRangeField extends AbstractNumericRangeField {
 
   @Override
   public NumericRangeValue parseSingleBound(String value) {
-    final var singleBoundTyped = parseFloatArray(value, "single bound values");
+    final var singleBoundTyped = parseDoubleArray(value, "single bound values");
     return new RangeValue(singleBoundTyped, singleBoundTyped);
   }
 
   /**
-   * Parse a comma-separated string of floats into an array.
+   * Parse a comma-separated string of doubles into an array.
    *
    * @param str the string to parse
    * @param description description for error messages
-   * @return array of parsed floats
+   * @return array of parsed doubles
    */
-  private float[] parseFloatArray(String str, String description) {
+  private double[] parseDoubleArray(String str, String description) {
     String[] parts = str.split(",");
-    float[] result = new float[parts.length];
+    double[] result = new double[parts.length];
 
     for (int i = 0; i < parts.length; i++) {
       try {
-        result[i] = Float.parseFloat(parts[i].trim());
+        result[i] = Double.parseDouble(parts[i].trim());
       } catch (NumberFormatException e) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Invalid float in " + description + ": '" + parts[i].trim() + "'",
+            "Invalid double in " + description + ": '" + parts[i].trim() + "'",
             e);
       }
     }
@@ -198,25 +198,25 @@ public class FloatRangeField extends AbstractNumericRangeField {
   @Override
   public Query newContainsQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rv = (RangeValue) rangeValue;
-    return FloatRange.newContainsQuery(fieldName, rv.mins, rv.maxs);
+    return DoubleRange.newContainsQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
   public Query newIntersectsQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rv = (RangeValue) rangeValue;
-    return FloatRange.newIntersectsQuery(fieldName, rv.mins, rv.maxs);
+    return DoubleRange.newIntersectsQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
   public Query newWithinQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rv = (RangeValue) rangeValue;
-    return FloatRange.newWithinQuery(fieldName, rv.mins, rv.maxs);
+    return DoubleRange.newWithinQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
   public Query newCrossesQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rv = (RangeValue) rangeValue;
-    return FloatRange.newCrossesQuery(fieldName, rv.mins, rv.maxs);
+    return DoubleRange.newCrossesQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
@@ -233,19 +233,19 @@ public class FloatRangeField extends AbstractNumericRangeField {
           parser, field, part1, part2, minInclusive, maxInclusive);
     }
 
-    // Parse the range bounds as single-dimensional float values
-    float min, max;
+    // Parse the range bounds as single-dimensional double values
+    double min, max;
     try {
-      min = Float.parseFloat(part1.trim());
-      max = Float.parseFloat(part2.trim());
+      min = Double.parseDouble(part1.trim());
+      max = Double.parseDouble(part2.trim());
     } catch (NumberFormatException e) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
-          "Invalid float values in range query: [" + part1 + " TO " + part2 + "]",
+          "Invalid double values in range query: [" + part1 + " TO " + part2 + "]",
           e);
     }
 
-    // For exclusive bounds, step to the next representable float value
+    // For exclusive bounds, step to the next representable double value
     if (!minInclusive) {
       min = Math.nextUp(min);
     }
@@ -254,14 +254,14 @@ public class FloatRangeField extends AbstractNumericRangeField {
     }
 
     // Build arrays for the query based on configured dimensions
-    float[] mins = new float[numDimensions];
-    float[] maxs = new float[numDimensions];
+    double[] mins = new double[numDimensions];
+    double[] maxs = new double[numDimensions];
 
     // For now, only support 1D range syntax with field:[X TO Y]
     if (numDimensions == 1) {
       mins[0] = min;
       maxs[0] = max;
-      return FloatRange.newContainsQuery(field.getName(), mins, maxs);
+      return DoubleRange.newContainsQuery(field.getName(), mins, maxs);
     } else {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
@@ -270,12 +270,12 @@ public class FloatRangeField extends AbstractNumericRangeField {
     }
   }
 
-  /** Simple holder class for parsed float range values. */
+  /** Simple holder class for parsed double range values. */
   public static class RangeValue implements AbstractNumericRangeField.NumericRangeValue {
-    public final float[] mins;
-    public final float[] maxs;
+    public final double[] mins;
+    public final double[] maxs;
 
-    public RangeValue(float[] mins, float[] maxs) {
+    public RangeValue(double[] mins, double[] maxs) {
       this.mins = mins;
       this.maxs = maxs;
     }
