@@ -37,7 +37,7 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
 
   /**
    * Request to "/admin/info/system" with params.
-   * 
+   *
    * @param params the Solr parameters to use for this request.
    */
   public SystemInfoRequest(SolrParams params) {

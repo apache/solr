@@ -65,7 +65,6 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     return response;
   }
 
-
   @Override
   public NodeSystemResponse getSpecificNodeSystemInfo(String requestedInfo, String nodes) {
     solrQueryResponse.setHttpCaching(false);

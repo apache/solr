@@ -83,4 +83,5 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
     Assert.assertNotNull(info.nodeInfo.security);
     Assert.assertNotNull(info.nodeInfo.system);
   }
+
 }

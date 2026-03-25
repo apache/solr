@@ -113,8 +113,8 @@ public class SystemInfoProvider {
 
   /** Fill-out the provided response with all system info. */
   public NodeSystemResponse getNodeSystemInfo(NodeSystemResponse response) {
-    NodeSystemResponse.NodeSystemInfo nodeInfo = new NodeSystemResponse.NodeSystemInfo ();
-    
+    NodeSystemResponse.NodeSystemInfo nodeInfo = new NodeSystemResponse.NodeSystemInfo();
+
     if (cc != null) {
       nodeInfo.solrHome = cc.getSolrHome().toString();
       nodeInfo.coreRoot = cc.getCoreRootDirectory().toString();

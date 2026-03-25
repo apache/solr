@@ -23,7 +23,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.NodeSystemResponse;
-import org.apache.solr.client.api.util.Constants;
 
 /** V2 API definitions to fetch node system info, analogous to the v1 /admin/info/system. */
 @Path("/node/system")

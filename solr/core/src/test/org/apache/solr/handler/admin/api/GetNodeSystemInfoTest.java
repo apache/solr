@@ -55,4 +55,22 @@ public class GetNodeSystemInfoTest extends SolrTestCaseJ4 {
     assertEquals("std", infoRsp.nodeInfo.mode);
     assertEquals(Version.LATEST.toString(), infoRsp.nodeInfo.lucene.luceneSpecVersion);
   }
+  
+
+
+  @Test
+  public void testGetSpecificNodeInfo() throws Exception {
+    final var req = new SystemApi.GetSpecificNodeSystemInfo("lucene");
+
+    final var infoRsp = req.process(solrTestRule.getSolrClient(null));
+
+    // Test a few values, majority of field-level validation occurs in NodeSystemInfoProviderTest
+    assertEquals(0, infoRsp.responseHeader.status);
+    assertNotNull(infoRsp.nodeInfo.lucene);
+    assertEquals(Version.LATEST.toString(), infoRsp.nodeInfo.lucene.luceneSpecVersion);
+    assertNull(infoRsp.nodeInfo.jvm);
+    assertNull(infoRsp.nodeInfo.gpu);
+    assertNull(infoRsp.nodeInfo.security);
+    assertNull(infoRsp.nodeInfo.system);
+  }
 }
