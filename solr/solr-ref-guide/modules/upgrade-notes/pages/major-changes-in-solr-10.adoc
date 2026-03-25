@@ -241,6 +241,11 @@ Solr 10 has migrated from Dropwizard metrics to OpenTelemetry (OTEL) for observa
 
 * Core renaming and swapping will reset the state of all corresponding core metrics.
 
+[IMPORTANT]
+====
+Solr 10 introduced significant changes to metrics, including new metric names and API endpoints. These metrics are currently considered Beta and may change in minor releases without notice.
+====
+
 === Docker
 
 The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 24 (noble) from Ubuntu 22 (jammy). The Docker base image is `eclipse-temurin:25-jre-noble`.
