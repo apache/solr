@@ -18,6 +18,11 @@
 
 Solr supports both a pull-based Prometheus-formatted API and an OTLP push exporter for collecting detailed performance-oriented metrics throughout the lifecycle of Solr services and their various components.
 
+[IMPORTANT]
+====
+Solr 10 introduced significant changes to metrics, including new metric names and API endpoints. These metrics are currently considered Beta and may change in minor releases without notice.
+====
+
 All metrics natively include attributes/labels, providing users with powerful ways to aggregate metrics in their preferred backend, as well as descriptions to help understand what each metric represents.
 
 Internally this feature uses https://opentelemetry.io/[OpenTelemetry], which uses the following instruments to measure events. For more information on instruments see the OpenTelemetry documentation on https://opentelemetry.io/docs/concepts/signals/metrics/#metric-instruments[Metric Instruments].

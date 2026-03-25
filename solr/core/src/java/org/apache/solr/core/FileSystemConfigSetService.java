@@ -35,7 +35,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.solr.util.FileUtils;
@@ -155,7 +154,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
+    if (ConfigSetService.isFileForbiddenInConfigSets(fileName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file type provided for upload, '"
@@ -234,7 +233,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {
-              if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(file.getFileName().toString())) {
+              if (ConfigSetService.isFileForbiddenInConfigSets(file.getFileName().toString())) {
                 log.warn(
                     "Not including uploading file to config, as it is a forbidden type: {}",
                     file.getFileName());
