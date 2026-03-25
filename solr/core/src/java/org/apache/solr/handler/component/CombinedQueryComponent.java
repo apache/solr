@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -277,7 +276,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
               .filter(field -> !field.equals(SolrReturnFields.SCORE))
               .collect(Collectors.toSet());
     } else {
-      scoreDependentFields = Collections.emptySet();
+      scoreDependentFields = Set.of();
     }
 
     IndexSchema schema = rb.req.getSchema();

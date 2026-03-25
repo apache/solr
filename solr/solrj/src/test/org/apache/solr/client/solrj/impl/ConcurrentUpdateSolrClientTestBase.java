@@ -199,10 +199,7 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @AfterClass

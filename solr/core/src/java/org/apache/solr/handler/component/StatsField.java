@@ -322,15 +322,11 @@ public class StatsField {
     String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
     this.facets = (null == facets) ? new String[0] : facets;
     String tagStr = localParams.get(CommonParams.TAG);
-    this.tagList =
-        (null == tagStr) ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+    this.tagList = (null == tagStr) ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
     // figure out if we need a special base DocSet
     String excludeStr = localParams.get(CommonParams.EXCLUDE);
-    this.excludeTagList =
-        (null == excludeStr)
-            ? Collections.<String>emptyList()
-            : StrUtils.splitSmart(excludeStr, ',');
+    this.excludeTagList = (null == excludeStr) ? List.of() : StrUtils.splitSmart(excludeStr, ',');
 
     assert ((null == this.valueSource) ^ (null == this.schemaField))
         : "exactly one of valueSource & schemaField must be null";

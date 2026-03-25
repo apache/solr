@@ -110,7 +110,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected final Set<String> supportedScoreModes;
 
   protected AbstractSpatialFieldType() {
-    this(Collections.emptySet());
+    this(Set.of());
   }
 
   protected AbstractSpatialFieldType(Set<String> moreScoreModes) {
@@ -242,7 +242,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
     if (shape == null) {
       log.debug("Field {}: null shape for input: {}", field, val);
-      return Collections.emptyList();
+      return List.of();
     }
 
     List<IndexableField> result = new ArrayList<>();

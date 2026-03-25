@@ -46,7 +46,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
-import org.apache.solr.client.api.model.CoreInfoResponse;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -114,41 +113,38 @@ public class SystemInfoProvider {
 
   /** Fill-out the provided response with all system info. */
   public NodeSystemResponse getNodeSystemInfo(NodeSystemResponse response) {
-    NodeSystemResponse.NodeSystemInfo info = new NodeSystemResponse.NodeSystemInfo();
-
     if (cc != null) {
-      info.solrHome = cc.getSolrHome().toString();
-      info.coreRoot = cc.getCoreRootDirectory().toString();
+      response.nodeInfo.solrHome = cc.getSolrHome().toString();
+      response.nodeInfo.coreRoot = cc.getCoreRootDirectory().toString();
     }
 
     boolean solrCloudMode = cc != null && cc.isZooKeeperAware();
-    info.mode = solrCloudMode ? "solrcloud" : "std";
+    response.nodeInfo.mode = solrCloudMode ? "solrcloud" : "std";
     if (solrCloudMode) {
-      info.zkHost = cc.getZkController().getZkServerAddress();
-      info.node = cc.getZkController().getNodeName();
+      response.nodeInfo.zkHost = cc.getZkController().getZkServerAddress();
+      response.nodeInfo.node = cc.getZkController().getNodeName();
     }
 
-    info.lucene = getLuceneInfo();
+    response.nodeInfo.lucene = getLuceneInfo();
 
-    info.jvm = getJvmInfo();
+    response.nodeInfo.jvm = getJvmInfo();
 
-    info.security = getSecurityInfo();
-    info.system = getSystemInfo();
-    info.gpu = getGpuInfo();
+    response.nodeInfo.security = getSecurityInfo();
+    response.nodeInfo.system = getSystemInfo();
+    response.nodeInfo.gpu = getGpuInfo();
 
     SolrEnvironment env =
         SolrEnvironment.getFromSyspropOrClusterprop(
             solrCloudMode ? cc.getZkController().zkStateReader : null);
     if (env.isDefined()) {
-      info.environment = env.getCode();
+      response.nodeInfo.environment = env.getCode();
       if (env.getLabel() != null) {
-        info.environmentLabel = env.getLabel();
+        response.nodeInfo.environmentLabel = env.getLabel();
       }
       if (env.getColor() != null) {
-        info.environmentColor = env.getColor();
+        response.nodeInfo.environmentColor = env.getColor();
       }
     }
-    response.nodeInfo = info;
     return response;
   }
 
@@ -180,47 +176,6 @@ public class SystemInfoProvider {
       log.warn("Problem getting the normalized index directory path", e);
     }
     info.add("directory", dirs);
-    return info;
-  }
-
-  /** Get core info for V2 */
-  public CoreInfoResponse getCoreInfo(String coreName, CoreInfoResponse info) {
-
-    SolrCore core = req.getCore();
-    log.info("Request SolrCore: {}", core.getName());
-    if (req.getCoreContainer() != null
-        && req.getCoreContainer().getAllCoreNames().contains(coreName)) {
-      core = req.getCoreContainer().getCore(coreName);
-      log.info("Requested SolrCore: {}", core.getName());
-    }
-
-    if (core == null) return info;
-
-    IndexSchema schema = req.getSchema();
-
-    info.schema = schema != null ? schema.getSchemaName() : "no schema!";
-    info.host = hostname;
-    info.now = new Date();
-    info.start = core.getStartTimeStamp();
-
-    // Solr Home
-    CoreInfoResponse.Directory dirs = new CoreInfoResponse.Directory();
-    dirs.cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().toString();
-    dirs.instance = core.getInstancePath().toString();
-    try {
-      dirs.data = core.getDirectoryFactory().normalize(core.getDataDir());
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized data directory path", e);
-      dirs.data = "N/A";
-    }
-    dirs.dirimpl = core.getDirectoryFactory().getClass().getName();
-    try {
-      dirs.index = core.getDirectoryFactory().normalize(core.getIndexDir());
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized index directory path", e);
-      dirs.index = "N/A";
-    }
-    info.directory = dirs;
     return info;
   }
 

@@ -77,11 +77,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Files.createDirectories(subHome);
 
     // Be sure we pick up sysvars when we create this
-    String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(srcDir, "schema-tiny.xml"), subHome.resolve("schema_ren.xml"));
-    Files.copy(Path.of(srcDir, "solrconfig-minimal.xml"), subHome.resolve("solrconfig_ren.xml"));
+    Path srcDir = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
+    Files.copy(srcDir.resolve("schema-tiny.xml"), subHome.resolve("schema_ren.xml"));
+    Files.copy(srcDir.resolve("solrconfig-minimal.xml"), subHome.resolve("solrconfig_ren.xml"));
     Files.copy(
-        Path.of(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        srcDir.resolve("solrconfig.snippet.randomindexconfig.xml"),
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
@@ -475,9 +475,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     Path subHome = solrHomeDirectory.resolve("corex").resolve("conf");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
     Files.copy(
-        Path.of(top, "bad-error-solrconfig.xml"),
+        top.resolve("bad-error-solrconfig.xml"),
         subHome.resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 

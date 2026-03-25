@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
@@ -100,6 +101,12 @@ public class CrossCollectionJoinQParser extends QParser {
       if (!OWN_PARAMS.contains(paramName)) {
         otherParams.set(paramName, localParams.getParams(paramName));
       }
+    }
+
+    // Propagate shards.preference from request-level params if not already set in localParams
+    String shardsPreference = req.getParams().get(ShardParams.SHARDS_PREFERENCE);
+    if (shardsPreference != null && otherParams.get(ShardParams.SHARDS_PREFERENCE) == null) {
+      otherParams.set(ShardParams.SHARDS_PREFERENCE, shardsPreference);
     }
 
     return new CrossCollectionJoinQuery(

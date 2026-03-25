@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -636,7 +635,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
           ((Number) facetResponse.get("count")).longValue());
       if (0 == rsp.getResults().getNumFound()) {
         // when the query matches nothing, we should expect no top level facets
-        expected = Collections.emptyMap();
+        expected = Map.of();
       }
       assertFacetCountsAreCorrect(maxBucketsToCheck, expected, baseParams, facetResponse);
     } catch (AssertionError e) {
