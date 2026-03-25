@@ -36,11 +36,13 @@
   <field name="2048_byte_vector" type="high_dimensional_byte_knn_vector" indexed="true" stored="true" />
   <field name="2048_float_vector" type="high_dimensional_float_knn_vector" indexed="true" stored="true" />
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="enriched_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
   <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
   <copyField source="*" dest="_text_"/>
   <field name="vectorised" type="boolean" indexed="true" stored="false" docValues="true" default="false"/>
+  <field name="enriched" type="boolean" indexed="true" stored="false" docValues="true" default="false"/>
 
   <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
     <analyzer type="index">
