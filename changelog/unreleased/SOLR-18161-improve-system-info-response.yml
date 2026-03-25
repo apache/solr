@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Add a wrapper to separate the system info from the response header, and a method to return selected info
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Isabelle Giguère
+links:
+  - name: SOLR-18161
+    url: https://issues.apache.org/jira/browse/SOLR-18161
