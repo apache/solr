@@ -86,6 +86,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SYNCSHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.UPGRADECOLLECTIONINDEX;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -587,6 +588,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                 req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP));
           }
           copyPropertiesWithPrefix(req.getParams(), m, "router.");
+          return m;
+        }),
+
+    UPGRADECOLLECTIONINDEX_OP(
+        UPGRADECOLLECTIONINDEX,
+        (req, rsp, h) -> {
+          Map<String, Object> m = copy(req.getParams().required(), null, NAME);
+          copy(req.getParams(), m, FOLLOW_ALIASES);
           return m;
         }),
 
