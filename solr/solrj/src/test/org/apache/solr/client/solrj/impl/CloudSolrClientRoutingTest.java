@@ -18,17 +18,22 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -129,5 +134,59 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
 
     assertEquals(0, numForwardedWithRoute);
     assertEquals(100, numForwardedWithoutRoute);
+  }
+
+  @Test
+  public void testDeleteWithoutRouteWithDirectUpdatesToLeadersOnly() throws Exception {
+    final String collectionName = "delete_without_route_collection";
+
+    final String docId = String.valueOf(random().nextInt(1000));
+    final String routeValue = TestUtil.randomRealisticUnicodeString(random());
+
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .setRouterField("router_field_s")
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
+
+    try (CloudSolrClient client =
+        new CloudSolrClient.Builder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withDefaultCollection(collectionName)
+            .sendUpdatesOnlyToShardLeaders()
+            .sendDirectUpdatesToShardLeadersOnly()
+            .build()) {
+
+      UpdateRequest addRequest = new UpdateRequest();
+      addRequest.add("id", docId, "router_field_s", routeValue);
+      addRequest.process(client);
+      client.commit();
+
+      assertEquals(1, client.query(new SolrQuery("id:" + docId)).getResults().getNumFound());
+
+      try (LogListener warnLog =
+          LogListener.warn(CloudSolrClient.class)
+              .substring(
+                  "No routing info found for update to collection '"
+                      + collectionName
+                      + "', broadcasting to all shards.")) {
+
+        // Delete by ID without providing explicit route
+        // Should still delete via sending to all shards and log a warning
+        UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById(docId);
+        deleteRequest.process(client);
+        client.commit();
+
+        assertEquals(0, client.query(new SolrQuery("id:" + docId)).getResults().getNumFound());
+
+        // Verify the warning was logged when routing info was missing
+        assertNotNull(
+            "Expected at least one warning about missing routing info for deleteById",
+            warnLog.pollMessage());
+
+        // Clear any remaining messages
+        warnLog.clearQueue();
+      }
+    }
   }
 }
