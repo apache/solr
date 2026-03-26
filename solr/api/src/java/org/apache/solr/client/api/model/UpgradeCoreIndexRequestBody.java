@@ -30,4 +30,13 @@ public class UpgradeCoreIndexRequestBody {
           "updateChain to be used for reindexing during index upgrade if you don't want to use the one used by /update by default")
   @JsonProperty
   public String updateChain;
+
+  @Schema(
+      description =
+          "Internal flag set by the collection-level UPGRADECOLLECTIONINDEX command to indicate"
+              + " this upgrade is being coordinated by SolrCloud. When true, the SolrCloud guard is"
+              + " bypassed, a local-only update chain is used (no distributed forwarding), and the"
+              + " core's readOnly flag is temporarily cleared for the duration of the upgrade.")
+  @JsonProperty
+  public Boolean cloudMode;
 }
