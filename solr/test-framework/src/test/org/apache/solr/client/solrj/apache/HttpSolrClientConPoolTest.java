@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.apache;
 
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +32,6 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.ExternalPaths;
@@ -51,8 +48,6 @@ public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws SolrServerException, IOException {
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 

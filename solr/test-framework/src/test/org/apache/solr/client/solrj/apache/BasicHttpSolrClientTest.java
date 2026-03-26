@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.apache;
 
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
-
 import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.io.InputStream;
@@ -68,7 +66,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.ExternalPaths;
@@ -100,8 +97,6 @@ public class BasicHttpSolrClientTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .withServlet(new ServletHolder(SlowStreamServlet.class), "/slowStream/*")
             .build();
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }

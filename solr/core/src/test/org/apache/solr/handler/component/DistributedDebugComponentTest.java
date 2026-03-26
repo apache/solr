@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +33,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.ExternalPaths;
@@ -57,8 +54,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
 
     solrTestRule
