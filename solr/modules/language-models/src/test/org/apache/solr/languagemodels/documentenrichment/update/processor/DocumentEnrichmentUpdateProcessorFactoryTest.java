@@ -99,7 +99,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   }
 
   @Test
-  public void init_nullPrompt_shouldThrowExceptionWithDetailedMessage() {
+  public void init_neitherPromptNorPromptFile_shouldThrowExceptionWithDetailedMessage() {
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "enriched_field");
@@ -108,7 +108,54 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("Missing required parameter: prompt", e.getMessage());
+    assertEquals("Either 'prompt' or 'promptFile' must be provided", e.getMessage());
+  }
+
+  @Test
+  public void init_bothPromptAndPromptFile_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Summarize: {input}");
+    args.add("promptFile", "prompt.txt");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+
+    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
+    assertEquals("Only one of 'prompt' or 'promptFile' can be provided, not both", e.getMessage());
+  }
+
+  @Test
+  public void init_promptFile_shouldLoadPromptFromFile() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field");
+    args.add("promptFile", "prompt.txt");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    factory.init(args);
+    factory.inform(collection1);
+
+    assertEquals("prompt.txt", factory.getPromptFile());
+    assertNotNull(factory.getPrompt());
+    assertTrue(factory.getPrompt().contains("{input}"));
+  }
+
+  @Test
+  public void init_promptFileWithMissingPlaceholder_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field");
+    args.add("promptFile", "prompt-no-placeholder.txt");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    factory.init(args);
+
+    SolrException e = assertThrows(SolrException.class, () -> factory.inform(collection1));
+    assertEquals("prompt must contain {input} placeholder", e.getMessage());
   }
 
   @Test
