@@ -97,7 +97,9 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   public enum CoreIndexUpgradeStatus {
     UPGRADE_SUCCESSFUL,
     ERROR,
-    NO_UPGRADE_NEEDED
+    NO_UPGRADE_NEEDED,
+    /** Returned by {@code checkOnly=true} when old-format segments are present. */
+    UPGRADE_NEEDED
   }
 
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
@@ -142,7 +144,13 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       SolrCore core, UpgradeCoreIndexRequestBody requestBody, UpgradeCoreIndexResponse response) {
 
     final boolean cloudMode = Boolean.TRUE.equals(requestBody.cloudMode);
+    final boolean checkOnly = Boolean.TRUE.equals(requestBody.checkOnly);
     boolean readOnlyWasCleared = false;
+
+    // checkOnly: count old-format segments and return without performing any writes
+    if (checkOnly) {
+      return performCheckOnly(core, response);
+    }
 
     RefCounted<IndexWriter> iwRef = null;
     MergePolicy originalMergePolicy = null;
@@ -296,6 +304,34 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     }
 
     return response;
+  }
+
+  /**
+   * Counts old-format segments without performing any writes. Returns immediately with the count
+   * and whether the index is already at the current Lucene format.
+   */
+  private UpgradeCoreIndexResponse performCheckOnly(
+      SolrCore core, UpgradeCoreIndexResponse response) {
+    String coreName = core.getName();
+    RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
+    try {
+      int segmentsNeedingUpgrade = 0;
+      for (LeafReaderContext lrc : searcherRef.get().getIndexReader().leaves()) {
+        if (shouldUpgradeSegment(lrc)) {
+          segmentsNeedingUpgrade++;
+        }
+      }
+      response.core = coreName;
+      response.numSegmentsEligibleForUpgrade = segmentsNeedingUpgrade;
+      response.indexUpgraded = (segmentsNeedingUpgrade == 0);
+      response.upgradeStatus =
+          response.indexUpgraded
+              ? CoreIndexUpgradeStatus.NO_UPGRADE_NEEDED.toString()
+              : CoreIndexUpgradeStatus.UPGRADE_NEEDED.toString();
+      return response;
+    } finally {
+      searcherRef.decref();
+    }
   }
 
   private boolean shouldUpgradeSegment(LeafReaderContext lrc) {

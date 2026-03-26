@@ -53,8 +53,11 @@ class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
     assert it.handler.coreContainer != null;
     SolrParams params = it.req.getParams();
     final boolean cloudMode = params.getBool("cloudMode", false);
+    final boolean checkOnly = params.getBool("checkOnly", false);
 
-    if (it.handler.coreContainer.isZooKeeperAware() && !cloudMode) {
+    // checkOnly is a read-only operation and is allowed in SolrCloud mode.
+    // Full upgrade requires either cloudMode (coordinator-initiated) or standalone mode.
+    if (it.handler.coreContainer.isZooKeeperAware() && !cloudMode && !checkOnly) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "action=UPGRADECOREINDEX is not supported in SolrCloud mode. Use the"
@@ -68,6 +71,7 @@ class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
     final var requestBody = new UpgradeCoreIndexRequestBody();
     requestBody.updateChain = params.get(UpdateParams.UPDATE_CHAIN);
     requestBody.cloudMode = cloudMode;
+    requestBody.checkOnly = checkOnly;
 
     UpgradeCoreIndex upgradeCoreIndexApi =
         UPGRADE_CORE_INDEX_FACTORY.create(

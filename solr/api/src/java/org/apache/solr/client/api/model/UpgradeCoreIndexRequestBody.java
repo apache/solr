@@ -39,4 +39,12 @@ public class UpgradeCoreIndexRequestBody {
               + " core's readOnly flag is temporarily cleared for the duration of the upgrade.")
   @JsonProperty
   public Boolean cloudMode;
+
+  @Schema(
+      description =
+          "When true, only checks whether the index contains old-format segments without performing"
+              + " any upgrade. Returns the number of segments needing upgrade and whether the index"
+              + " is already at the current Lucene format. No writes are performed.")
+  @JsonProperty
+  public Boolean checkOnly;
 }
