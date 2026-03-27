@@ -16,6 +16,7 @@
  */
 package org.apache.solr.languagemodels.documentenrichment.update.processor;
 
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -60,36 +61,51 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "enriched_field");
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
     factory.init(args);
 
-    assertEquals("string_field", factory.getInputField());
+    assertEquals(List.of("string_field"), factory.getInputFields());
     assertEquals("enriched_field", factory.getOutputField());
-    assertEquals("Summarize: {input}", factory.getPrompt());
+    assertEquals("Summarize: {string_field}", factory.getPrompt());
     assertEquals("model1", factory.getModelName());
   }
 
   @Test
-  public void init_nullInputField_shouldThrowExceptionWithDetailedMessage() {
+  public void init_multipleInputFields_shouldInitAllFields() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("inputField", "body_field");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Title: {string_field}. Body: {body_field}.");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    factory.init(args);
+
+    assertEquals(List.of("string_field", "body_field"), factory.getInputFields());
+  }
+
+  @Test
+  public void init_noInputField_shouldThrowExceptionWithDetailedMessage() {
     NamedList<String> args = new NamedList<>();
     args.add("outputField", "enriched_field");
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("Missing required parameter: inputField", e.getMessage());
+    assertEquals("At least one 'inputField' must be provided", e.getMessage());
   }
 
   @Test
   public void init_nullOutputField_shouldThrowExceptionWithDetailedMessage() {
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
@@ -116,7 +132,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "enriched_field");
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {string_field}");
     args.add("promptFile", "prompt.txt");
     args.add("model", "model1");
 
@@ -124,6 +140,64 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals("Only one of 'prompt' or 'promptFile' can be provided, not both", e.getMessage());
+  }
+
+  @Test
+  public void init_promptMissingPlaceholderForDeclaredField_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Summarize:");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+
+    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
+    assertEquals("prompt is missing placeholders for inputField(s): [string_field]", e.getMessage());
+  }
+
+  @Test
+  public void init_promptMissingOnePlaceholderOfMultipleFields_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("inputField", "body_field");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Title: {string_field}.");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+
+    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
+    assertEquals("prompt is missing placeholders for inputField(s): [body_field]", e.getMessage());
+  }
+
+  @Test
+  public void init_promptHasExtraPlaceholderNotDeclaredAsInputField_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Title: {string_field}. Extra: {unknown_field}.");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+
+    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
+    assertEquals(
+        "prompt contains placeholders not declared as inputField(s): [unknown_field]",
+        e.getMessage());
+  }
+
+  @Test
+  public void init_nullModel_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Summarize: {string_field}");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+
+    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
+    assertEquals("Missing required parameter: model", e.getMessage());
   }
 
   @Test
@@ -140,11 +214,29 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
     assertEquals("prompt.txt", factory.getPromptFile());
     assertNotNull(factory.getPrompt());
-    assertTrue(factory.getPrompt().contains("{input}"));
+    assertTrue(factory.getPrompt().contains("{string_field}"));
   }
 
   @Test
-  public void init_promptFileWithMissingPlaceholder_shouldThrowExceptionWithDetailedMessage() {
+  public void init_promptFileMultiField_shouldLoadAndValidateBothPlaceholders() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("inputField", "body_field");
+    args.add("outputField", "enriched_field");
+    args.add("promptFile", "prompt-multi-field.txt");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    factory.init(args);
+    factory.inform(collection1);
+
+    assertNotNull(factory.getPrompt());
+    assertTrue(factory.getPrompt().contains("{string_field}"));
+    assertTrue(factory.getPrompt().contains("{body_field}"));
+  }
+
+  @Test
+  public void init_promptFileWithMissingPlaceholder_shouldThrowExceptionInInform() {
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "enriched_field");
@@ -155,34 +247,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     factory.init(args);
 
     SolrException e = assertThrows(SolrException.class, () -> factory.inform(collection1));
-    assertEquals("prompt must contain {input} placeholder", e.getMessage());
-  }
-
-  @Test
-  public void init_missingPlaceholderPrompt_shouldThrowExceptionWithDetailedMessage() {
-    NamedList<String> args = new NamedList<>();
-    args.add("inputField", "string_field");
-    args.add("outputField", "enriched_field");
-    args.add("prompt", "Summarize:");
-    args.add("model", "model1");
-
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
-
-    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("prompt must contain {input} placeholder", e.getMessage());
-  }
-
-  @Test
-  public void init_nullModel_shouldThrowExceptionWithDetailedMessage() {
-    NamedList<String> args = new NamedList<>();
-    args.add("inputField", "string_field");
-    args.add("outputField", "enriched_field");
-    args.add("prompt", "Summarize: {input}");
-
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
-
-    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("Missing required parameter: model", e.getMessage());
+    assertEquals(
+        "prompt is missing placeholders for inputField(s): [string_field]", e.getMessage());
   }
 
   /* Following tests depend on a real solr schema and depend on BeforeClass-AfterClass methods */
@@ -192,7 +258,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "notExistentOutput");
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
@@ -210,7 +276,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "vector");
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
@@ -228,7 +294,25 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "notExistentInput");
     args.add("outputField", "enriched_field");
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {notExistentInput}");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
+    factory.init(args);
+
+    SolrException e = assertThrows(SolrException.class, () -> factory.getInstance(req, null, null));
+    assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
+  }
+
+  @Test
+  public void init_multipleInputFields_oneNotExistent_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("inputField", "notExistentInput");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Title: {string_field}. Body: {notExistentInput}.");
     args.add("model", "model1");
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
@@ -243,8 +327,27 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   @Test
   public void init_dynamicInputField_shouldNotThrowException() {
     UpdateRequestProcessor instance =
-        createUpdateProcessor("text_s", "enriched_field", collection1, "model1");
+        createUpdateProcessor("text_s", "enriched_field", collection1, "model2");
     assertNotNull(instance);
+  }
+
+  @Test
+  public void init_multipleDynamicInputFields_shouldNotThrowException() {
+    NamedList<String> args = new NamedList<>();
+    ManagedChatModelStore.getManagedModelStore(collection1)
+        .addModel(new SolrChatModel("model1", null, null));
+    args.add("inputField", "text_s");
+    args.add("inputField", "body_field");
+    args.add("outputField", "enriched_field");
+    args.add("prompt", "Title: {text_s}. Body: {body_field}.");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    factory.init(args);
+
+    SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
+    assertNotNull(factory.getInstance(req, null, null));
   }
 
   private UpdateRequestProcessor createUpdateProcessor(
@@ -255,7 +358,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         .addModel(new SolrChatModel(modelName, null, null));
     args.add("inputField", inputFieldName);
     args.add("outputField", outputFieldName);
-    args.add("prompt", "Summarize: {input}");
+    args.add("prompt", "Summarize: {" + inputFieldName + "}");
     args.add("model", modelName);
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();

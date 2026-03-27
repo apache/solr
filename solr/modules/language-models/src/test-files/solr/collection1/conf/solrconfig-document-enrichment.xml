@@ -53,7 +53,7 @@
   <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
-   <str name="prompt">Summarize this content: {input}</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">dummy-chat-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
@@ -63,7 +63,7 @@
   <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
-   <str name="prompt">Summarize this content: {input}</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">exception-throwing-chat-model</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
@@ -74,8 +74,30 @@
   <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
-   <str name="prompt">Summarize this content: {input}</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">dummy-chat-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="documentEnrichmentMultiField">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="inputField">body_field</str>
+   <str name="outputField">enriched_field</str>
+   <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
+   <str name="model">dummy-chat-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+
+ <updateRequestProcessorChain name="failingDocumentEnrichmentMultiField">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="inputField">body_field</str>
+   <str name="outputField">enriched_field</str>
+   <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
+   <str name="model">exception-throwing-chat-model</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>

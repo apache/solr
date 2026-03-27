@@ -20,6 +20,13 @@ package org.apache.solr.languagemodels.documentenrichment.update.processor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -32,25 +39,28 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
-import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TextField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
+import org.apache.solr.schema.TextField;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * Insert in an existing field the output of the model coming from a textual field value.
+ * Insert in an existing field the output of the model coming from one or more textual field values.
  *
- * <p>The parameters supported are:
+ * <p>One or more {@code inputField} parameters specify the Solr fields to use as input. Each field
+ * name must appear as a {@code {fieldName}} placeholder in the prompt. Exactly one of {@code
+ * prompt} or {@code promptFile} must be provided.
  *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
- *   &lt;str name=&quot;inputField&quot;&gt;textualField&lt;/str&gt;
- *   &lt;str name=&quot;outputField&quot;&gt;anotherTextualField&lt;/str&gt;
- *   &lt;str name=&quot;prompt&quot;&gt;Summarize: {input}&lt;/str&gt;
+ *   &lt;str name=&quot;inputField&quot;&gt;title_field&lt;/str&gt;
+ *   &lt;str name=&quot;inputField&quot;&gt;body_field&lt;/str&gt;
+ *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
+ *   &lt;str name=&quot;prompt&quot;&gt;Title: {title_field}. Body: {body_field}.&lt;/str&gt;
  *   &lt;str name=&quot;model&quot;&gt;ChatModel&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
@@ -59,15 +69,22 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
- *   &lt;str name=&quot;inputField&quot;&gt;textualField&lt;/str&gt;
- *   &lt;str name=&quot;outputField&quot;&gt;anotherTextualField&lt;/str&gt;
+ *   &lt;str name=&quot;inputField&quot;&gt;title_field&lt;/str&gt;
+ *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
  *   &lt;str name=&quot;promptFile&quot;&gt;prompt.txt&lt;/str&gt;
  *   &lt;str name=&quot;model&quot;&gt;ChatModel&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
  *
- * <p>Exactly one of {@code prompt} or {@code promptFile} must be provided. The prompt (from either
- * source) must contain the {@code {input}} placeholder.
+ * <p>Validation rules:
+ *
+ * <ul>
+ *   <li>At least one {@code inputField} must be declared.
+ *   <li>Exactly one of {@code prompt} or {@code promptFile} must be provided.
+ *   <li>Every declared {@code inputField} must have a corresponding {@code {fieldName}} placeholder
+ *       in the prompt.
+ *   <li>Every {@code {placeholder}} in the prompt must correspond to a declared {@code inputField}.
+ * </ul>
  */
 public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware, ManagedResourceObserver {
@@ -76,9 +93,11 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   private static final String PROMPT = "prompt";
   private static final String PROMPT_FILE = "promptFile";
   private static final String MODEL_NAME = "model";
+  private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
+
   private ManagedChatModelStore modelStore = null;
 
-  private String inputField; // TODO: change with a list of input fields (check how it's done in other UpdateProcessor that supports this behaviour)
+  private List<String> inputFields;
   private String outputField;
   private String prompt;
   private String promptFile;
@@ -87,9 +106,18 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
   @Override
   public void init(final NamedList<?> args) {
+    // removeConfigArgs handles both multiple <str name="inputField"> and <arr name="inputField">
+    // and must be called before toSolrParams() since it mutates args in place
+    Collection<String> fieldNames = args.removeConfigArgs(INPUT_FIELD_PARAM);
+    if (fieldNames.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "At least one 'inputField' must be provided");
+    }
+    inputFields = List.copyOf(fieldNames);
+
     params = args.toSolrParams();
     RequiredSolrParams required = params.required();
-    inputField = required.get(INPUT_FIELD_PARAM);
     outputField = required.get(OUTPUT_FIELD_PARAM);
     modelName = required.get(MODEL_NAME);
 
@@ -107,11 +135,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
           "Only one of 'prompt' or 'promptFile' can be provided, not both");
     }
     if (inlinePrompt != null) {
-      if (!inlinePrompt.contains("{input}")) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "prompt must contain {input} placeholder");
-      }
+      validatePromptPlaceholders(inlinePrompt, inputFields);
       this.prompt = inlinePrompt;
     }
     this.promptFile = promptFilePath;
@@ -130,11 +154,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
             "Cannot read prompt file: " + promptFile,
             e);
       }
-      if (!prompt.contains("{input}")) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "prompt must contain {input} placeholder");
-      }
+      validatePromptPlaceholders(prompt, inputFields);
     }
   }
 
@@ -154,16 +174,17 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     IndexSchema latestSchema = req.getCore().getLatestSchema();
 
-    if (!latestSchema.isDynamicField(inputField) && !latestSchema.hasExplicitField(inputField)) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + inputField + "\"");
+    for (String fieldName : inputFields) {
+      if (!latestSchema.isDynamicField(fieldName) && !latestSchema.hasExplicitField(fieldName)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + fieldName + "\"");
+      }
     }
 
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
     assertIsTextualField(outputFieldSchema);
 
-    ManagedChatModelStore modelStore =
-        ManagedChatModelStore.getManagedModelStore(req.getCore());
+    ManagedChatModelStore modelStore = ManagedChatModelStore.getManagedModelStore(req.getCore());
     SolrChatModel chatModel = modelStore.getModel(modelName);
     if (chatModel == null) {
       throw new SolrException(
@@ -174,8 +195,10 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
               + ManagedChatModelStore.REST_END_POINT);
     }
 
-    return new DocumentEnrichmentUpdateProcessor(inputField, outputField, prompt, chatModel, req, next);
+    return new DocumentEnrichmentUpdateProcessor(
+        inputFields, outputField, prompt, chatModel, req, next);
   }
+
   // This is used on the outputField. Now the support is limited. Can be changed with structured outputs.
   protected void assertIsTextualField(SchemaField schemaField) {
     FieldType fieldType = schemaField.getType();
@@ -187,8 +210,32 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
   }
 
-  public String getInputField() {
-    return inputField;
+  private static void validatePromptPlaceholders(String prompt, List<String> fieldNames) {
+    Set<String> promptPlaceholders = new LinkedHashSet<>();
+    Matcher m = PLACEHOLDER_PATTERN.matcher(prompt);
+    while (m.find()) {
+      promptPlaceholders.add(m.group(1));
+    }
+
+    Set<String> missingInPrompt = new LinkedHashSet<>(fieldNames);
+    missingInPrompt.removeAll(promptPlaceholders);
+    if (!missingInPrompt.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "prompt is missing placeholders for inputField(s): " + missingInPrompt);
+    }
+
+    Set<String> unknownInPrompt = new LinkedHashSet<>(promptPlaceholders);
+    unknownInPrompt.removeAll(new HashSet<>(fieldNames));
+    if (!unknownInPrompt.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "prompt contains placeholders not declared as inputField(s): " + unknownInPrompt);
+    }
+  }
+
+  public List<String> getInputFields() {
+    return inputFields;
   }
 
   public String getOutputField() {

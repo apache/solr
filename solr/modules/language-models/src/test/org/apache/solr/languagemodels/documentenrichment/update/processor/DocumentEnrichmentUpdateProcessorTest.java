@@ -201,6 +201,119 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "/response/docs/[1]/enriched_field=='enriched content'");
   }
 
+  // --- multi-field tests ---
+
+  @Test
+  public void processAdd_multipleInputFields_allPresent_shouldEnrichDocument() throws Exception {
+    loadChatModel("dummy-chat-model.json");
+
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "body_field", "He is very proud."),
+        "documentEnrichmentMultiField");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan.", "body_field", "He grew up on Earth."),
+        "documentEnrichmentMultiField");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery();
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "/response/docs/[0]/enriched_field=='enriched content'",
+        "/response/docs/[1]/id=='98'",
+        "/response/docs/[1]/enriched_field=='enriched content'");
+  }
+
+  @Test
+  public void processAdd_multipleInputFields_firstFieldNull_shouldSkipEnrichment() throws Exception {
+    loadChatModel("dummy-chat-model.json");
+
+    addWithChain(
+        sdoc("id", "99", "body_field", "He is very proud."), // string_field absent
+        "documentEnrichmentMultiField");
+    addWithChain(
+        sdoc("id", "98", "body_field", "He is very jealous."), // string_field absent
+        "documentEnrichmentMultiField");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery();
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/enriched_field==",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/enriched_field==");
+  }
+
+  @Test
+  public void processAdd_multipleInputFields_secondFieldEmpty_shouldSkipEnrichment() throws Exception {
+    loadChatModel("dummy-chat-model.json");
+
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "body_field", ""),
+        "documentEnrichmentMultiField");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Goku is the best saiyan.", "body_field", ""),
+        "documentEnrichmentMultiField");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery();
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/enriched_field==",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/enriched_field==");
+  }
+
+  @Test
+  public void processAdd_multipleInputFields_bothFieldsAbsent_shouldSkipEnrichment() throws Exception {
+    loadChatModel("dummy-chat-model.json");
+
+    addWithChain(sdoc("id", "99"), "documentEnrichmentMultiField");
+    addWithChain(sdoc("id", "98"), "documentEnrichmentMultiField");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery();
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/enriched_field==",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/enriched_field==");
+  }
+
+  @Test
+  public void processAdd_multipleInputFields_failingModel_shouldLogAndSkipEnrichment() throws Exception {
+    loadChatModel("exception-throwing-chat-model.json");
+
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "body_field", "He is very proud."),
+        "failingDocumentEnrichmentMultiField");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan.", "body_field", "He grew up on Earth."),
+        "failingDocumentEnrichmentMultiField");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery();
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/enriched_field==",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/enriched_field==");
+  }
+
   private SolrQuery getEnrichmentQuery() {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");

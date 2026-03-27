@@ -19,6 +19,7 @@ package org.apache.solr.languagemodels.documentenrichment.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.languagemodels.documentenrichment.model.SolrChatModel;
@@ -34,13 +35,13 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private IndexSchema schema;
-  private final String inputField;
+  private final List<String> inputFields;
   private final String outputField;
   private final String prompt;
   private SolrChatModel chatModel;
 
   public DocumentEnrichmentUpdateProcessor(
-      String inputField,
+      List<String> inputFields,
       String outputField,
       String prompt,
       SolrChatModel chatModel,
@@ -48,10 +49,9 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
       UpdateRequestProcessor next) {
     super(next);
     this.schema = req.getSchema();
-    // prompt must contain "{input}" where the user wants to inject the input data to populate outputField
-    this.prompt = prompt;
-    this.inputField = inputField;
+    this.inputFields = inputFields;
     this.outputField = outputField;
+    this.prompt = prompt;
     this.chatModel = chatModel;
   }
 
@@ -62,28 +62,35 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument doc = cmd.getSolrInputDocument();
-    SolrInputField inputFieldContent = doc.get(inputField);
-    if (!isNullOrEmpty(inputFieldContent)) {
-      try {
-        // as for now, only a plain text as prompt is sent to the model (no support for tools/skills/agents)
-        String toInject = inputFieldContent.getValue().toString();
-        String injectedPrompt = prompt.replace("{input}",  toInject);
-        String response = chatModel.chat(injectedPrompt);
-        /* TODO: check if the outputField is multivalued and adapt the code/llm call to deal with lists also, together
-            with structured output support
-        */
-        doc.setField(outputField, response);
-      } catch (RuntimeException chatModelFailure) {
-        if (log.isErrorEnabled()) {
-          SchemaField uniqueKeyField = schema.getUniqueKeyField();
-          String uniqueKeyFieldName = uniqueKeyField.getName();
-          log.error(
-              "Could not process: {} for the document with {}: {}",
-              inputField,
-              uniqueKeyFieldName,
-              doc.getFieldValue(uniqueKeyFieldName),
-              chatModelFailure);
-        }
+
+    // Collect all field values; skip enrichment if any declared field is null or empty
+    String injectedPrompt = prompt;
+    for (String fieldName : inputFields) {
+      SolrInputField field = doc.get(fieldName);
+      if (isNullOrEmpty(field)) {
+        super.processAdd(cmd);
+        return;
+      }
+      injectedPrompt = injectedPrompt.replace("{" + fieldName + "}", field.getValue().toString());
+    }
+
+    try {
+      // as for now, only a plain text as prompt is sent to the model (no support for tools/skills/agents)
+      String response = chatModel.chat(injectedPrompt);
+      /* TODO: check if the outputField is multivalued and adapt the code/llm call to deal with lists also, together
+          with structured output support
+      */
+      doc.setField(outputField, response);
+    } catch (RuntimeException chatModelFailure) {
+      if (log.isErrorEnabled()) {
+        SchemaField uniqueKeyField = schema.getUniqueKeyField();
+        String uniqueKeyFieldName = uniqueKeyField.getName();
+        log.error(
+            "Could not process fields {} for the document with {}: {}",
+            inputFields,
+            uniqueKeyFieldName,
+            doc.getFieldValue(uniqueKeyFieldName),
+            chatModelFailure);
       }
     }
     super.processAdd(cmd);
