@@ -297,11 +297,8 @@ public class LukeResponse extends SolrResponseBase {
   }
 
   public Integer getNumTerms() {
-    if (indexInfo == null) {
-      return null;
-    }
-    Object val = indexInfo.get("numTerms");
-    return val instanceof Integer i ? i : null;
+    if (indexInfo == null) return null;
+    return (Integer) indexInfo.get("numTerms");
   }
 
   public Map<String, FieldTypeInfo> getFieldTypeInfo() {
