@@ -143,6 +143,7 @@ import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
+import org.apache.solr.cloud.api.collections.UpgradeCollectionIndexCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -596,6 +597,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           Map<String, Object> m = copy(req.getParams().required(), null, NAME);
           copy(req.getParams(), m, FOLLOW_ALIASES);
+          copy(
+              req.getParams(), m, UpgradeCollectionIndexCmd.REPLICA_CONVERGENCE_TIMEOUT_SECS_PARAM);
           return m;
         }),
 

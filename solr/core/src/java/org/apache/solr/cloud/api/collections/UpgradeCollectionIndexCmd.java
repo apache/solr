@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
@@ -38,7 +39,9 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,17 +53,32 @@ import org.slf4j.LoggerFactory;
  * <ol>
  *   <li>Upgrades the shard leader's index locally (no distributed forwarding).
  *   <li>Upgrades each NRT non-leader replica's index locally in parallel.
- *   <li>TLOG and PULL replicas converge by replicating the upgraded index from the leader via their
- *       normal background replication mechanism.
- *   <li>Validates that all replicas have no old-format segments remaining.
+ *   <li>TLOG and PULL replicas converge by replicating committed leader states via their normal
+ *       background replication mechanism. Intermediate commits during upgrade are allowed, so these
+ *       replicas may fetch more than once before reaching the terminal state.
+ *   <li>Polls every live replica with {@code checkOnly=true} until all report no old-format
+ *       segments remaining.
  * </ol>
  *
- * <p>After all shards are processed, readOnly is cleared.
+ * <p>After all shards are processed and validated, readOnly is cleared. If validation fails, the
+ * collection remains read-only so writes do not resume on a partially upgraded collection.
  *
  * @see org.apache.solr.handler.admin.api.UpgradeCoreIndex
  */
 public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Parameter name for the configurable convergence timeout (in seconds). If not specified,
+   * defaults to {@link #DEFAULT_REPLICA_CONVERGENCE_TIMEOUT_SECS}.
+   */
+  public static final String REPLICA_CONVERGENCE_TIMEOUT_SECS_PARAM =
+      "replicaConvergenceTimeoutSecs";
+
+  /** Default timeout for waiting for TLOG/PULL replicas to converge after the upgrade. */
+  static final int DEFAULT_REPLICA_CONVERGENCE_TIMEOUT_SECS = 1800; // 30 minutes
+
+  private static final long REPLICA_CONVERGENCE_POLL_MS = TimeUnit.SECONDS.toMillis(2);
 
   private final CollectionCommandContext ccc;
 
@@ -87,7 +105,12 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
 
     log.info("Starting UPGRADECOLLECTIONINDEX for collection [{}]", collectionName);
 
+    final int convergenceTimeoutSecs =
+        message.getInt(
+            REPLICA_CONVERGENCE_TIMEOUT_SECS_PARAM, DEFAULT_REPLICA_CONVERGENCE_TIMEOUT_SECS);
+
     boolean readOnlyWasSet = false;
+    boolean upgradeCompleted = false;
     try {
       // 1. Set collection readOnly to block external writes
       setCollectionReadOnly(collectionName, true);
@@ -97,15 +120,18 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
       Map<String, Object> shardResults = new LinkedHashMap<>();
       for (Slice slice : collection.getSlices()) {
         NamedList<Object> shardResult = new NamedList<>();
-        upgradeShardIndex(adminCmdContext, collectionName, slice, shardResult);
+        upgradeShardIndex(
+            adminCmdContext, collectionName, slice, shardResult, convergenceTimeoutSecs);
         shardResults.put(slice.getName(), shardResult);
       }
       results.add("shardResults", shardResults);
+      upgradeCompleted = true;
 
       log.info("UPGRADECOLLECTIONINDEX completed successfully for collection [{}]", collectionName);
     } finally {
-      // 3. Always clear readOnly, even on failure
-      if (readOnlyWasSet) {
+      // 3. Clear readOnly only after all shards are verified upgraded. On failure we keep the
+      // collection read-only to avoid resuming writes on a partially upgraded collection.
+      if (readOnlyWasSet && upgradeCompleted) {
         try {
           setCollectionReadOnly(collectionName, false);
         } catch (Exception e) {
@@ -119,6 +145,15 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
               "warning",
               "Failed to clear readOnly on collection. Use MODIFYCOLLECTION to restore writes.");
         }
+      } else if (readOnlyWasSet) {
+        log.warn(
+            "UPGRADECOLLECTIONINDEX did not complete successfully for collection [{}]; keeping"
+                + " collection readOnly for operator intervention.",
+            collectionName);
+        results.add(
+            "warning",
+            "Upgrade did not complete successfully. Collection remains read-only until it is"
+                + " manually restored via MODIFYCOLLECTION.");
       }
     }
   }
@@ -127,7 +162,8 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
       AdminCmdContext adminCmdContext,
       String collectionName,
       Slice slice,
-      NamedList<Object> shardResult)
+      NamedList<Object> shardResult,
+      int convergenceTimeoutSecs)
       throws Exception {
 
     String shardName = slice.getName();
@@ -180,9 +216,11 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
     }
 
     // Step 3: TLOG and PULL non-leader replicas converge via their normal background
-    // replication from the now-upgraded leader. TLOG non-leaders get their Lucene index from
-    // the leader via ReplicateFromLeader; PULL replicas do the same. We do not upgrade them
-    // locally to avoid racing with their background replication thread.
+    // replication from committed leader states. Because auto-commit may persist intermediate
+    // progress during the leader upgrade, these replicas can begin converging before the leader's
+    // final explicit commit, so completion must be gated on replica-side validation rather than on
+    // assuming a single terminal fetch. We do not upgrade them locally to avoid racing with their
+    // background replication thread.
     List<String> replicatingReplicas = new ArrayList<>();
     for (Replica replica : slice.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.PULL))) {
       if (!replica.getName().equals(leader.getName())) {
@@ -197,6 +235,9 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
       shardResult.add("replicatingFromLeader", replicatingReplicas);
     }
 
+    waitForShardReplicaConvergence(
+        adminCmdContext, collectionName, slice, shardResult, convergenceTimeoutSecs);
+
     log.info("Shard [{}] upgrade complete", shardName);
   }
 
@@ -206,6 +247,115 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
     params.set(CoreAdminParams.CORE, coreName);
     params.set("cloudMode", "true");
     return params;
+  }
+
+  private ModifiableSolrParams buildCheckOnlyParams(String coreName) {
+    ModifiableSolrParams params = buildUpgradeParams(coreName);
+    params.set("checkOnly", "true");
+    return params;
+  }
+
+  private void waitForShardReplicaConvergence(
+      AdminCmdContext adminCmdContext,
+      String collectionName,
+      Slice slice,
+      NamedList<Object> shardResult,
+      int convergenceTimeoutSecs)
+      throws Exception {
+    final String shardName = slice.getName();
+    final TimeOut timeout =
+        new TimeOut(
+            convergenceTimeoutSecs, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
+
+    while (true) {
+      ClusterState latestClusterState = ccc.getZkStateReader().getClusterState();
+      List<Replica> liveReplicas = new ArrayList<>();
+      Slice latestSlice = latestClusterState.getCollection(collectionName).getSlice(shardName);
+      for (Replica replica : latestSlice.getReplicas()) {
+        if (latestClusterState.liveNodesContain(replica.getNodeName())) {
+          liveReplicas.add(replica);
+        }
+      }
+
+      NamedList<Object> checkResults = new NamedList<>();
+      ShardHandler checkHandler = ccc.newShardHandler();
+      ShardRequestTracker checkTracker =
+          CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
+      for (Replica replica : liveReplicas) {
+        checkTracker.sendShardRequest(
+            replica, buildCheckOnlyParams(replica.getCoreName()), checkHandler);
+      }
+      // abortOnError=false: transient request failures are treated as "not yet converged"
+      // rather than fatal errors that would permanently leave the collection read-only.
+      checkTracker.processResponses(
+          checkResults,
+          checkHandler,
+          false,
+          "Replica validation failed for shard " + shardName + " during UPGRADECOLLECTIONINDEX");
+
+      List<String> pendingReplicas = getPendingReplicaUpgrades(checkResults);
+      if (pendingReplicas.isEmpty()) {
+        shardResult.add(
+            "validatedReplicas", liveReplicas.stream().map(Replica::getCoreName).toList());
+        return;
+      }
+
+      if (timeout.hasTimedOut()) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Timed out waiting for shard "
+                + shardName
+                + " replicas to converge to the upgraded index format after "
+                + convergenceTimeoutSecs
+                + "s: "
+                + pendingReplicas);
+      }
+
+      log.info(
+          "Shard [{}] waiting for replica convergence ({} pending, {}s remaining): {}",
+          shardName,
+          pendingReplicas.size(),
+          timeout.timeLeft(TimeUnit.SECONDS),
+          pendingReplicas);
+      timeout.sleep(REPLICA_CONVERGENCE_POLL_MS);
+    }
+  }
+
+  /**
+   * Returns the keys of replicas that have not yet converged to the upgraded index format.
+   *
+   * <p>Replicas in the "success" map are pending if their {@code indexUpgraded} field is not {@code
+   * true}. Replicas in the "failure" map (those whose {@code checkOnly} request failed) are treated
+   * as pending — a transient failure does not mean the replica has converged.
+   */
+  private List<String> getPendingReplicaUpgrades(NamedList<Object> checkResults) {
+    List<String> pendingReplicas = new ArrayList<>();
+
+    @SuppressWarnings("unchecked")
+    SimpleOrderedMap<Object> successes = (SimpleOrderedMap<Object>) checkResults.get("success");
+    if (successes != null) {
+      for (int i = 0; i < successes.size(); i++) {
+        Object responseObj = successes.getVal(i);
+        boolean indexUpgraded =
+            (responseObj instanceof NamedList<?> response)
+                && Boolean.TRUE.equals(response.get("indexUpgraded"));
+        if (!indexUpgraded) {
+          pendingReplicas.add(successes.getName(i));
+        }
+      }
+    }
+
+    // Replicas that returned an error are treated as not-yet-converged. A transient error
+    // (network glitch, restarting node) should not permanently leave the collection read-only.
+    @SuppressWarnings("unchecked")
+    SimpleOrderedMap<Object> failures = (SimpleOrderedMap<Object>) checkResults.get("failure");
+    if (failures != null) {
+      for (int i = 0; i < failures.size(); i++) {
+        pendingReplicas.add(failures.getName(i));
+      }
+    }
+
+    return pendingReplicas;
   }
 
   /**
