@@ -25,7 +25,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -53,11 +55,17 @@ import org.slf4j.LoggerFactory;
  * <p>The values correspond to replicas are called terms. Only replicas with highest term value are
  * considered up to date and be able to become leader and serve queries.
  *
- * <p>Terms can only updated in two strict ways:
+ * <p>Terms can only be updated in three strict ways:
  *
  * <ul>
  *   <li>A replica sets its term equals to leader's term
  *   <li>The leader increase its term and some other replicas by 1
+ *   <li>A subset of replicas can be set to a higher term than the leader, if the collection is in
+ *       read-only mode. <br>
+ *       This will initiate a leader-election. The read-only check ensures that updates cannot be
+ *       distributed while this term update is taking place. Therefore, there is no concern around
+ *       updates being handled by a replica that is no longer leader-eligible before that replica
+ *       gets the ZkShardTerms updates and realizes that it should give-up leadership.
  * </ul>
  *
  * This class should not be reused after {@link
@@ -118,6 +126,25 @@ public class ZkShardTerms implements AutoCloseable {
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) {
     if (replicasNeedingRecovery.isEmpty()) return;
     mutate(terms -> terms.increaseTerms(leader, replicasNeedingRecovery));
+  }
+
+  /**
+   * Ensure that the given cores have the highest terms, even if they are not currently leader
+   * eligible. This operation should only be used when indexes are being loaded into cores, and
+   * therefore can only be done when a collection is in a read-only state.
+   *
+   * @param collection the collection to ensure is read-only
+   * @param mostUpToDateCores the set of cores that should be leader-eligible
+   * @throws SolrServerException if the given collection is not in a read-only state
+   */
+  public void ensureHighestTerms(DocCollection collection, Set<String> mostUpToDateCores)
+      throws SolrServerException {
+    if (mostUpToDateCores.isEmpty()) return;
+    if (!collection.isReadOnly()) {
+      throw new SolrServerException(
+          "Cannot replace highest term cores when collection is not in read-only mode");
+    }
+    mutate(terms -> terms.setHighestTerms(mostUpToDateCores));
   }
 
   public ShardTerms getShardTerms() {
