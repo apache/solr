@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Add a wrapper to separate the system info from the response header, and a method to return selected info
+title: Improve /node/system response with a wrapper to separate the system info from the response header, and add a method to return only selected info
 type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Isabelle Giguère
