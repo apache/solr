@@ -36,7 +36,10 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Solr's interface to Jetty. Formerly known as {@code SolrDispatchFilter}. */
+/**
+ * Solr's interface to Jetty, and passes requests to {@link HttpSolrCall}. Formerly known as {@code
+ * SolrDispatchFilter}.
+ */
 public class SolrServlet extends HttpServlet {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -94,10 +97,10 @@ public class SolrServlet extends HttpServlet {
   For over a decade this class did anything and everything
   In late 2021 SOLR-15590 moved container startup to CoreContainerProvider
   In late 2025 SOLR-18040 moved request wrappers to independent ServletFilters
-    such as PathExclusionFilter see web.xml for a full, up-to-date list
 
-  This class is only handling dispatch, please think twice before adding anything else to it.
-   */
+  This class is now basically only passing the request to HttpSolrCall.
+  Please think twice before adding anything else to it.
+  */
 
   private void dispatch(HttpServletRequest request, HttpServletResponse response, boolean retry)
       throws IOException, ServletException {
