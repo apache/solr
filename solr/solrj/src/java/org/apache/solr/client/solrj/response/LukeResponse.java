@@ -283,27 +283,16 @@ public class LukeResponse extends SolrResponseBase {
     return n != null ? n.longValue() : null;
   }
 
-  public Integer getNumDocs() {
-    if (indexInfo == null) {
-      return null;
-    }
-    Object val = indexInfo.get("numDocs");
-    return val instanceof Integer i ? i : null;
-  }
-
-  public Long getNumDocsAsLong() {
+  public Long getNumDocs() {
     return getIndexLong("numDocs");
   }
 
   public Integer getMaxDoc() {
-    if (indexInfo == null) {
-      return null;
-    }
-    Object val = indexInfo.get("maxDoc");
-    return val instanceof Integer i ? i : null;
+    if (indexInfo == null) return null;
+    return (Integer) indexInfo.get("maxDoc");
   }
 
-  public Long getDeletedDocsAsLong() {
+  public Long getDeletedDocs() {
     return getIndexLong("deletedDocs");
   }
 

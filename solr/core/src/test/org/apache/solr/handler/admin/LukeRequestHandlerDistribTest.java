@@ -34,7 +34,7 @@ import org.junit.Test;
 
 public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase {
 
-  private static final int NUM_DOCS = 20;
+  private static final Long NUM_DOCS = 20L;
 
   public LukeRequestHandlerDistribTest() {
     fixShardCount(2);
@@ -86,26 +86,23 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
     LukeResponse rsp = requestLuke();
 
-    assertEquals(
-        "aggregated numDocs should equal total docs", NUM_DOCS, rsp.getNumDocsAsLong().longValue());
+    assertEquals("aggregated numDocs should equal total docs", NUM_DOCS, rsp.getNumDocs());
     assertTrue("aggregated maxDoc should be > 0", rsp.getMaxDoc() > 0);
-    assertNotNull("deletedDocs should be present", rsp.getDeletedDocsAsLong());
+    assertNotNull("deletedDocs should be present", rsp.getDeletedDocs());
 
     Map<String, LukeResponse> shardResponses = rsp.getShardResponses();
     assertNotNull("shards section should be present", shardResponses);
     assertEquals("should have 2 shard entries", 2, shardResponses.size());
 
-    long sumShardDocs = 0;
+    Long sumShardDocs = 0L;
     for (Map.Entry<String, LukeResponse> entry : shardResponses.entrySet()) {
       LukeResponse shardLuke = entry.getValue();
-      assertNotNull("each shard should have numDocs", shardLuke.getNumDocsAsLong());
+      assertNotNull("each shard should have numDocs", shardLuke.getNumDocs());
       assertNotNull("each shard should have maxDoc", shardLuke.getMaxDoc());
-      sumShardDocs += shardLuke.getNumDocsAsLong();
+      sumShardDocs += shardLuke.getNumDocs();
     }
     assertEquals(
-        "sum of per-shard numDocs should equal aggregated numDocs",
-        rsp.getNumDocsAsLong().longValue(),
-        sumShardDocs);
+        "sum of per-shard numDocs should equal aggregated numDocs", rsp.getNumDocs(), sumShardDocs);
   }
 
   @Test
@@ -124,7 +121,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     assertNotNull("schema flags should be present", nameField.getSchema());
     assertEquals(
         "aggregated docs count for 'name' should equal total docs",
-        NUM_DOCS,
+        (long) NUM_DOCS,
         nameField.getDocs());
 
     LukeResponse.FieldInfo idField = fields.get("id");
@@ -227,9 +224,9 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     LukeResponse rsp = requestLuke();
 
     // Index-level stats
-    assertEquals("numDocs should be 1", 1, rsp.getNumDocsAsLong().longValue());
+    assertEquals("numDocs should be 1", 1, (long) rsp.getNumDocs());
     assertTrue("maxDoc should be > 0", rsp.getMaxDoc() > 0);
-    assertEquals("deletedDocs should be 0", 0, rsp.getDeletedDocsAsLong().longValue());
+    assertEquals("deletedDocs should be 0", 0L, (long) rsp.getDeletedDocs());
 
     Map<String, LukeResponse> shardResponses = rsp.getShardResponses();
     assertNotNull("shards section should be present", shardResponses);
@@ -238,8 +235,8 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     long sumShardDocs = 0;
     for (Map.Entry<String, LukeResponse> entry : shardResponses.entrySet()) {
       LukeResponse shardLuke = entry.getValue();
-      assertNotNull("each shard should have numDocs", shardLuke.getNumDocsAsLong());
-      sumShardDocs += shardLuke.getNumDocsAsLong();
+      assertNotNull("each shard should have numDocs", shardLuke.getNumDocs());
+      sumShardDocs += shardLuke.getNumDocs();
     }
     assertEquals("sum of per-shard numDocs should be 1", 1, sumShardDocs);
 
@@ -505,7 +502,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     rsp.setResponse(raw);
 
     assertNotNull("index info should be present", rsp.getIndexInfo());
-    assertEquals("should see the 1 doc we indexed", 1, rsp.getNumDocsAsLong().longValue());
+    assertEquals("should see the 1 doc we indexed", 1, (long) rsp.getNumDocs());
     assertNotNull(
         "shards section should be present when targeting a shard via shards param",
         rsp.getShardResponses());

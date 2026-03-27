@@ -402,9 +402,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       NamedList<Object> shardIndex = lukeRsp.getIndexInfo();
       if (shardIndex != null) {
-        totalNumDocs += Optional.ofNullable(lukeRsp.getNumDocsAsLong()).orElse(0L);
+        totalNumDocs += Optional.ofNullable(lukeRsp.getNumDocs()).orElse(0L);
         totalMaxDoc = Math.max(totalMaxDoc, Optional.ofNullable(lukeRsp.getMaxDoc()).orElse(0));
-        totalDeletedDocs += Optional.ofNullable(lukeRsp.getDeletedDocsAsLong()).orElse(0L);
+        totalDeletedDocs += Optional.ofNullable(lukeRsp.getDeletedDocs()).orElse(0L);
         Number segCount = (Number) shardIndex.get(KEY_SEGMENT_COUNT);
         totalSegmentCount += segCount != null ? segCount.intValue() : 0;
 
