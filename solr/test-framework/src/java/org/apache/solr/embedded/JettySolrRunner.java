@@ -148,7 +148,7 @@ public class JettySolrRunner implements SolrBackend {
 
   private String host;
 
-  private volatile EmbeddedSolrServer backendAdminClient;
+  private volatile HttpJettySolrClient jettySolrClient;
 
   private volatile boolean started = false;
 
@@ -592,8 +592,8 @@ public class JettySolrRunner implements SolrBackend {
 
       setProtocolAndHost();
 
-      IOUtils.closeQuietly(backendAdminClient);
-      backendAdminClient = new EmbeddedSolrServer(getCoreContainer(), null);
+      IOUtils.closeQuietly(jettySolrClient);
+      jettySolrClient = null;
 
       if (enableProxy) {
         if (started) {
@@ -683,6 +683,9 @@ public class JettySolrRunner implements SolrBackend {
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
+      IOUtils.closeQuietly(jettySolrClient);
+      jettySolrClient = null;
+
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
@@ -727,9 +730,6 @@ public class JettySolrRunner implements SolrBackend {
       if (enableProxy) {
         proxy.close();
       }
-
-      IOUtils.closeQuietly(backendAdminClient);
-      backendAdminClient = null;
 
       if (prevContext != null) {
         MDC.setContextMap(prevContext);
@@ -929,23 +929,35 @@ public class JettySolrRunner implements SolrBackend {
   }
 
   @Override
-  public SolrClient getSolrClient() {
-    return backendAdminClient;
+  public synchronized HttpJettySolrClient getSolrClient() {
+    if (jettySolrClient == null) {
+      jettySolrClient = new HttpJettySolrClient.Builder(getBaseUrl().toString()).build();
+    }
+    return jettySolrClient;
+  }
+
+  private EmbeddedSolrBackend getEmbeddedSolrBackend() {
+    var container = getCoreContainer();
+    if (container.isZooKeeperAware()) {
+      throw new IllegalStateException(
+          "Don't call SolrBackend methods in SolrCloud on JettySolrRunner");
+    }
+    return new EmbeddedSolrBackend(new EmbeddedSolrServer(container, null)); // cheap
   }
 
   @Override
   public void createCollection(CollectionAdminRequest.Create create) {
-    new EmbeddedSolrBackend(backendAdminClient).createCollection(create);
+    getEmbeddedSolrBackend().createCollection(create);
   }
 
   @Override
   public boolean hasCollection(String name) {
-    return new EmbeddedSolrBackend(backendAdminClient).hasCollection(name);
+    return getEmbeddedSolrBackend().hasCollection(name);
   }
 
   @Override
   public void reloadCollection(String name) throws SolrServerException, IOException {
-    new EmbeddedSolrBackend(backendAdminClient).reloadCollection(name);
+    getEmbeddedSolrBackend().reloadCollection(name);
   }
 
   @Override
@@ -955,7 +967,6 @@ public class JettySolrRunner implements SolrBackend {
 
   @Override
   public void close() {
-    IOUtils.closeQuietly(backendAdminClient);
     try {
       stop();
     } catch (Exception e) {
