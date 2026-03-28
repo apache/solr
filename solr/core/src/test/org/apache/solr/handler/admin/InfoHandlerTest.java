@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
 import io.opentelemetry.api.common.Attributes;
+import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
