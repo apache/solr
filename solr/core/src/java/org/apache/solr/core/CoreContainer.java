@@ -1254,6 +1254,10 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
+      // Shut down the coreZkRegister executor early so that any in-progress async reloads
+      // (triggered by ZK config watchers) complete before we close cores.
+      ExecutorUtil.shutdownAndAwaitTermination(zkSys.getCoreZkRegisterExecutorService());
+
       ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // Now clear all the cores that are being operated upon.
