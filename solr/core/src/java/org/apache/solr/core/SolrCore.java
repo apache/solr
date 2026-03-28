@@ -2053,8 +2053,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (searchComponents.isLoaded(name)
           && searchComponents.get(name) instanceof HighlightComponent) {
         if (!HighlightComponent.COMPONENT_NAME.equals(name)) {
-          searchComponents.put(
-              HighlightComponent.COMPONENT_NAME, searchComponents.getRegistry().get(name));
+          searchComponents.alias(name, HighlightComponent.COMPONENT_NAME);
         }
         break;
       }
