@@ -58,6 +58,8 @@ public class TestCaffeineCache extends SolrTestCase {
     String newLfuCacheName = scope + "-2";
 
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
+    solrMetricsContext.registerCloseable(lfuCache);
+    solrMetricsContext.registerCloseable(newLFUCache);
 
     lfuCache.initializeMetrics(
         solrMetricsContext, Attributes.of(NAME_ATTR, lfuCacheName), "solr_cache");
@@ -118,6 +120,8 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals(7.0, cumHitDatapoint + cumMissDatapoint, 0.001); // total cumulative lookups
     assertEquals(4.0, cumHitDatapoint, 0.001);
     assertEquals(102.0, cumInsertDatapoint, 0.001);
+
+    solrMetricsContext.close();
   }
 
   @Test

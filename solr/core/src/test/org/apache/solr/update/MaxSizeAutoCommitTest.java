@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +90,8 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
     updateRequestHandler = new UpdateRequestHandler();
     updateRequestHandler.init(null);
+    updateRequestHandler.initializeMetrics(
+        core.getCoreMetricManager().getSolrMetricsContext(), Attributes.empty());
   }
 
   @Override
@@ -97,6 +100,9 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     if (null != monitor) {
       monitor.assertSaneOffers();
       monitor.clear();
+    }
+    if (null != updateRequestHandler) {
+      updateRequestHandler.close();
     }
     super.tearDown();
     deleteCore();
