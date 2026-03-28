@@ -18,10 +18,10 @@
 package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEPROXY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN_OR_REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
+import static org.apache.solr.servlet.HttpSolrCall.Action.REMOTEPROXY;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,7 +56,6 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.servlet.HttpSolrCall;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -78,12 +77,8 @@ public class V2HttpCall extends HttpSolrCall {
   static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
   public V2HttpCall(
-      SolrDispatchFilter solrDispatchFilter,
-      CoreContainer cc,
-      HttpServletRequest request,
-      HttpServletResponse response,
-      boolean retry) {
-    super(solrDispatchFilter, cc, request, response, retry);
+      CoreContainer cc, HttpServletRequest request, HttpServletResponse response, boolean retry) {
+    super(cc, request, response, retry);
   }
 
   @Override
