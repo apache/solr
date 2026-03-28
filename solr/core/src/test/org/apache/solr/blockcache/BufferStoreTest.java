@@ -21,6 +21,7 @@ import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
@@ -51,7 +52,7 @@ public class BufferStoreTest extends SolrTestCase {
   @After
   public void clearBufferStores() {
     BufferStore.clearBufferStores();
-    org.apache.solr.common.util.IOUtils.closeQuietly(metrics);
+    IOUtils.closeQuietly(metrics);
     solrMetricsContext.close();
   }
 
