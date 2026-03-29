@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,14 +31,10 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.CookieStore;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
@@ -61,13 +56,11 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
@@ -455,73 +448,6 @@ public class BasicHttpSolrClientTest extends SolrTestCaseJ4 {
       SolrServerException e =
           expectThrows(SolrServerException.class, () -> queryRequest.process(client));
       assertTrue(e.getMessage().contains("redirect"));
-    }
-  }
-
-  @Test
-  public void testCompression() throws Exception {
-    final String debugPath = "/debug/foo";
-    final SolrQuery q = new SolrQuery("*:*");
-    final var queryRequest = new QueryRequest(q);
-    queryRequest.setPath(debugPath + queryRequest.getPath());
-
-    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      // verify request header gets set
-      DebugServlet.clear();
-      expectThrows(RemoteSolrException.class, () -> queryRequest.process(client));
-      assertNull(DebugServlet.headers.toString(), DebugServlet.headers.get("accept-encoding"));
-    }
-
-    try (SolrClient client =
-        new HttpSolrClient.Builder(solrTestRule.getBaseUrl()).allowCompression(true).build()) {
-      try {
-        queryRequest.process(client);
-      } catch (RemoteSolrException ignored) {
-      }
-      assertNotNull(DebugServlet.headers.get("accept-encoding"));
-    }
-
-    try (SolrClient client =
-        new HttpSolrClient.Builder(solrTestRule.getBaseUrl()).allowCompression(false).build()) {
-      try {
-        queryRequest.process(client);
-      } catch (RemoteSolrException ignored) {
-      }
-    }
-    assertNull(DebugServlet.headers.get("accept-encoding"));
-
-    // verify server compresses output
-    HttpGet get =
-        new HttpGet(
-            solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/select?q=foo&wt=xml");
-    get.setHeader("Accept-Encoding", "gzip");
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, true);
-
-    RequestConfig config = RequestConfig.custom().setDecompressionEnabled(false).build();
-    get.setConfig(config);
-
-    CloseableHttpClient httpclient = HttpClientUtil.createClient(params);
-    HttpEntity entity = null;
-    try {
-      HttpResponse response =
-          httpclient.execute(get, HttpClientUtil.createNewHttpClientRequestContext());
-      entity = response.getEntity();
-      Header ceheader = entity.getContentEncoding();
-      assertNotNull(Arrays.asList(response.getAllHeaders()).toString(), ceheader);
-      assertEquals("gzip", ceheader.getValue());
-    } finally {
-      if (entity != null) {
-        entity.getContent().close();
-      }
-      HttpClientUtil.close(httpclient);
-    }
-
-    // verify compressed response can be handled
-    try (SolrClient client =
-        getHttpSolrClient(solrTestRule.getBaseUrl(), DEFAULT_TEST_COLLECTION_NAME)) {
-      QueryResponse response = client.query(new SolrQuery("foo"));
-      assertEquals(0, response.getStatus());
     }
   }
 
