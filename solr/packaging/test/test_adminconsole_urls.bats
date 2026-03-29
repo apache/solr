@@ -32,29 +32,23 @@ teardown() {
 @test "assert able to launch solr admin console" {
   run solr start
 
-  # Check HTTP status code
   run curl -s -o /dev/null -w "%{http_code}" http://localhost:${SOLR_PORT}/solr/
   assert_output "200"
 
-  # Check Content-Type header is text/html
-  local content_type=$(curl -s -I http://localhost:${SOLR_PORT}/solr/ | grep -i "Content-Type:" | tr -d '\r')
-  [[ "$content_type" == *"text/html"* ]]
+  run curl -s -I http://localhost:${SOLR_PORT}/solr/
+  assert_output --partial "text/html"
 
-  # Check that response body contains HTML
-  local response_body=$(curl -s http://localhost:${SOLR_PORT}/solr/)
-  [[ "$response_body" == *"<html"* ]] || [[ "$response_body" == *"<!DOCTYPE"* ]]
+  run curl -s http://localhost:${SOLR_PORT}/solr/
+  assert_output --partial "<html"
 
-  # Check that a CSS file returns 200
   run curl -s -o /dev/null -w "%{http_code}" http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css
   assert_output "200"
 
-  # Check Content-Type header is text/css
-  local content_type=$(curl -s -I http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css | grep -i "Content-Type:" | tr -d '\r')
-  [[ "$content_type" == *"text/css"* ]]
+  run curl -s -I http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css
+  assert_output --partial "text/css"
 
-  # Check that response body contains actual CSS content
-  local response_body=$(curl -s http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css)
-  [[ "$response_body" == *"{"* ]] && [[ "$response_body" == *"}"* ]]
+  run curl -s http://localhost:${SOLR_PORT}/solr/css/angular/chosen.css
+  assert_output --partial "{"
 }
 
 @test "assert CSP header contains custom connect src URLs" {
@@ -63,11 +57,8 @@ teardown() {
 
   run solr start -Dsolr.ui.headers.csp.connect-src.urls="${csp_urls}"
 
-  # Get the Content-Security-Policy header value
-  local csp_header=$(curl -s -I http://localhost:${SOLR_PORT}/solr/ | grep -i "Content-Security-Policy:" | tr -d '\r')
-
-  # Check that the CSP header contains each of our custom URLs
-  [[ "$csp_header" == *"http://example1.com/token"* ]]
-  [[ "$csp_header" == *"https://example2.com/path/uri1"* ]]
-  [[ "$csp_header" == *"http://example3.com/oauth2/uri2"* ]]
+  run curl -s -I http://localhost:${SOLR_PORT}/solr/
+  assert_output --partial "http://example1.com/token"
+  assert_output --partial "https://example2.com/path/uri1"
+  assert_output --partial "http://example3.com/oauth2/uri2"
 }
