@@ -30,7 +30,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -38,8 +37,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -52,11 +49,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.SolrBackend;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoresApi;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -105,7 +107,7 @@ import org.slf4j.MDC;
  *
  * @since solr 1.3
  */
-public class JettySolrRunner {
+public class JettySolrRunner implements SolrBackend {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -145,6 +147,8 @@ public class JettySolrRunner {
   private String protocol;
 
   private String host;
+
+  private volatile HttpJettySolrClient jettySolrClient;
 
   private volatile boolean started = false;
 
@@ -499,9 +503,7 @@ public class JettySolrRunner {
     return (RateLimitFilter) rateLimitFilter.getFilter();
   }
 
-  /**
-   * @return the {@link CoreContainer} for this node
-   */
+  @Override
   public CoreContainer getCoreContainer() {
     SolrServlet servlet;
     try {
@@ -589,6 +591,9 @@ public class JettySolrRunner {
       }
 
       setProtocolAndHost();
+
+      IOUtils.closeQuietly(jettySolrClient);
+      jettySolrClient = null;
 
       if (enableProxy) {
         if (started) {
@@ -678,6 +683,9 @@ public class JettySolrRunner {
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
+      IOUtils.closeQuietly(jettySolrClient);
+      jettySolrClient = null;
+
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
@@ -731,29 +739,20 @@ public class JettySolrRunner {
     }
   }
 
-  public void outputMetrics(Path outputDirectory, String fileName) throws IOException {
+  public void outputMetrics(PrintStream out) throws IOException {
     if (getCoreContainer() != null) {
-
-      if (outputDirectory != null) {
-        Path outDir = outputDirectory;
-        Files.createDirectories(outDir);
-      }
-
       SolrMetricManager metricsManager = getCoreContainer().getMetricManager();
 
       Set<String> registryNames = metricsManager.registryNames();
       for (String registryName : registryNames) {
         var prometheusReader = metricsManager.getPrometheusMetricReader(registryName);
         if (prometheusReader != null) {
-          try (OutputStream os =
-              outputDirectory == null
-                  ? OutputStream.nullOutputStream()
-                  : Files.newOutputStream(outputDirectory.resolve(registryName + "_" + fileName))) {
-            new PrometheusTextFormatWriter(false).write(os, prometheusReader.collect());
-          }
+          out.println();
+          out.println("# Registry: " + registryName);
+          out.println();
+          new PrometheusTextFormatWriter(false).write(out, prometheusReader.collect());
         }
       }
-
     } else {
       throw new IllegalStateException("No CoreContainer found");
     }
@@ -918,5 +917,60 @@ public class JettySolrRunner {
 
   public SocketProxy getProxy() {
     return proxy;
+  }
+
+  // ---- SolrBackend implementation ----
+
+  @Override
+  public SolrClient newSolrClient(String collection) {
+    return new HttpJettySolrClient.Builder(getBaseUrl().toString())
+        .withDefaultCollection(collection)
+        .build();
+  }
+
+  @Override
+  public synchronized HttpJettySolrClient getSolrClient() {
+    if (jettySolrClient == null) {
+      jettySolrClient = new HttpJettySolrClient.Builder(getBaseUrl().toString()).build();
+    }
+    return jettySolrClient;
+  }
+
+  private EmbeddedSolrBackend getEmbeddedSolrBackend() {
+    var container = getCoreContainer();
+    if (container.isZooKeeperAware()) {
+      throw new IllegalStateException(
+          "Don't call SolrBackend methods in SolrCloud on JettySolrRunner");
+    }
+    return new EmbeddedSolrBackend(new EmbeddedSolrServer(container, null)); // cheap
+  }
+
+  @Override
+  public void createCollection(CollectionAdminRequest.Create create) {
+    getEmbeddedSolrBackend().createCollection(create);
+  }
+
+  @Override
+  public boolean hasCollection(String name) {
+    return getEmbeddedSolrBackend().hasCollection(name);
+  }
+
+  @Override
+  public void reloadCollection(String name) throws SolrServerException, IOException {
+    getEmbeddedSolrBackend().reloadCollection(name);
+  }
+
+  @Override
+  public String getBaseUrl(Random r) {
+    return getBaseUrl().toString();
+  }
+
+  @Override
+  public void close() {
+    try {
+      stop();
+    } catch (Exception e) {
+      log.error(e.toString(), e); // nowarn
+    }
   }
 }
