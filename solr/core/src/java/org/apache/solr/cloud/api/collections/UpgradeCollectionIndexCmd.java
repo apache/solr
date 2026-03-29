@@ -21,9 +21,11 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
@@ -78,7 +80,7 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
   /** Default timeout for waiting for TLOG/PULL replicas to converge after the upgrade. */
   static final int DEFAULT_REPLICA_CONVERGENCE_TIMEOUT_SECS = 1800; // 30 minutes
 
-  private static final long REPLICA_CONVERGENCE_POLL_MS = TimeUnit.SECONDS.toMillis(2);
+  private static final long REPLICA_CONVERGENCE_POLL_MS = TimeUnit.SECONDS.toMillis(30);
 
   private final CollectionCommandContext ccc;
 
@@ -267,36 +269,59 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
         new TimeOut(
             convergenceTimeoutSecs, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
 
+    // Monotonically accumulates replica keys that have confirmed indexUpgraded=true.
+    // A replica that confirms in iteration N is not re-checked in iteration N+1, so a
+    // momentary probe failure (GC pause, brief network blip) on a subsequent poll cannot
+    // un-confirm an already-verified replica.
+    final Set<String> confirmedConverged = new HashSet<>();
+
     while (true) {
       ClusterState latestClusterState = ccc.getZkStateReader().getClusterState();
-      List<Replica> liveReplicas = new ArrayList<>();
       Slice latestSlice = latestClusterState.getCollection(collectionName).getSlice(shardName);
-      for (Replica replica : latestSlice.getReplicas()) {
-        if (latestClusterState.liveNodesContain(replica.getNodeName())) {
-          liveReplicas.add(replica);
+      List<Replica> allReplicas = new ArrayList<>(latestSlice.getReplicas());
+
+      // Probe only the live replicas that have not yet been confirmed. Non-live replicas
+      // remain in pendingReplicas until they recover and report indexUpgraded=true.
+      List<Replica> toCheck = new ArrayList<>();
+      for (Replica replica : allReplicas) {
+        String key = CollectionHandlingUtils.requestKey(replica);
+        if (!confirmedConverged.contains(key)
+            && latestClusterState.liveNodesContain(replica.getNodeName())) {
+          toCheck.add(replica);
         }
       }
 
-      NamedList<Object> checkResults = new NamedList<>();
-      ShardHandler checkHandler = ccc.newShardHandler();
-      ShardRequestTracker checkTracker =
-          CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
-      for (Replica replica : liveReplicas) {
-        checkTracker.sendShardRequest(
-            replica, buildCheckOnlyParams(replica.getCoreName()), checkHandler);
-      }
-      // abortOnError=false: transient request failures are treated as "not yet converged"
-      // rather than fatal errors that would permanently leave the collection read-only.
-      checkTracker.processResponses(
-          checkResults,
-          checkHandler,
-          false,
-          "Replica validation failed for shard " + shardName + " during UPGRADECOLLECTIONINDEX");
+      if (!toCheck.isEmpty()) {
+        NamedList<Object> checkResults = new NamedList<>();
+        ShardHandler checkHandler = ccc.newShardHandler();
+        ShardRequestTracker checkTracker =
+            CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
+        for (Replica replica : toCheck) {
+          checkTracker.sendShardRequest(
+              replica, buildCheckOnlyParams(replica.getCoreName()), checkHandler);
+        }
+        // abortOnError=false: transient request failures are treated as "not yet converged"
+        // rather than fatal errors that would permanently leave the collection read-only.
+        checkTracker.processResponses(
+            checkResults,
+            checkHandler,
+            false,
+            "Replica validation failed for shard " + shardName + " during UPGRADECOLLECTIONINDEX");
 
-      List<String> pendingReplicas = getPendingReplicaUpgrades(checkResults);
+        updateConfirmedConverged(checkResults, confirmedConverged);
+      }
+
+      // Pending = ALL replicas of the shard (live or not) not yet confirmed. A down replica
+      // is still unverified and must eventually confirm before readOnly is cleared.
+      List<String> pendingReplicas =
+          allReplicas.stream()
+              .map(CollectionHandlingUtils::requestKey)
+              .filter(key -> !confirmedConverged.contains(key))
+              .toList();
+
       if (pendingReplicas.isEmpty()) {
         shardResult.add(
-            "validatedReplicas", liveReplicas.stream().map(Replica::getCoreName).toList());
+            "validatedReplicas", allReplicas.stream().map(Replica::getCoreName).toList());
         return;
       }
 
@@ -322,40 +347,23 @@ public class UpgradeCollectionIndexCmd implements CollApiCmds.CollectionApiComma
   }
 
   /**
-   * Returns the keys of replicas that have not yet converged to the upgraded index format.
-   *
-   * <p>Replicas in the "success" map are pending if their {@code indexUpgraded} field is not {@code
-   * true}. Replicas in the "failure" map (those whose {@code checkOnly} request failed) are treated
-   * as pending — a transient failure does not mean the replica has converged.
+   * Adds to {@code confirmedConverged} the keys of replicas that responded with {@code
+   * indexUpgraded=true} in this poll round.
    */
-  private List<String> getPendingReplicaUpgrades(NamedList<Object> checkResults) {
-    List<String> pendingReplicas = new ArrayList<>();
-
+  private void updateConfirmedConverged(
+      NamedList<Object> checkResults, Set<String> confirmedConverged) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> successes = (SimpleOrderedMap<Object>) checkResults.get("success");
-    if (successes != null) {
-      for (int i = 0; i < successes.size(); i++) {
-        Object responseObj = successes.getVal(i);
-        boolean indexUpgraded =
-            (responseObj instanceof NamedList<?> response)
-                && Boolean.TRUE.equals(response.get("indexUpgraded"));
-        if (!indexUpgraded) {
-          pendingReplicas.add(successes.getName(i));
-        }
+    if (successes == null) {
+      return;
+    }
+    for (int i = 0; i < successes.size(); i++) {
+      Object responseObj = successes.getVal(i);
+      if ((responseObj instanceof NamedList<?> response)
+          && Boolean.TRUE.equals(response.get("indexUpgraded"))) {
+        confirmedConverged.add(successes.getName(i));
       }
     }
-
-    // Replicas that returned an error are treated as not-yet-converged. A transient error
-    // (network glitch, restarting node) should not permanently leave the collection read-only.
-    @SuppressWarnings("unchecked")
-    SimpleOrderedMap<Object> failures = (SimpleOrderedMap<Object>) checkResults.get("failure");
-    if (failures != null) {
-      for (int i = 0; i < failures.size(); i++) {
-        pendingReplicas.add(failures.getName(i));
-      }
-    }
-
-    return pendingReplicas;
   }
 
   /**
