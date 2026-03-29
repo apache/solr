@@ -21,10 +21,6 @@ import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PA
 import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
@@ -49,6 +45,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.api.NodeHealth;
+import org.eclipse.jetty.client.ContentResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -172,20 +169,17 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       // Use a raw HTTP request so we can inspect the full response body.
       // SolrJ's HealthCheckRequest throws RemoteSolrException on non-200 responses and does
       // not expose the response body, so we go below SolrJ here.
-      try (HttpClient httpClient = HttpClient.newHttpClient()) {
-        HttpResponse<String> response =
-            httpClient.send(
-                HttpRequest.newBuilder()
-                    .uri(URI.create(newJetty.getBaseUrl() + HEALTH_CHECK_HANDLER_PATH))
-                    .build(),
-                HttpResponse.BodyHandlers.ofString());
+      ContentResponse response =
+          newJetty
+              .getSolrClient()
+              .getHttpClient()
+              .GET(newJetty.getBaseUrl() + HEALTH_CHECK_HANDLER_PATH);
 
-        assertEquals("Expected 503 SERVICE_UNAVAILABLE", 503, response.statusCode());
-        assertThat(
-            "v1 error response body must contain status=FAILURE so body-inspecting clients get a clear signal",
-            response.body(),
-            containsString("FAILURE"));
-      }
+      assertEquals("Expected 503 SERVICE_UNAVAILABLE", 503, response.getStatus());
+      assertThat(
+          "v1 error response body must contain status=FAILURE so body-inspecting clients get a clear signal",
+          response.getContentAsString(),
+          containsString("FAILURE"));
     } finally {
       newJetty.stop();
     }
