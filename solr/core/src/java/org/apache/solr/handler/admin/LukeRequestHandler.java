@@ -70,6 +70,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -96,6 +97,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -352,7 +354,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    aggregateDistributedResponses(rsp, responses);
+    aggregateDistributedResponses(req, rsp, responses);
     rsp.setHttpCaching(false);
     return true;
   }
@@ -361,7 +363,8 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     return srsp.getShardAddress() != null ? srsp.getShardAddress() : srsp.getShard();
   }
 
-  private void aggregateDistributedResponses(SolrQueryResponse rsp, List<ShardResponse> responses) {
+  private void aggregateDistributedResponses(
+      SolrQueryRequest req, SolrQueryResponse rsp, List<ShardResponse> responses) {
 
     if (!responses.isEmpty()) {
       ShardResponse firstRsp = responses.getFirst();
@@ -448,6 +451,13 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     if (firstDoc != null) {
       rsp.add(RSP_DOC, firstDoc);
+    }
+    if (shouldNarrowLongsForOldClient(req)) {
+      narrowLongToInt(aggregatedIndex, KEY_NUM_DOCS);
+      narrowLongToInt(aggregatedIndex, KEY_DELETED_DOCS);
+      for (AggregatedFieldData fd : aggregatedFields.values()) {
+        narrowLongToInt(fd.aggregated, KEY_DOCS);
+      }
     }
     if (!aggregatedFields.isEmpty()) {
       SimpleOrderedMap<Object> aggregatedFieldsNL = new SimpleOrderedMap<>();
@@ -555,6 +565,32 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     long docsLong = fi.getDocs();
     fieldData.aggregated.compute(
         KEY_DOCS, (key, val) -> val == null ? docsLong : (Long) val + docsLong);
+  }
+
+  /**
+   * Minimum client version that understands Long values in distributed Luke responses. Distributed
+   * Luke aggregates counts across shards, which can overflow Integer. Older clients cast these
+   * values to Integer and would fail with a ClassCastException.
+   */
+  private static final SolrVersion DISTRIB_LONG_COUNTS_MIN_VERSION =
+      SolrVersion.forIntegers(10, 2, 0);
+
+  private static boolean shouldNarrowLongsForOldClient(SolrQueryRequest req) {
+    HttpSolrCall call = req.getHttpSolrCall();
+    if (call == null) return false;
+    SolrVersion clientVersion = call.getUserAgentSolrVersion();
+    return clientVersion != null && clientVersion.lessThan(DISTRIB_LONG_COUNTS_MIN_VERSION);
+  }
+
+  /** Narrows a Long value to Integer if it fits, for javabin backward compatibility. */
+  private static void narrowLongToInt(NamedList<Object> nl, String key) {
+    int idx = nl.indexOf(key, 0);
+    if (idx >= 0) {
+      Object val = nl.getVal(idx);
+      if (val instanceof Long l && l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE) {
+        nl.setVal(idx, l.intValue());
+      }
+    }
   }
 
   /** Validates that a field attribute value is identical across shards. */
