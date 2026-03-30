@@ -34,4 +34,18 @@ sealed interface CreateConfigsetEvent {
      * @property error The error that was thrown during the creation process.
      */
     data class ConfigsetCreationFailed(val error: Exception) : CreateConfigsetEvent
+
+    /**
+     * Event that is omitted when the creation process is aborted.
+     */
+    data object ConfigsetCreationAborted: CreateConfigsetEvent
+
+    /**
+     * Event that is omitted when the creation process input form is toggled. It can be either
+     * text input or file input.
+     *
+     * @property useFileInput Whether the file input form is used (true) or the text field form
+     * instead (false).
+     */
+    data class ConfigsetCreateToggleInputForm(val useFileInput: Boolean): CreateConfigsetEvent
 }

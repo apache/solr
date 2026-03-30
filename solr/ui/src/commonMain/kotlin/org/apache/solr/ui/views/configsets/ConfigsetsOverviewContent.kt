@@ -18,7 +18,6 @@ package org.apache.solr.ui.views.configsets
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -27,6 +26,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -41,6 +41,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import org.apache.solr.ui.components.configsets.di.ConfigsetsOverviewComponent
+import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetDialog
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.domain.Configset
@@ -102,6 +103,19 @@ fun ConfigsetsOverviewContent(
         configsetsViewModel.selectConfigset(it.name)
     }
 
+    val createConfigsetEventCollector: (CreateConfigsetEvent) -> Unit = { event ->
+        when (event) {
+            is CreateConfigsetEvent.ConfigsetCreated -> onConfigsetCreated(event.configset)
+            is CreateConfigsetEvent.ConfigsetCreationAborted -> dialogBackStack.removeLastOrNull()
+            is CreateConfigsetEvent.ConfigsetCreateToggleInputForm -> dialogBackStack.apply {
+                removeLastOrNull()
+                if (event.useFileInput) add(ConfigsetDialog.ImportConfigsetDialog)
+                else add(ConfigsetDialog.CreateConfigsetDialog)
+            }
+            else -> Unit
+        }
+    }
+
     NavDisplay(
         backStack = dialogBackStack,
         sceneStrategies = listOf(dialogStrategy),
@@ -110,32 +124,24 @@ fun ConfigsetsOverviewContent(
         entryProvider = entryProvider {
             entry<ConfigsetDialog.None> {}
             entry<ConfigsetDialog.CreateConfigsetDialog> {
-                CreateConfigsetDialog(
-                    viewModel = viewModel { component.createCreateConfigsetViewModel() },
-                    onImport = {
-                        dialogBackStack.apply {
-                            removeLastOrNull()
-                            add(ConfigsetDialog.ImportConfigsetDialog)
-                        }
-                    },
-                    onCreated = onConfigsetCreated,
-                    onDismissRequest = { dialogBackStack.removeLastOrNull() }
-                )
+                val createViewModel = viewModel { component.createCreateConfigsetViewModel() }
+
+                LaunchedEffect(createViewModel) {
+                    createViewModel.events.collect(collector = createConfigsetEventCollector)
+                }
+
+                CreateConfigsetDialog(viewModel = createViewModel)
             }
             entry<ConfigsetDialog.ImportConfigsetDialog>(
                 metadata = DialogSceneStrategy.dialog()
             ) {
-                ImportConfigsetDialog(
-                    viewModel = viewModel { component.createImportConfigsetViewModel() },
-                    onToggle = {
-                        dialogBackStack.apply {
-                            removeLastOrNull()
-                            add(ConfigsetDialog.CreateConfigsetDialog)
-                        }
-                    },
-                    onCreated = onConfigsetCreated,
-                    onDismissRequest = { dialogBackStack.removeLastOrNull() },
-                )
+                val importViewModel = viewModel { component.createImportConfigsetViewModel() }
+
+                LaunchedEffect(importViewModel) {
+                    importViewModel.events.collect(collector = createConfigsetEventCollector)
+                }
+
+                ImportConfigsetDialog(viewModel = importViewModel)
             }
         }
     )

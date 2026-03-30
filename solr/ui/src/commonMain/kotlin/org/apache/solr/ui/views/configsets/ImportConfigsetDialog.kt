@@ -25,16 +25,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewModel
-import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_cancel
 import org.apache.solr.ui.generated.resources.action_create_configset
@@ -51,22 +48,10 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ImportConfigsetDialog(
     viewModel: ImportConfigsetViewModel,
-    onDismissRequest: () -> Unit,
-    onToggle: () -> Unit,
-    onCreated: (Configset) -> Unit,
     modifier: Modifier = Modifier,
-) = Dialog(onDismissRequest = onDismissRequest) {
+) = Dialog(onDismissRequest = viewModel::abortImport) {
     val model by viewModel.uiState.collectAsState()
     val fileSelectorModel by viewModel.fileSelectorUiState.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
-            when (event) {
-                is CreateConfigsetEvent.ConfigsetCreated -> onCreated(event.configset)
-                else -> Unit
-            }
-        }
-    }
 
     SolrCard(
         modifier = modifier,
@@ -107,12 +92,12 @@ fun ImportConfigsetDialog(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             // Dialog actions
-            SolrTextButton(onClick = onToggle) {
+            SolrTextButton(onClick = viewModel::toggleInput) {
                 Text(stringResource(Res.string.action_create_configset))
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SolrTextButton(onClick = onDismissRequest) {
+                SolrTextButton(onClick = viewModel::abortImport) {
                     Text(stringResource(Res.string.action_cancel))
                 }
                 SolrButton(

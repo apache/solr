@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.di.ConfigsetsOverviewComponent
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
@@ -41,7 +42,29 @@ private fun PreviewConfigsetsContentEmptyConfigsets() = PreviewContainer {
     ConfigsetsScene(component = PreviewConfigsetsComponent())
 }
 
-private class PreviewConfigsetsComponent(configsets: List<Configset> = emptyList()) : ConfigsetsComponent {
+private class PreviewConfigsetsComponent(
+    private val configsets: List<Configset> = emptyList(),
+) : ConfigsetsComponent {
+
+    override val configsetsRepository: ConfigsetsRepository = error("Not used in previews")
+
+    override val loadConfigsetsUseCase: LoadConfigsetsUseCase = object : LoadConfigsetsUseCase {
+        override suspend fun invoke(): Result<List<Configset>> = Result.success(configsets)
+    }
+
+    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel =
+        ConfigsetsRouteViewModel()
+
+    override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(
+        loadConfigsetsUseCase = loadConfigsetsUseCase,
+        ioDispatcher = Dispatchers.Default,
+    )
+
+    override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent =
+        PreviewConfigsetsOverviewComponent(configsets)
+}
+
+private class PreviewConfigsetsOverviewComponent(configsets: List<Configset> = emptyList()) : ConfigsetsOverviewComponent {
 
     override val configsetsRepository: ConfigsetsRepository = error("Not used in previews")
 
@@ -54,9 +77,6 @@ private class PreviewConfigsetsComponent(configsets: List<Configset> = emptyList
     }
 
     override val selectFileUseCase: SelectFileUseCase = error("Not used in previews")
-
-    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel =
-        ConfigsetsRouteViewModel()
 
     override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(
         loadConfigsetsUseCase = loadConfigsetsUseCase,
@@ -79,5 +99,4 @@ private class PreviewConfigsetsComponent(configsets: List<Configset> = emptyList
 
     override fun createConfigsetsOverviewViewModel(): ConfigsetsOverviewViewModel =
         ConfigsetsOverviewViewModel()
-
 }

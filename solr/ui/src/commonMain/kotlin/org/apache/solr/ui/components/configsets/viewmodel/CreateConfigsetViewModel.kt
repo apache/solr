@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetResult
@@ -71,11 +72,15 @@ class CreateConfigsetViewModel(
         uiState.update { it.copy(isLoading = true) }
         // TODO Validate input data or let use case validate data
 
-        viewModelScope.launch(context = ioDispatcher) {
-            when (val result = createConfigsetUseCase(
-                configsetName = uiState.value.configsetName,
-                baseConfigset = configsetsState.uiState.value.selectedConfigset,
-            )) {
+        viewModelScope.launch {
+            val result = withContext(context = ioDispatcher) {
+                createConfigsetUseCase(
+                    configsetName = uiState.value.configsetName,
+                    baseConfigset = configsetsState.uiState.value.selectedConfigset,
+                )
+            }
+
+            when (result) {
                 is CreateConfigsetResult.Success ->
                     events.emit(CreateConfigsetEvent.ConfigsetCreated(result.configset))
                 is CreateConfigsetResult.ValidationFailure ->
@@ -86,6 +91,14 @@ class CreateConfigsetViewModel(
     }
 
     fun clearBaseConfigset() = configsetsState.clearSelectedConfigset()
+
+    fun toggleInput() = viewModelScope.launch {
+        events.emit(CreateConfigsetEvent.ConfigsetCreateToggleInputForm(useFileInput = true))
+    }
+
+    fun abortCreation() = viewModelScope.launch {
+        events.emit(CreateConfigsetEvent.ConfigsetCreationAborted)
+    }
 }
 
 data class CreateConfigsetFormUiState(

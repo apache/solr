@@ -26,11 +26,11 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetResult
 import org.apache.solr.ui.components.configsets.domain.ImportConfigsetUseCase
 import org.apache.solr.ui.components.files.domain.FileSelectorEvent
-import org.apache.solr.ui.components.files.domain.SelectFileResult
 import org.apache.solr.ui.components.files.domain.SelectFileUseCase
 import org.apache.solr.ui.components.files.viewmodel.FileSelectorStateHolder
 import org.apache.solr.ui.domain.PickedFile
@@ -90,8 +90,12 @@ class ImportConfigsetViewModel(
         uiState.update { it.copy(isLoading = true) }
         // TODO Validate input data or let use case validate data
 
-        viewModelScope.launch(context = ioDispatcher) {
-            when (val result = importConfigsetUseCase(uiState.value.configsetName, file)) {
+        viewModelScope.launch {
+            val result = withContext(context = ioDispatcher) {
+                importConfigsetUseCase(uiState.value.configsetName, file)
+            }
+
+            when (result) {
                 is ImportConfigsetResult.Success ->
                     events.emit(CreateConfigsetEvent.ConfigsetCreated(result.configset))
 
@@ -107,6 +111,14 @@ class ImportConfigsetViewModel(
                 is ImportConfigsetResult.UnexpectedFailure -> TODO()
             }
         }
+    }
+
+    fun toggleInput() = viewModelScope.launch {
+        events.emit(CreateConfigsetEvent.ConfigsetCreateToggleInputForm(useFileInput = false))
+    }
+
+    fun abortImport() = viewModelScope.launch {
+        events.emit(CreateConfigsetEvent.ConfigsetCreationAborted)
     }
 
     /**
