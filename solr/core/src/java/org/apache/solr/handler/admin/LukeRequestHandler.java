@@ -552,11 +552,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     // "docs" → sum of per-shard doc counts (number of documents containing this field)
-    Long docsLong = fi.getDocs();
-    if (docsLong != null) {
-      fieldData.aggregated.compute(
-          KEY_DOCS, (key, val) -> val == null ? docsLong : (Long) val + docsLong);
-    }
+    long docsLong = fi.getDocs();
+    fieldData.aggregated.compute(
+        KEY_DOCS, (key, val) -> val == null ? docsLong : (Long) val + docsLong);
   }
 
   /** Validates that a field attribute value is identical across shards. */
@@ -843,7 +841,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
             }
           }
         }
-        fieldMap.add(KEY_DOCS, (long) terms.getDocCount());
+        fieldMap.add(KEY_DOCS, terms.getDocCount());
       }
       if (fields != null && (fields.contains(fieldName) || fields.contains("*"))) {
         getDetailedFieldInfo(req, fieldName, fieldMap);
