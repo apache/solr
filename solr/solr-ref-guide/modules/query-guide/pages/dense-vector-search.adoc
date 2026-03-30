@@ -565,7 +565,7 @@ The search results retrieved are the k=3 nearest documents to the vector in inpu
 
 === knn_text_to_vector Query Parser
 
-The `knn_text_to_vector` query parser encode a textual query to a vector using a dedicated Large Language Model(fine tuned for the task of encoding text to vector for sentence similarity) and matches k-nearest neighbours documents to such query vector.
+The `knn_text_to_vector` query parser encode a textual query to a vector using a dedicated Large Language Model (fine tuned for the task of encoding text to vector for sentence similarity) and matches k-nearest neighbours documents to such query vector.
 
 In addition to the parameters in common with the other dense-retrieval query parsers, it takes the following:
 
