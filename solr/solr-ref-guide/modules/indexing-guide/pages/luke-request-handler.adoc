@@ -164,10 +164,8 @@ In distributed mode, the response contains:
 Field `type`, `schema` flags, and `dynamicBase` are validated for consistency across shards.
 If a mismatch is detected, the handler returns an error identifying the field, the conflicting values, and the shard addresses involved.
 You can use `distrib=false` to query individual shards and compare their field configurations when troubleshooting mismatches.
-The `index` flags are index-derived (not schema-derived) and may legitimately differ across shards; the first non-null value is used.
-If the same document `id` is found on multiple shards (indicating index corruption), the handler returns an error.
+The `index` flags are index-derived (not schema-derived) and may be absent on shards where the field has no indexed data; the first non-null value is used, and any subsequent non-null values are validated for consistency.
 
 Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are not aggregated across shards.
 These statistics are shard-local and appear in each shard's entry under the `shards` key.
-For cross-shard term-level aggregation, Solr's xref:query-guide:faceting.adoc[faceting API] provides refinement and distributed aggregation, though it differs from Luke's term statistics: faceting doesn't count deleted documents, is more flexible, and is generally more expensive.
-A case could be made for adding aggregation strategies for Luke-powered term statistics (which offer better performance at the cost of flexibility), however this would require community interest to motivate.
+For collection-wide term frequencies or cardinality estimates, Solr's xref:query-guide:faceting.adoc[faceting API] may cover some of these use cases.

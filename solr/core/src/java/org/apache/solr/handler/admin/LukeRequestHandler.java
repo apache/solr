@@ -265,10 +265,10 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private static class ShardData {
-    final String shardAddr;
-    final Map<String, LukeResponse.FieldInfo> shardFieldInfo;
-    private NamedList<Object> indexInfo;
-    private SimpleOrderedMap<Object> detailedFields;
+    final String shardAddr; // key in "shards" response map
+    final Map<String, LukeResponse.FieldInfo> shardFieldInfo; // keyed by field name
+    private NamedList<Object> indexInfo; // value for "index" key in per-shard entry
+    private SimpleOrderedMap<Object> detailedFields; // keyed by field name
 
     ShardData(String shardAddr, Map<String, LukeResponse.FieldInfo> shardFieldInfo) {
       this.shardAddr = shardAddr;
