@@ -17,6 +17,7 @@
 
 package org.apache.solr.languagemodels.documentenrichment.update.processor;
 
+import dev.langchain4j.model.chat.request.ResponseFormat;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -38,13 +39,17 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
   private final List<String> inputFields;
   private final String outputField;
   private final String prompt;
-  private SolrChatModel chatModel;
+  private final SolrChatModel chatModel;
+  private final boolean multiValued;
+  private final ResponseFormat responseFormat;
 
   public DocumentEnrichmentUpdateProcessor(
       List<String> inputFields,
       String outputField,
       String prompt,
       SolrChatModel chatModel,
+      boolean multiValued,
+      ResponseFormat responseFormat,
       SolrQueryRequest req,
       UpdateRequestProcessor next) {
     super(next);
@@ -53,6 +58,8 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
     this.outputField = outputField;
     this.prompt = prompt;
     this.chatModel = chatModel;
+    this.multiValued = multiValued;
+    this.responseFormat = responseFormat;
   }
 
   /**
@@ -76,11 +83,15 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
 
     try {
       // as for now, only a plain text as prompt is sent to the model (no support for tools/skills/agents)
-      String response = chatModel.chat(injectedPrompt);
-      /* TODO: check if the outputField is multivalued and adapt the code/llm call to deal with lists also, together
-          with structured output support
-      */
-      doc.setField(outputField, response);
+      // chatModel.chat returns the parsed value from the structured JSON response
+      Object value = chatModel.chat(injectedPrompt, responseFormat);
+      if (multiValued && value instanceof List<?> list) {
+        for (Object item : list) {
+          doc.addField(outputField, item);
+        }
+      } else {
+        doc.setField(outputField, value);
+      }
     } catch (RuntimeException chatModelFailure) {
       if (log.isErrorEnabled()) {
         SchemaField uniqueKeyField = schema.getUniqueKeyField();

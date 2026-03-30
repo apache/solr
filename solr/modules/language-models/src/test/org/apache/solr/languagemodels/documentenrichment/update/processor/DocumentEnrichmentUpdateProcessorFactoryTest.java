@@ -286,7 +286,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
     SolrException e = assertThrows(SolrException.class, () -> factory.getInstance(req, null, null));
     assertEquals(
-        "only textual fields are compatible with Document Enrichment: vector", e.getMessage());
+        "field type is not supported by Document Enrichment: vector", e.getMessage());
   }
 
   @Test
@@ -322,6 +322,52 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
     SolrException e = assertThrows(SolrException.class, () -> factory.getInstance(req, null, null));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
+  }
+
+  @Test
+  public void init_multivaluedStringOutputField_shouldNotThrowException() {
+    UpdateRequestProcessor instance =
+        createUpdateProcessor("string_field", "enriched_field_multi", collection1, "model-mv");
+    assertNotNull(instance);
+  }
+
+  @Test
+  public void init_multivaluedStringOutputField_buildResponseFormat_shouldProduceArraySchema() {
+    NamedList<String> args = new NamedList<>();
+    ManagedChatModelStore.getManagedModelStore(collection1)
+        .addModel(new SolrChatModel("model-rf", null, null));
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field_multi");
+    args.add("prompt", "Summarize: {string_field}");
+    args.add("model", "model-rf");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    factory.init(args);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
+    assertNotNull(factory.getInstance(req, null, null));
+
+    // verify the ResponseFormat is constructed correctly for the multivalued field
+    var schema = collection1.getLatestSchema();
+    var schemaField = schema.getField("enriched_field_multi");
+    assertTrue(schemaField.multiValued());
+    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
+    assertNotNull(responseFormat);
+    assertEquals(
+        dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertNotNull(responseFormat.jsonSchema());
+  }
+
+  @Test
+  public void init_singleValuedStringOutputField_buildResponseFormat_shouldProduceStringSchema() {
+    var schema = collection1.getLatestSchema();
+    var schemaField = schema.getField("enriched_field");
+    assertFalse(schemaField.multiValued());
+    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
+    assertNotNull(responseFormat);
+    assertEquals(
+        dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertNotNull(responseFormat.jsonSchema());
   }
 
   @Test

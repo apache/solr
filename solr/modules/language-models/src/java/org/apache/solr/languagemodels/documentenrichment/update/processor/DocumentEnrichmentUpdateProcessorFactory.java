@@ -17,6 +17,16 @@
 
 package org.apache.solr.languagemodels.documentenrichment.update.processor;
 
+import dev.langchain4j.model.chat.request.ResponseFormat;
+import dev.langchain4j.model.chat.request.ResponseFormatType;
+import dev.langchain4j.model.chat.request.json.JsonArraySchema;
+import dev.langchain4j.model.chat.request.json.JsonBooleanSchema;
+import dev.langchain4j.model.chat.request.json.JsonIntegerSchema;
+import dev.langchain4j.model.chat.request.json.JsonNumberSchema;
+import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
+import dev.langchain4j.model.chat.request.json.JsonSchema;
+import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
+import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -39,8 +49,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
+import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.DatePointField;
+import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.FloatPointField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IntPointField;
+import org.apache.solr.schema.LongPointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
@@ -182,7 +199,10 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
 
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
-    assertIsTextualField(outputFieldSchema);
+    assertIsSupportedField(outputFieldSchema);
+
+    ResponseFormat responseFormat = buildResponseFormat(outputFieldSchema);
+    boolean multiValued = outputFieldSchema.multiValued();
 
     ManagedChatModelStore modelStore = ManagedChatModelStore.getManagedModelStore(req.getCore());
     SolrChatModel chatModel = modelStore.getModel(modelName);
@@ -196,17 +216,74 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
 
     return new DocumentEnrichmentUpdateProcessor(
-        inputFields, outputField, prompt, chatModel, req, next);
+        inputFields, outputField, prompt, chatModel, multiValued, responseFormat, req, next);
   }
 
-  // This is used on the outputField. Now the support is limited. Can be changed with structured outputs.
-  protected void assertIsTextualField(SchemaField schemaField) {
-    FieldType fieldType = schemaField.getType();
-    if (!(fieldType instanceof StrField) && !(fieldType instanceof TextField)) {
+  /**
+   * Validates that the output field type is supported. Supported types are: textual (Str, Text),
+   * numeric (Int, Long, Float, Double), boolean and date. Vector and binary fields are not
+   * supported.
+   */
+  protected void assertIsSupportedField(SchemaField schemaField) {
+    try {
+      toJsonSchemaElement(schemaField.getType());
+    } catch (SolrException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "only textual fields are compatible with Document Enrichment: "
-              + schemaField.getName());
+          "field type is not supported by Document Enrichment: " + schemaField.getName());
+    }
+  }
+
+  /**
+   * Builds a {@link ResponseFormat} that instructs the model to return a JSON object {@code
+   * {"value": ...}} whose value type matches the Solr field type. For multivalued fields the value
+   * is wrapped in a JSON array.
+   */
+  static ResponseFormat buildResponseFormat(SchemaField schemaField) {
+    JsonSchemaElement valueElement = toJsonSchemaElement(schemaField.getType());
+    JsonSchemaElement valueSchema =
+        schemaField.multiValued()
+            ? JsonArraySchema.builder().items(valueElement).build() // could be only supported by Gemini
+            // (source: https://github.com/langchain4j/langchain4j/blob/main/docs/docs/tutorials/structured-outputs.md)
+            // If not supported, we cannot support multivalued fields as outputField
+            : valueElement;
+    return ResponseFormat.builder()
+        .type(ResponseFormatType.JSON)
+        .jsonSchema(
+            JsonSchema.builder()
+                .name("output")
+                .rootElement(
+                    JsonObjectSchema.builder()
+                        .addProperty("value", valueSchema)
+                        .required("value")
+                        .build())
+                .build())
+        .build();
+  }
+
+  private static JsonSchemaElement toJsonSchemaElement(FieldType fieldType) {
+    // DenseVectorField extends FloatPointField, so it must be rejected before the numeric checks
+    if (fieldType instanceof DenseVectorField) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "field type is not supported by Document Enrichment: "
+              + fieldType.getClass().getSimpleName());
+    }
+    if (fieldType instanceof StrField
+        || fieldType instanceof TextField
+        || fieldType instanceof DatePointField) {
+      return new JsonStringSchema();
+    } else if (fieldType instanceof IntPointField || fieldType instanceof LongPointField) {
+      return new JsonIntegerSchema();
+    } else if (fieldType instanceof FloatPointField || fieldType instanceof DoublePointField) {
+      return new JsonNumberSchema();
+    } else if (fieldType instanceof BoolField) {
+      return new JsonBooleanSchema();
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "field type is not supported by Document Enrichment: "
+              + fieldType.getClass().getSimpleName());
     }
   }
 

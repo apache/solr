@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel",
+  "name": "dummy-date-multi",
+  "params": {
+    "response": "{\"value\": [\"2024-01-15T00:00:00Z\", \"2025-06-30T00:00:00Z\"]}"
+  }
+}

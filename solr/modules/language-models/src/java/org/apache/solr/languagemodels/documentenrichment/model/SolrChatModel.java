@@ -18,18 +18,18 @@ package org.apache.solr.languagemodels.documentenrichment.model;
 
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
-
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.request.ResponseFormat;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.documentenrichment.store.ChatModelException;
 import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedChatModelStore;
@@ -145,13 +145,28 @@ public class SolrChatModel implements Accountable {
     this.hashCode = calculateHashCode();
   }
 
-  public String chat(String text){
-    ChatRequest chatRequest = ChatRequest.builder()
-        //.responseFormat(responseFormat) // used for structured outputs
-        .messages(UserMessage.from(text))
-        .build();
-    ChatResponse chatResponse = chatModel.chat(chatRequest);
-    return chatResponse.aiMessage().text(); // To change in case of structured output support
+  /**
+   * Sends a structured chat request and returns the parsed value from the {@code {"value": ...}}
+   * JSON object that the model is instructed to produce via {@code responseFormat}.
+   *
+   * @return the extracted value: a {@link String}, {@link Number}, {@link Boolean}, or {@link
+   *     java.util.List} depending on the Solr output field type
+   */
+  @SuppressWarnings("unchecked")
+  public Object chat(String text, ResponseFormat responseFormat) {
+    ChatRequest chatRequest =
+        ChatRequest.builder()
+            .responseFormat(responseFormat)
+            .messages(UserMessage.from(text))
+            .build();
+    String rawJson = chatModel.chat(chatRequest).aiMessage().text();
+    Object parsed = Utils.fromJSONString(rawJson);
+    if (!(parsed instanceof Map<?, ?> map) || !map.containsKey("value")) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "LLM response is missing the 'value' key: " + rawJson);
+    }
+    return ((Map<String, Object>) map).get("value");
   }
 
   @Override
