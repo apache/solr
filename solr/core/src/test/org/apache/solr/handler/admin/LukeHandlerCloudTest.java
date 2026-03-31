@@ -34,7 +34,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,16 +52,9 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
-  private void requestLuke(String collection, ModifiableSolrParams extra) throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/luke");
-    params.set("numTerms", "0");
-    if (extra != null) {
-      for (Map.Entry<String, String[]> entry : extra.getMap().entrySet()) {
-        params.set(entry.getKey(), entry.getValue());
-      }
-    }
-    QueryRequest req = new QueryRequest(params);
+  private void requestLuke(String collection, SolrParams extra) throws Exception {
+    QueryRequest req = new QueryRequest(SolrParams.wrapDefaults(extra, params("numTerms", "0")));
+    req.setPath("/admin/luke");
     cluster.getSolrClient().request(req, collection);
   }
 
@@ -155,10 +148,8 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
       // Distributed Luke should detect inconsistent index flags between the two shards.
       // One shard has stored=true segments, the other has stored=false segments for test_flag_s.
       // No need to set distrib=true — ZK-aware nodes default to distributed mode.
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("fl", "test_flag_s");
-
-      Exception ex = expectThrows(Exception.class, () -> requestLuke(collection, params));
+      Exception ex =
+          expectThrows(Exception.class, () -> requestLuke(collection, params("fl", "test_flag_s")));
       String fullMessage = SolrException.getRootCause(ex).getMessage();
       assertTrue(
           "exception chain should mention inconsistent index flags: " + fullMessage,
