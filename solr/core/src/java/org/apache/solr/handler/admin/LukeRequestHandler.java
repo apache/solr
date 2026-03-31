@@ -562,9 +562,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     // "docs" → sum of per-shard doc counts (number of documents containing this field)
-    long docsLong = fi.getDocs();
-    fieldData.aggregated.compute(
-        KEY_DOCS, (key, val) -> val == null ? docsLong : (Long) val + docsLong);
+    fieldData.aggregated.merge(KEY_DOCS, fi.getDocs(), (a, b) -> Long.sum((Long) a, (Long) b));
   }
 
   /**
