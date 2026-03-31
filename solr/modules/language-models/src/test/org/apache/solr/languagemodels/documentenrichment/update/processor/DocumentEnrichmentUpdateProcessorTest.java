@@ -628,6 +628,78 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "/response/docs/[1]/output_date_multi/[1]=='2025-06-30T00:00:00Z'");
   }
 
+  // --- LLM response contract violation tests ---
+
+  @Test
+  public void processAdd_llmResponseMissingValueKey_shouldLogAndIndexWithNoEnrichedField()
+      throws Exception {
+    // Model returns valid JSON but without the required "value" key
+    loadTestChatModel("dummy-chat-model-missing-value-key.json", "dummy-chat-1");
+
+    addWithChain(sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
+    addWithChain(sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."), "documentEnrichment");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery("enriched_field");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/enriched_field==",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/enriched_field==");
+  }
+
+  @Test
+  public void processAdd_llmResponseMalformedJson_shouldLogAndIndexWithNoEnrichedField()
+      throws Exception {
+    // Model returns a plain string that cannot be parsed as JSON
+    loadTestChatModel("dummy-chat-model-malformed-json.json", "dummy-chat-1");
+
+    addWithChain(sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
+    addWithChain(sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."), "documentEnrichment");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery("enriched_field");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/enriched_field==",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/enriched_field==");
+  }
+
+  // --- multivalued output field / scalar response test ---
+
+  @Test
+  public void processAdd_multivaluedOutputField_scalarLlmResponse_shouldStoreSingleValue()
+      throws Exception {
+    // Model returns {"value": "a single string"} for a multivalued output field.
+    // The scalar falls through the List<?> check and is stored as a single-element value.
+    loadTestChatModel("dummy-chat-model-multivalued-scalar.json", "dummy-chat-multivalued-1");
+
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."),
+        "documentEnrichmentMultivaluedString");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "documentEnrichmentMultivaluedString");
+    assertU(commit());
+
+    final SolrQuery query = getEnrichmentQuery("enriched_field_multi");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "/response/docs/[0]/enriched_field_multi/[0]=='a single string'",
+        "/response/docs/[1]/id=='98'",
+        "/response/docs/[1]/enriched_field_multi/[0]=='a single string'");
+  }
+
   private SolrQuery getEnrichmentQuery(String enrichedFieldName) {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");

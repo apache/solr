@@ -286,7 +286,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
     SolrException e = assertThrows(SolrException.class, () -> factory.getInstance(req, null, null));
     assertEquals(
-        "field type is not supported by Document Enrichment: vector", e.getMessage());
+        "field type is not supported by Document Enrichment: DenseVectorField", e.getMessage());
   }
 
   @Test
@@ -325,14 +325,15 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   }
 
   @Test
-  public void init_multivaluedStringOutputField_shouldNotThrowException() {
+  public void init_multivaluedStringOutputField_shouldNotThrowException() throws Exception {
     UpdateRequestProcessor instance =
         createUpdateProcessor("string_field", "enriched_field_multi", collection1, "model-mv");
     assertNotNull(instance);
+    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model-mv");
   }
 
   @Test
-  public void init_multivaluedStringOutputField_buildResponseFormat_shouldProduceArraySchema() {
+  public void init_multivaluedStringOutputField_buildResponseFormat_shouldProduceArraySchema() throws Exception {
     NamedList<String> args = new NamedList<>();
     ManagedChatModelStore.getManagedModelStore(collection1)
         .addModel(new SolrChatModel("model-rf", null, null));
@@ -356,6 +357,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     assertEquals(
         dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
+    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model-rf");
   }
 
   @Test
@@ -371,14 +373,15 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   }
 
   @Test
-  public void init_dynamicInputField_shouldNotThrowException() {
+  public void init_dynamicInputField_shouldNotThrowException() throws Exception{
     UpdateRequestProcessor instance =
         createUpdateProcessor("text_s", "enriched_field", collection1, "model2");
     assertNotNull(instance);
+    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model2");
   }
 
   @Test
-  public void init_multipleDynamicInputFields_shouldNotThrowException() {
+  public void init_multipleDynamicInputFields_shouldNotThrowException() throws Exception{
     NamedList<String> args = new NamedList<>();
     ManagedChatModelStore.getManagedModelStore(collection1)
         .addModel(new SolrChatModel("model1", null, null));
@@ -394,6 +397,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
     SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
     assertNotNull(factory.getInstance(req, null, null));
+    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
 
   private UpdateRequestProcessor createUpdateProcessor(

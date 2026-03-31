@@ -199,7 +199,6 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
 
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
-    assertIsSupportedField(outputFieldSchema);
 
     ResponseFormat responseFormat = buildResponseFormat(outputFieldSchema);
     boolean multiValued = outputFieldSchema.multiValued();
@@ -220,32 +219,19 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   }
 
   /**
-   * Validates that the output field type is supported. Supported types are: textual (Str, Text),
-   * numeric (Int, Long, Float, Double), boolean and date. Vector and binary fields are not
-   * supported.
-   */
-  protected void assertIsSupportedField(SchemaField schemaField) {
-    try {
-      toJsonSchemaElement(schemaField.getType());
-    } catch (SolrException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "field type is not supported by Document Enrichment: " + schemaField.getName());
-    }
-  }
-
-  /**
    * Builds a {@link ResponseFormat} that instructs the model to return a JSON object {@code
    * {"value": ...}} whose value type matches the Solr field type. For multivalued fields the value
-   * is wrapped in a JSON array.
+   * is wrapped in a {@link JsonArraySchema} nested inside the root {@link JsonObjectSchema}.
+   *
+   * <p>Nesting {@link JsonArraySchema} inside a {@link JsonObjectSchema} property is supported by
+   * all langchain4j providers that implement structured outputs with {@link JsonObjectSchema} (OpenAI, Azure OpenAI,
+   * Google AI, Gemini, Mistral, Ollama, Amazon Bedrock, Watsonx).
    */
   static ResponseFormat buildResponseFormat(SchemaField schemaField) {
     JsonSchemaElement valueElement = toJsonSchemaElement(schemaField.getType());
     JsonSchemaElement valueSchema =
         schemaField.multiValued()
-            ? JsonArraySchema.builder().items(valueElement).build() // could be only supported by Gemini
-            // (source: https://github.com/langchain4j/langchain4j/blob/main/docs/docs/tutorials/structured-outputs.md)
-            // If not supported, we cannot support multivalued fields as outputField
+            ? JsonArraySchema.builder().items(valueElement).build()
             : valueElement;
     return ResponseFormat.builder()
         .type(ResponseFormatType.JSON)

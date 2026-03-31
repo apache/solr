@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private IndexSchema schema;
+  private final IndexSchema schema;
   private final List<String> inputFields;
   private final String outputField;
   private final String prompt;

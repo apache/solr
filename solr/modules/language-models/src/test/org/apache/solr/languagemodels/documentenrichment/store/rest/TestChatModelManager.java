@@ -67,10 +67,6 @@ public class TestChatModelManager extends TestLanguageModelBase {
 
     final String openAiClassName = "dev.langchain4j.model.openai.OpenAiChatModel";
 
-    // fails — no params provided
-//    String model = "{ \"name\":\"testChatModel1\", \"class\":\"" + openAiClassName + "\"}";
-//    assertJPut(ManagedChatModelStore.REST_END_POINT, model, "/responseHeader/status==400");
-
     // success
     String model =
         "{ name:\"testChatModel2\", class:\""
@@ -119,7 +115,7 @@ public class TestChatModelManager extends TestLanguageModelBase {
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/testChatModel2");
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/testChatModel3");
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/testChatModel4");
-    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models==[]'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test

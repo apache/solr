@@ -1,0 +1,4 @@
+title: Add DocumentEnrichmentUpdateProcessorFactory for LLM-based document enrichment at index time
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+- name: Nicolò Rinaldi

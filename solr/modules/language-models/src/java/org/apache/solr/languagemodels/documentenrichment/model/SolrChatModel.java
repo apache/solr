@@ -48,9 +48,9 @@ public class SolrChatModel implements Accountable {
   // timeout is type Duration
   private static final String TIMEOUT_PARAM = "timeout";
 
-  // the following are Integer type
+  // the followings are Integer type
   private static final String MAX_RETRIES_PARAM = "maxRetries";
-  private static final String THINKING_BUDGET_TOKENS ="thinkingBudgetTokens";
+  private static final String THINKING_BUDGET_TOKENS = "thinkingBudgetTokens";
   private static final String RANDOM_SEED = "randomSeed";
 
   private final String name;
@@ -152,7 +152,6 @@ public class SolrChatModel implements Accountable {
    * @return the extracted value: a {@link String}, {@link Number}, {@link Boolean}, or {@link
    *     java.util.List} depending on the Solr output field type
    */
-  @SuppressWarnings("unchecked")
   public Object chat(String text, ResponseFormat responseFormat) {
     ChatRequest chatRequest =
         ChatRequest.builder()
@@ -166,7 +165,7 @@ public class SolrChatModel implements Accountable {
           SolrException.ErrorCode.SERVER_ERROR,
           "LLM response is missing the 'value' key: " + rawJson);
     }
-    return ((Map<String, Object>) map).get("value");
+    return map.get("value");
   }
 
   @Override
