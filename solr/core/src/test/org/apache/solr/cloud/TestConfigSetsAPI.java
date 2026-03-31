@@ -162,6 +162,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Create baseConfigNoExists = new Create();
       baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
       verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
+
+      // Invalid configset names
+      for (String invalidName :
+          new String[] {"configset!", "configset\"", "-configset", "configset name"}) {
+        Create invalidNameCreate = new Create();
+        invalidNameCreate.setConfigSetName(invalidName).setBaseConfigSetName("_default");
+        verifyException(solrClient, invalidNameCreate, "Invalid configset");
+      }
     }
   }
 
@@ -382,6 +390,22 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
         zkClient.exists("/configs/myconf/anotherDummyFile"));
+
+    // Checking error when configuration name contains invalid characters
+    for (String invalidName : new String[] {"configset!", "-configset"}) {
+      map =
+          postDataAndGetResponse(
+              cluster.getSolrClient(),
+              cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
+                  + "/admin/configs?action=UPLOAD&name="
+                  + invalidName,
+              emptyData,
+              null,
+              false);
+      assertNotNull(map);
+      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+      assertEquals("Expected 400 for invalid configset name: " + invalidName, 400l, statusCode);
+    }
 
     zkClient.close();
     solrClient.close();
