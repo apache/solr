@@ -149,13 +149,14 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     @Override
     public void run() {
       final TimeOut timeout = new TimeOut(timeToRunSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      while (!timeout.hasTimedOut()) {
+      while (!timeout.hasTimedOut() && failure.get() == null) {
         try {
           doWork();
         } catch (Exception e) {
           log.error(e.toString(), e);
-          failure.set(e);
-          break;
+          if (!failure.compareAndSet(null, e)) {
+            failure.get().addSuppressed(e);
+          }
         }
       }
     }
