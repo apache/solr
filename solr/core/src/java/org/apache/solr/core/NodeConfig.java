@@ -43,7 +43,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.ModuleUtils;
 import org.slf4j.Logger;
@@ -294,7 +294,7 @@ public class NodeConfig {
    * @return path to install dir or null if solr.install.dir not set.
    */
   public static Path getSolrInstallDir() {
-    String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    String prop = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
     if (prop == null || prop.isBlank()) {
       log.debug("solr.install.dir property not initialized.");
       return null;
@@ -451,7 +451,7 @@ public class NodeConfig {
     if (solrInstallDir == null) {
       log.warn(
           "Unable to add $SOLR_HOME/lib for shared lib since {} was not set.",
-          SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+          CoreContainerProvider.SOLR_INSTALL_DIR);
     } else {
       // Always add $SOLR_TIP/lib to the shared resource loader
       libDirs.add(solrInstallDir.resolve("lib").toAbsolutePath().normalize().toString());
@@ -524,7 +524,7 @@ public class NodeConfig {
             "Unable to setup modules "
                 + moduleNames
                 + " because "
-                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE
+                + CoreContainerProvider.SOLR_INSTALL_DIR
                 + " was not set.");
       }
       return;

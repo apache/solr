@@ -772,8 +772,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
     jwtConsumer = null;
+    super.close();
   }
 
   @Override

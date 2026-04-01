@@ -472,7 +472,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     StoredFields storedFields = reader.storedFields();
     // Deal with the chance that the first bunch of terms are in deleted documents. Is there a
     // better way?
-    for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
+    for (int idx = 0; idx < 1000; ++idx) {
       text = termsEnum.next();
       // Ran off the end of the terms enum without finding any live docs with that field in them.
       if (text == null) {
@@ -481,7 +481,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
       final Bits liveDocs = reader.getLiveDocs();
       if (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        if (liveDocs != null && liveDocs.get(postingsEnum.docID())) {
+        if (liveDocs != null && !liveDocs.get(postingsEnum.docID())) {
           continue;
         }
         return storedFields.document(postingsEnum.docID());

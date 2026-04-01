@@ -31,7 +31,6 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.FileNotFoundException;
@@ -82,7 +81,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -156,7 +154,6 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
-  private BatchCallback metricsCallback;
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
@@ -932,56 +929,49 @@ public class ReplicationHandler extends RequestHandlerBase
         solrMetricsContext.longGaugeMeasurement(
             "solr_core_replication_download_speed", "Download speed in bytes per second");
 
-    metricsCallback =
-        solrMetricsContext.batchCallback(
-            () -> {
-              if (core != null && !core.isClosed()) {
-                indexSizeMetric.record(
-                    MetricUtils.bytesToMegabytes(core.getIndexSize()), replicationAttributes);
+    solrMetricsContext.batchCallback(
+        () -> {
+          if (core != null && !core.isClosed()) {
+            indexSizeMetric.record(
+                MetricUtils.bytesToMegabytes(core.getIndexSize()), replicationAttributes);
 
-                CommitVersionInfo vInfo = getIndexVersion();
-                if (vInfo != null) {
-                  indexVersionMetric.record(vInfo.version, replicationAttributes);
-                  indexGenerationMetric.record(vInfo.generation, replicationAttributes);
-                }
-              }
+            CommitVersionInfo vInfo = getIndexVersion();
+            if (vInfo != null) {
+              indexVersionMetric.record(vInfo.version, replicationAttributes);
+              indexGenerationMetric.record(vInfo.generation, replicationAttributes);
+            }
+          }
 
-              isLeaderMetric.record(isLeader ? 1 : 0, replicationAttributes);
-              isFollowerMetric.record(isFollower ? 1 : 0, replicationAttributes);
-              replicationEnabledMetric.record(
-                  (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes);
+          isLeaderMetric.record(isLeader ? 1 : 0, replicationAttributes);
+          isFollowerMetric.record(isFollower ? 1 : 0, replicationAttributes);
+          replicationEnabledMetric.record(
+              (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes);
 
-              IndexFetcher fetcher = currentIndexFetcher;
-              if (fetcher != null) {
-                isPollingDisabledMetric.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
-                isReplicatingMetric.record(isReplicating() ? 1 : 0, replicationAttributes);
+          IndexFetcher fetcher = currentIndexFetcher;
+          if (fetcher != null) {
+            isPollingDisabledMetric.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
+            isReplicatingMetric.record(isReplicating() ? 1 : 0, replicationAttributes);
 
-                long elapsed = fetcher.getReplicationTimeElapsed();
-                long val = fetcher.getTotalBytesDownloaded();
-                if (elapsed > 0) {
-                  timeElapsedMetric.record(elapsed, replicationAttributes);
-                  bytesDownloadedMetric.record(val, replicationAttributes);
-                  downloadSpeedMetric.record(val / elapsed, replicationAttributes);
-                }
-              }
-            },
-            indexSizeMetric,
-            indexVersionMetric,
-            indexGenerationMetric,
-            isLeaderMetric,
-            isFollowerMetric,
-            replicationEnabledMetric,
-            isPollingDisabledMetric,
-            isReplicatingMetric,
-            timeElapsedMetric,
-            bytesDownloadedMetric,
-            downloadSpeedMetric);
-  }
-
-  @Override
-  public void close() throws IOException {
-    IOUtils.closeQuietly(metricsCallback);
-    super.close();
+            long elapsed = fetcher.getReplicationTimeElapsed();
+            long val = fetcher.getTotalBytesDownloaded();
+            if (elapsed > 0) {
+              timeElapsedMetric.record(elapsed, replicationAttributes);
+              bytesDownloadedMetric.record(val, replicationAttributes);
+              downloadSpeedMetric.record(val / elapsed, replicationAttributes);
+            }
+          }
+        },
+        indexSizeMetric,
+        indexVersionMetric,
+        indexGenerationMetric,
+        isLeaderMetric,
+        isFollowerMetric,
+        replicationEnabledMetric,
+        isPollingDisabledMetric,
+        isReplicatingMetric,
+        timeElapsedMetric,
+        bytesDownloadedMetric,
+        downloadSpeedMetric);
   }
 
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is

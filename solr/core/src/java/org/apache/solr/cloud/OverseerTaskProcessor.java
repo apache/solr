@@ -93,7 +93,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   private final Stats stats;
   private final SolrMetricsContext overseerTaskProcessorMetricsContext;
-  private AutoCloseable toClose;
 
   /**
    * This map may contain tasks which are read from work queue but could not be executed because
@@ -152,7 +151,9 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     thisNode = MDCLoggingContext.getNodeName();
 
     this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+    initializeMetrics(
+        overseerTaskProcessorMetricsContext,
+        Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -407,13 +408,12 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.toClose =
-        parentContext.observableLongGauge(
-            "solr_overseer_collection_work_queue_size",
-            "Size of overseer's collection work queue",
-            (observableLongMeasurement) -> {
-              observableLongMeasurement.record(workQueue.getZkStats().getQueueLength(), attributes);
-            });
+    parentContext.observableLongGauge(
+        "solr_overseer_collection_work_queue_size",
+        "Size of overseer's collection work queue",
+        (observableLongMeasurement) -> {
+          observableLongMeasurement.record(workQueue.getZkStats().getQueueLength(), attributes);
+        });
   }
 
   @Override
@@ -424,14 +424,13 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   @Override
   public void close() {
     isClosed = true;
-    overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
       if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
     IOUtils.closeQuietly(selector);
-    IOUtils.closeQuietly(toClose);
+    IOUtils.closeQuietly(overseerTaskProcessorMetricsContext);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk)

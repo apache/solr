@@ -81,8 +81,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     }
     log.info("Indexing {} documents", maxDoc);
 
-    try (SolrClient solrClient =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build(); ) {
+    try (SolrClient solrClient = cluster.newSolrClient(collection); ) {
       final StoppableIndexingThread indexThread =
           new StoppableIndexingThread(null, solrClient, "1", true, maxDoc, 1, true);
       threads.add(indexThread);
