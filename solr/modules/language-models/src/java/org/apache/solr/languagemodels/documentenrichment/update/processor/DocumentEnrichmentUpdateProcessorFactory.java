@@ -112,14 +112,11 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   private static final String MODEL_NAME = "model";
   private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
 
-  private ManagedChatModelStore modelStore = null;
-
   private List<String> inputFields;
   private String outputField;
-  private String prompt;
+  private String promptText;
   private String promptFile;
   private String modelName;
-  private SolrParams params;
 
   @Override
   public void init(final NamedList<?> args) {
@@ -133,7 +130,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
     inputFields = List.copyOf(fieldNames);
 
-    params = args.toSolrParams();
+    SolrParams params = args.toSolrParams();
     RequiredSolrParams required = params.required();
     outputField = required.get(OUTPUT_FIELD_PARAM);
     modelName = required.get(MODEL_NAME);
@@ -153,7 +150,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
     if (inlinePrompt != null) {
       validatePromptPlaceholders(inlinePrompt, inputFields);
-      this.prompt = inlinePrompt;
+      this.promptText = inlinePrompt;
     }
     this.promptFile = promptFilePath;
   }
@@ -164,25 +161,22 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     ManagedChatModelStore.registerManagedChatModelStore(solrResourceLoader, this);
     if (promptFile != null) {
       try (InputStream is = solrResourceLoader.openResource(promptFile)) {
-        prompt = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+        promptText = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Cannot read prompt file: " + promptFile,
             e);
       }
-      validatePromptPlaceholders(prompt, inputFields);
+      validatePromptPlaceholders(promptText, inputFields);
     }
   }
 
   @Override
   public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
       throws SolrException {
-    if (res instanceof ManagedChatModelStore) {
-      modelStore = (ManagedChatModelStore) res;
-    }
-    if (modelStore != null) {
-      modelStore.loadStoredModels();
+    if (res instanceof ManagedChatModelStore store) {
+      store.loadStoredModels();
     }
   }
 
@@ -203,8 +197,8 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     ResponseFormat responseFormat = buildResponseFormat(outputFieldSchema);
     boolean multiValued = outputFieldSchema.multiValued();
 
-    ManagedChatModelStore modelStore = ManagedChatModelStore.getManagedModelStore(req.getCore());
-    SolrChatModel chatModel = modelStore.getModel(modelName);
+    ManagedChatModelStore store = ManagedChatModelStore.getManagedModelStore(req.getCore());
+    SolrChatModel chatModel = store.getModel(modelName);
     if (chatModel == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -215,7 +209,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
 
     return new DocumentEnrichmentUpdateProcessor(
-        inputFields, outputField, prompt, chatModel, multiValued, responseFormat, req, next);
+        inputFields, outputField, promptText, chatModel, multiValued, responseFormat, req, next);
   }
 
   /**
@@ -306,7 +300,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   }
 
   public String getPrompt() {
-    return prompt;
+    return promptText;
   }
 
   public String getModelName() {
