@@ -29,9 +29,12 @@ dependencies {
   implementation libs.apache.lucene.core
 
   implementation libs.langchain4j.core
+  runtimeOnly libs.langchain4j.anthropic
   runtimeOnly libs.langchain4j.cohere
+  runtimeOnly libs.langchain4j.google.ai.gemini
   runtimeOnly libs.langchain4j.hugging.face
   runtimeOnly libs.langchain4j.mistral.ai
+  runtimeOnly libs.langchain4j.ollama
   runtimeOnly libs.langchain4j.open.ai
 
   implementation libs.slf4j.api

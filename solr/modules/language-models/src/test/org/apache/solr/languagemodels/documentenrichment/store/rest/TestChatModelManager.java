@@ -163,6 +163,65 @@ public class TestChatModelManager extends TestLanguageModelBase {
   }
 
   @Test
+  public void loadChatModel_anthropic_shouldLoadModelConfig() throws Exception {
+    loadChatModel("anthropic-chat-model.json");
+
+    final String modelName = "anthropic-chat-1";
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedChatModelStore.REST_END_POINT,
+        "/models/[0]/params/baseUrl=='https://api.anthropic.com/v1'");
+    assertJQ(
+        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-anthropic'");
+    assertJQ(
+        ManagedChatModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='claude-3-5-haiku-latest'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
+
+    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + modelName);
+  }
+
+  @Test
+  public void loadChatModel_ollama_shouldLoadModelConfig() throws Exception {
+    loadChatModel("ollama-chat-model.json");
+
+    final String modelName = "ollama-chat-1";
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedChatModelStore.REST_END_POINT,
+        "/models/[0]/params/baseUrl=='http://localhost:11434'");
+    assertJQ(
+        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='llama3.2'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+
+    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + modelName);
+  }
+
+  @Test
+  public void loadChatModel_gemini_shouldLoadModelConfig() throws Exception {
+    loadChatModel("gemini-chat-model.json");
+
+    final String modelName = "gemini-chat-1";
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-gemini'");
+    assertJQ(
+        ManagedChatModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='gemini-2.0-flash'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
+
+    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + modelName);
+  }
+
+  @Test
   public void loadChatModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
     loadChatModel("dummy-chat-model-unsupported.json", "400");
   }

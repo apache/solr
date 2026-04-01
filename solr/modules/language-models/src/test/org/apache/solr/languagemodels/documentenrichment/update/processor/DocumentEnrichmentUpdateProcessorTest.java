@@ -165,7 +165,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
     SolrInputDocument atomicDoc = new SolrInputDocument();
     atomicDoc.setField("id", "99");
-    atomicDoc.setField("enriched", Map.of("set", "true"));
+    atomicDoc.setField("enriched", Map.of("set", true));
     addWithChain(atomicDoc, "documentEnrichmentForPartialUpdates");
     assertU(commit());
 
