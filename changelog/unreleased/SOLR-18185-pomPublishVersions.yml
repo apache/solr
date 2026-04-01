@@ -1,4 +1,4 @@
-title: Published POMs are now published with the resolved version. Fixes ambiguous/missing version problems.
+title: Published POMs now include resolved dependency versions, fixing ambiguous/missing version problems.
 type: fixed
 authors:
   - name: David Smiley
