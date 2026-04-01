@@ -35,7 +35,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.SolrParams;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,11 +44,6 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2).addConfig("managed", configset("cloud-managed")).configure();
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    shutdownCluster();
   }
 
   private void requestLuke(String collection, SolrParams extra) throws Exception {

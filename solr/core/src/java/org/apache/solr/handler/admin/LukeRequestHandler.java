@@ -571,7 +571,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
    * values to Integer and would fail with a ClassCastException.
    */
   private static final SolrVersion DISTRIB_LONG_COUNTS_MIN_VERSION =
-      SolrVersion.forIntegers(10, 2, 0);
+      SolrVersion.forIntegers(10, 1, 0);
 
   private static boolean shouldNarrowLongsForOldClient(SolrQueryRequest req) {
     HttpSolrCall call = req.getHttpSolrCall();

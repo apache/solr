@@ -4,5 +4,5 @@ type: added # added, changed, fixed, deprecated, removed, dependency_update, sec
 authors:
   - name: Luke Kot-Zaniewski
 links:
-  name: PR#4149
-  url: https://github.com/apache/solr/pull/4149
+  name: SOLR-8127
+  url: https://issues.apache.org/jira/browse/SOLR-8127
