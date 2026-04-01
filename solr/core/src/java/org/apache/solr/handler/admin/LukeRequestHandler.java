@@ -30,6 +30,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -434,6 +435,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       shardDataList.add(shardData);
     }
 
+    shardDataList.sort(Comparator.comparing(sd -> sd.shardAddr));
     SimpleOrderedMap<Object> shardsInfo = new SimpleOrderedMap<>();
     for (ShardData sd : shardDataList) {
       SimpleOrderedMap<Object> entry = sd.toResponseEntry();

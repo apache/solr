@@ -134,7 +134,8 @@ From SolrJ, you can access /luke using the {solr-javadocs}/solrj/org/apache/solr
 == Distributed Mode (multiple shards)
 
 When running in SolrCloud, the Luke handler automatically distributes requests across all shards in the collection, the same as search requests.
-To inspect only the local shard's index, set `distrib=false`.
+To inspect only the local shard's index set `distrib=false`.
+In non-cloud mode, you can still distribute across shards by passing the `shards` parameter with explicit shard URLs.
 
 To get a collection-wide view:
 

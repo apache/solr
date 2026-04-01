@@ -50,10 +50,24 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     params.set("numTerms", "0");
     params.set("shards", shards);
     params.add(extra);
+
+    // Query a random shard client
+    int which = r.nextInt(clients.size());
     QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = clients.get(0).request(req);
+    NamedList<Object> raw = clients.get(which).request(req);
     LukeResponse rsp = new LukeResponse();
     rsp.setResponse(raw);
+
+    // Query the control server with the same distributed params
+    QueryRequest controlReq = new QueryRequest(params);
+    NamedList<Object> controlRaw = controlClient.request(controlReq);
+    LukeResponse controlRsp = new LukeResponse();
+    controlRsp.setResponse(controlRaw);
+
+    // Compare — response should be consistent regardless of coordinating node
+    handle.put("QTime", SKIPVAL);
+    compareSolrResponses(rsp, controlRsp);
+
     return rsp;
   }
 
@@ -66,7 +80,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     params.add(extra);
     QueryRequest req = new QueryRequest(params);
     req.setResponseParser(new InputStreamResponseParser("xml"));
-    NamedList<Object> raw = clients.get(0).request(req);
+    NamedList<Object> raw = controlClient.request(req);
     String xml = InputStreamResponseParser.consumeResponseToString(raw);
     String failedXpath = BaseTestHarness.validateXPath(xml, xpaths);
     assertNull("XPath validation failed: " + failedXpath + "\nResponse:\n" + xml, failedXpath);
@@ -186,7 +200,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     params.set("qt", "/admin/luke");
     params.set("numTerms", "0");
     QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = clients.get(0).request(req);
+    NamedList<Object> raw = controlClient.request(req);
     LukeResponse rsp = new LukeResponse();
     rsp.setResponse(raw);
 
@@ -205,7 +219,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     params.set("numTerms", "0");
     params.set("distrib", "false");
     QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = clients.get(0).request(req);
+    NamedList<Object> raw = controlClient.request(req);
     LukeResponse rsp = new LukeResponse();
     rsp.setResponse(raw);
 
