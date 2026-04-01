@@ -255,6 +255,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     final LukeResponse.FieldInfo originalFieldInfo;
     private Object indexFlags;
     private String indexFlagsShardAddr;
+    private long docsSum;
 
     AggregatedFieldData(String shardAddr, LukeResponse.FieldInfo fieldInfo) {
       this.originalShardAddr = shardAddr;
@@ -462,6 +463,15 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
     if (!aggregatedFields.isEmpty()) {
+      // Finalize field entries: add index flags and docs in a consistent order.
+      // These are deferred from aggregateShardField because index flags may arrive
+      // from any shard, and we want a deterministic key order in the response.
+      for (AggregatedFieldData fd : aggregatedFields.values()) {
+        if (fd.indexFlags != null) {
+          fd.aggregated.add(KEY_INDEX_FLAGS, fd.indexFlags);
+        }
+        fd.aggregated.add(KEY_DOCS, fd.docsSum);
+      }
       SimpleOrderedMap<Object> aggregatedFieldsNL = new SimpleOrderedMap<>();
       for (Map.Entry<String, AggregatedFieldData> entry : aggregatedFields.entrySet()) {
         aggregatedFieldsNL.add(entry.getKey(), entry.getValue().aggregated);
@@ -518,9 +528,6 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       if (dynBase != null) {
         fieldData.aggregated.add(KEY_DYNAMIC_BASE, dynBase);
       }
-      if (fieldData.indexFlags != null) {
-        fieldData.aggregated.add(KEY_INDEX_FLAGS, fieldData.indexFlags);
-      }
     } else {
       // Subsequent shards: validate that "type", "schema", and "dynamicBase" match
       validateFieldAttr(
@@ -550,7 +557,6 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
         if (fieldData.indexFlags == null) {
           fieldData.indexFlags = indexFlags;
           fieldData.indexFlagsShardAddr = shardAddr;
-          fieldData.aggregated.add(KEY_INDEX_FLAGS, indexFlags);
         } else {
           validateFieldAttr(
               fieldName,
@@ -563,8 +569,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    // "docs" → sum of per-shard doc counts (number of documents containing this field)
-    fieldData.aggregated.merge(KEY_DOCS, fi.getDocs(), (a, b) -> Long.sum((Long) a, (Long) b));
+    // Sum per-shard doc counts (number of documents containing this field).
+    // Added to the response in finalization to ensure consistent key ordering.
+    fieldData.docsSum += fi.getDocs();
   }
 
   /**
