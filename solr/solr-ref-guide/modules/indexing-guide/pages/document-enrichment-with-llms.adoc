@@ -16,4 +16,463 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This module brings the power of *Language Models* to Solr.
+This module brings the power of *Large Language Models* to Solr.
+
+More specifically, it provides the capability, at indexing time, given a prompt and a set of input fields, of calling an
+LLM through https://github.com/langchain4j/langchain4j[LangChain4j] for each document and store the result of the call
+in an `outputField`, that can be of multiple types and even multivalued.
+
+_Without_ this module, the LLM calls must be done _outside_ Solr, before indexing.
+
+[IMPORTANT]
+====
+This module sends your documents off to some hosted service on the internet.
+There are cost, privacy, performance, and service availability implications on such a strong dependency that should be
+diligently examined before employing this module in a serious way.
+
+====
+
+At the moment a subset of LLM providers supported by LangChain4j is supported by Solr.
+
+*Disclaimer*: Apache Solr is *in no way* affiliated to any of these corporations or services.
+
+If you want to add support for additional services or improve the support for the existing ones, feel free to
+contribute:
+
+* https://github.com/apache/solr/blob/main/CONTRIBUTING.md[Contributing to Solr]
+
+== Module
+
+This is provided via the `language-models` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be
+enabled before use.
+
+== Language Model Configuration
+
+Language Models is a module and therefore its plugins must be configured in `solrconfig.xml`.
+
+=== Minimum Requirements
+
+* Enable the `language-models` module to make the Language Models classes available on Solr's classpath.
+See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
+
+* An update processor, similar to the one below, must be declared in `solrconfig.xml`:
++
+[source,xml]
+----
+<updateRequestProcessorChain name="documentEnrichment">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">summary</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="model">model-name</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+[NOTE]
+====
+If no component is configured in `solrconfig.xml`, the `ChatModel` store will not be registered and requests to `/schema/chat-model-store` will return an error.
+====
+
+== Document Enrichment Lifecycle
+
+=== Models
+
+* A model in this module is a chat model, that answers with text given a prompt.
+* A model in this Solr module is a reference to an external API that runs the Large Language Model responsible chat
+completion.
+
+[IMPORTANT]
+====
+the Solr chat model specifies the parameters to access the APIs, the LLM doesn't run internally in Solr
+
+====
+
+A model is described by these parameters:
+
+
+`class`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The model implementation.
+Accepted values:
+
+* `dev.langchain4j.model.ollama.OllamaChatModel`
+* `dev.langchain4j.model.mistralai.MistralAiChatModel`
+* `dev.langchain4j.model.anthropic.AnthropicChatModel`
+* `dev.langchain4j.model.openai.OpenAiChatModel`
+* `dev.langchain4j.model.googleai.GoogleAiGeminiChatModel`
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The identifier of your model, this is used by any component that intends to use the model (e.g., `DocumentEnrichmentUpdateProcessorFactory` update processor).
+
+`params`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Each model class has potentially different params.
+Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr: https://docs.langchain4j.dev/category/language-models[Chat Models in LangChain4j].
+
+=== Supported Models
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support document enrichement with LLMs.
+The models currently supported are:
+
+[tabs#supported-chat-models]
+======
+Ollama::
++
+====
+
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.ollama.OllamaChatModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "http://localhost:11434",
+    "modelName": "<a-local/hosted-chat-model>",
+    "timeout": 300,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+
+MistralAI::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.mistralai.MistralAiChatModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.mistral.ai/v1",
+    "apiKey": "<your-mistralAI-api-key>",
+    "modelName": "<a-mistralAI-chat-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+OpenAI::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.openai.OpenAiChatModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "<your-openAI-api-key>",
+    "modelName": "<a-openAI-chat-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+
+Anthropic::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.anthropic.AnthropicChatModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.anthropic.com/v1/",
+    "apiKey": "<your-anthropic-api-key>",
+    "modelName": "<a-anthropic-chat-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+
+Gemini::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.googleai.GoogleAiGeminiChatModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://generativelanguage.googleapis.com/v1beta/",
+    "apiKey": "<your-geminiAi-api-key>",
+    "modelName": "<a-geminiAi-chat-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+======
+
+=== Uploading a Model
+
+To upload the model in a `/path/myModel.json` file, please run:
+
+[source,bash]
+----
+curl -XPUT 'http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+----
+
+To delete the `currentModel` model:
+
+[source,bash]
+----
+curl -XDELETE 'http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store/currentModel'
+----
+
+To view all models:
+
+[source,text]
+http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store
+
+
+.Example: /path/myModel.json
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.openai.OpenAiChatModel",
+  "name": "openai-1",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "apiKey-openAI",
+    "modelName": "gpt-5.4-nano",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+
+=== How to Trigger Document Enrichment during Indexing
+To create new fields starting from existent ones in your documents at indexing time you need to configure an {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[Update Request Processor Chain] that includes at least one `DocumentEnrichmentUpdateProcessor` update request processor in one of the 2 following way:
+
+* Update processor with parameter `prompt`
++
+[source,xml]
+----
+<updateRequestProcessorChain name="documentEnrichment">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">summary</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="model">model-name</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+* Update processor with parameter `promptFile`: in this case, the file `prompt.txt` must be uploaded to Solr similarly to any other configuration file (e.g., `solrconfig.xml`, `synonyms.txt`, etc.)
++
+[source,xml]
+----
+<updateRequestProcessorChain name="documentEnrichment">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">summary</str>
+   <str name="promptFile">prompt.txt</str>
+   <str name="model">model-name</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+Exactly one of the following parameters is required: `prompt` or `promptFile`.
+
+Another important feature of this module is that one (or more) `inputField` needs to be injected in the prompt. This is
+done by some special tokens, that are the `fieldName` surrounded by curly brackets (e.g., `{fieldName}`). These tokens
+are _mandatory_ for this module to work properly. Solr will throw an error if the parameters are not properly defined.
+For example, both the prompt and the content of the file prompt.txt, must contain the text '{string_field}', which
+will be substituted with the content of the `string_field` field for each document. An example of a valid prompt with
+multiple input fields is as follows:
+
+[source,xml]
+----
+<updateRequestProcessorChain name="documentEnrichment">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">title</str>
+   <str name="inputField">body</str>
+   <str name="outputField">summary</str>
+   <str name="prompt">Summarize with the following information. Title: {title}. Body: {body}.</str>
+   <str name="model">chat-model</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+The LLM response is mapped to the specified `outputField`. Note that this module only supports a subset of Solr's
+available field types, which includes:
+
+* *String/Text*: `StrField`, `TextField`
+* *Date*: `DatePointField`
+* *Numeric*: `IntPointField`, `LongPointField, `FloatPointField`, `DoublePointField`
+* *Boolean*: `BoolField`
+
+
+This fields _can_ be multivalued. Solr uses structured output form LangChain4j to deal with LLMs' responses.
+
+
+For more details on how to work with update request processors in Apache Solr, please refer to the dedicated page:
+xref:configuration-guide:update-request-processors.adoc[Update Request Processor]
+
+[IMPORTANT]
+====
+This update processor sends your document field content off to some hosted service on the internet.
+There are serious performance implications that should be diligently examined before employing this component in production.
+It will slow down substantially your indexing pipeline so make sure to stress test your solution before going live.
+
+====
+
+=== Index first and enrich your documents on a second pass
+LLM calls are usually quite slow, so, depending on your use case it could be a good idea to index first your documents
+enrich them with new LLM-generated fields later on.
+
+This can be done in Solr defining two update request processors chains: one that includes all the processors you need,
+excluded the `DocumentEnrichmentUpdateProcessor` (let's call it 'no-enrichment') and one that includes the
+`DocumentEnrichmentUpdateProcessor` (let's call it 'enrichment').
+
+[source,xml]
+----
+<updateRequestProcessorChain name="no-enrichment">
+  <processor class="solr.processor1">
+   ...
+  </processor>
+   ...
+  <processor class="solr.processorN">
+   ...
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+----
+
+[source,xml]
+----
+<updateRequestProcessorChain name="enrichment">
+  <processor class="solr.processor1">
+   ...
+  </processor>
+   ...
+  <processor class="solr.processorN">
+   ...
+  </processor>
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">summary</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="model">chat-model</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+----
+
+You would index your documents first using the 'no-enrichment' and when finished, incrementally repeat the indexing
+targeting the 'enrichment' chain.
+
+[IMPORTANT]
+====
+This implies you need to send the documents you want to index to Solr twice and re-run any other update request
+processor you need, in the second chain. This has data traffic implications (you transfer your documents over the
+network twice) and processing implications (if you have other update request processors in your chain, those must be
+repeated the second time as we are literally replacing the indexed documents one by one).
+====
+
+If your use case is compatible with xref:indexing-guide:partial-document-updates.adoc[Partial Updates], you can do better:
+
+You still define two chains, but this time the 'enrichment' one only includes the 'DocumentEnrichmentUpdateProcessor'
+(and the xref:configuration-guide:update-request-processors.adoc[Mandatory Processors] )
+
+[source,xml]
+----
+<updateRequestProcessorChain name="no-enrichment">
+  <processor class="solr.processor1">
+   ...
+  </processor>
+   ...
+  <processor class="solr.processorN">
+   ...
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+----
+
+[source,xml]
+----
+<updateRequestProcessorChain name="enrichment">
+  <processor class="solr.DistributedUpdateProcessorFactory"/>
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">summary</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="model">chat-model</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+----
+
+[NOTE]
+====
+Since partial updates are resolved by `DistributedUpdateProcessorFactory`, be sure to place
+`DocumentEnrichmentUpdateProcessorFactory` afterwards so that it sees normal/complete documents.
+====
+
+Add to your schema a simple field that will be useful to track the enrichment process and use atomic updates:
+
+[source,xml]
+----
+<field name="enriched" type="boolean" indexed="true" stored="false" docValues="true" default="false"/>
+
+----
+
+In the first pass just index your documents using your reliable and fast 'no-enrichment' chain.
+
+On the second pass, re-index all your documents using atomic updates and targeting the 'enrichment' chain:
+
+[source,json]
+----
+{
+  "id":"mydoc",
+  "enriched": {
+    "set": true
+  }
+}
+----
+
+What will happen is that internally Solr fetches the stored content of the docs to update, all the existing fields are
+retrieved and a re-indexing happens, targeting the 'enrichment' chain that will add the LLM-generated fields and set the
+boolean `enriched` field to `true`.
+
+Faceting or querying on the boolean `enriched` field can also give you a quick idea on how many documents have been
+enriched with the new generated fields.
