@@ -21,6 +21,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.LukeResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -48,25 +49,21 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/luke");
     params.set("numTerms", "0");
-    params.set("shards", shards);
     params.add(extra);
 
-    // Query a random shard client
-    int which = r.nextInt(clients.size());
-    QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = clients.get(which).request(req);
-    LukeResponse rsp = new LukeResponse();
-    rsp.setResponse(raw);
-
-    // Query the control server with the same distributed params
-    QueryRequest controlReq = new QueryRequest(params);
-    NamedList<Object> controlRaw = controlClient.request(controlReq);
-    LukeResponse controlRsp = new LukeResponse();
-    controlRsp.setResponse(controlRaw);
-
-    // Compare — response should be consistent regardless of coordinating node
+    // query() sends to control and a random shard with shards param, compares responses
     handle.put("QTime", SKIPVAL);
-    compareSolrResponses(rsp, controlRsp);
+    handle.put("index", SKIP);
+    handle.put("shards", SKIP);
+    // Detailed per-field stats (distinct, topTerms, histogram) are kept per-shard in
+    // distributed mode and intentionally excluded from the aggregated top-level fields.
+    // Local mode includes them inline, so skip them in the comparison.
+    handle.put("distinct", SKIP);
+    handle.put("topTerms", SKIP);
+    handle.put("histogram", SKIP);
+    QueryResponse qr = query(params);
+    LukeResponse rsp = new LukeResponse();
+    rsp.setResponse(qr.getResponse());
 
     return rsp;
   }

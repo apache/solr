@@ -380,17 +380,13 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       if (schema != null) {
         rsp.add(RSP_SCHEMA, schema);
       }
-      Object info = firstShardRsp.get(RSP_INFO);
-      if (info != null) {
-        rsp.add(RSP_INFO, info);
-      }
     }
 
     long totalNumDocs = 0;
     int totalMaxDoc = 0;
     long totalDeletedDocs = 0;
     int totalSegmentCount = 0;
-    Map<String, AggregatedFieldData> aggregatedFields = new HashMap<>();
+    Map<String, AggregatedFieldData> aggregatedFields = new TreeMap<>();
     String firstDocShard = null;
     Object firstDoc = null;
     List<ShardData> shardDataList = new ArrayList<>();
@@ -477,6 +473,15 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
         aggregatedFieldsNL.add(entry.getKey(), entry.getValue().aggregated);
       }
       rsp.add(RSP_FIELDS, aggregatedFieldsNL);
+    }
+
+    // Add info section last (before shards), matching the local-mode key order.
+    if (!responses.isEmpty()) {
+      NamedList<Object> firstShardRsp = responses.getFirst().getSolrResponse().getResponse();
+      Object info = firstShardRsp == null ? null : firstShardRsp.get(RSP_INFO);
+      if (info != null) {
+        rsp.add(RSP_INFO, info);
+      }
     }
 
     rsp.add(RSP_SHARDS, shardsInfo);
@@ -862,6 +867,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       // Not indexed, so we need to report what we can (it made it through the fl param if
       // specified)
       if (terms == null) {
+        fieldMap.add(KEY_DOCS, 0);
         finfo.add(fieldName, fieldMap);
         continue;
       }
