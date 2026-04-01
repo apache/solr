@@ -1139,7 +1139,6 @@ public class ReplicationHandler extends RequestHandlerBase
     addVal(consumer, IndexFetcher.TIMES_FAILED, props, Integer.class);
     addVal(consumer, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
     addVal(consumer, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-    addVal(consumer, IndexFetcher.CLEARED_LOCAL_IDX, props, Boolean.class);
   }
 
   private void addVal(
