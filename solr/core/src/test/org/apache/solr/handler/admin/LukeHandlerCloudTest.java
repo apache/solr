@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -47,9 +47,9 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
   }
 
   private void requestLuke(String collection, SolrParams extra) throws Exception {
-    QueryRequest req = new QueryRequest(SolrParams.wrapDefaults(extra, params("numTerms", "0")));
-    req.setPath("/admin/luke");
-    cluster.getSolrClient().request(req, collection);
+    LukeRequest req = new LukeRequest(extra);
+    req.setNumTerms(0);
+    req.process(cluster.getSolrClient(), collection);
   }
 
   /**

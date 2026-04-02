@@ -125,26 +125,26 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   static final int HIST_ARRAY_SIZE = 33;
 
   // Response section keys
-  private static final String RSP_INDEX = "index";
-  private static final String RSP_FIELDS = "fields";
-  private static final String RSP_SCHEMA = "schema";
-  private static final String RSP_INFO = "info";
-  private static final String RSP_DOC = "doc";
-  private static final String RSP_SHARDS = "shards";
+  static final String RSP_INDEX = "index";
+  static final String RSP_FIELDS = "fields";
+  static final String RSP_SCHEMA = "schema";
+  static final String RSP_INFO = "info";
+  static final String RSP_DOC = "doc";
+  static final String RSP_SHARDS = "shards";
 
   // Field-level keys
-  private static final String KEY_NUM_DOCS = "numDocs";
-  private static final String KEY_MAX_DOC = "maxDoc";
-  private static final String KEY_DELETED_DOCS = "deletedDocs";
-  private static final String KEY_SEGMENT_COUNT = "segmentCount";
-  private static final String KEY_TYPE = "type";
-  private static final String KEY_SCHEMA_FLAGS = "schema";
-  private static final String KEY_DOCS = "docs";
-  private static final String KEY_DISTINCT = "distinct";
-  private static final String KEY_TOP_TERMS = "topTerms";
-  private static final String KEY_DYNAMIC_BASE = "dynamicBase";
-  private static final String KEY_INDEX_FLAGS = "index";
-  private static final String KEY_HISTOGRAM = "histogram";
+  static final String KEY_NUM_DOCS = "numDocs";
+  static final String KEY_MAX_DOC = "maxDoc";
+  static final String KEY_DELETED_DOCS = "deletedDocs";
+  static final String KEY_SEGMENT_COUNT = "segmentCount";
+  static final String KEY_TYPE = "type";
+  static final String KEY_SCHEMA_FLAGS = "schema";
+  static final String KEY_DOCS = "docs";
+  static final String KEY_DISTINCT = "distinct";
+  static final String KEY_TOP_TERMS = "topTerms";
+  static final String KEY_DYNAMIC_BASE = "dynamicBase";
+  static final String KEY_INDEX_FLAGS = "index";
+  static final String KEY_HISTOGRAM = "histogram";
 
   private ShardHandlerFactory shardHandlerFactory;
 

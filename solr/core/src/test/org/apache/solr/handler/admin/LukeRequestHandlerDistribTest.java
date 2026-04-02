@@ -18,7 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.util.Map;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -53,14 +53,14 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
     // query() sends to control and a random shard with shards param, compares responses
     handle.put("QTime", SKIPVAL);
-    handle.put("index", SKIP);
-    handle.put("shards", SKIP);
+    handle.put(LukeRequestHandler.RSP_INDEX, SKIP);
+    handle.put(LukeRequestHandler.RSP_SHARDS, SKIP);
     // Detailed per-field stats (distinct, topTerms, histogram) are kept per-shard in
     // distributed mode and intentionally excluded from the aggregated top-level fields.
     // Local mode includes them inline, so skip them in the comparison.
-    handle.put("distinct", SKIP);
-    handle.put("topTerms", SKIP);
-    handle.put("histogram", SKIP);
+    handle.put(LukeRequestHandler.KEY_DISTINCT, SKIP);
+    handle.put(LukeRequestHandler.KEY_TOP_TERMS, SKIP);
+    handle.put(LukeRequestHandler.KEY_HISTOGRAM, SKIP);
     QueryResponse qr = query(params);
     LukeResponse rsp = new LukeResponse();
     rsp.setResponse(qr.getResponse());
@@ -70,12 +70,10 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
   private void assertLukeXPath(ModifiableSolrParams extra, String... xpaths) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/luke");
-    params.set("numTerms", "0");
-    params.set("wt", "xml");
     params.set("shards", shards);
     params.add(extra);
-    QueryRequest req = new QueryRequest(params);
+    LukeRequest req = new LukeRequest(params);
+    req.setNumTerms(0);
     req.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> raw = controlClient.request(req);
     String xml = InputStreamResponseParser.consumeResponseToString(raw);
@@ -193,13 +191,9 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     indexTestData();
 
     // Query a single client without the shards param — local mode
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/luke");
-    params.set("numTerms", "0");
-    QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = controlClient.request(req);
-    LukeResponse rsp = new LukeResponse();
-    rsp.setResponse(raw);
+    LukeRequest req = new LukeRequest();
+    req.setNumTerms(0);
+    LukeResponse rsp = req.process(controlClient);
 
     assertNotNull("index info should be present", rsp.getIndexInfo());
     assertNull("shards should NOT be present in local mode", rsp.getShardResponses());
@@ -211,14 +205,9 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     indexTestData();
 
     // Query a single client with distrib=false — no shards param
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/luke");
-    params.set("numTerms", "0");
-    params.set("distrib", "false");
-    QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = controlClient.request(req);
-    LukeResponse rsp = new LukeResponse();
-    rsp.setResponse(raw);
+    LukeRequest req = new LukeRequest(params("distrib", "false"));
+    req.setNumTerms(0);
+    LukeResponse rsp = req.process(controlClient);
 
     assertNotNull("index info should be present", rsp.getIndexInfo());
     assertNull("shards should NOT be present with distrib=false", rsp.getShardResponses());
@@ -466,14 +455,9 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     // Query with shards= pointing only at shard 1 — the dynamic field should NOT appear.
     // This also tests that a single remote shard is correctly fanned out to rather than
     // falling through to local-mode on the coordinating node.
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/luke");
-    params.set("numTerms", "0");
-    params.set("shards", shardsArr[1]);
-    QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = clients.get(0).request(req);
-    LukeResponse rsp = new LukeResponse();
-    rsp.setResponse(raw);
+    LukeRequest req = new LukeRequest(params("shards", shardsArr[1]));
+    req.setNumTerms(0);
+    LukeResponse rsp = req.process(controlClient);
 
     Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
     assertNotNull("fields should be present", fields);
@@ -483,11 +467,9 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     assertNotNull("'name' field should still be present", fields.get("name"));
 
     // Now query with shards= pointing only at shard 0 — the dynamic field SHOULD appear
-    params.set("shards", shardsArr[0]);
-    req = new QueryRequest(params);
-    raw = clients.get(0).request(req);
-    rsp = new LukeResponse();
-    rsp.setResponse(raw);
+    req = new LukeRequest(params("shards", shardsArr[0]));
+    req.setNumTerms(0);
+    rsp = req.process(controlClient);
 
     fields = rsp.getFieldInfo();
     assertNotNull("fields should be present", fields);
@@ -503,14 +485,9 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
     // Pass the shards param with a single shard — should still fan out to it
     // rather than incorrectly falling through to local mode
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/luke");
-    params.set("numTerms", "0");
-    params.set("shards", shards);
-    QueryRequest req = new QueryRequest(params);
-    NamedList<Object> raw = clients.get(0).request(req);
-    LukeResponse rsp = new LukeResponse();
-    rsp.setResponse(raw);
+    LukeRequest req = new LukeRequest(params("shards", shards));
+    req.setNumTerms(0);
+    LukeResponse rsp = req.process(controlClient);
 
     assertNotNull("index info should be present", rsp.getIndexInfo());
     assertEquals("should see the 1 doc we indexed", 1, (long) rsp.getNumDocs());
