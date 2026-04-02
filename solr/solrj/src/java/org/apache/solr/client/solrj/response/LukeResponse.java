@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -120,7 +121,7 @@ public class LukeResponse extends SolrResponseBase {
     EnumSet<FieldFlag> flags;
     boolean cacheableFaceting;
     NamedList<Integer> topTerms;
-    Map<String, Object> extras = new HashMap<>();
+    Map<String, Object> extras = new TreeMap<>();
 
     public FieldInfo(String n) {
       name = n;
@@ -277,14 +278,14 @@ public class LukeResponse extends SolrResponseBase {
     return (String) indexInfo.get("directory");
   }
 
-  private Long getIndexLong(String key) {
+  private Long getLong(String key) {
     if (indexInfo == null) return null;
     Number n = (Number) indexInfo.get(key);
     return n != null ? n.longValue() : null;
   }
 
   public Long getNumDocs() {
-    return getIndexLong("numDocs");
+    return getLong("numDocs");
   }
 
   public Integer getMaxDoc() {
@@ -293,7 +294,7 @@ public class LukeResponse extends SolrResponseBase {
   }
 
   public Long getDeletedDocs() {
-    return getIndexLong("deletedDocs");
+    return getLong("deletedDocs");
   }
 
   public Integer getNumTerms() {
