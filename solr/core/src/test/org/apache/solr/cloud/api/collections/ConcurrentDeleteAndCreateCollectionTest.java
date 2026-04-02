@@ -153,7 +153,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
         try {
           doWork();
         } catch (Exception e) {
-          log.error(e.toString(), e);
+          log.error(e.toString(), e); // nowarn
           if (!failure.compareAndSet(null, e)) {
             failure.get().addSuppressed(e);
           }
