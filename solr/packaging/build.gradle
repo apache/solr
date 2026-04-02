@@ -282,6 +282,7 @@ task integrationTests(type: BatsTask) {
   }
 
   inputs.dir(distDir)
+  inputs.dir('test')  // Track .bats test files and helper as inputs
   outputs.dir(integrationTestOutput)
 
   doFirst {
@@ -311,7 +312,9 @@ task integrationTests(type: BatsTask) {
 }
 
 class BatsTask extends Exec {
-  @InputDirectory
+  // Note: testDir is marked @Internal because it's a String configuration property, not a trackable input.
+  // The task using BatsTask should explicitly declare inputs.dir(testDir) in its configuration.
+  @Internal
   String testDir = 'test'
 
   @Input
