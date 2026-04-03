@@ -87,6 +87,7 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     this.excludedFields = hashExcludedFields;
   }
 
+  @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument newDoc = cmd.getSolrInputDocument();
     String newHash = computeDocHash(newDoc);
