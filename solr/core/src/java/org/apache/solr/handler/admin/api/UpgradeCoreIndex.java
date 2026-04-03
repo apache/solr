@@ -41,6 +41,8 @@ import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
 import org.apache.solr.client.api.model.UpgradeCoreIndexResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -544,6 +546,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
           AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
           currDocCmd.solrDoc = solrDoc;
+          // Preserve the original _version_ on the command so that the tlog entry
+          // is consistent with the indexed document's _version_ field.
+          SolrInputField versionField = solrDoc.getField(CommonParams.VERSION_FIELD);
+          if (versionField != null) {
+            currDocCmd.setVersion(((Number) versionField.getValue()).longValue());
+          }
           processor.processAdd(currDocCmd);
         }
       } finally {
