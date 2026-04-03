@@ -1,21 +1,47 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.apache.solr.update.processor.ContentHashVersionProcessorFactory.CONTENT_HASH_ENABLED_PARAM;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.apache.solr.update.processor.ContentHashVersionProcessorFactory.CONTENT_HASH_ENABLED_PARAM;
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class ContentHashVersionProcessorFactoryTest {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    assumeWorkingMockito();
+  }
 
   @Test
   public void shouldHaveSensibleDefaultValues() {
@@ -120,7 +146,8 @@ public class ContentHashVersionProcessorFactoryTest {
     UpdateRequestProcessor next = mock(UpdateRequestProcessor.class);
     SolrQueryRequest updateRequest = createUpdateRequest(false); // Request disables processor
 
-    UpdateRequestProcessor instance = factory.getInstance(updateRequest, mock(SolrQueryResponse.class), next);
+    UpdateRequestProcessor instance =
+        factory.getInstance(updateRequest, mock(SolrQueryResponse.class), next);
 
     assertEquals(instance, next);
   }
@@ -131,7 +158,8 @@ public class ContentHashVersionProcessorFactoryTest {
     UpdateRequestProcessor next = mock(UpdateRequestProcessor.class);
     SolrQueryRequest updateRequest = createUpdateRequest(true); // Request enables processor
 
-    UpdateRequestProcessor instance = factory.getInstance(updateRequest, mock(SolrQueryResponse.class), next);
+    UpdateRequestProcessor instance =
+        factory.getInstance(updateRequest, mock(SolrQueryResponse.class), next);
 
     assertNotEquals(instance, next);
   }
@@ -139,7 +167,8 @@ public class ContentHashVersionProcessorFactoryTest {
   private static SolrQueryRequest createUpdateRequest(boolean enableContentHashParamValue) {
     SolrQueryRequest req = mock(SolrQueryRequest.class);
     SolrParams solrParams = mock(SolrParams.class);
-    when(solrParams.getBool(eq(CONTENT_HASH_ENABLED_PARAM), anyBoolean())).thenReturn(enableContentHashParamValue);
+    when(solrParams.getBool(eq(CONTENT_HASH_ENABLED_PARAM), anyBoolean()))
+        .thenReturn(enableContentHashParamValue);
     when(req.getParams()).thenReturn(solrParams);
 
     return req;
