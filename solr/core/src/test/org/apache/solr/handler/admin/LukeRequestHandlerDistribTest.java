@@ -49,6 +49,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/luke");
     params.set("numTerms", "0");
+    params.set("shards.info", "true");
     params.add(extra);
 
     // query() sends to control and a random shard with shards param, compares responses
@@ -71,6 +72,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   private void assertLukeXPath(ModifiableSolrParams extra, String... xpaths) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("shards", shards);
+    params.set("shards.info", "true");
     params.add(extra);
     LukeRequest req = new LukeRequest(params);
     req.setNumTerms(0);
@@ -485,15 +487,22 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
     // Pass the shards param with a single shard — should still fan out to it
     // rather than incorrectly falling through to local mode
-    LukeRequest req = new LukeRequest(params("shards", shards));
+    LukeRequest req = new LukeRequest(params("shards", shards, "shards.info", "true"));
     req.setNumTerms(0);
     LukeResponse rsp = req.process(controlClient);
 
     assertNotNull("index info should be present", rsp.getIndexInfo());
     assertEquals("should see the 1 doc we indexed", 1, (long) rsp.getNumDocs());
     assertNotNull(
-        "shards section should be present when targeting a shard via shards param",
-        rsp.getShardResponses());
+        "shards section should be present when shards.info=true", rsp.getShardResponses());
     assertEquals("should have 1 shard entry", 1, rsp.getShardResponses().size());
+
+    // Without shards.info, shards section should be absent
+    req = new LukeRequest(params("shards", shards));
+    req.setNumTerms(0);
+    rsp = req.process(controlClient);
+    assertNotNull("index info should be present", rsp.getIndexInfo());
+    assertEquals("should see the 1 doc we indexed", 1, (long) rsp.getNumDocs());
+    assertNull("shards section should be absent without shards.info", rsp.getShardResponses());
   }
 }

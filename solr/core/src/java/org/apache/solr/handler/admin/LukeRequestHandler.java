@@ -484,7 +484,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    rsp.add(RSP_SHARDS, shardsInfo);
+    if (req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+      rsp.add(RSP_SHARDS, shardsInfo);
+    }
   }
 
   private void processShardFields(
