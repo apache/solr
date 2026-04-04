@@ -156,7 +156,7 @@ In distributed mode, the response contains:
 * `doc` -- Present when `id` is specified. Contains the document from whichever shard owns it, including a `lucene` section (per-field analysis with shard-local `docFreq` values) and a `solr` section (stored fields). Only `id` is supported for distributed doc lookup; `docId` is rejected because Lucene document IDs are shard-local.
 * `schema` -- Schema information from the first responding shard (identical across shards sharing the same configset).
 * `info` -- Static info from the first responding shard.
-* `shards` -- Per-shard details in response-completion order. Each entry contains:
+* `shards` -- Only present when `shards.info=true`. Contains per-shard details, with each entry keyed by shard address:
 ** `index` -- Full index info for that shard (including `directory`, `segmentsFile`, `version`, `current`, `hasDeletions`, `lastModified`, `userData`).
 ** `fields` -- Only present when `fl` triggers detailed statistics. Contains per-field `topTerms`, `distinct`, and `histogram` from that shard.
 
@@ -168,5 +168,5 @@ You can use `distrib=false` to query individual shards and compare their field c
 The `index` flags are index-derived (not schema-derived) and may be absent on shards where the field has no indexed data; the first non-null value is used, and any subsequent non-null values are validated for consistency.
 
 Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are not aggregated across shards.
-These statistics are shard-local and appear in each shard's entry under the `shards` key.
+These statistics are shard-local and appear in each shard's entry under the `shards` key (requires `shards.info=true`).
 For collection-wide term frequencies or cardinality estimates, Solr's xref:query-guide:faceting.adoc[faceting API] may cover some of these use cases.

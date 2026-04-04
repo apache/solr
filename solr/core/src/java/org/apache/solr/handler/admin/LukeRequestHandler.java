@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -247,24 +248,53 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.setHttpCaching(false);
   }
 
+  /**
+   * Field-level response keys, declared in the order they appear in the local (non-distributed)
+   * response. EnumMap iteration follows declaration order, giving deterministic output.
+   */
+  enum FieldDataKey {
+    TYPE(KEY_TYPE),
+    SCHEMA(KEY_SCHEMA_FLAGS),
+    DYNAMIC_BASE(KEY_DYNAMIC_BASE),
+    INDEX(KEY_INDEX_FLAGS),
+    DOCS(KEY_DOCS);
+
+    final String responseKey;
+
+    FieldDataKey(String responseKey) {
+      this.responseKey = responseKey;
+    }
+  }
+
   /** Per-field accumulation state across shards: aggregated response data and field validation. */
   private static class AggregatedFieldData {
-    // keyed by individual field info properties, i.e. type, schema, etc.
-    final SimpleOrderedMap<Object> aggregated = new SimpleOrderedMap<>();
+    final EnumMap<FieldDataKey, Object> properties = new EnumMap<>(FieldDataKey.class);
     final String originalShardAddr;
     final LukeResponse.FieldInfo originalFieldInfo;
-    private Object indexFlags;
     private String indexFlagsShardAddr;
-    private long docsSum;
 
     AggregatedFieldData(String shardAddr, LukeResponse.FieldInfo fieldInfo) {
       this.originalShardAddr = shardAddr;
       this.originalFieldInfo = fieldInfo;
-      Object flags = fieldInfo.getExtras().get(KEY_INDEX_FLAGS);
-      if (flags != null) {
-        this.indexFlags = flags;
+      properties.put(FieldDataKey.TYPE, fieldInfo.getType());
+      properties.put(FieldDataKey.SCHEMA, fieldInfo.getSchema());
+      Object dynBase = fieldInfo.getExtras().get(KEY_DYNAMIC_BASE);
+      if (dynBase != null) {
+        properties.put(FieldDataKey.DYNAMIC_BASE, dynBase);
+      }
+      Object indexFlags = fieldInfo.getExtras().get(KEY_INDEX_FLAGS);
+      if (indexFlags != null) {
+        properties.put(FieldDataKey.INDEX, indexFlags);
         this.indexFlagsShardAddr = shardAddr;
       }
+    }
+
+    SimpleOrderedMap<Object> toResponse() {
+      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
+      for (Map.Entry<FieldDataKey, Object> entry : properties.entrySet()) {
+        result.add(entry.getKey().responseKey, entry.getValue());
+      }
+      return result;
     }
   }
 
@@ -451,26 +481,19 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     if (firstDoc != null) {
       rsp.add(RSP_DOC, firstDoc);
     }
-    if (shouldNarrowLongsForOldClient(req)) {
+    boolean narrowLongs = shouldNarrowLongsForOldClient(req);
+    if (narrowLongs) {
       narrowLongToInt(aggregatedIndex, KEY_NUM_DOCS);
       narrowLongToInt(aggregatedIndex, KEY_DELETED_DOCS);
-      for (AggregatedFieldData fd : aggregatedFields.values()) {
-        narrowLongToInt(fd.aggregated, KEY_DOCS);
-      }
     }
     if (!aggregatedFields.isEmpty()) {
-      // Finalize field entries: add index flags and docs in a consistent order.
-      // These are deferred from aggregateShardField because index flags may arrive
-      // from any shard, and we want a deterministic key order in the response.
-      for (AggregatedFieldData fd : aggregatedFields.values()) {
-        if (fd.indexFlags != null) {
-          fd.aggregated.add(KEY_INDEX_FLAGS, fd.indexFlags);
-        }
-        fd.aggregated.add(KEY_DOCS, fd.docsSum);
-      }
       SimpleOrderedMap<Object> aggregatedFieldsNL = new SimpleOrderedMap<>();
       for (Map.Entry<String, AggregatedFieldData> entry : aggregatedFields.entrySet()) {
-        aggregatedFieldsNL.add(entry.getKey(), entry.getValue().aggregated);
+        SimpleOrderedMap<Object> fieldResponse = entry.getValue().toResponse();
+        if (narrowLongs) {
+          narrowLongToInt(fieldResponse, KEY_DOCS);
+        }
+        aggregatedFieldsNL.add(entry.getKey(), fieldResponse);
       }
       rsp.add(RSP_FIELDS, aggregatedFieldsNL);
     }
@@ -523,20 +546,8 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     if (fieldData == null) {
       fieldData = new AggregatedFieldData(shardAddr, fi);
       aggregatedFields.put(fieldName, fieldData);
-
-      // First shard to report this field — populate response keys:
-      //   "type"        → field type name (e.g. "string", "text_general")
-      //   "schema"      → schema flags string (e.g. "I-S-M-----OF-----l")
-      //   "dynamicBase" → dynamic field glob if this is a dynamic field (e.g. "*_s")
-      //   "index"       → index-derived flags from the first shard that has them
-      fieldData.aggregated.add(KEY_TYPE, fi.getType());
-      fieldData.aggregated.add(KEY_SCHEMA_FLAGS, fi.getSchema());
-      Object dynBase = fi.getExtras().get(KEY_DYNAMIC_BASE);
-      if (dynBase != null) {
-        fieldData.aggregated.add(KEY_DYNAMIC_BASE, dynBase);
-      }
     } else {
-      // Subsequent shards: validate that "type", "schema", and "dynamicBase" match
+      // Subsequent shards: validate that type, schema, and dynamicBase match
       validateFieldAttr(
           fieldName,
           KEY_TYPE,
@@ -561,24 +572,24 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       Object indexFlags = fi.getExtras().get(KEY_INDEX_FLAGS);
       if (indexFlags != null) {
-        if (fieldData.indexFlags == null) {
-          fieldData.indexFlags = indexFlags;
+        Object existing = fieldData.properties.get(FieldDataKey.INDEX);
+        if (existing == null) {
+          fieldData.properties.put(FieldDataKey.INDEX, indexFlags);
           fieldData.indexFlagsShardAddr = shardAddr;
         } else {
           validateFieldAttr(
               fieldName,
               KEY_INDEX_FLAGS,
               indexFlags,
-              fieldData.indexFlags,
+              existing,
               shardAddr,
               fieldData.indexFlagsShardAddr);
         }
       }
     }
 
-    // Sum per-shard doc counts (number of documents containing this field).
-    // Added to the response in finalization to ensure consistent key ordering.
-    fieldData.docsSum += fi.getDocs();
+    // Sum per-shard doc counts
+    fieldData.properties.merge(FieldDataKey.DOCS, fi.getDocs(), (a, b) -> (long) a + (long) b);
   }
 
   /**
