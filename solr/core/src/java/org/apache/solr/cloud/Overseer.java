@@ -68,6 +68,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,8 +185,6 @@ public class Overseer implements SolrCloseable {
 
     private boolean isClosed = false;
 
-    private AutoCloseable toClose;
-
     public ClusterStateUpdater(
         final ZkStateReader reader,
         final String myId,
@@ -200,19 +199,19 @@ public class Overseer implements SolrCloseable {
       this.compressor = compressor;
 
       this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
-      initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+      initializeMetrics(
+          clusterStateUpdaterMetricContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
     }
 
     @Override
     public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-      this.toClose =
-          parentContext.observableLongGauge(
-              "solr_overseer_state_update_queue_size",
-              "Size of overseer's update queue",
-              (observableLongMeasurement) -> {
-                observableLongMeasurement.record(
-                    stateUpdateQueue.getZkStats().getQueueLength(), attributes);
-              });
+      parentContext.observableLongGauge(
+          "solr_overseer_state_update_queue_size",
+          "Size of overseer's update queue",
+          (observableLongMeasurement) -> {
+            observableLongMeasurement.record(
+                stateUpdateQueue.getZkStats().getQueueLength(), attributes);
+          });
     }
 
     @Override
@@ -461,7 +460,7 @@ public class Overseer implements SolrCloseable {
           && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
         return; // shutting down no need to go further
       }
-      org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
+      Stat stat = new Stat();
       final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
@@ -640,7 +639,7 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() {
       this.isClosed = true;
-      IOUtils.closeQuietly(toClose);
+      IOUtils.closeQuietly(clusterStateUpdaterMetricContext);
     }
 
     @Override
@@ -835,6 +834,7 @@ public class Overseer implements SolrCloseable {
     }
     this.closed = true;
     doClose();
+    IOUtils.closeQuietly(solrMetricsContext);
 
     assert ObjectReleaseTracker.release(this);
   }

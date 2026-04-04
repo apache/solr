@@ -149,6 +149,12 @@ configure(subprojects.findAll {it.path in rootProject.published}) {prj ->
 
           pom(configurePom)
 
+          // Publish resolved/locked dependency versions instead of declared catalog versions
+          versionMapping {
+            usage('java-api') { fromResolutionOf('runtimeClasspath') }
+            usage('java-runtime') { fromResolutionResult() }
+          }
+
           // Remove the internal :platform dependency from dependencyManagement in POMs
           pom.withXml {
             def root = asNode()

@@ -47,6 +47,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
@@ -101,7 +102,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
             "handler",
             handler,
             "plugin_name",
-            org.apache.solr.security.PKIAuthenticationPlugin.class.getSimpleName());
+            PKIAuthenticationPlugin.class.getSimpleName());
     assertAuthMetricsMinimumsPrometheus(
         handler,
         registryName,

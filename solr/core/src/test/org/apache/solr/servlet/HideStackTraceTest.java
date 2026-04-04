@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
@@ -66,7 +65,7 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
                     + "  </requestHandler>\n"
                     + "</config>"));
 
-    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.startSolr();
     solrTestRule.newCollection().withConfigSet(configSet).create();
   }
 

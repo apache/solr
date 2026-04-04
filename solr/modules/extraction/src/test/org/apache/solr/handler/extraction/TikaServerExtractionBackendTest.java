@@ -19,9 +19,10 @@ package org.apache.solr.handler.extraction;
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -65,6 +66,9 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   @SuppressWarnings("resource")
   @BeforeClass
   public static void startTikaServer() {
+    Assume.assumeFalse(
+        "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
+
     try {
       tika = new GenericContainer<>("apache/tika:3.2.3.0-full").withExposedPorts(9998);
       tika.start();
@@ -107,7 +111,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   public void testExtractTextAndMetadata() throws Exception {
     Assume.assumeTrue("Tika server container not started", tika != null);
     try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
-      byte[] data = "Hello TestContainers".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
         assertNotNull(res);
@@ -127,7 +131,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   public void testExtractWithSaxHandlerXml() throws Exception {
     Assume.assumeTrue("Tika server container not started", tika != null);
     try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
-      byte[] data = "Hello XML".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      byte[] data = "Hello XML".getBytes(StandardCharsets.UTF_8);
       ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
@@ -138,8 +142,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         // Tika Server may return XHTML without XML declaration; be flexible
         assertTrue(
             c.contains("<?xml")
-                || c.toLowerCase(java.util.Locale.ROOT).contains("<html")
-                || c.toLowerCase(java.util.Locale.ROOT).contains("<xhtml"));
+                || c.toLowerCase(Locale.ROOT).contains("<html")
+                || c.toLowerCase(Locale.ROOT).contains("<xhtml"));
         assertTrue(c.contains("Hello XML"));
       }
     }
@@ -173,7 +177,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   }
 
   private ExtractionRequest newRequest(String file, String contentType, String content) {
-    return newRequest(file, contentType, content, false, Collections.emptyMap());
+    return newRequest(file, contentType, content, false, Map.of());
   }
 
   @Test
@@ -185,7 +189,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
-              .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+              .getBytes(StandardCharsets.UTF_8);
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         SolrException e =
             expectThrows(
@@ -207,7 +211,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
-              .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+              .getBytes(StandardCharsets.UTF_8);
       ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ToXMLContentHandler xmlHandler = new ToXMLContentHandler();

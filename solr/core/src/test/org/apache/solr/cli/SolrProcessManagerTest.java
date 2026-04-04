@@ -79,13 +79,15 @@ public class SolrProcessManagerTest extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("SystemGetProperty")
   private static Pair<Integer, Process> createProcess(int port, boolean https) throws IOException {
     // Get the path to the java executable from the current JVM
+
+    String pathSeparator = System.getProperty("path.separator");
     String classPath =
-        Arrays.stream(
-                System.getProperty("java.class.path").split(System.getProperty("path.separator")))
+        Arrays.stream(System.getProperty("java.class.path").split(pathSeparator))
             .filter(p -> p.contains("solr") && p.contains("core") && p.contains("build"))
-            .collect(Collectors.joining(System.getProperty("path.separator")));
+            .collect(Collectors.joining(pathSeparator));
 
     ProcessBuilder processBuilder =
         new ProcessBuilder(
@@ -115,7 +117,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
         .forEach(
             p ->
                 assertEquals(
-                    (p.isHttps() ? "https" : "http") + "://localhost:" + p.getPort() + "/solr",
+                    (p.isHttps() ? "https" : "http") + "://localhost:" + p.port() + "/solr",
                     p.getLocalUrl()));
   }
 
@@ -134,22 +136,19 @@ public class SolrProcessManagerTest extends SolrTestCase {
   public void testProcessForPort() {
     assertEquals(
         processHttp.getKey().intValue(),
-        (solrProcessManager.processForPort(processHttp.getKey()).orElseThrow().getPort()));
+        (solrProcessManager.processForPort(processHttp.getKey()).orElseThrow().port()));
     assertEquals(
         processHttps.getKey().intValue(),
-        (solrProcessManager.processForPort(processHttps.getKey()).orElseThrow().getPort()));
+        (solrProcessManager.processForPort(processHttps.getKey()).orElseThrow().port()));
   }
 
   public void testGetProcessForPid() {
     assertEquals(
         processHttp.getValue().pid(),
-        (solrProcessManager.getProcessForPid(processHttp.getValue().pid()).orElseThrow().getPid()));
+        (solrProcessManager.getProcessForPid(processHttp.getValue().pid()).orElseThrow().pid()));
     assertEquals(
         processHttps.getValue().pid(),
-        (solrProcessManager
-            .getProcessForPid(processHttps.getValue().pid())
-            .orElseThrow()
-            .getPid()));
+        (solrProcessManager.getProcessForPid(processHttps.getValue().pid()).orElseThrow().pid()));
   }
 
   public void testScanSolrPidFiles() throws IOException {
@@ -164,14 +163,14 @@ public class SolrProcessManagerTest extends SolrTestCase {
 
   public void testSolrProcessMethods() {
     SolrProcess http = solrProcessManager.processForPort(processHttp.getKey()).orElseThrow();
-    assertEquals(processHttp.getValue().pid(), http.getPid());
-    assertEquals(processHttp.getKey().intValue(), http.getPort());
+    assertEquals(processHttp.getValue().pid(), http.pid());
+    assertEquals(processHttp.getKey().intValue(), http.port());
     assertFalse(http.isHttps());
     assertEquals("http://localhost:" + processHttp.getKey() + "/solr", http.getLocalUrl());
 
     SolrProcess https = solrProcessManager.processForPort(processHttps.getKey()).orElseThrow();
-    assertEquals(processHttps.getValue().pid(), https.getPid());
-    assertEquals(processHttps.getKey().intValue(), https.getPort());
+    assertEquals(processHttps.getValue().pid(), https.pid());
+    assertEquals(processHttps.getKey().intValue(), https.port());
     assertTrue(https.isHttps());
     assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
   }
@@ -187,7 +186,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
 
   /**
    * This class is started as new java process by {@link SolrProcessManagerTest#createProcess}, and
-   * it listens to a HTTP(s) port to simulate a real Solr process.
+   * it listens to an HTTP(s) port to simulate a real Solr process.
    */
   @SuppressWarnings("NewClassNamingConvention")
   public static class MockSolrProcess {

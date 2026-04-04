@@ -21,7 +21,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import jakarta.inject.Inject;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.AliasPropertyApis;
@@ -144,11 +143,11 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
   private static final String PROPERTIES = "property";
 
   private void modifyAliasProperty(
-      SolrJerseyResponse response, String alias, String proertyName, Object value)
+      SolrJerseyResponse response, String alias, String propertyName, Object value)
       throws Exception {
     Map<String, Object> props = new HashMap<>();
     // value can be null
-    props.put(proertyName, value);
+    props.put(propertyName, value);
 
     fetchAndValidateZooKeeperAwareCoreContainer();
     submitRemoteMessageAndHandleException(
@@ -168,7 +167,7 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
     // Note: success/no-op in the event of no properties supplied is intentional. Keeps code
     // simple and one less case for api-callers to check for.
     if (properties == null) {
-      properties = Collections.emptyMap();
+      properties = Map.of();
     }
     fetchAndValidateZooKeeperAwareCoreContainer();
     submitRemoteMessageAndHandleAsync(

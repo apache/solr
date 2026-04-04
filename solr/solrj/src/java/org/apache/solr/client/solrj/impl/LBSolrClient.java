@@ -383,6 +383,7 @@ public abstract class LBSolrClient extends SolrClient {
               skipped.add(wrapper.getEndpoint());
             }
           }
+          endpoint = null;
           continue;
         }
 

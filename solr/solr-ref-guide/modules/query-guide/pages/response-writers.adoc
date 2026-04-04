@@ -32,6 +32,7 @@ The list below describe shows the most common settings for the `wt` parameter, w
 * <<Smile Response Writer,smile>>
 * <<Standard XML Response Writer,xml>>
 * <<XSLT Response Writer,xslt>>
+* <<NoOp Response Writer,noop>>
 
 == JSON Response Writer
 
@@ -386,3 +387,15 @@ else:
 == Smile Response Writer
 
 The Smile format is a JSON-compatible binary format, described in detail here: https://en.wikipedia.org/wiki/Smile_%28data_interchange_format%29[https://en.wikipedia.org/wiki/Smile_(data_interchange_format)]
+
+== NoOp Response Writer
+
+You may want to disable a specific response writer.
+This is supported by remapping the name of the response writer to the `NoOpResponseWriter` in `solrconfig.xml`, which will return a 200 OK status code with the plain text message `noop response writer`.
+
+For example, to disable the `csv` handler you would re-define it in `solrconfig.xml` as:
+
+[source,xml]
+----
+<queryResponseWriter name="csv" class="solr.NoOpResponseWriter" />
+----

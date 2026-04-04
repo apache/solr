@@ -57,7 +57,7 @@ jobs:
 
           # Add and commit the changelog entry
           git add changelog/unreleased/
-          git commit -m "Add changelog entry"
+          git commit -m "Update changelog entry"
 
           # Push back to the PR branch
           git push
