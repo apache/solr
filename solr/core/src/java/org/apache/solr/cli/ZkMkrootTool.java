@@ -55,6 +55,8 @@ public class ZkMkrootTool extends ToolBase {
 
   @picocli.CommandLine.Option(
       names = {"--fail-on-exists"},
+      arity = "0..1",
+      fallbackValue = "true",
       description = "Raise an error if the znode already exists. Defaults to false.")
   private boolean failOnExists;
 

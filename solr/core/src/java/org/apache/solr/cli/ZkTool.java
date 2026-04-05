@@ -28,11 +28,14 @@ import picocli.CommandLine;
     mixinStandardHelpOptions = true,
     description = "Sub commands for working with ZooKeeper.",
     subcommands = {
+      ConfigSetDownloadTool.class,
+      ConfigSetUploadTool.class,
       ZkCpTool.class,
       ZkLsTool.class,
       ZkMkrootTool.class,
       ZkMvTool.class,
-      ZkRmTool.class
+      ZkRmTool.class,
+      UpdateACLTool.class
     })
 public class ZkTool implements Callable<Integer> {
 
