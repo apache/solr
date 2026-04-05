@@ -55,17 +55,24 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * Starts Solr/Jetty and creates a core "collection1. The coreRootDirectory is set to a temp dir.
+   *
+   * @param solrHome The solrHome; read-only. Also the configSetBaseDir having "collection1".
+   * @param configFile core: defaults to solrconfig.xml
+   * @param schemaFile core: defaults to schema.xml
+   */
   public static void createJettyAndHarness(Path solrHome, String configFile, String schemaFile)
       throws Exception {
 
     Properties nodeProps = new Properties();
     nodeProps.setProperty("coreRootDirectory", createTempDir().toString());
+    nodeProps.setProperty("configSetBaseDir", solrHome.toString()); // unusual!
 
     solrTestRule.startSolr(solrHome, nodeProps, JettyConfig.builder().build());
 
     solrTestRule
         .newCollection()
-        .withConfigSet("collection1")
         .withConfigFile(configFile)
         .withSchemaFile(schemaFile)
         .create();
