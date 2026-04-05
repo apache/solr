@@ -31,7 +31,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -473,7 +472,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       try (var leaderClient =
           new HttpSolrClient.Builder(slice.getLeader().getBaseUrl())
               .withDefaultCollection(slice.getLeader().getCoreName())
-              .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
               .build()) {
         long docsInShard =
             leaderClient

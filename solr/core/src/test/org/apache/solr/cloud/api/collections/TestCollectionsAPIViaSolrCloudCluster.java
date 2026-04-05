@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,11 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -46,6 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.Test;
 
 /** Test of the Collections API with the MiniSolrCloudCluster. */
@@ -328,11 +325,12 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
       case 1:
         // Sometimes use v1 API
-        String url =
+        var jetty1 = cluster.getRandomJetty(random());
+        String url1 =
             String.format(
                 Locale.ROOT,
                 "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&nrtReplicas=%s&tlogReplicas=%s&pullReplicas=%s&&property.my.custom.prop=%s",
-                cluster.getRandomJetty(random()).getBaseUrl(),
+                jetty1.getBaseUrl(),
                 collectionName,
                 confName,
                 2,
@@ -341,17 +339,14 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
                 0,
                 "customProp");
 
-        HttpGet createCollectionGet = new HttpGet(url);
-        HttpResponse httpResponseV1 =
-            ((CloudLegacySolrClient) cluster.getSolrClient())
-                .getHttpClient()
-                .execute(createCollectionGet);
-        assertEquals(200, httpResponseV1.getStatusLine().getStatusCode());
+        var response1 = jetty1.getSolrClient().getHttpClient().newRequest(url1).send();
+        assertEquals(200, response1.getStatus());
         break;
 
       case 2:
         // Sometimes use V2 API
-        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
+        var jetty2 = cluster.getRandomJetty(random());
+        String url2 = jetty2.getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
@@ -363,14 +358,17 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
                 2,
                 2,
                 0);
-        HttpPost createCollectionPost = new HttpPost(url);
-        createCollectionPost.setHeader("Content-type", "application/json");
-        createCollectionPost.setEntity(new StringEntity(requestBody));
-        HttpResponse httpResponseV2 =
-            ((CloudLegacySolrClient) cluster.getSolrClient())
+        var response2 =
+            jetty2
+                .getSolrClient()
                 .getHttpClient()
-                .execute(createCollectionPost);
-        assertEquals(200, httpResponseV2.getStatusLine().getStatusCode());
+                .newRequest(url2)
+                .method("POST")
+                .body(
+                    new StringRequestContent(
+                        "application/json", requestBody, StandardCharsets.UTF_8))
+                .send();
+        assertEquals(200, response2.getStatus());
         break;
     }
   }

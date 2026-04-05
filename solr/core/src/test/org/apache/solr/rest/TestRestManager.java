@@ -16,6 +16,8 @@
  */
 package org.apache.solr.rest;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -118,6 +120,18 @@ public class TestRestManager extends SolrRestletTestBase {
 
     // make sure it's really gone
     //    assertJQ("/config/managed", "/managedResources==[]");
+  }
+
+  /** Helper method to verify HEAD request returns expected status code */
+  private void assertHead(String request, int expectedStatusCode) throws Exception {
+    var response =
+        restTestHarness
+            .getHttpClient()
+            .newRequest(restTestHarness.getBaseURL() + request)
+            .method("HEAD")
+            .send();
+    assertEquals(expectedStatusCode, response.getStatus());
+    assertEquals(0, response.getHeaders().getLongField("Content-Length"));
   }
 
   @Test

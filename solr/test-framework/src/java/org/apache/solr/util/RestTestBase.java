@@ -23,11 +23,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.SortedMap;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.embedded.JettyConfig;
@@ -40,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+/** Test base class incorporating a {@link SolrJettyTestRule} and {@link RestTestHarness}. */
 public abstract class RestTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -132,11 +131,6 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
 
   protected static SolrClient getSolrClient() {
     return solrTestRule.getSolrClient();
-  }
-
-  protected static HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    return client.getHttpClient();
   }
 
   /** Validates an update XML String is successful */
@@ -248,12 +242,6 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
       log.error("REQUEST FAILED: {}", request, e2);
       throw new RuntimeException("Exception during query", e2);
     }
-  }
-
-  public static void assertHead(String request, int expectedStatusCode) throws IOException {
-    String response = restTestHarness.head(request);
-    assertTrue(response.contains("HTTP/1.1 " + expectedStatusCode));
-    assertTrue(response.contains("Content-Length: 0"));
   }
 
   /**

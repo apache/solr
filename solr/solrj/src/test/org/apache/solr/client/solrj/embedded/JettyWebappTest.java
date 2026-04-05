@@ -22,15 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Random;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -45,6 +39,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   int port = 0;
 
   Server server;
+  HttpClient httpClient;
 
   @Override
   public void setUp() throws Exception {
@@ -72,10 +67,15 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
 
     server.start();
     port = connector.getLocalPort();
+    httpClient = new HttpClient();
+    httpClient.start();
   }
 
   @Override
   public void tearDown() throws Exception {
+    if (httpClient != null) {
+      httpClient.stop();
+    }
     try {
       server.stop();
     } catch (Exception ex) {
@@ -90,13 +90,9 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }
 
-    try (CloseableHttpClient client = HttpClients.createDefault()) {
-      HttpRequestBase m = new HttpGet(adminPath);
-      HttpResponse response = client.execute(m, HttpClientUtil.createNewHttpClientRequestContext());
-      assertEquals(200, response.getStatusLine().getStatusCode());
-      Header header = response.getFirstHeader("X-Frame-Options");
-      assertEquals("DENY", header.getValue().toUpperCase(Locale.ROOT));
-      m.releaseConnection();
-    }
+    var response = httpClient.newRequest(adminPath).send();
+    assertEquals(200, response.getStatus());
+    String header = response.getHeaders().get("X-Frame-Options");
+    assertEquals("DENY", header.toUpperCase(Locale.ROOT));
   }
 }
