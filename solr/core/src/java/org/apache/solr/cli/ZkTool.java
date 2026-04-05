@@ -27,7 +27,13 @@ import picocli.CommandLine;
     name = "zk",
     mixinStandardHelpOptions = true,
     description = "Sub commands for working with ZooKeeper.",
-    subcommands = {ZkLsTool.class})
+    subcommands = {
+      ZkCpTool.class,
+      ZkLsTool.class,
+      ZkMkrootTool.class,
+      ZkMvTool.class,
+      ZkRmTool.class
+    })
 public class ZkTool implements Callable<Integer> {
 
   @CommandLine.Spec CommandLine.Model.CommandSpec spec;
