@@ -99,7 +99,7 @@ dependencies {
 
   implementation libs.commonscli.commonscli
   implementation libs.picocli
-  permitUnusedDeclared libs.picocli // will be used when CLI is migrated to picocli
+  annotationProcessor libs.picocli.codegen
 
   implementation libs.locationtech.spatial4j
 

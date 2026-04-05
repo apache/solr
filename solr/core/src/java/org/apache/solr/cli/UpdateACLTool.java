@@ -71,4 +71,9 @@ public class UpdateACLTool extends ToolBase {
       zkClient.updateACLs(path);
     }
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

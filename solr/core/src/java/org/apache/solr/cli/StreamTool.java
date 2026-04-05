@@ -480,6 +480,11 @@ public class StreamTool extends ToolBase {
     return buf.toString();
   }
 
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
+
   static String readExpression(LineNumberReader bufferedReader, String[] args) throws IOException {
 
     StringBuilder exprBuff = new StringBuilder();

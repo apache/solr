@@ -812,7 +812,11 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -h|--help)
-            print_usage "$SCRIPT_CMD"
+            if [[ "${SOLR_PICOCLI:-}" == "true" ]]; then
+                run_tool "$SCRIPT_CMD" --help
+            else
+                print_usage "$SCRIPT_CMD"
+            fi
             exit 0
         ;;
         -y|--no-prompt)

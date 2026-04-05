@@ -414,8 +414,22 @@ IF "%1"=="--all" goto set_stop_all
 :parse_general_args
 
 REM Print usage of command in case help option included
-IF "%1"=="--help" goto usage
-IF "%1"=="-h" goto usage
+IF "%1"=="--help" goto check_picocli_help
+IF "%1"=="-h" goto check_picocli_help
+goto after_help_check
+
+:check_picocli_help
+IF "%SOLR_PICOCLI%"=="true" goto run_picocli_help
+goto usage
+
+:run_picocli_help
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.cli.SolrCLI %SCRIPT_CMD% --help
+goto done
+
+:after_help_check
 
 REM other args supported by all special commands
 IF "%1"=="-p" goto set_port

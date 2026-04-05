@@ -1079,6 +1079,11 @@ public class RunExampleTool extends ToolBase {
       throw new IllegalStateException("Required file " + dest.toAbsolutePath() + " not found!");
   }
 
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
+
   protected boolean isPortAvailable(int port) {
     try (Socket s = new Socket("localhost", port)) {
       assert s != null; // To allow compilation.

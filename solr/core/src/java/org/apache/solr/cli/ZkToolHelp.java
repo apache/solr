@@ -77,4 +77,9 @@ public class ZkToolHelp extends ToolBase {
           "Pass --help or -h after any COMMAND to see command-specific usage information such as: ./solr zk ls --help");
     }
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

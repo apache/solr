@@ -136,4 +136,9 @@ public class SnapshotDescribeTool extends ToolBase {
 
     return result;
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

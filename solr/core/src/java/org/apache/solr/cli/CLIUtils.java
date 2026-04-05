@@ -183,6 +183,7 @@ public final class CLIUtils {
    * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * ZooKeeper.
    */
+  @Deprecated
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 

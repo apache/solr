@@ -352,4 +352,9 @@ public class CreateTool extends ToolBase {
       echo("            " + configCommand);
     }
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }
