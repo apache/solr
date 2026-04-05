@@ -46,6 +46,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Tests ZK subcommands by invoking tool instances directly (not through the bin/solr script).
+ *
+ * <p>Subclasses override {@link #runTool} to exercise different invocation paths (commons-cli vs
+ * picocli). All {@code @Test} methods are inherited and run in each subclass.
+ *
+ * @see ZkSubcommandsPicocliTest
+ */
 public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -89,6 +97,29 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * Runs a tool via the invocation path under test. {@code args[0]} is the tool name.
+   *
+   * <p>The default implementation uses commons-cli via {@link CLITestHelper#runTool}. Subclasses
+   * override this to exercise a different invocation path (e.g. picocli).
+   */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
+  /**
+   * Runs a tool with output capture via the invocation path under test. {@code args[0]} is the tool
+   * name.
+   *
+   * <p>The default implementation uses commons-cli via {@link CLITestHelper#runTool}. Subclasses
+   * override this to exercise a different invocation path (e.g. picocli).
+   */
+  protected int runTool(
+      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
+      throws Exception {
+    return CLITestHelper.runTool(args, runtime, clazz);
+  }
+
   @Test
   public void testPut() throws Exception {
     // test put
@@ -101,7 +132,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), localFile.toString(), "zk:/data.txt"};
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     assertArrayEquals(
         zkClient.getData("/data.txt", null, null), data.getBytes(StandardCharsets.UTF_8));
@@ -114,7 +145,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     writer.write(data);
     writer.close();
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     assertArrayEquals(
         zkClient.getData("/data.txt", null, null), data.getBytes(StandardCharsets.UTF_8));
@@ -139,7 +170,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), localFile.toString(), "zk:/state.json"};
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     assertArrayEquals(dataBytes, zkClient.getCuratorFramework().getData().forPath("/state.json"));
     assertArrayEquals(
@@ -160,7 +191,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), localFile.toString(), "zk:/state.json"};
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     byte[] fromZkRaw =
         zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json");
@@ -193,7 +224,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:/foo.xml"
         };
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     String fromZk = new String(zkClient.getData("/foo.xml", null, null), StandardCharsets.UTF_8);
     Path localFile = SOLR_HOME.resolve("solr-stress-new.xml");
@@ -213,7 +244,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:foo.xml"
         };
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     String fromZk = new String(zkClient.getData("/foo.xml", null, null), StandardCharsets.UTF_8);
     Path localFile = SOLR_HOME.resolve("solr-stress-new.xml");
@@ -235,7 +266,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:/state.json"
         };
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     Path locFile = SOLR_HOME.resolve("solr-stress-new.xml");
     byte[] fileBytes = Files.readAllBytes(locFile);
@@ -252,7 +283,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         "Should get back an uncompressed version what we put in ZK", fileBytes, fromZk);
 
     // Let's do it again
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     locFile = SOLR_HOME.resolve("solr-stress-new.xml");
     fileBytes = Files.readAllBytes(locFile);
@@ -279,7 +310,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:/foo.xml"
         };
 
-    assertEquals(1, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(1, runTool(args, ZkCpTool.class));
   }
 
   @Test
@@ -287,10 +318,10 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     zkClient.makePath("/test/path", true);
 
     // test what happens when path arg "/" isn't the last one.
-    String[] args = new String[] {"ls", "/", "-r", "true", "-z", zkServer.getZkAddress()};
+    String[] args = new String[] {"ls", "-r", "-z", zkServer.getZkAddress(), "/"};
 
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    assertEquals(0, CLITestHelper.runTool(args, runtime, ZkLsTool.class));
+    assertEquals(0, runTool(args, runtime, ZkLsTool.class));
 
     final String standardOutput2 = runtime.getOutput();
 
@@ -318,7 +349,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           zkServer.getZkAddress()
         };
 
-    assertEquals(0, CLITestHelper.runTool(args, ConfigSetUploadTool.class));
+    assertEquals(0, runTool(args, ConfigSetUploadTool.class));
 
     assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname));
     final Path confDir = ExternalPaths.TECHPRODUCTS_CONFIGSET;
@@ -349,7 +380,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           zkServer.getZkAddress()
         };
 
-    assertEquals(0, CLITestHelper.runTool(args, ConfigSetDownloadTool.class));
+    assertEquals(0, runTool(args, ConfigSetDownloadTool.class));
 
     try (Stream<Path> filesStream = Files.list(destDir.resolve("conf"))) {
       List<Path> files = filesStream.toList();
@@ -395,7 +426,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // test reset zk
     args = new String[] {"rm", "-r", "-z", zkServer.getZkAddress(), "zk:/configs/confsetone"};
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkRmTool.class));
+    assertEquals(0, runTool(args, ZkRmTool.class));
 
     assertEquals(0, zkClient.getChildren("/configs", null).size());
   }
@@ -412,7 +443,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.toString()};
 
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    assertEquals(0, CLITestHelper.runTool(args, runtime, ZkCpTool.class));
+    assertEquals(0, runTool(args, runtime, ZkCpTool.class));
 
     final String standardOutput2 = runtime.getOutput();
     assertTrue(standardOutput2.startsWith("Copying from 'zk:/getNode'"));
@@ -438,7 +469,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.toString()};
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     assertArrayEquals(data, Files.readAllBytes(localFile));
   }
@@ -457,7 +488,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // Not setting --zk-host, will fall back to sysProp 'zkHost'
     String[] args = new String[] {"cp", "zk:" + getNode, file.toString()};
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
     assertArrayEquals(data, Files.readAllBytes(file));
   }
 
@@ -480,7 +511,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.toString()};
 
-    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(0, runTool(args, ZkCpTool.class));
 
     assertArrayEquals(data, Files.readAllBytes(file));
   }
@@ -494,19 +525,72 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.toString()};
 
-    assertEquals(1, CLITestHelper.runTool(args, ZkCpTool.class));
+    assertEquals(1, runTool(args, ZkCpTool.class));
   }
 
   @Test
   public void testInvalidZKAddress() throws Exception {
 
-    String[] args = new String[] {"ls", "/", "-r", "-z", "----------:33332"};
+    String[] args = new String[] {"ls", "-r", "-z", "----------:33332", "/"};
 
-    assertEquals(1, CLITestHelper.runTool(args, ZkLsTool.class));
+    assertEquals(1, runTool(args, ZkLsTool.class));
+  }
+
+  @Test
+  public void testMkroot() throws Exception {
+    String[] args = new String[] {"mkroot", "-z", zkServer.getZkAddress(), "/mkroot-test/a/b/c"};
+
+    assertEquals(0, runTool(args, ZkMkrootTool.class));
+    assertTrue("Created path should exist", zkClient.exists("/mkroot-test/a/b/c"));
+
+    // --fail-on-exists with a value works for both commons-cli (hasArg) and picocli (arity 0..1)
+    args =
+        new String[] {
+          "mkroot", "--fail-on-exists", "true", "-z", zkServer.getZkAddress(), "/mkroot-test/a/b/c"
+        };
+    assertEquals(1, runTool(args, ZkMkrootTool.class));
+
+    // Without --fail-on-exists, creating an existing path should succeed
+    args = new String[] {"mkroot", "-z", zkServer.getZkAddress(), "/mkroot-test/a/b/c"};
+    assertEquals(0, runTool(args, ZkMkrootTool.class));
+  }
+
+  @Test
+  public void testMv() throws Exception {
+    zkClient.makePath("/mv-src", true);
+
+    String[] args = new String[] {"mv", "-z", zkServer.getZkAddress(), "/mv-src", "/mv-dst"};
+    assertEquals(0, runTool(args, ZkMvTool.class));
+    assertFalse("Source should be gone after mv", zkClient.exists("/mv-src"));
+    assertTrue("Destination should exist after mv", zkClient.exists("/mv-dst"));
+
+    // file: prefix should cause failure
+    args = new String[] {"mv", "-z", zkServer.getZkAddress(), "file:/mv-dst", "/mv-dst2"};
+    assertEquals(1, runTool(args, ZkMvTool.class));
+  }
+
+  @Test
+  public void testRm() throws Exception {
+    zkClient.makePath("/rm-test/child", true);
+
+    // Should fail without --recursive when node has children
+    String[] args = new String[] {"rm", "-z", zkServer.getZkAddress(), "/rm-test"};
+    assertEquals(1, runTool(args, ZkRmTool.class));
+    assertTrue("Node should still exist after failed rm", zkClient.exists("/rm-test"));
+
+    // Should succeed with --recursive
+    args = new String[] {"rm", "-r", "-z", zkServer.getZkAddress(), "/rm-test"};
+    assertEquals(0, runTool(args, ZkRmTool.class));
+    assertFalse("Node should be gone after rm -r", zkClient.exists("/rm-test"));
+
+    // Removing root should fail
+    args = new String[] {"rm", "-r", "-z", zkServer.getZkAddress(), "zk:/"};
+    assertEquals(1, runTool(args, ZkRmTool.class));
   }
 
   @Test
   public void testSetClusterProperty() throws Exception {
+    // ClusterTool is not a picocli ZK subcommand; always use the commons-cli path.
     ClusterProperties properties = new ClusterProperties(zkClient);
     // add property urlScheme=http
     String[] args =
@@ -539,7 +623,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
 
     String[] args = new String[] {"updateacls", "/", "-z", zkServer.getZkAddress()};
-    assertEquals(0, CLITestHelper.runTool(args, UpdateACLTool.class));
+    assertEquals(0, runTool(args, UpdateACLTool.class));
 
     boolean excepted = false;
     try (SolrZkClient zkClient =
