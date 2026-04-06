@@ -78,7 +78,9 @@ import org.slf4j.LoggerFactory;
       StopCommand.class,
       StatusTool.class,
       VersionTool.class,
-      ZkTool.class
+      ZkTool.class,
+      CreateTool.class,
+      DeleteTool.class
     })
 public class SolrCLI implements CLIO {
 

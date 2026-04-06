@@ -42,5 +42,5 @@ teardown() {
 
 @test "multiple connection options are prevented" {
   run solr create -c COLL_NAME2 --solr-url http://localhost:${SOLR_PORT} -z localhost:${ZK_PORT}
-  assert_output --partial "The option 'z' was specified but an option from this group has already been selected: 's'"
+  assert_output --regexp "(mutually exclusive|already been selected)"
 }
