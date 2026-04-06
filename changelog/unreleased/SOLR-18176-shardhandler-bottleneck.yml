@@ -1,4 +1,4 @@
-title: Fix query throughput bottleneck caused by uncached ZooKeeper get calls for queries with explicit 'collection' parameter
+title: Increased query throughput by removing a call to ZooKeeper for cluster state that should have been cached. Happens when Solr does distributed search over multiple collections, and when the coordinator has no local replica for some of them.
 type: changed
 authors:
   - name: Matthew Biscocho
