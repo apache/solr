@@ -386,9 +386,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                 baseUrl
                     + "/admin/collections?action=CREATEALIAS"
                     + "&wt=json"
-                    + "&name=735741!45"
-                    + // ! not allowed
-                    "&router.field=evt_dt"
+                    + "&name=735741!45" // ! not allowed
+                    + "&router.field=evt_dt"
                     + "&router.name=time"
                     + "&router.start=2018-01-15T00:00:00Z"
                     + "&router.interval=%2B30MINUTE"
@@ -413,9 +412,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                     + "&name="
                     + aliasName
                     + "&router.field=evt_dt"
-                    + "&router.name=tiafasme"
-                    + // bad
-                    "&router.start=2018-01-15T00:00:00Z"
+                    + "&router.name=tiafasme" // bad
+                    + "&router.start=2018-01-15T00:00:00Z"
                     + "&router.interval=%2B30MINUTE"
                     + "&create-collection.collection.configName=_default"
                     + "&create-collection.numShards=1"),
@@ -439,9 +437,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                     + aliasName
                     + "&router.field=evt_dt"
                     + "&router.name=time"
-                    + "&router.start=2018-01-15T00:00:00.001Z"
-                    + // bad: no milliseconds permitted
-                    "&router.interval=%2B30MINUTE"
+                    + "&router.start=2018-01-15T00:00:00.001Z" // bad: no milliseconds permitted
+                    + "&router.interval=%2B30MINUTE"
                     + "&create-collection.collection.configName=_default"
                     + "&create-collection.numShards=1"),
         "Date or date math for start time includes milliseconds");
@@ -465,9 +462,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                     + "&router.field=evt_dt"
                     + "&router.name=time"
                     + "&router.start=2018-01-15T00:00:00Z"
-                    + "&router.interval=%2B30MINUTEx"
-                    + // bad; trailing 'x'
-                    "&router.maxFutureMs=60000"
+                    + "&router.interval=%2B30MINUTEx" // bad; trailing 'x'
+                    + "&router.maxFutureMs=60000"
                     + "&create-collection.collection.configName=_default"
                     + "&create-collection.numShards=1"),
         "Unit not recognized");
@@ -492,9 +488,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                     + "&router.name=time"
                     + "&router.start=2018-01-15T00:00:00Z"
                     + "&router.interval=%2B30MINUTE"
-                    + "&router.maxFutureMs=-60000"
-                    + // bad: negative
-                    "&create-collection.collection.configName=_default"
+                    + "&router.maxFutureMs=-60000" // bad: negative
+                    + "&create-collection.collection.configName=_default"
                     + "&create-collection.numShards=1"),
         "must be >= 0");
   }
@@ -518,9 +513,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                     + "&router.name=time"
                     + "&router.start=2018-01-15T00:00:00Z"
                     + "&router.interval=%2B30MINUTE"
-                    + "&router.maxFutureMs=SixtyThousandMilliseconds"
-                    + // bad
-                    "&create-collection.collection.configName=_default"
+                    + "&router.maxFutureMs=SixtyThousandMilliseconds" // bad
+                    + "&create-collection.collection.configName=_default"
                     + "&create-collection.numShards=1"),
         "SixtyThousandMilliseconds"); // TODO improve SolrParams.getLong
   }
