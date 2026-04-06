@@ -39,6 +39,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SSLTestConfig;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
@@ -385,7 +386,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    * and getting the HTTP statusCode from the response
    */
   private static int doHeadRequest(final HttpClient client, final String url) throws Exception {
-    return client.newRequest(url).method("HEAD").send().getStatus();
+    return client.newRequest(url).method(HttpMethod.HEAD).send().getStatus();
   }
 
   /**

@@ -26,7 +26,6 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -61,7 +60,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   public void testCacheVetoException() throws Exception {
     String url = getSelectUrl("q", "xyz_ignore_exception:solr", "qt", "standard");
     // We force an exception from Solr. This should emit "no-cache" HTTP headers
-    ContentResponse response = getHttpClient().newRequest(url).method(HttpMethod.GET).send();
+    ContentResponse response = getHttpClient().GET(url);
     assertNotEquals(200, response.getStatus());
     checkVetoHeaders(response);
   }

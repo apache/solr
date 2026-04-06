@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpMethod;
 
 /** Facilitates testing Solr's REST API */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
@@ -75,12 +76,14 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    */
   public String query(String request) throws IOException {
     return getResponse(
-        getHttpClient().newRequest(URLUtil.buildURI(getBaseURI(), request)).method("GET"));
+        getHttpClient().newRequest(URLUtil.buildURI(getBaseURI(), request)).method(HttpMethod.GET));
   }
 
   public String adminQuery(String request) throws IOException {
     return getResponse(
-        getHttpClient().newRequest(URLUtil.buildURI(getAdminURI(), request)).method("GET"));
+        getHttpClient()
+            .newRequest(URLUtil.buildURI(getAdminURI(), request))
+            .method(HttpMethod.GET));
   }
 
   /**
@@ -95,7 +98,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     return getResponse(
         getHttpClient()
             .newRequest(URLUtil.buildURI(getBaseURI(), request))
-            .method("PUT")
+            .method(HttpMethod.PUT)
             .body(new StringRequestContent("application/json", content, StandardCharsets.UTF_8)));
   }
 
@@ -108,7 +111,9 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    */
   public String delete(String request) throws IOException {
     return getResponse(
-        getHttpClient().newRequest(URLUtil.buildURI(getBaseURI(), request)).method("DELETE"));
+        getHttpClient()
+            .newRequest(URLUtil.buildURI(getBaseURI(), request))
+            .method(HttpMethod.DELETE));
   }
 
   /**
