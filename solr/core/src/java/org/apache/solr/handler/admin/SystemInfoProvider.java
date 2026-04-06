@@ -320,8 +320,7 @@ public class SystemInfoProvider {
     }
 
     if (cc != null && cc.getZkController() != null) {
-      String urlScheme =
-          cc.getZkController().zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
+      String urlScheme = cc.getZkController().zkStateReader.getUrlScheme();
       info.tls = ZkStateReader.HTTPS.equals(urlScheme);
     }
 

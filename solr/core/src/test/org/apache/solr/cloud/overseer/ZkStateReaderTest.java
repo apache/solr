@@ -995,4 +995,14 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     var lowestVersion = reader.fetchLowestSolrVersion();
     assertFalse("Expected no lowest version when no live nodes exist", lowestVersion.isPresent());
   }
+
+  public void testGetUrlScheme_validSystemProperty() {
+    String expectedUrlScheme = isSSLMode() ? "https" : "http";
+    assertEquals(expectedUrlScheme, fixture.reader.getUrlScheme());
+  }
+
+  public void testGetUrlScheme_noClusterAndSystemProperty() {
+    assumeFalse("Skip the test when ssl is enabled", isSSLMode());
+    assertEquals("http", fixture.reader.getUrlScheme());
+  }
 }

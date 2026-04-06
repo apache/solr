@@ -287,7 +287,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if (isSSLMode()) {
       // SolrCloud tests should usually clear this
-      System.setProperty("urlScheme", "https");
+      System.setProperty("solr.ssl.enabled", "true");
     }
 
     ExecutorUtil.resetThreadLocalProviders();

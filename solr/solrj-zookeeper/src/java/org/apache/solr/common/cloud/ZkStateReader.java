@@ -56,8 +56,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.CommonTestInjection;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -1228,8 +1230,7 @@ public class ZkStateReader implements SolrCloseable {
    * @return url that looks like {@code https://localhost:8983/solr}
    */
   public String getBaseUrlForNodeName(final String nodeName) {
-    String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, getUrlScheme(), false);
   }
 
   /**
@@ -1240,8 +1241,27 @@ public class ZkStateReader implements SolrCloseable {
    * @return url that looks like {@code https://localhost:8983/api}
    */
   public String getBaseUrlV2ForNodeName(final String nodeName) {
-    String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, true);
+    return URLUtil.getBaseUrlForNodeName(nodeName, getUrlScheme(), true);
+  }
+
+  /**
+   * Returns the URL scheme for the host.
+   *
+   * <p>Examples:
+   *
+   * <ul>
+   *   <li>Returns {@code "https"} when SSL is enabled via configuration.
+   *   <li>Returns {@code "http"} when no explicit configuration is provided.
+   * </ul>
+   *
+   * @return the URL scheme ("http" or "https")
+   */
+  public String getUrlScheme() {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool("solr.ssl.enabled");
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    return getClusterProperty(URL_SCHEME, "http");
   }
 
   /** Watches a single collection's state.json. */
