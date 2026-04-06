@@ -51,6 +51,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
@@ -501,7 +502,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     return zkStateReader;
   }
 
-  private void assertSuccess(org.eclipse.jetty.client.ContentResponse response) {
+  private void assertSuccess(ContentResponse response) {
     if (200 != response.getStatus()) {
       System.err.println(response.getContentAsString());
       fail("Unexpected status: " + response.getStatus());

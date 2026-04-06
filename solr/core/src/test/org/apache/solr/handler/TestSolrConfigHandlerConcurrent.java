@@ -27,12 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -43,6 +38,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
@@ -149,7 +146,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
           < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
-        MapWriter respMap = getAsMap(url + "/config/overlay", cloudClient);
+        MapWriter respMap = getAsMap(publisher.getHttpClient(), url + "/config/overlay");
         MapWriter m = (MapWriter) respMap._get("overlay/props");
         if (m == null) {
           errmessages.add(
@@ -186,23 +183,15 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static LinkedHashMapWriter getAsMap(String uri, CloudSolrClient cloudClient)
-      throws Exception {
-    HttpGet get = new HttpGet(uri);
-    HttpEntity entity = null;
+  private static LinkedHashMapWriter getAsMap(HttpClient httpClient, String uri) throws Exception {
+    ContentResponse httpResponse = httpClient.GET(uri);
+    String response = httpResponse.getContentAsString();
     try {
-      entity = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      try {
-        return (LinkedHashMapWriter)
-            Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();
-      } catch (JSONParser.ParseException e) {
-        log.error(response, e);
-        throw e;
-      }
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-      get.releaseConnection();
+      return (LinkedHashMapWriter)
+          Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();
+    } catch (JSONParser.ParseException e) {
+      log.error(response, e);
+      throw e;
     }
   }
 }

@@ -24,6 +24,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.URLUtil;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -42,6 +43,10 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     return serverProvider.getBaseURL();
   }
 
+  private URI getBaseURI() {
+    return URI.create(getBaseURL());
+  }
+
   public synchronized void setServerProvider(RESTfulServerProvider serverProvider) {
     this.serverProvider = serverProvider;
     IOUtils.closeQuietly(solrClient);
@@ -56,6 +61,10 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     return getBaseURL().replace("/collection1", "");
   }
 
+  private URI getAdminURI() {
+    return URI.create(getAdminURL());
+  }
+
   /**
    * Processes a "query" using a URL path (with no context path) + optional query params, e.g.
    * "/schema/fields?indent=off"
@@ -65,11 +74,13 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @exception IOException any exception in the response.
    */
   public String query(String request) throws IOException {
-    return getResponse(getHttpClient().newRequest(buildURI(getBaseURL(), request)).method("GET"));
+    return getResponse(
+        getHttpClient().newRequest(URLUtil.buildURI(getBaseURI(), request)).method("GET"));
   }
 
   public String adminQuery(String request) throws IOException {
-    return getResponse(getHttpClient().newRequest(buildURI(getAdminURL(), request)).method("GET"));
+    return getResponse(
+        getHttpClient().newRequest(URLUtil.buildURI(getAdminURI(), request)).method("GET"));
   }
 
   /**
@@ -83,7 +94,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String put(String request, String content) throws IOException {
     return getResponse(
         getHttpClient()
-            .newRequest(buildURI(getBaseURL(), request))
+            .newRequest(URLUtil.buildURI(getBaseURI(), request))
             .method("PUT")
             .body(new StringRequestContent("application/json", content, StandardCharsets.UTF_8)));
   }
@@ -97,7 +108,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    */
   public String delete(String request) throws IOException {
     return getResponse(
-        getHttpClient().newRequest(buildURI(getBaseURL(), request)).method("DELETE"));
+        getHttpClient().newRequest(URLUtil.buildURI(getBaseURI(), request)).method("DELETE"));
   }
 
   /**
@@ -111,7 +122,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String post(String request, String content) throws IOException {
     return getResponse(
         getHttpClient()
-            .newRequest(buildURI(getBaseURL(), request))
+            .newRequest(URLUtil.buildURI(getBaseURI(), request))
             .method("POST")
             .body(new StringRequestContent("application/json", content, StandardCharsets.UTF_8)));
   }
@@ -152,7 +163,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     try {
       return getResponse(
           getHttpClient()
-              .newRequest(buildURI(getBaseURL(), "/update"))
+              .newRequest(URLUtil.buildURI(getBaseURI(), "/update"))
               .method("POST")
               .body(new StringRequestContent("application/xml", xml, StandardCharsets.UTF_8)));
     } catch (RuntimeException e) {
@@ -160,24 +171,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-  }
-
-  /**
-   * Constructs a properly encoded URI by combining the base URL with the request path. This ensures
-   * special characters (like umlauts) are properly percent-encoded in {@code request}.
-   */
-  private URI buildURI(String baseURL, String request) {
-    // append '/' so that URI.resolve appends instead of replaces the last component
-    assert !baseURL.endsWith("/");
-    baseURL += "/";
-    // skip leading / so that this is relative (i.e. appends not replaces the base path)
-    assert request.startsWith("/");
-    request = request.substring(1);
-
-    // toASCIIString ensures it's encoded.  create(str) doesn't do encoding.
-    String encodedRemainingRequest = URI.create(request).toASCIIString();
-
-    return URI.create(baseURL).resolve(encodedRemainingRequest);
   }
 
   /** Executes the given request and returns the response. */

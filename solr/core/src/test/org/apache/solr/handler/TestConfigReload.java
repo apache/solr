@@ -117,8 +117,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
   @SuppressWarnings({"rawtypes"})
   private LinkedHashMapWriter getAsMap(String uri) throws Exception {
-    var jetty = cloudJettys.getFirst().jetty;
-    var response = jetty.getSolrClient().getHttpClient().newRequest(uri).send();
+    var response = cloudJettys.getFirst().jetty.getSolrClient().getHttpClient().GET(uri);
     assertEquals(200, response.getStatus());
     String responseStr = response.getContentAsString();
     return (LinkedHashMapWriter)

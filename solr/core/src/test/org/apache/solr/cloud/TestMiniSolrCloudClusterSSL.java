@@ -384,8 +384,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    * Trivial helper method for doing a HEAD request of the specified URL using the specified client
    * and getting the HTTP statusCode from the response
    */
-  private static int doHeadRequest(
-      final org.eclipse.jetty.client.HttpClient client, final String url) throws Exception {
+  private static int doHeadRequest(final HttpClient client, final String url) throws Exception {
     return client.newRequest(url).method("HEAD").send().getStatus();
   }
 

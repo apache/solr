@@ -16,8 +16,6 @@
  */
 package org.apache.solr.rest;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

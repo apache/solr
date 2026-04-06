@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,5 +157,97 @@ public class URLUtil {
       throws MalformedURLException, URISyntaxException {
     URL url = new URI(solrUrl).toURL();
     return url.getAuthority() + url.getPath().replace('/', '_');
+  }
+
+  /**
+   * Constructs a properly encoded URI by combining a base URI with a request path. This ensures
+   * special characters (like umlauts) are properly percent-encoded.
+   *
+   * @param baseUri the base URI (e.g., URI for "http://localhost:8983/solr")
+   * @param path the path to append (e.g., "/config/overlay" or "admin/cores")
+   * @return a properly encoded URI
+   * @throws IllegalArgumentException if the baseUri or path are invalid
+   */
+  public static URI buildURI(URI baseUri, String path) {
+    return buildURI(baseUri, path, null);
+  }
+
+  /**
+   * Constructs a properly encoded URI by combining a base URI with a request path and optional
+   * query parameters. This ensures special characters are properly percent-encoded.
+   *
+   * @param baseUri the base URI (e.g., URI for "http://localhost:8983/solr")
+   * @param path the path to append (e.g., "/config/overlay" or "admin/cores"). May include a query
+   *     string (e.g., "/select?q=test")
+   * @param queryParams optional query parameters to append (may be null). If the path already
+   *     contains a query string, these params will be added to it.
+   * @return a properly encoded URI
+   * @throws IllegalArgumentException if the baseUri or path are invalid
+   */
+  public static URI buildURI(URI baseUri, String path, SolrParams queryParams) {
+    if (baseUri == null) {
+      throw new IllegalArgumentException("baseUri cannot be null");
+    }
+    if (path == null || path.isEmpty()) {
+      throw new IllegalArgumentException("path cannot be null or empty");
+    }
+
+    try {
+      // The path may contain a query string (e.g., "/path?param=value")
+      // Split on the first '?' to separate path from query
+      String pathOnly;
+      String queryFromPath = null;
+      int queryIndex = path.indexOf('?');
+      if (queryIndex != -1) {
+        pathOnly = path.substring(0, queryIndex);
+        queryFromPath = path.substring(queryIndex + 1);
+      } else {
+        pathOnly = path;
+      }
+
+      // Normalize path: remove leading slash if present
+      String normalizedPath = pathOnly.startsWith("/") ? pathOnly.substring(1) : pathOnly;
+
+      // Construct the full path by combining base path with the additional path
+      String basePath = baseUri.getPath();
+      if (basePath == null) {
+        basePath = "";
+      }
+      // Ensure base path ends with '/' for proper concatenation
+      if (!basePath.isEmpty() && !basePath.endsWith("/")) {
+        basePath += "/";
+      }
+      String fullPath = basePath + normalizedPath;
+
+      // Build the URI using the multi-parameter constructor which properly encodes the path
+      URI uri =
+          new URI(
+              baseUri.getScheme(),
+              baseUri.getUserInfo(),
+              baseUri.getHost(),
+              baseUri.getPort(),
+              fullPath,
+              queryFromPath, // pass query from path (null if not present)
+              baseUri.getFragment());
+
+      // If no additional query params, return early
+      if (queryParams == null) {
+        return uri;
+      }
+
+      // Build the final URL combining query from path with additional params
+      String encodedQuery = queryParams.toQueryString(); // starts with '?'
+
+      String finalUrl;
+      if (queryFromPath == null) {
+        finalUrl = uri.toASCIIString() + encodedQuery;
+      } else {
+        finalUrl = uri.toASCIIString() + '&' + encodedQuery.substring(1);
+      }
+
+      return URI.create(finalUrl);
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException("Failed to construct URI", e);
+    }
   }
 }
