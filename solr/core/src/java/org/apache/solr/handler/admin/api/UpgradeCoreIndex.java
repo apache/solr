@@ -267,18 +267,36 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       return false;
     }
 
-    // Check if _root_ field has fewer unique values than documents with that field.
-    // This indicates multiple docs share the same _root_ (i.e., child docs exist)
+    String uniqueKeyFieldName = schema.getUniqueKeyField().getName();
+
+    // Compare unique _root_ values against unique id values per segment.
+    // For non-nested docs, every document's _root_ equals its own id, so the number of
+    // distinct _root_ values equals the number of distinct id values. For nested docs,
+    // children share the parent's _root_ value, so there are fewer distinct _root_ values
+    // than distinct id values.
+    //
+    // We intentionally compare against unique id values rather than Terms.getDocCount()
+    // (the number of documents with the _root_ field) because segment-level term statistics
+    // include deleted documents. Updates (delete + re-add of the same id) can leave multiple
+    // documents with the same _root_ value within a segment, causing getDocCount() to exceed
+    // the unique _root_ count even when no nested docs exist.
     IndexReader reader = searcher.getIndexReader();
     for (LeafReaderContext leaf : reader.leaves()) {
-      Terms terms = leaf.reader().terms(IndexSchema.ROOT_FIELD_NAME);
-      if (terms != null) {
-        long uniqueRootValues = terms.size();
-        int docsWithRoot = terms.getDocCount();
+      Terms rootTerms = leaf.reader().terms(IndexSchema.ROOT_FIELD_NAME);
+      if (rootTerms != null) {
+        long uniqueRootValues = rootTerms.size();
+        if (uniqueRootValues == -1) {
+          return true; // Codec doesn't report term count; assume nested docs as a safe fallback
+        }
 
-        if (uniqueRootValues == -1 || uniqueRootValues < docsWithRoot) {
-          return true; // Codec doesn't store number of terms (so a safe fallback), or multiple docs
-          // share same _root_ (aka nested docs exist)
+        Terms idTerms = leaf.reader().terms(uniqueKeyFieldName);
+        long uniqueIdValues = (idTerms != null) ? idTerms.size() : -1;
+        if (uniqueIdValues == -1) {
+          return true; // Codec doesn't report term count; assume nested docs as a safe fallback
+        }
+
+        if (uniqueRootValues < uniqueIdValues) {
+          return true; // Fewer distinct _root_ values than distinct ids means child docs exist
         }
       }
     }
