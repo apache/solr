@@ -26,12 +26,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
@@ -154,12 +152,28 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       String basicPass,
       int expectStatusCode)
       throws IOException {
+    doHttpPostWithHeader(
+        httpClient,
+        url,
+        jsonCommand,
+        "Authorization",
+        encodeBasicAuthHeaderIfNotNull(basicUser, basicPass),
+        expectStatusCode);
+  }
+
+  static void doHttpPostWithHeader(
+      HttpClient httpClient,
+      String url,
+      String jsonCommand,
+      String headerName,
+      String headerValue,
+      int expectStatusCode)
+      throws IOException {
     try {
       var rsp =
           httpClient
               .POST(url)
-              .headers(
-                  h -> h.add("Authorization", encodeBasicAuthHeaderIfNotNull(basicUser, basicPass)))
+              .headers(h -> h.add(headerName, headerValue))
               .body(
                   new StringRequestContent(
                       "application/json", jsonCommand.replace("'", "\""), UTF_8))
@@ -180,9 +194,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    JettySolrRunner jetty =
-        new JettySolrRunner(
-            instance.getHomeDir().toString(), new Properties(), JettyConfig.builder().build());
+    var jetty = new JettySolrRunner(instance.getHomeDir().toString(), 0);
     jetty.start();
     return jetty;
   }

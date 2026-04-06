@@ -20,6 +20,8 @@ import static org.apache.solr.cloud.SolrCloudAuthTestCase.NOT_NULL_PREDICATE;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 import static org.apache.solr.security.BasicAuthStandaloneTest.SolrInstance;
 import static org.apache.solr.security.BasicAuthStandaloneTest.createAndStartJetty;
+import static org.apache.solr.security.BasicAuthStandaloneTest.doHttpPost;
+import static org.apache.solr.security.BasicAuthStandaloneTest.doHttpPostWithHeader;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +31,6 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.Principal;
-import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,7 +47,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -499,57 +499,6 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
         "The actual schemes and realms should match the expected ones exactly",
         expectedSchemes.stream().map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toList()),
         actualSchemes.stream().map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toList()));
-  }
-
-  private void doHttpPost(
-      HttpClient httpClient,
-      String url,
-      String jsonCommand,
-      String basicUser,
-      String basicPass,
-      int expectStatusCode)
-      throws IOException {
-    try {
-      var req = httpClient.POST(url);
-      if (basicUser != null && basicPass != null) {
-        String userPass = basicUser + ":" + basicPass;
-        String encoded =
-            Base64.getEncoder().encodeToString(userPass.getBytes(StandardCharsets.UTF_8));
-        req.headers(h -> h.add("Authorization", "Basic " + encoded));
-      }
-      req.body(
-          new StringRequestContent(
-              "application/json", jsonCommand.replace("'", "\""), StandardCharsets.UTF_8));
-      var r = req.send();
-      int statusCode = r.getStatus();
-      assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
-  }
-
-  private void doHttpPostWithHeader(
-      HttpClient httpClient,
-      String url,
-      String jsonCommand,
-      String headerName,
-      String headerValue,
-      int expectStatusCode)
-      throws IOException {
-    try {
-      var req = httpClient.POST(url);
-      if (headerName != null) {
-        req.headers(h -> h.add(headerName, headerValue));
-      }
-      req.body(
-          new StringRequestContent(
-              "application/json", jsonCommand.replace("'", "\""), StandardCharsets.UTF_8));
-      var r = req.send();
-      int statusCode = r.getStatus();
-      assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
   }
 
   @SuppressWarnings("unchecked")
