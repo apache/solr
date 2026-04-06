@@ -186,8 +186,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
         getHttpClient()
             .POST(url)
-            .headers(h -> h.add("Content-type", "application/json"))
-            .body(new StringRequestContent(requestBody))
+            .body(new StringRequestContent("application/json", requestBody))
             .send();
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
@@ -366,8 +365,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         var httpResponse2 =
             getHttpClient()
                 .POST(url)
-                .headers(h -> h.add("Content-type", "application/json"))
-                .body(new StringRequestContent(requestBody))
+                .body(new StringRequestContent("application/json", requestBody))
                 .send();
         assertEquals(200, httpResponse2.getStatus());
         break;

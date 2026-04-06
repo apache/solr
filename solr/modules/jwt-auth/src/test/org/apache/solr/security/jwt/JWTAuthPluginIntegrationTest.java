@@ -533,14 +533,13 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     final Set<Map.Entry<String, Object>> initialPlugins =
         getAuthPluginsInUseForCluster(url).entrySet();
 
-    var req = httpClient.POST(url);
-    if (jws != null) {
-      String headerString = "Bearer " + jws.getCompactSerialization();
-      req.headers(h1 -> h1.add("Authorization", headerString));
-    }
+    String authHeaderValue = jws != null ? "Bearer " + jws.getCompactSerialization() : null;
     var rsp =
-        req.body(new BytesRequestContent(payload.getBytes(UTF_8)))
-            .headers(h -> h.add("Content-Type", "application/json; charset=UTF-8"))
+        httpClient
+            .POST(url)
+            .headers(h1 -> h1.add("Authorization", authHeaderValue))
+            .body(
+                new BytesRequestContent("application/json; charset=UTF-8", payload.getBytes(UTF_8)))
             .send();
     String response = rsp.getContentAsString();
     assertEquals("Non-200 response code. Response was " + response, 200, rsp.getStatus());

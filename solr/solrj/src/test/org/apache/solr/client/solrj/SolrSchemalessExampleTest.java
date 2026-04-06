@@ -79,8 +79,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     ContentResponse response =
         httpClient
             .POST(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
-            .headers(h -> h.add("Content-Type", "application/json"))
-            .body(new StringRequestContent(json))
+            .body(new StringRequestContent("application/json", json))
             .send();
     assertEquals(200, response.getStatus());
     client.commit();
@@ -106,8 +105,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     ContentResponse response =
         httpClient
             .POST(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
-            .headers(h -> h.add("Content-Type", "application/json"))
-            .body(new StringRequestContent(json))
+            .body(new StringRequestContent("application/json", json))
             .send();
     assertEquals(200, response.getStatus());
     client.commit();
