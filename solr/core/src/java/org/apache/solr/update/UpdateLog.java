@@ -80,8 +80,8 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -267,7 +267,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected AttributedLongCounter applyingBufferedOpsCounter;
   protected AttributedLongCounter replayOpsCounter;
   protected AttributedLongCounter copyOverOldUpdatesCounter;
-  protected List<AutoCloseable> toClose;
   protected SolrMetricsContext solrMetricsContext;
 
   public static class LogPtr {
@@ -629,45 +628,39 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    final List<AutoCloseable> observables = new ArrayList<>();
+    IOUtils.closeQuietly(solrMetricsContext);
     solrMetricsContext = parentContext.getChildContext(this);
 
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString()).build();
 
-    observables.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_buffered_ops",
-            "The current number of buffered operations",
-            (observableLongMeasurement ->
-                observableLongMeasurement.record(computeBufferedOps(), baseAttributes))));
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_log_buffered_ops",
+        "The current number of buffered operations",
+        (observableLongMeasurement ->
+            observableLongMeasurement.record(computeBufferedOps(), baseAttributes)));
 
-    observables.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_replay_logs_remaining",
-            "The current number of tlogs remaining to be replayed",
-            (observableLongMeasurement -> {
-              observableLongMeasurement.record(logs.size(), baseAttributes);
-            })));
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_log_replay_logs_remaining",
+        "The current number of tlogs remaining to be replayed",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(logs.size(), baseAttributes);
+        }));
 
-    observables.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_size_remaining",
-            "The total size in bytes of all tlogs remaining to be replayed",
-            (observableLongMeasurement -> {
-              observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
-            }),
-            OtelUnit.BYTES));
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_log_size_remaining",
+        "The total size in bytes of all tlogs remaining to be replayed",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
+        }),
+        OtelUnit.BYTES);
 
-    toClose = Collections.unmodifiableList(observables);
-
-    observables.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_state",
-            "The current state of the update log. Replaying (0), buffering (1), applying buffered (2), active (3)",
-            (observableLongMeasurement -> {
-              observableLongMeasurement.record(state.getValue(), baseAttributes);
-            })));
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_log_state",
+        "The current state of the update log. Replaying (0), buffering (1), applying buffered (2), active (3)",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(state.getValue(), baseAttributes);
+        }));
 
     applyingBufferedOpsCounter =
         new AttributedLongCounter(
@@ -1556,7 +1549,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
     copyOverOldUpdatesCounter.inc();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
+    SolrQueryRequest req = new SolrQueryRequestBase(uhandler.core, new ModifiableSolrParams());
     TransactionLog.LogReader logReader = null;
     Object o = null;
     try {
@@ -1692,7 +1685,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         log.info("Recording current closed for {} log={}", uhandler.core, theLog);
         CommitUpdateCommand cmd =
             new CommitUpdateCommand(
-                new LocalSolrQueryRequest(
+                new SolrQueryRequestBase(
                     uhandler.core, new ModifiableSolrParams((SolrParams) null)),
                 false);
         theLog.writeCommit(cmd);
@@ -1744,7 +1737,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     } catch (IOException e) {
       log.warn("exception releasing tlog dir", e);
     } finally {
-      IOUtils.closeQuietly(toClose);
+      IOUtils.closeQuietly(solrMetricsContext);
     }
   }
 
@@ -2124,7 +2117,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
-      req = new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+      req = new SolrQueryRequestBase(uhandler.core, BASE_REPLAY_PARAMS);
       rsp = new SolrQueryResponse();
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -2199,7 +2192,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 () -> {
                   // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
                   final var localRequest =
-                      new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+                      new SolrQueryRequestBase(uhandler.core, BASE_REPLAY_PARAMS);
                   var proc = processorChain.createProcessor(localRequest, rsp);
                   procPool.add(proc);
                   return proc;

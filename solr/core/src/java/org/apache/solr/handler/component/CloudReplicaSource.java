@@ -160,7 +160,7 @@ class CloudReplicaSource implements ReplicaSource {
     if (slice == null) {
       // Treat this the same as "all servers down" for a slice, and let things continue
       // if partial results are acceptable
-      return Collections.emptyList();
+      return List.of();
     } else {
       final Predicate<Replica> isShardLeader =
           new IsLeaderPredicate(

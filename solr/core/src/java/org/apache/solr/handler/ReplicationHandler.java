@@ -31,7 +31,6 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.FileNotFoundException;
@@ -82,7 +81,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -111,8 +109,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.util.IndexInputInputStream;
 import org.apache.solr.util.NumberUtils;
-import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.stats.MetricUtils;
@@ -156,7 +154,6 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
-  private BatchCallback metricsCallback;
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
@@ -379,9 +376,37 @@ public class ReplicationHandler extends RequestHandlerBase
   private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp) {
     params.required().get(NAME);
 
+    String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     String location = params.get(CoreAdminParams.BACKUP_LOCATION);
-    core.getCoreContainer().assertPathAllowed(location == null ? null : Path.of(location));
-    SnapShooter snapShooter = new SnapShooter(core, location, params.get(NAME));
+
+    // commitName is not documented in ref guide for the backup option.
+    // copying to here, an dit may be that both are just null?
+    String commitName = params.get(CoreAdminParams.COMMIT_NAME);
+
+    CoreContainer cc = core.getCoreContainer();
+    BackupRepository repo = null;
+    if (repoName != null) {
+      repo = cc.newBackupRepository(repoName);
+      location = repo.getBackupLocation(location);
+      if (location == null) {
+        throw new IllegalArgumentException("location is required");
+      }
+    } else {
+      repo = new LocalFileSystemRepository();
+      if (location == null) {
+        location = core.getDataDir();
+      } else {
+        location =
+            core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
+      }
+    }
+    if ("file".equals(repo.createURI("x").getScheme())) {
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
+    }
+
+    URI locationUri = repo.createDirectoryURI(location);
+    SnapShooter snapShooter =
+        new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
     snapShooter.validateDeleteSnapshot();
     snapShooter.deleteSnapAsync(this);
     rsp.add(STATUS, OK_STATUS);
@@ -904,56 +929,49 @@ public class ReplicationHandler extends RequestHandlerBase
         solrMetricsContext.longGaugeMeasurement(
             "solr_core_replication_download_speed", "Download speed in bytes per second");
 
-    metricsCallback =
-        solrMetricsContext.batchCallback(
-            () -> {
-              if (core != null && !core.isClosed()) {
-                indexSizeMetric.record(
-                    MetricUtils.bytesToMegabytes(core.getIndexSize()), replicationAttributes);
+    solrMetricsContext.batchCallback(
+        () -> {
+          if (core != null && !core.isClosed()) {
+            indexSizeMetric.record(
+                MetricUtils.bytesToMegabytes(core.getIndexSize()), replicationAttributes);
 
-                CommitVersionInfo vInfo = getIndexVersion();
-                if (vInfo != null) {
-                  indexVersionMetric.record(vInfo.version, replicationAttributes);
-                  indexGenerationMetric.record(vInfo.generation, replicationAttributes);
-                }
-              }
+            CommitVersionInfo vInfo = getIndexVersion();
+            if (vInfo != null) {
+              indexVersionMetric.record(vInfo.version, replicationAttributes);
+              indexGenerationMetric.record(vInfo.generation, replicationAttributes);
+            }
+          }
 
-              isLeaderMetric.record(isLeader ? 1 : 0, replicationAttributes);
-              isFollowerMetric.record(isFollower ? 1 : 0, replicationAttributes);
-              replicationEnabledMetric.record(
-                  (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes);
+          isLeaderMetric.record(isLeader ? 1 : 0, replicationAttributes);
+          isFollowerMetric.record(isFollower ? 1 : 0, replicationAttributes);
+          replicationEnabledMetric.record(
+              (isLeader && replicationEnabled.get()) ? 1 : 0, replicationAttributes);
 
-              IndexFetcher fetcher = currentIndexFetcher;
-              if (fetcher != null) {
-                isPollingDisabledMetric.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
-                isReplicatingMetric.record(isReplicating() ? 1 : 0, replicationAttributes);
+          IndexFetcher fetcher = currentIndexFetcher;
+          if (fetcher != null) {
+            isPollingDisabledMetric.record(isPollingDisabled() ? 1 : 0, replicationAttributes);
+            isReplicatingMetric.record(isReplicating() ? 1 : 0, replicationAttributes);
 
-                long elapsed = fetcher.getReplicationTimeElapsed();
-                long val = fetcher.getTotalBytesDownloaded();
-                if (elapsed > 0) {
-                  timeElapsedMetric.record(elapsed, replicationAttributes);
-                  bytesDownloadedMetric.record(val, replicationAttributes);
-                  downloadSpeedMetric.record(val / elapsed, replicationAttributes);
-                }
-              }
-            },
-            indexSizeMetric,
-            indexVersionMetric,
-            indexGenerationMetric,
-            isLeaderMetric,
-            isFollowerMetric,
-            replicationEnabledMetric,
-            isPollingDisabledMetric,
-            isReplicatingMetric,
-            timeElapsedMetric,
-            bytesDownloadedMetric,
-            downloadSpeedMetric);
-  }
-
-  @Override
-  public void close() throws IOException {
-    IOUtils.closeQuietly(metricsCallback);
-    super.close();
+            long elapsed = fetcher.getReplicationTimeElapsed();
+            long val = fetcher.getTotalBytesDownloaded();
+            if (elapsed > 0) {
+              timeElapsedMetric.record(elapsed, replicationAttributes);
+              bytesDownloadedMetric.record(val, replicationAttributes);
+              downloadSpeedMetric.record(val / elapsed, replicationAttributes);
+            }
+          }
+        },
+        indexSizeMetric,
+        indexVersionMetric,
+        indexGenerationMetric,
+        isLeaderMetric,
+        isFollowerMetric,
+        replicationEnabledMetric,
+        isPollingDisabledMetric,
+        isReplicatingMetric,
+        timeElapsedMetric,
+        bytesDownloadedMetric,
+        downloadSpeedMetric);
   }
 
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
@@ -1196,7 +1214,7 @@ public class ReplicationHandler extends RequestHandlerBase
         }
 
         try {
-          final InputStream is = new PropertiesInputStream(input);
+          final InputStream is = new IndexInputInputStream(input);
           Properties props = new Properties();
           props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
           return props;
@@ -1378,7 +1396,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
           // ensure the writer is initialized so that we have a list of commit points
           RefCounted<IndexWriter> iw =
-              core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+              core.getUpdateHandler().getSolrCoreState().getIndexWriter(core, false);
           iw.decref();
 
         } catch (IOException e) {
@@ -1505,7 +1523,11 @@ public class ReplicationHandler extends RequestHandlerBase
             if (numberToKeep < 1) {
               numberToKeep = Integer.MAX_VALUE;
             }
-            SnapShooter snapShooter = new SnapShooter(core, null, null);
+
+            URI locationUri = Path.of(core.getDataDir()).toUri();
+
+            SnapShooter snapShooter =
+                new SnapShooter(new LocalFileSystemRepository(), core, locationUri, null, null);
             snapShooter.validateCreateSnapshot();
             snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
           } catch (Exception e) {

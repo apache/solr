@@ -1520,10 +1520,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // SOLR 3161 ensure shards.qt=/update fails (anything but search handler really)
     // Also see TestRemoteStreaming#testQtUpdateFails()
 
-    // SolrException e = expectThrows(SolrException.class, () -> {
-    //  ignoreException("isShard is only acceptable");
-    //  query("q","*:*","shards.qt","/update","stream.body","<delete><query>*:*</query></delete>");
-    // });
     unIgnoreException("isShard is only acceptable");
 
     // test debugging

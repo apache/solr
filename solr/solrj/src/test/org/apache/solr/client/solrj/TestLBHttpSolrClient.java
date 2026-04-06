@@ -40,7 +40,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,23 +57,10 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   CloseableHttpClient httpClient;
 
   // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
-
   @BeforeClass
   public static void beforeClass() {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
-    System.clearProperty("tests.shardhandler.randomSeed");
   }
 
   @Override
@@ -278,10 +264,6 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       return homeDir.toString();
     }
 
-    public String getUrl() {
-      return buildUrl(port) + "/collection1";
-    }
-
     public String getBaseUrl() {
       return buildUrl(port);
     }
@@ -294,10 +276,6 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       return "solrj/solr/collection1/conf/schema-replication1.xml";
     }
 
-    public String getConfDir() {
-      return confDir.toString();
-    }
-
     public String getDataDir() {
       return dataDir.toString();
     }
@@ -306,16 +284,10 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       return "solrj/solr/collection1/conf/solrconfig-follower1.xml";
     }
 
-    public String getSolrXmlFile() {
-      return "solrj/solr/solr.xml";
-    }
-
     public void setUp() throws Exception {
       Files.createDirectories(homeDir);
       Files.createDirectories(dataDir);
       Files.createDirectories(confDir);
-
-      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.resolve("solr.xml"));
 
       Path f = confDir.resolve("solrconfig.xml");
       Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);

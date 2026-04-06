@@ -1,0 +1,168 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- This is a minimal config file for Combined Query Component use.
+  -->
+
+<config>
+
+  <!-- Used to specify an alternate directory to hold all index data.
+       It defaults to "index" if not present, and should probably
+       not be changed if replication is in use. -->
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
+
+  <updateHandler class="${solr.updateHandler:solr.DirectUpdateHandler2}">
+
+    <autoCommit>
+      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
+    </autoCommit>
+
+    <updateLog enable="${enable.update.log:true}">
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+
+    <commitWithin>
+      <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
+    </commitWithin>
+
+  </updateHandler>
+
+  <query>
+    <!-- Maximum number of clauses in a boolean query... can affect
+        range or wildcard queries that expand to big boolean
+        queries.  An exception is thrown if exceeded.
+    -->
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
+
+    <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
+         that match a particular query.
+      -->
+    <filterCache
+      size="512"
+      initialSize="512"
+      autowarmCount="2"
+      async="${solr.filterCache.async:false}"/>
+
+    <queryResultCache
+      size="512"
+      initialSize="512"
+      autowarmCount="2"/>
+
+    <documentCache
+      size="512"
+      initialSize="512"
+      autowarmCount="0"/>
+
+    <cache name="perSegFilter"
+      class="solr.CaffeineCache"
+      size="10"
+      initialSize="0"
+      autowarmCount="10" />
+
+    <queryResultWindowSize>10</queryResultWindowSize>
+
+    <slowQueryThresholdMillis>2000</slowQueryThresholdMillis>
+
+  </query>
+
+  <queryResponseWriter name="xml" default="true"
+                       class="solr.XMLResponseWriter" />
+
+  <!-- requestHandler plugins
+  -->
+  <requestHandler name="/select" class="solr.SearchHandler">
+  </requestHandler>
+
+  <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
+  </requestHandler>
+
+    <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+        <int name="maxCombinerQueries">2</int>
+        <lst name="combiners">
+            <lst name="test">
+                <str name="class">org.apache.solr.handler.component.combine.TestCombiner</str>
+                <int name="var1">30</int>
+                <str name="var2">test</str>
+            </lst>
+        </lst>
+    </searchComponent>
+
+  <requestHandler name="/forcedDistribTest" class="org.apache.solr.handler.component.CombinedQuerySolrCloudTest$ForcedDistribSearchHandler">
+  </requestHandler>
+
+  <searchComponent class="solr.HighlightComponent" name="highlight">
+  <highlighting>
+   <!-- Configure the standard fragmenter -->
+   <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
+    <lst name="defaults">
+     <int name="hl.fragsize">100</int>
+    </lst>
+   </fragmenter>
+
+   <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
+    <lst name="defaults">
+     <int name="hl.fragsize">70</int>
+    </lst>
+   </fragmenter>
+
+   <!-- Configure the standard formatter -->
+   <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
+    <lst name="defaults">
+     <str name="hl.simple.pre"><![CDATA[<em>]]></str>
+     <str name="hl.simple.post"><![CDATA[</em>]]></str>
+    </lst>
+   </formatter>
+
+   <!-- Configure the standard fragListBuilder -->
+   <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
+
+   <!-- Configure the standard fragmentsBuilder -->
+   <fragmentsBuilder name="simple" class="org.apache.solr.highlight.SimpleFragmentsBuilder" default="true"/>
+   <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder"/>
+
+   <boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
+     <lst name="defaults">
+       <str name="hl.bs.maxScan">10</str>
+       <str name="hl.bs.chars">.,!? &#9;&#10;&#13;</str>
+     </lst>
+   </boundaryScanner>
+
+   <boundaryScanner name="breakIterator" class="solr.highlight.BreakIteratorBoundaryScanner">
+     <lst name="defaults">
+       <str name="hl.bs.type">WORD</str>
+       <str name="hl.bs.language">en</str>
+       <str name="hl.bs.country">US</str>
+     </lst>
+   </boundaryScanner>
+  </highlighting>
+  </searchComponent>
+
+    <initParams path="/select,/search">
+        <lst name="defaults">
+            <str name="df">text</str>
+        </lst>
+    </initParams>
+
+</config>

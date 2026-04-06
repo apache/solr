@@ -25,27 +25,27 @@ apply plugin: 'java-library'
 description = 'API - Interfaces and classes used to represent Solrs APIs'
 
 ext {
-    jsClientDir = "${buildDir}/generated/js"
-    pythonClientDir = "${buildDir}/generated/python"
-    openApiSpecDir = "${buildDir}/generated/openapi"
-    openApiSpecFile = "${project.openApiSpecDir}/solr-openapi-${version}.json"
+  jsClientDir = "${buildDir}/generated/js"
+  pythonClientDir = "${buildDir}/generated/python"
+  openApiSpecDir = "${buildDir}/generated/openapi"
+  openApiSpecFile = "${project.openApiSpecDir}/solr-openapi-${version}.json"
 }
 
 configurations {
-    openapiSpec {
-        canBeConsumed = true
-        canBeResolved = false
-    }
-    jsClient {
-        canBeConsumed = true
-        canBeResolved = false
-    }
-    pythonClient {
-        canBeConsumed = true
-        canBeResolved = false
-    }
+  openapiSpec {
+    canBeConsumed = true
+    canBeResolved = false
+  }
+  jsClient {
+    canBeConsumed = true
+    canBeResolved = false
+  }
+  pythonClient {
+    canBeConsumed = true
+    canBeResolved = false
+  }
 
-    swaggerBuild.extendsFrom implementation
+  swaggerBuild.extendsFrom implementation
 }
 
 resolve {
@@ -60,25 +60,25 @@ resolve {
 }
 
 dependencies {
-    api platform(project(":platform"))
-    swaggerDeps platform(project(":platform"))
-    api platform(libs.fasterxml.jackson.bom)
+  api platform(project(":platform"))
+  swaggerDeps platform(project(":platform"))
+  api platform(libs.fasterxml.jackson.bom)
 
-    runtimeOnly libs.slf4j.api
+  runtimeOnly libs.slf4j.api
 
-    implementation libs.jakarta.ws.rsapi
-    api libs.fasterxml.jackson.core.annotations
-    api libs.swagger3.annotations.jakarta
-    implementation libs.semver4j.semver4j
+  implementation libs.jakarta.ws.rsapi
+  api libs.fasterxml.jackson.core.annotations
+  api libs.swagger3.annotations.jakarta
+  implementation libs.semver4j.semver4j
 
-    testImplementation project(':solr:test-framework')
-    testImplementation project(':solr:api')
-    testImplementation libs.junit.junit
-    testImplementation libs.hamcrest.hamcrest
-    testImplementation libs.apache.lucene.testframework
-    testImplementation libs.fasterxml.jackson.core.databind
+  testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:api')
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.fasterxml.jackson.core.databind
 
-    swaggerBuild libs.swagger3.jaxrs2.jakarta
+  swaggerBuild libs.swagger3.jaxrs2.jakarta
 }
 
 // Non-Java client generation tasks below:
@@ -105,16 +105,16 @@ tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
 }
 
 artifacts {
-    // Ensure the OAS is available to other modules who want to generate code (i.e. solrj)
-    openapiSpec file(openApiSpecFile), {
-        builtBy resolve
-    }
+  // Ensure the OAS is available to other modules who want to generate code (i.e. solrj)
+  openapiSpec file(openApiSpecFile), {
+    builtBy resolve
+  }
 
-    // Makes generated clients available to other build modules
-    jsClient file(project.jsClientDir), {
-        builtBy buildJSClient
-    }
-    pythonClient file(project.pythonClientDir), {
-        builtBy buildPythonClient
-    }
+  // Makes generated clients available to other build modules
+  jsClient file(project.jsClientDir), {
+    builtBy buildJSClient
+  }
+  pythonClient file(project.pythonClientDir), {
+    builtBy buildPythonClient
+  }
 }

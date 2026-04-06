@@ -35,7 +35,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLanguageModelBas
 
   @BeforeClass
   public static void init() throws Exception {
-    setupTest("solrconfig-language-models.xml", "schema.xml", false, false);
+    setupTest("solrconfig-language-models.xml", "schema-language-models.xml", false, false);
   }
 
   @AfterClass
@@ -47,7 +47,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLanguageModelBas
 
   @Before
   public void setup() {
-    collection1 = solrClientTestRule.getCoreContainer().getCore("collection1");
+    collection1 = solrTestRule.getCoreContainer().getCore("collection1");
   }
 
   @After

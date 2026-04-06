@@ -39,6 +39,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Test;
 
@@ -57,6 +58,8 @@ public class TestCaffeineCache extends SolrTestCase {
     String newLfuCacheName = scope + "-2";
 
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
+    solrMetricsContext.registerCloseable(lfuCache);
+    solrMetricsContext.registerCloseable(newLFUCache);
 
     lfuCache.initializeMetrics(
         solrMetricsContext, Attributes.of(NAME_ATTR, lfuCacheName), "solr_cache");
@@ -117,6 +120,8 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals(7.0, cumHitDatapoint + cumMissDatapoint, 0.001); // total cumulative lookups
     assertEquals(4.0, cumHitDatapoint, 0.001);
     assertEquals(102.0, cumInsertDatapoint, 0.001);
+
+    solrMetricsContext.close();
   }
 
   @Test
@@ -384,9 +389,7 @@ public class TestCaffeineCache extends SolrTestCase {
   }
 
   private CounterSnapshot.CounterDataPointSnapshot getCacheOperation(
-      org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
-      String cacheName,
-      String operation) {
+      FilterablePrometheusMetricReader prometheusReader, String cacheName, String operation) {
     return SolrMetricTestUtils.getCounterDatapoint(
         prometheusReader,
         "solr_cache_ops",
@@ -399,9 +402,7 @@ public class TestCaffeineCache extends SolrTestCase {
   }
 
   private CounterSnapshot.CounterDataPointSnapshot getCacheLookup(
-      org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
-      String cacheName,
-      String result) {
+      FilterablePrometheusMetricReader prometheusReader, String cacheName, String result) {
     var builder =
         Labels.builder()
             .label("category", "CACHE")

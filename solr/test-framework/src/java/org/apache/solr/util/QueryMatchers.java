@@ -58,7 +58,7 @@ public class QueryMatchers {
 
   /**
    * Matches is a Query object's toString result is equal to this query string. A useful shortcut
-   * when constructing complex queries with deterministic string repr
+   * when constructing complex queries with deterministic string representation.
    *
    * <p>Note: Do not use this in place of DisjunctionMaxQuery, but safe to use for the disjunct
    * clauses

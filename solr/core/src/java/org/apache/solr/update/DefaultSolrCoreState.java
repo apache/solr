@@ -51,7 +51,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
 
   private final ReentrantLock recoveryLock = new ReentrantLock();
 
-  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 10000);
+  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 1000);
 
   private final ActionThrottle leaderThrottle = new ActionThrottle("leader", 5000);
 
@@ -106,8 +106,9 @@ public final class DefaultSolrCoreState extends SolrCoreState
   }
 
   @Override
-  public RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException {
-    if (core != null && (!core.indexEnabled || core.readOnly)) {
+  public RefCounted<IndexWriter> getIndexWriter(SolrCore core, boolean failOnReadOnly)
+      throws IOException {
+    if (core != null && (!core.indexEnabled || (core.readOnly && failOnReadOnly))) {
       throw new SolrException(
           SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Indexing is temporarily disabled");
     }

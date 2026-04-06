@@ -90,7 +90,6 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
   @AfterClass
   public static void tearDownClass() {
     TestInjection.cpuTimerDelayInjectedNS = null;
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test

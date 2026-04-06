@@ -36,7 +36,7 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -81,9 +81,6 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Pattern NAMING_CONVENTION_TEST_SUFFIX =
-      Pattern.compile("(.+\\.)([^.]+)(Test)");
-
   private static final Pattern NAMING_CONVENTION_TEST_PREFIX =
       Pattern.compile("(.+\\.)(Test)([^.]+)");
 
@@ -119,16 +116,16 @@ public class SolrTestCase extends LuceneTestCase {
    *
    * <p>Logs INFO/WARNing messages as appropriate based on these 2 conditions.
    *
-   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR
    */
   @BeforeClass
   public static void beforeSolrTestCase() {
     final String existingValue =
-        EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR);
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           existingValue);
       return;
     }
@@ -136,22 +133,22 @@ public class SolrTestCase extends LuceneTestCase {
     if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
               + "does not exist or is not a readable directory, you may need to set the property yourself "
               + "for tests to run properly",
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET);
     }
 
-    // set solr.install.dir needed by some test configs outside of the test sandbox (!)
+    // set solr.install.dir needed by some test configs outside the test sandbox (!)
     if (ExternalPaths.SOURCE_HOME != null) {
       System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME.toString());
     }
@@ -167,7 +164,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   /**
    * Special hook for sanity checking if any tests trigger failures when an Assumption failure
-   * occures in a {@link BeforeClass} method
+   * occurs in a {@link BeforeClass} method
    *
    * @lucene.internal
    */

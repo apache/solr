@@ -17,6 +17,7 @@
 package org.apache.solr.servlet;
 
 import com.google.common.net.HttpHeaders;
+import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
 /**
@@ -60,11 +60,11 @@ public final class LoadAdminUiServlet extends HttpServlet {
     response.addHeader(
         "X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
-    // This attribute is set by the SolrDispatchFilter
     String admin = request.getRequestURI().substring(request.getContextPath().length());
-    CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
     try (InputStream in = getServletContext().getResourceAsStream(admin)) {
-      if (in != null && cores != null) {
+      CoreContainerProvider.serviceForContext(getServletConfig().getServletContext())
+          .getCoreContainer();
+      if (in != null) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html");
         String connectSrc = generateCspConnectSrc();
@@ -86,6 +86,8 @@ public final class LoadAdminUiServlet extends HttpServlet {
       } else {
         response.sendError(404);
       }
+    } catch (UnavailableException e) { // from CoreContainer being unavailable
+      response.sendError(404);
     }
   }
 

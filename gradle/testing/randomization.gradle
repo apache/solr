@@ -71,7 +71,7 @@ configure(rootProject) {
 
 // Any test task will trigger display of randomization settings.
 allprojects {
-  tasks.withType(Test) { task ->
+  tasks.withType(Test) {task ->
     task.dependsOn rootProject.randomizationInfo
   }
 }
@@ -82,7 +82,8 @@ allprojects {
     project.ext {
       testOptions += [
           // seed, repetition and amplification.
-          [propName: 'tests.seed', value: { -> rootSeed }, description: "Sets the master randomization seed."],
+          [propName: 'tests.seed', value: {->
+            rootSeed}, description: "Sets the master randomization seed."],
           [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test case N times."],
           [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
           [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
@@ -93,8 +94,9 @@ allprojects {
           [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
           [propName: 'tests.leaveTemporary', value: false, description: "Leave temporary directories after tests complete."],
           [propName: 'tests.useSecurityManager',
-           value: { -> rootProject.ext.runtimeJavaVersion <= JavaVersion.VERSION_23 ? 'true' : 'false' },
-           description: "Control security manager in tests.", buildOnly: true],
+              value: {->
+                rootProject.ext.runtimeJavaVersion <= JavaVersion.VERSION_23 ? 'true' : 'false'},
+              description: "Control security manager in tests.", buildOnly: true],
           // component randomization
           [propName: 'tests.codec', value: "random", description: "Sets the codec tests should run with."],
           [propName: 'tests.directory', value: "random", description: "Sets the Directory implementation tests should run with."],
@@ -110,10 +112,11 @@ allprojects {
           [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
           [propName: 'tests.badapples', value: null, description: "Enables or disables @BadApple tests."],
           [propName: 'tests.file.encoding',
-           value: { ->
-             RandomPicks.randomFrom(new Random(projectSeedLong), ["US-ASCII", "ISO-8859-1", "UTF-8"])
-           },
-           description: "Sets the default file.encoding on test JVM.", buildOnly: true],
+              value: {->
+                RandomPicks
+                    .randomFrom(new Random(projectSeedLong), ["US-ASCII", "ISO-8859-1", "UTF-8"])
+              },
+              description: "Sets the default file.encoding on test JVM.", buildOnly: true],
           // test data
           [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
           // miscellaneous; some of them very weird.
@@ -124,7 +127,7 @@ allprojects {
 }
 
 // Add Solr-specific test configs settings.
-configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr")}) {
   plugins.withType(JavaPlugin) {
     project.ext {
       testOptions += [
@@ -139,14 +142,14 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
 allprojects {
   plugins.withType(JavaPlugin) {
     afterEvaluate {
-      project.ext.testOptionsResolved = testOptions.findAll { opt ->
+      project.ext.testOptionsResolved = testOptions.findAll {opt ->
         propertyOrDefault(opt.propName, opt.value) != null
-      }.collectEntries { opt ->
+      }.collectEntries {opt ->
         [(opt.propName): Objects.toString(resolvedTestOption(opt.propName))]
       }
 
       // Compute the "reproduce with" string.
-      project.ext.testOptionsForReproduceLine = testOptions.findAll { opt ->
+      project.ext.testOptionsForReproduceLine = testOptions.findAll {opt ->
         if (opt["includeInReproLine"] == false) {
           return false
         }
@@ -154,20 +157,21 @@ allprojects {
         def defValue = Objects.toString(opt.value, null)
         def value = testOptionsResolved[opt.propName]
         return defValue != value
-      }.collect { opt ->
+      }.collect {opt ->
         Commandline.quoteArgument("-P" + opt.propName + "=" + testOptionsResolved[opt.propName])
       }.join(" ")
 
       // leaving temporary folder option has multiple aliases...
       if ([
-         "tests.leaveTemporary",
-         "tests.leavetemporary",
-         "tests.leavetmpdir",
-         "solr.test.leavetmpdir",
-      ].find { prop ->
+          "tests.leaveTemporary",
+          "tests.leavetemporary",
+          "tests.leavetmpdir",
+          "solr.test.leavetmpdir",
+      ].find {prop ->
         def v = Boolean.parseBoolean(propertyOrDefault(prop, "false"))
         if (v) {
-          logger.lifecycle("Update your code to use the official 'tests.leaveTemporary' option (you used '${prop}').")
+          logger
+              .lifecycle("Update your code to use the official 'tests.leaveTemporary' option (you used '${prop}').")
         }
         return v
       }) {
@@ -175,7 +179,7 @@ allprojects {
       }
 
       // Append resolved test properties to the test task.
-      tasks.withType(Test) { task ->
+      tasks.withType(Test) {
         // TODO: we could remove some options that are only relevant to the build environment
         // and not the test JVM itself.
         systemProperties testOptionsResolved
@@ -190,25 +194,29 @@ allprojects {
           failFast true
         }
 
-        // The Lucene version is only available after resolving was done, so add lately using a provider:
+        // The Lucene version is only available after resolving was done, so add lately using a
+        // provider:
         jvmArgumentProviders.add({
           def luceneMatchVersion = rootProject.luceneBaseVersionProvider.get()
           return [
-            "-Dtests.LUCENE_VERSION=${luceneMatchVersion}",
-            "-Dtests.luceneMatchVersion=${luceneMatchVersion}",
+              "-Dtests.LUCENE_VERSION=${luceneMatchVersion}",
+              "-Dtests.luceneMatchVersion=${luceneMatchVersion}",
           ]
         } as CommandLineArgumentProvider)
 
-        // Enable security manager, if requested. We could move the selection of security manager and security policy
-        // to each project's build/ configuration but it seems compact enough to keep it here for now.
-        def useSecurityManager = Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"]);
+        // Enable security manager, if requested. We could move the selection of security manager
+        // and security policy to each project's build/ configuration but it seems compact enough to
+        // keep it here for now.
+        def useSecurityManager = Boolean
+            .parseBoolean(testOptionsResolved["tests.useSecurityManager"]);
         // Allow the project to override this
         if (project.ext.has("useSecurityManager")) {
           useSecurityManager &= project.ext.get("useSecurityManager")
         }
         if (useSecurityManager) {
           def commonSolrDir = project(':solr').layout.projectDirectory
-          def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
+          def javaSecurityPolicy = layout
+              .projectDirectory.file("${resources}/policies/solr-tests.policy")
           jvmArgumentProviders.add(
               new SecurityArgumentProvider(
                   commonSolrDir: commonSolrDir,
@@ -218,13 +226,21 @@ allprojects {
           systemProperty 'java.security.manager', "default"
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()
-          systemProperty 'gradle.lib.dir', Path.of(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')
-          systemProperty 'gradle.worker.jar', Path.of("${gradleUserHome}/caches/${gradle.gradleVersion}/workerMain/gradle-worker.jar").toAbsolutePath().toString()
+          systemProperty 'gradle.lib.dir',
+              Path.of(project.class.location.toURI()).parent.toAbsolutePath().toString().replace(
+                  '\\',
+                  '/')
+          systemProperty 'gradle.worker.jar',
+              Path
+                  .of("${gradleUserHome}/caches/${gradle.gradleVersion}/workerMain/gradle-worker.jar")
+                  .toAbsolutePath()
+                  .toString()
           systemProperty 'gradle.user.home', gradleUserHome.toPath().toAbsolutePath().toString()
         }
 
         doFirst {
-          logger.debug("Will use test opts:\n" + testOptionsResolved.collect {k,v -> "${k}: ${v}"}.sort().join("\n"))
+          logger.debug("Will use test opts:\n" +
+              testOptionsResolved.collect {k, v -> "${k}: ${v}"}.sort().join("\n"))
         }
       }
     }
@@ -242,7 +258,7 @@ allprojects {
       doFirst {
         println "Test options for project ${project.path} and seed \"${rootSeed}\":"
 
-        testOptions.sort { a, b -> a.propName.compareTo(b.propName) }.each { opt ->
+        testOptions.sort {a, b -> a.propName.compareTo(b.propName)}.each {opt ->
           def defValue
           def computedValue = false
           if (opt.value instanceof Closure) {
@@ -258,7 +274,8 @@ allprojects {
               (defValue != value ? "! " : computedValue ? "C " : "  "),
               opt.propName,
               value,
-              (computedValue ? "(!= default: computed) " : (defValue != value ? "(!= default: ${defValue}) " : "")) + opt.description)
+              (computedValue ? "(!= default: computed) " :
+                  (defValue != value ? "(!= default: ${defValue}) " : "")) + opt.description)
         }
       }
     }

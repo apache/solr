@@ -18,7 +18,6 @@
 package org.apache.solr.packagemanager;
 
 import static org.apache.solr.cli.SolrCLI.printGreen;
-import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
 import java.io.IOException;
@@ -47,6 +46,7 @@ import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SystemApi;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -122,17 +122,15 @@ public class RepositoryManager {
     @SuppressWarnings({"unchecked"})
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(repoName, uri));
-    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
+    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH) == false) {
       packageManager.zkClient.create(
           PackageUtils.REPOSITORIES_ZK_PATH,
           getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
-          CreateMode.PERSISTENT,
-          true);
+          CreateMode.PERSISTENT);
     } else {
       packageManager.zkClient.setData(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
-          true);
+          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8));
     }
 
     try (InputStream is = new URI(uri + "/publickey.der").toURL().openStream()) {
@@ -141,15 +139,11 @@ public class RepositoryManager {
   }
 
   public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
-    // get solr_home directory from info servlet
-    NamedList<Object> systemInfo =
-        solrClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/solr" + SYSTEM_INFO_PATH));
-    String solrHome = (String) systemInfo.get("solr_home");
+    final var sysResponse = new SystemApi.GetNodeSystemInfo().process(solrClient);
 
     // put the public key into package store's trusted key store and request a sync.
     String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Path.of(solrHome));
+    PackageUtils.uploadKey(key, path, Path.of(sysResponse.solrHome));
     final var syncRequest = new FileStoreApi.SyncFile(path);
     final var syncResponse = syncRequest.process(solrClient);
     final var status = syncResponse.responseHeader.status;
@@ -162,10 +156,9 @@ public class RepositoryManager {
 
   private String getRepositoriesJson(SolrZkClient zkClient)
       throws UnsupportedEncodingException, KeeperException, InterruptedException {
-    if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
+    if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH)) {
       return new String(
-          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true),
-          StandardCharsets.UTF_8);
+          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null), StandardCharsets.UTF_8);
     }
     return "[]";
   }

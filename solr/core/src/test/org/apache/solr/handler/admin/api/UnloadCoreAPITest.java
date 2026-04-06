@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class UnloadCoreAPITest extends SolrTestCaseJ4 {
-  private UnloadCore unloadCoreAPI;
+  private UnloadCore api;
   private static final String NON_EXISTENT_CORE = "non_existent_core";
 
   @BeforeClass
@@ -48,13 +48,12 @@ public class UnloadCoreAPITest extends SolrTestCaseJ4 {
     CoreContainer coreContainer = h.getCoreContainer();
     CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
         new CoreAdminHandler.CoreAdminAsyncTracker();
-    unloadCoreAPI =
-        new UnloadCore(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
+    api = new UnloadCore(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
   @Test
   public void testValidUnloadCoreAPIResponse() throws Exception {
-    SolrJerseyResponse response = unloadCoreAPI.unloadCore(coreName, getUnloadCoreRequestBodyObj());
+    SolrJerseyResponse response = api.unloadCore(coreName, getUnloadCoreRequestBodyObj());
     assertEquals(0, response.responseHeader.status);
   }
 
@@ -63,9 +62,7 @@ public class UnloadCoreAPITest extends SolrTestCaseJ4 {
     final SolrException solrException =
         expectThrows(
             SolrException.class,
-            () -> {
-              unloadCoreAPI.unloadCore(NON_EXISTENT_CORE, getUnloadCoreRequestBodyObj());
-            });
+            () -> api.unloadCore(NON_EXISTENT_CORE, getUnloadCoreRequestBodyObj()));
     assertEquals(400, solrException.code());
     assertTrue(solrException.getMessage().contains("Cannot unload non-existent core"));
   }

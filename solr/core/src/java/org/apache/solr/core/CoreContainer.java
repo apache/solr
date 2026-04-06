@@ -94,6 +94,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -136,8 +137,8 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
@@ -146,6 +147,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -434,6 +436,7 @@ public class CoreContainer {
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     allowPathBuilder.addPath(cfg.getSolrHome());
     allowPathBuilder.addPath(cfg.getCoreRootDirectory());
+    allowPathBuilder.addPath(cfg.getConfigSetBaseDirectory());
     if (cfg.getSolrDataHome() != null) {
       allowPathBuilder.addPath(cfg.getSolrDataHome());
     }
@@ -761,6 +764,10 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+
+    initGpuMetricsService(); // Initialize GPU metrics service
+
     ClusterPluginsSource pluginsSource =
         ClusterPluginsSource.loadClusterPluginsSource(this, loader);
     containerPluginsRegistry =
@@ -777,10 +784,12 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
-
-    // Initialize GPU metrics service
-    initGpuMetricsService();
+    // PublicKeyHandler was added to containerHandlers in the constructor before metrics were ready
+    containerHandlers
+        .get(PublicKeyHandler.PATH)
+        .initializeMetrics(
+            solrMetricsContext,
+            Attributes.builder().put(HANDLER_ATTR, PublicKeyHandler.PATH).build());
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -796,7 +805,7 @@ public class CoreContainer {
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
-      this.caches = Collections.emptyMap();
+      this.caches = Map.of();
     } else {
       Map<String, SolrCache<?, ?>> m = CollectionUtil.newHashMap(cachesConfig.size());
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
@@ -1245,6 +1254,10 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
+      // Shut down the coreZkRegister executor early so that any in-progress async reloads
+      // (triggered by ZK config watchers) complete before we close cores.
+      ExecutorUtil.shutdownAndAwaitTermination(zkSys.getCoreZkRegisterExecutorService());
+
       ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // Now clear all the cores that are being operated upon.
@@ -1275,14 +1288,6 @@ public class CoreContainer {
       }
 
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
-
-      // Shutdown GPU metrics service if it was initialized
-      shutdownGpuMetricsService();
-
-      if (metricManager != null) {
-        // Close all OTEL meter providers and metrics
-        metricManager.closeAllRegistries();
-      }
 
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
@@ -1337,6 +1342,14 @@ public class CoreContainer {
 
     // It should be safe to close the authentication plugin at this point.
     try {
+      if (pkiAuthenticationSecurityBuilder != null) {
+        pkiAuthenticationSecurityBuilder.close();
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing PKI authentication plugin.", e);
+    }
+
+    try {
       if (authenticationPlugin != null) {
         authenticationPlugin.plugin.close();
         authenticationPlugin = null;
@@ -1359,6 +1372,14 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
+
+    containerHandlers.close();
+
+    shutdownGpuMetricsService(); // Shutdown GPU metrics service if it was initialized
+
+    IOUtils.closeQuietly(solrMetricsContext);
+
+    metricManager.closeAllRegistries(); // Close all OTEL meter providers and metrics
   }
 
   public void cancelCoreRecoveries() {
@@ -1484,6 +1505,10 @@ public class CoreContainer {
         log.warn(msg);
         throw new SolrException(ErrorCode.CONFLICT, msg);
       }
+
+      // Validate 'instancePath' prior to instantiating CoreDescriptor, as CD construction attempts
+      // to read properties from 'instancePath'
+      assertPathAllowed(instancePath);
       CoreDescriptor cd =
           new CoreDescriptor(
               coreName, instancePath, parameters, getContainerProperties(), getZkController());
@@ -1498,7 +1523,6 @@ public class CoreContainer {
       }
 
       // Validate paths are relative to known locations to avoid path traversal
-      assertPathAllowed(cd.getInstanceDir());
       assertPathAllowed(Path.of(cd.getDataDir()));
 
       boolean preExistingZkEntry = false;
@@ -1569,6 +1593,8 @@ public class CoreContainer {
       }
     }
   }
+
+  public static final String ALLOW_PATHS_SYSPROP = "solr.security.allow.paths";
 
   /**
    * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one
@@ -1666,11 +1692,11 @@ public class CoreContainer {
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
-        // this mostly happens when the core is deleted when this node is down
+        // this mostly happens when the core is deleted when this node is down,
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(
-                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
+            EnvUtils.getPropertyAsBool("solr.cloud.startup.delete.unknown.cores.enabled", false);
+
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),
@@ -1678,7 +1704,7 @@ public class CoreContainer {
             (deleteUnknownCores
                 ? " It will be deleted. See SOLR-13396 for more information."
                 : ""));
-        // We alreday have an ongoing CoreOp, so do not wait to start another one
+        // We already have an ongoing CoreOp, so do not wait to start another one
         unloadWithoutCoreOp(
             dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;
@@ -1970,7 +1996,7 @@ public class CoreContainer {
 
         // force commit on old core if the new one is readOnly and prevent any new updates
         if (newCore.readOnly) {
-          SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+          SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
           core.getUpdateHandler().commit(CommitUpdateCommand.closeOnCommit(req, false));
         }
 
@@ -2502,5 +2528,20 @@ public class CoreContainer {
             }
           }
         });
+  }
+
+  /**
+   * Audit an event if our audit plugin is installed and wants to audit this type of event.
+   *
+   * @param event the event to audit.
+   * @param eventType a Supplier to defer event creation and avoid gc load when auditing is not
+   *     enabled. Lambdas are preferred for this since they are easily inlined.
+   */
+  public void audit(Supplier<AuditEvent> event, AuditEvent.EventType eventType) {
+    if (getAuditLoggerPlugin() != null && getAuditLoggerPlugin().shouldLog(eventType)) {
+      // The lambda should get optimized out, and produce no GC load:
+      // https://medium.com/@reetesh043/how-lambda-expressions-work-internally-in-java-f2a6f0e0bc68
+      getAuditLoggerPlugin().doAudit(event.get());
+    }
   }
 }

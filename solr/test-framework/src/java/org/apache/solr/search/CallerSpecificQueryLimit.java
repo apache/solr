@@ -16,12 +16,9 @@
  */
 package org.apache.solr.search;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.solr.util.CallerMatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Helper class to simulate query timeouts at specific points in various components that call {@link
@@ -29,8 +26,6 @@ import org.slf4j.LoggerFactory;
  * information and enforce the count limits.
  */
 public class CallerSpecificQueryLimit implements QueryLimit {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private final CallerMatcher callerMatcher;
 
   /**

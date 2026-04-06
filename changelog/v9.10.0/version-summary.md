@@ -7,8 +7,8 @@
 <!-- !!! ⚠️ DO NOT MODIFY THIS FILE, YOUR CHANGES WILL BE LOST ⚠️ !!! -->
 
 
-[9.10.0]
---------
+[9.10.0] - 2025-11-06
+---------------------
 
 ### Added (4 changes)
 
@@ -88,7 +88,7 @@
 ### Other (9 changes)
 
 - Deprecate `CloudHttp2SolrClient.Builder#withHttpClient` in favor of `CloudHttp2SolrClient.Builder#withInternalClientBuilder`. Deprecate `LBHttp2SolrClient.Builder#withListenerFactory` in favor of `LBHttp2SolrClient.Builder#withListenerFactories`. [SOLR-17541](https://issues.apache.org/jira/browse/SOLR-17541) (James Dyer)
-- Use logchange for changelog management ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy) @janhoy)
+- Use logchange for changelog management [SOLR-17619](https://issues.apache.org/jira/browse/SOLR-17619) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy) @janhoy)
 - SolrCloud "live_node" now has metadata: version of Solr, roles [SOLR-17620](https://issues.apache.org/jira/browse/SOLR-17620) (Yuntong Qu) (David Smiley)
 - Deprecating waitForFinalState parameter in any SolrCloud command that accepts it. It remains defaulted to false in 9, but will become true and likely removed. [SOLR-17712](https://issues.apache.org/jira/browse/SOLR-17712) (Abhishek Umarjikar) (David Smiley)
 - Deprecate `CloudSolrClient.Builder` in favor of `CloudHttp2SolrClient.Builder`. [SOLR-17771](https://issues.apache.org/jira/browse/SOLR-17771) (James Dyer)

@@ -75,13 +75,13 @@ public class ApiBag {
   public synchronized List<Api> registerObject(Object o) {
     List<Api> l = AnnotatedApi.getApis(o);
     for (Api api : l) {
-      register(api, Collections.emptyMap());
+      register(api, Map.of());
     }
     return l;
   }
 
   public synchronized void register(Api api) {
-    register(api, Collections.emptyMap());
+    register(api, Map.of());
   }
 
   public synchronized void register(Api api, Map<String, String> nameSubstitutes) {

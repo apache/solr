@@ -17,8 +17,6 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
-import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
@@ -112,7 +110,6 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
@@ -129,19 +126,9 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.CSVResponseWriter;
-import org.apache.solr.response.CborResponseWriter;
-import org.apache.solr.response.GeoJSONResponseWriter;
-import org.apache.solr.response.GraphMLResponseWriter;
-import org.apache.solr.response.JacksonJsonWriter;
-import org.apache.solr.response.JavaBinResponseWriter;
-import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.SchemaXmlResponseWriter;
-import org.apache.solr.response.SmileResponseWriter;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -151,7 +138,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.LocalStatsCache;
@@ -173,8 +159,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.util.IndexInputInputStream;
 import org.apache.solr.util.IndexOutputOutputStream;
-import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
@@ -268,7 +254,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private AttributedLongCounter newSearcherOtherErrorsCounter;
   private AttributedLongTimer newSearcherTimer;
   private AttributedLongTimer newSearcherWarmupTimer;
-  private List<AutoCloseable> toClose;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -461,7 +446,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       return dataDir + "index/";
     }
     // c'tor just assigns a variable here, no exception thrown.
-    final InputStream is = new PropertiesInputStream(input);
+    final InputStream is = new IndexInputInputStream(input);
     try {
       Properties p = new Properties();
       p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
@@ -1139,14 +1124,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
 
-      SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
-      // this is registered at the CONTAINER level because it's not core-specific - for now we
-      // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(
-          solrMetricsContext,
-          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build());
-      infoRegistry.put("fieldCache", solrFieldCacheBean);
-
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
       this.slowQueryThresholdMillis = solrConfig.slowQueryThresholdMillis;
 
@@ -1163,7 +1140,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
-      updateProcessors.init(Collections.emptyMap(), this);
+      updateProcessors.init(Map.of(), this);
 
       // Processors initialized before the handlers
       updateProcessorChains = loadUpdateProcessorChains();
@@ -1220,8 +1197,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
-        ((SolrMetricProducer) directoryFactory)
-            .initializeMetrics(solrMetricsContext, Attributes.empty());
+        coreMetricManager.registerMetricProducer(
+            (SolrMetricProducer) directoryFactory, Attributes.empty());
       }
 
       bufferUpdatesIfConstructing(coreDescriptor);
@@ -1337,8 +1314,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    final List<AutoCloseable> observables = new ArrayList<>();
-
     Attributes baseSearcherAttributes =
         Attributes.builder()
             .putAll(attributes)
@@ -1385,59 +1360,56 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 OtelUnit.MILLISECONDS),
             baseSearcherAttributes);
 
-    observables.add(
-        parentContext.observableLongGauge(
-            "solr_core_ref_count",
-            "The current number of active references to a Solr core",
-            (observableLongMeasurement -> {
-              observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
-            })));
+    parentContext.observableLongGauge(
+        "solr_core_ref_count",
+        "The current number of active references to a Solr core",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
+        }));
 
-    observables.add(
-        parentContext.observableDoubleGauge(
-            "solr_core_disk_space",
-            "Solr core disk space metrics",
-            (observableDoubleMeasurement -> {
+    parentContext.observableDoubleGauge(
+        "solr_core_disk_space",
+        "Solr core disk space metrics",
+        (observableDoubleMeasurement -> {
 
-              // initialize disk total / free metrics
-              Path dataDirPath = Path.of(dataDir);
-              var totalSpaceAttributes =
-                  Attributes.builder()
-                      .putAll(baseGaugeCoreAttributes)
-                      .put(TYPE_ATTR, "total_space")
-                      .build();
-              var usableSpaceAttributes =
-                  Attributes.builder()
-                      .putAll(baseGaugeCoreAttributes)
-                      .put(TYPE_ATTR, "usable_space")
-                      .build();
-              try {
-                observableDoubleMeasurement.record(
-                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getTotalSpace()),
-                    totalSpaceAttributes);
-              } catch (IOException e) {
-                observableDoubleMeasurement.record(0.0, totalSpaceAttributes);
-              }
-              try {
-                observableDoubleMeasurement.record(
-                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getUsableSpace()),
-                    usableSpaceAttributes);
-              } catch (IOException e) {
-                observableDoubleMeasurement.record(0.0, usableSpaceAttributes);
-              }
-            }),
-            OtelUnit.MEGABYTES));
+          // initialize disk total / free metrics
+          Path dataDirPath = Path.of(dataDir);
+          var totalSpaceAttributes =
+              Attributes.builder()
+                  .putAll(baseGaugeCoreAttributes)
+                  .put(TYPE_ATTR, "total_space")
+                  .build();
+          var usableSpaceAttributes =
+              Attributes.builder()
+                  .putAll(baseGaugeCoreAttributes)
+                  .put(TYPE_ATTR, "usable_space")
+                  .build();
+          try {
+            observableDoubleMeasurement.record(
+                MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getTotalSpace()),
+                totalSpaceAttributes);
+          } catch (IOException e) {
+            observableDoubleMeasurement.record(0.0, totalSpaceAttributes);
+          }
+          try {
+            observableDoubleMeasurement.record(
+                MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getUsableSpace()),
+                usableSpaceAttributes);
+          } catch (IOException e) {
+            observableDoubleMeasurement.record(0.0, usableSpaceAttributes);
+          }
+        }),
+        OtelUnit.MEGABYTES);
 
-    observables.add(
-        parentContext.observableDoubleGauge(
-            "solr_core_index_size",
-            "Index size for a Solr core",
-            (observableDoubleMeasurement -> {
-              if (!isClosed())
-                observableDoubleMeasurement.record(
-                    MetricUtils.bytesToMegabytes(getIndexSize()), baseGaugeCoreAttributes);
-            }),
-            OtelUnit.MEGABYTES));
+    parentContext.observableDoubleGauge(
+        "solr_core_index_size",
+        "Index size for a Solr core",
+        (observableDoubleMeasurement -> {
+          if (!isClosed())
+            observableDoubleMeasurement.record(
+                MetricUtils.bytesToMegabytes(getIndexSize()), baseGaugeCoreAttributes);
+        }),
+        OtelUnit.MEGABYTES);
 
     parentContext.observableLongGauge(
         "solr_core_segments",
@@ -1448,17 +1420,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }));
 
     if (coreContainer.isZooKeeperAware())
-      observables.add(
-          parentContext.observableLongGauge(
-              "solr_core_is_leader",
-              "Indicates whether this Solr core is currently the leader",
-              (observableLongMeasurement -> {
-                observableLongMeasurement.record(
-                    (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0,
-                    baseGaugeCoreAttributes);
-              })));
-
-    this.toClose = Collections.unmodifiableList(observables);
+      parentContext.observableLongGauge(
+          "solr_core_is_leader",
+          "Indicates whether this Solr core is currently the leader",
+          (observableLongMeasurement -> {
+            observableLongMeasurement.record(
+                (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0, baseGaugeCoreAttributes);
+          }));
   }
 
   public String getMetricTag() {
@@ -1581,7 +1549,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       final IndexInput input =
           dir.openInput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      final InputStream is = new PropertiesInputStream(input);
+      final InputStream is = new IndexInputInputStream(input);
       try {
         p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
       } catch (Exception e) {
@@ -1808,7 +1776,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
         assert false : "Too many closes on SolrCore";
       } else if (count == 0) {
         doClose();
-        IOUtils.closeQuietly(toClose);
       }
     } finally {
       MDCLoggingContext.clear(); // balance out from SolrCore open with close
@@ -2086,8 +2053,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (searchComponents.isLoaded(name)
           && searchComponents.get(name) instanceof HighlightComponent) {
         if (!HighlightComponent.COMPONENT_NAME.equals(name)) {
-          searchComponents.put(
-              HighlightComponent.COMPONENT_NAME, searchComponents.getRegistry().get(name));
+          searchComponents.alias(name, HighlightComponent.COMPONENT_NAME);
         }
         break;
       }
@@ -2476,7 +2442,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
                   true,
                   directoryFactory);
         } else {
-          RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
+          RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this, false);
           DirectoryReader newReader = null;
           try {
             newReader = indexReaderFactory.newReader(writer.get(), this);
@@ -3088,51 +3054,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private final PluginBag<QueryResponseWriter> responseWriters =
       new PluginBag<>(QueryResponseWriter.class, this);
-  public static final Map<String, QueryResponseWriter> DEFAULT_RESPONSE_WRITERS;
-
-  static {
-    HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
-    m.put("xml", new XMLResponseWriter());
-    m.put(CommonParams.JSON, new JacksonJsonWriter());
-    m.put("standard", m.get(CommonParams.JSON));
-    m.put("geojson", new GeoJSONResponseWriter());
-    m.put("graphml", new GraphMLResponseWriter());
-    m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
-    m.put("cbor", new CborResponseWriter());
-    m.put("csv", new CSVResponseWriter());
-    m.put("schema.xml", new SchemaXmlResponseWriter());
-    m.put("smile", new SmileResponseWriter());
-    m.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
-    m.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
-    m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
-    DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
-  }
-
-  private static JavaBinResponseWriter getFileStreamWriter() {
-    return new JavaBinResponseWriter() {
-      @Override
-      public void write(
-          OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
-          throws IOException {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
-        if (rawWriter != null) {
-          rawWriter.write(out);
-          if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
-        }
-      }
-
-      @Override
-      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
-        if (rawWriter != null) {
-          return rawWriter.getContentType();
-        } else {
-          return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
-        }
-      }
-    };
-  }
 
   public void fetchLatestSchema() {
     IndexSchema schema = configSet.getIndexSchema(true);
@@ -3148,18 +3069,52 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Configure the query response writers. There will always be a default writer; additional writers
-   * may also be configured.
+   * Gets a response writer suitable for node/container-level requests.
+   *
+   * @param writerName the writer name, or null for default
+   * @return the response writer, never null
+   * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
    */
-  private void initWriters() {
-    responseWriters.init(DEFAULT_RESPONSE_WRITERS, this);
-    // configure the default response writer; this one should never be null
-    if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
+  @Deprecated
+  public static QueryResponseWriter getAdminResponseWriter(String writerName) {
+    return ResponseWritersRegistry.getWriter(writerName);
   }
 
-  /** Finds a writer by name, or returns the default writer if not found. */
+  /**
+   * Initializes query response writers. Response writers from {@code ImplicitPlugins.json} may also
+   * be configured.
+   */
+  private void initWriters() {
+    // Build default writers map from implicit plugins
+    Map<String, QueryResponseWriter> defaultWriters = new HashMap<>();
+
+    // Start with built-in writers that are always available
+    defaultWriters.putAll(ResponseWritersRegistry.getAllWriters());
+
+    // Load writers from ImplicitPlugins.json (may override built-ins)
+    List<PluginInfo> implicitWriters = getImplicitResponseWriters();
+    for (PluginInfo info : implicitWriters) {
+      try {
+        QueryResponseWriter writer =
+            createInstance(
+                info.className,
+                QueryResponseWriter.class,
+                "queryResponseWriter",
+                null,
+                getResourceLoader());
+        defaultWriters.put(info.name, writer);
+      } catch (Exception e) {
+        log.warn("Failed to load implicit response writer: {}", info.name, e);
+      }
+    }
+
+    // Initialize with the built defaults
+    responseWriters.init(defaultWriters, this);
+  }
+
+  /** Finds a writer by name, or null if not found. */
   public final QueryResponseWriter getQueryResponseWriter(String writerName) {
-    return responseWriters.get(writerName, true);
+    return responseWriters.get(writerName, false);
   }
 
   /**
@@ -3255,7 +3210,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @return The instances initialized
    */
   public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
-    if (pluginInfos.isEmpty()) return Collections.emptyList();
+    if (pluginInfos.isEmpty()) return List.of();
     List<T> result = new ArrayList<>(pluginInfos.size());
     for (PluginInfo info : pluginInfos)
       result.add(createInitInstance(info, type, type.getSimpleName(), defClassName));
@@ -3563,7 +3518,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private static boolean checkStale(SolrZkClient zkClient, String zkPath, int currentVersion) {
     if (zkPath == null) return false;
     try {
-      Stat stat = zkClient.exists(zkPath, null, true);
+      Stat stat = zkClient.exists(zkPath, null);
       if (stat == null) {
         if (currentVersion > -1) return true;
         return false;
@@ -3614,32 +3569,49 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private static final class ImplicitHolder {
-    private ImplicitHolder() {}
+  private static final class ImplicitPluginsHolder {
+    private ImplicitPluginsHolder() {}
 
-    private static final List<PluginInfo> INSTANCE;
+    private static final Map<String, List<PluginInfo>> ALL_IMPLICIT_PLUGINS;
 
     static {
       @SuppressWarnings("unchecked")
       Map<String, ?> implicitPluginsInfo =
           (Map<String, ?>)
               Utils.fromJSONResource(SolrCore.class.getClassLoader(), "ImplicitPlugins.json");
-      @SuppressWarnings("unchecked")
-      Map<String, Map<String, Object>> requestHandlers =
-          (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
 
-      List<PluginInfo> implicits = new ArrayList<>(requestHandlers.size());
-      for (Map.Entry<String, Map<String, Object>> entry : requestHandlers.entrySet()) {
-        Map<String, Object> info = entry.getValue();
-        info.put(CommonParams.NAME, entry.getKey());
-        implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
+      Map<String, List<PluginInfo>> plugins = new HashMap<>();
+
+      // Load all plugin types from the JSON
+      for (Map.Entry<String, ?> entry : implicitPluginsInfo.entrySet()) {
+        String pluginType = entry.getKey();
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Object>> pluginConfigs =
+            (Map<String, Map<String, Object>>) entry.getValue();
+
+        List<PluginInfo> pluginInfos = new ArrayList<>(pluginConfigs.size());
+        for (Map.Entry<String, Map<String, Object>> plugin : pluginConfigs.entrySet()) {
+          Map<String, Object> info = plugin.getValue();
+          info.put(CommonParams.NAME, plugin.getKey());
+          pluginInfos.add(new PluginInfo(pluginType, info));
+        }
+        plugins.put(pluginType, Collections.unmodifiableList(pluginInfos));
       }
-      INSTANCE = Collections.unmodifiableList(implicits);
+
+      ALL_IMPLICIT_PLUGINS = Collections.unmodifiableMap(plugins);
+    }
+
+    public static List<PluginInfo> getImplicitPlugins(String type) {
+      return ALL_IMPLICIT_PLUGINS.getOrDefault(type, List.of());
     }
   }
 
   public List<PluginInfo> getImplicitHandlers() {
-    return ImplicitHolder.INSTANCE;
+    return ImplicitPluginsHolder.getImplicitPlugins(SolrRequestHandler.TYPE);
+  }
+
+  public List<PluginInfo> getImplicitResponseWriters() {
+    return ImplicitPluginsHolder.getImplicitPlugins("queryResponseWriter");
   }
 
   public CancellableQueryTracker getCancellableQueryTracker() {

@@ -62,12 +62,10 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
+    solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
     }
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.index.updatelog.enabled");
 
     if (restTestHarness != null) {
       restTestHarness.close();

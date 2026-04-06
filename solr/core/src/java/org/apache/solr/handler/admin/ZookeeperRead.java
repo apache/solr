@@ -88,20 +88,18 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
 
     zkPath = sanitizeZkPath(zkPath);
     try {
-      Stat stat = coreContainer.getZkController().getZkClient().exists(zkPath, null, true);
+      Stat stat = coreContainer.getZkController().getZkClient().exists(zkPath, null);
       listResponse.stat = createAnnotatedStatFrom(stat);
       if (includeChildren != null && !includeChildren.booleanValue()) {
         return listResponse;
       }
-      List<String> l =
-          coreContainer.getZkController().getZkClient().getChildren(zkPath, null, false);
+      List<String> l = coreContainer.getZkController().getZkClient().getChildren(zkPath, null);
       String prefix = zkPath.endsWith("/") ? zkPath : zkPath + "/";
 
       Map<String, Stat> stats = new LinkedHashMap<>();
       for (String s : l) {
         try {
-          stats.put(
-              s, coreContainer.getZkController().getZkClient().exists(prefix + s, null, false));
+          stats.put(s, coreContainer.getZkController().getZkClient().exists(prefix + s, null));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -162,7 +160,7 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   private byte[] readPathFromZookeeper(String path) {
     byte[] d;
     try {
-      d = coreContainer.getZkController().getZkClient().getData(path, null, null, false);
+      d = coreContainer.getZkController().getZkClient().getData(path, null, null);
     } catch (KeeperException.NoNodeException e) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: " + path);
     } catch (Exception e) {

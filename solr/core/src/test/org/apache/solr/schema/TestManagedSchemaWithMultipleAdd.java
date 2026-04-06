@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -50,12 +49,6 @@ public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
             "conf1",
             TEST_PATH().resolve("configsets").resolve("cloud-managed-autocommit").resolve("conf"))
         .configure();
-  }
-
-  @AfterClass
-  public static void afterRestartWhileUpdatingTest() {
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.autoSoftCommit.maxTime");
   }
 
   @Test

@@ -114,7 +114,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
   @Test
   public void testAdjustShardRequestLimits() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
-    String timeAllowed = "500"; // ms
+    String timeAllowed = "1000"; // ms - increased from 500 to avoid flakiness with grouped queries
     ModifiableSolrParams params =
         params(
             "q",

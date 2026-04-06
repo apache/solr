@@ -50,7 +50,7 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ccc.getZkStateReader();
@@ -63,7 +63,7 @@ public class CreateAliasCmd extends AliasCmd {
     if (!anyRoutingParams(message)) {
       callCreatePlainAlias(message, aliasName, zkStateReader);
     } else {
-      callCreateRoutedAlias(message, aliasName, zkStateReader, state);
+      callCreateRoutedAlias(adminCmdContext, message, aliasName, zkStateReader);
     }
 
     // Sleep a bit to allow ZooKeeper state propagation.
@@ -112,7 +112,10 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   private void callCreateRoutedAlias(
-      ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state)
+      AdminCmdContext adminCmdContext,
+      ZkNodeProps message,
+      String aliasName,
+      ZkStateReader zkStateReader)
       throws Exception {
     // Validate we got a basic minimum
     if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
@@ -150,7 +153,11 @@ public class CreateAliasCmd extends AliasCmd {
       // Create the first collection. Prior validation ensures that this is not a standard alias
       collectionListStr = routedAlias.computeInitialCollectionName();
       ensureAliasCollection(
-          aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), collectionListStr);
+          adminCmdContext,
+          aliasName,
+          zkStateReader,
+          routedAlias.getAliasMetadata(),
+          collectionListStr);
     } else {
       List<String> collectionList = aliases.resolveAliases(aliasName);
       collectionListStr = String.join(",", collectionList);
@@ -163,14 +170,15 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   private void ensureAliasCollection(
+      AdminCmdContext adminCmdContext,
       String aliasName,
       ZkStateReader zkStateReader,
-      ClusterState state,
       Map<String, String> aliasProperties,
       String initialCollectionName)
       throws Exception {
     // Create the collection
-    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ccc);
+    createCollectionAndWait(
+        adminCmdContext, aliasName, aliasProperties, initialCollectionName, ccc);
     validateAllCollectionsExistAndNoDuplicates(
         Collections.singletonList(initialCollectionName), zkStateReader);
   }

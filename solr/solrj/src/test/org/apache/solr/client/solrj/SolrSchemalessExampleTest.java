@@ -42,6 +42,11 @@ import org.junit.Test;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
+  protected HttpClient getHttpClient() {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    return client.getHttpClient();
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path tempSolrHome = createTempDir();
@@ -56,22 +61,13 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     PathUtils.copyDirectory(ExternalPaths.DEFAULT_CONFIGSET, collection1Dir);
     Properties props = new Properties();
     props.setProperty("name", "collection1");
-    OutputStreamWriter writer = null;
-    try {
-      writer =
-          new OutputStreamWriter(
-              PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
-              StandardCharsets.UTF_8);
+    try (OutputStreamWriter writer =
+        new OutputStreamWriter(
+            PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
+            StandardCharsets.UTF_8)) {
       props.store(writer, null);
-    } finally {
-      if (writer != null) {
-        try {
-          writer.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
-    createAndStartJetty(tempSolrHome);
+    solrTestRule.startSolr(tempSolrHome);
   }
 
   @Test
@@ -84,7 +80,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
     HttpClient httpClient = getHttpClient();
-    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
+    HttpPost post =
+        new HttpPost(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -112,7 +109,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             + "{\"p.q\" : \"name\"}"
             + "{\"a&b\" : \"name\"}";
     HttpClient httpClient = getHttpClient();
-    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
+    HttpPost post =
+        new HttpPost(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -132,8 +130,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   @Override
   public SolrClient createNewSolrClient() {
     HttpSolrClient.Builder httpSolrClientBuilder =
-        new HttpSolrClient.Builder(getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
             .allowMultiPartPost(random().nextBoolean());
     if (random().nextBoolean()) {
       httpSolrClientBuilder

@@ -20,6 +20,7 @@ package org.apache.solr.search.facet;
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
@@ -681,7 +682,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     /** Parses a String param into a value. Can throw a low level format exception as needed. */
     @SuppressWarnings({"rawtypes"})
-    protected abstract Comparable parseStr(final String rawval) throws java.text.ParseException;
+    protected abstract Comparable parseStr(final String rawval) throws ParseException;
 
     /**
      * Parses a String param into a value that represents the gap and can be included in the
@@ -707,7 +708,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      *
      * <p>Default Impl calls parseVal
      */
-    protected Object parseGap(final String rawval) throws java.text.ParseException {
+    protected Object parseGap(final String rawval) throws ParseException {
       return parseStr(rawval);
     }
 
@@ -733,7 +734,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      */
     @SuppressWarnings({"rawtypes"})
     protected abstract Comparable parseAndAddGap(Comparable value, String gap)
-        throws java.text.ParseException;
+        throws ParseException;
   }
 
   private static class FloatCalc extends Calc {
@@ -907,7 +908,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public Date parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap)
-        throws java.text.ParseException {
+        throws ParseException {
       final DateMathParser dmp = new DateMathParser();
       dmp.setNow((Date) value);
       return dmp.parseMath(gap);
@@ -969,19 +970,18 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     @SuppressWarnings({"rawtypes"})
-    protected Comparable parseStr(final String rawval) throws java.text.ParseException {
+    protected Comparable parseStr(final String rawval) throws ParseException {
       return CurrencyValue.parse(rawval, defaultCurrencyCode);
     }
 
     @Override
-    protected Object parseGap(final String rawval) throws java.text.ParseException {
+    protected Object parseGap(final String rawval) throws ParseException {
       return parseStr(rawval);
     }
 
     @Override
     @SuppressWarnings({"rawtypes"})
-    protected Comparable parseAndAddGap(Comparable value, String gap)
-        throws java.text.ParseException {
+    protected Comparable parseAndAddGap(Comparable value, String gap) throws ParseException {
       if (value == null) {
         throw new NullPointerException("Cannot perform range faceting on null CurrencyValue");
       }

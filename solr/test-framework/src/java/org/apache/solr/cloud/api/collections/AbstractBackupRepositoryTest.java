@@ -195,7 +195,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDirectoryCreationFailsIfParentDoesntExist() throws Exception {
+  public void testDirectoryCreationFailsIfParentDoesNotExist() throws Exception {
     try (BackupRepository repo = getRepository()) {
       final URI nonExistentParentUri = repo.resolve(getBaseUri(), "nonExistentParent");
       final URI nestedUri = repo.resolve(nonExistentParentUri, "childDirectoryToCreate");

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -60,9 +62,23 @@ public abstract class SolrRequest<T> implements Serializable {
 
   public enum METHOD {
     GET,
+    HEAD,
     POST,
     PUT,
-    DELETE
+    DELETE;
+
+    /**
+     * Returns the METHOD enum value matching the provided string, or 'null' if no match is found.
+     */
+    public static METHOD fromString(String methodStr) {
+      try {
+        return METHOD.valueOf(methodStr.toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Request contained unexpected HTTP method: " + methodStr);
+      }
+    }
   };
 
   public enum ApiVersion {

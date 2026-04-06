@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
@@ -523,7 +524,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
      * Parses a String param into an Range endpoint. Can throw a low level format exception as
      * needed.
      */
-    protected abstract T parseVal(final String rawval) throws java.text.ParseException;
+    protected abstract T parseVal(final String rawval) throws ParseException;
 
     /**
      * Parses a String param into a value that represents the gap and can be included in the
@@ -549,7 +550,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
      *
      * <p>Default Impl calls parseVal
      */
-    protected Object parseGap(final String rawval) throws java.text.ParseException {
+    protected Object parseGap(final String rawval) throws ParseException {
       return parseVal(rawval);
     }
 
@@ -572,7 +573,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
      * Adds the String gap param to a low Range endpoint value to determine the corrisponding high
      * Range endpoint value. Can throw a low level format exception as needed.
      */
-    protected abstract T parseAndAddGap(T value, String gap) throws java.text.ParseException;
+    protected abstract T parseAndAddGap(T value, String gap) throws ParseException;
 
     public List<FacetRange> computeRanges() {
       List<FacetRange> ranges = new ArrayList<>();
@@ -791,7 +792,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
 
     @Override
-    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
+    public Date parseAndAddGap(Date value, String gap) throws ParseException {
       final DateMathParser dmp = new DateMathParser();
       dmp.setNow(value);
       return dmp.parseMath(gap);
@@ -815,7 +816,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
 
     @Override
-    protected Object parseGap(String rawval) throws java.text.ParseException {
+    protected Object parseGap(String rawval) throws ParseException {
       return parseVal(rawval).strValue();
     }
 

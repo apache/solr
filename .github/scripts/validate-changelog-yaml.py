@@ -22,10 +22,15 @@ Validates changelog YAML files in changelog/unreleased/ folder.
 
 Checks:
 - File is valid YAML
+- All top-level keys are valid (title, type, issues, links, important_notes, modules, authors)
+- Deprecated keys (merge_requests, configurations) are not used
 - Contains required 'title' field (non-empty string)
 - Contains required 'type' field (one of: added, changed, fixed, deprecated, removed, dependency_update, security, other)
 - Contains required 'authors' field with at least one author
 - Each author has a 'name' field (non-empty string)
+- Contains either 'links' or 'issues' field (or both)
+- If 'issues' is present, it must be an integer not exceeding 17000
+- Comment block is removed
 """
 
 import sys
@@ -35,15 +40,31 @@ import yaml
 def validate_changelog_yaml(file_path):
     """Validate a changelog YAML file."""
     valid_types = ['added', 'changed', 'fixed', 'deprecated', 'removed', 'dependency_update', 'security', 'other']
+    valid_keys = ['title', 'type', 'issues', 'links', 'important_notes', 'modules', 'authors']
+    deprecated_keys = ['merge_requests', 'configurations']
+    not_allowed_text = ['DELETE ALL COMMENTS UP HERE', 'Most such changes are too small']
 
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = yaml.safe_load(f)
+            raw_content = f.read()
+            data = yaml.safe_load(raw_content)
 
         # Check if file contains a mapping (dictionary)
         if not isinstance(data, dict):
             print(f"::error file={file_path}::File must contain YAML mapping (key-value pairs)")
             return False
+
+        # Check for invalid top-level keys
+        for key in data.keys():
+            if key not in valid_keys and key not in deprecated_keys:
+                print(f"::error file={file_path}::Invalid top-level key '{key}'. Valid keys are: {', '.join(valid_keys)}")
+                return False
+
+        # Check for deprecated keys
+        for deprecated_key in deprecated_keys:
+            if deprecated_key in data:
+                print(f"::error file={file_path}::Our project does not use the '{deprecated_key}' yaml key, please remove")
+                return False
 
         # Validate 'title' field
         if 'title' not in data or not data['title']:
@@ -86,6 +107,26 @@ def validate_changelog_yaml(file_path):
                 return False
             if not isinstance(author['name'], str) or not author['name'].strip():
                 print(f"::error file={file_path}::Author {i} 'name' must be a non-empty string")
+                return False
+
+        # Validate that either 'links' or 'issues' exists (or both)
+        if 'links' not in data and 'issues' not in data:
+            print(f"::error file={file_path}::Must contain either 'links' or 'issues' key (or both)")
+            return False
+
+        # Validate 'issues' field if present
+        if 'issues' in data:
+            if not isinstance(data['issues'], int):
+                print(f"::error file={file_path}::Field 'issues' must be an integer")
+                return False
+            if data['issues'] > 17000:
+                print(f"::error file={file_path}::Field 'issues' value {data['issues']} points to a non-existing github PR. Did you intend to reference a JIRA issue, please use 'links'.")
+                return False
+
+        # Validate that comments are removed
+        for not_allowed in not_allowed_text:
+            if not_allowed in raw_content:
+                print(f"::error file={file_path}::File still contains commented template text. Please remove the comment block at the top of the file.")
                 return False
 
         # All validations passed

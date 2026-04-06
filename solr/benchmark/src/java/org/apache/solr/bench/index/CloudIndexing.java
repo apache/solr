@@ -24,7 +24,7 @@ import static org.apache.solr.bench.generators.SourceDSL.strings;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -114,22 +114,20 @@ public class CloudIndexing {
     }
 
     @Setup(Level.Trial)
-    public void doSetup(MiniClusterState.MiniClusterBenchState miniClusterState) throws Exception {
+    public void doSetup(SolrBenchState solrBenchState) throws Exception {
       preGenerate();
 
       System.setProperty("mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
-      miniClusterState.startMiniCluster(nodeCount);
-      miniClusterState.createCollection(COLLECTION, numShards, numReplicas);
+      solrBenchState.startSolr(nodeCount);
+      solrBenchState.createCollection(COLLECTION, numShards, numReplicas);
     }
   }
 
   @Benchmark
-  public Object indexDoc(MiniClusterState.MiniClusterBenchState miniClusterState, BenchState state)
-      throws Exception {
+  public Object indexDoc(SolrBenchState solrBenchState, BenchState state) throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(state.getNextDoc());
-    final var url =
-        miniClusterState.nodes.get(miniClusterState.getRandom().nextInt(state.nodeCount));
-    return miniClusterState.client.requestWithBaseUrl(url, updateRequest, BenchState.COLLECTION);
+    final var url = solrBenchState.nodes.get(solrBenchState.getRandom().nextInt(state.nodeCount));
+    return solrBenchState.client.requestWithBaseUrl(url, updateRequest, BenchState.COLLECTION);
   }
 }

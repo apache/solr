@@ -631,6 +631,9 @@
     </analyzer>
   </fieldType>
 
+  <!-- Late Interaction Vectors -->
+  <fieldType name="late_vector_4" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4" />
+  <field name="late_vec_4" type="late_vector_4" />
 
   <uniqueKey>id</uniqueKey>
 

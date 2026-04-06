@@ -22,7 +22,6 @@ import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -1042,7 +1041,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   @SuppressWarnings({"unchecked"})
   static <T> List<T> asList(Object list) {
-    return list != null ? (List<T>) list : Collections.emptyList();
+    return list != null ? (List<T>) list : List.of();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

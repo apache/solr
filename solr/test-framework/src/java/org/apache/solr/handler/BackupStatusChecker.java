@@ -61,7 +61,7 @@ public final class BackupStatusChecker {
   }
 
   /**
-   * Convinience wrapper
+   * Convenience wrapper
    *
    * @see #waitForBackupSuccess(String,TimeOut)
    */
@@ -72,7 +72,7 @@ public final class BackupStatusChecker {
   }
 
   /**
-   * Polls the replication handler's status until the it reports that the specified backupName is
+   * Polls the replication handler's status until it reports that the specified backupName is
    * completed as a <code>"success"</code> (in which case the method returns the directoryName of
    * the backup) or either <code>"exception"</code> is reported or the <code>timeOut</code> expires
    * (in either case an assertion is thrown)
@@ -105,7 +105,7 @@ public final class BackupStatusChecker {
   }
 
   /**
-   * Convinience wrapper
+   * Convenience wrapper
    *
    * @see #waitForDifferentBackupDir(String,TimeOut)
    */
@@ -117,20 +117,19 @@ public final class BackupStatusChecker {
   }
 
   /**
-   * Polls the replication handler's status until the it reports that <em>any</em> backup has
-   * completed as a <code>"success"</code> with a different <code>"directoryName"</code> then the
-   * one specified (in which case the method returns the new directoryName) or either an <code>
+   * Polls the replication handler's status until it reports that <em>any</em> backup has completed
+   * as a <code>"success"</code> with a different <code>"directoryName"</code> then the one
+   * specified (in which case the method returns the new directoryName) or either an <code>
    * "exception"</code> is reported or the <code>timeOut</code> expires (in either case an assertion
    * is thrown)
    *
    * <p><b>NOTE:</b> this method is <em>NOT</em> suitable/safe to use in a test where multiple
    * backups are being taken/deleted concurrently, because the replication handler API provides no
-   * reliable way to determine if the most recently reported status to the a particular backup
-   * request.
+   * reliable way to determine if the most recently reported status to a particular backup request.
    *
    * @param directoryName to compare to, may be null
    * @param timeOut limiting how long we wait
-   * @return the (new) directoryName of the latests successful backup
+   * @return the (new) directoryName of the latest successful backup
    * @see #checkBackupSuccess()
    */
   public String waitForDifferentBackupDir(final String directoryName, final TimeOut timeOut)
@@ -154,17 +153,16 @@ public final class BackupStatusChecker {
   }
 
   /**
-   * Does a single check of the replication handler's status to determine if the mostrecently
+   * Does a single check of the replication handler's status to determine if the most recently
    * completed backup was a success. Throws a test assertion failure if any <code>"exception"</code>
    * message is ever encountered (The Replication Handler API does not make it possible to know
    * <em>which</em> backup this exception was related to)
    *
    * <p><b>NOTE:</b> this method is <em>NOT</em> suitable/safe to use in a test where multiple
    * backups are being taken/deleted concurrently, because the replication handler API provides no
-   * reliable way to determine if the most recently reported status to the a particular backup
-   * request.
+   * reliable way to determine if the most recently reported status to a particular backup request.
    *
-   * @return the "directoryName" of the backup if the response indicates that a is completed
+   * @return the "directoryName" of the backup if the response indicates that is completed
    *     successfully, otherwise null
    */
   public String checkBackupSuccess() throws Exception {
@@ -187,7 +185,7 @@ public final class BackupStatusChecker {
     return _checkBackupSuccess(backupName);
   }
 
-  /** Helper method that works with either named or unnamemed backups */
+  /** Helper method that works with either named or unnamed backups */
   private String _checkBackupSuccess(final String backupName) throws Exception {
     final String label = (null == backupName ? "latest backup" : backupName);
     final SimpleSolrResponse rsp =
@@ -220,7 +218,7 @@ public final class BackupStatusChecker {
   }
 
   /**
-   * Convinience wrapper
+   * Convenience wrapper
    *
    * @see #waitForBackupDeletionSuccess(String,TimeOut)
    */
@@ -231,7 +229,7 @@ public final class BackupStatusChecker {
   }
 
   /**
-   * Polls the replication handler's status until the it reports that the specified backupName is
+   * Polls the replication handler's status until it reports that the specified backupName is
    * deleted or either <code>"Unable to delete"</code> status is reported or the <code>timeOut
    * </code> expires (in either case an assertion is thrown)
    *
@@ -246,7 +244,7 @@ public final class BackupStatusChecker {
    */
   public void waitForBackupDeletionSuccess(final String backupName, final TimeOut timeOut)
       throws Exception {
-    assertNotNull("backumpName must not be null", backupName);
+    assertNotNull("backupName must not be null", backupName);
     while (!timeOut.hasTimedOut()) {
       if (checkBackupDeletionSuccess(backupName)) {
         return;
@@ -270,7 +268,7 @@ public final class BackupStatusChecker {
    * @see #waitForBackupDeletionSuccess(String,TimeOut)
    */
   public boolean checkBackupDeletionSuccess(final String backupName) throws Exception {
-    assertNotNull("backumpName must not be null", backupName);
+    assertNotNull("backupName must not be null", backupName);
     final SimpleSolrResponse rsp =
         new GenericSolrRequest(
                 GenericSolrRequest.METHOD.GET,

@@ -17,7 +17,6 @@
 package org.apache.solr.security;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
@@ -48,7 +47,7 @@ public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthoriza
     if (principal instanceof VerifiedUserRoles) {
       return ((VerifiedUserRoles) principal).getVerifiedRoles();
     } else {
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 }

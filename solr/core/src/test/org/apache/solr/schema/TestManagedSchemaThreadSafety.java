@@ -73,11 +73,11 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     }
 
     @Override
-    public byte[] getData(String path, Watcher watcher, Stat stat, boolean retryOnConnLoss)
+    public byte[] getData(String path, Watcher watcher, Stat stat)
         throws KeeperException, InterruptedException {
       byte[] data;
       try {
-        data = super.getData(path, watcher, stat, retryOnConnLoss);
+        data = super.getData(path, watcher, stat);
       } catch (NoNodeException e) {
         if (isSlowpoke()) {
           // System.out.println("suspending "+Thread.currentThread()+" on " + path);
@@ -161,7 +161,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
               public Boolean answer(InvocationOnMock invocation) throws Throwable {
                 String path = (String) invocation.getArguments()[0];
                 perhapsExpired();
-                Boolean exists = client.exists(path, true);
+                Boolean exists = client.exists(path);
                 perhapsExpired();
                 return exists;
               }

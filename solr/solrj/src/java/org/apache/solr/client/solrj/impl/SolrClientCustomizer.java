@@ -22,8 +22,9 @@ import org.apache.solr.client.solrj.SolrClient;
  * A config hook for post-configuration of a {@linkplain SolrClient} by its builder. It is not
  * supported by all builders.
  *
+ * <p>Implementations can be specified via system property in some client builders.
+ *
  * @param <T> type of SolrClient this customizer targets
- * @see org.apache.solr.client.solrj.jetty.HttpJettySolrClient#CLIENT_CUSTOMIZER_SYSPROP
  * @lucene.experimental
  */
 public interface SolrClientCustomizer<T extends SolrClient> {
