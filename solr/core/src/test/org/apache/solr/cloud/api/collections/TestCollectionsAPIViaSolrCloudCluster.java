@@ -348,8 +348,16 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         String requestBody =
             String.format(
                 Locale.ROOT,
-                "{\"name\":\"%s\", \"config\":\"%s\", \"numShards\":%s, \"nrtReplicas\":%s, \"tlogReplicas\":%s, \"pullReplicas\":%s,"
-                    + " \"properties\": { \"my.custom.prop\": \"test\" } }",
+                """
+                {
+                  "name": "%s",
+                  "config": "%s",
+                  "numShards": %s,
+                  "nrtReplicas": %s,
+                  "tlogReplicas": %s,
+                  "pullReplicas": %s,
+                  "properties": { "my.custom.prop": "test" }
+                }""",
                 collectionName,
                 confName,
                 2,
