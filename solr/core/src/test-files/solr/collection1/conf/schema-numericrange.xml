@@ -25,28 +25,28 @@
   <fieldType name="long" class="solr.LongPointField"/>
 
   <!-- IntRangeField types with different dimensions -->
-  <fieldType name="intrange" class="solr.numericrange.IntRangeField" numDimensions="1"/>
-  <fieldType name="intrange2d" class="solr.numericrange.IntRangeField" numDimensions="2"/>
-  <fieldType name="intrange3d" class="solr.numericrange.IntRangeField" numDimensions="3"/>
-  <fieldType name="intrange4d" class="solr.numericrange.IntRangeField" numDimensions="4"/>
+  <fieldType name="intrange" class="solr.IntRangeField" numDimensions="1"/>
+  <fieldType name="intrange2d" class="solr.IntRangeField" numDimensions="2"/>
+  <fieldType name="intrange3d" class="solr.IntRangeField" numDimensions="3"/>
+  <fieldType name="intrange4d" class="solr.IntRangeField" numDimensions="4"/>
 
   <!-- LongRangeField types with different dimensions -->
-  <fieldType name="longrange" class="solr.numericrange.LongRangeField" numDimensions="1"/>
-  <fieldType name="longrange2d" class="solr.numericrange.LongRangeField" numDimensions="2"/>
-  <fieldType name="longrange3d" class="solr.numericrange.LongRangeField" numDimensions="3"/>
-  <fieldType name="longrange4d" class="solr.numericrange.LongRangeField" numDimensions="4"/>
+  <fieldType name="longrange" class="solr.LongRangeField" numDimensions="1"/>
+  <fieldType name="longrange2d" class="solr.LongRangeField" numDimensions="2"/>
+  <fieldType name="longrange3d" class="solr.LongRangeField" numDimensions="3"/>
+  <fieldType name="longrange4d" class="solr.LongRangeField" numDimensions="4"/>
 
   <!-- FloatRangeField types with different dimensions -->
-  <fieldType name="floatrange" class="solr.numericrange.FloatRangeField" numDimensions="1"/>
-  <fieldType name="floatrange2d" class="solr.numericrange.FloatRangeField" numDimensions="2"/>
-  <fieldType name="floatrange3d" class="solr.numericrange.FloatRangeField" numDimensions="3"/>
-  <fieldType name="floatrange4d" class="solr.numericrange.FloatRangeField" numDimensions="4"/>
+  <fieldType name="floatrange" class="solr.FloatRangeField" numDimensions="1"/>
+  <fieldType name="floatrange2d" class="solr.FloatRangeField" numDimensions="2"/>
+  <fieldType name="floatrange3d" class="solr.FloatRangeField" numDimensions="3"/>
+  <fieldType name="floatrange4d" class="solr.FloatRangeField" numDimensions="4"/>
 
   <!-- DoubleRangeField types with different dimensions -->
-  <fieldType name="doublerange" class="solr.numericrange.DoubleRangeField" numDimensions="1"/>
-  <fieldType name="doublerange2d" class="solr.numericrange.DoubleRangeField" numDimensions="2"/>
-  <fieldType name="doublerange3d" class="solr.numericrange.DoubleRangeField" numDimensions="3"/>
-  <fieldType name="doublerange4d" class="solr.numericrange.DoubleRangeField" numDimensions="4"/>
+  <fieldType name="doublerange" class="solr.DoubleRangeField" numDimensions="1"/>
+  <fieldType name="doublerange2d" class="solr.DoubleRangeField" numDimensions="2"/>
+  <fieldType name="doublerange3d" class="solr.DoubleRangeField" numDimensions="3"/>
+  <fieldType name="doublerange4d" class="solr.DoubleRangeField" numDimensions="4"/>
 
   <!-- Field definitions -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>

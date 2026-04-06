@@ -51,8 +51,8 @@ import org.apache.solr.search.QParser;
  * <h2>Schema Configuration</h2>
  *
  * <pre>
- * &lt;fieldType name="doublerange" class="org.apache.solr.schema.numericrange.DoubleRangeField" numDimensions="1"/&gt;
- * &lt;fieldType name="doublerange2d" class="org.apache.solr.schema.numericrange.DoubleRangeField" numDimensions="2"/&gt;
+ * &lt;fieldType name="doublerange" class="solr.DoubleRangeField" numDimensions="1"/&gt;
+ * &lt;fieldType name="doublerange2d" class="solr.DoubleRangeField" numDimensions="2"/&gt;
  * &lt;field name="price_range" type="doublerange" indexed="true" stored="true"/&gt;
  * &lt;field name="my_2d_range" type="doublerange2d" indexed="true" stored="true"/&gt;
  * </pre>
