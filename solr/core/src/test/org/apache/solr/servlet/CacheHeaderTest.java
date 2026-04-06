@@ -255,7 +255,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   protected void doCacheControl(String method) throws Exception {
     String url = getSelectUrl();
     if ("POST".equals(method)) {
-      ContentResponse response = getHttpClient().newRequest(url).method(HttpMethod.POST).send();
+      ContentResponse response = getHttpClient().POST(url).send();
       checkResponseBody(method, response);
 
       String head = response.getHeaders().get(HttpHeader.CACHE_CONTROL);

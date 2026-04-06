@@ -35,7 +35,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethod;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -162,8 +161,7 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
     try {
       var rsp =
           httpClient
-              .newRequest(uri)
-              .method(HttpMethod.POST)
+              .POST(uri)
               .body(new BytesRequestContent("application/json", Utils.toJSON(jsonBody)))
               .send();
       rspStr = rsp.getContentAsString();

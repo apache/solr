@@ -126,8 +126,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         jetty
             .getSolrClient()
             .getHttpClient()
-            .newRequest(baseUrl + "/____v2/aliases")
-            .method("POST")
+            .POST(baseUrl + "/____v2/aliases")
             .body(new StringRequestContent("application/json", aliasJson, StandardCharsets.UTF_8)));
 
     Date startDate = DateMathParser.parseMath(new Date(), "NOW/DAY");

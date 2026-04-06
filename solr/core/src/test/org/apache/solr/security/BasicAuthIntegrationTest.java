@@ -161,8 +161,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     verifySecurityStatus(httpClient, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
     var response =
         httpClient
-            .newRequest(baseUrl + authcPrefix)
-            .method("POST")
+            .POST(baseUrl + authcPrefix)
             .headers(h1 -> h1.add("Authorization", makeBasicAuthHeader("solr", "SolrRocks")))
             .body(new StringRequestContent("application/json", command, UTF_8))
             .send();
@@ -453,8 +452,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
     var rsp =
         httpClient
-            .newRequest(url)
-            .method("POST")
+            .POST(url)
             .headers(h1 -> h1.add("Authorization", makeBasicAuthHeader(user, pwd)))
             .body(new StringRequestContent("application/json", jsonBody, UTF_8))
             .send();

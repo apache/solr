@@ -157,8 +157,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     try {
       var rsp =
           httpClient
-              .newRequest(url)
-              .method("POST")
+              .POST(url)
               .headers(
                   h -> h.add("Authorization", encodeBasicAuthHeaderIfNotNull(basicUser, basicPass)))
               .body(

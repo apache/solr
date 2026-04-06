@@ -69,7 +69,6 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.http.HttpMethod;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -186,8 +185,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 4); // tlogReplicas
 
         getHttpClient()
-            .newRequest(url)
-            .method(HttpMethod.POST)
+            .POST(url)
             .headers(h -> h.add("Content-type", "application/json"))
             .body(new StringRequestContent(requestBody))
             .send();
@@ -367,8 +365,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         String requestBody = String.format(Locale.ROOT, "{\"type\": \"%s\"}", type);
         var httpResponse2 =
             getHttpClient()
-                .newRequest(url)
-                .method(HttpMethod.POST)
+                .POST(url)
                 .headers(h -> h.add("Content-type", "application/json"))
                 .body(new StringRequestContent(requestBody))
                 .send();

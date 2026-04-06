@@ -510,7 +510,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       int expectStatusCode)
       throws IOException {
     try {
-      var req = httpClient.newRequest(url).method("POST");
+      var req = httpClient.POST(url);
       if (basicUser != null && basicPass != null) {
         String userPass = basicUser + ":" + basicPass;
         String encoded =
@@ -537,7 +537,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       int expectStatusCode)
       throws IOException {
     try {
-      var req = httpClient.newRequest(url).method("POST");
+      var req = httpClient.POST(url);
       if (headerName != null) {
         req.headers(h -> h.add(headerName, headerValue));
       }

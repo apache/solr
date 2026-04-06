@@ -34,7 +34,6 @@ import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.http.HttpMethod;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -79,9 +78,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     HttpClient httpClient = getHttpClient();
     ContentResponse response =
         httpClient
-            .newRequest(
-                solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
-            .method(HttpMethod.POST)
+            .POST(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
             .headers(h -> h.add("Content-Type", "application/json"))
             .body(new StringRequestContent(json))
             .send();
@@ -108,9 +105,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     HttpClient httpClient = getHttpClient();
     ContentResponse response =
         httpClient
-            .newRequest(
-                solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
-            .method(HttpMethod.POST)
+            .POST(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update/json/docs")
             .headers(h -> h.add("Content-Type", "application/json"))
             .body(new StringRequestContent(json))
             .send();

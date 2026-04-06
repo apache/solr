@@ -533,7 +533,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     final Set<Map.Entry<String, Object>> initialPlugins =
         getAuthPluginsInUseForCluster(url).entrySet();
 
-    var req = httpClient.newRequest(url).method("POST");
+    var req = httpClient.POST(url);
     if (jws != null) {
       String headerString = "Bearer " + jws.getCompactSerialization();
       req.headers(h1 -> h1.add("Authorization", headerString));

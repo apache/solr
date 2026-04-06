@@ -186,8 +186,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
             jetty2
                 .getSolrClient()
                 .getHttpClient()
-                .newRequest(url2)
-                .method("POST")
+                .POST(url2)
                 .body(
                     new StringRequestContent(
                         "application/json", requestBody, StandardCharsets.UTF_8))

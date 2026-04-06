@@ -44,7 +44,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethod;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -320,8 +319,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     try {
       var resp =
           httpClient
-              .newRequest(uri)
-              .method(HttpMethod.POST)
+              .POST(uri)
               .body(
                   new BytesRequestContent(
                       "application/json", Utils.toJSON(Utils.getReflectWriter(body))))

@@ -122,8 +122,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String post(String request, String content) throws IOException {
     return getResponse(
         getHttpClient()
-            .newRequest(URLUtil.buildURI(getBaseURI(), request))
-            .method("POST")
+            .POST(URLUtil.buildURI(getBaseURI(), request))
             .body(new StringRequestContent("application/json", content, StandardCharsets.UTF_8)));
   }
 
@@ -163,8 +162,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     try {
       return getResponse(
           getHttpClient()
-              .newRequest(URLUtil.buildURI(getBaseURI(), "/update"))
-              .method("POST")
+              .POST(URLUtil.buildURI(getBaseURI(), "/update"))
               .body(new StringRequestContent("application/xml", xml, StandardCharsets.UTF_8)));
     } catch (RuntimeException e) {
       throw e;
