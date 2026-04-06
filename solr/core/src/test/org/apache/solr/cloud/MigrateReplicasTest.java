@@ -116,7 +116,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     log.info("excluded_node : {}  ", emptyNode);
     Map<?, ?> response =
         callMigrateReplicas(
-            cloudClient,
             new MigrateReplicasRequestBody(
                 Set.of(nodeToBeDecommissioned), Set.of(emptyNode), true, null));
     assertEquals(
@@ -144,7 +143,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     // let's do it back - this time wait for recoveries
     response =
         callMigrateReplicas(
-            cloudClient,
             new MigrateReplicasRequestBody(
                 Set.of(emptyNode), Set.of(nodeToBeDecommissioned), true, null));
     assertEquals(
@@ -252,7 +250,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     log.info("### Before decommission: {}", initialCollection);
     Map<?, ?> response =
         callMigrateReplicas(
-            cloudClient,
             new MigrateReplicasRequestBody(
                 new HashSet<>(nodesToBeDecommissioned), Set.of(), true, null));
     assertEquals(
@@ -298,7 +295,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     String liveNode = cloudClient.getClusterState().getLiveNodes().iterator().next();
     Map<?, ?> response =
         callMigrateReplicas(
-            cloudClient, new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), true, null));
+            new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), true, null));
     assertNotNull(
         "No error in response, when the request should have failed", response.get("error"));
     assertEquals(
@@ -307,33 +304,29 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         ((Map<?, ?>) response.get("error")).get("msg"));
   }
 
-  public Map<?, ?> callMigrateReplicas(CloudSolrClient cloudClient, MigrateReplicasRequestBody body)
-      throws IOException {
-    String response = null;
-    Map<?, ?> r = null;
-
-    String uri =
-        cluster.getJettySolrRunners().get(0).getBaseURLV2().toString()
-            + "/cluster/replicas/migrate";
-    HttpClient httpClient = cluster.getRandomJetty(random()).getSolrClient().getHttpClient();
+  public Map<?, ?> callMigrateReplicas(MigrateReplicasRequestBody body) throws IOException {
+    String rspStr = null;
+    var jetty = cluster.getRandomJetty(random());
+    HttpClient httpClient = jetty.getSolrClient().getHttpClient();
     try {
-      var resp =
+      var rsp =
           httpClient
-              .POST(uri)
+              .POST(jetty.getBaseURLV2() + "/cluster/replicas/migrate")
               .body(
                   new BytesRequestContent(
                       "application/json", Utils.toJSON(Utils.getReflectWriter(body))))
               .send();
-      response = resp.getContentAsString();
-      r = (Map<?, ?>) Utils.fromJSONString(response);
-      assertNotNull("No response given from MigrateReplicas API", r);
-      assertNotNull("No responseHeader given from MigrateReplicas API", r.get("responseHeader"));
+      rspStr = rsp.getContentAsString();
+      var rspMap = (Map<?, ?>) Utils.fromJSONString(rspStr);
+      assertNotNull("No response given from MigrateReplicas API", rspMap);
+      assertNotNull(
+          "No responseHeader given from MigrateReplicas API", rspMap.get("responseHeader"));
+      return rspMap;
     } catch (JSONParser.ParseException e) {
-      log.error("err response: {}", response);
+      log.error("err response: {}", rspStr);
       throw new AssertionError(e);
     } catch (Exception e) {
       throw new IOException(e);
     }
-    return r;
   }
 }
