@@ -56,18 +56,7 @@ public class ConfigSetDownloadTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
-  @picocli.CommandLine.Option(
-      names = {"-n", "--conf-name"},
-      description = "Configset name in ZooKeeper.",
-      required = true)
-  private String confName;
-
-  @picocli.CommandLine.Option(
-      names = {"-d", "--conf-dir"},
-      description = "Local directory with configs.",
-      required = true,
-      paramLabel = "DIR")
-  private String confDir;
+  @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
 
   public ConfigSetDownloadTool() {
     this(new DefaultToolRuntime());
@@ -141,7 +130,7 @@ public class ConfigSetDownloadTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doDownconfig(zkClient, zkHost, confName, confDir);
+      doDownconfig(zkClient, zkHost, configSetOpts.confName, configSetOpts.confDir);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete downconfig operation for reason: ", e);

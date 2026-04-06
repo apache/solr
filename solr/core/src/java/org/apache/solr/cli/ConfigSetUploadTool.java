@@ -58,18 +58,7 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
-  @picocli.CommandLine.Option(
-      names = {"-n", "--conf-name"},
-      description = "Configset name in ZooKeeper.",
-      required = true)
-  private String confName;
-
-  @picocli.CommandLine.Option(
-      names = {"-d", "--conf-dir"},
-      description = "Local directory with configs.",
-      required = true,
-      paramLabel = "DIR")
-  private String confDir;
+  @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
 
   public ConfigSetUploadTool() {
     this(new DefaultToolRuntime());
@@ -145,7 +134,7 @@ public class ConfigSetUploadTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doUpconfig(zkClient, zkHost, confName, confDir);
+      doUpconfig(zkClient, zkHost, configSetOpts.confName, configSetOpts.confDir);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete upconfig operation for reason: ", e);
