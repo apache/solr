@@ -65,6 +65,7 @@ import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.IndexSchema.DynamicField;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.DateMathParser;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -289,7 +290,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
           field, "multivalued", toStringArray(getRandomInts(numValues, false)));
     }
 
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertThat("Missing types in the test", regexToTest, Matchers.empty());
   }
 
   @Test
@@ -968,7 +969,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       doTestFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertThat("Missing types in the test", regexToTest, Matchers.empty());
   }
 
   @Test
@@ -1650,7 +1651,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       doTestFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertThat("Missing types in the test", regexToTest, Matchers.empty());
   }
 
   @Test
@@ -2296,7 +2297,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       doTestFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertThat("Missing types in the test", regexToTest, Matchers.empty());
   }
 
   @Test
@@ -2927,7 +2928,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       doTestFieldFunctionQueryError(
           field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertThat("Missing types in the test", regexToTest, Matchers.empty());
   }
 
   @Test

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.IndexableField;
@@ -337,9 +336,9 @@ public abstract class NumericField extends PrimitiveFieldType {
   @Override
   public final List<IndexableField> createFields(SchemaField sf, Object value) {
     if (!isFieldUsed(sf)) {
-      return Collections.emptyList();
+      return List.of();
     }
-    return Collections.singletonList(createField(sf, value));
+    return List.of(createField(sf, value));
   }
 
   @Override
