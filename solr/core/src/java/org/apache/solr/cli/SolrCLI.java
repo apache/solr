@@ -127,11 +127,13 @@ public class SolrCLI implements CLIO {
           .getCommandSpec()
           .usageMessage()
           .synopsisHeading(cmd.getCommandSpec().usageMessage().synopsisHeading());
-      subcommand
-          .getCommandSpec()
-          .usageMessage()
-          .footer(
-              "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html");
+      if (subcommand.getSubcommands().isEmpty()) {
+        subcommand
+            .getCommandSpec()
+            .usageMessage()
+            .footer(
+                "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html");
+      }
       propagateCommandSettings(subcommand);
     }
   }
