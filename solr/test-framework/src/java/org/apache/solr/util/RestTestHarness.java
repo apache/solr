@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
@@ -37,7 +38,8 @@ import org.slf4j.LoggerFactory;
 
 /** Facilitates testing Solr's REST API */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
-  private static final Logger log = LoggerFactory.getLogger(RestTestHarness.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private RESTfulServerProvider serverProvider;
   private HttpJettySolrClient solrClient; // lazy instantiated given serverProvider
 
