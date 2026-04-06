@@ -48,6 +48,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /**
@@ -113,16 +114,16 @@ public class TestHarness extends BaseTestHarness {
   }
 
   /**
-   * Helper method to let us do some home sys prop check in delegated constructor. in "real" code
-   * SolrDispatchFilter takes care of checking this sys prop when building NodeConfig/CoreContainer
+   * Helper method to let us do a solr-home sys prop check in a delegated constructor. in "real"
+   * code {@link CoreContainerProvider} takes care of checking this sys prop when building
+   * NodeConfig/CoreContainer
    */
   private static Path checkAndReturnSolrHomeSysProp() {
-    final String SOLR_HOME = "solr.solr.home";
-    final String home = System.getProperty(SOLR_HOME);
+    final String home = System.getProperty(CoreContainerProvider.SOLR_SOLR_HOME);
     if (null == home) {
       throw new IllegalStateException(
           "This TestHarness constructor requires "
-              + SOLR_HOME
+              + CoreContainerProvider.SOLR_SOLR_HOME
               + " sys prop to be set by test first");
     }
     return Path.of(home).toAbsolutePath().normalize();
