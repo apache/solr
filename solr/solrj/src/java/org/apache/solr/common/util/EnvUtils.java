@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +50,10 @@ public class EnvUtils {
 
   /** Maps deprecated sys prop keys to current sys prop keys with special/custom mappings */
   private static final Map<String, String> DEPRECATED_MAPPINGS = new HashMap<>();
+
+  /** Properties which are no longer supported; used to warn users of out-of-date configuration */
+  private static final Set<String> REMOVED_PROPERTIES =
+      Set.of("disable.v2.api", "solr.api.v2.enabled");
 
   private static final Map<String, String> camelCaseToDotsMap = new ConcurrentHashMap<>();
 
@@ -240,6 +245,15 @@ public class EnvUtils {
         } else {
           setProperty(key, sysProperties.getProperty(deprecatedKey));
         }
+      }
+    }
+
+    // Log a warning on any "removed" system properties
+    for (String removedPropName : REMOVED_PROPERTIES) {
+      if (getProperty(removedPropName) != null) {
+        log.warn(
+            "No-longer-supported system property [{}] detected; please review usage and remove.",
+            removedPropName);
       }
     }
   }
