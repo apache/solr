@@ -49,8 +49,8 @@ import org.apache.solr.search.QParser;
  * <h2>Schema Configuration</h2>
  *
  * <pre>
- * &lt;fieldType name="intrange" class="org.apache.solr.schema.numericrange.IntRangeField" numDimensions="1"/&gt;
- * &lt;fieldType name="intrange2d" class="org.apache.solr.schema.numericrange.IntRangeField" numDimensions="2"/&gt;
+ * &lt;fieldType name="intrange" class="solr.IntRangeField" numDimensions="1"/&gt;
+ * &lt;fieldType name="intrange2d" class="solr.IntRangeField" numDimensions="2"/&gt;
  * &lt;field name="price_range" type="intrange" indexed="true" stored="true"/&gt;
  * &lt;field name="bbox" type="intrange2d" indexed="true" stored="true"/&gt;
  * </pre>

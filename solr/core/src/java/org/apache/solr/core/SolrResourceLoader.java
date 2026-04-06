@@ -89,6 +89,7 @@ public class SolrResourceLoader
     "",
     "analysis.",
     "schema.",
+    "schema.numericrange.",
     "handler.",
     "handler.tagger.",
     "search.",
