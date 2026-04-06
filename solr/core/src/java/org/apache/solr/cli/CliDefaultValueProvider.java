@@ -16,12 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.CLIUtils.getCloudSolrClient;
-import static org.apache.solr.cli.CLIUtils.normalizeSolrUrl;
-
-import java.util.Set;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import picocli.CommandLine;
 
@@ -31,48 +25,10 @@ public class CliDefaultValueProvider implements CommandLine.IDefaultValueProvide
   public String defaultValue(CommandLine.Model.ArgSpec argSpec) throws Exception {
     return switch (argSpec.paramLabel()) {
       case "<zkHost>" -> EnvUtils.getProperty("zkHost");
-      case "<solrUrl>" -> {
-        String val = EnvUtils.getProperty("solr.url");
-        yield val != null ? val : resolveSolrUrlViaZkHost(argSpec);
-      }
+      case "<solrUrl>" -> EnvUtils.getProperty("solr.url");
       case "<port>" -> EnvUtils.getProperty("solr.port", "8983");
       case "<maxWaitSecs>" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");
       default -> null;
     };
-  }
-
-  /**
-   * If no solrUrl is provided on the command line, and SOLR_URL is not set, this method will be
-   * used to determine the solrUrl from the zkHost.
-   *
-   * @param argSpec the argSpec for the solrUrl option
-   * @return the solrUrl
-   * @throws Exception if an error occurs
-   */
-  public static String resolveSolrUrlViaZkHost(picocli.CommandLine.Model.ArgSpec argSpec)
-      throws Exception {
-    // Find value of zkHost from command line options. The argSpec passed in will be for the
-    // solrUrl option.
-    CommandLine.Model.OptionSpec zkHostOption = argSpec.command().findOption("--zk-host");
-
-    String zkHost = zkHostOption != null ? zkHostOption.getValue() : null;
-    if (zkHost == null) {
-      return null;
-    }
-
-    String solrUrl;
-    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkHost)) {
-      cloudSolrClient.connect();
-      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-      if (liveNodes.isEmpty())
-        throw new IllegalStateException(
-            "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
-
-      String firstLiveNode = liveNodes.iterator().next();
-      solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-      solrUrl = normalizeSolrUrl(solrUrl, false);
-    }
-    solrUrl = normalizeSolrUrl(solrUrl);
-    return solrUrl;
   }
 }

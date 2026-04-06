@@ -50,8 +50,9 @@ teardown() {
  run solr zk -h
  # TODO: Long help is different in picocli
  #assert_output --partial "bin/solr zk ls"
- assert_output --partial "bin/solr zk updateacls"
- #assert_output --partial "Pass --help or -h after any COMMAND"
+ #assert_output --partial "bin/solr zk updateacls"
+ assert_output --partial "Pass --help or -h after any COMMAND"
+ assert_output --partial "updateacls"
 }
 
 # TODO: Picocli fails in a different way when a subcommand is not invoked using the zk command
