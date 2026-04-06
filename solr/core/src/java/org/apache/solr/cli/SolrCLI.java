@@ -55,9 +55,10 @@ import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
 @picocli.CommandLine.Command(
-    name = "solr",
+    name = "bin/solr",
     version = "Apache Solr version " + SolrVersion.LATEST_STRING,
     mixinStandardHelpOptions = true,
+    synopsisHeading = "usage: ",
     commandListHeading = "\nCommands:\n",
     descriptionHeading = "Global options:\n",
     footer = {
@@ -66,7 +67,7 @@ import org.slf4j.LoggerFactory;
       "",
       "  ./solr start",
       "",
-      "Get help for a command by running 'solr COMMAND --help'.",
+      "Get help for a command by running 'bin/solr COMMAND --help'.",
       "",
       "For more help on how to use Solr, head to https://solr.apache.org/"
     },
@@ -122,6 +123,10 @@ public class SolrCLI implements CLIO {
           .getCommandSpec()
           .usageMessage()
           .commandListHeading(cmd.getCommandSpec().usageMessage().commandListHeading());
+      subcommand
+          .getCommandSpec()
+          .usageMessage()
+          .synopsisHeading(cmd.getCommandSpec().usageMessage().synopsisHeading());
       subcommand
           .getCommandSpec()
           .usageMessage()

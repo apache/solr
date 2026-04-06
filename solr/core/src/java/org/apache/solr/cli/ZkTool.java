@@ -27,6 +27,7 @@ import picocli.CommandLine;
     name = "zk",
     mixinStandardHelpOptions = true,
     description = "Sub commands for working with ZooKeeper.",
+    footer = "\nPass --help or -h after any COMMAND to see command-specific usage information.",
     subcommands = {
       ConfigSetDownloadTool.class,
       ConfigSetUploadTool.class,
