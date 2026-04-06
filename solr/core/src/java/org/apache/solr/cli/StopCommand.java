@@ -19,8 +19,8 @@ package org.apache.solr.cli;
 import picocli.CommandLine;
 
 /**
- * This class is currently only used for printing CLI usage.
- * The stop logic is currently handled in start script.
+ * This class is currently only used for printing CLI usage. The stop logic is currently handled in
+ * start script.
  */
 @CommandLine.Command(name = "stop", description = "Stops Solr.", mixinStandardHelpOptions = true)
 public class StopCommand {
