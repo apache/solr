@@ -76,27 +76,7 @@ public class DeleteTool extends ToolBase {
   @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
   private ConnectionOptions connectionOptions;
 
-  static class ConnectionOptions {
-    @picocli.CommandLine.Option(
-        names = {"-s", "--solr-url"},
-        description =
-            "Base Solr URL, which can be used to determine the zk-host if that's not known.")
-    String solrUrl;
-
-    @picocli.CommandLine.Option(
-        names = {"-z", "--zk-host"},
-        description =
-            "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                + CommonCLIOptions.DefaultValues.ZK_HOST
-                + ".")
-    String zkHost;
-  }
-
-  @picocli.CommandLine.Option(
-      names = {"-u", "--credentials"},
-      description =
-          "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-  private String credentials;
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Option(
       names = {"-c", "--name"},
@@ -279,7 +259,8 @@ public class DeleteTool extends ToolBase {
   public int callTool() throws Exception {
     String zkHostArg = (connectionOptions != null) ? connectionOptions.zkHost : null;
     String solrUrlArg = (connectionOptions != null) ? connectionOptions.solrUrl : null;
-    DeleteParams params = new DeleteParams(name, credentials, deleteConfig, force);
+    DeleteParams params =
+        new DeleteParams(name, credentialsOptions.credentials, deleteConfig, force);
 
     if (zkHostArg != null) {
       deleteCollection(zkHostArg, params);
@@ -294,7 +275,8 @@ public class DeleteTool extends ToolBase {
                 + resolvedSolrUrl
                 + ".");
       }
-      try (var solrClient = CLIUtils.getSolrClient(resolvedSolrUrl, credentials)) {
+      try (var solrClient =
+          CLIUtils.getSolrClient(resolvedSolrUrl, credentialsOptions.credentials)) {
         Map<String, Object> status = StatusTool.reportStatus(solrClient);
         @SuppressWarnings("unchecked")
         Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
