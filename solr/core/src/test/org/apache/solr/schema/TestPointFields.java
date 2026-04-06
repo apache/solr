@@ -302,7 +302,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
           field, "multivalued", toStringArray(getRandomInts(numValues, false)));
     }
 
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -981,7 +981,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -1662,7 +1662,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -2310,7 +2310,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -2936,7 +2936,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(
           field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test

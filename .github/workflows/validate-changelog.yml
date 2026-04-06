@@ -85,7 +85,7 @@ jobs:
         VALIDATION_FAILED=false
 
         while IFS= read -r file; do
-          if [ -z "$file" ]; then
+          if [ -z "$file" ] || [ ! -f "$file" ]; then
             continue
           fi
 

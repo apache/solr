@@ -486,7 +486,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   /**
    * see SOLR-16848 working around a timing issue where the callback will be faster than the
-   * dispatchFilter's init
+   * SolrServlet's init
    */
   private void waitForJettyInit(JettySolrRunner replica1Jetty, String replica1JettyNodeName)
       throws InterruptedException {

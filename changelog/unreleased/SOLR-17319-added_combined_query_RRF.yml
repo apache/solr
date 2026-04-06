@@ -1,0 +1,8 @@
+title: New CombinedQuerySearchHandler etc. for implementing hybrid search with reciprocal rank fusion (RRF).
+type: added
+authors:
+  - name: Sonu Sharma
+  - name: David Smiley
+links:
+  - name: SOLR-17319
+    url: https://issues.apache.org/jira/browse/SOLR-17319

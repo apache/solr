@@ -15,14 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
 
     - uses: ./.github/actions/prepare-for-build
 
-    - name: Test the SolrJ Package
+    - name: Test SolrJ module
       run: ./gradlew solr:solrj:test

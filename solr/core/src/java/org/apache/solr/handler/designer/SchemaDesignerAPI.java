@@ -168,8 +168,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     responseMap.put(SCHEMA_VERSION_PARAM, configSetHelper.getCurrentSchemaVersion(mutableId));
     responseMap.put(
-        "collections",
-        exists ? configSetHelper.listCollectionsForConfig(configSet) : Collections.emptyList());
+        "collections", exists ? configSetHelper.listCollectionsForConfig(configSet) : List.of());
 
     // don't fail if loading sample docs fails
     try {
@@ -217,7 +216,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     String filePath = getConfigSetZkPath(getMutableId(configSet), file);
     byte[] data;
     try {
-      data = zkStateReader().getZkClient().getData(filePath, null, null, true);
+      data = zkStateReader().getZkClient().getData(filePath, null, null);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading file: " + filePath, SolrZkClient.checkInterrupted(e));
     }
@@ -272,7 +271,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // apply the update and reload the temp collection / re-index sample docs
     SolrZkClient zkClient = zkStateReader().getZkClient();
     try {
-      zkClient.setData(zkPath, data, true);
+      zkClient.setData(zkPath, data);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Failed to save data in ZK at path: " + zkPath, SolrZkClient.checkInterrupted(e));
@@ -396,8 +395,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     SolrZkClient zkClient = zkStateReader().getZkClient();
     String configId = mutableId;
     try {
-      if (!zkClient.exists(getConfigSetZkPath(mutableId, null), true)) {
-        if (zkClient.exists(getConfigSetZkPath(configSet, null), true)) {
+      if (!zkClient.exists(getConfigSetZkPath(mutableId, null))) {
+        if (zkClient.exists(getConfigSetZkPath(configSet, null))) {
           configId = configSet;
         } else {
           throw new SolrException(
@@ -657,7 +656,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     if (languages != null) {
       langs =
           languages.length == 0 || (languages.length == 1 && "*".equals(languages[0]))
-              ? Collections.emptyList()
+              ? List.of()
               : Arrays.asList(languages);
       if (!langs.equals(settings.getLanguages())) {
         settings.setLanguages(langs);
@@ -866,7 +865,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // collect the fields to add ... adding all fields at once is faster than one-at-a-time
     List<SchemaField> fieldsToAdd = new ArrayList<>();
     for (String field : docs.keySet()) {
-      List<Object> sampleValues = docs.getOrDefault(field, Collections.emptyList());
+      List<Object> sampleValues = docs.getOrDefault(field, List.of());
 
       // Collapse all whitespace in fields to a single underscore
       String normalizedField = field.trim().replaceAll("\\s+", "_");
@@ -1353,7 +1352,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   private boolean pathExistsInZk(final String zkPath) throws IOException {
     SolrZkClient zkClient = zkStateReader().getZkClient();
     try {
-      return zkClient.exists(zkPath, true);
+      return zkClient.exists(zkPath);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Failed to check if path exists: " + zkPath, SolrZkClient.checkInterrupted(e));

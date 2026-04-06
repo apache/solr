@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionPropertiesApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -536,7 +537,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCollectionProp() throws InterruptedException, IOException, SolrServerException {
+  public void testCollectionProp() throws Exception {
     String collectionName = getSaferTestName();
     final String propName = "testProperty";
 
@@ -554,18 +555,43 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.setCollectionProperty(collectionName, propName, null)
         .process(cluster.getSolrClient());
     checkCollectionProperty(collectionName, propName, null);
+
+    // Test that "list-properties" returns all properties
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName + "1", "prop1Val")
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName + "2", "prop2Val")
+        .process(cluster.getSolrClient());
+    final var allProperties =
+        new CollectionPropertiesApi.ListCollectionProperties(collectionName)
+            .process(cluster.getSolrClient())
+            .properties;
+    assertEquals(2, allProperties.size());
+    assertEquals("prop1Val", allProperties.get(propName + "1"));
+    assertEquals("prop2Val", allProperties.get(propName + "2"));
+
+    // Test GET single property API
+    final var prop1Response =
+        new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName + "1")
+            .process(cluster.getSolrClient());
+    assertEquals("prop1Val", prop1Response.value);
+
+    final var prop2Response =
+        new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName + "2")
+            .process(cluster.getSolrClient());
+    assertEquals("prop2Val", prop2Response.value);
   }
 
   private void checkCollectionProperty(String collection, String propertyName, String propertyValue)
-      throws InterruptedException {
+      throws Exception {
     TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()) {
-      Thread.sleep(10);
-      if (Objects.equals(
-          cluster.getZkStateReader().getCollectionProperties(collection).get(propertyName),
-          propertyValue)) {
+      final var listCollPropRsp =
+          new CollectionPropertiesApi.ListCollectionProperties(collection)
+              .process(cluster.getSolrClient());
+      if (Objects.equals(listCollPropRsp.properties.get(propertyName), propertyValue)) {
         return;
       }
+      Thread.sleep(10);
     }
 
     fail("Timed out waiting for cluster property value");

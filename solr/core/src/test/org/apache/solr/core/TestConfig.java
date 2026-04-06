@@ -16,20 +16,16 @@
  */
 package org.apache.solr.core;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Map;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.ConfigNode;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.search.CacheConfig;
 import org.apache.solr.update.SolrIndexConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,7 +38,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLib() throws IOException {
+  public void testLib() {
     SolrResourceLoader loader = h.getCore().getResourceLoader();
     InputStream data = null;
     String[] unexpectedFiles = new String[] {"empty-file-c2.txt", "empty-file-d2.txt"};
@@ -64,30 +60,6 @@ public class TestConfig extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testJavaProperty() {
-    // property values defined in build.xml
-
-    String s = solrConfig.get("propTest").txt();
-    assertEquals("prefix-proptwo-suffix", s);
-
-    s = solrConfig.get("propTest").attr("attr1", "default");
-    assertEquals("propone-${literal}", s);
-
-    s = solrConfig.get("propTest").attr("attr2", "default");
-    assertEquals("default-from-config", s);
-
-    assertEquals(
-        "prefix-proptwo-suffix",
-        solrConfig.get("propTest", it -> "default-from-config".equals(it.attr("attr2"))).txt());
-
-    List<ConfigNode> nl = solrConfig.root.getAll("propTest");
-    assertEquals(1, nl.size());
-    assertEquals("prefix-proptwo-suffix", nl.get(0).txt());
-
-    assertEquals("prefix-proptwo-suffix", solrConfig.get("propTest").txt());
-  }
-
-  @Test
   public void testCacheEnablingDisabling() throws Exception {
     // ensure if cache is not defined in the config then cache is disabled
     SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-defaults.xml");
@@ -96,7 +68,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertNull(sc.documentCacheConfig);
     //
     assertNotNull(sc.userCacheConfigs);
-    assertEquals(Collections.<String, CacheConfig>emptyMap(), sc.userCacheConfigs);
+    assertEquals(Map.of(), sc.userCacheConfigs);
 
     // enable all the core caches (and one user cache) via system properties and verify
     System.setProperty("filterCache.enabled", "true");
@@ -130,12 +102,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals(2, sc.userCacheConfigs.size());
     assertNotNull(sc.userCacheConfigs.get("user_defined_cache_XXX"));
     assertNotNull(sc.userCacheConfigs.get("user_defined_cache_ZZZ"));
-
-    System.clearProperty("user_defined_cache_XXX.enabled");
-    System.clearProperty("user_defined_cache_ZZZ.enabled");
-    System.clearProperty("filterCache.enabled");
-    System.clearProperty("queryResultCache.enabled");
-    System.clearProperty("documentCache.enabled");
   }
 
   // If defaults change, add test methods to cover each version

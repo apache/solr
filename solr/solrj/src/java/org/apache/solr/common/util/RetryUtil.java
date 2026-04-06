@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -36,6 +37,15 @@ public class RetryUtil {
    */
   public interface RetryCmd {
     void execute() throws Exception;
+  }
+
+  /**
+   * Interface for typed commands that can be retried and may throw exceptions.
+   *
+   * <p>Implementations should define the operation to be executed in the {@link #execute()} method.
+   */
+  public interface TypedRetryCmd<T> {
+    T execute() throws Exception;
   }
 
   /**
@@ -139,6 +149,41 @@ public class RetryUtil {
       throws InterruptedException {
     while (retries-- > 0) {
       if (cmd.execute()) return;
+      pauseUnit.sleep(pauseTime);
+    }
+    throw new SolrException(ErrorCode.SERVER_ERROR, errorMessage);
+  }
+
+  /**
+   * Retries a command until it returns a value that matches the given test or the maximum number of
+   * retries is reached.
+   *
+   * <p>The command is executed up to {@code retries} times. After each failed attempt (when the
+   * command returns a value that returns {@code false} when given to the {@code test}), the method
+   * pauses for the specified duration before retrying. If all retries are exhausted without
+   * success, a {@link SolrException} is thrown with the provided error message.
+   *
+   * @param errorMessage the error message to use if all retries are exhausted
+   * @param retries maximum number of retry attempts
+   * @param pauseTime duration to pause between retries
+   * @param pauseUnit time unit for the pause duration
+   * @param cmd the command to execute
+   * @param test the predicate to test against the value produced by {@code cmd}
+   * @throws Exception if the thread is interrupted while sleeping between retries or the cmd throws
+   *     an exception
+   * @throws SolrException if all retries are exhausted without success
+   */
+  public static <T> T retryUntil(
+      String errorMessage,
+      int retries,
+      long pauseTime,
+      TimeUnit pauseUnit,
+      TypedRetryCmd<T> cmd,
+      Predicate<T> test)
+      throws Exception {
+    while (retries-- > 0) {
+      T value = cmd.execute();
+      if (test.test(value)) return value;
       pauseUnit.sleep(pauseTime);
     }
     throw new SolrException(ErrorCode.SERVER_ERROR, errorMessage);

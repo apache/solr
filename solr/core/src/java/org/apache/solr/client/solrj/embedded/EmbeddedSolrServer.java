@@ -69,7 +69,6 @@ import org.apache.solr.servlet.SolrRequestParsers;
 public class EmbeddedSolrServer extends SolrClient {
 
   protected final CoreContainer coreContainer;
-  protected final String coreName;
   private final SolrRequestParsers _parser;
   private final RequestWriterSupplier supplier;
   private boolean containerIsLocal = false;
@@ -145,7 +144,7 @@ public class EmbeddedSolrServer extends SolrClient {
       throw new NullPointerException("CoreContainer instance required");
     }
     this.coreContainer = coreContainer;
-    this.coreName = coreName;
+    this.defaultCollection = coreName;
     _parser = new SolrRequestParsers(null);
     this.supplier = supplier;
   }
@@ -168,7 +167,7 @@ public class EmbeddedSolrServer extends SolrClient {
         SolrQueryRequest req =
             _parser.buildRequestFrom(
                 null, getParams(request), getContentStreams(request), request.getUserPrincipal());
-        req.getContext().put("httpMethod", request.getMethod().name());
+        req.getContext().put("httpMethod", request.getMethod());
         req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
@@ -182,7 +181,7 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     if (coreName == null) {
-      coreName = this.coreName;
+      coreName = this.defaultCollection;
       if (coreName == null) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -221,7 +220,7 @@ public class EmbeddedSolrServer extends SolrClient {
               .buildRequestFrom(
                   core, params, getContentStreams(request), request.getUserPrincipal());
       req.getContext().put(PATH, path);
-      req.getContext().put("httpMethod", request.getMethod().name());
+      req.getContext().put("httpMethod", request.getMethod());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 

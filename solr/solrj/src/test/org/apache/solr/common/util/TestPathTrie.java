@@ -17,12 +17,12 @@
 
 package org.apache.solr.common.util;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 
@@ -30,12 +30,12 @@ public class TestPathTrie extends SolrTestCaseJ4 {
 
   public void testPathTrie() {
     PathTrie<String> pathTrie = new PathTrie<>(Set.of("_introspect"));
-    pathTrie.insert("/", emptyMap(), "R");
-    pathTrie.insert("/aa", emptyMap(), "d");
-    pathTrie.insert("/aa/bb/{cc}/dd", emptyMap(), "a");
+    pathTrie.insert("/", Map.of(), "R");
+    pathTrie.insert("/aa", Map.of(), "d");
+    pathTrie.insert("/aa/bb/{cc}/dd", Map.of(), "a");
     pathTrie.insert("/$handlerName/{cc}/dd", singletonMap(HANDLER_NAME, "test"), "test");
-    pathTrie.insert("/aa/bb/{cc}/{xx}", emptyMap(), "b");
-    pathTrie.insert("/aa/bb", emptyMap(), "c");
+    pathTrie.insert("/aa/bb/{cc}/{xx}", Map.of(), "b");
+    pathTrie.insert("/aa/bb", Map.of(), "c");
 
     HashMap<String, String> templateValues = new HashMap<>();
     assertEquals("R", pathTrie.lookup("/", templateValues, null));
@@ -54,7 +54,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     assertEquals(3, subPaths.size());
 
     pathTrie = new PathTrie<>(Set.of("_introspect"));
-    pathTrie.insert("/aa/bb/{cc}/tt/*", emptyMap(), "W");
+    pathTrie.insert("/aa/bb/{cc}/tt/*", Map.of(), "W");
 
     templateValues.clear();
     assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt/hello", templateValues));
@@ -68,7 +68,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt/hello/world/from/solr", templateValues));
     assertEquals(templateValues.get("*"), "/hello/world/from/solr");
 
-    pathTrie.insert("/1/2/{x}/4", emptyMap(), "a");
+    pathTrie.insert("/1/2/{x}/4", Map.of(), "a");
     assertEquals("a", pathTrie.lookup("/1/2/3/4", null));
     templateValues.clear();
     assertEquals("a", pathTrie.lookup("/1/2/3/4", templateValues));

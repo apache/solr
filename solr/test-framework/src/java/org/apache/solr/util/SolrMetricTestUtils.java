@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
@@ -40,23 +41,12 @@ import org.apache.solr.metrics.SolrMetricsContext;
 public final class SolrMetricTestUtils {
 
   private static final int MAX_ITERATIONS = 100;
-  private static final SolrInfoBean.Category CATEGORIES[] = SolrInfoBean.Category.values();
+  private static final SolrInfoBean.Category[] CATEGORIES = SolrInfoBean.Category.values();
 
   // Cache name constants
   public static final String QUERY_RESULT_CACHE = "queryResultCache";
   public static final String FILTER_CACHE = "filterCache";
-  public static final String DOCUMENT_CACHE = "documentCache";
   public static final String PER_SEG_FILTER_CACHE = "perSegFilter";
-
-  public static String getRandomScope(Random random) {
-    return getRandomScope(random, random.nextBoolean());
-  }
-
-  public static String getRandomScope(Random random, boolean shouldDefineScope) {
-    return shouldDefineScope
-        ? TestUtil.randomSimpleString(random, 5, 10)
-        : null; // must be simple string for JMX publishing
-  }
 
   public static SolrInfoBean.Category getRandomCategory(Random random) {
     return CATEGORIES[TestUtil.nextInt(random, 0, CATEGORIES.length - 1)];
@@ -88,7 +78,7 @@ public final class SolrMetricTestUtils {
   /**
    * Looks up the first {@link MetricSnapshot} named {@code metricName}, and returns the first
    * {@link DataPointSnapshot} having exactly these {@code labels}. Null if not found. The result is
-   * typically casted to something useful.
+   * typically cast to something useful.
    */
   public static DataPointSnapshot getDataPointSnapshot(
       PrometheusMetricReader reader, String metricName, Labels labels) {
@@ -272,7 +262,7 @@ public final class SolrMetricTestUtils {
 
   public static class TestSolrMetricProducer implements SolrMetricProducer {
     SolrMetricsContext solrMetricsContext;
-    private final Map<String, io.opentelemetry.api.metrics.LongCounter> counters = new HashMap<>();
+    private final Map<String, LongCounter> counters = new HashMap<>();
     private final String coreName;
     private final Map<String, Long> metrics;
 
@@ -298,7 +288,7 @@ public final class SolrMetricTestUtils {
       return solrMetricsContext;
     }
 
-    public Map<String, io.opentelemetry.api.metrics.LongCounter> getCounters() {
+    public Map<String, LongCounter> getCounters() {
       return counters;
     }
   }

@@ -28,14 +28,8 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
-  <!-- see TestConfig.testJavaProperty -->
-  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
-            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
-
   <!-- see TestConfig.testDisableRequetsHandler -->
   <requestHandler name="/disabled" class="solr.SearchHandler" enable="false"/>
   <requestHandler name="/enabled" class="solr.SearchHandler" enable="true"/>
-
-
 
 </config>

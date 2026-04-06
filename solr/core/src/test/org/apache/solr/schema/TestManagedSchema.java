@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -87,8 +86,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   @After
   public void afterClass() {
     deleteCore();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   public void testUpgrade() throws Exception {
@@ -184,7 +181,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
       IndexSchema oldSchema = h.getCore().getLatestSchema();
       String fieldName = "new_field";
       String fieldType = "string";
-      Map<String, ?> options = Collections.emptyMap();
+      Map<String, ?> options = Map.of();
       SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
       IndexSchema newSchema = oldSchema.addField(newField);
       h.getCore().setLatestSchema(newSchema);

@@ -19,10 +19,8 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -32,16 +30,12 @@ import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -60,12 +54,6 @@ import org.slf4j.LoggerFactory;
  *
  * <p>To add additional functions, just define them as plugins in solrconfig.xml via {@code
  * <expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" />}
- *
- * <p>The @deprecated configuration method as of Solr 8.5 is {@code <lst name="streamFunctions"><str
- * name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str><str
- * name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str></lst> }
- *
- * @since 6.1.0
  */
 public class GraphHandler extends RequestHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
@@ -97,34 +85,6 @@ public class GraphHandler extends RequestHandlerBase
 
     // This pulls all the overrides and additions from the config
     StreamHandler.addExpressiblePlugins(streamFactory, core);
-
-    // Check deprecated approach.
-    Object functionMappingsObj = initArgs.get("streamFunctions");
-    if (null != functionMappingsObj) {
-      log.warn(
-          "solrconfig.xml: <streamFunctions> is deprecated for adding additional streaming functions to GraphHandler.");
-      NamedList<?> functionMappings = (NamedList<?>) functionMappingsObj;
-      for (Entry<String, ?> functionMapping : functionMappings) {
-        String key = functionMapping.getKey();
-        PluginInfo pluginInfo =
-            new PluginInfo(key, Collections.singletonMap("class", functionMapping.getValue()));
-
-        if (pluginInfo.pkgName == null) {
-          Class<? extends Expressible> clazz =
-              core.getResourceLoader()
-                  .findClass((String) functionMapping.getValue(), Expressible.class);
-          streamFactory.withFunctionName(key, clazz);
-        } else {
-          @SuppressWarnings("resource")
-          StreamHandler.ExpressibleHolder holder =
-              new StreamHandler.ExpressibleHolder(
-                  pluginInfo,
-                  core,
-                  SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
-          streamFactory.withFunctionName(key, holder);
-        }
-      }
-    }
   }
 
   @Override

@@ -70,7 +70,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
+    solrTestRule.reset();
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -1437,7 +1437,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
   @SuppressWarnings({"unchecked", "varargs"})
   private static <T extends Similarity> void assertFieldSimilarity(
       String fieldname, Class<T> expected, Consumer<T>... validators) {
-    CoreContainer cc = solrClientTestRule.getCoreContainer();
+    CoreContainer cc = solrTestRule.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {
       SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();
       assertNotNull(simfac);

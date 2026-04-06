@@ -28,10 +28,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
-import org.apache.solr.client.solrj.request.SolrQuery;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 
 class DatabaseMetaDataImpl implements DatabaseMetaData {
@@ -111,8 +110,6 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
   @Override
   public String getDatabaseProductVersion() throws SQLException {
     // Returns the version for the first live node in the Solr cluster.
-    SolrQuery sysQuery = new SolrQuery();
-    sysQuery.setRequestHandler("/admin/info/system");
 
     CloudSolrClient cloudSolrClient = this.connection.getClient();
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -126,9 +123,10 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
         String nodeURL = Utils.getBaseUrlForNodeName(node, urlScheme);
         solrClient = new HttpJettySolrClient.Builder(nodeURL).build();
 
-        QueryResponse rsp = solrClient.query(sysQuery);
-        return String.valueOf(
-            ((SimpleOrderedMap) rsp.getResponse().get("lucene")).get("solr-spec-version"));
+        SystemInfoRequest req = new SystemInfoRequest();
+        SystemInfoResponse resp = req.process(solrClient);
+
+        return resp.getSolrSpecVersion();
       } catch (SolrServerException | IOException ignore) {
         return "";
       } finally {

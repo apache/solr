@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -34,12 +35,13 @@ import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
@@ -404,7 +406,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRequestHandlerBaseException() {
+  public void testRequestHandlerBaseException() throws Exception {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler =
         new RequestHandlerBase() {
@@ -424,11 +426,14 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           }
         };
     handler.init(new NamedList<>());
+    handler.initializeMetrics(
+        h.getCore().getCoreMetricManager().getSolrMetricsContext(), Attributes.empty());
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
     h.getCore().execute(handler, req, rsp);
     assertNotNull("should have found an exception", rsp.getException());
     req.close();
+    handler.close();
   }
 
   @Test
@@ -499,11 +504,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLocalSolrQueryRequestParams() {
-    HashMap<String, Object> args = new HashMap<>();
-    args.put("string", "string value");
-    args.put("array", new String[] {"array", "value"});
-    SolrQueryRequest req = new LocalSolrQueryRequest(null, null, null, 0, 20, args);
+  public void testSolrQueryRequestBaseParams() {
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.set("string", "string value");
+    solrParams.set("array", "array", "value");
+    solrParams.set(CommonParams.ROWS, 20);
+    SolrQueryRequest req = new SolrQueryRequestBase(null, solrParams);
     assertEquals("string value", req.getParams().get("string"));
     assertEquals("array", req.getParams().get("array"));
 
@@ -592,7 +598,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     m.put("s", "BBB");
     m.put("ss", "SSS");
 
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, nl);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(null, nl.toSolrParams());
     SolrParams p = req.getParams();
 
     assertEquals(p.get("i"), "555");
@@ -613,10 +619,10 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.get("s"), "bbb");
     assertEquals(p.get("ss"), "SSS");
 
-    assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
+    assertEquals(p.getBool("bt"), !p.getBool("bf"));
     assertTrue(p.getBool("foo", true));
     assertFalse(p.getBool("foo", false));
-    assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
+    assertEquals(p.getBool("bt"), !p.getBool("bf"));
 
     NamedList<String> more = new NamedList<>();
     more.add("s", "aaa");
@@ -785,9 +791,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     DocIterator di = dl.iterator();
     Document d1 = req.getSearcher().getDocFetcher().doc(di.nextDoc());
-    IndexableField[] values1 = null;
+    IndexableField[] values1;
 
-    // ensure fl field is non lazy, and non-fl field is lazy
+    // ensure fl fields are not lazy, and non-fl field is lazy
     assertFalse(d1.getField("title") instanceof LazyDocument.LazyField);
     assertFalse(d1.getField("id") instanceof LazyDocument.LazyField);
     values1 = d1.getFields("test_hlt");

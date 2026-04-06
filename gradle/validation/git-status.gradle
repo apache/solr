@@ -42,9 +42,9 @@ configure(rootProject) {
     doFirst {
       try {
         def repository = new FileRepositoryBuilder()
-                .setWorkTree(rootProject.projectDir)
-                .setMustExist(true)
-                .build()
+            .setWorkTree(rootProject.projectDir)
+            .setMustExist(true)
+            .build()
 
         def ref = repository.findRef("HEAD").getObjectId()
         project.ext.gitRev = ref.name()
@@ -55,7 +55,8 @@ configure(rootProject) {
         project.ext.gitRevShort = "(not a git checkout)"
         project.ext.gitStatus = null
       } catch (NotSupportedException e) {
-        throw new GradleException("jgit does not support git repository version at this location: ${dir}", e)
+        throw new GradleException("jgit does not support git repository version at this location: ${dir}",
+            e)
       }
     }
   }
@@ -68,14 +69,16 @@ configure(rootProject) {
       if (status == null) {
         if (file("${rootProject.projectDir}/.git").exists()) {
           // Ignore git worktree branches until jgit supports them.
-          logger.warn("WARNING: git worktrees are not supported by jgit (won't check dirty files): ${rootProject.projectDir}")
+          logger
+              .warn("WARNING: git worktrees are not supported by jgit (won't check dirty files): ${rootProject.projectDir}")
         } else {
           // Ignore the check. This isn't a git checkout.
-          logger.warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
+          logger
+              .warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
         }
       } else {
         // git ignores any folders which are empty (this includes folders with recursively empty sub-folders).
-        def untrackedNonEmptyFolders = status.untrackedFolders.findAll { path ->
+        def untrackedNonEmptyFolders = status.untrackedFolders.findAll {path ->
           File location = file("${rootProject.projectDir}/${path}")
           boolean hasFiles = false
           Files.walkFileTree(location.toPath(), new SimpleFileVisitor<Path>() {
@@ -99,15 +102,15 @@ configure(rootProject) {
             "(modified)": status.modified,
             "(untracked)": status.untracked,
             "(untracked non-empty dir)": untrackedNonEmptyFolders
-        ].collectMany { fileStatus, files ->
-          files.collect {file -> "  - ${file} ${fileStatus}" }
+        ].collectMany {fileStatus, files ->
+          files.collect {file -> "  - ${file} ${fileStatus}"}
         }.sort()
 
-        if (offenders ) {
+        if (offenders) {
           def propName = "validation.git.failOnModified"
           def shouldFail = Boolean.valueOf(propertyOrDefault(propName, isCIBuild))
           def msg = "Working copy is not a clean git checkout" +
-                  (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${offenders.join("\n")}"
+              (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${offenders.join("\n")}"
 
           if (shouldFail) {
             throw new GradleException(msg)

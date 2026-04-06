@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -50,6 +51,7 @@ public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Cl
   public SolrJerseyResponse cloneExistingConfigSet(CloneConfigsetRequestBody requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    SolrIdentifierValidator.validateConfigSetName(requestBody.name);
     if (configSetService.checkConfigExists(requestBody.name)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + requestBody.name);

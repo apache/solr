@@ -20,7 +20,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -74,11 +73,6 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
             .setLocation(validBackupLocation)
             .processAndWait(cluster.getSolrClient(), ASYNC_COMMAND_WAIT_PERIOD_MILLIS);
     assertEquals(RequestStatusState.COMPLETED, backupState);
-  }
-
-  @AfterClass
-  public static void tearDownClass() {
-    System.clearProperty("solr.security.allow.paths");
   }
 
   @Test

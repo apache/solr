@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>10.3</luceneMatchVersion>
+  <luceneMatchVersion>10.4</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -505,12 +505,6 @@
 
   </query>
 
-  <!-- Request Dispatcher
-
-       This section contains instructions for how the SolrDispatchFilter
-       should behave when processing requests for this SolrCore.
-
-    -->
   <requestDispatcher>
     <!-- Request Parsing
 
@@ -895,7 +889,7 @@
       <str name="fieldType">pdoubles</str>
     </lst>
   </updateProcessor>
-  
+
 
   <!-- The update.autoCreateFields property can be turned to false to disable schemaless mode -->
   <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="${update.autoCreateFields:true}"

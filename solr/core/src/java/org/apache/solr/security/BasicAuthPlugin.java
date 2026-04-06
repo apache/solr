@@ -199,9 +199,6 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void close() throws IOException {}
-
-  @Override
   public void closeRequest() {
     authHeader.remove();
   }

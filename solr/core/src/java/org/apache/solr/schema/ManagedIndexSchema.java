@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -178,7 +177,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
       if (createOnly) {
         try {
-          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
+          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT);
           schemaZkVersion = 0;
           log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
         } catch (KeeperException.NodeExistsException e) {
@@ -190,7 +189,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       } else {
         try {
           // Assumption: the path exists
-          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
+          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion);
           schemaZkVersion = stat.getVersion();
           log.info(
               "Persisted managed schema version {}  at {}", schemaZkVersion, managedSchemaPath);
@@ -435,7 +434,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (isMutable) {
       boolean success = false;
       if (copyFieldNames == null) {
-        copyFieldNames = Collections.emptyMap();
+        copyFieldNames = Map.of();
       }
       newSchema = shallowCopy(true);
 
@@ -639,7 +638,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (isMutable) {
       boolean success = false;
       if (copyFieldNames == null) {
-        copyFieldNames = Collections.emptyMap();
+        copyFieldNames = Map.of();
       }
       newSchema = shallowCopy(true);
 

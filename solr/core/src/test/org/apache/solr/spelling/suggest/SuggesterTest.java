@@ -19,7 +19,6 @@ package org.apache.solr.spelling.suggest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,22 +27,10 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   protected String requestUri = "/suggest";
 
   // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     initCore("solrconfig-spellchecker.xml", "schema-spellchecker.xml");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
   }
 
   public static void addDocs() {

@@ -23,7 +23,6 @@ import java.nio.CharBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import org.apache.solr.common.SolrException;
@@ -167,7 +166,7 @@ public class StrUtils {
    * @return a list of file names with the escaping backslashes removed
    */
   public static List<String> splitFileNames(String fileNames) {
-    if (fileNames == null) return Collections.<String>emptyList();
+    if (fileNames == null) return List.of();
 
     List<String> result = new ArrayList<>();
     for (String file : fileNames.split("(?<!\\\\),")) {

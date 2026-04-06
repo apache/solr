@@ -69,7 +69,8 @@ public final class ReplicationTestHelper {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
   }
@@ -292,17 +293,14 @@ public final class ReplicationTestHelper {
     }
 
     public void setUp() throws Exception {
-      System.setProperty("solr.test.sys.prop1", "propone");
-      System.setProperty("solr.test.sys.prop2", "proptwo");
-
       Properties props = new Properties();
       props.setProperty("name", "collection1");
 
       SolrTestCaseJ4.writeCoreProperties(
           homeDir.resolve("collection1"), props, "TestReplicationHandler");
 
-      dataDir = Path.of(homeDir + "/collection1", "data");
-      confDir = Path.of(homeDir + "/collection1", "conf");
+      dataDir = homeDir.resolve("collection1").resolve("data");
+      confDir = homeDir.resolve("collection1").resolve("conf");
 
       Files.createDirectories(homeDir);
       Files.createDirectories(dataDir);

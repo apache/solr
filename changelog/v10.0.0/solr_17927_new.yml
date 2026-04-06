@@ -1,0 +1,10 @@
+title: Rename vector search parameters and language model modules
+type: changed
+authors:
+  - name: Ishan Chattopadhyaya
+  - name: Alessandro Benedetti
+  - name: Ilaria Petreti
+  - name: Chaitali Rajhans
+links:
+  - name: SOLR-17927
+    url: https://issues.apache.org/jira/browse/SOLR-17927

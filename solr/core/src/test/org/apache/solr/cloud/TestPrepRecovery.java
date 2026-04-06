@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,11 +43,6 @@ public class TestPrepRecovery extends SolrCloudTestCase {
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
-  }
-
-  @AfterClass
-  public static void tearCluster() {
-    System.clearProperty("leaderConflictResolveWait");
   }
 
   @Test

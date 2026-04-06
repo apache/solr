@@ -1,8 +1,0 @@
-issue: SOLR-17927
-title: Rename vector search parameters and language model modules
-type: changed
-authors:
-  - name: Ishan Chattopadhyaya
-  - name: Alessandro Benedetti
-  - name: Ilaria Petreti
-  - name: Chaitali Rajhans

@@ -34,6 +34,7 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
@@ -396,7 +397,7 @@ class SimpleClusterAbstractionsImpl {
       }
     }
 
-    private Replica.ReplicaState translateState(org.apache.solr.common.cloud.Replica.State state) {
+    private Replica.ReplicaState translateState(State state) {
       switch (state) {
         case ACTIVE:
           return Replica.ReplicaState.ACTIVE;

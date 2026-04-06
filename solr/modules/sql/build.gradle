@@ -21,7 +21,6 @@ description = 'SQL Module'
 
 dependencies {
   implementation platform(project(':platform'))
-  permitUnusedDeclared platform(project(":platform"))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-streaming')
@@ -42,8 +41,6 @@ dependencies {
   compileOnly libs.immutables.valueannotations // needed due to Calcite requiring this CALCITE-4787
   // sub-deps of calcite-core that we reference directly
   implementation libs.apache.calcite.linq4j
-  implementation libs.apache.calcite.avatica.core
-  permitUnusedDeclared libs.apache.calcite.avatica.core
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
@@ -51,7 +48,6 @@ dependencies {
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
 }
-
 
 // Copy all the test resource files from core to the build/resources/test directory
 // of the SQL module so we can avoid duplication of the test resource files like

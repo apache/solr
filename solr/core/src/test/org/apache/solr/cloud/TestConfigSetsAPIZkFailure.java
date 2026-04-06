@@ -156,8 +156,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
         .getZkClient()
         .setData(
             "/configs/" + baseConfigSetName,
-            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8),
-            true);
+            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8));
   }
 
   private StringBuilder getConfigSetProps(Map<String, String> map) {

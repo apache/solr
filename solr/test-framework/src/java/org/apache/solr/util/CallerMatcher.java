@@ -72,7 +72,7 @@ public class CallerMatcher {
    *
    * @param callerExprs list of expressions in the format of <code>
    *     ( simpleClassName[.methodName] | * )[:NNN]</code>. If the list is empty or null then the
-   *     first call to {@link #checkCaller()} ()} from any caller will match.
+   *     first call to {@link #checkCaller()} from any caller will match.
    */
   public CallerMatcher(Collection<String> callerExprs, Collection<String> excludeExprs) {
     for (String callerExpr : callerExprs) {

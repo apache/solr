@@ -154,7 +154,6 @@ public class ServletFixtures {
     }
 
     private void setCookies(HttpServletRequest req) {
-      Cookie[] ck = req.getCookies();
       cookies = req.getCookies();
     }
 

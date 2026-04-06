@@ -18,6 +18,7 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
 
@@ -92,7 +93,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       coreContainer
           .getZkController()
           .getZkClient()
-          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
+          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL);
 
       if (requestBody == null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
@@ -142,7 +143,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
       try {
-        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
       } catch (Exception e) {
         log.error("Unexpected error  ", e);
       }
@@ -275,14 +276,14 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       coreContainer
           .getZkController()
           .getZkClient()
-          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
+          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL);
       fileStore.delete(filePath);
     } catch (Exception e) {
       log.error("Unknown error", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       try {
-        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
       } catch (Exception e) {
         log.error("Unexpected error  ", e);
       }
@@ -320,6 +321,19 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     if (path == null) {
       path = "";
     }
+
+    // Ensure 'getFrom' points to a node in this cluster
+    final var zkStateReader = coreContainer.getZkController().getZkStateReader();
+    if (StrUtils.isNotBlank(getFrom)
+        && !getFrom.equals("*")
+        && !zkStateReader.isNodeLive(getFrom)) {
+      throw new SolrException(
+          BAD_REQUEST,
+          "File store cannot fetch from source node ["
+              + getFrom
+              + "] as it does not appear in live-nodes");
+    }
+
     pullFileFromNode(coreContainer, fileStore, path, getFrom);
     return response;
   }
