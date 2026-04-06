@@ -20,6 +20,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -30,9 +32,12 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Facilitates testing Solr's REST API */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
+  private static final Logger log = LoggerFactory.getLogger(RestTestHarness.class);
   private RESTfulServerProvider serverProvider;
   private HttpJettySolrClient solrClient; // lazy instantiated given serverProvider
 
@@ -75,12 +80,12 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @exception IOException any exception in the response.
    */
   public String query(String request) throws IOException {
-    return getResponse(
-        getHttpClient().newRequest(URLUtil.buildURI(getBaseURI(), request)).method(HttpMethod.GET));
+    return sendAndReturnString(
+        getHttpClient().newRequest(buildUri(request)).method(HttpMethod.GET));
   }
 
   public String adminQuery(String request) throws IOException {
-    return getResponse(
+    return sendAndReturnString(
         getHttpClient()
             .newRequest(URLUtil.buildURI(getAdminURI(), request))
             .method(HttpMethod.GET));
@@ -91,15 +96,15 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * "/schema/fields/newfield", PUTs the given content, and returns the response content.
    *
    * @param request The URL path and optional query params
-   * @param content The content to include with the PUT request
+   * @param json The content to include with the PUT request
    * @return The response to the PUT request
    */
-  public String put(String request, String content) throws IOException {
-    return getResponse(
+  public String put(String request, String json) throws IOException {
+    return sendAndReturnString(
         getHttpClient()
-            .newRequest(URLUtil.buildURI(getBaseURI(), request))
+            .newRequest(buildUri(request))
             .method(HttpMethod.PUT)
-            .body(new StringRequestContent("application/json", content, StandardCharsets.UTF_8)));
+            .body(new StringRequestContent("application/json", json, StandardCharsets.UTF_8)));
   }
 
   /**
@@ -110,10 +115,8 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the DELETE request
    */
   public String delete(String request) throws IOException {
-    return getResponse(
-        getHttpClient()
-            .newRequest(URLUtil.buildURI(getBaseURI(), request))
-            .method(HttpMethod.DELETE));
+    return sendAndReturnString(
+        getHttpClient().newRequest(buildUri(request)).method(HttpMethod.DELETE));
   }
 
   /**
@@ -121,14 +124,15 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * "/schema/fields/newfield", PUTs the given content, and returns the response content.
    *
    * @param request The URL path and optional query params
-   * @param content The content to include with the POST request
+   * @param json The content to include with the POST request
    * @return The response to the POST request
    */
-  public String post(String request, String content) throws IOException {
-    return getResponse(
+  public String post(String request, String json) throws IOException {
+    return sendAndReturnString(
         getHttpClient()
-            .POST(URLUtil.buildURI(getBaseURI(), request))
-            .body(new StringRequestContent("application/json", content, StandardCharsets.UTF_8)));
+            .newRequest(buildUri(request))
+            .method(HttpMethod.POST)
+            .body(new StringRequestContent("application/json", json, StandardCharsets.UTF_8)));
   }
 
   public String checkAdminResponseStatus(String request, int code) throws Exception {
@@ -165,9 +169,9 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public String update(String xml) {
     try {
-      return getResponse(
+      return sendAndReturnString(
           getHttpClient()
-              .POST(URLUtil.buildURI(getBaseURI(), "/update"))
+              .POST(buildUri("/update"))
               .body(new StringRequestContent("application/xml", xml, StandardCharsets.UTF_8)));
     } catch (RuntimeException e) {
       throw e;
@@ -176,17 +180,37 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     }
   }
 
-  /** Executes the given request and returns the response. */
-  private String getResponse(Request request) throws IOException {
-    try {
-      ContentResponse rsp = request.send();
-      //      if (rsp.getStatus() >= 300 && rsp.getStatus()!=) {
-      //        throw new IOException("Unexpected response " + rsp);
-      //      }
-      return rsp.getContentAsString();
-    } catch (Exception e) {
-      throw new IOException(e);
+  private URI buildUri(String request) {
+    if (request.contains("://")) {
+      // is this a hack or simply useful / pragmatic ?
+      return URI.create(request);
     }
+    return URLUtil.buildURI(getBaseURI(), request);
+  }
+
+  /** Executes the given request and returns the response as a String. */
+  private String sendAndReturnString(Request request) throws IOException {
+    ContentResponse rsp;
+    try {
+      rsp = request.send();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt(); // reset
+      throw new RuntimeException(e);
+    } catch (TimeoutException e) {
+      throw new RuntimeException(e);
+    } catch (ExecutionException e) {
+      log.warn("Propagating cause of executionException");
+      try {
+        throw e.getCause();
+      } catch (RuntimeException | IOException | Error cause) {
+        throw cause;
+      } catch (Exception cause) {
+        throw new IOException(cause);
+      } catch (Throwable ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+    return rsp.getContentAsString();
   }
 
   public synchronized HttpClient getHttpClient() {

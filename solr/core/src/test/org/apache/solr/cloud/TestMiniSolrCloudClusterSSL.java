@@ -336,8 +336,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
       if (!sslConfig.isClientAuthMode()) {
         // verify simple HTTP(S) client can't do HEAD request for URL with wrong protocol
-        var httpClient = newSslAwareClientWithNoClientCerts();
-        try {
+        try (var httpClient = newSslAwareClientWithNoClientCerts()) {
           final String wrongUrl = wrongBaseURL + "/admin/cores";
           // vastly diff exception details between plain http vs https, not worried about details
           // here
@@ -346,16 +345,13 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
               () -> {
                 doHeadRequest(httpClient, wrongUrl);
               });
-        } finally {
-          httpClient.stop();
         }
       }
 
       if (ssl) {
         // verify expected results for a HEAD request to valid URL from HTTP(S) client w/o client
         // certs
-        var httpClient = newSslAwareClientWithNoClientCerts();
-        try {
+        try (var httpClient = newSslAwareClientWithNoClientCerts()) {
           final String url = baseURL + "/admin/cores";
           if (sslConfig.isClientAuthMode()) {
             // w/o a valid client cert, SSL connection should fail
@@ -374,8 +370,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
                 200,
                 doHeadRequest(httpClient, url));
           }
-        } finally {
-          httpClient.stop();
         }
       }
     }

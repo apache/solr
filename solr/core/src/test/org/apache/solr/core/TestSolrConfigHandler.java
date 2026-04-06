@@ -286,7 +286,7 @@ public class TestSolrConfigHandler extends RestTestBase {
       Map<?, ?> m =
           testServerBaseUrl == null
               ? getRespMap(writeHarness, uri)
-              : getRespMap(testServerBaseUrl, uri);
+              : getRespMap(writeHarness, testServerBaseUrl + uri); // RTH accepts whole URLs
       if (null == Utils.getObjectByPath(m, true, asList("overlay", "requestHandler", "/x", "a"))) {
         success = true;
         break;
@@ -690,7 +690,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         m =
             testServerBaseUrl == null
                 ? getRespMap(harness, uri)
-                : getRespMap(testServerBaseUrl, uri);
+                : getRespMap(harness, testServerBaseUrl + uri);
       } catch (Exception e) {
         Thread.sleep(100);
         continue;
@@ -971,14 +971,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     } catch (JSONParser.ParseException e) {
       log.error(response);
       return new LinkedHashMapWriter<>();
-    }
-  }
-
-  @SuppressWarnings({"rawtypes"})
-  private static LinkedHashMapWriter getRespMap(String baseUrl, String path) throws Exception {
-    // TODO re-use a client somehow; like add such an option to RestTestHarness ctor?
-    try (RestTestHarness h = new RestTestHarness(() -> baseUrl)) {
-      return getRespMap(h, path);
     }
   }
 

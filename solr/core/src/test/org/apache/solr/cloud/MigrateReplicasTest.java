@@ -294,8 +294,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
 
     String liveNode = cloudClient.getClusterState().getLiveNodes().iterator().next();
     Map<?, ?> response =
-        callMigrateReplicas(
-            new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), true, null));
+        callMigrateReplicas(new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), true, null));
     assertNotNull(
         "No error in response, when the request should have failed", response.get("error"));
     assertEquals(
