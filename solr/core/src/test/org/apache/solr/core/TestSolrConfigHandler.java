@@ -976,7 +976,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   @SuppressWarnings({"rawtypes"})
   private static LinkedHashMapWriter getRespMap(String baseUrl, String path) throws Exception {
-    // a hack... if possible pass in an httpClient and also be able to init RestTestHarness with it
+    // TODO re-use a client somehow; like add such an option to RestTestHarness ctor?
     try (RestTestHarness h = new RestTestHarness(() -> baseUrl)) {
       return getRespMap(h, path);
     }

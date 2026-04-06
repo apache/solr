@@ -314,23 +314,22 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     String collectionName = "testUserDefinedPropertiesCollection";
 
     switch (random().nextInt(3)) {
-      case 0:
+      case 0 -> {
         CollectionAdminRequest.Create createOp =
             CollectionAdminRequest.createCollection(collectionName, confName, 1, 2);
         createOp.withProperty("my.custom.prop", "customProp");
         CollectionAdminResponse rsp = createOp.process(cluster.getSolrClient());
         assertNull(rsp.getErrorMessages());
         assertSame(0, rsp.getStatus());
-        break;
-
-      case 1:
+      }
+      case 1 -> {
         // Sometimes use v1 API
-        var jetty1 = cluster.getRandomJetty(random());
-        String url1 =
+        var jetty = cluster.getRandomJetty(random());
+        String url =
             String.format(
                 Locale.ROOT,
                 "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&nrtReplicas=%s&tlogReplicas=%s&pullReplicas=%s&&property.my.custom.prop=%s",
-                jetty1.getBaseUrl(),
+                jetty.getBaseUrl(),
                 collectionName,
                 confName,
                 2,
@@ -339,14 +338,13 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
                 0,
                 "customProp");
 
-        var response1 = jetty1.getSolrClient().getHttpClient().GET(url1);
-        assertEquals(200, response1.getStatus());
-        break;
-
-      case 2:
+        var response = jetty.getSolrClient().getHttpClient().GET(url);
+        assertEquals(200, response.getStatus());
+      }
+      case 2 -> {
         // Sometimes use V2 API
-        var jetty2 = cluster.getRandomJetty(random());
-        String url2 = jetty2.getBaseUrl().toString() + "/____v2/collections";
+        var jetty = cluster.getRandomJetty(random());
+        String url = jetty.getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
@@ -358,17 +356,17 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
                 2,
                 2,
                 0);
-        var response2 =
-            jetty2
+        var response =
+            jetty
                 .getSolrClient()
                 .getHttpClient()
-                .POST(url2)
+                .POST(url)
                 .body(
                     new StringRequestContent(
                         "application/json", requestBody, StandardCharsets.UTF_8))
                 .send();
-        assertEquals(200, response2.getStatus());
-        break;
+        assertEquals(200, response.getStatus());
+      }
     }
   }
 }

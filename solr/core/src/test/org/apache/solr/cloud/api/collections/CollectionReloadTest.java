@@ -140,23 +140,23 @@ public class CollectionReloadTest extends SolrCloudTestCase {
       int numShards, int nrtReplicas, int tlogReplicas, int pullReplicas, String collectionName)
       throws Exception {
     switch (random().nextInt(3)) {
-      case 0:
+      case 0 -> {
         log.info("Creating collection with SolrJ");
         // Sometimes use SolrJ
         assertSuccessfulAdminRequest(
             CollectionAdminRequest.createCollection(
                     collectionName, "conf", numShards, nrtReplicas, tlogReplicas, pullReplicas)
                 .process(cluster.getSolrClient()));
-        break;
-      case 1:
+      }
+      case 1 -> {
         log.info("Creating collection with V1 API");
         // Sometimes use v1 API
-        var jetty1 = cluster.getRandomJetty(random());
-        String url1 =
+        var jetty = cluster.getRandomJetty(random());
+        String url =
             String.format(
                 Locale.ROOT,
                 "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&maxShardsPerNode=%s&nrtReplicas=%s&tlogReplicas=%s&pullReplicas=%s",
-                jetty1.getBaseUrl(),
+                jetty.getBaseUrl(),
                 collectionName,
                 "conf",
                 numShards,
@@ -164,14 +164,14 @@ public class CollectionReloadTest extends SolrCloudTestCase {
                 nrtReplicas,
                 tlogReplicas,
                 pullReplicas);
-        var response1 = jetty1.getSolrClient().getHttpClient().GET(url1);
-        assertEquals(200, response1.getStatus());
-        break;
-      case 2:
+        var response = jetty.getSolrClient().getHttpClient().GET(url);
+        assertEquals(200, response.getStatus());
+      }
+      case 2 -> {
         log.info("Creating collection with V2 API");
         // Sometimes use V2 API
-        var jetty2 = cluster.getRandomJetty(random());
-        String url2 = jetty2.getBaseUrl().toString() + "/____v2/collections";
+        var jetty = cluster.getRandomJetty(random());
+        String url = jetty.getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
@@ -182,17 +182,17 @@ public class CollectionReloadTest extends SolrCloudTestCase {
                 nrtReplicas,
                 tlogReplicas,
                 pullReplicas);
-        var response2 =
-            jetty2
+        var response =
+            jetty
                 .getSolrClient()
                 .getHttpClient()
-                .POST(url2)
+                .POST(url)
                 .body(
                     new StringRequestContent(
                         "application/json", requestBody, StandardCharsets.UTF_8))
                 .send();
-        assertEquals(200, response2.getStatus());
-        break;
+        assertEquals(200, response.getStatus());
+      }
     }
   }
 }
