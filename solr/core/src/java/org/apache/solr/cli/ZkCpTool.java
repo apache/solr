@@ -76,10 +76,7 @@ public class ZkCpTool extends ToolBase {
       description = "Destination path: [file:][/]path/to/local/file or zk:/path/to/zk/node.")
   private String dst;
 
-  @picocli.CommandLine.Option(
-      names = {"-r", "--recursive"},
-      description = "Apply the command recursively.")
-  private boolean recursive;
+  @picocli.CommandLine.Mixin RecursiveOption recursiveOpt;
 
   @picocli.CommandLine.Option(
       names = {"--solr-home"},
@@ -255,7 +252,7 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    doCp(zkOpts.resolveZkHost(), src, dst, recursive, solrHome);
+    doCp(zkOpts.resolveZkHost(), src, dst, recursiveOpt.recursive, solrHome);
     return 0;
   }
 }

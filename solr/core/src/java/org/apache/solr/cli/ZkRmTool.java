@@ -43,10 +43,7 @@ public class ZkRmTool extends ToolBase {
       description = "The ZooKeeper znode path to remove (zk: prefix optional).")
   private String path;
 
-  @picocli.CommandLine.Option(
-      names = {"-r", "--recursive"},
-      description = "Apply the command recursively.")
-  private boolean recursive;
+  @picocli.CommandLine.Mixin RecursiveOption recursiveOpt;
 
   public ZkRmTool() {
     this(new DefaultToolRuntime());
@@ -121,7 +118,7 @@ public class ZkRmTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doRm(zkClient, zkHost, path, recursive);
+      doRm(zkClient, zkHost, path, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete rm operation for reason: ", e);

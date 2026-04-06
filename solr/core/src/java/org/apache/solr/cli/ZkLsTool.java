@@ -41,10 +41,7 @@ public class ZkLsTool extends ToolBase {
       description = "The path of the ZooKeeper znode path to list.")
   private String path;
 
-  @picocli.CommandLine.Option(
-      names = {"-r", "--recursive"},
-      description = "Apply the command recursively.")
-  private boolean recursive;
+  @picocli.CommandLine.Mixin RecursiveOption recursiveOpt;
 
   public ZkLsTool() {
     this(new DefaultToolRuntime());
@@ -109,7 +106,7 @@ public class ZkLsTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doLs(zkClient, zkHost, path, recursive);
+      doLs(zkClient, zkHost, path, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
