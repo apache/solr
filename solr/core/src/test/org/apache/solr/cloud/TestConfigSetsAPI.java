@@ -381,18 +381,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     // Checking error when configuration name contains invalid characters
     for (String invalidName : new String[] {"configset!", "-configset"}) {
+      JettySolrRunner jetty = cluster.getJettySolrRunners().getFirst();
       map =
           postDataAndGetResponse(
-              cluster.getSolrClient(),
-              cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-                  + "/admin/configs?action=UPLOAD&name="
-                  + invalidName,
-              emptyData,
-              null,
-              false);
-      assertNotNull(map);
-      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
-      assertEquals("Expected 400 for invalid configset name: " + invalidName, 400l, statusCode);
+              jetty, "/admin/configs?action=UPLOAD&name=" + invalidName, emptyData, null, false);
+      int statusCode = getStatusCode(map);
+      assertEquals("Expected 400 for invalid configset name: " + invalidName, 400, statusCode);
     }
 
     zkClient.close();
@@ -1487,7 +1481,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         httpClient
             .newRequest(uri)
             .method(usePut ? HttpMethod.PUT : HttpMethod.POST)
-            .headers(h1 -> h1.add("user", username))
+            .headers(h -> h.add("user", username))
             .body(new ByteBufferRequestContent(contentType, payload))
             .send();
     String response = rsp.getContentAsString();
