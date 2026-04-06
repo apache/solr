@@ -146,7 +146,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     final HttpClient httpClient = getRawClient();
     final String url = getListCollectionsUrl();
 
-    final var response = httpClient.newRequest(url + "?wt=xml").send();
+    final var response = httpClient.GET(url + "?wt=xml");
 
     assertEquals(200, response.getStatus());
     assertEquals("application/xml", response.getHeaders().get("Content-type"));
@@ -169,7 +169,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     final HttpClient httpClient = getRawClient();
     final String url = getListCollectionsUrl();
 
-    final var response = httpClient.newRequest(url).send();
+    final var response = httpClient.GET(url);
 
     assertEquals(200, response.getStatus());
     assertEquals("application/json", response.getHeaders().get("Content-type"));

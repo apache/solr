@@ -170,7 +170,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 "conf",
                 2, // numShards
                 4); // tlogReplicas
-        getHttpClient().newRequest(url).send();
+        getHttpClient().GET(url);
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
       case 2:
@@ -353,7 +353,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 collectionName,
                 shardName,
                 type);
-        var httpResponse = getHttpClient().newRequest(url).send();
+        var httpResponse = getHttpClient().GET(url);
         assertEquals(200, httpResponse.getStatus());
         break;
       case 2: // Add replica with V2 API

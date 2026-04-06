@@ -164,7 +164,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
                 nrtReplicas,
                 tlogReplicas,
                 pullReplicas);
-        var response1 = jetty1.getSolrClient().getHttpClient().newRequest(url1).send();
+        var response1 = jetty1.getSolrClient().getHttpClient().GET(url1);
         assertEquals(200, response1.getStatus());
         break;
       case 2:

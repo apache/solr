@@ -480,7 +480,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
   private int doHttpGetAnonymous(HttpClient httpClient, String url) throws IOException {
     try {
-      return httpClient.newRequest(url).send().getStatus();
+      return httpClient.GET(url).getStatus();
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -488,7 +488,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
   private void verifyWWWAuthenticateHeaders(HttpClient httpClient, String baseUrl)
       throws Exception {
-    var response = httpClient.newRequest(baseUrl + CommonParams.SYSTEM_INFO_PATH).send();
+    var response = httpClient.GET(baseUrl + CommonParams.SYSTEM_INFO_PATH);
     List<String> actualSchemes = response.getHeaders().getValuesList("WWW-Authenticate");
 
     List<String> expectedSchemes = generateExpectedSchemes();

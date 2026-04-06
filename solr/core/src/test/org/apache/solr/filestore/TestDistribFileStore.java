@@ -217,8 +217,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
             jettySolrRunner
                 .getSolrClient()
                 .getHttpClient()
-                .newRequest(baseUrl + "/cluster/filestore/files" + path)
-                .send();
+                .GET(baseUrl + "/cluster/filestore/files" + path);
         assertEquals(200, resp.getStatus());
         ByteBuffer buf = ByteBuffer.wrap(resp.getContent());
         assertEquals(
@@ -239,7 +238,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
     @Override
     public NavigableObject call() throws Exception {
-      var resp = jetty.getSolrClient().getHttpClient().newRequest(this.url).send();
+      var resp = jetty.getSolrClient().getHttpClient().GET(this.url);
       assertEquals(200, resp.getStatus());
       return NavigableObject.wrap(new JavaBinCodec().unmarshal(resp.getContent()));
     }

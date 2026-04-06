@@ -90,7 +90,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }
 
-    var response = httpClient.newRequest(adminPath).send();
+    var response = httpClient.GET(adminPath);
     assertEquals(200, response.getStatus());
     String header = response.getHeaders().get("X-Frame-Options");
     assertEquals("DENY", header.toUpperCase(Locale.ROOT));

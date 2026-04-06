@@ -90,7 +90,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
-      var response = httpClient.newRequest(url).send();
+      var response = httpClient.GET(url);
       s = response.getContentAsString();
       Map<?, ?> m = (Map<?, ?>) Utils.fromJSONString(s);
 

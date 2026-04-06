@@ -148,7 +148,7 @@ public class TestPullReplica extends SolrCloudTestCase {
                   3); // pullReplicas
           // These options should all mean the same
           url1 = url1 + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1");
-          var response1 = jetty1.getSolrClient().getHttpClient().newRequest(url1).send();
+          var response1 = jetty1.getSolrClient().getHttpClient().GET(url1);
           assertEquals(200, response1.getStatus());
           break;
         case 2:
@@ -1046,7 +1046,7 @@ public class TestPullReplica extends SolrCloudTestCase {
                 collectionName,
                 shardName,
                 type);
-        var response1 = jetty1.getSolrClient().getHttpClient().newRequest(url1).send();
+        var response1 = jetty1.getSolrClient().getHttpClient().GET(url1);
         assertEquals(200, response1.getStatus());
         break;
       case 2: // Add replica with V2 API

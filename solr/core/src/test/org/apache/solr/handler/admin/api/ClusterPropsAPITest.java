@@ -84,7 +84,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
     var httpClient = cluster.getJettySolrRunner(0).getSolrClient().getHttpClient();
     // List Properties, confirm the test property does not exist
     // This ignores eventually existing other properties
-    var response = httpClient.newRequest(baseUrlV2ClusterProps).send();
+    var response = httpClient.GET(baseUrlV2ClusterProps);
     assertEquals(200, response.getStatus());
     var o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
     assertNotNull(o);
@@ -109,7 +109,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
     assertNotNull(o);
 
     // List Properties, this time there should be the just added property
-    response = httpClient.newRequest(baseUrlV2ClusterProps).send();
+    response = httpClient.GET(baseUrlV2ClusterProps);
     assertEquals(200, response.getStatus());
     o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
     assertNotNull(o);
@@ -119,7 +119,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
 
     // Fetch Cluster Property
     // Same path as used in the Create step above
-    response = httpClient.newRequest(path).send();
+    response = httpClient.GET(path);
     assertEquals(200, response.getStatus());
     o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
     assertNotNull(o);
@@ -135,7 +135,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
     assertNotNull(o);
 
     // List Properties, the test property should be gone
-    response = httpClient.newRequest(baseUrlV2ClusterProps).send();
+    response = httpClient.GET(baseUrlV2ClusterProps);
     assertEquals(200, response.getStatus());
     o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
     assertNotNull(o);
@@ -164,7 +164,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
 
     // Fetch Cluster Property checking the not-nested property set above
     String path = baseUrlV2ClusterProps + "/" + testClusterProperty;
-    response = httpClient.newRequest(path).send();
+    response = httpClient.GET(path);
     assertEquals(200, response.getStatus());
     o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
     assertNotNull(o);
@@ -174,7 +174,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
 
     // Fetch Cluster Property checking the nested property set above
     path = baseUrlV2ClusterProps + "/" + "defaults";
-    response = httpClient.newRequest(path).send();
+    response = httpClient.GET(path);
     assertEquals(200, response.getStatus());
     o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
     assertNotNull(o);
@@ -195,7 +195,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
     var httpClient = cluster.getJettySolrRunner(0).getSolrClient().getHttpClient();
     // Fetch Cluster Property that doesn't exist
     String path = baseUrlV2ClusterProps + "/ext.clusterPropThatDoesNotExist";
-    var response = httpClient.newRequest(path).send();
+    var response = httpClient.GET(path);
     assertEquals(404, response.getStatus());
   }
 }

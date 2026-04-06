@@ -73,7 +73,7 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
     final String url =
         solrTestRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
     var httpClient = solrTestRule.getJetty().getSolrClient().getHttpClient();
-    var responseRaw = httpClient.newRequest(url).send();
+    var responseRaw = httpClient.GET(url);
 
     assertEquals(500, responseRaw.getStatus());
     NamedList<Object> response =

@@ -53,7 +53,7 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
   public void testHttpResponse() throws Exception {
     String url = solrTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*";
     var httpClient = solrTestRule.getJetty().getSolrClient().getHttpClient();
-    var response = httpClient.newRequest(url).send();
+    var response = httpClient.GET(url);
     var headers = response.getHeaders();
     boolean containsWarningHeader = false;
     if (headers.contains("Warning")) {

@@ -139,7 +139,7 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
 
     final String url = solrTestRule.getBaseUrl() + "/collection1/withError?q=*:*&wt=json";
     var httpClient = solrTestRule.getJetty().getSolrClient().getHttpClient();
-    var response = httpClient.newRequest(url).send();
+    var response = httpClient.GET(url);
 
     assertEquals(500, response.getStatus());
     String responseJson = response.getContentAsString();

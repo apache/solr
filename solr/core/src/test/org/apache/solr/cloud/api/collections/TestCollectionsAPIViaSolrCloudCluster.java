@@ -339,7 +339,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
                 0,
                 "customProp");
 
-        var response1 = jetty1.getSolrClient().getHttpClient().newRequest(url1).send();
+        var response1 = jetty1.getSolrClient().getHttpClient().GET(url1);
         assertEquals(200, response1.getStatus());
         break;
 

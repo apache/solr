@@ -139,7 +139,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
               .getValue();
 
       // Send GET request to trigger some metrics
-      httpClient.newRequest(j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes").send();
+      httpClient.GET(j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes");
 
       var childrenFetched =
           SolrMetricTestUtils.getCounterDatapoint(

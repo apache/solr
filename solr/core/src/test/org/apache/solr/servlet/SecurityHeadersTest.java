@@ -65,8 +65,7 @@ public class SecurityHeadersTest extends SolrCloudTestCase {
 
       // path shouldn't matter -- even if bogus / 404
       for (String path : Arrays.asList("/select", "/bogus")) {
-        var resp =
-            httpClient.newRequest(jetty.getBaseUrl().toString() + "/" + COLLECTION + path).send();
+        var resp = httpClient.GET(jetty.getBaseUrl().toString() + "/" + COLLECTION + path);
 
         for (Map.Entry<String, String[]> entry : EXPECTED_HEADERS) {
           // these exact arrays (of 1 element each) should be *ALL* of the header instances...

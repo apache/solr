@@ -537,7 +537,7 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         10,
         () -> {
-          ContentResponse rsp = httpClient.newRequest(jetty.getBaseUrl() + uri).send();
+          ContentResponse rsp = httpClient.GET(jetty.getBaseUrl() + uri);
           try (InputStream is = new ByteArrayInputStream(rsp.getContent())) {
             return NavigableObject.wrap(parser.accept(is));
           }
@@ -691,7 +691,7 @@ public class TestPackages extends SolrCloudTestCase {
             @Override
             public NavigableObject call() throws Exception {
               HttpClient solrClient = jetty.getSolrClient().getHttpClient();
-              byte[] bytes = solrClient.newRequest(path).send().getContent();
+              byte[] bytes = solrClient.GET(path).getContent();
               return (NavigableObject) new JavaBinCodec().unmarshal(bytes);
             }
           },

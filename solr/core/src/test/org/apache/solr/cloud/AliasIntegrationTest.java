@@ -294,7 +294,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
             + aliasName
             + "&property.foo=baz"
             + "&property.bar=bam";
-    assertSuccess(httpClient.newRequest(url).send());
+    assertSuccess(httpClient.GET(url));
     checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
 
     url =
@@ -305,7 +305,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
             + aliasName
             + "&property.foo="
             + "&property.bar=bar";
-    assertSuccess(httpClient.newRequest(url).send());
+    assertSuccess(httpClient.GET(url));
     checkFooAndBarMeta(aliasName, zkStateReader, null, "bar");
   }
 
