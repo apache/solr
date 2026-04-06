@@ -34,6 +34,15 @@ This compatibility safeguard can be disabled via the environment variable `SOLR_
 
 Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
+== Solr 10.1
+
+=== v2 API
+Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
+
+Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer should take care to review any custom `RuleBasedAuthorizationPlugin` permissions and ensure that v2 API paths are adequately secured.
+
+Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
+
 == Solr 10.0
 
 === Solr Jetty parameters
