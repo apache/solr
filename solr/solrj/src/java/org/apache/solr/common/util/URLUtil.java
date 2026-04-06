@@ -219,7 +219,30 @@ public class URLUtil {
       }
       String fullPath = basePath + normalizedPath;
 
-      // Build the URI using the multi-parameter constructor which properly encodes the path
+      // Combine query strings before building final URI
+      // Both queryFromPath and queryParams.toQueryString() are already percent-encoded
+      String combinedEncodedQuery = null;
+      if (queryFromPath != null || queryParams != null) {
+        StringBuilder queryBuilder = new StringBuilder();
+        if (queryFromPath != null) {
+          queryBuilder.append(queryFromPath);
+        }
+        if (queryParams != null) {
+          String encodedParams =
+              queryParams.toQueryString(); // returns "?name1=value1&name2=value2"
+          if (encodedParams.length() > 1) { // More than just "?"
+            if (!queryBuilder.isEmpty()) {
+              queryBuilder.append('&');
+            }
+            queryBuilder.append(encodedParams.substring(1)); // Skip leading '?'
+          }
+        }
+        if (!queryBuilder.isEmpty()) {
+          combinedEncodedQuery = queryBuilder.toString();
+        }
+      }
+
+      // Build URI with path only (no query)
       URI uri =
           new URI(
               baseUri.getScheme(),
@@ -227,25 +250,15 @@ public class URLUtil {
               baseUri.getHost(),
               baseUri.getPort(),
               fullPath,
-              queryFromPath, // pass query from path (null if not present)
+              null, // no query - we'll add it to the string
               baseUri.getFragment());
 
-      // If no additional query params, return early
-      if (queryParams == null) {
-        return uri;
+      // If we have a combined query, append it to the URI string
+      if (combinedEncodedQuery != null) {
+        return URI.create(uri.toASCIIString() + '?' + combinedEncodedQuery);
       }
 
-      // Build the final URL combining query from path with additional params
-      String encodedQuery = queryParams.toQueryString(); // starts with '?'
-
-      String finalUrl;
-      if (queryFromPath == null) {
-        finalUrl = uri.toASCIIString() + encodedQuery;
-      } else {
-        finalUrl = uri.toASCIIString() + '&' + encodedQuery.substring(1);
-      }
-
-      return URI.create(finalUrl);
+      return uri;
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException("Failed to construct URI", e);
     }

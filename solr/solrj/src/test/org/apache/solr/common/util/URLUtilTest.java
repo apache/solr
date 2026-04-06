@@ -214,6 +214,27 @@ public class URLUtilTest extends SolrTestCase {
   }
 
   @Test
+  public void testBuildURIWithSpecialCharsInParamValues() {
+    URI baseUri = URI.create("http://localhost:8983/solr");
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    // Test ampersand and equals sign as literal values in parameters
+    params.add("q", "foo=bar&baz");
+    params.add("fq", "field:a=b");
+
+    URI uri = URLUtil.buildURI(baseUri, "select", params);
+    String uriString = uri.toASCIIString();
+
+    // These characters should be percent-encoded in values
+    // URLEncoder also encodes ':' to %3A
+    assertTrue(
+        "Expected encoded = and & in value, got: " + uriString,
+        uriString.contains("foo%3Dbar%26baz"));
+    assertTrue(
+        "Expected encoded = and : in value, got: " + uriString,
+        uriString.contains("field%3Aa%3Db"));
+  }
+
+  @Test
   public void testBuildURIValidation() {
     URI baseUri = URI.create("http://localhost:8983/solr");
     // Test null baseUri
