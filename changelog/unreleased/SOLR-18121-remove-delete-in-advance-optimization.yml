@@ -1,0 +1,20 @@
+# (DELETE ALL COMMENTS UP HERE AFTER FILLING THIS IN
+
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+# If the change is minor, don't bother adding a changelog entry.
+# For `other` type entries, the threshold to bother with a changelog entry should be even higher.
+
+# title:
+#  * The audience is end-users and administrators, not committers.
+#  * Be short and focused on the user impact.  Multiple sentences is fine!
+#  * For technical/geeky details, prefer the commit message instead of changelog.
+#  * Reference JIRA issues like `SOLR-12345`, or if no JIRA but have a GitHub PR then `PR#12345`.
+
+title: Remove broken disk-space optimization on "full-recovery"
+type: removed
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-18121
+    url: https://issues.apache.org/jira/browse/SOLR-18121
