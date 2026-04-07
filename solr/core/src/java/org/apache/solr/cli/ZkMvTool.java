@@ -119,12 +119,12 @@ public class ZkMvTool extends ToolBase {
           "mv command operates on znodes and 'file:' has been specified.");
     }
     String source = src;
-    if (src.toLowerCase(Locale.ROOT).startsWith("zk")) {
+    if (src.toLowerCase(Locale.ROOT).startsWith("zk:")) {
       source = src.substring(3);
     }
 
     String dest = dst;
-    if (dst.toLowerCase(Locale.ROOT).startsWith("zk")) {
+    if (dst.toLowerCase(Locale.ROOT).startsWith("zk:")) {
       dest = dst.substring(3);
     }
 
