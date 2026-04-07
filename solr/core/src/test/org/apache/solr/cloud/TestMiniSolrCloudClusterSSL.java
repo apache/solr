@@ -295,6 +295,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    *
    * @see #getRandomizedHttpSolrClient
    */
+  @SuppressWarnings("try") // don't care that HttpClient.close can throw InterruptedException
   private static void checkClusterJettys(
       final MiniSolrCloudCluster cluster, final SSLTestConfig sslConfig) throws Exception {
 
