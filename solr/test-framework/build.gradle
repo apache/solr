@@ -105,6 +105,4 @@ dependencies {
     exclude group: "commons-codec", module: "commons-codec"
     exclude group: "commons-logging", module: "commons-logging"
   })
-
-  testImplementation libs.apache.commons.lang3
 }

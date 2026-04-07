@@ -110,7 +110,6 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -1146,23 +1145,19 @@ public class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      if (V2ApiUtils.isEnabled()) {
-        final String effectiveConfigSetId = configSet.getName() + "-" + solrConfig.effectiveId();
-        jerseyAppHandler =
-            coreContainer
-                .getJerseyAppHandlerCache()
-                .computeIfAbsent(
-                    effectiveConfigSetId,
-                    () -> {
-                      log.debug(
-                          "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
-                          effectiveConfigSetId);
-                      return new ApplicationHandler(
-                          reqHandlers.getRequestHandlers().getJerseyEndpoints());
-                    });
-      } else {
-        jerseyAppHandler = null;
-      }
+      final String effectiveConfigSetId = configSet.getName() + "-" + solrConfig.effectiveId();
+      jerseyAppHandler =
+          coreContainer
+              .getJerseyAppHandlerCache()
+              .computeIfAbsent(
+                  effectiveConfigSetId,
+                  () -> {
+                    log.debug(
+                        "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
+                        effectiveConfigSetId);
+                    return new ApplicationHandler(
+                        reqHandlers.getRequestHandlers().getJerseyEndpoints());
+                  });
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
