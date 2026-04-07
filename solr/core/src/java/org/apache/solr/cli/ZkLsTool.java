@@ -18,33 +18,30 @@ package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
 
 /** Supports zk ls command in the bin/solr script. */
-@picocli.CommandLine.Command(
+@CommandLine.Command(
     name = "ls",
     mixinStandardHelpOptions = true,
     description = "List the contents of a ZooKeeper node.")
 public class ZkLsTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @CommandLine.Mixin ZkConnectionOptions zkOpts;
 
-  @picocli.CommandLine.Parameters(
+  @CommandLine.Parameters(
       index = "0",
       arity = "1",
       description = "The path of the ZooKeeper znode path to list.")
   private String path;
 
-  @picocli.CommandLine.Option(
-      names = {"-r", "--recursive"},
-      description = "Apply the command recursively.")
-  private boolean recursive;
+  @CommandLine.Mixin RecursiveOption recursiveOpt;
 
   public ZkLsTool() {
     this(new DefaultToolRuntime());
@@ -74,37 +71,30 @@ public class ZkLsTool extends ToolBase {
   }
 
   @Override
-  public void runImpl(CommandLine cli) throws Exception {
+  public void runImpl(org.apache.commons.cli.CommandLine cli) throws Exception {
     String zkHost = CLIUtils.getZkHost(cli);
     String znode = cli.getArgs()[0];
+    boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
 
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-      boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
-      echoIfVerbose(
-          "Getting listing for ZooKeeper node "
-              + znode
-              + " from ZooKeeper at "
-              + zkHost
-              + " recursive: "
-              + recursive);
-      runtime.print(zkClient.listZnode(znode, recursive));
+      doLs(zkClient, zkHost, znode, recursive);
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
       throw (e);
     }
   }
 
-  private void doLs(SolrZkClient zkClient) throws Exception {
-    echoIfVerbose("\nConnecting to ZooKeeper at " + zkOpts.zkHost + " ...");
+  private void doLs(SolrZkClient zkClient, String zkHost, String znode, boolean recursive)
+      throws Exception {
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     echoIfVerbose(
         "Getting listing for ZooKeeper node "
-            + path
+            + znode
             + " from ZooKeeper at "
-            + zkOpts.zkHost
+            + zkHost
             + " recursive: "
             + recursive);
-    runtime.print(zkClient.listZnode(path, recursive));
+    runtime.print(zkClient.listZnode(znode, recursive));
   }
 
   @Override
@@ -116,7 +106,7 @@ public class ZkLsTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doLs(zkClient);
+      doLs(zkClient, zkHost, path, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);

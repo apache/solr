@@ -16,35 +16,26 @@
  */
 package org.apache.solr.cli;
 
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
 /**
- * Sub commands for working with ZooKeeper, only here to provide a common parent for the subcommands
- * and print tool help.
+ * Picocli mixin providing common configset options shared by upconfig and downconfig sub-commands.
+ *
+ * <p>Use {@code @CommandLine.Mixin ConfigSetOptions configSetOpts} in a command class to inherit
+ * these options.
  */
-@CommandLine.Command(
-    name = "zk",
-    mixinStandardHelpOptions = true,
-    description = "Sub commands for working with ZooKeeper.",
-    footer = "\nPass --help or -h after any COMMAND to see command-specific usage information.",
-    subcommands = {
-      ConfigSetDownloadTool.class,
-      ConfigSetUploadTool.class,
-      ZkCpTool.class,
-      ZkLsTool.class,
-      ZkMkrootTool.class,
-      ZkMvTool.class,
-      ZkRmTool.class,
-      UpdateACLTool.class
-    })
-public class ZkTool implements Callable<Integer> {
+public class ConfigSetOptions {
 
-  @CommandLine.Spec CommandLine.Model.CommandSpec spec;
+  @CommandLine.Option(
+      names = {"-n", "--conf-name"},
+      description = "Configset name in ZooKeeper.",
+      required = true)
+  public String confName;
 
-  @Override
-  public Integer call() {
-    spec.commandLine().usage(CLIO.getOutStream());
-    return 0;
-  }
+  @CommandLine.Option(
+      names = {"-d", "--conf-dir"},
+      description = "Local directory with configs.",
+      required = true,
+      paramLabel = "DIR")
+  public String confDir;
 }

@@ -18,9 +18,11 @@ package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
@@ -29,6 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Supports zk upconfig command in the bin/solr script. */
+@picocli.CommandLine.Command(
+    name = "upconfig",
+    mixinStandardHelpOptions = true,
+    description = "Upload a configset from the local filesystem to ZooKeeper.")
 public class ConfigSetUploadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -49,6 +55,14 @@ public class ConfigSetUploadTool extends ToolBase {
           .required()
           .desc("Local directory with configs.")
           .get();
+
+  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
+
+  public ConfigSetUploadTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ConfigSetUploadTool(ToolRuntime runtime) {
     super(runtime);
@@ -76,40 +90,55 @@ public class ConfigSetUploadTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String zkHost = CLIUtils.getZkHost(cli);
-
-    final String solrInstallDir = System.getProperty("solr.install.dir");
-    Path solrInstallDirPath = Path.of(solrInstallDir);
-
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION);
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
-      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
-
-      echo(
-          "Uploading "
-              + confPath.toAbsolutePath()
-              + " for config "
-              + confName
-              + " to ZooKeeper at "
-              + zkHost);
-      FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
-      ZkMaintenanceUtils.uploadToZK(
-          zkClient,
-          confPath,
-          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
-          ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
-
+      doUpconfig(zkClient, zkHost, confName, confDir);
     } catch (Exception e) {
       log.error("Could not complete upconfig operation for reason: ", e);
       throw (e);
     }
   }
 
+  private void doUpconfig(SolrZkClient zkClient, String zkHost, String confName, String confDir)
+      throws Exception {
+    final String solrInstallDir = System.getProperty("solr.install.dir");
+    Path solrInstallDirPath = Path.of(solrInstallDir);
+    final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
+    Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
+
+    echo(
+        "Uploading "
+            + confPath.toAbsolutePath()
+            + " for config "
+            + confName
+            + " to ZooKeeper at "
+            + zkHost);
+    FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
+    ZkMaintenanceUtils.uploadToZK(
+        zkClient,
+        confPath,
+        ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
+        ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+  }
+
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    String zkHost = zkOpts.resolveZkHost();
+
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      doUpconfig(zkClient, zkHost, configSetOpts.confName, configSetOpts.confDir);
+      return 0;
+    } catch (Exception e) {
+      log.error("Could not complete upconfig operation for reason: ", e);
+      throw (e);
+    }
   }
 }

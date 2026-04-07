@@ -20,16 +20,46 @@ import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Supports zk mv command in the bin/solr script. */
+@picocli.CommandLine.Command(
+    name = "mv",
+    mixinStandardHelpOptions = true,
+    description = {
+      "Move (rename) a znode on ZooKeeper.",
+      "",
+      "<src>, <dest> : ZooKeeper nodes, the 'zk:' prefix is optional.",
+      "If <dest> ends with '/', then <dest> will be a parent znode",
+      "and the last element of the <src> path will be appended."
+    })
 public class ZkMvTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      description = "Source ZooKeeper znode path (zk: prefix optional).")
+  private String src;
+
+  @picocli.CommandLine.Parameters(
+      index = "1",
+      arity = "1",
+      description = "Destination ZooKeeper znode path (zk: prefix optional).")
+  private String dst;
+
+  public ZkMvTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ZkMvTool(ToolRuntime runtime) {
     super(runtime);
@@ -70,37 +100,52 @@ public class ZkMvTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String zkHost = CLIUtils.getZkHost(cli);
+    String src = cli.getArgs()[0];
+    String dst = cli.getArgs()[1];
 
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-      String src = cli.getArgs()[0];
-      String dst = cli.getArgs()[1];
-
-      if (src.toLowerCase(Locale.ROOT).startsWith("file:")
-          || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {
-        throw new SolrServerException(
-            "mv command operates on znodes and 'file:' has been specified.");
-      }
-      String source = src;
-      if (src.toLowerCase(Locale.ROOT).startsWith("zk")) {
-        source = src.substring(3);
-      }
-
-      String dest = dst;
-      if (dst.toLowerCase(Locale.ROOT).startsWith("zk")) {
-        dest = dst.substring(3);
-      }
-
-      echo("Moving Znode " + source + " to " + dest + " on ZooKeeper at " + zkHost);
-      zkClient.moveZnode(source, dest);
+      doMv(zkClient, zkHost, src, dst);
     } catch (Exception e) {
       log.error("Could not complete mv operation for reason: ", e);
       throw (e);
     }
   }
 
+  private void doMv(SolrZkClient zkClient, String zkHost, String src, String dst) throws Exception {
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    if (src.toLowerCase(Locale.ROOT).startsWith("file:")
+        || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {
+      throw new SolrServerException(
+          "mv command operates on znodes and 'file:' has been specified.");
+    }
+    String source = src;
+    if (src.toLowerCase(Locale.ROOT).startsWith("zk:")) {
+      source = src.substring(3);
+    }
+
+    String dest = dst;
+    if (dst.toLowerCase(Locale.ROOT).startsWith("zk:")) {
+      dest = dst.substring(3);
+    }
+
+    echo("Moving Znode " + source + " to " + dest + " on ZooKeeper at " + zkHost);
+    zkClient.moveZnode(source, dest);
+  }
+
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    String zkHost = zkOpts.resolveZkHost();
+
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      doMv(zkClient, zkHost, src, dst);
+      return 0;
+    } catch (Exception e) {
+      log.error("Could not complete mv operation for reason: ", e);
+      throw (e);
+    }
   }
 }

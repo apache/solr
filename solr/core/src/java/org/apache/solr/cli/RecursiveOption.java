@@ -16,35 +16,16 @@
  */
 package org.apache.solr.cli;
 
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
 /**
- * Sub commands for working with ZooKeeper, only here to provide a common parent for the subcommands
- * and print tool help.
+ * Picocli mixin providing the {@code --recursive} option shared by ZooKeeper sub-commands that
+ * support recursive traversal (cp, ls, rm).
  */
-@CommandLine.Command(
-    name = "zk",
-    mixinStandardHelpOptions = true,
-    description = "Sub commands for working with ZooKeeper.",
-    footer = "\nPass --help or -h after any COMMAND to see command-specific usage information.",
-    subcommands = {
-      ConfigSetDownloadTool.class,
-      ConfigSetUploadTool.class,
-      ZkCpTool.class,
-      ZkLsTool.class,
-      ZkMkrootTool.class,
-      ZkMvTool.class,
-      ZkRmTool.class,
-      UpdateACLTool.class
-    })
-public class ZkTool implements Callable<Integer> {
+public class RecursiveOption {
 
-  @CommandLine.Spec CommandLine.Model.CommandSpec spec;
-
-  @Override
-  public Integer call() {
-    spec.commandLine().usage(CLIO.getOutStream());
-    return 0;
-  }
+  @CommandLine.Option(
+      names = {"-r", "--recursive"},
+      description = "Apply the command recursively.")
+  public boolean recursive;
 }
