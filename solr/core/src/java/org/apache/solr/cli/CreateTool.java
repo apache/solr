@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.ConfigSetService;
 
 /** Supports create command in the bin/solr script. */
@@ -412,7 +413,8 @@ public class CreateTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHostArg = (connectionOptions != null) ? connectionOptions.zkHost : null;
+    String zkHostArg =
+        (connectionOptions != null) ? connectionOptions.zkHost : EnvUtils.getProperty("zkHost");
     String solrUrlArg = (connectionOptions != null) ? connectionOptions.solrUrl : null;
 
     if (zkHostArg != null) {

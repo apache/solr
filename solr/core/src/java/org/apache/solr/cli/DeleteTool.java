@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,7 +207,7 @@ public class DeleteTool extends ToolBase {
               "Configuration directory {} is also being used by {}{}",
               configName,
               inUse.get(),
-              "; configuration will not be deleted from ZooKeeper. You can pass the --force-delete-config flag to force delete.");
+              "; configuration will not be deleted from ZooKeeper. You can pass the --force flag to force delete.");
         }
       }
     }
@@ -257,7 +258,8 @@ public class DeleteTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHostArg = (connectionOptions != null) ? connectionOptions.zkHost : null;
+    String zkHostArg =
+        (connectionOptions != null) ? connectionOptions.zkHost : EnvUtils.getProperty("zkHost");
     String solrUrlArg = (connectionOptions != null) ? connectionOptions.solrUrl : null;
     DeleteParams params =
         new DeleteParams(name, credentialsOptions.credentials, deleteConfig, force);
