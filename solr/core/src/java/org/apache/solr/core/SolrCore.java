@@ -2658,6 +2658,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           future =
               searcherExecutor.submit(
                   () -> {
+                    AttributedLongTimer.MetricTimer warmupContext = newSearcherWarmupTimer.start();
                     try {
                       newSearcher.warm(currSearcher);
                     } catch (Throwable e) {
@@ -2665,6 +2666,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
                       if (e instanceof Error) {
                         throw (Error) e;
                       }
+                    } finally {
+                      warmupContext.stop();
                     }
                     return null;
                   });

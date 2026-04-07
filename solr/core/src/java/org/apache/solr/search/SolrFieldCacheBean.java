@@ -56,12 +56,12 @@ public class SolrFieldCacheBean implements SolrInfoBean {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     var solrCacheStats =
-        solrMetricsContext.longGaugeMeasurement(
+        parentContext.longGaugeMeasurement(
             "solr.core.field_cache.entries", "Number of field cache entries");
     var solrCacheSize =
-        solrMetricsContext.longGaugeMeasurement(
+        parentContext.longGaugeMeasurement(
             "solr.core.field_cache.size", "Size of field cache in bytes", OtelUnit.BYTES);
-    solrMetricsContext.batchCallback(
+    parentContext.batchCallback(
         () -> {
           if (enableEntryList && enableJmxEntryList) {
             UninvertingReader.FieldCacheStats fieldCacheStats =
