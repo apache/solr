@@ -110,7 +110,6 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -138,7 +137,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.LocalStatsCache;
@@ -254,7 +252,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private AttributedLongCounter newSearcherMaxReachedCounter;
   private AttributedLongCounter newSearcherOtherErrorsCounter;
   private AttributedLongTimer newSearcherTimer;
-  private List<AutoCloseable> toClose;
+  private AttributedLongTimer newSearcherWarmupTimer;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1125,14 +1123,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
 
-      SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
-      // this is registered at the CONTAINER level because it's not core-specific - for now we
-      // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(
-          solrMetricsContext,
-          coreAttributes.toBuilder().put(CATEGORY_ATTR, Category.CACHE.toString()).build());
-      infoRegistry.put("fieldCache", solrFieldCacheBean);
-
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
       this.slowQueryThresholdMillis = solrConfig.slowQueryThresholdMillis;
 
@@ -1155,23 +1145,19 @@ public class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      if (V2ApiUtils.isEnabled()) {
-        final String effectiveConfigSetId = configSet.getName() + "-" + solrConfig.effectiveId();
-        jerseyAppHandler =
-            coreContainer
-                .getJerseyAppHandlerCache()
-                .computeIfAbsent(
-                    effectiveConfigSetId,
-                    () -> {
-                      log.debug(
-                          "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
-                          effectiveConfigSetId);
-                      return new ApplicationHandler(
-                          reqHandlers.getRequestHandlers().getJerseyEndpoints());
-                    });
-      } else {
-        jerseyAppHandler = null;
-      }
+      final String effectiveConfigSetId = configSet.getName() + "-" + solrConfig.effectiveId();
+      jerseyAppHandler =
+          coreContainer
+              .getJerseyAppHandlerCache()
+              .computeIfAbsent(
+                  effectiveConfigSetId,
+                  () -> {
+                    log.debug(
+                        "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
+                        effectiveConfigSetId);
+                    return new ApplicationHandler(
+                        reqHandlers.getRequestHandlers().getJerseyEndpoints());
+                  });
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -1206,8 +1192,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
-        ((SolrMetricProducer) directoryFactory)
-            .initializeMetrics(solrMetricsContext, Attributes.empty());
+        coreMetricManager.registerMetricProducer(
+            (SolrMetricProducer) directoryFactory, Attributes.empty());
       }
 
       bufferUpdatesIfConstructing(coreDescriptor);
@@ -1323,8 +1309,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    final List<AutoCloseable> observables = new ArrayList<>();
-
     Attributes baseSearcherAttributes =
         Attributes.builder()
             .putAll(attributes)
@@ -1363,59 +1347,64 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 OtelUnit.MILLISECONDS),
             baseSearcherAttributes);
 
-    observables.add(
-        parentContext.observableLongGauge(
-            "solr.core.ref_count",
-            "The current number of active references to a Solr core",
-            (observableLongMeasurement -> {
-              observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
-            })));
+    newSearcherWarmupTimer =
+        new AttributedLongTimer(
+            parentContext.longHistogram(
+                "solr.core.indexsearcher.open.warmup.time",
+                "Time to warmup new searchers",
+                OtelUnit.MILLISECONDS),
+            baseSearcherAttributes);
 
-    observables.add(
-        parentContext.observableDoubleGauge(
-            "solr.core.disk_space",
-            "Solr core disk space metrics",
-            (observableDoubleMeasurement -> {
+    parentContext.observableLongGauge(
+        "solr.core.ref_count",
+        "The current number of active references to a Solr core",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
+        }));
 
-              // initialize disk total / free metrics
-              Path dataDirPath = Path.of(dataDir);
-              var totalSpaceAttributes =
-                  Attributes.builder()
-                      .putAll(baseGaugeCoreAttributes)
-                      .put(TYPE_ATTR, "total_space")
-                      .build();
-              var usableSpaceAttributes =
-                  Attributes.builder()
-                      .putAll(baseGaugeCoreAttributes)
-                      .put(TYPE_ATTR, "usable_space")
-                      .build();
-              try {
-                observableDoubleMeasurement.record(
-                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getTotalSpace()),
-                    totalSpaceAttributes);
-              } catch (IOException e) {
-                observableDoubleMeasurement.record(0.0, totalSpaceAttributes);
-              }
-              try {
-                observableDoubleMeasurement.record(
-                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getUsableSpace()),
-                    usableSpaceAttributes);
-              } catch (IOException e) {
-                observableDoubleMeasurement.record(0.0, usableSpaceAttributes);
-              }
-            }),
-            OtelUnit.MEGABYTES));
+    parentContext.observableDoubleGauge(
+        "solr.core.disk_space",
+        "Solr core disk space metrics",
+        (observableDoubleMeasurement -> {
 
-    observables.add(
-        parentContext.observableDoubleGauge(
-            "solr.core.index.size",
-            "Index size for a Solr core",
-            (observableDoubleMeasurement -> {
-              if (!isClosed())
-                observableDoubleMeasurement.record(
-                    MetricUtils.bytesToMegabytes(getIndexSize()), baseGaugeCoreAttributes);
-            }),
-            OtelUnit.MEGABYTES));
+          // initialize disk total / free metrics
+          Path dataDirPath = Path.of(dataDir);
+          var totalSpaceAttributes =
+              Attributes.builder()
+                  .putAll(baseGaugeCoreAttributes)
+                  .put(TYPE_ATTR, "total_space")
+                  .build();
+          var usableSpaceAttributes =
+              Attributes.builder()
+                  .putAll(baseGaugeCoreAttributes)
+                  .put(TYPE_ATTR, "usable_space")
+                  .build();
+          try {
+            observableDoubleMeasurement.record(
+                MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getTotalSpace()),
+                totalSpaceAttributes);
+          } catch (IOException e) {
+            observableDoubleMeasurement.record(0.0, totalSpaceAttributes);
+          }
+          try {
+            observableDoubleMeasurement.record(
+                MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getUsableSpace()),
+                usableSpaceAttributes);
+          } catch (IOException e) {
+            observableDoubleMeasurement.record(0.0, usableSpaceAttributes);
+          }
+        }),
+        OtelUnit.MEGABYTES);
+
+    parentContext.observableDoubleGauge(
+        "solr.core.index.size",
+        "Index size for a Solr core",
+        (observableDoubleMeasurement -> {
+          if (!isClosed())
+            observableDoubleMeasurement.record(
+                MetricUtils.bytesToMegabytes(getIndexSize()), baseGaugeCoreAttributes);
+        }),
+        OtelUnit.MEGABYTES);
 
     parentContext.observableLongGauge(
         "solr.core.segments",
@@ -1426,17 +1415,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }));
 
     if (coreContainer.isZooKeeperAware())
-      observables.add(
-          parentContext.observableLongGauge(
-              "solr.core.is_leader",
-              "Indicates whether this Solr core is currently the leader",
-              (observableLongMeasurement -> {
-                observableLongMeasurement.record(
-                    (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0,
-                    baseGaugeCoreAttributes);
-              })));
-
-    this.toClose = Collections.unmodifiableList(observables);
+      parentContext.observableLongGauge(
+          "solr.core.is_leader",
+          "Indicates whether this Solr core is currently the leader",
+          (observableLongMeasurement -> {
+            observableLongMeasurement.record(
+                (coreDescriptor.getCloudDescriptor().isLeader()) ? 1 : 0, baseGaugeCoreAttributes);
+          }));
   }
 
   public String getMetricTag() {
@@ -1786,7 +1771,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
         assert false : "Too many closes on SolrCore";
       } else if (count == 0) {
         doClose();
-        IOUtils.closeQuietly(toClose);
       }
     } finally {
       MDCLoggingContext.clear(); // balance out from SolrCore open with close
@@ -2064,8 +2048,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (searchComponents.isLoaded(name)
           && searchComponents.get(name) instanceof HighlightComponent) {
         if (!HighlightComponent.COMPONENT_NAME.equals(name)) {
-          searchComponents.put(
-              HighlightComponent.COMPONENT_NAME, searchComponents.getRegistry().get(name));
+          searchComponents.alias(name, HighlightComponent.COMPONENT_NAME);
         }
         break;
       }

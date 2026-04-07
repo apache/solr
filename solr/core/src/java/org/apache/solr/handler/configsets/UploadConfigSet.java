@@ -29,6 +29,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
@@ -58,6 +59,7 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
       throws IOException {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureConfigSetUploadEnabled();
+    SolrIdentifierValidator.validateConfigSetName(configSetName);
 
     boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
     // Get upload parameters
@@ -110,6 +112,7 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
       throws IOException {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureConfigSetUploadEnabled();
+    SolrIdentifierValidator.validateConfigSetName(configSetName);
 
     boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
 
