@@ -25,7 +25,6 @@ import java.util.concurrent.TimeoutException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -39,49 +38,40 @@ public class RestTestHarness extends BaseTestHarness {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final HttpClient httpClient;
-  private final String baseUrl;
   private final URI baseUri;
 
   /**
    * Creates a RestTestHarness for the given base URL using the provided HttpClient.
    *
    * @param httpClient The HttpClient to use for requests (not closed by this harness)
-   * @param baseUrl The base URL (e.g., "http://localhost:8983/solr/collection1")
+   * @param baseUri The base URI (e.g., "http://localhost:8983/solr/collection1")
    */
-  public RestTestHarness(HttpClient httpClient, String baseUrl) {
+  public RestTestHarness(HttpClient httpClient, URI baseUri) {
     if (httpClient == null) {
       throw new IllegalArgumentException("httpClient cannot be null");
     }
-    if (baseUrl == null || baseUrl.isEmpty()) {
-      throw new IllegalArgumentException("baseUrl cannot be null or empty");
+    if (baseUri == null || !baseUri.isAbsolute()) {
+      throw new IllegalArgumentException("baseUrl cannot be null or non-absolute");
     }
     this.httpClient = httpClient;
-    this.baseUrl = baseUrl;
-    this.baseUri = URI.create(baseUrl);
+    this.baseUri = baseUri;
   }
 
-  /**
-   * Convenience constructor that creates a RestTestHarness for a specific core/collection on a
-   * JettySolrRunner.
-   *
-   * @param jetty The JettySolrRunner
-   * @param coreOrCollection The core or collection name (appended to jetty's base URL)
-   */
-  public RestTestHarness(JettySolrRunner jetty, String coreOrCollection) {
-    this(
-        jetty.getSolrClient().getHttpClient(),
-        jetty.getBaseUrl().toString() + "/" + coreOrCollection);
-  }
-
+  /** Creates a new instance for the specified URL, sharing the underlying HTTP client. */
   public RestTestHarness newWithUrl(String baseUrl) {
-    return new RestTestHarness(httpClient, baseUrl);
+    return new RestTestHarness(httpClient, URI.create(baseUrl));
+  }
+
+  @Override
+  public String toString() {
+    return getBaseURL();
   }
 
   public String getBaseURL() {
-    return baseUrl;
+    return getBaseURI().toASCIIString();
   }
 
-  private URI getBaseURI() {
+  public URI getBaseURI() {
     return baseUri;
   }
 
@@ -111,6 +101,17 @@ public class RestTestHarness extends BaseTestHarness {
         getHttpClient()
             .newRequest(URLUtil.buildURI(getAdminURI(), request))
             .method(HttpMethod.GET));
+  }
+
+  /**
+   * Processes a HEAD request using a URL path (with no context path) + optional query params and
+   * returns the response content.
+   *
+   * @param request The URL path and optional query params
+   * @return The response to the HEAD request
+   */
+  public ContentResponse head(String request) throws IOException {
+    return send(getHttpClient().newRequest(buildUri(request)).method(HttpMethod.HEAD));
   }
 
   /**
@@ -203,11 +204,16 @@ public class RestTestHarness extends BaseTestHarness {
   }
 
   private URI buildUri(String request) {
-    return URLUtil.buildURI(getBaseURI(), request);
+    return request == null ? getBaseURI() : URLUtil.buildURI(getBaseURI(), request);
   }
 
   /** Executes the given request and returns the response as a String. */
   private String sendAndReturnString(Request request) throws IOException {
+    ContentResponse rsp = send(request);
+    return rsp.getContentAsString();
+  }
+
+  private static ContentResponse send(Request request) throws IOException {
     ContentResponse rsp;
     try {
       rsp = request.send();
@@ -228,7 +234,7 @@ public class RestTestHarness extends BaseTestHarness {
         throw new RuntimeException(ex);
       }
     }
-    return rsp.getContentAsString();
+    return rsp;
   }
 
   public HttpClient getHttpClient() {

@@ -122,12 +122,7 @@ public class TestRestManager extends SolrRestletTestBase {
 
   /** Helper method to verify HEAD request returns expected status code */
   private void assertHead(String request, int expectedStatusCode) throws Exception {
-    var response =
-        restTestHarness
-            .getHttpClient()
-            .newRequest(restTestHarness.getBaseURL() + request)
-            .method("HEAD")
-            .send();
+    var response = restTestHarness.head(request);
     assertEquals(expectedStatusCode, response.getStatus());
     assertEquals(0, response.getHeaders().getLongField("Content-Length"));
   }

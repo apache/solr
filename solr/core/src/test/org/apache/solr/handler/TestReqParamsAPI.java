@@ -48,8 +48,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     for (final JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       // Randomly pick v1 or v2 API
       String path = random().nextBoolean() ? COLL_NAME : "____v2/c/" + COLL_NAME;
-      RestTestHarness harness = new RestTestHarness(jettySolrRunner, path);
-      restTestHarnesses.add(harness);
+      restTestHarnesses.add(jettySolrRunner.getRestClient(path));
     }
   }
 

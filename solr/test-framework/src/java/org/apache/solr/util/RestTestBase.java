@@ -62,7 +62,7 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
 
     createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
 
-    restTestHarness = new RestTestHarness(getJetty(), DEFAULT_TEST_CORENAME);
+    restTestHarness = getJetty().getRestClient(DEFAULT_TEST_CORENAME);
   }
 
   protected static JettySolrRunner createAndStartJetty(

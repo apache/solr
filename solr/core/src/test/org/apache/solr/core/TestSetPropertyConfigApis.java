@@ -343,7 +343,7 @@ public class TestSetPropertyConfigApis extends SolrCloudTestCase {
   }
 
   private static RestTestHarness makeRestHarness(final String collectionName) {
-    return new RestTestHarness(cluster.getRandomJetty(random()), collectionName);
+    return cluster.getRandomJetty(random()).getRestClient(collectionName);
   }
 
   private static void runConfigCommand(RestTestHarness harness, String json) throws IOException {

@@ -3107,11 +3107,12 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected void setupRestTestHarnesses() {
     for (final JettySolrRunner jetty : jettys) {
-      restTestHarnesses.add(new RestTestHarness(jetty, DEFAULT_TEST_COLLECTION_NAME));
+      restTestHarnesses.add(jetty.getRestClient(DEFAULT_TEST_COLLECTION_NAME));
     }
   }
 
   protected void closeRestTestHarnesses() throws IOException {
+    // note: prior to Solr 10.1, there was actual closing to do.
     restTestHarnesses.clear();
   }
 
