@@ -25,6 +25,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.numericrange.AbstractNumericRangeField;
 import org.apache.solr.schema.numericrange.AbstractNumericRangeField.NumericRangeValue;
+import org.apache.solr.schema.numericrange.DoubleRangeField;
 import org.apache.solr.schema.numericrange.FloatRangeField;
 import org.apache.solr.schema.numericrange.IntRangeField;
 import org.apache.solr.schema.numericrange.LongRangeField;
@@ -36,9 +37,9 @@ import org.apache.solr.search.SyntaxError;
 /**
  * Query parser for numeric range fields with support for different query relationship types.
  *
- * <p>This parser enables queries against {@link IntRangeField}, {@link LongRangeField}, and {@link
- * FloatRangeField} fields with explicit control over the query relationship type (intersects,
- * within, contains, crosses).
+ * <p>This parser enables queries against {@link IntRangeField}, {@link LongRangeField}, {@link
+ * FloatRangeField}, and {@link DoubleRangeField} fields with explicit control over the query
+ * relationship type (intersects, within, contains, crosses).
  *
  * <h2>Parameters</h2>
  *
@@ -82,6 +83,7 @@ import org.apache.solr.search.SyntaxError;
  * @see IntRangeField
  * @see LongRangeField
  * @see FloatRangeField
+ * @see DoubleRangeField
  * @lucene.experimental
  */
 public class NumericRangeQParserPlugin extends QParserPlugin {

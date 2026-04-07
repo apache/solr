@@ -100,7 +100,6 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
 import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -163,6 +162,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Create baseConfigNoExists = new Create();
       baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
       verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
+
+      // Invalid configset names
+      for (String invalidName :
+          new String[] {"configset!", "configset\"", "-configset", "configset name"}) {
+        Create invalidNameCreate = new Create();
+        invalidNameCreate.setConfigSetName(invalidName).setBaseConfigSetName("_default");
+        verifyException(solrClient, invalidNameCreate, "Invalid configset");
+      }
     }
   }
 
@@ -383,6 +390,22 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
         zkClient.exists("/configs/myconf/anotherDummyFile"));
+
+    // Checking error when configuration name contains invalid characters
+    for (String invalidName : new String[] {"configset!", "-configset"}) {
+      map =
+          postDataAndGetResponse(
+              cluster.getSolrClient(),
+              cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
+                  + "/admin/configs?action=UPLOAD&name="
+                  + invalidName,
+              emptyData,
+              null,
+              false);
+      assertNotNull(map);
+      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+      assertEquals("Expected 400 for invalid configset name: " + invalidName, 400l, statusCode);
+    }
 
     zkClient.close();
     solrClient.close();
@@ -1650,12 +1673,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * the real directory which matches what {@link ZkController} finds and uses to bootstrap ZK in
    * cloud based tests.
    *
-   * <p>This assumes the {@link SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE} system
-   * property has not been externally set in the environment where this test is being run -- which
-   * should <b>never</b> be the case, since it would prevent the test-framework from using {@link
+   * <p>This assumes the {@link ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR} system property has
+   * not been externally set in the environment where this test is being run -- which should
+   * <b>never</b> be the case, since it would prevent the test-framework from using {@link
    * ExternalPaths#DEFAULT_CONFIGSET}
    *
-   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR
    * @see #beforeSolrTestCase
    * @see ConfigSetService#getDefaultConfigDirPath
    */
