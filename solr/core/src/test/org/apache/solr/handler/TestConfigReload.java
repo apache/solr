@@ -51,11 +51,8 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   @Test
   public void test() throws Exception {
     setupRestTestHarnesses();
-    try {
-      reloadTest();
-    } finally {
-      closeRestTestHarnesses();
-    }
+    reloadTest();
+    closeRestTestHarnesses();
   }
 
   private void reloadTest() throws Exception {

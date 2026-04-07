@@ -46,12 +46,9 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   private void setupHarnesses() {
     for (final JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      RestTestHarness harness =
-          new RestTestHarness(() -> jettySolrRunner.getBaseUrl().toString() + "/" + COLL_NAME);
-      if (random().nextBoolean()) {
-        harness.setServerProvider(
-            () -> jettySolrRunner.getBaseUrl().toString() + "/____v2/c/" + COLL_NAME);
-      }
+      // Randomly pick v1 or v2 API
+      String path = random().nextBoolean() ? COLL_NAME : "____v2/c/" + COLL_NAME;
+      RestTestHarness harness = new RestTestHarness(jettySolrRunner, path);
       restTestHarnesses.add(harness);
     }
   }
@@ -70,14 +67,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    try {
-      setupHarnesses();
-      testReqParams();
-    } finally {
-      for (RestTestHarness r : restTestHarnesses) {
-        r.close();
-      }
-    }
+    setupHarnesses();
+    testReqParams();
   }
 
   private void testReqParams() throws Exception {
@@ -120,60 +111,48 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     Map<?, ?> result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "x", "a"),
             "A val",
             10);
     compareValues(result, "B val", asList("response", "params", "x", "b"));
 
     TestSolrConfigHandler.testForResponseElement(
-        null,
-        urls.get(random().nextInt(urls.size())),
+        writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
         "/config/overlay",
-        cloudClient,
         asList("overlay", "requestHandler", "/dump0", "name"),
         "/dump0",
         10);
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/dump0?useParams=x",
-            cloudClient,
             asList("params", "a"),
             "A val",
             5);
     compareValues(result, "", asList("params", RequestParams.USEPARAM));
 
     TestSolrConfigHandler.testForResponseElement(
-        null,
-        urls.get(random().nextInt(urls.size())),
+        writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
         "/dump0?useParams=x&a=fomrequest",
-        cloudClient,
         asList("params", "a"),
         "fomrequest",
         5);
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/overlay",
-            cloudClient,
             asList("overlay", "requestHandler", "/dump1", "name"),
             "/dump1",
             10);
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/dump1",
-            cloudClient,
             asList("params", "a"),
             "A val",
             5);
@@ -193,10 +172,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "y", "c"),
             "CY val",
             10);
@@ -205,10 +182,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/dump1?useParams=y",
-            cloudClient,
             asList("params", "c"),
             "CY val",
             5);
@@ -219,10 +194,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/requestHandler?componentName=/dump1&expandParams=true&useParams=y&c=CC",
-            cloudClient,
             asList("config", "requestHandler", "/dump1", "_useParamsExpanded_", "x", "a"),
             "A val",
             5);
@@ -259,10 +232,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "y", "c"),
             "CY val modified",
             10);
@@ -280,10 +251,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params", payload);
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "y", "p"),
             "P val",
             10);
@@ -296,10 +265,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "x", "_appends_", "add"),
             "first",
             10);
@@ -307,10 +274,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/dump1?fixed=changeit&add=second",
-            cloudClient,
             asList("params", "fixed"),
             "f",
             5);
@@ -328,10 +293,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     payload = " {'delete' : 'y'}";
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        null,
-        urls.get(random().nextInt(urls.size())),
+        writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
         "/config/params",
-        cloudClient,
         asList("response", "params", "y", "p"),
         null,
         10);

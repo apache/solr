@@ -35,7 +35,6 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.StrUtils;
@@ -46,7 +45,6 @@ import org.apache.solr.handler.DumpRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrCache;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
@@ -101,19 +99,14 @@ public class TestSolrConfigHandler extends RestTestBase {
         extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
-      restTestHarness.setServerProvider(
-          () -> getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+      restTestHarness =
+          restTestHarness.newWithUrl(getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
     }
   }
 
   @After
   public void after() throws Exception {
     solrTestRule.reset();
-
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   public void testProperty() throws Exception {
@@ -173,7 +166,7 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public void testReqHandlerAPIs() throws Exception {
-    reqhandlertests(restTestHarness, null, null);
+    reqhandlertests(restTestHarness);
   }
 
   public static void runConfigCommand(RestTestHarness harness, String uri, String payload)
@@ -205,9 +198,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         errorMessages.get(0).toString().contains(expectedErrorMessage));
   }
 
-  public static void reqhandlertests(
-      RestTestHarness writeHarness, String testServerBaseUrl, CloudSolrClient cloudSolrClient)
-      throws Exception {
+  public static void reqhandlertests(RestTestHarness writeHarness) throws Exception {
     String payload =
         "{\n"
             + "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n"
@@ -216,9 +207,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config/overlay",
-        cloudSolrClient,
         asList("overlay", "requestHandler", "/x", "startup"),
         "lazy",
         TIMEOUT_S);
@@ -232,9 +221,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config/overlay",
-        cloudSolrClient,
         asList("overlay", "requestHandler", "/x", "a"),
         "b",
         TIMEOUT_S);
@@ -250,27 +237,21 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config/overlay",
-        cloudSolrClient,
         asList("overlay", "requestHandler", "/dump", "defaults", "c"),
         "C",
         TIMEOUT_S);
 
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/x?getdefaults=true&json.nl=map",
-        cloudSolrClient,
         asList("getdefaults", "def_a"),
         "def A val",
         TIMEOUT_S);
 
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/x?param=multival&json.nl=map",
-        cloudSolrClient,
         asList("params", "multival"),
         asList("a", "b", "c"),
         TIMEOUT_S);
@@ -283,10 +264,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
         < maxTimeoutSeconds) {
       String uri = "/config/overlay";
-      Map<?, ?> m =
-          testServerBaseUrl == null
-              ? getRespMap(writeHarness, uri)
-              : getRespMap(writeHarness, testServerBaseUrl + uri); // RTH accepts whole URLs
+      Map<?, ?> m = getRespMap(writeHarness, uri);
       if (null == Utils.getObjectByPath(m, true, asList("overlay", "requestHandler", "/x", "a"))) {
         success = true;
         break;
@@ -302,9 +280,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "queryConverter", "qc", "class"),
         "org.apache.solr.spelling.SpellingQueryConverter",
         TIMEOUT_S);
@@ -315,9 +291,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "queryConverter", "qc", "class"),
         "org.apache.solr.spelling.SuggestQueryConverter",
         TIMEOUT_S);
@@ -325,13 +299,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     payload = "{\n" + "'delete-queryconverter' : 'qc'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness,
-        testServerBaseUrl,
-        "/config",
-        cloudSolrClient,
-        asList("config", "queryConverter", "qc"),
-        null,
-        TIMEOUT_S);
+        writeHarness, "/config", asList("config", "queryConverter", "qc"), null, TIMEOUT_S);
 
     payload =
         "{\n"
@@ -343,9 +311,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "listener[0]", "class"),
         "solr.QuerySenderListener",
         TIMEOUT_S);
@@ -360,23 +326,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "listener[0]", "class"),
         "org.apache.solr.core.QuerySenderListener",
         TIMEOUT_S);
 
     payload = "{\n" + "'delete-listener' : 'f7fb2d87bea44464af2401cf33f42b69'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
-    testForResponseElement(
-        writeHarness,
-        testServerBaseUrl,
-        "/config",
-        cloudSolrClient,
-        asList("config", "listener"),
-        null,
-        TIMEOUT_S);
+    testForResponseElement(writeHarness, "/config", asList("config", "listener"), null, TIMEOUT_S);
 
     payload =
         "{\n"
@@ -385,9 +342,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "searchComponent", "tc", "class"),
         "org.apache.solr.handler.component.TermsComponent",
         TIMEOUT_S);
@@ -398,9 +353,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "searchComponent", "tc", "class"),
         "org.apache.solr.handler.component.TermVectorComponent",
         TIMEOUT_S);
@@ -408,13 +361,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     payload = "{\n" + "'delete-searchcomponent' : 'tc'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness,
-        testServerBaseUrl,
-        "/config",
-        cloudSolrClient,
-        asList("config", "searchComponent", "tc"),
-        null,
-        TIMEOUT_S);
+        writeHarness, "/config", asList("config", "searchComponent", "tc"), null, TIMEOUT_S);
     // <valueSourceParser name="countUsage"
     // class="org.apache.solr.core.CountUsageValueSourceParser"/>
     payload =
@@ -424,9 +371,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "valueSourceParser", "cu", "class"),
         "org.apache.solr.core.CountUsageValueSourceParser",
         TIMEOUT_S);
@@ -440,9 +385,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "valueSourceParser", "cu", "class"),
         "org.apache.solr.search.function.NvlValueSourceParser",
         TIMEOUT_S);
@@ -450,13 +393,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     payload = "{\n" + "'delete-valuesourceparser' : 'cu'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness,
-        testServerBaseUrl,
-        "/config",
-        cloudSolrClient,
-        asList("config", "valueSourceParser", "cu"),
-        null,
-        TIMEOUT_S);
+        writeHarness, "/config", asList("config", "valueSourceParser", "cu"), null, TIMEOUT_S);
     //    <transformer name="mytrans2"
     // class="org.apache.solr.response.transform.ValueAugmenterFactory" >
     //    <int name="value">5</int>
@@ -468,9 +405,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "transformer", "mytrans", "class"),
         "org.apache.solr.response.transform.ValueAugmenterFactory",
         TIMEOUT_S);
@@ -482,9 +417,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config",
-        cloudSolrClient,
         asList("config", "transformer", "mytrans", "value"),
         "6",
         TIMEOUT_S);
@@ -497,13 +430,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     Map<?, ?> map =
         testForResponseElement(
-            writeHarness,
-            testServerBaseUrl,
-            "/config",
-            cloudSolrClient,
-            asList("config", "transformer", "mytrans"),
-            null,
-            TIMEOUT_S);
+            writeHarness, "/config", asList("config", "transformer", "mytrans"), null, TIMEOUT_S);
 
     List<?> l = (List<?>) Utils.getObjectByPath(map, false, asList("config", "initParams"));
     assertNotNull("no object /config/initParams : " + map, l);
@@ -527,9 +454,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     map =
         testForResponseElement(
             writeHarness,
-            testServerBaseUrl,
             "/config",
-            cloudSolrClient,
             asList("config", "searchComponent", "myspellcheck", "spellchecker", "class"),
             "solr.DirectSolrSpellChecker",
             TIMEOUT_S);
@@ -548,9 +473,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     map =
         testForResponseElement(
             writeHarness,
-            testServerBaseUrl,
             "/config",
-            cloudSolrClient,
             asList("config", "requestHandler", "/dump100", "class"),
             "org.apache.solr.handler.DumpRequestHandler",
             TIMEOUT_S);
@@ -575,9 +498,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config/overlay",
-        cloudSolrClient,
         asList("overlay", "requestHandler", "/dump101", "startup"),
         "lazy",
         TIMEOUT_S);
@@ -591,9 +512,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     map =
         testForResponseElement(
             writeHarness,
-            testServerBaseUrl,
             "/config/overlay",
-            cloudSolrClient,
             asList("overlay", "cache", "lfuCacheDecayFalse", "class"),
             "solr.search.CaffeineCache",
             TIMEOUT_S);
@@ -673,9 +592,7 @@ public class TestSolrConfigHandler extends RestTestBase {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public static LinkedHashMapWriter testForResponseElement(
       RestTestHarness harness,
-      String testServerBaseUrl,
       String uri,
-      CloudSolrClient cloudSolrClient,
       List<String> jsonPath,
       Object expected,
       long maxTimeoutSeconds)
@@ -687,10 +604,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     TimeOut timeOut = new TimeOut(maxTimeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       try {
-        m =
-            testServerBaseUrl == null
-                ? getRespMap(harness, uri)
-                : getRespMap(harness, testServerBaseUrl + uri);
+        m = getRespMap(harness, uri);
       } catch (Exception e) {
         Thread.sleep(100);
         continue;
@@ -714,7 +628,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertTrue(
         StrUtils.formatString(
             "Could not get expected value  ''{0}'' for path ''{1}'' full output: {2},  from server:  {3}",
-            expected, StrUtils.join(jsonPath, '/'), m.toString(), testServerBaseUrl),
+            expected, StrUtils.join(jsonPath, '/'), m.toString(), harness.getBaseURL()),
         success);
 
     return m;
@@ -733,22 +647,10 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/config/params",
-        null,
-        asList("response", "params", "x", "a"),
-        "A val",
-        TIMEOUT_S);
+        harness, "/config/params", asList("response", "params", "x", "a"), "A val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/config/params",
-        null,
-        asList("response", "params", "x", "b"),
-        "B val",
-        TIMEOUT_S);
+        harness, "/config/params", asList("response", "params", "x", "b"), "B val", TIMEOUT_S);
 
     payload =
         "{\n"
@@ -759,23 +661,15 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
-        null,
         "/config/overlay",
-        null,
         asList("overlay", "requestHandler", "/d", "name"),
         "/d",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, null, "/d?useParams=x", null, asList("params", "a"), "A val", TIMEOUT_S);
+        harness, "/d?useParams=x", asList("params", "a"), "A val", TIMEOUT_S);
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/d?useParams=x&a=fomrequest",
-        null,
-        asList("params", "a"),
-        "fomrequest",
-        TIMEOUT_S);
+        harness, "/d?useParams=x&a=fomrequest", asList("params", "a"), "fomrequest", TIMEOUT_S);
 
     payload =
         "{\n"
@@ -786,15 +680,13 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
-        null,
         "/config/overlay",
-        null,
         asList("overlay", "requestHandler", "/dump1", "name"),
         "/dump1",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, null, "/dump1", null, asList("params", "a"), "A val", TIMEOUT_S);
+        harness, "/dump1", asList("params", "a"), "A val", TIMEOUT_S);
 
     payload =
         " {\n"
@@ -808,31 +700,19 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/config/params",
-        null,
-        asList("response", "params", "y", "c"),
-        "CY val",
-        TIMEOUT_S);
+        harness, "/config/params", asList("response", "params", "y", "c"), "CY val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, null, "/dump1?useParams=y", null, asList("params", "c"), "CY val", TIMEOUT_S);
+        harness, "/dump1?useParams=y", asList("params", "c"), "CY val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, null, "/dump1?useParams=y", null, asList("params", "b"), "BY val", TIMEOUT_S);
+        harness, "/dump1?useParams=y", asList("params", "b"), "BY val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, null, "/dump1?useParams=y", null, asList("params", "a"), "A val", TIMEOUT_S);
+        harness, "/dump1?useParams=y", asList("params", "a"), "A val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/dump1?useParams=y",
-        null,
-        asList("params", "d"),
-        asList("val 1", "val 2"),
-        TIMEOUT_S);
+        harness, "/dump1?useParams=y", asList("params", "d"), asList("val 1", "val 2"), TIMEOUT_S);
 
     payload =
         " {\n"
@@ -848,21 +728,13 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
-        null,
         "/config/params",
-        null,
         asList("response", "params", "y", "c"),
         "CY val modified",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/config/params",
-        null,
-        asList("response", "params", "y", "e"),
-        "EY val",
-        TIMEOUT_S);
+        harness, "/config/params", asList("response", "params", "y", "e"), "EY val", TIMEOUT_S);
 
     payload =
         " {\n"
@@ -875,32 +747,14 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/config/params",
-        null,
-        asList("response", "params", "y", "p"),
-        "P val",
-        TIMEOUT_S);
+        harness, "/config/params", asList("response", "params", "y", "p"), "P val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/config/params",
-        null,
-        asList("response", "params", "y", "c"),
-        null,
-        TIMEOUT_S);
+        harness, "/config/params", asList("response", "params", "y", "c"), null, TIMEOUT_S);
     payload = " {'delete' : 'y'}";
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        null,
-        "/config/params",
-        null,
-        asList("response", "params", "y", "p"),
-        null,
-        TIMEOUT_S);
+        harness, "/config/params", asList("response", "params", "y", "p"), null, TIMEOUT_S);
 
     payload =
         "{\n"
@@ -925,22 +779,18 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.runConfigCommand(harness, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(
         harness,
-        null,
         "/config/overlay",
-        null,
         asList("overlay", "requestHandler", "aRequestHandler", "class"),
         "org.apache.solr.handler.DumpRequestHandler",
         TIMEOUT_S);
-    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
-    restTestHarness.setServerProvider(
-        () -> getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+    RestTestHarness oldRth = restTestHarness;
+    restTestHarness =
+        restTestHarness.newWithUrl(getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
 
     Map<?, ?> rsp =
         TestSolrConfigHandler.testForResponseElement(
             harness,
-            null,
             "/something/part1_Value/fixed/part2_Value?urlTemplateValues=part1&urlTemplateValues=part2",
-            null,
             asList("urlTemplateValues"),
             new ValidatingJsonMap.PredicateWithErrMsg<>() {
               @Override
@@ -958,7 +808,7 @@ public class TestSolrConfigHandler extends RestTestBase {
               }
             },
             TIMEOUT_S);
-    restTestHarness.setServerProvider(oldProvider);
+    restTestHarness = oldRth;
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -975,8 +825,8 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public void testCacheDisableSolrConfig() throws Exception {
-    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
-    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
+    RestTestHarness oldRth = restTestHarness;
+    restTestHarness = restTestHarness.newWithUrl(getBaseUrl());
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertTrue(
         "fieldValueCache metrics should be present",
@@ -986,45 +836,45 @@ public class TestSolrConfigHandler extends RestTestBase {
         "documentCache metrics should be absent",
         prometheusMetrics.contains("name=\"documentCache\""));
 
-    restTestHarness.setServerProvider(oldProvider);
+    restTestHarness = oldRth;
   }
 
   public void testSetPropertyCacheSize() throws Exception {
-    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    RestTestHarness oldRth = restTestHarness;
     // Changing cache size
     String payload = "{'set-property' : { 'query.documentCache.size': 399} }";
     runConfigCommand(restTestHarness, "/config", payload);
     MapWriter overlay = getRespMap(restTestHarness, "/config/overlay");
     assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size"));
     // Setting size only will not enable the cache
-    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
+    restTestHarness = restTestHarness.newWithUrl(getBaseUrl());
 
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertFalse(prometheusMetrics.contains("cache_name=\"documentCache\""));
 
-    restTestHarness.setServerProvider(oldProvider);
+    restTestHarness = oldRth;
   }
 
   public void testSetPropertyEnableAndDisableCache() throws Exception {
-    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    RestTestHarness oldRth = restTestHarness;
     // Enabling Cache
     String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
     runConfigCommand(restTestHarness, "/config", payload);
-    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
+    restTestHarness = restTestHarness.newWithUrl(getBaseUrl());
 
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertTrue(prometheusMetrics.contains("name=\"documentCache\""));
 
     // Disabling Cache
     payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
-    restTestHarness.setServerProvider(oldProvider);
+    restTestHarness = oldRth;
 
     runConfigCommand(restTestHarness, "/config", payload);
-    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
+    restTestHarness = restTestHarness.newWithUrl(getBaseUrl());
 
     prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertFalse(prometheusMetrics.contains("name=\"documentCache\""));
 
-    restTestHarness.setServerProvider(oldProvider);
+    restTestHarness = oldRth;
   }
 }

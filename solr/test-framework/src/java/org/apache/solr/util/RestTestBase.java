@@ -47,12 +47,8 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
   protected static RestTestHarness restTestHarness;
 
   @AfterClass
-  public static void cleanUpHarness() throws IOException {
-    RestTestHarness localHarness = restTestHarness;
-    if (localHarness != null) {
-      localHarness.close();
-      restTestHarness = null;
-    }
+  public static void cleanUpHarness() {
+    restTestHarness = null;
   }
 
   public static void createJettyAndHarness(
@@ -66,7 +62,7 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
 
     createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
 
-    restTestHarness = new RestTestHarness(RestTestBase::getCoreUrl);
+    restTestHarness = new RestTestHarness(getJetty(), DEFAULT_TEST_CORENAME);
   }
 
   protected static JettySolrRunner createAndStartJetty(

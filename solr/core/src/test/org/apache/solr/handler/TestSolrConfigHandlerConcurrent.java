@@ -38,8 +38,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
-import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.HttpClient;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
@@ -109,19 +107,15 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       String val1;
       String val2;
       String val3;
-      try {
-        payload = payload.replace("CACHENAME", cacheName);
-        val1 = String.valueOf(10 * i + 1);
-        payload = payload.replace("CACHEVAL1", val1);
-        val2 = String.valueOf(10 * i + 2);
-        payload = payload.replace("CACHEVAL2", val2);
-        val3 = String.valueOf(10 * i + 3);
-        payload = payload.replace("CACHEVAL3", val3);
+      payload = payload.replace("CACHENAME", cacheName);
+      val1 = String.valueOf(10 * i + 1);
+      payload = payload.replace("CACHEVAL1", val1);
+      val2 = String.valueOf(10 * i + 2);
+      payload = payload.replace("CACHEVAL2", val2);
+      val3 = String.valueOf(10 * i + 3);
+      payload = payload.replace("CACHEVAL3", val3);
 
-        response = publisher.post("/config", SolrTestCaseJ4.json(payload));
-      } finally {
-        publisher.close();
-      }
+      response = publisher.post("/config", SolrTestCaseJ4.json(payload));
 
       Map<?, ?> map = (Map<?, ?>) Utils.fromJSONString(response);
       Object errors = map.get("errors");
@@ -139,6 +133,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
       // get another node
       String url = urls.get(urls.size() - 1);
+      RestTestHarness urlHarness = publisher.newWithUrl(url);
 
       long startTime = System.nanoTime();
       long maxTimeoutSeconds = 20;
@@ -146,7 +141,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
           < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
-        MapWriter respMap = getAsMap(publisher.getHttpClient(), url + "/config/overlay");
+        MapWriter respMap = getAsMap(urlHarness, "/config/overlay");
         MapWriter m = (MapWriter) respMap._get("overlay/props");
         if (m == null) {
           errmessages.add(
@@ -183,9 +178,8 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
   }
 
   @SuppressWarnings({"rawtypes"})
-  private static LinkedHashMapWriter getAsMap(HttpClient httpClient, String uri) throws Exception {
-    ContentResponse httpResponse = httpClient.GET(uri);
-    String response = httpResponse.getContentAsString();
+  public static LinkedHashMapWriter getAsMap(RestTestHarness harness, String uri) throws Exception {
+    String response = harness.query(uri);
     try {
       return (LinkedHashMapWriter)
           Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();

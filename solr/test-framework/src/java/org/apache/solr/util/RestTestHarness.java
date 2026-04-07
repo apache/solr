@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -25,9 +24,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -36,33 +34,55 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Facilitates testing Solr's REST API */
-public class RestTestHarness extends BaseTestHarness implements Closeable {
+/** Facilitates testing Solr's REST API via Jetty HttpClient. Immutable and cheap to construct. */
+public class RestTestHarness extends BaseTestHarness {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private RESTfulServerProvider serverProvider;
-  private HttpJettySolrClient solrClient; // lazy instantiated given serverProvider
+  private final HttpClient httpClient;
+  private final String baseUrl;
+  private final URI baseUri;
 
-  public RestTestHarness(RESTfulServerProvider serverProvider) {
-    this.serverProvider = serverProvider;
+  /**
+   * Creates a RestTestHarness for the given base URL using the provided HttpClient.
+   *
+   * @param httpClient The HttpClient to use for requests (not closed by this harness)
+   * @param baseUrl The base URL (e.g., "http://localhost:8983/solr/collection1")
+   */
+  public RestTestHarness(HttpClient httpClient, String baseUrl) {
+    if (httpClient == null) {
+      throw new IllegalArgumentException("httpClient cannot be null");
+    }
+    if (baseUrl == null || baseUrl.isEmpty()) {
+      throw new IllegalArgumentException("baseUrl cannot be null or empty");
+    }
+    this.httpClient = httpClient;
+    this.baseUrl = baseUrl;
+    this.baseUri = URI.create(baseUrl);
+  }
+
+  /**
+   * Convenience constructor that creates a RestTestHarness for a specific core/collection on a
+   * JettySolrRunner.
+   *
+   * @param jetty The JettySolrRunner
+   * @param coreOrCollection The core or collection name (appended to jetty's base URL)
+   */
+  public RestTestHarness(JettySolrRunner jetty, String coreOrCollection) {
+    this(
+        jetty.getSolrClient().getHttpClient(),
+        jetty.getBaseUrl().toString() + "/" + coreOrCollection);
+  }
+
+  public RestTestHarness newWithUrl(String baseUrl) {
+    return new RestTestHarness(httpClient, baseUrl);
   }
 
   public String getBaseURL() {
-    return serverProvider.getBaseURL();
+    return baseUrl;
   }
 
   private URI getBaseURI() {
-    return URI.create(getBaseURL());
-  }
-
-  public synchronized void setServerProvider(RESTfulServerProvider serverProvider) {
-    this.serverProvider = serverProvider;
-    IOUtils.closeQuietly(solrClient);
-    solrClient = null;
-  }
-
-  public RESTfulServerProvider getServerProvider() {
-    return this.serverProvider;
+    return baseUri;
   }
 
   public String getAdminURL() {
@@ -183,10 +203,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   }
 
   private URI buildUri(String request) {
-    if (request.contains("://")) {
-      // is this a hack or simply useful / pragmatic ?
-      return URI.create(request);
-    }
     return URLUtil.buildURI(getBaseURI(), request);
   }
 
@@ -215,15 +231,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     return rsp.getContentAsString();
   }
 
-  public synchronized HttpClient getHttpClient() {
-    if (solrClient == null) {
-      solrClient = new HttpJettySolrClient.Builder(getBaseURL()).build();
-    }
-    return solrClient.getHttpClient();
-  }
-
-  @Override
-  public void close() {
-    IOUtils.closeQuietly(solrClient);
+  public HttpClient getHttpClient() {
+    return httpClient;
   }
 }
