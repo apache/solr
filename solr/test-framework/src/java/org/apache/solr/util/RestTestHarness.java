@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,13 +106,16 @@ public class RestTestHarness extends BaseTestHarness {
 
   /**
    * Processes a HEAD request using a URL path (with no context path) + optional query params and
-   * returns the response content.
+   * returns the status code.
    *
    * @param request The URL path and optional query params
-   * @return The response to the HEAD request
+   * @return The HTTP status code
    */
-  public ContentResponse head(String request) throws IOException {
-    return send(getHttpClient().newRequest(buildUri(request)).method(HttpMethod.HEAD));
+  public int head(String request) throws IOException {
+    ContentResponse rsp =
+        send(getHttpClient().newRequest(buildUri(request)).method(HttpMethod.HEAD));
+    assert rsp.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH) <= 0 : "Expected no content";
+    return rsp.getStatus();
   }
 
   /**
