@@ -91,7 +91,8 @@ public class TestModelManagerPersistence extends TestLanguageModelBase {
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     // check persistence after restart
-    restartJetty();
+    getJetty().stop();
+    getJetty().start();
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedTextToVectorModelStore.REST_END_POINT,
@@ -117,7 +118,8 @@ public class TestModelManagerPersistence extends TestLanguageModelBase {
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");
 
     // check persistence after restart
-    restartJetty();
+    getJetty().stop();
+    getJetty().start();
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");
   }
 }

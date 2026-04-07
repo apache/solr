@@ -290,13 +290,15 @@ public class TestSetPropertyConfigApis extends SolrCloudTestCase {
   private static void setUserProperties(
       final String collectionName, final Map<String, String> props) throws Exception {
 
-    final String cmd =
-        "{ 'set-user-property' : { "
-            + props.entrySet().stream()
-                .map(e -> "'" + e.getKey() + "':'" + e.getValue() + "'")
-                .collect(Collectors.joining(","))
-            + "}} ";
-    runConfigCommand(makeRestHarness(collectionName), cmd);
+    try (RestTestHarness harness = makeRestHarness(collectionName)) {
+      final String cmd =
+          "{ 'set-user-property' : { "
+              + props.entrySet().stream()
+                  .map(e -> "'" + e.getKey() + "':'" + e.getValue() + "'")
+                  .collect(Collectors.joining(","))
+              + "}} ";
+      runConfigCommand(harness, cmd);
+    }
   }
 
   /**
@@ -343,7 +345,8 @@ public class TestSetPropertyConfigApis extends SolrCloudTestCase {
   }
 
   private static RestTestHarness makeRestHarness(final String collectionName) {
-    return cluster.getRandomJetty(random()).getRestClient(collectionName);
+    return new RestTestHarness(
+        () -> cluster.getRandomJetty(random()).getBaseUrl().toString() + "/" + collectionName);
   }
 
   private static void runConfigCommand(RestTestHarness harness, String json) throws IOException {

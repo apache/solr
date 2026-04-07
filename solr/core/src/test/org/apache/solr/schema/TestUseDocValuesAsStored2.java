@@ -46,6 +46,11 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
   @After
   public void after() throws Exception {
     solrTestRule.reset();
+
+    if (restTestHarness != null) {
+      restTestHarness.close();
+    }
+    restTestHarness = null;
   }
 
   public void testSchemaAPI() throws Exception {

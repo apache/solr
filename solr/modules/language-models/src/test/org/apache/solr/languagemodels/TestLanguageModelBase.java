@@ -78,7 +78,10 @@ public class TestLanguageModelBase extends RestTestBase {
   }
 
   protected static void afterTest() throws Exception {
-    restTestHarness = null;
+    if (null != restTestHarness) {
+      restTestHarness.close();
+      restTestHarness = null;
+    }
     solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);

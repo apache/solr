@@ -69,7 +69,6 @@ import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrServlet;
 import org.apache.solr.servlet.TracingFilter;
-import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -809,27 +808,19 @@ public class JettySolrRunner implements SolrBackend {
     this.proxyPort = proxyPort;
   }
 
-  private URI getBaseUri(int jettyPort, String path) {
-    try {
-      return new URI(protocol, null, host, jettyPort, path, null, null);
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   /** Returns a base URL like {@code http://localhost:8983/solr} */
   public URL getBaseUrl() {
     try {
-      return getBaseUri(jettyPort, "/solr").toURL();
-    } catch (MalformedURLException e) {
+      return new URI(protocol, null, host, jettyPort, "/solr", null, null).toURL();
+    } catch (URISyntaxException | MalformedURLException e) {
       throw new RuntimeException(e);
     }
   }
 
   public URL getBaseURLV2() {
     try {
-      return getBaseUri(jettyPort, "/api").toURL();
-    } catch (MalformedURLException e) {
+      return new URI(protocol, null, host, jettyPort, "/api", null, null).toURL();
+    } catch (MalformedURLException | URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
@@ -840,8 +831,8 @@ public class JettySolrRunner implements SolrBackend {
    */
   public URL getProxyBaseUrl() {
     try {
-      return getBaseUri(getLocalPort(), "/solr").toURL();
-    } catch (MalformedURLException e) {
+      return new URI(protocol, null, host, getLocalPort(), "/solr", null, null).toURL();
+    } catch (MalformedURLException | URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
@@ -914,18 +905,6 @@ public class JettySolrRunner implements SolrBackend {
 
   public SocketProxy getProxy() {
     return proxy;
-  }
-
-  /**
-   * Creates a REST client useful for HTTP operations. It closes when this {@link JettySolrRunner}
-   * is stopped.
-   */
-  public RestTestHarness getRestClient(String collection) {
-    String path = "/solr";
-    if (collection != null) {
-      path += "/" + collection;
-    }
-    return new RestTestHarness(getSolrClient().getHttpClient(), getBaseUri(jettyPort, path));
   }
 
   // ---- SolrBackend implementation ----
