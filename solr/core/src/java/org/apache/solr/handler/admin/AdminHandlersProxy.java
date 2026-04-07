@@ -63,7 +63,7 @@ public class AdminHandlersProxy {
    * provided. For V2, use {@link AdminHandlersProxy#maybeProxyToNodes(String, SolrQueryRequest,
    * SolrQueryResponse, CoreContainer)}
    */
-  public static boolean maybeProxyToNodes(
+  public boolean maybeProxyToNodes(
       SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
       throws IOException, SolrServerException, InterruptedException {
     return maybeProxyToNodes("V1", req, rsp, container);
@@ -73,7 +73,7 @@ public class AdminHandlersProxy {
    * Proxy this request to a different remote node's selected API version if 'node' or 'nodes'
    * parameter is provided
    */
-  public static boolean maybeProxyToNodes(
+  public boolean maybeProxyToNodes(
       String apiVersion, SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
       throws IOException, SolrServerException, InterruptedException {
 
@@ -112,7 +112,7 @@ public class AdminHandlersProxy {
   }
 
   /** Handle non-Prometheus formats using the existing NamedList approach. */
-  private static void handleNamedListFormat(
+  private void handleNamedListFormat(
       String apiVersion,
       Set<String> nodes,
       String pathStr,
@@ -146,7 +146,7 @@ public class AdminHandlersProxy {
   }
 
   /** Makes a remote request asynchronously. */
-  private static CompletableFuture<NamedList<Object>> callRemoteNode(
+  private CompletableFuture<NamedList<Object>> callRemoteNode(
       String apiVersion,
       String nodeName,
       String uriPath,
@@ -194,7 +194,7 @@ public class AdminHandlersProxy {
    * @return set of resolved node names
    * @throws SolrException if node format is invalid
    */
-  private static Set<String> resolveNodes(String nodeNames, CoreContainer container) {
+  private Set<String> resolveNodes(String nodeNames, CoreContainer container) {
     Set<String> liveNodes =
         container.getZkController().zkStateReader.getClusterState().getLiveNodes();
 
@@ -223,7 +223,7 @@ public class AdminHandlersProxy {
    * @param container the CoreContainer
    * @param rsp the response to populate
    */
-  private static void handlePrometheusSingleNode(
+  private void handlePrometheusSingleNode(
       String apiVersion,
       String nodeName,
       String pathStr,
@@ -251,8 +251,7 @@ public class AdminHandlersProxy {
     }
   }
 
-  private static SolrRequest<?> createRequest(
-      String apiVersion, String uriPath, SolrParams params) {
+  private SolrRequest<?> createRequest(String apiVersion, String uriPath, SolrParams params) {
     if (apiVersion.equalsIgnoreCase("V1")) {
       return new GenericSolrRequest(SolrRequest.METHOD.GET, uriPath, params);
     }

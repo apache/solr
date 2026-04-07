@@ -68,8 +68,8 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
   private boolean proxyToNodes() {
     try {
       if (coreContainer != null
-          && AdminHandlersProxy.maybeProxyToNodes(
-              "V2", solrQueryRequest, solrQueryResponse, coreContainer)) {
+          && new AdminHandlersProxy()
+              .maybeProxyToNodes("V2", solrQueryRequest, solrQueryResponse, coreContainer)) {
         return true; // Request was proxied to other node
       }
     } catch (Exception e) {

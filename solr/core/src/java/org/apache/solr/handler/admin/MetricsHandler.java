@@ -101,7 +101,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
               + format);
     }
 
-    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
+    if (cc != null && new AdminHandlersProxy().maybeProxyToNodes(req, rsp, cc)) {
       return; // Request was proxied to other node
     }
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
