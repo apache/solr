@@ -263,6 +263,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     if (exc != null) {
       throw exc;
     }
+    super.close();
   }
 
   @Override

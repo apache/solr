@@ -78,8 +78,7 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     waitForState(
         "Expected a collection with one shard and one replicas", collection, clusterShape(1, 1));
-    try (SolrClient solrClient =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build()) {
+    try (SolrClient solrClient = cluster.newSolrClient(collection)) {
       UpdateRequest commitReq = new UpdateRequest();
       withBasicAuth(commitReq);
       for (int i = 0; i < 500; i++) {
