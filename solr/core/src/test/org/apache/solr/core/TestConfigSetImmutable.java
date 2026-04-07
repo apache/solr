@@ -62,11 +62,6 @@ public class TestConfigSetImmutable extends RestTestBase {
   @After
   public void after() throws Exception {
     solrTestRule.reset();
-
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test

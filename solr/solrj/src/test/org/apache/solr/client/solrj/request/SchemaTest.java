@@ -113,10 +113,6 @@ public class SchemaTest extends RestTestBase {
   @After
   public void cleanup() throws Exception {
     solrTestRule.reset();
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test
