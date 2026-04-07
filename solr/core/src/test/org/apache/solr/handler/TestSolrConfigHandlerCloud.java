@@ -109,7 +109,11 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     Map<?, ?> result =
         TestSolrConfigHandler.testForResponseElement(
-            null, "/config/params", asList("response", "params", "x", "a"), "A val", TIMEOUT_S);
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
+            "/config/params",
+            asList("response", "params", "x", "a"),
+            "A val",
+            TIMEOUT_S);
     compareValues(result, "B val", asList("response", "params", "x", "b"));
 
     payload =

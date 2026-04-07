@@ -783,32 +783,27 @@ public class TestSolrConfigHandler extends RestTestBase {
         asList("overlay", "requestHandler", "aRequestHandler", "class"),
         "org.apache.solr.handler.DumpRequestHandler",
         TIMEOUT_S);
-    RestTestHarness oldRth = restTestHarness;
-    restTestHarness =
-        restTestHarness.newWithUrl(getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
 
-    Map<?, ?> rsp =
-        TestSolrConfigHandler.testForResponseElement(
-            harness,
-            "/something/part1_Value/fixed/part2_Value?urlTemplateValues=part1&urlTemplateValues=part2",
-            asList("urlTemplateValues"),
-            new ValidatingJsonMap.PredicateWithErrMsg<>() {
-              @Override
-              public String test(Object o) {
-                if (o instanceof Map<?, ?> m) {
-                  if ("part1_Value".equals(m.get("part1")) && "part2_Value".equals(m.get("part2")))
-                    return null;
-                }
-                return "no match";
-              }
+    TestSolrConfigHandler.testForResponseElement(
+        harness.newWithUrl(getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME),
+        "/something/part1_Value/fixed/part2_Value?urlTemplateValues=part1&urlTemplateValues=part2",
+        asList("urlTemplateValues"),
+        new ValidatingJsonMap.PredicateWithErrMsg<>() {
+          @Override
+          public String test(Object o) {
+            if (o instanceof Map<?, ?> m) {
+              if ("part1_Value".equals(m.get("part1")) && "part2_Value".equals(m.get("part2")))
+                return null;
+            }
+            return "no match";
+          }
 
-              @Override
-              public String toString() {
-                return "{part1:part1_Value, part2 : part2_Value]";
-              }
-            },
-            TIMEOUT_S);
-    restTestHarness = oldRth;
+          @Override
+          public String toString() {
+            return "{part1:part1_Value, part2 : part2_Value]";
+          }
+        },
+        TIMEOUT_S);
   }
 
   @SuppressWarnings({"rawtypes"})

@@ -115,6 +115,16 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
     return solrTestRule.getJetty();
   }
 
+  /**
+   * Restarts Jetty and recreates the RestTestHarness with a new HttpClient. Use this instead of
+   * calling getJetty().stop()/start() directly.
+   */
+  protected static void restartJetty() throws Exception {
+    getJetty().stop();
+    getJetty().start();
+    restTestHarness = getJetty().getRestClient(DEFAULT_TEST_CORENAME);
+  }
+
   /** URL to Solr */
   protected static String getBaseUrl() {
     return solrTestRule.getBaseUrl();

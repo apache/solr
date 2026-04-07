@@ -198,10 +198,6 @@ public class TestRerankBase extends RestTestBase {
     }
   }
 
-  public static void makeRestTestHarnessNull() {
-    restTestHarness = null;
-  }
-
   /** produces a model encoded in json * */
   public static String getModelInJson(
       String name, String type, String[] features, String fstore, String params) {
