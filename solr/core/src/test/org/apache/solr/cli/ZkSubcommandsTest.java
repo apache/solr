@@ -318,7 +318,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     zkClient.makePath("/test/path", true);
 
     // test what happens when path arg "/" isn't the last one.
-    String[] args = new String[] {"ls", "-r", "-z", zkServer.getZkAddress(), "/"};
+    String[] args = new String[] {"ls", "/", "-r", "-z", zkServer.getZkAddress()};
 
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
     assertEquals(0, runTool(args, runtime, ZkLsTool.class));
