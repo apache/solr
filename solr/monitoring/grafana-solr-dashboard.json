@@ -202,109 +202,6 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "Number of permanently loaded Solr cores across selected instances.",
-         "fieldConfig": {
-            "defaults": {
-               "unit": "short"
-            }
-         },
-         "gridPos": {
-            "h": 4,
-            "w": 6,
-            "x": 0,
-            "y": 17
-         },
-         "id": 6,
-         "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "reduceOptions": {
-               "calcs": [
-                  "lastNotNull"
-               ]
-            }
-         },
-         "pluginVersion": "v11.4.0",
-         "targets": [
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "expr": "sum(solr_cores_loaded{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"permanent\"})",
-               "interval": "$interval",
-               "legendFormat": "Cores"
-            }
-         ],
-         "title": "Active Cores",
-         "type": "stat"
-      },
-      {
-         "datasource": {
-            "type": "datasource",
-            "uid": "-- Mixed --"
-         },
-         "description": "Percentage of disk space free on the Solr data directory mount (min across instances). Alert fires below 15%% for 5 minutes (SolrLowDiskSpace).",
-         "fieldConfig": {
-            "defaults": {
-               "color": {
-                  "mode": "thresholds"
-               },
-               "max": 100,
-               "min": 0,
-               "thresholds": {
-                  "steps": [
-                     {
-                        "color": "red",
-                        "value": null
-                     },
-                     {
-                        "color": "yellow",
-                        "value": 15
-                     },
-                     {
-                        "color": "green",
-                        "value": 30
-                     }
-                  ]
-               },
-               "unit": "percent"
-            }
-         },
-         "gridPos": {
-            "h": 4,
-            "w": 6,
-            "x": 6,
-            "y": 17
-         },
-         "id": 7,
-         "options": {
-            "reduceOptions": {
-               "calcs": [
-                  "lastNotNull"
-               ]
-            }
-         },
-         "pluginVersion": "v11.4.0",
-         "targets": [
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "expr": "min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"usable_space\"}) / min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"total_space\"}) * 100",
-               "interval": "$interval",
-               "legendFormat": "Free %%"
-            }
-         ],
-         "title": "Disk Free",
-         "type": "gauge"
-      },
-      {
-         "datasource": {
-            "type": "datasource",
-            "uid": "-- Mixed --"
-         },
          "description": "Searchable document count per collection (max across cores, to avoid double-counting replicas). Tracks index growth over time.",
          "fieldConfig": {
             "defaults": {
@@ -317,7 +214,7 @@
             "x": 12,
             "y": 17
          },
-         "id": 8,
+         "id": 6,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -342,6 +239,55 @@
          "type": "timeseries"
       },
       {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Number of active shard leaders per shard over time. Each shard contributes 1 when it has a leader; a band dropping to 0 indicates that shard has lost its leader.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 100,
+                  "lineWidth": 0,
+                  "stacking": {
+                     "mode": "normal"
+                  }
+               },
+               "min": 0,
+               "unit": "short"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 17
+         },
+         "id": 7,
+         "options": {
+            "legend": {
+               "displayMode": "list"
+            },
+            "tooltip": {
+               "mode": "multi"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum by (collection, shard)(solr_core_is_leader{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"} == 1)",
+               "interval": "$interval",
+               "legendFormat": "{{collection}} {{shard}}"
+            }
+         ],
+         "title": "Shard Leaders",
+         "type": "timeseries"
+      },
+      {
          "collapsed": false,
          "gridPos": {
             "h": 1,
@@ -349,7 +295,7 @@
             "x": 0,
             "y": 25
          },
-         "id": 9,
+         "id": 8,
          "title": "JVM",
          "type": "row"
       },
@@ -370,7 +316,7 @@
             "x": 0,
             "y": 26
          },
-         "id": 10,
+         "id": 9,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -420,7 +366,7 @@
             "x": 8,
             "y": 26
          },
-         "id": 11,
+         "id": 10,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -473,7 +419,7 @@
             "x": 16,
             "y": 26
          },
-         "id": 12,
+         "id": 11,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -532,7 +478,7 @@
             "x": 0,
             "y": 34
          },
-         "id": 13,
+         "id": 12,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -573,7 +519,7 @@
             "x": 8,
             "y": 34
          },
-         "id": 14,
+         "id": 13,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -614,7 +560,7 @@
             "x": 16,
             "y": 34
          },
-         "id": 15,
+         "id": 14,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -655,7 +601,7 @@
             "x": 0,
             "y": 42
          },
-         "id": 16,
+         "id": 15,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -687,14 +633,14 @@
             "x": 0,
             "y": 50
          },
-         "id": 17,
+         "id": 16,
          "panels": [
             {
                "datasource": {
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Query requests per second per core on /select and /query handlers (user-facing only). Use the collection, shard, and replica_type dropdowns to narrow the view in large clusters.",
+               "description": "Query requests per second per core on /select and /query handlers (all traffic, including internal shard requests). Use the collection, shard, and replica_type dropdowns to narrow the view in large clusters.",
                "fieldConfig": {
                   "defaults": {
                      "unit": "reqps"
@@ -706,7 +652,7 @@
                   "x": 0,
                   "y": 47
                },
-               "id": 18,
+               "id": 17,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -722,7 +668,7 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "sum by (core)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\",handler=~\"/select|/query\",internal=\"false\"}[$interval]))",
+                     "expr": "sum by (core)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\",handler=~\"/select|/query\"}[$interval]))",
                      "interval": "$interval",
                      "legendFormat": "{{core}}"
                   }
@@ -747,7 +693,7 @@
                   "x": 12,
                   "y": 47
                },
-               "id": 19,
+               "id": 18,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -788,7 +734,7 @@
                   "x": 0,
                   "y": 55
                },
-               "id": 20,
+               "id": 19,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -829,7 +775,7 @@
                   "x": 12,
                   "y": 55
                },
-               "id": 21,
+               "id": 20,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -870,7 +816,7 @@
                   "x": 0,
                   "y": 63
                },
-               "id": 22,
+               "id": 21,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -906,7 +852,7 @@
             "x": 0,
             "y": 51
          },
-         "id": 23,
+         "id": 22,
          "panels": [
             {
                "datasource": {
@@ -925,7 +871,7 @@
                   "x": 0,
                   "y": 47
                },
-               "id": 24,
+               "id": 23,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -966,7 +912,7 @@
                   "x": 12,
                   "y": 47
                },
-               "id": 25,
+               "id": 24,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1007,7 +953,7 @@
                   "x": 0,
                   "y": 55
                },
-               "id": 26,
+               "id": 25,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1048,7 +994,7 @@
                   "x": 8,
                   "y": 55
                },
-               "id": 27,
+               "id": 26,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1089,7 +1035,7 @@
                   "x": 0,
                   "y": 63
                },
-               "id": 28,
+               "id": 27,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1125,7 +1071,7 @@
             "x": 0,
             "y": 52
          },
-         "id": 29,
+         "id": 28,
          "panels": [
             {
                "datasource": {
@@ -1144,7 +1090,7 @@
                   "x": 0,
                   "y": 49
                },
-               "id": 30,
+               "id": 29,
                "pluginVersion": "v11.4.0",
                "targets": [
                   {
@@ -1177,7 +1123,7 @@
                   "x": 12,
                   "y": 49
                },
-               "id": 31,
+               "id": 30,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1237,9 +1183,9 @@
                   "h": 8,
                   "w": 6,
                   "x": 18,
-                  "y": 49
+                  "y": 57
                },
-               "id": 32,
+               "id": 31,
                "options": {
                   "reduceOptions": {
                      "calcs": [
@@ -1279,7 +1225,7 @@
                   "x": 0,
                   "y": 57
                },
-               "id": 33,
+               "id": 32,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1302,6 +1248,67 @@
                ],
                "title": "Index Size per Collection",
                "type": "timeseries"
+            },
+            {
+               "datasource": {
+                  "type": "datasource",
+                  "uid": "-- Mixed --"
+               },
+               "description": "Percentage of disk space free on the Solr data directory mount (min across instances). Alert fires below 15%% for 5 minutes (SolrLowDiskSpace).",
+               "fieldConfig": {
+                  "defaults": {
+                     "color": {
+                        "mode": "thresholds"
+                     },
+                     "max": 100,
+                     "min": 0,
+                     "thresholds": {
+                        "steps": [
+                           {
+                              "color": "red",
+                              "value": null
+                           },
+                           {
+                              "color": "yellow",
+                              "value": 15
+                           },
+                           {
+                              "color": "green",
+                              "value": 30
+                           }
+                        ]
+                     },
+                     "unit": "percent"
+                  }
+               },
+               "gridPos": {
+                  "h": 8,
+                  "w": 6,
+                  "x": 12,
+                  "y": 57
+               },
+               "id": 33,
+               "options": {
+                  "reduceOptions": {
+                     "calcs": [
+                        "lastNotNull"
+                     ]
+                  }
+               },
+               "pluginVersion": "v11.4.0",
+               "targets": [
+                  {
+                     "datasource": {
+                        "type": "prometheus",
+                        "uid": "$datasource"
+                     },
+                     "expr": "min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"usable_space\"}) / min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"total_space\"}) * 100",
+                     "interval": "$interval",
+                     "legendFormat": "Free %%"
+                  }
+               ],
+               "title": "Disk Free",
+               "type": "gauge"
             },
             {
                "datasource": {

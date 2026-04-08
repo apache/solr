@@ -229,33 +229,6 @@ local nodeOverviewPanels = [
     desc='p99 latency for /update (indexing) requests per collection. High latency may indicate index merge pressure or I/O bottlenecks.'
   ) + { gridPos: { x: 12, y: 9, w: 12, h: 8 } },
 
-  statPanel(
-    'Active Cores',
-    [prom(
-      'sum(solr_cores_loaded{%s,%s,%s,type="permanent"})' % [envSel, clusterSel, instSel],
-      'Cores'
-    )],
-    unit='short',
-    desc='Number of permanently loaded Solr cores across selected instances.'
-  ) + { gridPos: { x: 0, y: 17, w: 6, h: 4 } },
-
-  gaugePanel(
-    'Disk Free',
-    [prom(
-      'min(solr_disk_space_megabytes{%s,%s,%s,type="usable_space"}) / min(solr_disk_space_megabytes{%s,%s,%s,type="total_space"}) * 100' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel],
-      'Free %%'
-    )],
-    unit='percent',
-    desc='Percentage of disk space free on the Solr data directory mount (min across instances). Alert fires below 15%% for 5 minutes (SolrLowDiskSpace).',
-    min=0,
-    max=100,
-    steps=[
-      { color: 'red', value: null },
-      { color: 'yellow', value: 15 },
-      { color: 'green', value: 30 },
-    ]
-  ) + { gridPos: { x: 6, y: 17, w: 6, h: 4 } },
-
   ts(
     'Document Count',
     [prom(
@@ -265,6 +238,23 @@ local nodeOverviewPanels = [
     unit='short',
     desc='Searchable document count per collection (max across cores, to avoid double-counting replicas). Tracks index growth over time.'
   ) + { gridPos: { x: 12, y: 17, w: 12, h: 8 } },
+
+  p.timeSeries.new('Shard Leaders')
+  + p.timeSeries.queryOptions.withTargets([
+    prom(
+      'sum by (collection, shard)(solr_core_is_leader{%s,%s,%s} == 1)' % [envSel, clusterSel, instSel],
+      '{{collection}} {{shard}}'
+    ),
+  ])
+  + p.timeSeries.standardOptions.withUnit('short')
+  + p.timeSeries.panelOptions.withDescription('Number of active shard leaders per shard over time. Each shard contributes 1 when it has a leader; a band dropping to 0 indicates that shard has lost its leader.')
+  + p.timeSeries.options.legend.withDisplayMode('list')
+  + p.timeSeries.options.tooltip.withMode('multi')
+  + p.timeSeries.fieldConfig.defaults.custom.stacking.withMode('normal')
+  + p.timeSeries.fieldConfig.defaults.custom.withFillOpacity(100)
+  + p.timeSeries.fieldConfig.defaults.custom.withLineWidth(0)
+  + p.timeSeries.standardOptions.withMin(0)
+  + { gridPos: { x: 0, y: 17, w: 12, h: 8 } },
 ];
 
 // -----------------------------------------------------------------------
@@ -384,11 +374,11 @@ local solrCoreRow =
       ts(
         'QPS',
         [prom(
-          'sum by (core)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,%s,handler=~"/select|/query",internal="false"}[$interval]))' % [envSel, clusterSel, instSel, colSel],
+          'sum by (core)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,%s,handler=~"/select|/query"}[$interval]))' % [envSel, clusterSel, instSel, colSel],
           '{{core}}'
         )],
         unit='reqps',
-        desc='Query requests per second per core on /select and /query handlers (user-facing only). Use the collection, shard, and replica_type dropdowns to narrow the view in large clusters.'
+        desc='Query requests per second per core on /select and /query handlers (all traffic, including internal shard requests). Use the collection, shard, and replica_type dropdowns to narrow the view in large clusters.'
       ) + { gridPos: { x: 0, y: 47, w: 12, h: 8 } },
 
       ts(
@@ -538,7 +528,7 @@ local indexHealthRow =
           { color: 'orange', value: 25 },
           { color: 'green', value: 50 },
         ]
-      ) + { gridPos: { x: 18, y: 49, w: 6, h: 8 } },
+      ) + { gridPos: { x: 18, y: 57, w: 6, h: 8 } },
 
       ts(
         'Index Size per Collection',
@@ -549,6 +539,23 @@ local indexHealthRow =
         unit='decmbytes',
         desc='Combined index size of shard leader cores per collection (replicas excluded). Represents the logical data size of each collection without counting replica duplication.'
       ) + { gridPos: { x: 0, y: 57, w: 12, h: 8 } },
+
+      gaugePanel(
+        'Disk Free',
+        [prom(
+          'min(solr_disk_space_megabytes{%s,%s,%s,type="usable_space"}) / min(solr_disk_space_megabytes{%s,%s,%s,type="total_space"}) * 100' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel],
+          'Free %%'
+        )],
+        unit='percent',
+        desc='Percentage of disk space free on the Solr data directory mount (min across instances). Alert fires below 15%% for 5 minutes (SolrLowDiskSpace).',
+        min=0,
+        max=100,
+        steps=[
+          { color: 'red', value: null },
+          { color: 'yellow', value: 15 },
+          { color: 'green', value: 30 },
+        ]
+      ) + { gridPos: { x: 12, y: 57, w: 6, h: 8 } },
 
       ts(
         'Flush Rate',
