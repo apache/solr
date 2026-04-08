@@ -1320,26 +1320,26 @@ public class SolrCore implements SolrInfoBean, Closeable {
     newSearcherCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
-                "solr_core_searcher_new", "Total number of new searchers opened"),
+                "solr.core.searcher.new", "Total number of new searchers opened"),
             baseSearcherAttributes);
 
     newSearcherMaxReachedCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
-                "solr_core_searcher_warming_max",
+                "solr.core.searcher.warming_max",
                 "Total number of maximum concurrent warming searchers reached"),
             baseSearcherAttributes);
 
     newSearcherOtherErrorsCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
-                "solr_core_searcher_errors", "Total number of searcher errors"),
+                "solr.core.searcher.errors", "Total number of searcher errors"),
             baseSearcherAttributes);
 
     newSearcherTimer =
         new AttributedLongTimer(
             parentContext.longHistogram(
-                "solr_core_indexsearcher_open_time",
+                "solr.core.indexsearcher.open.time",
                 "Time to open new searchers",
                 OtelUnit.MILLISECONDS),
             baseSearcherAttributes);
@@ -1347,20 +1347,20 @@ public class SolrCore implements SolrInfoBean, Closeable {
     newSearcherWarmupTimer =
         new AttributedLongTimer(
             parentContext.longHistogram(
-                "solr_core_indexsearcher_open_warmup_time",
+                "solr.core.indexsearcher.open.warmup.time",
                 "Time to warmup new searchers",
                 OtelUnit.MILLISECONDS),
             baseSearcherAttributes);
 
     parentContext.observableLongGauge(
-        "solr_core_ref_count",
+        "solr.core.ref_count",
         "The current number of active references to a Solr core",
         (observableLongMeasurement -> {
           observableLongMeasurement.record(getOpenCount(), baseGaugeCoreAttributes);
         }));
 
     parentContext.observableDoubleGauge(
-        "solr_core_disk_space",
+        "solr.core.disk_space",
         "Solr core disk space metrics",
         (observableDoubleMeasurement -> {
 
@@ -1394,7 +1394,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         OtelUnit.MEGABYTES);
 
     parentContext.observableDoubleGauge(
-        "solr_core_index_size",
+        "solr.core.index.size",
         "Index size for a Solr core",
         (observableDoubleMeasurement -> {
           if (!isClosed())
@@ -1404,7 +1404,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         OtelUnit.MEGABYTES);
 
     parentContext.observableLongGauge(
-        "solr_core_segments",
+        "solr.core.segments",
         "Number of segments in a Solr core",
         (observableLongMeasurement -> {
           if (isReady())
@@ -1413,7 +1413,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     if (coreContainer.isZooKeeperAware())
       parentContext.observableLongGauge(
-          "solr_core_is_leader",
+          "solr.core.is_leader",
           "Indicates whether this Solr core is currently the leader",
           (observableLongMeasurement -> {
             observableLongMeasurement.record(

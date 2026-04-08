@@ -333,7 +333,7 @@ public abstract class StatsCache implements PluginInfoInitialized, SolrInfoBean 
             .put(SolrMetricProducer.CATEGORY_ATTR, Category.CACHE.toString())
             .build();
     solrMetricsContext.observableLongGauge(
-        "solr_core_indexsearcher_termstats_cache",
+        "solr.core.indexsearcher.termstats.cache",
         "Operation counts for the searcher term statistics cache, reported per operation type",
         obs -> {
           var cacheMetrics = getCacheMetrics();
