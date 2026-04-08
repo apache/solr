@@ -67,12 +67,13 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
 
     Properties nodeProps = new Properties();
     nodeProps.setProperty("coreRootDirectory", createTempDir().toString());
-    nodeProps.setProperty("configSetBaseDir", solrHome.toString()); // unusual!
+    nodeProps.setProperty("configSetBaseDir", solrHome.toString()); // unusual! vs. configsets/
 
     solrTestRule.startSolr(solrHome, nodeProps, JettyConfig.builder().build());
 
     solrTestRule
         .newCollection()
+        .withConfigSet("collection1")
         .withConfigFile(configFile)
         .withSchemaFile(schemaFile)
         .create();
