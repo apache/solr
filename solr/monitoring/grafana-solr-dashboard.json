@@ -210,7 +210,7 @@
          },
          "gridPos": {
             "h": 8,
-            "w": 12,
+            "w": 8,
             "x": 12,
             "y": 17
          },
@@ -243,6 +243,48 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
+         "description": "Number of distinct collections currently present in the cluster.",
+         "fieldConfig": {
+            "defaults": {
+               "unit": "short"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 20,
+            "y": 17
+         },
+         "id": 7,
+         "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+               "calcs": [
+                  "lastNotNull"
+               ]
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "count(count by (collection)(solr_core_is_leader{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}))",
+               "interval": "$interval",
+               "legendFormat": "Collections"
+            }
+         ],
+         "title": "Collections",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
          "description": "Number of active shard leaders per shard over time. Each shard contributes 1 when it has a leader; a band dropping to 0 indicates that shard has lost its leader.",
          "fieldConfig": {
             "defaults": {
@@ -263,7 +305,7 @@
             "x": 0,
             "y": 17
          },
-         "id": 7,
+         "id": 8,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -295,7 +337,7 @@
             "x": 0,
             "y": 25
          },
-         "id": 8,
+         "id": 9,
          "title": "JVM",
          "type": "row"
       },
@@ -316,7 +358,7 @@
             "x": 0,
             "y": 26
          },
-         "id": 9,
+         "id": 10,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -366,7 +408,7 @@
             "x": 8,
             "y": 26
          },
-         "id": 10,
+         "id": 11,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -419,7 +461,7 @@
             "x": 16,
             "y": 26
          },
-         "id": 11,
+         "id": 12,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -478,7 +520,7 @@
             "x": 0,
             "y": 34
          },
-         "id": 12,
+         "id": 13,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -519,7 +561,7 @@
             "x": 8,
             "y": 34
          },
-         "id": 13,
+         "id": 14,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -560,7 +602,7 @@
             "x": 16,
             "y": 34
          },
-         "id": 14,
+         "id": 15,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -601,7 +643,7 @@
             "x": 0,
             "y": 42
          },
-         "id": 15,
+         "id": 16,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -633,7 +675,7 @@
             "x": 0,
             "y": 50
          },
-         "id": 16,
+         "id": 17,
          "panels": [
             {
                "datasource": {
@@ -652,7 +694,7 @@
                   "x": 0,
                   "y": 47
                },
-               "id": 17,
+               "id": 18,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -693,7 +735,7 @@
                   "x": 12,
                   "y": 47
                },
-               "id": 18,
+               "id": 19,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -734,7 +776,7 @@
                   "x": 0,
                   "y": 55
                },
-               "id": 19,
+               "id": 20,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -775,7 +817,7 @@
                   "x": 12,
                   "y": 55
                },
-               "id": 20,
+               "id": 21,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -816,7 +858,7 @@
                   "x": 0,
                   "y": 63
                },
-               "id": 21,
+               "id": 22,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -852,7 +894,7 @@
             "x": 0,
             "y": 51
          },
-         "id": 22,
+         "id": 23,
          "panels": [
             {
                "datasource": {
@@ -871,7 +913,7 @@
                   "x": 0,
                   "y": 47
                },
-               "id": 23,
+               "id": 24,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -912,7 +954,7 @@
                   "x": 12,
                   "y": 47
                },
-               "id": 24,
+               "id": 25,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -953,7 +995,7 @@
                   "x": 0,
                   "y": 55
                },
-               "id": 25,
+               "id": 26,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -994,7 +1036,7 @@
                   "x": 8,
                   "y": 55
                },
-               "id": 26,
+               "id": 27,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1035,7 +1077,7 @@
                   "x": 0,
                   "y": 63
                },
-               "id": 27,
+               "id": 28,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1071,7 +1113,7 @@
             "x": 0,
             "y": 52
          },
-         "id": 28,
+         "id": 29,
          "panels": [
             {
                "datasource": {
@@ -1090,7 +1132,7 @@
                   "x": 0,
                   "y": 49
                },
-               "id": 29,
+               "id": 30,
                "pluginVersion": "v11.4.0",
                "targets": [
                   {
@@ -1123,7 +1165,7 @@
                   "x": 12,
                   "y": 49
                },
-               "id": 30,
+               "id": 31,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1185,7 +1227,7 @@
                   "x": 18,
                   "y": 57
                },
-               "id": 31,
+               "id": 32,
                "options": {
                   "reduceOptions": {
                      "calcs": [
@@ -1225,7 +1267,7 @@
                   "x": 0,
                   "y": 57
                },
-               "id": 32,
+               "id": 33,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1287,7 +1329,7 @@
                   "x": 12,
                   "y": 57
                },
-               "id": 33,
+               "id": 34,
                "options": {
                   "reduceOptions": {
                      "calcs": [
@@ -1327,7 +1369,7 @@
                   "x": 0,
                   "y": 65
                },
-               "id": 34,
+               "id": 35,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1368,7 +1410,7 @@
                   "x": 8,
                   "y": 65
                },
-               "id": 35,
+               "id": 36,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1409,7 +1451,7 @@
                   "x": 16,
                   "y": 65
                },
-               "id": 36,
+               "id": 37,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1450,7 +1492,7 @@
                   "x": 12,
                   "y": 73
                },
-               "id": 37,
+               "id": 38,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1486,7 +1528,7 @@
             "x": 0,
             "y": 53
          },
-         "id": 38,
+         "id": 39,
          "panels": [
             {
                "datasource": {
@@ -1505,7 +1547,7 @@
                   "x": 0,
                   "y": 49
                },
-               "id": 39,
+               "id": 40,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1546,7 +1588,7 @@
                   "x": 8,
                   "y": 49
                },
-               "id": 40,
+               "id": 41,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1587,7 +1629,7 @@
                   "x": 16,
                   "y": 49
                },
-               "id": 41,
+               "id": 42,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1628,7 +1670,7 @@
                   "x": 0,
                   "y": 57
                },
-               "id": 42,
+               "id": 43,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1669,7 +1711,7 @@
                   "x": 8,
                   "y": 57
                },
-               "id": 43,
+               "id": 44,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1710,7 +1752,7 @@
                   "x": 16,
                   "y": 57
                },
-               "id": 44,
+               "id": 45,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1751,7 +1793,7 @@
                   "x": 0,
                   "y": 65
                },
-               "id": 45,
+               "id": 46,
                "options": {
                   "legend": {
                      "displayMode": "list"

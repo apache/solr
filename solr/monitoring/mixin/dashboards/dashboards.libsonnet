@@ -237,7 +237,17 @@ local nodeOverviewPanels = [
     )],
     unit='short',
     desc='Searchable document count per collection (max across cores, to avoid double-counting replicas). Tracks index growth over time.'
-  ) + { gridPos: { x: 12, y: 17, w: 12, h: 8 } },
+  ) + { gridPos: { x: 12, y: 17, w: 8, h: 8 } },
+
+  statPanel(
+    'Collections',
+    [prom(
+      'count(count by (collection)(solr_core_is_leader{%s,%s,%s}))' % [envSel, clusterSel, instSel],
+      'Collections'
+    )],
+    unit='short',
+    desc='Number of distinct collections currently present in the cluster.'
+  ) + { gridPos: { x: 20, y: 17, w: 4, h: 8 } },
 
   p.timeSeries.new('Shard Leaders')
   + p.timeSeries.queryOptions.withTargets([
