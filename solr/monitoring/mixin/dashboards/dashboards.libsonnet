@@ -222,11 +222,11 @@ local nodeOverviewPanels = [
   ts(
     'Update Latency p99',
     [prom(
-      'histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler="/update",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
+      'histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler="/update"}[$interval])))' % [envSel, clusterSel, instSel],
       '{{collection}}'
     )],
     unit='ms',
-    desc='p99 latency for /update (indexing) requests per collection (entry-point requests only). High latency may indicate index merge pressure or I/O bottlenecks.'
+    desc='p99 latency for /update (indexing) requests per collection. High latency may indicate index merge pressure or I/O bottlenecks.'
   ) + { gridPos: { x: 12, y: 9, w: 12, h: 8 } },
 
   statPanel(
@@ -278,33 +278,57 @@ local jvmPanels = [
 
   ts(
     'Heap Used',
-    [prom(
-      'max by (instance, jvm_memory_pool_name)(jvm_memory_used_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
-      '{{instance}} {{jvm_memory_pool_name}}'
-    )],
+    [
+      prom(
+        'max by (instance, jvm_memory_pool_name)(jvm_memory_used_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
+        '{{instance}} {{jvm_memory_pool_name}}'
+      ),
+      prom(
+        'max by (instance)(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
+        '{{instance}} heap max'
+      ),
+    ],
     unit='bytes',
-    desc='JVM heap memory currently in use per instance and memory pool. Uses max() to avoid double-counting the two OTel JVM instrumentation scopes (java8 + java17) emitted by Solr.'
+    desc='JVM heap memory currently in use per instance and memory pool, with -Xmx (heap max) as reference line. Uses max() to avoid double-counting the two OTel JVM instrumentation scopes (java8 + java17) emitted by Solr.'
   ) + { gridPos: { x: 0, y: 26, w: 8, h: 8 } },
 
   ts(
     'Heap Committed',
-    [prom(
-      'max by (instance, jvm_memory_pool_name)(jvm_memory_committed_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
-      '{{instance}} {{jvm_memory_pool_name}}'
-    )],
+    [
+      prom(
+        'max by (instance, jvm_memory_pool_name)(jvm_memory_committed_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
+        '{{instance}} {{jvm_memory_pool_name}}'
+      ),
+      prom(
+        'max by (instance)(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
+        '{{instance}} heap max'
+      ),
+    ],
     unit='bytes',
-    desc='JVM heap memory committed (reserved from the OS) per instance and pool. Uses max() to avoid double-counting.'
+    desc='JVM heap memory committed (reserved from the OS) per instance and pool, with -Xmx (heap max) as reference line. Uses max() to avoid double-counting.'
   ) + { gridPos: { x: 8, y: 26, w: 8, h: 8 } },
 
-  statPanel(
-    'Heap Max',
-    [prom(
-      'min(max by (instance)(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"}))' % [envSel, clusterSel, instSel],
-      'min across instances'
-    )],
-    unit='bytes',
-    desc='Minimum -Xmx heap setting across selected instances. In a well-configured cluster all nodes share the same value, so one number suffices; the min highlights any under-provisioned node.'
-  ) + { gridPos: { x: 16, y: 26, w: 8, h: 8 } },
+  p.timeSeries.new('System and Heap Memory')
+  + p.timeSeries.queryOptions.withTargets([
+    prom(
+      'max by (instance)(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
+      '{{instance}} heap max'
+    ),
+    prom(
+      'max by (instance)(jvm_system_memory_bytes{%s,%s,%s,state="total"})' % [envSel, clusterSel, instSel],
+      '{{instance}} system total'
+    ),
+    prom(
+      'max by (instance)(jvm_system_memory_bytes{%s,%s,%s,state="total"}) - max by (instance)(jvm_system_memory_bytes{%s,%s,%s,state="free"})' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel],
+      '{{instance}} system used'
+    ),
+  ])
+  + p.timeSeries.standardOptions.withUnit('bytes')
+  + p.timeSeries.panelOptions.withDescription('Physical system memory (total and used) alongside JVM heap max (-Xmx) per instance. Shows how much of physical RAM is consumed and how the heap ceiling compares to total RAM.')
+  + p.timeSeries.options.legend.withDisplayMode('list')
+  + p.timeSeries.options.tooltip.withMode('multi')
+  + p.timeSeries.fieldConfig.defaults.custom.withFillOpacity(10)
+  + { gridPos: { x: 16, y: 26, w: 8, h: 8 } },
 
   ts(
     'GC Pause p99',
@@ -502,11 +526,11 @@ local indexHealthRow =
       gaugePanel(
         'MMap Efficiency',
         [prom(
-          'clamp_max((max(jvm_system_memory_total_bytes{%s,%s,%s}) - sum(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})) / 1e6 / sum(solr_core_index_size_megabytes{%s,%s,%s}) * 100, 100)' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel, envSel, clusterSel, instSel],
+          'clamp_max((max(jvm_system_memory_bytes{%s,%s,%s,state="total"}) - sum(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})) / 1e6 / sum(solr_core_index_size_megabytes{%s,%s,%s}) * 100, 100)' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel, envSel, clusterSel, instSel],
           'MMap %%'
         )],
         unit='percent',
-        desc='Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric). Shows "No data" if absent.',
+        desc='Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_bytes (Solr 10.x physical RAM metric). Shows "No data" if absent.',
         min=0,
         max=100,
         steps=[

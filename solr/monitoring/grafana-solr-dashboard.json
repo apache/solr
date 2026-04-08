@@ -161,7 +161,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "p99 latency for /update (indexing) requests per collection (entry-point requests only). High latency may indicate index merge pressure or I/O bottlenecks.",
+         "description": "p99 latency for /update (indexing) requests per collection. High latency may indicate index merge pressure or I/O bottlenecks.",
          "fieldConfig": {
             "defaults": {
                "unit": "ms"
@@ -189,7 +189,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=\"/update\",internal=\"false\"}[$interval])))",
+               "expr": "histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=\"/update\"}[$interval])))",
                "interval": "$interval",
                "legendFormat": "{{collection}}"
             }
@@ -358,7 +358,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "JVM heap memory currently in use per instance and memory pool. Uses max() to avoid double-counting the two OTel JVM instrumentation scopes (java8 + java17) emitted by Solr.",
+         "description": "JVM heap memory currently in use per instance and memory pool, with -Xmx (heap max) as reference line. Uses max() to avoid double-counting the two OTel JVM instrumentation scopes (java8 + java17) emitted by Solr.",
          "fieldConfig": {
             "defaults": {
                "unit": "bytes"
@@ -389,6 +389,15 @@
                "expr": "max by (instance, jvm_memory_pool_name)(jvm_memory_used_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})",
                "interval": "$interval",
                "legendFormat": "{{instance}} {{jvm_memory_pool_name}}"
+            },
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "max by (instance)(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})",
+               "interval": "$interval",
+               "legendFormat": "{{instance}} heap max"
             }
          ],
          "title": "Heap Used",
@@ -399,7 +408,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "JVM heap memory committed (reserved from the OS) per instance and pool. Uses max() to avoid double-counting.",
+         "description": "JVM heap memory committed (reserved from the OS) per instance and pool, with -Xmx (heap max) as reference line. Uses max() to avoid double-counting.",
          "fieldConfig": {
             "defaults": {
                "unit": "bytes"
@@ -430,6 +439,15 @@
                "expr": "max by (instance, jvm_memory_pool_name)(jvm_memory_committed_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})",
                "interval": "$interval",
                "legendFormat": "{{instance}} {{jvm_memory_pool_name}}"
+            },
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "max by (instance)(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})",
+               "interval": "$interval",
+               "legendFormat": "{{instance}} heap max"
             }
          ],
          "title": "Heap Committed",
@@ -440,9 +458,12 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "Minimum -Xmx heap setting across selected instances. In a well-configured cluster all nodes share the same value, so one number suffices; the min highlights any under-provisioned node.",
+         "description": "Physical system memory (total and used) alongside JVM heap max (-Xmx) per instance. Shows how much of physical RAM is consumed and how the heap ceiling compares to total RAM.",
          "fieldConfig": {
             "defaults": {
+               "custom": {
+                  "fillOpacity": 10
+               },
                "unit": "bytes"
             }
          },
@@ -454,12 +475,11 @@
          },
          "id": 12,
          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "reduceOptions": {
-               "calcs": [
-                  "lastNotNull"
-               ]
+            "legend": {
+               "displayMode": "list"
+            },
+            "tooltip": {
+               "mode": "multi"
             }
          },
          "pluginVersion": "v11.4.0",
@@ -469,13 +489,31 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "min(max by (instance)(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"}))",
+               "expr": "max by (instance)(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})",
                "interval": "$interval",
-               "legendFormat": "min across instances"
+               "legendFormat": "{{instance}} heap max"
+            },
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "max by (instance)(jvm_system_memory_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",state=\"total\"})",
+               "interval": "$interval",
+               "legendFormat": "{{instance}} system total"
+            },
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "max by (instance)(jvm_system_memory_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",state=\"total\"}) - max by (instance)(jvm_system_memory_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",state=\"free\"})",
+               "interval": "$interval",
+               "legendFormat": "{{instance}} system used"
             }
          ],
-         "title": "Heap Max",
-         "type": "stat"
+         "title": "System and Heap Memory",
+         "type": "timeseries"
       },
       {
          "datasource": {
@@ -1168,7 +1206,7 @@
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric). Shows \"No data\" if absent.",
+               "description": "Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_bytes (Solr 10.x physical RAM metric). Shows \"No data\" if absent.",
                "fieldConfig": {
                   "defaults": {
                      "color": {
@@ -1216,7 +1254,7 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "clamp_max((max(jvm_system_memory_total_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) - sum(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})) / 1e6 / sum(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) * 100, 100)",
+                     "expr": "clamp_max((max(jvm_system_memory_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",state=\"total\"}) - sum(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})) / 1e6 / sum(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) * 100, 100)",
                      "interval": "$interval",
                      "legendFormat": "MMap %%"
                   }

@@ -193,9 +193,9 @@ local cfg = config._config;
         // Fires when less than cfg.mmapRatioThreshold percent of the index fits in
         // available MMap address space (physical RAM minus heap).
         // The "and on(instance)" guard ensures the alert never fires if
-        // jvm_system_memory_total_bytes is absent (metric not available) or zero
+        // jvm_system_memory_bytes is absent (metric not available) or zero
         // (would otherwise produce a negative available-mmap and a spurious alert).
-        // This alert requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric).
+        // This alert requires jvm_system_memory_bytes (Solr 10.x physical RAM metric).
         // ---------------------------------------------------------------
         {
           alert: 'SolrHighMmapRatio',
@@ -203,7 +203,7 @@ local cfg = config._config;
             (
               clamp_max(
                 (
-                  max by (instance) (jvm_system_memory_total_bytes{%(solrSelector)s})
+                  max by (instance) (jvm_system_memory_bytes{%(solrSelector)s,state="total"})
                   - sum by (instance) (jvm_memory_limit_bytes{%(solrSelector)s,jvm_memory_type="heap"})
                 )
                 / 1e6
@@ -213,7 +213,7 @@ local cfg = config._config;
               ) < %(threshold)s
             )
             and on(instance)
-              max by (instance) (jvm_system_memory_total_bytes{%(solrSelector)s}) > 0
+              max by (instance) (jvm_system_memory_bytes{%(solrSelector)s,state="total"}) > 0
           ||| % { threshold: cfg.mmapRatioThreshold, solrSelector: cfg.solrSelector },
           'for': '5m',
           labels: { severity: 'warning' },
