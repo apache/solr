@@ -26,13 +26,17 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.function.BiConsumer;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetMetrics;
 import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
+import org.apache.solr.handler.admin.proxy.GenericV1RequestProxy;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -102,9 +106,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
               + format);
     }
 
-    if (cc != null && new AdminHandlersProxy(cc).maybeProxyToNodes(req, rsp)) {
+    final var reqProxy = createMetricProxy(cc, req, rsp);
+    if (cc != null && reqProxy.shouldProxy()) {
+      reqProxy.proxyRequest();
       return; // Request was proxied to other node
     }
+
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
     try {
       handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
@@ -142,6 +149,34 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     // Merge all filtered snapshots and return the merged result
     MetricSnapshots mergedSnapshots = MetricUtils.mergeSnapshots(allSnapshots);
     consumer.accept("metrics", mergedSnapshots);
+  }
+
+  public static AdminHandlersProxy createMetricProxy(
+      CoreContainer cc, SolrQueryRequest req, SolrQueryResponse rsp) {
+    return new GenericV1RequestProxy(cc, req, rsp) {
+
+      // Metric requests use 'node' to proxy rather than the generally accepted "nodes"
+      @Override
+      protected String getDestinationNodeParamName() {
+        return "node";
+      }
+
+      // Metrics requests require a particular ResponseParser
+      @Override
+      protected SolrRequest<?> createGenericRequest(String apiPath, SolrParams params) {
+        final var toProxy = super.createGenericRequest(apiPath, params);
+        String wt = params.get(CommonParams.WT, MetricUtils.PROMETHEUS_METRICS_WT);
+        toProxy.setResponseParser(new InputStreamResponseParser(wt));
+
+        return toProxy;
+      }
+
+      // Metrics requests only proxy to single host, so proxied response is added at root level
+      @Override
+      public void processProxiedResponse(String nodeName, NamedList<Object> proxiedResponse) {
+        rsp.getValues().addAll(proxiedResponse);
+      }
+    };
   }
 
   @Override
