@@ -154,17 +154,17 @@ public class PeerSync implements SolrMetricProducer {
     syncErrors =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_peer_sync_errors", "Total number of sync errors with peer"),
+                "solr.core.peer_sync.errors", "Total number of sync errors with peer"),
             baseAttributes);
     syncSkipped =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_peer_sync_skipped", "Total number of skipped syncs with peer"),
+                "solr.core.peer_sync.skipped", "Total number of skipped syncs with peer"),
             baseAttributes);
     syncTime =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr_core_peer_sync_time", "Peer sync times", OtelUnit.MILLISECONDS),
+                "solr.core.peer_sync.time", "Peer sync times", OtelUnit.MILLISECONDS),
             baseAttributes);
   }
 
