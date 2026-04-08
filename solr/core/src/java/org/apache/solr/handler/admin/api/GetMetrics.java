@@ -35,7 +35,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.AdminHandlersProxy;
+import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;

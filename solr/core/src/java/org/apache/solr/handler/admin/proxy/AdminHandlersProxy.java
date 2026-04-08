@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.admin;
+package org.apache.solr.handler.admin.proxy;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

@@ -24,6 +24,7 @@ import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetNodeSystemInfo;
+import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
