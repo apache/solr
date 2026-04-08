@@ -16,11 +16,12 @@
 // dashboards.libsonnet — Solr 10.x Grafana dashboard definition.
 //
 // Rows:
-//   Node Overview   (open by default)  — query/index request rates, latency, cores, disk
-//   JVM             (open by default)  — heap, GC, threads, CPU
-//   SolrCloud       (collapsed)        — Overseer queues, ZK ops, shard leaders
-//   Index Health    (collapsed)        — segments, index size, merge rates, MMap efficiency
-//   Cache Efficiency (collapsed)       — filter/query/document cache hit rates and evictions
+//   Cluster Overview (open by default)  — distributed query/update rates, latency, cores, disk
+//   JVM              (open by default)  — heap, GC, threads, CPU
+//   Solr Core        (collapsed)        — per-core QPS, update rate, latency, commits, optimizes
+//   SolrCloud        (collapsed)        — Overseer queues, ZK ops, shard leaders
+//   Index Health     (collapsed)        — segments, index size, merge rates, MMap efficiency
+//   Solr Caches      (collapsed)        — filter/query/document cache hit rates and evictions
 
 local config = import '../config.libsonnet';
 local g = import 'github.com/grafana/grafonnet/gen/grafonnet-latest/main.libsonnet';
@@ -162,65 +163,70 @@ local prom(expr, legend='{{instance}}') =
   + q.withLegendFormat(legend)
   + q.withInterval('$interval');
 
+local promInstant(expr, legend='{{instance}}') =
+  q.new('$datasource', expr)
+  + q.withLegendFormat(legend)
+  + q.withInstant(true);
+
 local gp(x, y, w, h) = p.timeSeries.gridPos.withX(x) + p.timeSeries.gridPos.withY(y)
                        + p.timeSeries.gridPos.withW(w) + p.timeSeries.gridPos.withH(h);
 
 // -----------------------------------------------------------------------
-// Node Overview panels (T013) — open by default, y starts at 0
+// Cluster Overview panels (T013) — open by default, y starts at 0
 // -----------------------------------------------------------------------
 local nodeOverviewPanels = [
-  p.row.new('Node Overview')
+  p.row.new('Cluster Overview')
   + p.row.withCollapsed(false)
   + { gridPos: { x: 0, y: 0, w: 24, h: 1 } },
 
   ts(
-    'Query Request Rate',
+    'Distributed QPS',
     [prom(
-      'sum by (instance)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,category="QUERY"}[$interval]))' % [envSel, clusterSel, instSel],
-      '{{instance}}'
+      'sum by (collection)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,category="QUERY",internal="false"}[$interval]))' % [envSel, clusterSel, instSel],
+      '{{collection}}'
     )],
     unit='reqps',
-    desc='Rate of incoming query (read) requests per second. Spike without latency increase is normal scaling; combined spike indicates saturation.'
+    desc='Incoming user query requests per second per collection (internal shard fan-out excluded). Shows cluster-wide QPS distribution across collections. Use the collection dropdown to focus on a specific collection.'
   ) + { gridPos: { x: 0, y: 1, w: 12, h: 8 } },
 
   ts(
     'Search Latency p50 / p95 / p99',
     [
       prom(
-        'histogram_quantile(0.50, sum by (le, handler, instance)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler=~"/select.*",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
-        'p50 {{handler}}'
+        'histogram_quantile(0.50, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler=~"/select.*",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
+        'p50 {{collection}}'
       ),
       prom(
-        'histogram_quantile(0.95, sum by (le, handler, instance)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler=~"/select.*",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
-        'p95 {{handler}}'
+        'histogram_quantile(0.95, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler=~"/select.*",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
+        'p95 {{collection}}'
       ),
       prom(
-        'histogram_quantile(0.99, sum by (le, handler, instance)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler=~"/select.*",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
-        'p99 {{handler}}'
+        'histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler=~"/select.*",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
+        'p99 {{collection}}'
       ),
     ],
     unit='ms',
-    desc='Search request latency percentiles for /select handlers. Alert fires at p99 > 1000ms for 5 minutes (SolrHighSearchLatency).'
+    desc='Search request latency percentiles per collection for /select handlers (user-facing requests only). Alert fires at p99 > 1000ms for 5 minutes (SolrHighSearchLatency).'
   ) + { gridPos: { x: 12, y: 1, w: 12, h: 8 } },
 
   ts(
-    'Indexing Rate',
+    'Total Update Rate',
     [prom(
-      'sum by (instance)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,category="UPDATE"}[$interval]))' % [envSel, clusterSel, instSel],
-      '{{instance}}'
+      'sum by (collection)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,category="UPDATE"}[$interval]))' % [envSel, clusterSel, instSel],
+      '{{collection}}'
     )],
     unit='reqps',
-    desc='Rate of incoming indexing (write/update) requests per second.'
+    desc='Update request rate per collection across the cluster. Includes all update traffic reaching each collection.'
   ) + { gridPos: { x: 0, y: 9, w: 12, h: 8 } },
 
   ts(
     'Update Latency p99',
     [prom(
-      'histogram_quantile(0.99, sum by (le, instance)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler="/update"}[$interval])))' % [envSel, clusterSel, instSel],
-      '{{instance}}'
+      'histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler="/update",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
+      '{{collection}}'
     )],
     unit='ms',
-    desc='p99 latency for /update (indexing) requests. High latency may indicate index merge pressure or I/O bottlenecks.'
+    desc='p99 latency for /update (indexing) requests per collection (entry-point requests only). High latency may indicate index merge pressure or I/O bottlenecks.'
   ) + { gridPos: { x: 12, y: 9, w: 12, h: 8 } },
 
   statPanel(
@@ -249,16 +255,26 @@ local nodeOverviewPanels = [
       { color: 'green', value: 30 },
     ]
   ) + { gridPos: { x: 6, y: 17, w: 6, h: 4 } },
+
+  ts(
+    'Document Count',
+    [prom(
+      'max by (collection)(solr_core_indexsearcher_index_num_docs{%s,%s,%s,collection=~"$collection"})' % [envSel, clusterSel, instSel],
+      '{{collection}}'
+    )],
+    unit='short',
+    desc='Searchable document count per collection (max across cores, to avoid double-counting replicas). Tracks index growth over time.'
+  ) + { gridPos: { x: 12, y: 17, w: 12, h: 8 } },
 ];
 
 // -----------------------------------------------------------------------
-// JVM panels (T014) — open by default, y starts at 21
+// JVM panels (T014) — open by default, y starts at 25
 // ALL panels use max by (instance,...) to deduplicate dual OTel scopes.
 // -----------------------------------------------------------------------
 local jvmPanels = [
   p.row.new('JVM')
   + p.row.withCollapsed(false)
-  + { gridPos: { x: 0, y: 21, w: 24, h: 1 } },
+  + { gridPos: { x: 0, y: 25, w: 24, h: 1 } },
 
   ts(
     'Heap Used',
@@ -268,7 +284,7 @@ local jvmPanels = [
     )],
     unit='bytes',
     desc='JVM heap memory currently in use per instance and memory pool. Uses max() to avoid double-counting the two OTel JVM instrumentation scopes (java8 + java17) emitted by Solr.'
-  ) + { gridPos: { x: 0, y: 22, w: 8, h: 8 } },
+  ) + { gridPos: { x: 0, y: 26, w: 8, h: 8 } },
 
   ts(
     'Heap Committed',
@@ -278,7 +294,7 @@ local jvmPanels = [
     )],
     unit='bytes',
     desc='JVM heap memory committed (reserved from the OS) per instance and pool. Uses max() to avoid double-counting.'
-  ) + { gridPos: { x: 8, y: 22, w: 8, h: 8 } },
+  ) + { gridPos: { x: 8, y: 26, w: 8, h: 8 } },
 
   statPanel(
     'Heap Max',
@@ -288,7 +304,7 @@ local jvmPanels = [
     )],
     unit='bytes',
     desc='Minimum -Xmx heap setting across selected instances. In a well-configured cluster all nodes share the same value, so one number suffices; the min highlights any under-provisioned node.'
-  ) + { gridPos: { x: 16, y: 22, w: 8, h: 8 } },
+  ) + { gridPos: { x: 16, y: 26, w: 8, h: 8 } },
 
   ts(
     'GC Pause p99',
@@ -298,7 +314,7 @@ local jvmPanels = [
     )],
     unit='s',
     desc='p99 GC pause duration per collector and instance. Alert fires when total GC time > 10s/min for 3 minutes (SolrJvmGcThrashing).'
-  ) + { gridPos: { x: 0, y: 30, w: 8, h: 8 } },
+  ) + { gridPos: { x: 0, y: 34, w: 8, h: 8 } },
 
   ts(
     'GC Collection Rate',
@@ -308,7 +324,7 @@ local jvmPanels = [
     )],
     unit='cps',
     desc='GC collection frequency per collector and instance. Frequent major GC indicates memory pressure.'
-  ) + { gridPos: { x: 8, y: 30, w: 8, h: 8 } },
+  ) + { gridPos: { x: 8, y: 34, w: 8, h: 8 } },
 
   ts(
     'JVM Threads',
@@ -318,7 +334,7 @@ local jvmPanels = [
     )],
     unit='short',
     desc='JVM thread count by state per instance. Large BLOCKED or WAITING counts indicate lock contention or stalled I/O.'
-  ) + { gridPos: { x: 16, y: 30, w: 8, h: 8 } },
+  ) + { gridPos: { x: 16, y: 34, w: 8, h: 8 } },
 
   ts(
     'JVM CPU Utilization',
@@ -328,17 +344,79 @@ local jvmPanels = [
     )],
     unit='percentunit',
     desc='Recent JVM CPU utilization (0–1) per instance. Sustained values near 1.0 indicate CPU saturation; combine with GC rate for root-cause analysis.'
-  ) + { gridPos: { x: 0, y: 38, w: 24, h: 8 } },
+  ) + { gridPos: { x: 0, y: 42, w: 24, h: 8 } },
 ];
 
 // -----------------------------------------------------------------------
-// SolrCloud panels (T019) — collapsed by default, y=46
+// Solr Core panels — collapsed by default, y=50
+// All panels show per-core breakdown; respond to all dropdowns including colSel.
+// -----------------------------------------------------------------------
+local solrCoreRow =
+  p.row.new('Solr Core')
+  + p.row.withCollapsed(true)
+  + {
+    gridPos: { x: 0, y: 50, w: 24, h: 1 },
+    panels: [
+      ts(
+        'QPS',
+        [prom(
+          'sum by (core)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,%s,handler=~"/select|/query",internal="false"}[$interval]))' % [envSel, clusterSel, instSel, colSel],
+          '{{core}}'
+        )],
+        unit='reqps',
+        desc='Query requests per second per core on /select and /query handlers (user-facing only). Use the collection, shard, and replica_type dropdowns to narrow the view in large clusters.'
+      ) + { gridPos: { x: 0, y: 47, w: 12, h: 8 } },
+
+      ts(
+        'Update Rate',
+        [prom(
+          'sum by (core)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,%s,category="UPDATE"}[$interval]))' % [envSel, clusterSel, instSel, colSel],
+          '{{core}}'
+        )],
+        unit='reqps',
+        desc='Indexing (update) request rate per core. Includes all update traffic reaching each core.'
+      ) + { gridPos: { x: 12, y: 47, w: 12, h: 8 } },
+
+      ts(
+        'Update Latency p99',
+        [prom(
+          'histogram_quantile(0.99, sum by (le, core)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,%s,handler="/update"}[$interval])))' % [envSel, clusterSel, instSel, colSel],
+          '{{core}}'
+        )],
+        unit='ms',
+        desc='p99 /update latency per core. High per-core latency relative to the distributed latency indicates uneven load or merge pressure on specific cores.'
+      ) + { gridPos: { x: 0, y: 55, w: 12, h: 8 } },
+
+      ts(
+        'Commit Rate',
+        [prom(
+          'sum by (core)(rate(solr_core_update_handler_commits_total{%s,%s,%s,%s}[$interval]))' % [envSel, clusterSel, instSel, colSel],
+          '{{core}}'
+        )],
+        unit='ops',
+        desc='Hard commit rate per core. Frequent hard commits increase I/O load; tune autoCommit intervals in solrconfig.xml if this is elevated.'
+      ) + { gridPos: { x: 12, y: 55, w: 12, h: 8 } },
+
+      ts(
+        'Optimize Rate',
+        [prom(
+          'sum by (core)(rate(solr_core_update_handler_optimizes_total{%s,%s,%s,%s}[$interval]))' % [envSel, clusterSel, instSel, colSel],
+          '{{core}}'
+        )],
+        unit='ops',
+        desc='Optimize (force-merge to 1 segment) rate per core. Optimizes are expensive and block searches; should be infrequent and scheduled during off-peak hours.'
+      ) + { gridPos: { x: 0, y: 63, w: 12, h: 8 } },
+    ],
+  };
+
+// -----------------------------------------------------------------------
+// SolrCloud panels (T019) — collapsed by default, y=51
 // -----------------------------------------------------------------------
 local solrcloudRow =
   p.row.new('SolrCloud')
   + p.row.withCollapsed(true)
   + {
-    gridPos: { x: 0, y: 46, w: 24, h: 1 },
+    gridPos: { x: 0, y: 51, w: 24, h: 1 },
     panels: [
       ts(
         'Overseer Collection Work Queue',
@@ -360,15 +438,15 @@ local solrcloudRow =
         desc='Pending cluster state updates in the Overseer queue. High values indicate ZooKeeper write pressure.'
       ) + { gridPos: { x: 12, y: 47, w: 12, h: 8 } },
 
-      statPanel(
-        'Shard Leaders on Node',
+      ts(
+        'Shard Leaders',
         [prom(
-          'count(solr_core_is_leader{%s,%s,%s} == 1)' % [envSel, clusterSel, instSel],
+          'sum by (instance)(solr_core_is_leader{%s,%s,%s} == 1)' % [envSel, clusterSel, instSel],
           '{{instance}}'
         )],
         unit='short',
-        desc='Number of shard replicas where this instance is the current leader.'
-      ) + { gridPos: { x: 0, y: 55, w: 8, h: 4 } },
+        desc='Number of shard leaders per node over time. Uneven distribution indicates imbalanced leader placement; use BALANCELEADERS API to rebalance.'
+      ) + { gridPos: { x: 0, y: 55, w: 8, h: 8 } },
 
       ts(
         'ZooKeeper Ops Rate',
@@ -380,46 +458,46 @@ local solrcloudRow =
         desc='Rate of ZooKeeper operations per instance. High rates may indicate excessive ZK polling or state update storms.'
       ) + { gridPos: { x: 8, y: 55, w: 16, h: 8 } },
 
-      statPanel(
+      ts(
         'Update Log Replay Remaining',
         [prom(
-          'sum(solr_core_update_log_replay_logs_remaining{%s,%s,%s})' % [envSel, clusterSel, instSel],
-          'Logs'
+          'sum by (collection)(solr_core_update_log_replay_logs_remaining{%s,%s,%s})' % [envSel, clusterSel, instSel],
+          '{{collection}}'
         )],
         unit='short',
-        desc='Number of transaction logs remaining to replay during leader recovery. Non-zero indicates a replica is catching up after restart.'
-      ) + { gridPos: { x: 0, y: 59, w: 8, h: 4 } },
+        desc='Transaction logs remaining to replay per collection during leader recovery. Non-zero indicates replicas catching up after restart.'
+      ) + { gridPos: { x: 0, y: 63, w: 12, h: 8 } },
     ],
   };
 
 // -----------------------------------------------------------------------
-// Index Health panels (T021) — collapsed by default, y=47
+// Index Health panels (T021) — collapsed by default, y=52
 // -----------------------------------------------------------------------
 local indexHealthRow =
   p.row.new('Index Health')
   + p.row.withCollapsed(true)
   + {
-    gridPos: { x: 0, y: 47, w: 24, h: 1 },
+    gridPos: { x: 0, y: 52, w: 24, h: 1 },
     panels: [
       barPanel(
-        'Segment Count per Core',
-        [prom(
-          'solr_core_segments{%s,%s,%s,collection=~"$collection",shard=~"$shard"}' % [envSel, clusterSel, instSel],
-          '{{core}}'
+        'Segment Count per Collection',
+        [promInstant(
+          'max by (collection)(solr_core_segments{%s,%s,%s,collection=~"$collection",shard=~"$shard"})' % [envSel, clusterSel, instSel],
+          '{{collection}}'
         )],
         unit='short',
-        desc='Number of Lucene segments per core. High counts (> 50) degrade search performance; trigger explicit merges or tune mergeFactor.'
-      ) + { gridPos: { x: 0, y: 48, w: 12, h: 8 } },
+        desc='Current maximum Lucene segment count per collection (max across cores). High counts (> 50) degrade search performance; trigger explicit merges or tune mergeFactor.'
+      ) + { gridPos: { x: 0, y: 49, w: 12, h: 8 } },
 
-      statPanel(
-        'Total Index Size',
+      ts(
+        'Total Index Size per Node',
         [prom(
-          'sum(solr_core_index_size_megabytes{%s,%s,%s})' % [envSel, clusterSel, instSel],
-          'Total MB'
+          'sum by (instance)(solr_core_index_size_megabytes{%s,%s,%s})' % [envSel, clusterSel, instSel],
+          '{{instance}}'
         )],
         unit='decmbytes',
-        desc='Total Lucene index size in megabytes across all selected cores.'
-      ) + { gridPos: { x: 12, y: 48, w: 6, h: 4 } },
+        desc='Total Lucene index size in megabytes per node (all cores combined). Helps identify nodes carrying disproportionate index data.'
+      ) + { gridPos: { x: 12, y: 49, w: 12, h: 8 } },
 
       gaugePanel(
         'MMap Efficiency',
@@ -436,7 +514,17 @@ local indexHealthRow =
           { color: 'orange', value: 25 },
           { color: 'green', value: 50 },
         ]
-      ) + { gridPos: { x: 18, y: 48, w: 6, h: 8 } },
+      ) + { gridPos: { x: 18, y: 49, w: 6, h: 8 } },
+
+      ts(
+        'Index Size per Collection',
+        [prom(
+          'sum by (collection)(solr_core_index_size_megabytes{%s,%s,%s,collection=~"$collection"} * on(core, instance) group_left() (solr_core_is_leader{%s,%s,%s} == 1))' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel],
+          '{{collection}}'
+        )],
+        unit='decmbytes',
+        desc='Combined index size of shard leader cores per collection (replicas excluded). Represents the logical data size of each collection without counting replica duplication.'
+      ) + { gridPos: { x: 0, y: 57, w: 12, h: 8 } },
 
       ts(
         'Flush Rate',
@@ -446,7 +534,7 @@ local indexHealthRow =
         )],
         unit='ops',
         desc='Rate of IndexWriter segment flushes per second. High flush rates indicate heavy write load or small RAM buffer (solr.autoSoftCommitMaxDocs).'
-      ) + { gridPos: { x: 0, y: 56, w: 8, h: 8 } },
+      ) + { gridPos: { x: 0, y: 65, w: 8, h: 8 } },
 
       ts(
         'Minor Merge Rate',
@@ -456,7 +544,7 @@ local indexHealthRow =
         )],
         unit='ops',
         desc='Rate of completed minor (small segment) Lucene merge operations per second.'
-      ) + { gridPos: { x: 8, y: 56, w: 8, h: 8 } },
+      ) + { gridPos: { x: 8, y: 65, w: 8, h: 8 } },
 
       ts(
         'Major Merge Rate',
@@ -466,38 +554,28 @@ local indexHealthRow =
         )],
         unit='ops',
         desc='Rate of completed major (large segment) Lucene merge operations per second. Sustained major merges impact query latency; consider scheduling merges during off-peak hours.'
-      ) + { gridPos: { x: 16, y: 56, w: 8, h: 8 } },
-
-      ts(
-        'Documents Indexed',
-        [prom(
-          'sum by (core)(solr_core_indexsearcher_index_num_docs{%s,%s,%s,collection=~"$collection"})' % [envSel, clusterSel, instSel],
-          '{{core}}'
-        )],
-        unit='short',
-        desc='Total number of searchable documents per core. Tracks index growth over time.'
-      ) + { gridPos: { x: 0, y: 64, w: 12, h: 8 } },
+      ) + { gridPos: { x: 16, y: 65, w: 8, h: 8 } },
 
       ts(
         'Pending Commit Docs',
         [prom(
-          'sum(solr_core_update_docs_pending_commit{%s,%s,%s})' % [envSel, clusterSel, instSel],
-          'Pending'
+          'sum by (collection)(solr_core_update_docs_pending_commit{%s,%s,%s,collection=~"$collection"})' % [envSel, clusterSel, instSel],
+          '{{collection}}'
         )],
         unit='short',
-        desc='Documents added but not yet committed and visible to searchers. High values indicate delayed hard commits.'
-      ) + { gridPos: { x: 12, y: 64, w: 12, h: 8 } },
+        desc='Documents added but not yet committed and visible to searchers per collection. High values indicate delayed hard commits.'
+      ) + { gridPos: { x: 12, y: 73, w: 12, h: 8 } },
     ],
   };
 
 // -----------------------------------------------------------------------
-// Cache Efficiency panels (T025) — collapsed by default, y=48
+// Solr Caches panels (T025) — collapsed by default, y=53
 // -----------------------------------------------------------------------
 local cacheRow =
-  p.row.new('Cache Efficiency')
+  p.row.new('Solr Caches')
   + p.row.withCollapsed(true)
   + {
-    gridPos: { x: 0, y: 48, w: 24, h: 1 },
+    gridPos: { x: 0, y: 53, w: 24, h: 1 },
     panels: [
       ts(
         'Filter Cache Hit Rate',
@@ -611,6 +689,7 @@ local dashboard =
   + d.withPanels(
     nodeOverviewPanels
     + jvmPanels
+    + [solrCoreRow]
     + [solrcloudRow]
     + [indexHealthRow]
     + [cacheRow]

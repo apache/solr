@@ -12,7 +12,7 @@
             "y": 0
          },
          "id": 1,
-         "title": "Node Overview",
+         "title": "Cluster Overview",
          "type": "row"
       },
       {
@@ -20,7 +20,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "Rate of incoming query (read) requests per second. Spike without latency increase is normal scaling; combined spike indicates saturation.",
+         "description": "Incoming user query requests per second per collection (internal shard fan-out excluded). Shows cluster-wide QPS distribution across collections. Use the collection dropdown to focus on a specific collection.",
          "fieldConfig": {
             "defaults": {
                "unit": "reqps"
@@ -48,12 +48,12 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum by (instance)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"QUERY\"}[$interval]))",
+               "expr": "sum by (collection)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"QUERY\",internal=\"false\"}[$interval]))",
                "interval": "$interval",
-               "legendFormat": "{{instance}}"
+               "legendFormat": "{{collection}}"
             }
          ],
-         "title": "Query Request Rate",
+         "title": "Distributed QPS",
          "type": "timeseries"
       },
       {
@@ -61,7 +61,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "Search request latency percentiles for /select handlers. Alert fires at p99 > 1000ms for 5 minutes (SolrHighSearchLatency).",
+         "description": "Search request latency percentiles per collection for /select handlers (user-facing requests only). Alert fires at p99 > 1000ms for 5 minutes (SolrHighSearchLatency).",
          "fieldConfig": {
             "defaults": {
                "unit": "ms"
@@ -89,27 +89,27 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "histogram_quantile(0.50, sum by (le, handler, instance)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=~\"/select.*\",internal=\"false\"}[$interval])))",
+               "expr": "histogram_quantile(0.50, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=~\"/select.*\",internal=\"false\"}[$interval])))",
                "interval": "$interval",
-               "legendFormat": "p50 {{handler}}"
+               "legendFormat": "p50 {{collection}}"
             },
             {
                "datasource": {
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "histogram_quantile(0.95, sum by (le, handler, instance)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=~\"/select.*\",internal=\"false\"}[$interval])))",
+               "expr": "histogram_quantile(0.95, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=~\"/select.*\",internal=\"false\"}[$interval])))",
                "interval": "$interval",
-               "legendFormat": "p95 {{handler}}"
+               "legendFormat": "p95 {{collection}}"
             },
             {
                "datasource": {
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "histogram_quantile(0.99, sum by (le, handler, instance)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=~\"/select.*\",internal=\"false\"}[$interval])))",
+               "expr": "histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=~\"/select.*\",internal=\"false\"}[$interval])))",
                "interval": "$interval",
-               "legendFormat": "p99 {{handler}}"
+               "legendFormat": "p99 {{collection}}"
             }
          ],
          "title": "Search Latency p50 / p95 / p99",
@@ -120,7 +120,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "Rate of incoming indexing (write/update) requests per second.",
+         "description": "Update request rate per collection across the cluster. Includes all update traffic reaching each collection.",
          "fieldConfig": {
             "defaults": {
                "unit": "reqps"
@@ -148,12 +148,12 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum by (instance)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"UPDATE\"}[$interval]))",
+               "expr": "sum by (collection)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"UPDATE\"}[$interval]))",
                "interval": "$interval",
-               "legendFormat": "{{instance}}"
+               "legendFormat": "{{collection}}"
             }
          ],
-         "title": "Indexing Rate",
+         "title": "Total Update Rate",
          "type": "timeseries"
       },
       {
@@ -161,7 +161,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "p99 latency for /update (indexing) requests. High latency may indicate index merge pressure or I/O bottlenecks.",
+         "description": "p99 latency for /update (indexing) requests per collection (entry-point requests only). High latency may indicate index merge pressure or I/O bottlenecks.",
          "fieldConfig": {
             "defaults": {
                "unit": "ms"
@@ -189,9 +189,9 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "histogram_quantile(0.99, sum by (le, instance)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=\"/update\"}[$interval])))",
+               "expr": "histogram_quantile(0.99, sum by (le, collection)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=\"/update\",internal=\"false\"}[$interval])))",
                "interval": "$interval",
-               "legendFormat": "{{instance}}"
+               "legendFormat": "{{collection}}"
             }
          ],
          "title": "Update Latency p99",
@@ -301,14 +301,55 @@
          "type": "gauge"
       },
       {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Searchable document count per collection (max across cores, to avoid double-counting replicas). Tracks index growth over time.",
+         "fieldConfig": {
+            "defaults": {
+               "unit": "short"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 17
+         },
+         "id": 8,
+         "options": {
+            "legend": {
+               "displayMode": "list"
+            },
+            "tooltip": {
+               "mode": "multi"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "max by (collection)(solr_core_indexsearcher_index_num_docs{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\"})",
+               "interval": "$interval",
+               "legendFormat": "{{collection}}"
+            }
+         ],
+         "title": "Document Count",
+         "type": "timeseries"
+      },
+      {
          "collapsed": false,
          "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 21
+            "y": 25
          },
-         "id": 8,
+         "id": 9,
          "title": "JVM",
          "type": "row"
       },
@@ -327,9 +368,9 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 22
+            "y": 26
          },
-         "id": 9,
+         "id": 10,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -368,9 +409,9 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 22
+            "y": 26
          },
-         "id": 10,
+         "id": 11,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -409,9 +450,9 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 22
+            "y": 26
          },
-         "id": 11,
+         "id": 12,
          "options": {
             "colorMode": "value",
             "graphMode": "none",
@@ -451,9 +492,9 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 30
+            "y": 34
          },
-         "id": 12,
+         "id": 13,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -492,9 +533,9 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 30
+            "y": 34
          },
-         "id": 13,
+         "id": 14,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -533,9 +574,9 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 30
+            "y": 34
          },
-         "id": 14,
+         "id": 15,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -574,9 +615,9 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 38
+            "y": 42
          },
-         "id": 15,
+         "id": 16,
          "options": {
             "legend": {
                "displayMode": "list"
@@ -606,9 +647,228 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 46
+            "y": 50
          },
-         "id": 16,
+         "id": 17,
+         "panels": [
+            {
+               "datasource": {
+                  "type": "datasource",
+                  "uid": "-- Mixed --"
+               },
+               "description": "Query requests per second per core on /select and /query handlers (user-facing only). Use the collection, shard, and replica_type dropdowns to narrow the view in large clusters.",
+               "fieldConfig": {
+                  "defaults": {
+                     "unit": "reqps"
+                  }
+               },
+               "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 0,
+                  "y": 47
+               },
+               "id": 18,
+               "options": {
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
+                  }
+               },
+               "pluginVersion": "v11.4.0",
+               "targets": [
+                  {
+                     "datasource": {
+                        "type": "prometheus",
+                        "uid": "$datasource"
+                     },
+                     "expr": "sum by (core)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\",handler=~\"/select|/query\",internal=\"false\"}[$interval]))",
+                     "interval": "$interval",
+                     "legendFormat": "{{core}}"
+                  }
+               ],
+               "title": "QPS",
+               "type": "timeseries"
+            },
+            {
+               "datasource": {
+                  "type": "datasource",
+                  "uid": "-- Mixed --"
+               },
+               "description": "Indexing (update) request rate per core. Includes all update traffic reaching each core.",
+               "fieldConfig": {
+                  "defaults": {
+                     "unit": "reqps"
+                  }
+               },
+               "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 12,
+                  "y": 47
+               },
+               "id": 19,
+               "options": {
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
+                  }
+               },
+               "pluginVersion": "v11.4.0",
+               "targets": [
+                  {
+                     "datasource": {
+                        "type": "prometheus",
+                        "uid": "$datasource"
+                     },
+                     "expr": "sum by (core)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\",category=\"UPDATE\"}[$interval]))",
+                     "interval": "$interval",
+                     "legendFormat": "{{core}}"
+                  }
+               ],
+               "title": "Update Rate",
+               "type": "timeseries"
+            },
+            {
+               "datasource": {
+                  "type": "datasource",
+                  "uid": "-- Mixed --"
+               },
+               "description": "p99 /update latency per core. High per-core latency relative to the distributed latency indicates uneven load or merge pressure on specific cores.",
+               "fieldConfig": {
+                  "defaults": {
+                     "unit": "ms"
+                  }
+               },
+               "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 0,
+                  "y": 55
+               },
+               "id": 20,
+               "options": {
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
+                  }
+               },
+               "pluginVersion": "v11.4.0",
+               "targets": [
+                  {
+                     "datasource": {
+                        "type": "prometheus",
+                        "uid": "$datasource"
+                     },
+                     "expr": "histogram_quantile(0.99, sum by (le, core)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\",handler=\"/update\"}[$interval])))",
+                     "interval": "$interval",
+                     "legendFormat": "{{core}}"
+                  }
+               ],
+               "title": "Update Latency p99",
+               "type": "timeseries"
+            },
+            {
+               "datasource": {
+                  "type": "datasource",
+                  "uid": "-- Mixed --"
+               },
+               "description": "Hard commit rate per core. Frequent hard commits increase I/O load; tune autoCommit intervals in solrconfig.xml if this is elevated.",
+               "fieldConfig": {
+                  "defaults": {
+                     "unit": "ops"
+                  }
+               },
+               "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 12,
+                  "y": 55
+               },
+               "id": 21,
+               "options": {
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
+                  }
+               },
+               "pluginVersion": "v11.4.0",
+               "targets": [
+                  {
+                     "datasource": {
+                        "type": "prometheus",
+                        "uid": "$datasource"
+                     },
+                     "expr": "sum by (core)(rate(solr_core_update_handler_commits_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\"}[$interval]))",
+                     "interval": "$interval",
+                     "legendFormat": "{{core}}"
+                  }
+               ],
+               "title": "Commit Rate",
+               "type": "timeseries"
+            },
+            {
+               "datasource": {
+                  "type": "datasource",
+                  "uid": "-- Mixed --"
+               },
+               "description": "Optimize (force-merge to 1 segment) rate per core. Optimizes are expensive and block searches; should be infrequent and scheduled during off-peak hours.",
+               "fieldConfig": {
+                  "defaults": {
+                     "unit": "ops"
+                  }
+               },
+               "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 0,
+                  "y": 63
+               },
+               "id": 22,
+               "options": {
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
+                  }
+               },
+               "pluginVersion": "v11.4.0",
+               "targets": [
+                  {
+                     "datasource": {
+                        "type": "prometheus",
+                        "uid": "$datasource"
+                     },
+                     "expr": "sum by (core)(rate(solr_core_update_handler_optimizes_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\"}[$interval]))",
+                     "interval": "$interval",
+                     "legendFormat": "{{core}}"
+                  }
+               ],
+               "title": "Optimize Rate",
+               "type": "timeseries"
+            }
+         ],
+         "title": "Solr Core",
+         "type": "row"
+      },
+      {
+         "collapsed": true,
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 51
+         },
+         "id": 23,
          "panels": [
             {
                "datasource": {
@@ -627,7 +887,7 @@
                   "x": 0,
                   "y": 47
                },
-               "id": 17,
+               "id": 24,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -668,7 +928,7 @@
                   "x": 12,
                   "y": 47
                },
-               "id": 18,
+               "id": 25,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -697,26 +957,25 @@
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Number of shard replicas where this instance is the current leader.",
+               "description": "Number of shard leaders per node over time. Uneven distribution indicates imbalanced leader placement; use BALANCELEADERS API to rebalance.",
                "fieldConfig": {
                   "defaults": {
                      "unit": "short"
                   }
                },
                "gridPos": {
-                  "h": 4,
+                  "h": 8,
                   "w": 8,
                   "x": 0,
                   "y": 55
                },
-               "id": 19,
+               "id": 26,
                "options": {
-                  "colorMode": "value",
-                  "graphMode": "none",
-                  "reduceOptions": {
-                     "calcs": [
-                        "lastNotNull"
-                     ]
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
                   }
                },
                "pluginVersion": "v11.4.0",
@@ -726,13 +985,13 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "count(solr_core_is_leader{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"} == 1)",
+                     "expr": "sum by (instance)(solr_core_is_leader{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"} == 1)",
                      "interval": "$interval",
                      "legendFormat": "{{instance}}"
                   }
                ],
-               "title": "Shard Leaders on Node",
-               "type": "stat"
+               "title": "Shard Leaders",
+               "type": "timeseries"
             },
             {
                "datasource": {
@@ -751,7 +1010,7 @@
                   "x": 8,
                   "y": 55
                },
-               "id": 20,
+               "id": 27,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -780,26 +1039,25 @@
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Number of transaction logs remaining to replay during leader recovery. Non-zero indicates a replica is catching up after restart.",
+               "description": "Transaction logs remaining to replay per collection during leader recovery. Non-zero indicates replicas catching up after restart.",
                "fieldConfig": {
                   "defaults": {
                      "unit": "short"
                   }
                },
                "gridPos": {
-                  "h": 4,
-                  "w": 8,
+                  "h": 8,
+                  "w": 12,
                   "x": 0,
-                  "y": 59
+                  "y": 63
                },
-               "id": 21,
+               "id": 28,
                "options": {
-                  "colorMode": "value",
-                  "graphMode": "none",
-                  "reduceOptions": {
-                     "calcs": [
-                        "lastNotNull"
-                     ]
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
                   }
                },
                "pluginVersion": "v11.4.0",
@@ -809,13 +1067,13 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "sum(solr_core_update_log_replay_logs_remaining{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
+                     "expr": "sum by (collection)(solr_core_update_log_replay_logs_remaining{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
                      "interval": "$interval",
-                     "legendFormat": "Logs"
+                     "legendFormat": "{{collection}}"
                   }
                ],
                "title": "Update Log Replay Remaining",
-               "type": "stat"
+               "type": "timeseries"
             }
          ],
          "title": "SolrCloud",
@@ -827,16 +1085,16 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 47
+            "y": 52
          },
-         "id": 22,
+         "id": 29,
          "panels": [
             {
                "datasource": {
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Number of Lucene segments per core. High counts (> 50) degrade search performance; trigger explicit merges or tune mergeFactor.",
+               "description": "Current maximum Lucene segment count per collection (max across cores). High counts (> 50) degrade search performance; trigger explicit merges or tune mergeFactor.",
                "fieldConfig": {
                   "defaults": {
                      "unit": "short"
@@ -846,9 +1104,9 @@
                   "h": 8,
                   "w": 12,
                   "x": 0,
-                  "y": 48
+                  "y": 49
                },
-               "id": 23,
+               "id": 30,
                "pluginVersion": "v11.4.0",
                "targets": [
                   {
@@ -856,12 +1114,12 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "solr_core_segments{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\"}",
-                     "interval": "$interval",
-                     "legendFormat": "{{core}}"
+                     "expr": "max by (collection)(solr_core_segments{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\"})",
+                     "instant": true,
+                     "legendFormat": "{{collection}}"
                   }
                ],
-               "title": "Segment Count per Core",
+               "title": "Segment Count per Collection",
                "type": "barchart"
             },
             {
@@ -869,26 +1127,25 @@
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Total Lucene index size in megabytes across all selected cores.",
+               "description": "Total Lucene index size in megabytes per node (all cores combined). Helps identify nodes carrying disproportionate index data.",
                "fieldConfig": {
                   "defaults": {
                      "unit": "decmbytes"
                   }
                },
                "gridPos": {
-                  "h": 4,
-                  "w": 6,
+                  "h": 8,
+                  "w": 12,
                   "x": 12,
-                  "y": 48
+                  "y": 49
                },
-               "id": 24,
+               "id": 31,
                "options": {
-                  "colorMode": "value",
-                  "graphMode": "none",
-                  "reduceOptions": {
-                     "calcs": [
-                        "lastNotNull"
-                     ]
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
                   }
                },
                "pluginVersion": "v11.4.0",
@@ -898,20 +1155,20 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "sum(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
+                     "expr": "sum by (instance)(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
                      "interval": "$interval",
-                     "legendFormat": "Total MB"
+                     "legendFormat": "{{instance}}"
                   }
                ],
-               "title": "Total Index Size",
-               "type": "stat"
+               "title": "Total Index Size per Node",
+               "type": "timeseries"
             },
             {
                "datasource": {
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_bytes{state=\"total\"} (Solr 10.x physical RAM metric). Shows \"No data\" if absent.",
+               "description": "Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric). Shows \"No data\" if absent.",
                "fieldConfig": {
                   "defaults": {
                      "color": {
@@ -942,9 +1199,9 @@
                   "h": 8,
                   "w": 6,
                   "x": 18,
-                  "y": 48
+                  "y": 49
                },
-               "id": 25,
+               "id": 32,
                "options": {
                   "reduceOptions": {
                      "calcs": [
@@ -959,13 +1216,54 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "clamp_max((max(jvm_system_memory_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",state=\"total\"}) - sum(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})) / 1e6 / sum(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) * 100, 100)",
+                     "expr": "clamp_max((max(jvm_system_memory_total_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) - sum(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})) / 1e6 / sum(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) * 100, 100)",
                      "interval": "$interval",
                      "legendFormat": "MMap %%"
                   }
                ],
                "title": "MMap Efficiency",
                "type": "gauge"
+            },
+            {
+               "datasource": {
+                  "type": "datasource",
+                  "uid": "-- Mixed --"
+               },
+               "description": "Combined index size of shard leader cores per collection (replicas excluded). Represents the logical data size of each collection without counting replica duplication.",
+               "fieldConfig": {
+                  "defaults": {
+                     "unit": "decmbytes"
+                  }
+               },
+               "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 0,
+                  "y": 57
+               },
+               "id": 33,
+               "options": {
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
+                  }
+               },
+               "pluginVersion": "v11.4.0",
+               "targets": [
+                  {
+                     "datasource": {
+                        "type": "prometheus",
+                        "uid": "$datasource"
+                     },
+                     "expr": "sum by (collection)(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\"} * on(core, instance) group_left() (solr_core_is_leader{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"} == 1))",
+                     "interval": "$interval",
+                     "legendFormat": "{{collection}}"
+                  }
+               ],
+               "title": "Index Size per Collection",
+               "type": "timeseries"
             },
             {
                "datasource": {
@@ -982,9 +1280,9 @@
                   "h": 8,
                   "w": 8,
                   "x": 0,
-                  "y": 56
+                  "y": 65
                },
-               "id": 26,
+               "id": 34,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1023,9 +1321,9 @@
                   "h": 8,
                   "w": 8,
                   "x": 8,
-                  "y": 56
+                  "y": 65
                },
-               "id": 27,
+               "id": 35,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1064,9 +1362,9 @@
                   "h": 8,
                   "w": 8,
                   "x": 16,
-                  "y": 56
+                  "y": 65
                },
-               "id": 28,
+               "id": 36,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1095,48 +1393,7 @@
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Total number of searchable documents per core. Tracks index growth over time.",
-               "fieldConfig": {
-                  "defaults": {
-                     "unit": "short"
-                  }
-               },
-               "gridPos": {
-                  "h": 8,
-                  "w": 12,
-                  "x": 0,
-                  "y": 64
-               },
-               "id": 29,
-               "options": {
-                  "legend": {
-                     "displayMode": "list"
-                  },
-                  "tooltip": {
-                     "mode": "multi"
-                  }
-               },
-               "pluginVersion": "v11.4.0",
-               "targets": [
-                  {
-                     "datasource": {
-                        "type": "prometheus",
-                        "uid": "$datasource"
-                     },
-                     "expr": "sum by (core)(solr_core_indexsearcher_index_num_docs{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\"})",
-                     "interval": "$interval",
-                     "legendFormat": "{{core}}"
-                  }
-               ],
-               "title": "Documents Indexed",
-               "type": "timeseries"
-            },
-            {
-               "datasource": {
-                  "type": "datasource",
-                  "uid": "-- Mixed --"
-               },
-               "description": "Documents added but not yet committed and visible to searchers. High values indicate delayed hard commits.",
+               "description": "Documents added but not yet committed and visible to searchers per collection. High values indicate delayed hard commits.",
                "fieldConfig": {
                   "defaults": {
                      "unit": "short"
@@ -1146,9 +1403,9 @@
                   "h": 8,
                   "w": 12,
                   "x": 12,
-                  "y": 64
+                  "y": 73
                },
-               "id": 30,
+               "id": 37,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1164,9 +1421,9 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "sum(solr_core_update_docs_pending_commit{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
+                     "expr": "sum by (collection)(solr_core_update_docs_pending_commit{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\"})",
                      "interval": "$interval",
-                     "legendFormat": "Pending"
+                     "legendFormat": "{{collection}}"
                   }
                ],
                "title": "Pending Commit Docs",
@@ -1182,9 +1439,9 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 48
+            "y": 53
          },
-         "id": 31,
+         "id": 38,
          "panels": [
             {
                "datasource": {
@@ -1203,7 +1460,7 @@
                   "x": 0,
                   "y": 49
                },
-               "id": 32,
+               "id": 39,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1244,7 +1501,7 @@
                   "x": 8,
                   "y": 49
                },
-               "id": 33,
+               "id": 40,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1285,7 +1542,7 @@
                   "x": 16,
                   "y": 49
                },
-               "id": 34,
+               "id": 41,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1326,7 +1583,7 @@
                   "x": 0,
                   "y": 57
                },
-               "id": 35,
+               "id": 42,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1367,7 +1624,7 @@
                   "x": 8,
                   "y": 57
                },
-               "id": 36,
+               "id": 43,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1408,7 +1665,7 @@
                   "x": 16,
                   "y": 57
                },
-               "id": 37,
+               "id": 44,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1449,7 +1706,7 @@
                   "x": 0,
                   "y": 65
                },
-               "id": 38,
+               "id": 45,
                "options": {
                   "legend": {
                      "displayMode": "list"
@@ -1474,7 +1731,7 @@
                "type": "timeseries"
             }
          ],
-         "title": "Cache Efficiency",
+         "title": "Solr Caches",
          "type": "row"
       }
    ],
