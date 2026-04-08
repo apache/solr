@@ -590,7 +590,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   private List<Action> calcDeletes(List<Action> actions) {
     final String autoDeleteAgeMathStr = this.getAutoDeleteAgeMath();
     if (autoDeleteAgeMathStr == null || actions.size() == 0) {
-      return Collections.emptyList();
+      return List.of();
     }
     if (actions.size() > 1) {
       throw new IllegalStateException(
@@ -675,7 +675,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       String nextCol = calcNextCollection(parsed);
       return Collections.singletonList(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
     } else {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 

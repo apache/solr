@@ -2114,6 +2114,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * using {@code this.getClass()}.
    */
   public static Path getFile(String name) {
+    // see if it's a classpath resource
     final URL url =
         SolrTestCaseJ4.class
             .getClassLoader()
@@ -2128,10 +2129,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                 + name);
       }
     }
+
+    // see if it's a file path resource
     final Path file = Path.of(name);
     if (Files.exists(file)) {
-      return file;
+      return file.toAbsolutePath(); // absolute to reduce ambiguity
     }
+
     throw new RuntimeException(
         "Cannot find resource in classpath or in file-system (relative to CWD): "
             + file.toAbsolutePath());

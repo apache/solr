@@ -40,7 +40,6 @@ import java.security.Principal;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -85,7 +84,6 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
@@ -102,7 +100,6 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
 import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -165,6 +162,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Create baseConfigNoExists = new Create();
       baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
       verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
+
+      // Invalid configset names
+      for (String invalidName :
+          new String[] {"configset!", "configset\"", "-configset", "configset name"}) {
+        Create invalidNameCreate = new Create();
+        invalidNameCreate.setConfigSetName(invalidName).setBaseConfigSetName("_default");
+        verifyException(solrClient, invalidNameCreate, "Invalid configset");
+      }
     }
   }
 
@@ -386,6 +391,22 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         "Expected file doesnt exist in zk. It's possibly overwritten",
         zkClient.exists("/configs/myconf/anotherDummyFile"));
 
+    // Checking error when configuration name contains invalid characters
+    for (String invalidName : new String[] {"configset!", "-configset"}) {
+      map =
+          postDataAndGetResponse(
+              cluster.getSolrClient(),
+              cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
+                  + "/admin/configs?action=UPLOAD&name="
+                  + invalidName,
+              emptyData,
+              null,
+              false);
+      assertNotNull(map);
+      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+      assertEquals("Expected 400 for invalid configset name: " + invalidName, 400l, statusCode);
+    }
+
     zkClient.close();
     solrClient.close();
   }
@@ -584,7 +605,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertEquals(
           400, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true, false));
 
-      for (String fileEnding : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
+      for (String fileEnding : ConfigSetService.DEFAULT_FORBIDDEN_FILE_TYPES) {
         String f = configPath + "/test." + fileEnding;
         assertFalse(
             "Expecting file " + f + " to not exist, because it has a forbidden file type",
@@ -805,7 +826,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
-      for (String fileType : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
+      for (String fileType : ConfigSetService.DEFAULT_FORBIDDEN_FILE_TYPES) {
         ignoreException("is forbidden for use in configSets");
         assertEquals(
             "Can't upload a configset file with a forbidden type: " + fileType,
@@ -1386,7 +1407,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     try (ZipOutputStream zout = new ZipOutputStream(out)) {
       if (Files.isRegularFile(fileOrDirectory)) {
         // Create entries with given file, one for each forbidden endding
-        for (String fileType : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
+        for (String fileType : ConfigSetService.DEFAULT_FORBIDDEN_FILE_TYPES) {
           zout.putNextEntry(new ZipEntry("test." + fileType));
 
           try (InputStream in = Files.newInputStream(fileOrDirectory)) {
@@ -1652,12 +1673,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * the real directory which matches what {@link ZkController} finds and uses to bootstrap ZK in
    * cloud based tests.
    *
-   * <p>This assumes the {@link SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE} system
-   * property has not been externally set in the environment where this test is being run -- which
-   * should <b>never</b> be the case, since it would prevent the test-framework from using {@link
+   * <p>This assumes the {@link ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR} system property has
+   * not been externally set in the environment where this test is being run -- which should
+   * <b>never</b> be the case, since it would prevent the test-framework from using {@link
    * ExternalPaths#DEFAULT_CONFIGSET}
    *
-   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR
    * @see #beforeSolrTestCase
    * @see ConfigSetService#getDefaultConfigDirPath
    */
@@ -1728,7 +1749,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
         @Override
         public Map<String, String> getPromptHeaders() {
-          return Collections.emptyMap();
+          return Map.of();
         }
       };
     }

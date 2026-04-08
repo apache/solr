@@ -55,6 +55,9 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
   // TODO it'd be nice if the ResponseParser could receive the mime type so it can parse
   //  accordingly, maybe json, cbor, smile
 
+  /**
+   * Parse the Json {@code stream} to the expected Java type, then, converts to a {@link NamedList}.
+   */
   @Override
   public NamedList<Object> processResponse(InputStream stream, String encoding) throws IOException {
     // TODO generalize to CBOR, Smile, ...

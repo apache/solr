@@ -1,0 +1,7 @@
+title: Published POMs now include resolved dependency versions, fixing ambiguous/missing version problems.
+type: fixed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18185
+    url: https://issues.apache.org/jira/browse/SOLR-18185

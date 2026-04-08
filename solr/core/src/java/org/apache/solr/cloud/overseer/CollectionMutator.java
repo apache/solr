@@ -22,7 +22,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,7 +62,7 @@ public class CollectionMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
     if (slice == null) {
-      Map<String, Replica> replicas = Collections.emptyMap();
+      Map<String, Replica> replicas = Map.of();
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
