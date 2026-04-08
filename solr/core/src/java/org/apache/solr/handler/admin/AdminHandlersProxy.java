@@ -58,23 +58,27 @@ public class AdminHandlersProxy {
   private static final String PARAM_NODE = "node";
   private static final long PROMETHEUS_FETCH_TIMEOUT_SECONDS = 10;
 
+  private final CoreContainer container;
+
+  public AdminHandlersProxy(CoreContainer container) {
+    this.container = container;
+  }
+
   /**
    * Proxy this request to a different remote node's V1 API if 'node' or 'nodes' parameter is
    * provided. For V2, use {@link AdminHandlersProxy#maybeProxyToNodes(String, SolrQueryRequest,
-   * SolrQueryResponse, CoreContainer)}
+   * SolrQueryResponse)}
    */
-  public boolean maybeProxyToNodes(
-      SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
+  public boolean maybeProxyToNodes(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException, InterruptedException {
-    return maybeProxyToNodes("V1", req, rsp, container);
+    return maybeProxyToNodes("V1", req, rsp);
   }
 
   /**
    * Proxy this request to a different remote node's selected API version if 'node' or 'nodes'
    * parameter is provided
    */
-  public boolean maybeProxyToNodes(
-      String apiVersion, SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
+  public boolean maybeProxyToNodes(String apiVersion, SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException, InterruptedException {
 
     String pathStr = req.getPath();
@@ -95,7 +99,7 @@ public class AdminHandlersProxy {
       }
 
       params.remove(PARAM_NODE);
-      handlePrometheusSingleNode(apiVersion, nodeName, pathStr, params, container, rsp);
+      handlePrometheusSingleNode(apiVersion, nodeName, pathStr, params, rsp);
     } else {
       // Other formats (JSON/XML): use plural 'nodes' parameter for multi-node aggregation
       String nodeNames = req.getParams().get(PARAM_NODES);
@@ -104,7 +108,7 @@ public class AdminHandlersProxy {
       }
 
       params.remove(PARAM_NODES);
-      Set<String> nodes = resolveNodes(nodeNames, container);
+      Set<String> nodes = resolveNodes(nodeNames);
       handleNamedListFormat(apiVersion, nodes, pathStr, params, container.getZkController(), rsp);
     }
 
@@ -194,7 +198,7 @@ public class AdminHandlersProxy {
    * @return set of resolved node names
    * @throws SolrException if node format is invalid
    */
-  private Set<String> resolveNodes(String nodeNames, CoreContainer container) {
+  private Set<String> resolveNodes(String nodeNames) {
     Set<String> liveNodes =
         container.getZkController().zkStateReader.getClusterState().getLiveNodes();
 
@@ -228,7 +232,6 @@ public class AdminHandlersProxy {
       String nodeName,
       String pathStr,
       ModifiableSolrParams params,
-      CoreContainer container,
       SolrQueryResponse rsp)
       throws IOException, SolrServerException {
 

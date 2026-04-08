@@ -49,7 +49,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
 
-    if (new AdminHandlersProxy().maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
+    if (new AdminHandlersProxy(getCoreContainer(req)).maybeProxyToNodes(req, rsp)) {
       return; // Request was proxied to other node
     }
 

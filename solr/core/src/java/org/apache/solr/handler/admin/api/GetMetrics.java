@@ -137,8 +137,8 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
   private boolean proxyToNodes() {
     try {
       if (coreContainer != null
-          && new AdminHandlersProxy()
-              .maybeProxyToNodes("V2", solrQueryRequest, solrQueryResponse, coreContainer)) {
+          && new AdminHandlersProxy(coreContainer)
+              .maybeProxyToNodes("V2", solrQueryRequest, solrQueryResponse)) {
         return true; // Request was proxied to other node
       }
     } catch (Exception e) {
