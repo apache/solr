@@ -31,8 +31,10 @@ bin/solr status - Get the status of a Solr server.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr status* [*-hvV*] [*--short*] [*--max-wait-secs*=_<maxWaitSecs>_] [*-p*=_<port>_]
-                [*-s*=_<solrUrl>_] [*-u*=_<credentials>_]
+....
+bin/solr status [-hvV] [--short] [--max-wait-secs=<maxWaitSecs>] [-p=<port>]
+                [-s=<solrUrl>] [-u=<credentials>]
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

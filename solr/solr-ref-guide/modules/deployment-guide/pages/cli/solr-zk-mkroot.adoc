@@ -31,8 +31,10 @@ bin/solr zk mkroot - Make a znode in ZooKeeper with no data. Can be used to make
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk mkroot* [*-hvV*] [*--fail-on-exists*[=_<failOnExists>_]] [*-s*=_<solrUrl>_]
-                   [*-u*=_<credentials>_] [*-z*=_<zkHost>_] _<path>_
+....
+bin/solr zk mkroot [-hvV] [--fail-on-exists[=<failOnExists>]] [-s=<solrUrl>]
+                   [-u=<credentials>] [-z=<zkHost>] <path>
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

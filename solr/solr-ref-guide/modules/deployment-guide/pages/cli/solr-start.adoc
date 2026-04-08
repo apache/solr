@@ -31,12 +31,14 @@ bin/solr start - Starts Solr in standalone or SolrCloud mode.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr start* [*-fhqVy*] [*--force*] [*--user-managed*] [*--verbose*]
-               [*--data-home*=_<dataHome>_] [*-e*=_<example>_]
-               [*--example-dir*=_<exampleDir>_] [*--host*=_<host>_] [*-j*=_<jettyParams>_]
-               [*--jvm-opts*=_<jvmOpts>_] [*-m*=_<memory>_] [*-p*=_<port>_]
-               [*--prompt-inputs*=_<values>_] [*--server-dir*=_<serverDir>_]
-               [*--solr-home*=_<solrHome>_] [*-z*=_<zkHost>_]
+....
+bin/solr start [-fhqVy] [--force] [--user-managed] [--verbose]
+               [--data-home=<dataHome>] [-e=<example>]
+               [--example-dir=<exampleDir>] [--host=<host>] [-j=<jettyParams>]
+               [--jvm-opts=<jvmOpts>] [-m=<memory>] [-p=<port>]
+               [--prompt-inputs=<values>] [--server-dir=<serverDir>]
+               [--solr-home=<solrHome>] [-z=<zkHost>]
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

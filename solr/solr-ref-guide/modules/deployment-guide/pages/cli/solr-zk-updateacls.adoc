@@ -31,8 +31,10 @@ bin/solr zk updateacls - Update ACLs for a ZooKeeper znode.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk updateacls* [*-hvV*] [*-s*=_<solrUrl>_] [*-u*=_<credentials>_] [*-z*=_<zkHost>_]
-                       _<path>_
+....
+bin/solr zk updateacls [-hvV] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
+                       <path>
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

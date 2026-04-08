@@ -31,8 +31,10 @@ bin/solr zk upconfig - Upload a configset from the local filesystem to ZooKeeper
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk upconfig* [*-hvV*] *-d*=_DIR_ *-n*=_<confName>_ [*-s*=_<solrUrl>_]
-                     [*-u*=_<credentials>_] [*-z*=_<zkHost>_]
+....
+bin/solr zk upconfig [-hvV] -d=DIR -n=<confName> [-s=<solrUrl>]
+                     [-u=<credentials>] [-z=<zkHost>]
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

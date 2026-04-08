@@ -610,6 +610,19 @@ String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNot
   def picocliQualifiedName = 'bin/solr-' + baseName.substring('solr-'.length())
   content = content.replace(picocliQualifiedName, newTitle)
 
+  // Wrap the synopsis paragraph in a literal block to preserve line breaks and indentation.
+  // ManPageGenerator generates a plain paragraph with picocli AsciiDoc marks (*bold*, _italic_)
+  // which Asciidoctor collapses to a single line. A `....` literal block preserves whitespace
+  // but does not render inline formatting, so we strip the marks for a clean monospace output.
+  content = content.replaceAll(
+    /(?s)(== Synopsis\n\n)(.*?)(\n\n\/\/ end::picocli-generated-man-section-synopsis\[\])/
+  ) { List<String> m ->
+    def synopsis = m[2]
+      .replaceAll(/\*([^*]+)\*/, '$1')  // *bold* → plain
+      .replaceAll(/_([^_]+)_/, '$1')    // _italic_ → plain
+    "${m[1]}....\n${synopsis}\n....${m[3]}"
+  }
+
   // Strip the outer full-manpage tag wrappers
   content = content.replace("// tag::picocli-generated-full-manpage[]\n", '')
   content = content.replace("// end::picocli-generated-full-manpage[]\n", '')

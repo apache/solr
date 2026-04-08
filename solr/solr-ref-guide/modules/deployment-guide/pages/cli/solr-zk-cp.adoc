@@ -31,8 +31,10 @@ bin/solr zk cp - Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeep
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk cp* [*-hrvV*] [*-s*=_<solrUrl>_] [*--solr-home*=_DIR_] [*-u*=_<credentials>_]
-               [*-z*=_<zkHost>_] _<src>_ _<dst>_
+....
+bin/solr zk cp [-hrvV] [-s=<solrUrl>] [--solr-home=DIR] [-u=<credentials>]
+               [-z=<zkHost>] <src> <dst>
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

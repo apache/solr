@@ -31,7 +31,9 @@ bin/solr zk rm - Remove a znode from ZooKeeper.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk rm* [*-hrvV*] [*-s*=_<solrUrl>_] [*-u*=_<credentials>_] [*-z*=_<zkHost>_] _<path>_
+....
+bin/solr zk rm [-hrvV] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <path>
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

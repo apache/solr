@@ -31,7 +31,9 @@ bin/solr stop - Stops Solr.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr stop* [*-hV*] [*--all*] [*--verbose*] [*-k*=_<key>_] [*-p*=_<port>_]
+....
+bin/solr stop [-hV] [--all] [--verbose] [-k=<key>] [-p=<port>]
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

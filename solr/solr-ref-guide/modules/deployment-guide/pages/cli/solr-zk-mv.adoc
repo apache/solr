@@ -31,8 +31,10 @@ bin/solr zk mv - Move (rename) a znode on ZooKeeper.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk mv* [*-hvV*] [*-s*=_<solrUrl>_] [*-u*=_<credentials>_] [*-z*=_<zkHost>_] _<src>_
-               _<dst>_
+....
+bin/solr zk mv [-hvV] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <src>
+               <dst>
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

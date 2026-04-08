@@ -31,7 +31,9 @@ bin/solr zk ls - List the contents of a ZooKeeper node.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk ls* [*-hrvV*] [*-s*=_<solrUrl>_] [*-u*=_<credentials>_] [*-z*=_<zkHost>_] _<path>_
+....
+bin/solr zk ls [-hrvV] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <path>
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

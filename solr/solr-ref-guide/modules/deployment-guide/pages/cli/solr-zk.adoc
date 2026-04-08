@@ -31,7 +31,9 @@ bin/solr zk - Sub commands for working with ZooKeeper.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk* [*-hV*] [COMMAND]
+....
+bin/solr zk [-hV] [COMMAND]
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

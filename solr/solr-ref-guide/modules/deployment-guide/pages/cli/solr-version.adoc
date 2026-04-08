@@ -31,7 +31,9 @@ bin/solr version - Prints the Solr version.
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr version* [*-v*]
+....
+bin/solr version [-v]
+....
 
 // end::picocli-generated-man-section-synopsis[]
 

@@ -31,8 +31,10 @@ bin/solr zk downconfig - Download a configset from ZooKeeper to the local filesy
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
-*bin/solr zk downconfig* [*-hvV*] *-d*=_DIR_ *-n*=_<confName>_ [*-s*=_<solrUrl>_]
-                       [*-u*=_<credentials>_] [*-z*=_<zkHost>_]
+....
+bin/solr zk downconfig [-hvV] -d=DIR -n=<confName> [-s=<solrUrl>]
+                       [-u=<credentials>] [-z=<zkHost>]
+....
 
 // end::picocli-generated-man-section-synopsis[]
 
