@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
     mixinStandardHelpOptions = true,
     synopsisHeading = "usage: ",
     commandListHeading = "\nCommands:\n",
-    descriptionHeading = "Global options:\n",
     footer = {
       "",
       "SolrCloud example (embedded Zookeeper):",
@@ -111,9 +110,6 @@ public class SolrCLI implements CLIO {
   private static void propagateCommandSettings(picocli.CommandLine cmd) {
     for (picocli.CommandLine subcommand : cmd.getSubcommands().values()) {
       subcommand.getCommandSpec().defaultValueProvider(cmd.getCommandSpec().defaultValueProvider());
-      subcommand
-          .getCommandSpec()
-          .mixinStandardHelpOptions(cmd.getCommandSpec().mixinStandardHelpOptions());
       subcommand.getCommandSpec().usageMessage().width(cmd.getCommandSpec().usageMessage().width());
       subcommand
           .getCommandSpec()

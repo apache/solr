@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 /** Supports zk upconfig command in the bin/solr script. */
 @picocli.CommandLine.Command(
     name = "upconfig",
-    mixinStandardHelpOptions = true,
     description = "Upload a configset from the local filesystem to ZooKeeper.")
 public class ConfigSetUploadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

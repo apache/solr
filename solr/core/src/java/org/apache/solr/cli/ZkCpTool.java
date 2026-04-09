@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 /** Supports zk cp command in the bin/solr script. */
 @picocli.CommandLine.Command(
     name = "cp",
-    mixinStandardHelpOptions = true,
     description = {
       "Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.",
       "",
