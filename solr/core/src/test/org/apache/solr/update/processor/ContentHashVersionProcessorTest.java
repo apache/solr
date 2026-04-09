@@ -16,27 +16,14 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.UUIDField;
-import org.apache.solr.update.AddUpdateCommand;
+import org.jspecify.annotations.NonNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,108 +31,73 @@ import org.junit.Test;
 public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
 
   public static final String ID_FIELD = "_id";
-  public static final String HASH_FIELD_NAME = "_hash_";
   public static final String FIRST_FIELD = "field1";
   public static final String SECOND_FIELD = "field2";
   public static final String THIRD_FIELD = "docField3";
   public static final String FOURTH_FIELD = "field4";
-  private SolrQueryRequest req;
 
-  private ContentHashVersionProcessor getContentHashVersionProcessor(
-      SolrQueryRequest req,
-      SolrQueryResponse rsp,
-      UpdateRequestProcessor next,
-      List<String> includedFields,
-      List<String> excludedFields) {
-    ContentHashVersionProcessor processor =
-        new ContentHashVersionProcessor(
-            ContentHashVersionProcessorFactory.buildFieldMatcher(includedFields),
-            ContentHashVersionProcessorFactory.buildFieldMatcher(excludedFields),
-            HASH_FIELD_NAME,
-            req,
-            rsp,
-            next);
-
-    // Given (previous doc retrieval configuration)
-    processor.setOldDocProvider(
-        (core, hashField, indexedDocId) -> {
-          final SolrInputDocument inputDocument =
-              doc(
-                  f(ID_FIELD, indexedDocId.utf8ToString()),
-                  f(FIRST_FIELD, "Initial values used to compute initial hash"),
-                  f(SECOND_FIELD, "This a constant value for testing include/exclude fields"));
-          return doc(
-              f(ID_FIELD, inputDocument.getFieldValue(ID_FIELD)),
-              f(FIRST_FIELD, inputDocument.getFieldValue(FIRST_FIELD)),
-              f(SECOND_FIELD, inputDocument.getFieldValue(SECOND_FIELD)),
-              f(hashField, processor.computeDocHash(inputDocument)));
-        });
-    return processor;
-  }
+  public static final String INITIAL_DOC_ID = "1";
+  public static final String INITIAL_FIELD1_VALUE = "Initial values used to compute initial hash";
+  public static final String INITIAL_FIELD2_VALUE =
+      "This a constant value for testing include/exclude fields";
+  public static final String[] INITIAL_DOC =
+      new String[] {
+        ID_FIELD, INITIAL_DOC_ID,
+        FIRST_FIELD, INITIAL_FIELD1_VALUE,
+        SECOND_FIELD, INITIAL_FIELD2_VALUE
+      };
+  private String initialDocHash;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeWorkingMockito();
+    initCore("solrconfig-contenthashversion.xml", "schema16.xml");
   }
 
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    assertU(delQ("*:*"));
+    addDoc(adoc(INITIAL_DOC), "contenthashversion-default");
+    assertU(commit());
 
-    // Given (processor configuration)
-    req = mock(SolrQueryRequest.class);
-    when(req.getParams()).thenReturn(mock(SolrParams.class));
-
-    // Given (schema configuration)
-    IndexSchema indexSchema = mock(IndexSchema.class);
-    when(req.getSchema()).thenReturn(indexSchema);
-    when(indexSchema.getUniqueKeyField()).thenReturn(new SchemaField(ID_FIELD, new UUIDField()));
-    when(indexSchema.indexableUniqueKey(anyString()))
-        .then(invocationOnMock -> new BytesRef(invocationOnMock.getArgument(0).toString()));
+    // Query for the document and extract _hash_ field value
+    initialDocHash = getHashFieldValue(INITIAL_DOC_ID);
   }
 
-  @Test
-  public void shouldComputeHashForDoc() {
-    // Given
-    ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            mock(SolrQueryResponse.class),
-            mock(UpdateRequestProcessor.class),
-            List.of("*"),
-            List.of(ID_FIELD));
+  private static @NonNull String getHashFieldValue(String docId) throws Exception {
+    String response = h.query(req("q", ID_FIELD + ":" + docId, "fl", "_hash_"));
 
-    // Given (doc for update)
-    SolrInputDocument inputDocument1 =
-        doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(FIRST_FIELD, "Values will serve as input to compute a hash"),
-            f(SECOND_FIELD, "This a constant value for testing include/exclude fields"));
+    // Parse XML response to extract _hash_ field value
+    // Response format: <str name="_hash_">value</str>
+    String hashPattern = "<str name=\"_hash_\">";
+    int startIdx = response.indexOf(hashPattern);
+    if (startIdx == -1) {
+      fail("Hash field not found in document " + docId);
+    }
+    startIdx += hashPattern.length();
+    int endIdx = response.indexOf("</str>", startIdx);
+    if (endIdx == -1) {
+      fail("Hash field closing tag not found");
+    }
+    return response.substring(startIdx, endIdx);
+  }
 
-    // Then
-    assertEquals("Tak0G5a/DIE=", processor.computeDocHash(inputDocument1));
-
-    // Given (doc for update - with different order)
-    SolrInputDocument inputDocument2 =
-        doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(SECOND_FIELD, "This a constant value for testing include/exclude fields"),
-            f(FIRST_FIELD, "Values will serve as input to compute a hash"));
-
-    // Then (hash remain same, since id is excluded from signature fields)
-    assertEquals("Tak0G5a/DIE=", processor.computeDocHash(inputDocument2));
+  private ContentHashVersionProcessor getContentHashVersionProcessor(
+      List<String> includedFields, List<String> excludedFields) {
+    return new ContentHashVersionProcessor(
+        ContentHashVersionProcessorFactory.buildFieldMatcher(includedFields),
+        ContentHashVersionProcessorFactory.buildFieldMatcher(excludedFields),
+        "_hash_",
+        mock(SolrQueryRequest.class),
+        mock(SolrQueryResponse.class),
+        mock(UpdateRequestProcessor.class));
   }
 
   @Test
   public void shouldUseExcludedFieldsWildcard() {
     // Given
     ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            mock(SolrQueryResponse.class),
-            mock(UpdateRequestProcessor.class),
-            List.of("*"),
-            List.of("field*"));
+        getContentHashVersionProcessor(List.of("*"), List.of("field*"));
 
     // Given (doc for update)
     SolrInputDocument inputDocument =
@@ -165,12 +117,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
   public void shouldUseIncludedFieldsWildcard() {
     // Given
     ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            mock(SolrQueryResponse.class),
-            mock(UpdateRequestProcessor.class),
-            List.of("field*"),
-            List.of(THIRD_FIELD));
+        getContentHashVersionProcessor(List.of("field*"), List.of(THIRD_FIELD));
 
     // Given (doc for update)
     SolrInputDocument inputDocument =
@@ -189,12 +136,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
   public void shouldUseIncludedFieldsWildcard2() {
     // Given (variant of previous shouldUseIncludedFieldsWildcard, without the excludedField config)
     ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            mock(SolrQueryResponse.class),
-            mock(UpdateRequestProcessor.class),
-            List.of("field*"),
-            List.of());
+        getContentHashVersionProcessor(List.of("field*"), List.of());
 
     // Given (doc for update)
     SolrInputDocument inputDocument =
@@ -213,22 +155,11 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
   public void shouldDedupIncludedFields() {
     // Given (processor to include field1 and field2 only)
     ContentHashVersionProcessor processorWithDuplicatedFieldName =
-        getContentHashVersionProcessor(
-            req,
-            mock(SolrQueryResponse.class),
-            mock(UpdateRequestProcessor.class),
-            List.of(FIRST_FIELD, FIRST_FIELD, SECOND_FIELD),
-            List.of());
-
+        getContentHashVersionProcessor(List.of(FIRST_FIELD, FIRST_FIELD, SECOND_FIELD), List.of());
     ContentHashVersionProcessor processorWithWildcard =
         getContentHashVersionProcessor(
-            req,
-            mock(SolrQueryResponse.class),
-            mock(UpdateRequestProcessor.class),
-            List.of(
-                SECOND_FIELD,
-                FIRST_FIELD,
-                "field1*"), // Also change order of config (test reorder of field names)
+            List.of( // Also change order of config (test reorder of field names)
+                SECOND_FIELD, FIRST_FIELD, "field1*"),
             List.of());
 
     // Given (doc for update)
@@ -246,198 +177,257 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
   }
 
   @Test
-  public void shouldCreateSignatureForNewDoc() throws IOException {
-    // Given
-    SolrQueryResponse response = mock(SolrQueryResponse.class);
-    ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            response,
-            mock(UpdateRequestProcessor.class),
-            Arrays.asList(FIRST_FIELD, SECOND_FIELD),
-            List.of());
-    processor.setDiscardSameDocuments(false);
-    processor.setOldDocProvider((core, hashField, indexedDocId) -> null);
-
-    // Given (command)
-    AddUpdateCommand cmd = new AddUpdateCommand(req);
-
-    // Given (doc for update)
-    SolrInputDocument inputDocument =
-        doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(FIRST_FIELD, "Values will serve as input to compute a hash"),
-            f(SECOND_FIELD, "This a constant value for testing include/exclude fields"));
-    cmd.solrDoc = inputDocument;
-
-    // When
-    processor.processAdd(cmd);
-    processor.finish();
+  public void shouldCreateSignatureForNewDoc() throws Exception {
+    // When (update)
+    final String newDocId = UUID.randomUUID().toString();
+    assertU(
+        adoc(
+            ID_FIELD, newDocId,
+            FIRST_FIELD, INITIAL_FIELD1_VALUE,
+            SECOND_FIELD, INITIAL_FIELD2_VALUE));
+    assertU(commit());
 
     // Then
-    assertNotNull(inputDocument.getField(HASH_FIELD_NAME)); // signature field got added
-    assertEquals(
-        processor.computeDocHash(inputDocument),
-        inputDocument.getField(HASH_FIELD_NAME).getValue()); // ... and contains expected value
-
-    // Then (asserts on hash comparison results)
-    verify(response, times(1)).addToLog(eq("numAddsExisting"), eq(0));
-    verify(response, times(1))
-        .addToLog(eq("numAddsExistingWithIdentical"), eq(0)); // And no hash clash with old doc
+    final String hashFieldValueForNewDoc = getHashFieldValue(newDocId);
+    assertEquals(initialDocHash, hashFieldValueForNewDoc);
   }
 
   @Test
-  public void shouldAddToResponseLog() throws IOException {
-    // Given
-    SolrQueryResponse response = mock(SolrQueryResponse.class);
-    ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            response,
-            mock(UpdateRequestProcessor.class),
-            Arrays.asList(FIRST_FIELD, SECOND_FIELD),
-            List.of());
-    processor.setDiscardSameDocuments(false);
-
+  public void shouldAddToResponseLog() throws Exception {
     // Given (command to update existing doc)
-    AddUpdateCommand cmdDoesNotChangeValues = new AddUpdateCommand(req);
+    final String newDocId = UUID.randomUUID().toString();
+    final SolrQueryResponse update1 =
+        addDocWithResponse(
+            adoc(
+                ID_FIELD, newDocId,
+                FIRST_FIELD, INITIAL_FIELD1_VALUE,
+                SECOND_FIELD, INITIAL_FIELD2_VALUE),
+            "contenthashversion-default");
+    final SolrQueryResponse update2 =
+        addDocWithResponse(
+            adoc(
+                ID_FIELD, newDocId,
+                FIRST_FIELD, "This is a doc with values",
+                SECOND_FIELD, "that differs from stored doc, so it's considered new"),
+            "contenthashversion-default");
+    assertU(commit());
 
-    // Given (doc for update - matches the existing doc, see getContentHashVersionProcessor())
-    SolrInputDocument initialDocument =
-        doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(FIRST_FIELD, "Initial values used to compute initial hash"),
-            f(SECOND_FIELD, "This a constant value for testing include/exclude fields"));
-    cmdDoesNotChangeValues.solrDoc =
-        doc(
-            f(ID_FIELD, initialDocument.getFieldValue(ID_FIELD)),
-            f(FIRST_FIELD, initialDocument.getFieldValue(FIRST_FIELD)),
-            f(SECOND_FIELD, initialDocument.getFieldValue(SECOND_FIELD)),
-            f(HASH_FIELD_NAME, processor.computeDocHash(initialDocument)));
-
-    // Given (command to update existing doc with different content)
-    AddUpdateCommand cmdChangesDocValues = new AddUpdateCommand(req);
-
-    // Given (doc for update - does *not* match the existing doc, see
-    // getContentHashVersionProcessor())
-    cmdChangesDocValues.solrDoc =
-        doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(FIRST_FIELD, "This is a doc with values"),
-            f(SECOND_FIELD, "that differs from stored doc, so it's considered new"));
-
-    // When
-    processor.processAdd(cmdDoesNotChangeValues);
-    processor.processAdd(cmdChangesDocValues);
-    processor.finish();
-
-    // Then (read as follows: 2 updates occurred for an existing doc. Among these updates, 1 update
-    // tried to replace
-    // doc with the same content)
-    verify(response, times(1)).addToLog(eq("numAddsExisting"), eq(2));
-    verify(response, times(1)).addToLog(eq("numAddsExistingWithIdentical"), eq(1));
+    // Then
+    assertResponse(update1, 0, 0, 0);
+    assertResponse(update2, 0, 0, 1);
   }
 
   @Test
-  public void shouldNotUpdateSignatureForNewDoc() throws IOException {
-    // Given
-    SolrQueryResponse response = mock(SolrQueryResponse.class);
-    ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req, response, mock(UpdateRequestProcessor.class), List.of(SECOND_FIELD), List.of());
+  public void shouldKeepDuplicateDocumentsInLogMode() throws Exception {
+    // Given: Use log chain which detects but does NOT drop duplicates
+    final String docId = UUID.randomUUID().toString();
 
-    // Given (command)
-    AddUpdateCommand cmd = new AddUpdateCommand(req);
+    // When: Add a document
+    addDoc(
+        adoc(
+            ID_FIELD, docId,
+            FIRST_FIELD, "original value",
+            SECOND_FIELD, "original value 2"),
+        "contenthashversion-log");
+    assertU(commit());
+    String originalHash = getHashFieldValue(docId);
 
-    // Given (doc for update)
-    SolrInputDocument inputDocument =
-        doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(FIRST_FIELD, "Values will serve as input to compute a hash"),
-            f(SECOND_FIELD, "This a constant value for testing include/exclude fields"));
-    cmd.solrDoc = inputDocument;
+    // When: Try to add the same content again (duplicate)
+    SolrQueryResponse duplicateResponse =
+        addDocWithResponse(
+            adoc(
+                ID_FIELD, docId,
+                FIRST_FIELD, "original value",
+                SECOND_FIELD, "original value 2"),
+            "contenthashversion-log");
+    assertU(commit());
 
-    // When
-    processor.processAdd(cmd);
+    // Then: Response should show duplicate was detected but NOT dropped
+    assertResponse(duplicateResponse, 0, 1, 0);
 
-    // Then
-    assertNotNull(inputDocument.getField(HASH_FIELD_NAME)); // signature field got added
-    assertEquals(
-        processor.computeDocHash(inputDocument),
-        inputDocument.getField(HASH_FIELD_NAME).getValue()); // ... and contains expected value
-    verify(response, never()).addToLog(eq("numAddsExisting"), eq(0));
-    verify(response, never()).addToLog(eq("numAddsExistingWithIdentical"), eq(0));
+    // Then: Document should still exist in index
+    assertQ(req("q", ID_FIELD + ":" + docId), "//result[@numFound='1']");
+
+    // Then: Document hash should remain unchanged (duplicate was processed)
+    String currentHash = getHashFieldValue(docId);
+    assertEquals("Hash should remain unchanged for duplicate", originalHash, currentHash);
+
+    // When: Update with different content
+    SolrQueryResponse changedResponse =
+        addDocWithResponse(
+            adoc(
+                ID_FIELD, docId,
+                FIRST_FIELD, "changed value",
+                SECOND_FIELD, "changed value 2"),
+            "contenthashversion-log");
+    assertU(commit());
+
+    // Then: Response should show content changed
+    assertResponse(changedResponse, 0, 0, 1);
+
+    // Then: Hash should be updated
+    String newHash = getHashFieldValue(docId);
+    assertNotEquals("Hash should change for different content", originalHash, newHash);
   }
 
   @Test
-  public void shouldExcludeFieldsUpdateSignatureForNewDoc() throws IOException {
-    // Given
-    SolrQueryResponse response = mock(SolrQueryResponse.class);
-    ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            response,
-            mock(UpdateRequestProcessor.class),
-            List.of(FIRST_FIELD, SECOND_FIELD),
-            List.of(FIRST_FIELD));
-    processor.setDiscardSameDocuments(false);
-
-    // Given (command)
-    AddUpdateCommand cmd = new AddUpdateCommand(req);
-
-    // Given (doc for update)
-    SolrInputDocument inputDocument =
-        doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(FIRST_FIELD, "Values will serve as input to compute a hash"),
-            f(SECOND_FIELD, "This a constant value for testing include/exclude fields"));
-    cmd.solrDoc = inputDocument;
-
-    // When
-    processor.processAdd(cmd);
+  public void shouldExcludeFieldsUpdateSignatureForNewDoc() throws Exception {
+    // Given (update using URP chain WITHOUT drop doc (log mode))
+    final String newDocId = UUID.randomUUID().toString();
+    addDoc(
+        adoc(
+            ID_FIELD, newDocId,
+            FIRST_FIELD, INITIAL_FIELD1_VALUE,
+            SECOND_FIELD, INITIAL_FIELD2_VALUE),
+        "contenthashversion-default");
+    assertU(commit());
 
     // Then
-    assertNotNull(inputDocument.getField(HASH_FIELD_NAME)); // signature field got added
-    assertEquals(
-        processor.computeDocHash(inputDocument),
-        inputDocument.getField(HASH_FIELD_NAME).getValue()); // ... and contains expected value
-    verify(response, never()).addToLog(eq("numAddsExisting"), eq(1));
-    verify(response, never()).addToLog(eq("numAddsExistingWithIdentical"), eq(0));
+    final String hashFieldValue = getHashFieldValue(newDocId);
+    assertEquals(initialDocHash, hashFieldValue);
   }
 
   @Test
-  public void shouldCommitWithDiscardModeEnabled() throws IOException {
-    // Given
-    UpdateRequestProcessor nextProcessor = mock(UpdateRequestProcessor.class);
+  public void shouldCommitWithDropModeEnabled() throws Exception {
+    // Initial document already exists from setUp()
+    // When: Try to add the same document again (duplicate content) using URP chain WITH drop doc
+    // (drop mode)
+    SolrQueryResponse solrQueryResponse =
+        addDocWithResponse(
+            adoc(
+                ID_FIELD, INITIAL_DOC_ID,
+                FIRST_FIELD, INITIAL_FIELD1_VALUE,
+                SECOND_FIELD, INITIAL_FIELD2_VALUE),
+            "contenthashversion-drop");
+    assertU(commit());
+
+    // Then: Verify response shows duplicate was dropped
+    assertResponse(solrQueryResponse, 1, 1, 0);
+
+    // Then: Verify document was NOT actually added/updated (still only 1 doc in index)
+    assertQ(req("q", "*:*"), "//result[@numFound='1']");
+
+    // Verify the document still has the original hash
+    String currentHash = getHashFieldValue(INITIAL_DOC_ID);
+    assertEquals("Document hash should not have changed", initialDocHash, currentHash);
+  }
+
+  @Test
+  public void shouldHandleDocumentWithOnlyIdField() {
+    // Given: Document with only ID field (no other fields to hash)
     ContentHashVersionProcessor processor =
-        getContentHashVersionProcessor(
-            req,
-            mock(SolrQueryResponse.class),
-            nextProcessor,
-            List.of(FIRST_FIELD, SECOND_FIELD),
-            List.of(FIRST_FIELD));
-    processor.setDiscardSameDocuments(true);
+        getContentHashVersionProcessor(List.of("*"), List.of(ID_FIELD));
 
-    // Given (command to update existing doc)
-    AddUpdateCommand cmdDoesNotChangeValues = new AddUpdateCommand(req);
+    // When: Compute hash for document with only ID
+    SolrInputDocument doc = doc(f(ID_FIELD, "only-id-doc"));
 
-    // Given (doc for update - matches the existing doc, see getContentHashVersionProcessor())
-    SolrInputDocument initialDocument =
+    // Then: Should compute hash (even if empty field set)
+    String hash = processor.computeDocHash(doc);
+    assertNotNull("Hash should not be null for ID-only document", hash);
+    assertFalse("Hash should not be empty", hash.isEmpty());
+  }
+
+  @Test
+  public void shouldHandleMultiValueFields() {
+    // Given: Processor that includes multi-value fields
+    ContentHashVersionProcessor processor =
+        getContentHashVersionProcessor(List.of("*"), List.of(ID_FIELD));
+
+    // When: Document with multi-value field
+    SolrInputDocument doc1 = doc(f(ID_FIELD, "doc1"), f(FIRST_FIELD, "value1", "value2", "value3"));
+
+    // Then: Should compute consistent hash
+    String hash1 = processor.computeDocHash(doc1);
+    assertNotNull(hash1);
+
+    // Same values in same order should produce same hash
+    SolrInputDocument doc2 = doc(f(ID_FIELD, "doc2"), f(FIRST_FIELD, "value1", "value2", "value3"));
+    String hash2 = processor.computeDocHash(doc2);
+    assertEquals("Same multi-value field should produce same hash", hash1, hash2);
+
+    // Different order should produce different hash (collection order matters)
+    SolrInputDocument doc3 = doc(f(ID_FIELD, "doc3"), f(FIRST_FIELD, "value3", "value1", "value2"));
+    String hash3 = processor.computeDocHash(doc3);
+    assertNotEquals("Different order should produce different hash", hash1, hash3);
+  }
+
+  @Test
+  public void shouldHandleNullFieldValues() {
+    // Given: Processor that handles null values
+    ContentHashVersionProcessor processor =
+        getContentHashVersionProcessor(List.of("*"), List.of(ID_FIELD));
+
+    // When: Document with null field value (represented as "null" string)
+    SolrInputDocument doc = doc(f(ID_FIELD, "null-doc"), f(FIRST_FIELD, (Object) null));
+
+    // Then: Should compute hash without error
+    String hash = processor.computeDocHash(doc);
+    assertNotNull("Should handle null values", hash);
+    assertFalse("Hash should not be empty", hash.isEmpty());
+  }
+
+  @Test
+  public void shouldProduceSameHashRegardlessOfFieldOrder() {
+    // Given: Documents with same fields in different order
+    ContentHashVersionProcessor processor =
+        getContentHashVersionProcessor(List.of("*"), List.of(ID_FIELD));
+
+    // When: Create docs with fields in different order
+    SolrInputDocument doc1 =
         doc(
-            f(ID_FIELD, UUID.randomUUID().toString()),
-            f(FIRST_FIELD, "Initial values used to compute initial hash"),
-            f(SECOND_FIELD, "This a constant value for testing include/exclude fields"));
-    cmdDoesNotChangeValues.solrDoc =
+            f(ID_FIELD, "doc1"),
+            f(FIRST_FIELD, "value1"),
+            f(SECOND_FIELD, "value2"),
+            f(THIRD_FIELD, "value3"));
+
+    SolrInputDocument doc2 =
         doc(
-            f(ID_FIELD, initialDocument.getFieldValue(ID_FIELD)),
-            f(FIRST_FIELD, initialDocument.getFieldValue(FIRST_FIELD)),
-            f(SECOND_FIELD, initialDocument.getFieldValue(SECOND_FIELD)),
-            f(HASH_FIELD_NAME, processor.computeDocHash(initialDocument)));
+            f(ID_FIELD, "doc2"),
+            f(THIRD_FIELD, "value3"),
+            f(FIRST_FIELD, "value1"),
+            f(SECOND_FIELD, "value2"));
 
-    // When
-    processor.processAdd(cmdDoesNotChangeValues);
+    // Then: Hashes should be identical (fields are sorted before hashing)
+    String hash1 = processor.computeDocHash(doc1);
+    String hash2 = processor.computeDocHash(doc2);
+    assertEquals("Hash should be same regardless of field order", hash1, hash2);
+  }
 
-    // Then
-    verify(nextProcessor, never()).processAdd(eq(cmdDoesNotChangeValues));
+  @Test
+  public void shouldHandleEmptyFieldValues() {
+    // Given: Document with empty string values
+    ContentHashVersionProcessor processor =
+        getContentHashVersionProcessor(List.of("*"), List.of(ID_FIELD));
+
+    SolrInputDocument doc1 = doc(f(ID_FIELD, "empty-doc"), f(FIRST_FIELD, ""), f(SECOND_FIELD, ""));
+
+    // When: Compute hash
+    String hash1 = processor.computeDocHash(doc1);
+
+    // Then: Should produce valid hash
+    assertNotNull("Should handle empty values", hash1);
+    assertFalse("Hash should not be empty", hash1.isEmpty());
+
+    // Empty strings should produce different hash than no fields
+    SolrInputDocument doc2 = doc(f(ID_FIELD, "empty-doc"));
+    String hash2 = processor.computeDocHash(doc2);
+    assertNotEquals("Empty string fields should differ from no fields", hash1, hash2);
+  }
+
+  private static void assertResponse(
+      SolrQueryResponse solrQueryResponse,
+      int droppedDocCount,
+      int duplicateDocCount,
+      int changedDocCount) {
+    assertNotNull(solrQueryResponse.getToLog().get("contentHash.duplicatesDropped"));
+    assertNotNull(solrQueryResponse.getToLog().get("contentHash.duplicatesDetected"));
+    assertNotNull(solrQueryResponse.getToLog().get("contentHash.changed"));
+
+    int droppedDocs = (int) solrQueryResponse.getToLog().get("contentHash.duplicatesDropped");
+    int duplicateDocs = (int) solrQueryResponse.getToLog().get("contentHash.duplicatesDetected");
+    int changedDocs = (int) solrQueryResponse.getToLog().get("contentHash.changed");
+    assertEquals(droppedDocCount, droppedDocs);
+    assertEquals(duplicateDocCount, duplicateDocs);
+    assertEquals(changedDocCount, changedDocs);
   }
 }

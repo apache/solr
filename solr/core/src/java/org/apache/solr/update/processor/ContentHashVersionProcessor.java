@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.lucene.util.BytesRef;
@@ -41,21 +41,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of {@link UpdateRequestProcessor} which computes a hash of selected doc values,
- * and uses this hash value to reject/accept doc updates.
+ * An implementation of {@link UpdateRequestProcessor} which computes a hash of field values, and
+ * uses this hash to reject/accept document updates.
  *
  * <ul>
- *   <li>When no corresponding doc with same id exists (create), computed hash is added to the
- *       document.
- *   <li>When a previous doc exists (update), a new hash is computed using new version values and
- *       compared with old hash.
+ *   <li>When no corresponding document with same id exists (create), the computed hash is added to
+ *       the document.
+ *   <li>When a previous document exists (update), a new hash is computed from the incoming field
+ *       values and compared with the stored hash.
  * </ul>
  *
- * Depending on {#discardSameDocuments} value, this processor may reject or accept doc update. This
- * implementation can be used for monitoring or rejecting no-op updates (updates that do not change
- * Solr document).
+ * <p>Depending on {#dropSameDocuments} value, this processor may drop or accept document updates.
+ * This implementation can be used for monitoring or dropping no-op updates (updates that do not
+ * change the Solr document content).
  *
- * <p>Note: hash is computed using {@link Lookup3Signature}.
+ * <p>Note: the hash is computed using {@link Lookup3Signature} and must be stored in a field with
+ * docValues enabled for retrieval.
  *
  * @see Lookup3Signature
  */
@@ -66,11 +67,9 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
   private final SolrCore core;
   private final Predicate<String> includedFields; // Matcher for included fields in hash
   private final Predicate<String> excludedFields; // Matcher for excluded fields from hash
-  private OldDocProvider oldDocProvider = new DefaultDocProvider();
-  private boolean discardSameDocuments;
+  private boolean dropSameDocuments;
   private int sameCount = 0;
   private int differentCount = 0;
-  private int unknownCount = 0;
 
   public ContentHashVersionProcessor(
       Predicate<String> hashIncludedFields,
@@ -94,7 +93,7 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     newDoc.setField(hashField.getName(), newHash);
     int i = 0;
 
-    if (!validateHash(cmd.getIndexedId(), newHash)) {
+    if (!isHashAcceptable(cmd.getIndexedId(), newHash)) {
       return;
     }
 
@@ -117,9 +116,22 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     try {
       super.finish();
     } finally {
-      rsp.addToLog("numAddsExisting", sameCount + differentCount + unknownCount);
-      rsp.addToLog("numAddsExistingWithIdentical", sameCount);
-      rsp.addToLog("numAddsExistingUnknown", unknownCount);
+      // Only log when there are updates to existing documents
+      int totalUpdates = sameCount + differentCount;
+      if (totalUpdates > 0) {
+        if (dropSameDocuments) {
+          rsp.addToLog("contentHash.duplicatesDropped", sameCount);
+          rsp.addToLog("contentHash.duplicatesDetected", sameCount);
+        } else {
+          rsp.addToLog("contentHash.duplicatesDropped", 0);
+          rsp.addToLog("contentHash.duplicatesDetected", sameCount);
+        }
+        rsp.addToLog("contentHash.changed", differentCount);
+      } else {
+        rsp.addToLog("contentHash.duplicatesDropped", 0);
+        rsp.addToLog("contentHash.duplicatesDetected", 0);
+        rsp.addToLog("contentHash.changed", 0);
+      }
     }
   }
 
@@ -129,27 +141,19 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     }
   }
 
-  void setOldDocProvider(OldDocProvider oldDocProvider) {
-    this.oldDocProvider = oldDocProvider;
+  void setDropSameDocuments(boolean dropSameDocuments) {
+    this.dropSameDocuments = dropSameDocuments;
   }
 
-  void setDiscardSameDocuments(boolean discardSameDocuments) {
-    this.discardSameDocuments = discardSameDocuments;
-  }
-
-  private boolean validateHash(BytesRef indexedDocId, String newHash) throws IOException {
+  private boolean isHashAcceptable(BytesRef indexedDocId, String newHash) throws IOException {
     assert null != indexedDocId;
 
-    var docFoundAndOldUserVersions = getOldUserVersionsFromStored(indexedDocId);
-    if (docFoundAndOldUserVersions.found) {
-      String oldHash =
-          docFoundAndOldUserVersions.oldHash; // No hash: might want to keep track of these too
-      if (oldHash == null) {
-        unknownCount++;
-        return true;
-      } else if (Objects.equals(newHash, oldHash)) {
+    Optional<String> oldDocHash = getOldDocHash(indexedDocId);
+    if (oldDocHash.isPresent()) {
+      String oldHash = oldDocHash.get(); // No hash: might want to keep track of these too
+      if (Objects.equals(newHash, oldHash)) {
         sameCount++;
-        return !discardSameDocuments;
+        return !dropSameDocuments;
       } else {
         differentCount++;
         return true;
@@ -158,80 +162,41 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     return true; // Doc not found
   }
 
-  private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromStored(BytesRef indexedDocId)
-      throws IOException {
-    SolrInputDocument oldDoc = oldDocProvider.getDocument(core, hashField.getName(), indexedDocId);
-    return null == oldDoc
-        ? DocFoundAndOldUserAndSolrVersions.NOT_FOUND
-        : getUserVersionAndSolrVersionFromDocument(oldDoc);
-  }
-
-  private DocFoundAndOldUserAndSolrVersions getUserVersionAndSolrVersionFromDocument(
-      SolrInputDocument oldDoc) {
+  /** Retrieves the hash value from the old document identified by the given ID. */
+  private Optional<String> getOldDocHash(BytesRef indexedDocId) throws IOException {
+    SolrInputDocument oldDoc =
+        RealTimeGetComponent.getInputDocument(
+            core, indexedDocId, indexedDocId, null, Set.of(hashField.getName()), Resolution.DOC);
+    if (oldDoc == null) {
+      return Optional.empty();
+    }
     Object o = oldDoc.getFieldValue(hashField.getName());
-    if (o != null) {
-      return new DocFoundAndOldUserAndSolrVersions(o.toString());
-    }
-    return new DocFoundAndOldUserAndSolrVersions();
+    return Optional.ofNullable(o).map(String::valueOf);
   }
 
-  public String computeDocHash(SolrInputDocument doc) {
-    List<String> docIncludedFieldNames =
-        doc.getFieldNames().stream()
-            .filter(includedFields) // Keep fields that match 'included fields' matcher...
-            .filter(
-                excludedFields
-                    .negate()) // ...and exclude fields that match 'excluded fields' matcher
-            .sorted() // Sort to ensure consistent field order across different doc field orders
-            .toList();
-
+  String computeDocHash(SolrInputDocument doc) {
     final Signature sig = new Lookup3Signature();
-    for (String fieldName : docIncludedFieldNames) {
-      sig.add(fieldName);
-      Object o = doc.getFieldValue(fieldName);
-      if (o instanceof Collection) {
-        for (Object oo : (Collection<?>) o) {
-          sig.add(String.valueOf(oo));
-        }
-      } else {
-        sig.add(String.valueOf(o));
-      }
-    }
+
+    // Stream field names, filter, sort, and process in a single pass
+    doc.getFieldNames().stream()
+        .filter(includedFields) // Keep fields that match 'included fields' matcher
+        .filter(excludedFields.negate()) // Exclude fields that match 'excluded fields' matcher
+        .sorted() // Sort to ensure consistent field order across different doc field orders
+        .forEach(
+            fieldName -> {
+              sig.add(fieldName);
+              Object o = doc.getFieldValue(fieldName);
+              if (o instanceof Collection) {
+                for (Object oo : (Collection<?>) o) {
+                  sig.add(String.valueOf(oo));
+                }
+              } else {
+                sig.add(String.valueOf(o));
+              }
+            });
 
     // Signature, depending on implementation, may return 8-byte or 16-byte value
     byte[] signature = sig.getSignature();
-    return Base64.getEncoder()
-        .encodeToString(signature); // Makes a base64 hash out of signature value
-  }
-
-  interface OldDocProvider {
-    SolrInputDocument getDocument(SolrCore core, String hashField, BytesRef indexedDocId)
-        throws IOException;
-  }
-
-  private static class DefaultDocProvider implements OldDocProvider {
-    @Override
-    public SolrInputDocument getDocument(SolrCore core, String hashField, BytesRef indexedDocId)
-        throws IOException {
-      return RealTimeGetComponent.getInputDocument(
-          core, indexedDocId, indexedDocId, null, Set.of(hashField), Resolution.PARTIAL);
-    }
-  }
-
-  private static class DocFoundAndOldUserAndSolrVersions {
-    private static final DocFoundAndOldUserAndSolrVersions NOT_FOUND =
-        new DocFoundAndOldUserAndSolrVersions();
-    private final boolean found;
-
-    public String oldHash;
-
-    private DocFoundAndOldUserAndSolrVersions() {
-      this.found = false;
-    }
-
-    private DocFoundAndOldUserAndSolrVersions(String oldHash) {
-      this.found = true;
-      this.oldHash = oldHash;
-    }
+    return Base64.getEncoder().encodeToString(signature);
   }
 }

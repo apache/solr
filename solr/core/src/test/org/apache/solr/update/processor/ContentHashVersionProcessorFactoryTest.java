@@ -17,22 +17,13 @@
 package org.apache.solr.update.processor;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.apache.solr.update.processor.ContentHashVersionProcessorFactory.CONTENT_HASH_ENABLED_PARAM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.List;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,8 +38,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldHaveSensibleDefaultValues() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     assertEquals(List.of("*"), factory.getIncludeFields());
-    assertEquals("content_hash", factory.getHashFieldName());
-    assertTrue(factory.discardSameDocuments());
+    assertTrue(factory.dropSameDocuments());
   }
 
   @Test
@@ -65,6 +55,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldInitWithAllField() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
+    args.add("hashFieldName", "content_hash");
     args.add("includeFields", "*");
     factory.init(args);
 
@@ -76,6 +67,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldInitWithIncludedFields() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
+    args.add("hashFieldName", "content_hash");
     args.add("includeFields", " field1,field2 , field3 ");
     factory.init(args);
 
@@ -87,6 +79,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldInitWithExcludedFields() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
+    args.add("hashFieldName", "content_hash");
     args.add("excludeFields", " field1,field2 , field3 ");
     factory.init(args);
 
@@ -95,39 +88,32 @@ public class ContentHashVersionProcessorFactoryTest {
   }
 
   @Test
-  public void shouldSelectRejectSameHashStrategy() {
+  public void shouldSelectDropStrategy() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashCompareStrategy", "discard");
+    args.add("hashFieldName", "content_hash");
+    args.add("hashCompareStrategy", "drop");
     factory.init(args);
 
-    assertTrue(factory.discardSameDocuments());
+    assertTrue(factory.dropSameDocuments());
   }
 
   @Test
   public void shouldSelectLogStrategy() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
+    args.add("hashFieldName", "content_hash");
     args.add("hashCompareStrategy", "log");
     factory.init(args);
 
-    assertFalse(factory.discardSameDocuments());
-  }
-
-  @Test
-  public void shouldSelectDiscardStrategy() {
-    ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
-    NamedList<String> args = new NamedList<>();
-    args.add("hashCompareStrategy", "discard");
-    factory.init(args);
-
-    assertTrue(factory.discardSameDocuments());
+    assertFalse(factory.dropSameDocuments());
   }
 
   @Test(expected = SolrException.class)
   public void shouldSelectUnsupportedStrategy() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
+    args.add("hashFieldName", "content_hash");
     args.add("hashCompareStrategy", "unsupported value");
     factory.init(args);
   }
@@ -136,41 +122,35 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldRejectExcludeAllFields() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
+    args.add("hashFieldName", "content_hash");
     args.add("excludeFields", "*");
     factory.init(args);
   }
 
-  @Test
-  public void shouldDisableContentHashByQueryParameter() {
+  @Test(expected = SolrException.class)
+  public void shouldRequireExplicitHashFieldName() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
-    UpdateRequestProcessor next = mock(UpdateRequestProcessor.class);
-    SolrQueryRequest updateRequest = createUpdateRequest(false); // Request disables processor
-
-    UpdateRequestProcessor instance =
-        factory.getInstance(updateRequest, mock(SolrQueryResponse.class), next);
-
-    assertEquals(instance, next);
+    NamedList<String> args = new NamedList<>();
+    // Intentionally not setting hashFieldName
+    factory.init(args);
   }
 
   @Test
-  public void shouldEnableContentHashByQueryParameter() {
+  public void shouldAutoExcludeHashFieldFromHashComputation() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
-    UpdateRequestProcessor next = mock(UpdateRequestProcessor.class);
-    SolrQueryRequest updateRequest = createUpdateRequest(true); // Request enables processor
+    NamedList<String> args = new NamedList<>();
+    args.add("hashFieldName", "my_hash_field");
+    args.add("excludeFields", "field1,field2");
+    factory.init(args);
 
-    UpdateRequestProcessor instance =
-        factory.getInstance(updateRequest, mock(SolrQueryResponse.class), next);
-
-    assertNotEquals(instance, next);
-  }
-
-  private static SolrQueryRequest createUpdateRequest(boolean enableContentHashParamValue) {
-    SolrQueryRequest req = mock(SolrQueryRequest.class);
-    SolrParams solrParams = mock(SolrParams.class);
-    when(solrParams.getBool(eq(CONTENT_HASH_ENABLED_PARAM), anyBoolean()))
-        .thenReturn(enableContentHashParamValue);
-    when(req.getParams()).thenReturn(solrParams);
-
-    return req;
+    // Hash field should be automatically added to excludeFields
+    assertEquals(3, factory.getExcludeFields().size());
+    assertTrue(
+        "Should contain explicitly excluded field1", factory.getExcludeFields().contains("field1"));
+    assertTrue(
+        "Should contain explicitly excluded field2", factory.getExcludeFields().contains("field2"));
+    assertTrue(
+        "Should auto-exclude hash field name",
+        factory.getExcludeFields().contains("my_hash_field"));
   }
 }
