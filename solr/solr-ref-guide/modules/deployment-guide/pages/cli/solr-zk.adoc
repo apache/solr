@@ -61,28 +61,28 @@ Sub commands for working with ZooKeeper.
 // tag::picocli-generated-man-section-commands[]
 == Commands
 
-xref:bin/solr zk-downconfig.adoc[*downconfig*]::
+xref:cli/solr-zk-downconfig.adoc[*downconfig*]::
   Download a configset from ZooKeeper to the local filesystem.
 
-xref:bin/solr zk-upconfig.adoc[*upconfig*]::
+xref:cli/solr-zk-upconfig.adoc[*upconfig*]::
   Upload a configset from the local filesystem to ZooKeeper.
 
-xref:bin/solr zk-cp.adoc[*cp*]::
+xref:cli/solr-zk-cp.adoc[*cp*]::
   Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.
 
-xref:bin/solr zk-ls.adoc[*ls*]::
+xref:cli/solr-zk-ls.adoc[*ls*]::
   List the contents of a ZooKeeper node.
 
-xref:bin/solr zk-mkroot.adoc[*mkroot*]::
+xref:cli/solr-zk-mkroot.adoc[*mkroot*]::
   Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary depth but primarily intended to create a 'chroot'.
 
-xref:bin/solr zk-mv.adoc[*mv*]::
+xref:cli/solr-zk-mv.adoc[*mv*]::
   Move (rename) a znode on ZooKeeper.
 
-xref:bin/solr zk-rm.adoc[*rm*]::
+xref:cli/solr-zk-rm.adoc[*rm*]::
   Remove a znode from ZooKeeper.
 
-xref:bin/solr zk-updateacls.adoc[*updateacls*]::
+xref:cli/solr-zk-updateacls.adoc[*updateacls*]::
   Update ACLs for a ZooKeeper znode.
 
 // end::picocli-generated-man-section-commands[]

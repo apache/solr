@@ -605,6 +605,10 @@ String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNot
     /(?s)\/\/ tag::picocli-generated-man-section-header\[\].*?\/\/ end::picocli-generated-man-section-header\[\]\n\n?/,
     "= ${newTitle}\n:page-toclevels: 2\n\n")
 
+  // Fix xref paths: ManPageGenerator generates "xref:bin/solr-*.adoc" relative to the bin/ subdir,
+  // but in Antora xrefs are resolved from the module's pages/ root, so pages/cli/ files need "cli/" prefix.
+  content = content.replace('xref:bin/', 'xref:cli/')
+
   // ManPageGenerator renders the command's qualified name as "bin/solr-start" (parent-dash-child).
   // Replace occurrences of that with the correct spaced form "bin/solr start".
   def picocliQualifiedName = 'bin/solr-' + baseName.substring('solr-'.length())
