@@ -369,6 +369,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "\"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"alpha delta\", "
             + "\"expand\": true, \"expand.q\": \"text:alpha OR text:bravo OR text:charlie OR text:delta\"}}";
 
+    handle.put("expanded", UNORDERED);
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
 
     // Collect mod3_idv values from the result to check for duplicates
