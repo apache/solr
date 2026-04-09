@@ -366,7 +366,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "\"fields\":[\"id\",\"score\",\"mod3_idv\"],"
             + "\"params\":{\"combiner\":true, \"combiner.query\":[\"q1\",\"q2\"], "
             + "\"fq\": [\"{!collapse field=mod3_idv sort='id asc'}\"], \"facet\": true, \"facet.field\": \"id\","
-            +  "\"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"alpha delta\", "
+            + "\"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"alpha delta\", "
             + "\"expand\": true, \"expand.q\": \"text:alpha OR text:bravo OR text:charlie OR text:delta\"}}";
 
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
@@ -389,7 +389,9 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         collapseValues.size());
     assertEquals("Expected exactly 3 groups (mod3_idv values 0, 1, 2)", 3, collapseValues.size());
     assertEquals("id", rsp.getFacetFields().getFirst().getName());
-    assertEquals("[1 (1), 2 (1), 3 (1), 4 (0), 5 (0), 6 (0)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(
+        "[1 (1), 2 (1), 3 (1), 4 (0), 5 (0), 6 (0)]",
+        rsp.getFacetFields().getFirst().getValues().toString());
     assertEquals(3, rsp.getHighlighting().size());
     assertEquals("bravo <em>delta</em>", rsp.getHighlighting().get("3").get("title").getFirst());
     assertEquals("<em>alpha</em> bravo", rsp.getHighlighting().get("1").get("title").getFirst());
