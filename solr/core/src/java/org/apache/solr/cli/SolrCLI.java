@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
     mixinStandardHelpOptions = true,
     synopsisHeading = "usage: ",
     commandListHeading = "\nCommands:\n",
-    descriptionHeading = "Global options:\n",
     footer = {
       "",
       "SolrCloud example (embedded Zookeeper):",
