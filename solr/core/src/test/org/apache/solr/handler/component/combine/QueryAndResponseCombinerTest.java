@@ -17,10 +17,15 @@
 package org.apache.solr.handler.component.combine;
 
 import java.util.List;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.schema.SchemaField;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CollapsingQParserPlugin.CollapsingPostFilter;
 import org.apache.solr.search.DocSlice;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
@@ -61,6 +66,23 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
     return List.of(r1, r2);
   }
 
+  /** Parses a collapse fq string and returns the CollapsingPostFilter. */
+  private static CollapsingPostFilter parseCollapseFilter(String collapseFq) throws Exception {
+    SolrQueryRequest solrReq = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, rsp));
+    try {
+      Query q = QParser.getParser(collapseFq, solrReq).getQuery();
+      assertTrue(
+          "Expected CollapsingPostFilter but got " + q.getClass(),
+          q instanceof CollapsingPostFilter);
+      return (CollapsingPostFilter) q;
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
+      solrReq.close();
+    }
+  }
+
   /** Tests that simpleCombine without using collapse. */
   @Test
   public void simpleCombine() {
@@ -76,7 +98,7 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
    * survive.
    */
   @Test
-  public void simpleCombineWithCollapseField() {
+  public void simpleCombineWithCollapseField() throws Exception {
     // getQueryResults() returns:
     //   r1: docs [1, 2] scores [0.67, 0.62]
     //   r2: docs [0]    scores [0.87]
@@ -86,13 +108,14 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "2", "group_ti_dv", "2"));
     assertU(commit());
 
+    CollapsingPostFilter collapseFilter = parseCollapseFilter("{!collapse field=group_ti_dv}");
+
     RefCounted<SolrIndexSearcher> searcherRef = h.getCore().getSearcher();
     try {
       SolrIndexSearcher searcher = searcherRef.get();
-      SchemaField collapseField = searcher.getSchema().getField("group_ti_dv");
 
       QueryResult combined =
-          QueryAndResponseCombiner.simpleCombine(getQueryResults(), collapseField, searcher);
+          QueryAndResponseCombiner.simpleCombine(getQueryResults(), collapseFilter, searcher);
 
       // group=1: doc 0 (0.87) beats doc 1 (0.67) → keep doc 0
       // group=2: doc 2 (0.62) → kept
@@ -110,20 +133,22 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
    * considered duplicates.
    */
   @Test
-  public void simpleCombineWithCollapseFieldNullPolicy() {
+  public void simpleCombineWithCollapseFieldNullPolicy() throws Exception {
     assertU(delQ("*:*"));
     assertU(adoc("id", "0", "group_ti_dv", "1"));
     assertU(adoc("id", "1", "group_ti_dv", "1"));
     assertU(adoc("id", "2")); // no collapse field
     assertU(commit());
 
+    CollapsingPostFilter collapseFilter =
+        parseCollapseFilter("{!collapse field=group_ti_dv sort='score asc'}");
+
     RefCounted<SolrIndexSearcher> searcherRef = h.getCore().getSearcher();
     try {
       SolrIndexSearcher searcher = searcherRef.get();
-      SchemaField collapseField = searcher.getSchema().getField("group_ti_dv");
 
       QueryResult combined =
-          QueryAndResponseCombiner.simpleCombine(getQueryResults(), collapseField, searcher);
+          QueryAndResponseCombiner.simpleCombine(getQueryResults(), collapseFilter, searcher);
 
       // group=1: doc 0 (0.87) beats doc 1 (0.67) → keep doc 0
       // doc 2 has no group value → kept (null policy)

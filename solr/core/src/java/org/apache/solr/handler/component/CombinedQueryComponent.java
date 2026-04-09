@@ -241,9 +241,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean segmentTerminatedEarly,
       Boolean setMaxHitsTerminatedEarly) {
     SolrIndexSearcher searcher = crb.req.getSearcher();
-    SchemaField collapseField = getCollapseField(crb.getFilters(), searcher);
+    CollapsingQParserPlugin.CollapsingPostFilter collapseFilter =
+        getCollapseFilter(crb.getFilters());
     QueryResult combinedQueryResult =
-        QueryAndResponseCombiner.simpleCombine(queryResults, collapseField, searcher);
+        QueryAndResponseCombiner.simpleCombine(queryResults, collapseFilter, searcher);
     combinedQueryResult.setPartialResults(partialResults);
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
@@ -265,12 +266,13 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     }
   }
 
-  /** Extracts the collapse field from the filter list, if a CollapsingPostFilter is present. */
-  private static SchemaField getCollapseField(List<Query> filters, SolrIndexSearcher searcher) {
+  /** Extracts the CollapsingPostFilter from the filter list, if present. */
+  private static CollapsingQParserPlugin.CollapsingPostFilter getCollapseFilter(
+      List<Query> filters) {
     if (CollectionUtil.isNotEmpty(filters)) {
       for (Query q : filters) {
         if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter cp) {
-          return searcher.getSchema().getField(cp.getField());
+          return cp;
         }
       }
     }
