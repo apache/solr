@@ -53,8 +53,10 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.util.SolrResponseUtil;
@@ -236,7 +238,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean partialResults,
       boolean segmentTerminatedEarly,
       Boolean setMaxHitsTerminatedEarly) {
-    QueryResult combinedQueryResult = QueryAndResponseCombiner.simpleCombine(queryResults);
+    String collapseField = getCollapseField(crb.getFilters());
+    SolrIndexSearcher searcher = crb.req.getSearcher();
+    QueryResult combinedQueryResult =
+        QueryAndResponseCombiner.simpleCombine(queryResults, collapseField, searcher);
     combinedQueryResult.setPartialResults(partialResults);
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
@@ -256,6 +261,21 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             crb.responseBuilders.getFirst().getNextCursorMark().getSerializedTotem());
       }
     }
+  }
+
+  /**
+   * Extracts the collapse field from the filter list, if a CollapsingPostFilter is present.
+   *
+   * @return the collapse field name, or null if no collapse filter is found
+   */
+  private static String getCollapseField(List<org.apache.lucene.search.Query> filters) {
+    if (filters == null) return null;
+    for (org.apache.lucene.search.Query q : filters) {
+      if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter cp) {
+        return cp.getField();
+      }
+    }
+    return null;
   }
 
   @Override
