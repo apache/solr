@@ -44,10 +44,7 @@ import org.noggit.JSONWriter;
  *
  * <p>Get the status of a Solr server.
  */
-@picocli.CommandLine.Command(
-    name = "status",
-    mixinStandardHelpOptions = true,
-    description = "Get the status of a Solr server.")
+@picocli.CommandLine.Command(name = "status", description = "Get the status of a Solr server.")
 public class StatusTool extends ToolBase {
   @picocli.CommandLine.Option(
       names = {"--max-wait-secs"},

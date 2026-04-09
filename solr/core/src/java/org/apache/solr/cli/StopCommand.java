@@ -22,8 +22,10 @@ import picocli.CommandLine;
  * This class is currently only used for printing CLI usage. The stop logic is currently handled in
  * start script.
  */
-@CommandLine.Command(name = "stop", description = "Stops Solr.", mixinStandardHelpOptions = true)
+@CommandLine.Command(name = "stop", description = "Stops Solr.")
 public class StopCommand {
+
+  @CommandLine.Mixin HelpMixin helpMixin;
 
   @CommandLine.Option(
       names = {"-p", "--port"},

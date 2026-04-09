@@ -26,10 +26,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 /** Supports zk ls command in the bin/solr script. */
-@CommandLine.Command(
-    name = "ls",
-    mixinStandardHelpOptions = true,
-    description = "List the contents of a ZooKeeper node.")
+@CommandLine.Command(name = "ls", description = "List the contents of a ZooKeeper node.")
 public class ZkLsTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

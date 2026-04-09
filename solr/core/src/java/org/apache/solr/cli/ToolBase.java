@@ -26,6 +26,8 @@ import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.util.StartupLoggingUtils;
 
 public abstract class ToolBase implements Tool, Callable<Integer> {
+  @picocli.CommandLine.Mixin HelpMixin helpMixin;
+
   @picocli.CommandLine.Option(
       names = {"-v", "--verbose"},
       description = "Enable verbose mode.")

@@ -19,11 +19,10 @@ package org.apache.solr.cli;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
-@CommandLine.Command(
-    name = "start",
-    description = "Starts Solr in standalone or SolrCloud mode.",
-    mixinStandardHelpOptions = true)
+@CommandLine.Command(name = "start", description = "Starts Solr in standalone or SolrCloud mode.")
 public class StartCommand implements Callable<Integer> {
+
+  @CommandLine.Mixin HelpMixin helpMixin;
 
   @CommandLine.Spec CommandLine.Model.CommandSpec spec;
 
