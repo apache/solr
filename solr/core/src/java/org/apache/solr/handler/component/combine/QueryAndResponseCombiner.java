@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component.combine;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TotalHits;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -34,6 +35,7 @@ import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSlice;
@@ -59,16 +61,6 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
       Map<String, List<ShardDoc>> queriesDocMap, SolrParams solrParams);
 
   /**
-   * Simple combine query result list as a union.
-   *
-   * @param queryResults the query results to be combined
-   * @return the combined query result
-   */
-  public static QueryResult simpleCombine(List<QueryResult> queryResults) {
-    return simpleCombine(queryResults, null, null);
-  }
-
-  /**
    * Combine query result list as a union, optionally deduplicating by a collapse field. When a
    * collapse field is provided, only one document per unique field value is kept (the one with the
    * highest score). This ensures that collapse semantics are preserved across combined queries.
@@ -79,7 +71,7 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
    * @return the combined query result
    */
   public static QueryResult simpleCombine(
-      List<QueryResult> queryResults, String collapseField, SolrIndexSearcher searcher) {
+      List<QueryResult> queryResults, SchemaField collapseField, SolrIndexSearcher searcher) {
     QueryResult combinedQueryResults = new QueryResult();
     DocSet combinedDocSet = null;
     Map<Integer, Float> uniqueDocIds = new HashMap<>();
@@ -101,13 +93,10 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
     // Each sub-query already collapsed individually, but different sub-queries may have
     // selected different group heads for the same field value.
     int removedByCollapse = 0;
-    if (collapseField != null && searcher != null && uniqueDocIds.size() > 1) {
+    if (collapseField != null && searcher != null && queryResults.size() > 1) {
       int preCollapseSize = uniqueDocIds.size();
-      try {
-        collapseByFieldValue(uniqueDocIds, collapseField, searcher);
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+      combinedDocSet =
+          removeCollapsedDuplicates(collapseField, searcher, uniqueDocIds, combinedDocSet);
       removedByCollapse = preCollapseSize - uniqueDocIds.size();
     }
 
@@ -135,75 +124,108 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
     return combinedQueryResults;
   }
 
+  private static DocSet removeCollapsedDuplicates(
+      SchemaField collapseField,
+      SolrIndexSearcher searcher,
+      Map<Integer, Float> uniqueDocIds,
+      DocSet combinedDocSet) {
+    try {
+      List<Integer> removedDocs = collapseByFieldValue(uniqueDocIds, collapseField, searcher);
+      if (!removedDocs.isEmpty()) {
+        for (int docId : removedDocs) {
+          uniqueDocIds.remove(docId);
+        }
+        if (combinedDocSet != null) {
+          FixedBitSet bits = new FixedBitSet(searcher.maxDoc());
+          for (int docId : removedDocs) {
+            bits.set(docId);
+          }
+          return combinedDocSet.andNot(new BitDocSet(bits, removedDocs.size()));
+        }
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    return combinedDocSet;
+  }
+
   /**
-   * Deduplicates the doc map by collapse field value. For each unique field value, only the doc with
-   * the highest score is retained. Docs with null/missing field values are kept (null policy pass).
+   * Deduplicates the doc map by collapse field value. For each unique field value, only the doc
+   * with the highest score is retained. Docs with null/missing field values are kept (null policy
+   * pass).
+   *
+   * @return list of doc IDs that should be removed
    */
-  private static void collapseByFieldValue(
-      Map<Integer, Float> uniqueDocIds, String collapseField, SolrIndexSearcher searcher)
+  private static List<Integer> collapseByFieldValue(
+      Map<Integer, Float> uniqueDocIds, SchemaField collapseField, SolrIndexSearcher searcher)
+      throws IOException {
+    Map<Integer, Object> docFieldValues = readDocValues(uniqueDocIds, collapseField, searcher);
+    if (docFieldValues.isEmpty()) {
+      return List.of();
+    }
+    return findDuplicatesByFieldValue(uniqueDocIds, docFieldValues);
+  }
+
+  /**
+   * Reads collapse field values from DocValues for the given doc IDs. Entries are accessed in doc
+   * ID order as required by the forward-only DocValues API.
+   */
+  private static Map<Integer, Object> readDocValues(
+      Map<Integer, Float> uniqueDocIds, SchemaField collapseField, SolrIndexSearcher searcher)
       throws IOException {
     LeafReader reader = searcher.getSlowAtomicReader();
-    SchemaField schemaField = searcher.getSchema().getField(collapseField);
-    FieldType fieldType = schemaField.getType();
+    FieldType fieldType = collapseField.getType();
+    String fieldName = collapseField.getName();
 
-    // fieldValue -> (docId, score) for the best doc per group
-    Map<Object, Map.Entry<Integer, Float>> bestPerGroup = new HashMap<>();
-    List<Integer> docsToRemove = new java.util.ArrayList<>();
+    List<Integer> sortedDocIds = new java.util.ArrayList<>(uniqueDocIds.keySet());
+    java.util.Collections.sort(sortedDocIds);
 
-    // Sort entries by doc ID for DocValues forward-only access
-    List<Map.Entry<Integer, Float>> sortedEntries = new java.util.ArrayList<>(uniqueDocIds.entrySet());
-    sortedEntries.sort(Map.Entry.comparingByKey());
-
+    Map<Integer, Object> docFieldValues = new HashMap<>();
     if (fieldType instanceof StrField) {
-      SortedDocValues sortedValues = DocValues.getSorted(reader, collapseField);
-      for (Map.Entry<Integer, Float> entry : sortedEntries) {
-        int docId = entry.getKey();
-        float score = entry.getValue();
-        Object fieldVal = null;
-        if (sortedValues.advanceExact(docId)) {
-          fieldVal = BytesRef.deepCopyOf(sortedValues.lookupOrd(sortedValues.ordValue()));
-        }
-        if (fieldVal == null) {
-          // Null policy: keep docs with missing field values
-          continue;
-        }
-        Map.Entry<Integer, Float> existing = bestPerGroup.get(fieldVal);
-        if (existing == null) {
-          bestPerGroup.put(fieldVal, entry);
-        } else if (score > existing.getValue()) {
-          docsToRemove.add(existing.getKey());
-          bestPerGroup.put(fieldVal, entry);
-        } else {
-          docsToRemove.add(docId);
+      SortedDocValues sdv = DocValues.getSorted(reader, fieldName);
+      for (int docId : sortedDocIds) {
+        if (sdv.advanceExact(docId)) {
+          docFieldValues.put(docId, sdv.ordValue());
         }
       }
     } else if (fieldType.getNumberType() != null) {
-      NumericDocValues numericValues = DocValues.getNumeric(reader, collapseField);
-      for (Map.Entry<Integer, Float> entry : sortedEntries) {
-        int docId = entry.getKey();
-        float score = entry.getValue();
-        Object fieldVal = null;
-        if (numericValues.advanceExact(docId)) {
-          fieldVal = numericValues.longValue();
-        }
-        if (fieldVal == null) {
-          continue;
-        }
-        Map.Entry<Integer, Float> existing = bestPerGroup.get(fieldVal);
-        if (existing == null) {
-          bestPerGroup.put(fieldVal, entry);
-        } else if (score > existing.getValue()) {
-          docsToRemove.add(existing.getKey());
-          bestPerGroup.put(fieldVal, entry);
-        } else {
-          docsToRemove.add(docId);
+      NumericDocValues ndv = DocValues.getNumeric(reader, fieldName);
+      for (int docId : sortedDocIds) {
+        if (ndv.advanceExact(docId)) {
+          docFieldValues.put(docId, ndv.longValue());
         }
       }
     }
+    return docFieldValues;
+  }
 
-    for (Integer docId : docsToRemove) {
-      uniqueDocIds.remove(docId);
+  /**
+   * Finds duplicate docs by field value, keeping the highest-scoring doc per unique value. Docs
+   * without a field value (null policy) are not considered duplicates.
+   *
+   * @return list of doc IDs that are duplicates and should be removed
+   */
+  private static List<Integer> findDuplicatesByFieldValue(
+      Map<Integer, Float> uniqueDocIds, Map<Integer, Object> docFieldValues) {
+    Map<Object, Map.Entry<Integer, Float>> bestPerGroup = new HashMap<>();
+    List<Integer> docsToRemove = new ArrayList<>();
+
+    for (Map.Entry<Integer, Float> entry : uniqueDocIds.entrySet()) {
+      Object fieldVal = docFieldValues.get(entry.getKey());
+      if (fieldVal == null) {
+        continue;
+      }
+      Map.Entry<Integer, Float> existing = bestPerGroup.get(fieldVal);
+      if (existing == null) {
+        bestPerGroup.put(fieldVal, entry);
+      } else if (entry.getValue() > existing.getValue()) {
+        docsToRemove.add(existing.getKey());
+        bestPerGroup.put(fieldVal, entry);
+      } else {
+        docsToRemove.add(entry.getKey());
+      }
     }
+    return docsToRemove;
   }
 
   /**

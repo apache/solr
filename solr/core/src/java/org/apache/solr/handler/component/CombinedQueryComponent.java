@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,6 +43,7 @@ import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -238,8 +240,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean partialResults,
       boolean segmentTerminatedEarly,
       Boolean setMaxHitsTerminatedEarly) {
-    String collapseField = getCollapseField(crb.getFilters());
     SolrIndexSearcher searcher = crb.req.getSearcher();
+    SchemaField collapseField = getCollapseField(crb.getFilters(), searcher);
     QueryResult combinedQueryResult =
         QueryAndResponseCombiner.simpleCombine(queryResults, collapseField, searcher);
     combinedQueryResult.setPartialResults(partialResults);
@@ -263,16 +265,13 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     }
   }
 
-  /**
-   * Extracts the collapse field from the filter list, if a CollapsingPostFilter is present.
-   *
-   * @return the collapse field name, or null if no collapse filter is found
-   */
-  private static String getCollapseField(List<org.apache.lucene.search.Query> filters) {
-    if (filters == null) return null;
-    for (org.apache.lucene.search.Query q : filters) {
-      if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter cp) {
-        return cp.getField();
+  /** Extracts the collapse field from the filter list, if a CollapsingPostFilter is present. */
+  private static SchemaField getCollapseField(List<Query> filters, SolrIndexSearcher searcher) {
+    if (CollectionUtil.isNotEmpty(filters)) {
+      for (Query q : filters) {
+        if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter cp) {
+          return searcher.getSchema().getField(cp.getField());
+        }
       }
     }
     return null;

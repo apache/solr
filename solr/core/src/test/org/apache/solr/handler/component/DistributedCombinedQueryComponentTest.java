@@ -320,9 +320,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   @Test
   public void testCollapseWithCombinedQueryProducesDuplicates() throws Exception {
     del("*:*");
-    fixShardCount(2);
 
     // Index 6 docs where mod3_idv groups docs: {3,6}→0, {1,4}→1, {2,5}→2
+    // All docs indexed to the same shard (first client) to ensure co-location,
+    // which is a requirement for collapse in SolrCloud.
     List<SolrInputDocument> docs = new ArrayList<>();
     String[][] data = {
       {"1", "alpha bravo", "alpha bravo"},
@@ -341,8 +342,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
       doc.addField("mod3_idv", idVal % 3);
       docs.add(doc);
     }
+    // Index all docs to the first shard (co-location for collapse).
+    // indexDoc(client, doc) also indexes to controlClient automatically.
     for (SolrInputDocument doc : docs) {
-      indexDoc(doc);
+      indexDoc(clients.getFirst(), doc);
     }
     commit();
 
@@ -352,14 +355,19 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // After collapse, each query returns 3 docs (one per mod3_idv value 0,1,2).
     // But the group heads for mod3_idv=1 differ: query1 picks id=1, query2 picks id=4.
     // simpleCombine() merges by doc ID, so both id=1 and id=4 survive → duplicate on mod3_idv=1.
+    // q1 -> 1,2,5,3,6    q2 -> 2,4,6,3,5
+    // q1 -> 1,2,2,0,0    q2 -> 2,1,0,0,2
+    // q1 -> 1 for sure, 2,3  => 4 for sure, 3 and 2
     String jsonQuery =
         "{\"queries\":"
             + "{\"q1\":{\"lucene\":{\"query\":\"text:alpha OR text:bravo\"}},"
             + "\"q2\":{\"lucene\":{\"query\":\"text:charlie OR text:delta\"}}},"
             + "\"limit\":10,"
             + "\"fields\":[\"id\",\"score\",\"mod3_idv\"],"
-            + "\"filter\":[\"{!collapse field=mod3_idv}\"],"
-            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"q1\",\"q2\"]}}";
+            + "\"params\":{\"combiner\":true, \"combiner.query\":[\"q1\",\"q2\"], "
+            + "\"fq\": [\"{!collapse field=mod3_idv sort='id asc'}\"], \"facet\": true, \"facet.field\": \"id\","
+            +  "\"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"alpha delta\", "
+            + "\"expand\": true, \"expand.q\": \"text:alpha OR text:bravo OR text:charlie OR text:delta\"}}";
 
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
 
@@ -375,10 +383,16 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     long uniqueCollapseValues = collapseValues.stream().distinct().count();
     assertEquals(
         "Expected no duplicate collapse field values in combined results, "
-            + "but got collapseValues=" + collapseValues,
+            + "but got collapseValues="
+            + collapseValues,
         uniqueCollapseValues,
         collapseValues.size());
-    assertEquals(
-        "Expected exactly 3 groups (mod3_idv values 0, 1, 2)", 3, collapseValues.size());
+    assertEquals("Expected exactly 3 groups (mod3_idv values 0, 1, 2)", 3, collapseValues.size());
+    assertEquals("id", rsp.getFacetFields().getFirst().getName());
+    assertEquals("[1 (1), 2 (1), 3 (1), 4 (0), 5 (0), 6 (0)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(3, rsp.getHighlighting().size());
+    assertEquals("bravo <em>delta</em>", rsp.getHighlighting().get("3").get("title").getFirst());
+    assertEquals("<em>alpha</em> bravo", rsp.getHighlighting().get("1").get("title").getFirst());
+    assertEquals(3, rsp.getExpandedResults().size());
   }
 }
