@@ -48,6 +48,25 @@ ENV SOLR_USER="solr" \
     SOLR_HOST_BIND="0.0.0.0" \
     SOLR_ZOOKEEPER_EMBEDDED_HOST="0.0.0.0"
 
+ARG GOSU_VERSION=1.19
+RUN set -eux; \
+    apt-get update; \
+    apt-get -y --no-install-recommends install curl acl lsof procps wget netcat-openbsd tini jattach gpg gnupg dirmngr; \
+    rm -rf /var/lib/apt/lists/*; \
+    dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+    wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${dpkgArch}"; \
+    wget -O /tmp/gosu.asc "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${dpkgArch}.asc"; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    gpg --batch --keyserver hkps://keys.openpgp.org \
+        --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
+    gpg --batch --verify /tmp/gosu.asc /usr/local/bin/gosu; \
+    gpgconf --kill gpg-agent; \
+    rm -rf "$GNUPGHOME" /tmp/gosu.asc; \
+    chmod +x /usr/local/bin/gosu; \
+    gosu --version; \
+    gosu nobody true; \
+    apt-get -y remove gpg dirmngr && apt-get -y autoremove
+
 RUN set -ex; \
   groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \
   useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"
@@ -66,11 +85,6 @@ RUN set -ex; \
   chmod 0664 /etc/default/solr.in.sh; \
   mkdir -p -m0770 /var/solr; \
   chown -R "$SOLR_USER:0" /var/solr;
-
-RUN set -ex; \
-    apt-get update; \
-    apt-get -y --no-install-recommends install curl acl lsof procps wget netcat-openbsd gosu tini jattach; \
-    rm -rf /var/lib/apt/lists/*;
 
 VOLUME /var/solr
 EXPOSE 8983

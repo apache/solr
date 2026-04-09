@@ -4,9 +4,19 @@
   "enabled": true,
   "gitIgnoredAuthors": ["renovate-bot <renovate-bot@noreply.github.com>"],
   "dependencyDashboard": false,
-  "enabledManagers": ["gradle", "github-actions"],
+  "enabledManagers": ["gradle", "github-actions", "regex"],
   "labels": ["exempt-stale"],
-  "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
+  "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*", "solr/docker/templates/Dockerfile.body.template"],
+  "customManagers": [
+    {
+      "description": "Track gosu GitHub releases and update ARG GOSU_VERSION in Dockerfile template",
+      "customType": "regex",
+      "fileMatch": ["^solr/docker/templates/Dockerfile\\.body\\.template$"],
+      "matchStrings": ["ARG GOSU_VERSION=(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "tianon/gosu",
+      "datasourceTemplate": "github-releases"
+    }
+  ],
   "postUpgradeTasks": {
     "commands": [
       "./gradlew resolveAndLockAll --write-locks",
