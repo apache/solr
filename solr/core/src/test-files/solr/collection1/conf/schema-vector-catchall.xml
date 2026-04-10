@@ -858,14 +858,9 @@
     <copyField source="lowerfilt1" dest="lowerfilt1and2"/>
     <copyField source="lowerfilt" dest="lowerfilt1and2"/>
 
-    <copyField source="*" dest="text"/>
-    <copyField source="id" dest="range_facet_l"/>
-    <copyField source="id" dest="id_i1"/>
     <copyField source="range_facet_f" dest="range_facet_d"/>
     <copyField source="range_facet_f1" dest="range_facet_f1_dv"/>
 
-    <copyField source="id" dest="range_facet_l_dv"/>
-    <copyField source="id" dest="range_facet_i_dv"/>
     <copyField source="range_facet_f" dest="range_facet_f_dv"/>
     <copyField source="range_facet_f" dest="range_facet_d_dv"/>
     <copyField source="bday" dest="range_facet_dt_dv"/>
