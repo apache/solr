@@ -307,13 +307,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return this.collapseField;
     }
 
-    /**
-     * Returns the parsed SortSpec if this collapse uses sort-based selection, or null otherwise.
-     */
-    public SortSpec getSortSpec() {
-      return this.sortSpec;
-    }
-
     @Override
     public void setCache(boolean cache) {}
 

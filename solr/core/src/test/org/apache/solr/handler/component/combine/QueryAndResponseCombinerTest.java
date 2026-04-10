@@ -123,6 +123,7 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
           "Expected 2 docs after collapse dedup (one per group value)",
           2,
           combined.getDocList().size());
+      assertEquals(0, combined.getDocList().iterator().nextDoc());
     } finally {
       searcherRef.decref();
     }
@@ -141,7 +142,7 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     CollapsingPostFilter collapseFilter =
-        parseCollapseFilter("{!collapse field=group_ti_dv sort='score asc'}");
+        parseCollapseFilter("{!collapse field=group_ti_dv nullPolicy=collapse sort='score asc'}");
 
     RefCounted<SolrIndexSearcher> searcherRef = h.getCore().getSearcher();
     try {
@@ -150,10 +151,11 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
       QueryResult combined =
           QueryAndResponseCombiner.simpleCombine(getQueryResults(), collapseFilter, searcher);
 
-      // group=1: doc 0 (0.87) beats doc 1 (0.67) → keep doc 0
+      // group=1: doc 0 (0.87) > doc 1 (0.67) → keep doc 1
       // doc 2 has no group value → kept (null policy)
       assertEquals(
           "Expected 2 docs: one group head + one null-field doc", 2, combined.getDocList().size());
+      assertEquals(1, combined.getDocList().iterator().nextDoc());
     } finally {
       searcherRef.decref();
     }

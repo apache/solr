@@ -178,8 +178,12 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       List<QueryResult> queryResults = new ArrayList<>();
       int rbIndex = 0;
       boolean shouldReturn = false;
+      boolean hasCollapse = getCollapseFilter(crb.getFilters()) != null;
       // TODO: to be parallelized
       for (ResponseBuilder thisRb : crb.responseBuilders) {
+        if (hasCollapse) {
+          thisRb.setNeedDocSet(true);
+        }
         // Just a placeholder for future implementation for Cursors
         thisRb.setCursorMark(crb.getCursorMark());
         super.process(thisRb);

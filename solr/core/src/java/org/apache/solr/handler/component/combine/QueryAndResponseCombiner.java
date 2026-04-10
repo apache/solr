@@ -16,36 +16,39 @@
  */
 package org.apache.solr.handler.component.combine;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SortedDocValues;
+import java.util.Set;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TotalHits;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.search.Weight;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ShardDoc;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.StrField;
-import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.CollapsingQParserPlugin.CollapsingPostFilter;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSlice;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -104,10 +107,9 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
     int removedByCollapse = 0;
     if (collapseFilter != null && searcher != null && queryResults.size() > 1) {
       int preCollapseSize = uniqueDocIds.size();
-      SchemaField collapseField = searcher.getSchema().getField(collapseFilter.getField());
       combinedDocSet =
-          removeCollapsedDuplicates(
-              collapseField, collapseFilter, searcher, uniqueDocIds, combinedDocSet);
+          removeCollapsedDuplicatesViaSearcher(
+              collapseFilter, searcher, uniqueDocIds, combinedDocSet);
       removedByCollapse = preCollapseSize - uniqueDocIds.size();
     }
 
@@ -135,192 +137,37 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
     return combinedQueryResults;
   }
 
-  private static DocSet removeCollapsedDuplicates(
-      SchemaField collapseField,
+  /**
+   * Removes collapsed duplicates by delegating to SolrIndexSearcher with the CollapsingPostFilter.
+   * Uses a PrecomputedScoreQuery to preserve original scores from combined sub-queries, then
+   * applies the collapse filter to determine surviving doc IDs.
+   *
+   * <p>This leverages Solr's native collapse infrastructure instead of manually reading DocValues.
+   */
+  private static DocSet removeCollapsedDuplicatesViaSearcher(
       CollapsingPostFilter collapseFilter,
       SolrIndexSearcher searcher,
       Map<Integer, Float> uniqueDocIds,
       DocSet combinedDocSet) {
     try {
-      List<Integer> removedDocs =
-          collapseByFieldValue(uniqueDocIds, collapseField, collapseFilter, searcher);
-      if (!removedDocs.isEmpty()) {
-        for (int docId : removedDocs) {
-          uniqueDocIds.remove(docId);
-        }
-        if (combinedDocSet != null) {
-          FixedBitSet bits = new FixedBitSet(searcher.maxDoc());
-          for (int docId : removedDocs) {
-            bits.set(docId);
-          }
-          return combinedDocSet.andNot(new BitDocSet(bits, removedDocs.size()));
-        }
+      QueryCommand cmd =
+          new QueryCommand()
+              .setQuery(new PrecomputedScoreQuery(uniqueDocIds))
+              .setFilterList(List.of(combinedDocSet.makeQuery(), collapseFilter))
+              .setLen(uniqueDocIds.size())
+              .setNeedDocSet(true);
+      QueryResult result = searcher.search(cmd);
+
+      Set<Integer> survivingDocIds = new HashSet<>();
+      DocIterator iter = result.getDocList().iterator();
+      while (iter.hasNext()) {
+        survivingDocIds.add(iter.nextDoc());
       }
+      uniqueDocIds.keySet().retainAll(survivingDocIds);
+      return result.getDocSet();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    return combinedDocSet;
-  }
-
-  /**
-   * Deduplicates the doc map by collapse field value. For each unique field value, the winning doc
-   * is determined by the collapse selection strategy: sort-based collapse uses the sort spec,
-   * score-based collapse keeps the highest-scoring doc. Docs with null/missing field values are
-   * kept (null policy pass).
-   *
-   * @return list of doc IDs that should be removed
-   */
-  private static List<Integer> collapseByFieldValue(
-      Map<Integer, Float> uniqueDocIds,
-      SchemaField collapseField,
-      CollapsingPostFilter collapseFilter,
-      SolrIndexSearcher searcher)
-      throws IOException {
-    Map<Integer, Object> docFieldValues =
-        readDocValues(uniqueDocIds.keySet(), collapseField, searcher);
-    if (docFieldValues.isEmpty()) {
-      return List.of();
-    }
-
-    // Build a comparator based on the collapse selection strategy
-    Comparator<Map.Entry<Integer, ?>> sortComparator =
-        buildSortComparator(collapseFilter, uniqueDocIds, searcher);
-
-    return findDuplicatesByFieldValue(uniqueDocIds, docFieldValues, sortComparator);
-  }
-
-  /**
-   * Reads field values from DocValues for a given set of doc IDs. Entries are accessed in doc ID
-   * order as required by the forward-only DocValues API.
-   *
-   * @param docIds the doc IDs to read values for
-   * @param field the schema field to read
-   * @param searcher the searcher providing the index reader
-   * @return map of docId to field value (ordinal for strings, long for numerics)
-   */
-  private static Map<Integer, Object> readDocValues(
-      Iterable<Integer> docIds, SchemaField field, SolrIndexSearcher searcher) throws IOException {
-    LeafReader reader = searcher.getSlowAtomicReader();
-    FieldType fieldType = field.getType();
-    String fieldName = field.getName();
-
-    List<Integer> sortedDocIds = new ArrayList<>();
-    docIds.forEach(sortedDocIds::add);
-    Collections.sort(sortedDocIds);
-
-    Map<Integer, Object> docFieldValues = new HashMap<>();
-    if (fieldType instanceof StrField) {
-      SortedDocValues sdv = DocValues.getSorted(reader, fieldName);
-      for (int docId : sortedDocIds) {
-        if (sdv.advanceExact(docId)) {
-          docFieldValues.put(docId, sdv.ordValue());
-        }
-      }
-    } else if (fieldType.getNumberType() != null) {
-      NumericDocValues ndv = DocValues.getNumeric(reader, fieldName);
-      for (int docId : sortedDocIds) {
-        if (ndv.advanceExact(docId)) {
-          docFieldValues.put(docId, ndv.longValue());
-        }
-      }
-    }
-    return docFieldValues;
-  }
-
-  /**
-   * Builds a comparator that determines which doc wins per group based on the collapse selection
-   * strategy. For sort-based collapse, pre-reads the sort field values and compares by them. For
-   * score-based collapse (default), compares by score.
-   */
-  private static Comparator<Map.Entry<Integer, ?>> buildSortComparator(
-      CollapsingPostFilter collapseFilter,
-      Map<Integer, Float> uniqueDocIds,
-      SolrIndexSearcher searcher)
-      throws IOException {
-    if (collapseFilter.getSortSpec() != null) {
-      Sort sort = collapseFilter.getSortSpec().getSort();
-      if (sort != null && sort.getSort().length > 0) {
-        Comparator<Map.Entry<Integer, ?>> chained = null;
-        for (SortField sortField : sort.getSort()) {
-          Comparator<Map.Entry<Integer, ?>> fieldCmp =
-              buildSingleFieldComparator(sortField, uniqueDocIds, searcher);
-          chained = (chained == null) ? fieldCmp : chained.thenComparing(fieldCmp);
-        }
-        if (chained != null) {
-          return chained;
-        }
-      }
-    }
-    // Default: score-based (higher score wins)
-    return scoreComparator(true);
-  }
-
-  /** Builds a score-based comparator. Higher score wins when preferHigher=true. */
-  @SuppressWarnings("unchecked")
-  private static Comparator<Map.Entry<Integer, ?>> scoreComparator(boolean preferHigher) {
-    Comparator<Map.Entry<Integer, ?>> cmp =
-        Comparator.comparing(e -> ((Map.Entry<Integer, Float>) e).getValue());
-    return preferHigher ? cmp : cmp.reversed();
-  }
-
-  /** Builds a comparator for a single SortField — handles both score and schema fields. */
-  private static Comparator<Map.Entry<Integer, ?>> buildSingleFieldComparator(
-      SortField sortField, Map<Integer, Float> uniqueDocIds, SolrIndexSearcher searcher)
-      throws IOException {
-    String sortFieldName = sortField.getField();
-    if (sortFieldName == null) {
-      // Score field: reverse=false means natural (desc), reverse=true means asc
-      return scoreComparator(!sortField.getReverse());
-    }
-    SchemaField sf = searcher.getSchema().getFieldOrNull(sortFieldName);
-    if (sf != null) {
-      Map<Integer, Object> sortValues = readDocValues(uniqueDocIds.keySet(), sf, searcher);
-      return fieldValueComparator(sortValues, sortField.getReverse());
-    }
-    // Unknown field — neutral comparator
-    return (a, b) -> 0;
-  }
-
-  /** Builds a comparator over pre-read field values. Higher value wins when preferHigher=true. */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private static Comparator<Map.Entry<Integer, ?>> fieldValueComparator(
-      Map<Integer, Object> fieldValues, boolean preferHigher) {
-    Comparator cmp =
-        preferHigher
-            ? Comparator.nullsFirst(Comparator.naturalOrder())
-            : Comparator.nullsFirst(Comparator.reverseOrder());
-    return (a, b) -> cmp.compare(fieldValues.get(a.getKey()), fieldValues.get(b.getKey()));
-  }
-
-  /**
-   * Finds duplicate docs by field value, keeping the winning doc per unique value based on the
-   * provided comparator. Docs without a field value (null policy) are not considered duplicates.
-   *
-   * @return list of doc IDs that are duplicates and should be removed
-   */
-  private static List<Integer> findDuplicatesByFieldValue(
-      Map<Integer, Float> uniqueDocIds,
-      Map<Integer, Object> docFieldValues,
-      Comparator<Map.Entry<Integer, ?>> sortComparator) {
-    Map<Object, Map.Entry<Integer, Float>> bestPerGroup = new HashMap<>();
-    List<Integer> docsToRemove = new ArrayList<>();
-
-    for (Map.Entry<Integer, Float> entry : uniqueDocIds.entrySet()) {
-      Object fieldVal = docFieldValues.get(entry.getKey());
-      if (fieldVal == null) {
-        continue;
-      }
-      Map.Entry<Integer, Float> existing = bestPerGroup.get(fieldVal);
-      if (existing == null) {
-        bestPerGroup.put(fieldVal, entry);
-      } else if (sortComparator.compare(entry, existing) > 0) {
-        docsToRemove.add(existing.getKey());
-        bestPerGroup.put(fieldVal, entry);
-      } else {
-        docsToRemove.add(entry.getKey());
-      }
-    }
-    return docsToRemove;
   }
 
   /**
@@ -354,5 +201,156 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
     }
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST, "Unknown Combining algorithm: " + algorithm);
+  }
+
+  /**
+   * A query that returns pre-computed scores for specific doc IDs. Used to preserve original scores
+   * from combined sub-queries when delegating collapse to the searcher.
+   */
+  private static class PrecomputedScoreQuery extends Query {
+    private final Map<Integer, Float> docScores;
+
+    PrecomputedScoreQuery(Map<Integer, Float> docScores) {
+      this.docScores = docScores;
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+      return new PrecomputedScoreWeight(this, docScores, boost);
+    }
+
+    @Override
+    public String toString(String field) {
+      return "PrecomputedScoreQuery(docs=" + docScores.size() + ")";
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return other instanceof PrecomputedScoreQuery otherQuery
+          && docScores.equals(otherQuery.docScores);
+    }
+
+    @Override
+    public int hashCode() {
+      return classHash() * 31 + docScores.hashCode();
+    }
+  }
+
+  private static class PrecomputedScoreWeight extends Weight {
+    private final Map<Integer, Float> docScores;
+    private final float boost;
+
+    PrecomputedScoreWeight(Query query, Map<Integer, Float> docScores, float boost) {
+      super(query);
+      this.docScores = docScores;
+      this.boost = boost;
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext context, int doc) {
+      int globalDoc = context.docBase + doc;
+      Float score = docScores.get(globalDoc);
+      if (score != null) {
+        return Explanation.match(score * boost, "precomputed score");
+      }
+      return Explanation.noMatch("no precomputed score");
+    }
+
+    @Override
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) {
+      List<Integer> localDocs = getLocalDocs(context);
+      if (localDocs.isEmpty()) {
+        return null;
+      }
+      Scorer scorer = new PrecomputedScoreScorer(localDocs, context.docBase, docScores, boost);
+      return new SolrDefaultScorerSupplier(scorer);
+    }
+
+    private List<Integer> getLocalDocs(LeafReaderContext context) {
+      List<Integer> localDocs = new ArrayList<>();
+      int maxDoc = context.reader().maxDoc();
+      for (int globalDoc : docScores.keySet()) {
+        int local = globalDoc - context.docBase;
+        if (local >= 0 && local < maxDoc) {
+          localDocs.add(local);
+        }
+      }
+      Collections.sort(localDocs);
+      return localDocs;
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+  }
+
+  private static class PrecomputedScoreScorer extends Scorer {
+    private final List<Integer> localDocs;
+    private final int docBase;
+    private final Map<Integer, Float> docScores;
+    private final float boost;
+    private int idx = -1;
+
+    PrecomputedScoreScorer(
+        List<Integer> localDocs, int docBase, Map<Integer, Float> docScores, float boost) {
+      this.localDocs = localDocs;
+      this.docBase = docBase;
+      this.docScores = docScores;
+      this.boost = boost;
+    }
+
+    @Override
+    public DocIdSetIterator iterator() {
+      return new DocIdSetIterator() {
+        @Override
+        public int docID() {
+          return PrecomputedScoreScorer.this.docID();
+        }
+
+        @Override
+        public int nextDoc() {
+          idx++;
+          return docID();
+        }
+
+        @Override
+        public int advance(int target) {
+          do {
+            idx++;
+          } while (idx < localDocs.size() && localDocs.get(idx) < target);
+          return docID();
+        }
+
+        @Override
+        public long cost() {
+          return localDocs.size();
+        }
+      };
+    }
+
+    @Override
+    public float getMaxScore(int upTo) {
+      return Float.MAX_VALUE;
+    }
+
+    @Override
+    public float score() {
+      Float s = docScores.get(localDocs.get(idx) + docBase);
+      return (s != null ? s : 0f) * boost;
+    }
+
+    @Override
+    public int docID() {
+      if (idx < 0) {
+        return -1;
+      }
+      return idx < localDocs.size() ? localDocs.get(idx) : NO_MORE_DOCS;
+    }
   }
 }
