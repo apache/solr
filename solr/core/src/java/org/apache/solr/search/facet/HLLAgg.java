@@ -24,6 +24,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.DocValuesUtil;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
@@ -193,9 +194,7 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
-      values =
-          DocValues.unwrapSingleton(
-              DocValues.getSortedNumeric(readerContext.reader(), sf.getName()));
+      values = DocValuesUtil.getNumeric(readerContext.reader(), sf.getName());
     }
 
     @Override

@@ -209,7 +209,9 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
         && fieldInfo.getDocValuesType() != DocValuesType.SORTED_NUMERIC) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          getClass() + " only support single valued number/string with docValues");
+          getClass()
+              + " only support single valued number/string with docValues: "
+              + fieldInfo.getDocValuesType());
     }
   }
 

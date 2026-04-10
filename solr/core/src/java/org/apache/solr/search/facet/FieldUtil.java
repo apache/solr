@@ -33,13 +33,16 @@ public class FieldUtil {
 
   public static SortedDocValues getSortedDocValues(QueryContext context, SchemaField field)
       throws IOException {
-    return DocValues.unwrapSingleton(
-        DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName()));
+    return DocValues.unwrapSingleton(getSortedSetDocValues(context, field));
   }
 
   public static SortedSetDocValues getSortedSetDocValues(QueryContext context, SchemaField field)
       throws IOException {
-    return DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName());
+    try {
+      return DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName());
+    } catch (IllegalStateException e) {
+      return DocValues.emptySortedSet();
+    }
   }
 
   /**

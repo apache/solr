@@ -40,6 +40,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   private static final Pattern trieFields = Pattern.compile(".*_t.");
@@ -48,11 +49,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-    }
-
     System.setProperty(
         "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");

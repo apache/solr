@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -40,6 +39,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.DocValuesUtil;
 
 /**
  * Returns an AnalyticsQuery implementation that performs one Gradient Descent iteration of a result
@@ -148,8 +148,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       leafReader = context.reader();
-      leafOutcomeValue =
-          DocValues.unwrapSingleton(DocValues.getSortedNumeric(leafReader, trainingParams.outcome));
+      leafOutcomeValue = DocValuesUtil.getNumeric(leafReader, trainingParams.outcome);
     }
 
     @Override

@@ -26,7 +26,11 @@ public class TestFieldSortValues extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     System.setProperty(
         "solr.tests.payload.fieldtype",
-        Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) ? "wrapped_point_int" : "wrapped_trie_int");
+        Boolean.getBoolean(NUMERIC_FULL_SYSPROP)
+            ? "wrapped_int"
+            : Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
+                ? "wrapped_point_int"
+                : "wrapped_trie_int");
     initCore("solrconfig-minimal.xml", "schema-field-sort-values.xml");
   }
 

@@ -224,7 +224,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Annotation for test classes that want to disable PointFields. PointFields will otherwise
+   * Annotation for test classes that want to disable {@link PointField}s. PointFields will otherwise
    * randomly be used by some schemas.
    */
   @Documented
@@ -234,6 +234,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public @interface SuppressPointFields {
     /** Point to JIRA entry. */
     public String bugUrl();
+  }
+
+  /**
+   * Annotation for test classes that want to enable docValues for numeric fields.
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface EnableNumericDocValues {
+    boolean trieFields() default false;
+    boolean pointFields() default true;
+    boolean numericFields() default true;
   }
 
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
@@ -2814,9 +2827,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   private static void randomizeNumericTypesProperties() {
 
-    final boolean useDV = random().nextBoolean();
-    System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "" + useDV);
-
     // consume a consistent amount of random data even if system property/annotation is set
     // Randomize between three types: Trie (legacy), Point, and new NumericField
     final int randNumericType = random().nextInt(15); // 0-14
@@ -2837,8 +2847,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             && !RandomizedContext.current()
                 .getTargetClass()
                 .isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class);
+    Optional<EnableNumericDocValues> numericDocValuesAnnotation =
+        Optional.ofNullable(RandomizedContext.current()
+            .getTargetClass()
+            .getAnnotation(EnableNumericDocValues.class));
+    boolean useDV = random().nextBoolean();
 
     if (useNumericField) {
+      if (numericDocValuesAnnotation.map(EnableNumericDocValues::numericFields).orElse(false)) {
+        useDV = true;
+      }
       log.info(
           "Using NumericFields (NUMERIC_FULL_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
@@ -2853,6 +2871,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.setProperty(NUMERIC_FULL_SYSPROP, "true");
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else if (usePoints) {
+      if (numericDocValuesAnnotation.map(EnableNumericDocValues::pointFields).orElse(false)) {
+        useDV = true;
+      }
       log.info(
           "Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
@@ -2867,6 +2888,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.setProperty(NUMERIC_FULL_SYSPROP, "false");
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     } else {
+      if (numericDocValuesAnnotation.map(EnableNumericDocValues::trieFields).orElse(false)) {
+        useDV = true;
+      }
       log.info(
           "Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
@@ -2881,6 +2905,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.setProperty(NUMERIC_FULL_SYSPROP, "false");
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     }
+    System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "" + useDV);
     for (Map.Entry<Class<?>, String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
       System.setProperty(
           "solr.tests." + entry.getKey().getSimpleName() + "FieldType", entry.getValue());

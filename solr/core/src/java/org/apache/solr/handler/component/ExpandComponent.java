@@ -90,6 +90,7 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.DocValuesUtil;
 import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
@@ -339,8 +340,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     } else {
       groupSet = new LongHashSet(docList.size());
       NumericDocValues collapseValues =
-          DocValues.unwrapSingleton(
-              DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
+          DocValuesUtil.getNumeric(contexts.get(currentContext).reader(), field);
       for (int i = 0; i < globalDocs.length; i++) {
         int globalDoc = globalDocs[i];
         while (globalDoc >= nextDocBase) {
@@ -350,9 +350,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               currentContext + 1 < contexts.size()
                   ? contexts.get(currentContext + 1).docBase
                   : Integer.MAX_VALUE;
-          collapseValues =
-              DocValues.unwrapSingleton(
-                  DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
+          collapseValues = DocValuesUtil.getNumeric(contexts.get(currentContext).reader(), field);
         }
         collapsedSet.add(globalDoc);
         int contextDoc = globalDoc - currentDocBase;

@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.DocValuesUtil;
 
 /** syntax fq={!hash workers=11 worker=4 keys=field1,field2} */
 public class HashQParserPlugin extends QParserPlugin {
@@ -97,8 +98,7 @@ public class HashQParserPlugin extends QParserPlugin {
         final String field = fields[i];
         NumericDocValues numericDocValues = null;
         try {
-          numericDocValues =
-              DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), field));
+          numericDocValues = DocValuesUtil.getNumeric(ctx.reader(), field);
         } catch (IllegalStateException ignored) {
         }
         if (numericDocValues != null) {

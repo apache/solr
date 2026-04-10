@@ -18,12 +18,10 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.solr.util.DocValuesUtil;
 
 class DoubleValue implements SortValue {
 
@@ -32,7 +30,6 @@ class DoubleValue implements SortValue {
   protected double currentValue;
   protected DoubleComp comp;
   private int lastDocID;
-  private LeafReader reader;
   private boolean present;
 
   public DoubleValue(String field, DoubleComp comp) {
@@ -60,16 +57,7 @@ class DoubleValue implements SortValue {
 
   @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
-    this.reader = context.reader();
-    try {
-      this.vals = DocValues.getNumeric(this.reader, field);
-    } catch (IllegalStateException ise) {
-      this.vals =
-          SortedNumericSelector.wrap(
-              DocValues.getSortedNumeric(this.reader, field),
-              SortedNumericSelector.Type.MIN,
-              SortField.Type.DOUBLE);
-    }
+    this.vals = DocValuesUtil.getNumeric(context.reader(), field, SortField.Type.DOUBLE);
     lastDocID = 0;
   }
 

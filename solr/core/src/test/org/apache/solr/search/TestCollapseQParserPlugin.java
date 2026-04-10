@@ -38,12 +38,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     initCore("solrconfig-collapseqparser.xml", "schema11.xml");
   }
 

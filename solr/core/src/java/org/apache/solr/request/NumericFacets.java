@@ -51,6 +51,7 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.DocValuesUtil;
 
 /** Utility class to compute facets on numeric fields. */
 final class NumericFacets {
@@ -215,7 +216,7 @@ final class NumericFacets {
           ctx = ctxIt.next();
         } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
         assert doc >= ctx.docBase;
-        longs = DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), fieldName));
+        longs = DocValuesUtil.getNumeric(ctx.reader(), fieldName);
         if (!(sf.getType() instanceof NumericField)) {
           if (sf.getType().getNumberType() == NumberType.FLOAT) {
             longs =

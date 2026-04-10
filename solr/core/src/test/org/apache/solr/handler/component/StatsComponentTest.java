@@ -59,15 +59,13 @@ import org.apache.solr.util.hll.HLL;
 import org.junit.BeforeClass;
 
 /** Statistics Component Test (which also checks some equivalent json.facet functionality) */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class StatsComponentTest extends SolrTestCaseJ4 {
 
   static final String XPRE = "/response/lst[@name='stats']/";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     initCore("solrconfig.xml", "schema11.xml");
   }
 

@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -57,6 +58,7 @@ import org.junit.Test;
   "Lucene45",
   "Appending"
 })
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestJsonFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers; // for distributed testing
@@ -75,10 +77,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
     origDefaultFacetMethod = FacetField.FacetMethod.DEFAULT_METHOD;
     // instead of the following, see the constructor
     // FacetField.FacetMethod.DEFAULT_METHOD = rand(FacetField.FacetMethod.values());
-
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
 
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -2106,7 +2104,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 + " , f3:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'unique(${where_s})'}  } "
                 + " , f4:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'hll(${where_s})'}  } "
                 + " , f5:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'variance(${num_d})'}  } "
-                + " , f6:{type:terms, field:${num_d}, limit:1, sort:'x desc', facet:{x:'hll(${num_i})'}  } "
+                + " , f6:{type:terms, field:${num_d}, limit:1, sort:'x desc, val asc', facet:{x:'hll(${num_i})'}  } "
                 + // facet on a field that will cause hashing and exercise hll.resize on numeric
                 // field
                 " , f7:{type:terms, field:${cat_s}, limit:2, sort:'x desc', facet:{x:'missing(${sparse_num_d})'}  } "

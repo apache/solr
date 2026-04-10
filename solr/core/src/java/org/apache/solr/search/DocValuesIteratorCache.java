@@ -33,6 +33,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.DocValuesUtil;
 
 /**
  * A helper class for random-order value access over docValues (such as in the case of
@@ -46,9 +47,7 @@ public class DocValuesIteratorCache {
       funcMap = new EnumMap<>(DocValuesType.class);
 
   static {
-    funcMap.put(
-        DocValuesType.NUMERIC,
-        ((leafReader, s) -> DocValues.unwrapSingleton(DocValues.getSortedNumeric(leafReader, s))));
+    funcMap.put(DocValuesType.NUMERIC, DocValuesUtil::getNumeric);
     funcMap.put(DocValuesType.BINARY, DocValues::getBinary);
     funcMap.put(
         DocValuesType.SORTED,

@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.TreeSet;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -36,6 +35,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.DocValuesUtil;
 
 public class IGainTermsQParserPlugin extends QParserPlugin {
 
@@ -124,7 +124,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       LeafReader reader = context.reader();
-      leafOutcomeValue = DocValues.unwrapSingleton(DocValues.getSortedNumeric(reader, outcome));
+      leafOutcomeValue = DocValuesUtil.getNumeric(reader, outcome);
     }
 
     @Override
