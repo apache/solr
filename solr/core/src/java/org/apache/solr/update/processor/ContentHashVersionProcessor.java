@@ -91,13 +91,12 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     SolrInputDocument newDoc = cmd.getSolrInputDocument();
     String newHash = computeDocHash(newDoc);
     newDoc.setField(hashField.getName(), newHash);
-    int i = 0;
 
     if (!isHashAcceptable(cmd.getIndexedId(), newHash)) {
       return;
     }
 
-    while (true) {
+    for (int i = 0; ; i++) {
       logOverlyFailedRetries(i, cmd);
       try {
         super.processAdd(cmd);
