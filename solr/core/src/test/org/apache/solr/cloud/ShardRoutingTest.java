@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.ServletFixtures;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -332,13 +333,13 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
   @Override
   public SequencedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
-    return new LinkedHashMap<>(Map.of(JettySolrRunner.DebugFilter.class, "/*"));
+    return new LinkedHashMap<>(Map.of(ServletFixtures.DelayServlet.class, "/*"));
   }
 
   long getNumRequests() {
-    long n = controlJetty.getFilter(JettySolrRunner.DebugFilter.class).getTotalRequests();
+    long n = controlJetty.getFilter(ServletFixtures.DelayServlet.class).getTotalRequests();
     for (JettySolrRunner jetty : jettys) {
-      n += jetty.getFilter(JettySolrRunner.DebugFilter.class).getTotalRequests();
+      n += jetty.getFilter(ServletFixtures.DelayServlet.class).getTotalRequests();
     }
     return n;
   }

@@ -65,6 +65,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.ServletFixtures;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -207,12 +208,12 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   @Override
   public SequencedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
-    return new LinkedHashMap<>(Map.of(JettySolrRunner.DebugFilter.class, "/*"));
+    return new LinkedHashMap<>(Map.of(ServletFixtures.DelayServlet.class, "/*"));
   }
 
   private void resetDelays() {
     for (JettySolrRunner j : jettys) {
-      j.getFilter(JettySolrRunner.DebugFilter.class).unsetDelay();
+      j.getFilter(ServletFixtures.DelayServlet.class).unsetDelay();
     }
   }
 
@@ -1244,7 +1245,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         .get(SHARD1)
         .get(1)
         .jetty
-        .getFilter(JettySolrRunner.DebugFilter.class)
+        .getFilter(ServletFixtures.DelayServlet.class)
         .addDelay("Waiting for dependant update to timeout", 1, 6000);
 
     ExecutorService threadpool =
@@ -1336,7 +1337,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           .get(SHARD1)
           .getFirst()
           .jetty
-          .getFilter(JettySolrRunner.DebugFilter.class)
+          .getFilter(ServletFixtures.DelayServlet.class)
           .unsetDelay();
 
       updates.add(regularDeleteRequest(1));
@@ -1345,13 +1346,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           .get(SHARD1)
           .get(1)
           .jetty
-          .getFilter(JettySolrRunner.DebugFilter.class)
+          .getFilter(ServletFixtures.DelayServlet.class)
           .addDelay("Waiting for dependant update to timeout", 1, 5999); // the first update
       shardToJetty
           .get(SHARD1)
           .get(1)
           .jetty
-          .getFilter(JettySolrRunner.DebugFilter.class)
+          .getFilter(ServletFixtures.DelayServlet.class)
           .addDelay("Waiting for dependant update to timeout", 4, 5998); // the delete update
 
       threadpool =
@@ -1648,7 +1649,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         .get(SHARD1)
         .get(1)
         .jetty
-        .getFilter(JettySolrRunner.DebugFilter.class)
+        .getFilter(ServletFixtures.DelayServlet.class)
         .addDelay("Waiting for dependant update to timeout", 2, 8000);
 
     ExecutorService threadpool =

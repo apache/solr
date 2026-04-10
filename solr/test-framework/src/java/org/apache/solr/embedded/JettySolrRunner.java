@@ -19,12 +19,8 @@ package org.apache.solr.embedded;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -34,7 +30,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -46,8 +41,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -138,69 +131,6 @@ public class JettySolrRunner implements SolrBackend {
   private volatile HttpJettySolrClient jettySolrClient;
 
   private volatile boolean started = false;
-
-  public static class DebugFilter implements Filter {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-    private AtomicLong nRequests = new AtomicLong();
-
-    List<Delay> delays = new ArrayList<>();
-
-    public long getTotalRequests() {
-      return nRequests.get();
-    }
-
-    /**
-     * Introduce a delay of specified milliseconds for the specified request.
-     *
-     * @param reason Info message logged when delay occurs
-     * @param count The count-th request will experience a delay
-     * @param delay There will be a delay of this many milliseconds
-     */
-    public void addDelay(String reason, int count, int delay) {
-      delays.add(new Delay(reason, count, delay));
-    }
-
-    /** Remove any delay introduced before. */
-    public void unsetDelay() {
-      delays.clear();
-    }
-
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {}
-
-    @Override
-    public void doFilter(
-        ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
-        throws IOException, ServletException {
-      nRequests.incrementAndGet();
-      executeDelay();
-      filterChain.doFilter(servletRequest, servletResponse);
-    }
-
-    @Override
-    public void destroy() {}
-
-    private void executeDelay() {
-      int delayMs = 0;
-      for (Delay delay : delays) {
-        log.info("Delaying {}, for reason: {}", delay.delayValue, delay.reason);
-        if (delay.counter.decrementAndGet() == 0) {
-          delayMs += delay.delayValue;
-        }
-      }
-
-      if (delayMs > 0) {
-        log.info("Pausing this socket connection for {}ms...", delayMs);
-        try {
-          Thread.sleep(delayMs);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-        log.info("Waking up after the delay of {}ms...", delayMs);
-      }
-    }
-  }
 
   /**
    * Create a new JettySolrRunner.
@@ -851,18 +781,6 @@ public class JettySolrRunner implements SolrBackend {
       throw new IllegalStateException("solrServlet/coreContainer is not set/available!");
     }
     cores.waitForLoadingCoresToFinish(timeoutMs);
-  }
-
-  static class Delay {
-    final AtomicInteger counter;
-    final int delayValue;
-    final String reason;
-
-    public Delay(String reason, int counter, int delay) {
-      this.reason = reason;
-      this.counter = new AtomicInteger(counter);
-      this.delayValue = delay;
-    }
   }
 
   public SocketProxy getProxy() {
