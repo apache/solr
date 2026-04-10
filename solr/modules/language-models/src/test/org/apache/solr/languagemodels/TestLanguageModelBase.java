@@ -53,7 +53,7 @@ public class TestLanguageModelBase extends RestTestBase {
       String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
       throws Exception {
     initFolders(persistModelStore);
-    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema);
     if (buildIndex) prepareIndex();
   }
 

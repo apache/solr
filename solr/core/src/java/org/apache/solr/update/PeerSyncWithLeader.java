@@ -109,17 +109,17 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     syncErrors =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_sync_with_leader_errors", "Total number of sync errors with leader"),
+                "solr.core.sync_with_leader.errors", "Total number of sync errors with leader"),
             baseAttributes);
     syncSkipped =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_sync_with_leader_skipped", "Total number of skipped syncs with leader"),
+                "solr.core.sync_with_leader.skipped", "Total number of skipped syncs with leader"),
             baseAttributes);
     syncTime =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr_core_sync_with_leader_time", "leader sync times", OtelUnit.MILLISECONDS),
+                "solr.core.sync_with_leader.time", "leader sync times", OtelUnit.MILLISECONDS),
             baseAttributes);
   }
 

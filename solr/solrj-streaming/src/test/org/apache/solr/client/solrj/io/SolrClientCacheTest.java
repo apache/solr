@@ -17,13 +17,16 @@
 package org.apache.solr.client.solrj.io;
 
 import java.util.Map;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -63,6 +66,27 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
       cache.setDefaultZKHost("test:2181");
       expectThrows(
           SolrException.class, () -> cache.getCloudSolrClient(zkClient().getZkServerAddress()));
+    }
+  }
+
+  @Test
+  public void testGetClientWithHttp() {
+    String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    try (SolrClientCache cache = new SolrClientCache()) {
+      CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(solrUrl);
+      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
+      Assert.assertEquals(1, clusterState.getLiveNodes().size());
+    }
+  }
+
+  @Test
+  public void testGetClientWithZookeeper() {
+    String zkConnectionString = zkClient().getZkServerAddress();
+    try (SolrClientCache cache = new SolrClientCache()) {
+      cache.setDefaultZKHost(zkClient().getZkServerAddress());
+      CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(zkConnectionString);
+      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
+      Assert.assertEquals(1, clusterState.getLiveNodes().size());
     }
   }
 

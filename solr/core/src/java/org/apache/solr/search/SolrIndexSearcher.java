@@ -610,7 +610,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         caffeineCache.initializeMetrics(
             solrMetricsContext,
             core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
-            "solr_core_indexsearcher_cache");
+            "solr.core.indexsearcher.cache");
       }
     }
     initializeMetrics(solrMetricsContext, core.getCoreAttributes());
@@ -2636,13 +2636,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     warmupTimer =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr_core_indexsearcher_warmup_time",
+                "solr.core.indexsearcher.warmup_time",
                 "Searcher warmup time (ms)",
                 OtelUnit.MILLISECONDS),
             baseAttributes);
 
     solrMetricsContext.observableLongCounter(
-        "solr_core_indexsearcher_live_docs_cache",
+        "solr.core.indexsearcher.live_docs.cache",
         "LiveDocs cache metrics",
         obs -> {
           obs.record(
@@ -2656,7 +2656,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         });
     // reader stats (numeric)
     solrMetricsContext.observableLongGauge(
-        "solr_core_indexsearcher_index_num_docs",
+        "solr.core.indexsearcher.index.num_docs",
         "Number of live docs in the index",
         obs -> {
           try {
@@ -2667,7 +2667,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         });
 
     solrMetricsContext.observableLongGauge(
-        "solr_core_indexsearcher_index_docs",
+        "solr.core.indexsearcher.index.docs",
         "Total number of docs in the index (including deletions)",
         obs -> {
           try {
@@ -2677,7 +2677,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         });
     // indexVersion (numeric)
     solrMetricsContext.observableLongGauge(
-        "solr_core_indexsearcher_index_version",
+        "solr.core.indexsearcher.index.version",
         "Lucene index version",
         obs -> {
           try {
@@ -2687,7 +2687,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         });
     // size of the currently opened commit
     solrMetricsContext.observableDoubleGauge(
-        "solr_core_indexsearcher_index_commit_size",
+        "solr.core.indexsearcher.index.commit_size",
         "Size of the current index commit (megabytes)",
         obs -> {
           try {

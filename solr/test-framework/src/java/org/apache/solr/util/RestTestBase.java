@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
-import java.util.SortedMap;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.JSONTestUtil;
@@ -33,13 +32,13 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.SolrRequestParsers;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+/** Test base class incorporating a {@link SolrJettyTestRule} and {@link RestTestHarness}. */
 public abstract class RestTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,64 +55,30 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
     }
   }
 
-  public static void createJettyAndHarness(
-      Path solrHome,
-      String configFile,
-      String schemaFile,
-      String context,
-      boolean stopAtShutdown,
-      SortedMap<ServletHolder, String> extraServlets)
+  /**
+   * Starts Solr/Jetty and creates a core "collection1. The coreRootDirectory is set to a temp dir.
+   *
+   * @param solrHome The solrHome; read-only. Also the configSetBaseDir having "collection1".
+   * @param configFile core: defaults to solrconfig.xml
+   * @param schemaFile core: defaults to schema.xml
+   */
+  public static void createJettyAndHarness(Path solrHome, String configFile, String schemaFile)
       throws Exception {
-
-    createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
-
-    restTestHarness = new RestTestHarness(RestTestBase::getCoreUrl);
-  }
-
-  protected static JettySolrRunner createAndStartJetty(
-      Path solrHome,
-      String configFile,
-      String schemaFile,
-      String context,
-      boolean stopAtShutdown,
-      SortedMap<ServletHolder, String> extraServlets)
-      throws Exception {
-    // creates the data dir
-
-    assert context == null || context.equals("/solr"); // deprecated
-
-    JettyConfig jettyConfig =
-        JettyConfig.builder().stopAtShutdown(stopAtShutdown).withServlets(extraServlets).build();
 
     Properties nodeProps = new Properties();
-    if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
-    if (schemaFile != null) nodeProps.setProperty("schema", schemaFile);
-    if (System.getProperty("solr.data.dir") == null) {
-      nodeProps.setProperty("solr.data.dir", createTempDir().toRealPath().toString());
-    }
+    nodeProps.setProperty("coreRootDirectory", createTempDir().toString());
+    nodeProps.setProperty("configSetBaseDir", solrHome.toString()); // unusual! vs. configsets/
 
-    return createAndStartJetty(solrHome, nodeProps, jettyConfig);
-  }
+    solrTestRule.startSolr(solrHome, nodeProps, JettyConfig.builder().build());
 
-  protected static JettySolrRunner createAndStartJetty(
-      Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+    solrTestRule
+        .newCollection()
+        .withConfigSet("collection1")
+        .withConfigFile(configFile)
+        .withSchemaFile(schemaFile)
+        .create();
 
-    Path coresDir = createTempDir().resolve("cores");
-
-    Properties props = new Properties();
-    props.setProperty("name", DEFAULT_TEST_CORENAME);
-    props.setProperty("configSet", "collection1");
-    props.setProperty("config", "${solrconfig:solrconfig.xml}");
-    props.setProperty("schema", "${schema:schema.xml}");
-
-    writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
-
-    Properties nodeProps = new Properties(nodeProperties);
-    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
-    nodeProps.setProperty("configSetBaseDir", solrHome.toString());
-
-    solrTestRule.startSolr(solrHome, nodeProps, jettyConfig);
-    return getJetty();
+    restTestHarness = new RestTestHarness(RestTestBase::getCoreUrl);
   }
 
   protected static JettySolrRunner getJetty() {
