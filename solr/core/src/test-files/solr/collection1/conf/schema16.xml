@@ -20,10 +20,11 @@
 
 <schema name="test" version="1.6">
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="binary" class="solr.BinaryField"/>
 
   <field name="_id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="_version_" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-  <field name="_hash_" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="_hash_" type="binary" indexed="true" docValues="true" stored="false" required="true"/>
   <field name="field1" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="field2" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="docField3" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

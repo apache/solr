@@ -19,9 +19,9 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Base64;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -33,8 +33,8 @@ import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.handler.component.RealTimeGetComponent.Resolution;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.BinaryField;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TextField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
       UpdateRequestProcessor next) {
     super(next);
     this.core = req.getCore();
-    this.hashField = new SchemaField(hashFieldName, new TextField());
+    this.hashField = new SchemaField(hashFieldName, new BinaryField());
     this.rsp = rsp;
     this.includedFields = hashIncludedFields;
     this.excludedFields = hashExcludedFields;
@@ -89,7 +89,7 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument newDoc = cmd.getSolrInputDocument();
-    String newHash = computeDocHash(newDoc);
+    byte[] newHash = computeDocHash(newDoc);
     newDoc.setField(hashField.getName(), newHash);
 
     if (!isHashAcceptable(cmd.getIndexedId(), newHash)) {
@@ -144,13 +144,12 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     this.dropSameDocuments = dropSameDocuments;
   }
 
-  private boolean isHashAcceptable(BytesRef indexedDocId, String newHash) throws IOException {
+  private boolean isHashAcceptable(BytesRef indexedDocId, byte[] newHash) throws IOException {
     assert null != indexedDocId;
 
-    Optional<String> oldDocHash = getOldDocHash(indexedDocId);
+    Optional<byte[]> oldDocHash = getOldDocHash(indexedDocId);
     if (oldDocHash.isPresent()) {
-      String oldHash = oldDocHash.get(); // No hash: might want to keep track of these too
-      if (Objects.equals(newHash, oldHash)) {
+      if (Arrays.equals(newHash, oldDocHash.get())) {
         sameCount++;
         return !dropSameDocuments;
       } else {
@@ -162,7 +161,7 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
   }
 
   /** Retrieves the hash value from the old document identified by the given ID. */
-  private Optional<String> getOldDocHash(BytesRef indexedDocId) throws IOException {
+  private Optional<byte[]> getOldDocHash(BytesRef indexedDocId) throws IOException {
     SolrInputDocument oldDoc =
         RealTimeGetComponent.getInputDocument(
             core, indexedDocId, indexedDocId, null, Set.of(hashField.getName()), Resolution.DOC);
@@ -170,10 +169,17 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
       return Optional.empty();
     }
     Object o = oldDoc.getFieldValue(hashField.getName());
-    return Optional.ofNullable(o).map(String::valueOf);
+    if (o instanceof byte[] bytes) {
+      return Optional.of(bytes);
+    } else if (o instanceof ByteBuffer buf) {
+      byte[] bytes = new byte[buf.remaining()];
+      buf.duplicate().get(bytes);
+      return Optional.of(bytes);
+    }
+    return Optional.empty();
   }
 
-  String computeDocHash(SolrInputDocument doc) {
+  byte[] computeDocHash(SolrInputDocument doc) {
     final Signature sig = new Lookup3Signature();
 
     // Stream field names, filter, sort, and process in a single pass
@@ -194,8 +200,6 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
               }
             });
 
-    // Signature, depending on implementation, may return 8-byte or 16-byte value
-    byte[] signature = sig.getSignature();
-    return Base64.getEncoder().encodeToString(signature);
+    return sig.getSignature();
   }
 }

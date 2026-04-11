@@ -18,6 +18,8 @@ package org.apache.solr.update.processor;
 
 import static org.mockito.Mockito.mock;
 
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import org.apache.solr.common.SolrInputDocument;
@@ -109,8 +111,9 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(FOURTH_FIELD, UUID.randomUUID().toString()));
 
     // Then (only ID and THIRD_FIELD is used in hash, other fields contain random values)
-    assertEquals(
-        "bwE8Zjq0aOs=", processor.computeDocHash(inputDocument)); // Hash if only ID field was used
+    assertArrayEquals(
+        Base64.getDecoder().decode("bwE8Zjq0aOs="),
+        processor.computeDocHash(inputDocument)); // Hash if only ID field was used
   }
 
   @Test
@@ -129,7 +132,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(FOURTH_FIELD, "constant to have a constant hash for field4"));
 
     // Then
-    assertEquals("PozPs2qZQtw=", processor.computeDocHash(inputDocument));
+    assertArrayEquals(Base64.getDecoder().decode("PozPs2qZQtw="), processor.computeDocHash(inputDocument));
   }
 
   @Test
@@ -148,7 +151,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(FOURTH_FIELD, "constant to have a constant hash for field4"));
 
     // Then
-    assertEquals("PozPs2qZQtw=", processor.computeDocHash(inputDocument));
+    assertArrayEquals(Base64.getDecoder().decode("PozPs2qZQtw="), processor.computeDocHash(inputDocument));
   }
 
   @Test
@@ -172,8 +175,8 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(FOURTH_FIELD, "constant to have a constant hash for field4"));
 
     // Then
-    assertEquals("XavrOYGlkXM=", processorWithDuplicatedFieldName.computeDocHash(inputDocument));
-    assertEquals("XavrOYGlkXM=", processorWithWildcard.computeDocHash(inputDocument));
+    assertArrayEquals(Base64.getDecoder().decode("XavrOYGlkXM="), processorWithDuplicatedFieldName.computeDocHash(inputDocument));
+    assertArrayEquals(Base64.getDecoder().decode("XavrOYGlkXM="), processorWithWildcard.computeDocHash(inputDocument));
   }
 
   @Test
@@ -322,9 +325,9 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     SolrInputDocument doc = doc(f(ID_FIELD, "only-id-doc"));
 
     // Then: Should compute hash (even if empty field set)
-    String hash = processor.computeDocHash(doc);
+    byte[] hash = processor.computeDocHash(doc);
     assertNotNull("Hash should not be null for ID-only document", hash);
-    assertFalse("Hash should not be empty", hash.isEmpty());
+    assertTrue("Hash should not be empty", hash.length > 0);
   }
 
   @Test
@@ -337,18 +340,18 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     SolrInputDocument doc1 = doc(f(ID_FIELD, "doc1"), f(FIRST_FIELD, "value1", "value2", "value3"));
 
     // Then: Should compute consistent hash
-    String hash1 = processor.computeDocHash(doc1);
+    byte[] hash1 = processor.computeDocHash(doc1);
     assertNotNull(hash1);
 
     // Same values in same order should produce same hash
     SolrInputDocument doc2 = doc(f(ID_FIELD, "doc2"), f(FIRST_FIELD, "value1", "value2", "value3"));
-    String hash2 = processor.computeDocHash(doc2);
-    assertEquals("Same multi-value field should produce same hash", hash1, hash2);
+    byte[] hash2 = processor.computeDocHash(doc2);
+    assertArrayEquals("Same multi-value field should produce same hash", hash1, hash2);
 
     // Different order should produce different hash (collection order matters)
     SolrInputDocument doc3 = doc(f(ID_FIELD, "doc3"), f(FIRST_FIELD, "value3", "value1", "value2"));
-    String hash3 = processor.computeDocHash(doc3);
-    assertNotEquals("Different order should produce different hash", hash1, hash3);
+    byte[] hash3 = processor.computeDocHash(doc3);
+    assertFalse("Different order should produce different hash", Arrays.equals(hash1, hash3));
   }
 
   @Test
@@ -361,9 +364,9 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     SolrInputDocument doc = doc(f(ID_FIELD, "null-doc"), f(FIRST_FIELD, (Object) null));
 
     // Then: Should compute hash without error
-    String hash = processor.computeDocHash(doc);
+    byte[] hash = processor.computeDocHash(doc);
     assertNotNull("Should handle null values", hash);
-    assertFalse("Hash should not be empty", hash.isEmpty());
+    assertTrue("Hash should not be empty", hash.length > 0);
   }
 
   @Test
@@ -388,9 +391,9 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(SECOND_FIELD, "value2"));
 
     // Then: Hashes should be identical (fields are sorted before hashing)
-    String hash1 = processor.computeDocHash(doc1);
-    String hash2 = processor.computeDocHash(doc2);
-    assertEquals("Hash should be same regardless of field order", hash1, hash2);
+    byte[] hash1 = processor.computeDocHash(doc1);
+    byte[] hash2 = processor.computeDocHash(doc2);
+    assertArrayEquals("Hash should be same regardless of field order", hash1, hash2);
   }
 
   @Test
@@ -402,16 +405,16 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     SolrInputDocument doc1 = doc(f(ID_FIELD, "empty-doc"), f(FIRST_FIELD, ""), f(SECOND_FIELD, ""));
 
     // When: Compute hash
-    String hash1 = processor.computeDocHash(doc1);
+    byte[] hash1 = processor.computeDocHash(doc1);
 
     // Then: Should produce valid hash
     assertNotNull("Should handle empty values", hash1);
-    assertFalse("Hash should not be empty", hash1.isEmpty());
+    assertTrue("Hash should not be empty", hash1.length > 0);
 
     // Empty strings should produce different hash than no fields
     SolrInputDocument doc2 = doc(f(ID_FIELD, "empty-doc"));
-    String hash2 = processor.computeDocHash(doc2);
-    assertNotEquals("Empty string fields should differ from no fields", hash1, hash2);
+    byte[] hash2 = processor.computeDocHash(doc2);
+    assertFalse("Empty string fields should differ from no fields", Arrays.equals(hash1, hash2));
   }
 
   private static void assertResponse(
