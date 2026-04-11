@@ -66,6 +66,4 @@ dependencies {
   testImplementation libs.squareup.okhttp3.mockwebserver
   testImplementation libs.squareup.okhttp3.okhttp
   testRuntimeOnly libs.netty.codechttp
-  testImplementation libs.apache.httpcomponents.httpclient
-  testImplementation libs.apache.httpcomponents.httpcore
 }

@@ -36,14 +36,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -946,18 +944,16 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void customHttpClientTest() throws IOException {
-    CloseableHttpClient client = HttpClientUtil.createClient(null);
-    try (CloudSolrClient solrClient =
-        new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .withHttpClient(client)
-            .build()) {
-
-      assertSame(((CloudLegacySolrClient) solrClient).getLbClient().getHttpClient(), client);
-
-    } finally {
-      HttpClientUtil.close(client);
+  public void customHttpClientTest() throws Exception {
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    try (HttpJettySolrClient httpClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
+      try (CloudSolrClient cloudClient =
+          new CloudJettySolrClient.Builder(Collections.singletonList(baseUrl))
+              .withHttpClient(httpClient)
+              .build()) {
+        // Verify the CloudJettySolrClient uses the provided HttpJettySolrClient
+        assertSame(((CloudJettySolrClient) cloudClient).getHttpClient(), httpClient);
+      }
     }
   }
 

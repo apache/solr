@@ -55,14 +55,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.script.ScriptEngineManager;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -70,7 +62,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -95,15 +86,21 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.api.ModifyBasicAuthConfigAPI;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
 import org.apache.solr.security.BasicAuthPlugin;
+import org.apache.solr.security.SimplePrincipal;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.jetty.client.ByteBufferRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -332,25 +329,19 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testUploadErrors() throws Exception {
-    final SolrClient solrClient =
-        getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
     ignoreException("The configuration name should be provided");
     // Checking error when no configuration name is specified in request
     Map<?, ?> map =
         postDataAndGetResponse(
-            cluster.getSolrClient(),
-            cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-                + "/admin/configs?action=UPLOAD",
+            cluster.getJettySolrRunners().getFirst(),
+            "/admin/configs?action=UPLOAD",
             emptyData,
             null,
             false);
-    assertNotNull(map);
     unIgnoreException("The configuration name should be provided");
-    long statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
-    assertEquals(400l, statusCode);
+    assertEquals(400, getStatusCode(map));
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -374,16 +365,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ignoreException("already exists");
     map =
         postDataAndGetResponse(
-            cluster.getSolrClient(),
-            cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-                + "/admin/configs?action=UPLOAD&name=myconf",
+            cluster.getJettySolrRunners().getFirst(),
+            "/admin/configs?action=UPLOAD&name=myconf",
             emptyData,
             null,
             false);
-    assertNotNull(map);
     unIgnoreException("already exists`");
-    statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
-    assertEquals(400l, statusCode);
+    assertEquals(400, getStatusCode(map));
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
         zkClient.exists("/configs/myconf/firstDummyFile"));
@@ -393,22 +381,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     // Checking error when configuration name contains invalid characters
     for (String invalidName : new String[] {"configset!", "-configset"}) {
+      JettySolrRunner jetty = cluster.getJettySolrRunners().getFirst();
       map =
           postDataAndGetResponse(
-              cluster.getSolrClient(),
-              cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-                  + "/admin/configs?action=UPLOAD&name="
-                  + invalidName,
-              emptyData,
-              null,
-              false);
-      assertNotNull(map);
-      statusCode = (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
-      assertEquals("Expected 400 for invalid configset name: " + invalidName, 400l, statusCode);
+              jetty, "/admin/configs?action=UPLOAD&name=" + invalidName, emptyData, null, false);
+      int statusCode = getStatusCode(map);
+      assertEquals("Expected 400 for invalid configset name: " + invalidName, 400, statusCode);
     }
 
     zkClient.close();
-    solrClient.close();
   }
 
   @Test
@@ -481,16 +462,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ByteBuffer buff = UTF_8.encode(payload);
     Map<?, ?> map =
         postDataAndGetResponse(
-            cluster.getSolrClient(),
-            cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-                + "/newcollection/schema?wt=js"
-                + "on",
+            cluster.getJettySolrRunners().getFirst(),
+            "/newcollection/schema?wt=json",
+            "application/json",
             buff,
             null,
             false);
-    Map<?, ?> responseHeader = (Map<?, ?>) map.get("responseHeader");
-    Long status = (Long) responseHeader.get("status");
-    assertEquals((long) status, 0L);
+    assertEquals(0, getStatusCode(map));
   }
 
   @Test
@@ -1165,14 +1143,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         readFile("solr/configsets/upload/" + configSetName + "/solrconfig.xml"));
   }
 
-  private long uploadConfigSet(
+  private int uploadConfigSet(
       String configSetName, String suffix, String username, SolrZkClient zkClient, boolean v2)
-      throws IOException {
+      throws Exception {
     assertFalse(getConfigSetService().checkConfigExists(configSetName + suffix));
     return uploadConfigSet(configSetName, suffix, username, false, false, v2, false, false);
   }
 
-  private long uploadConfigSet(
+  private int uploadConfigSet(
       String configSetName,
       String suffix,
       String username,
@@ -1181,7 +1159,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       boolean v2,
       boolean forbiddenTypes,
       boolean forbiddenContent)
-      throws IOException {
+      throws Exception {
 
     Path zipFile;
     if (forbiddenTypes) {
@@ -1200,21 +1178,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return uploadGivenConfigSet(zipFile, configSetName, suffix, username, overwrite, cleanup, v2);
   }
 
-  private long uploadBadConfigSet(String configSetName, String suffix, String username, boolean v2)
-      throws IOException {
-
-    // Read single file from sample configs. This should fail the unzipping
-    return uploadGivenConfigSet(
-        SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml"),
-        configSetName,
-        suffix,
-        username,
-        true /* overwrite */,
-        true /* cleanup */,
-        v2);
-  }
-
-  private long uploadGivenConfigSet(
+  private int uploadGivenConfigSet(
       Path file,
       String configSetName,
       String suffix,
@@ -1222,7 +1186,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       boolean overwrite,
       boolean cleanup,
       boolean v2)
-      throws IOException {
+      throws Exception {
 
     if (v2) {
       // TODO: switch to using V2Request
@@ -1235,15 +1199,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               + (!overwrite ? "?overwrite=false" : "")
               + (cleanup ? "?cleanup=true" : "");
       final boolean usePut = true;
+      JettySolrRunner jetty = cluster.getJettySolrRunners().getFirst();
       Map<?, ?> map =
           postDataAndGetResponse(
-              cluster.getSolrClient(),
-              cluster.getJettySolrRunners().get(0).getBaseURLV2().toString() + uriEnding,
-              fileBytes,
-              username,
-              usePut);
-      assertNotNull(map);
-      return (Long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+              jetty, jetty.getBaseURLV2() + uriEnding, fileBytes, username, usePut);
+      return getStatusCode(map);
     } // else "not" a V2 request...
 
     try {
@@ -1262,7 +1222,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
   }
 
-  private long uploadSingleConfigSetFile(
+  private int uploadSingleConfigSetFile(
       String configSetName,
       String suffix,
       String username,
@@ -1271,7 +1231,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       boolean overwrite,
       boolean cleanup,
       boolean v2)
-      throws IOException {
+      throws Exception {
     // Read single file from sample configs
     final Path file = SolrTestCaseJ4.getFile(localFilePath);
 
@@ -1292,15 +1252,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               + (cleanup ? "?cleanup=true" : "");
       final boolean usePut = true;
 
+      JettySolrRunner jetty = cluster.getJettySolrRunners().getFirst();
       Map<?, ?> map =
           postDataAndGetResponse(
-              cluster.getSolrClient(),
-              cluster.getJettySolrRunners().get(0).getBaseURLV2().toString() + uriEnding,
-              sampleConfigFile,
-              username,
-              usePut);
-      assertNotNull(map);
-      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+              jetty, jetty.getBaseURLV2() + uriEnding, sampleConfigFile, username, usePut);
+      return getStatusCode(map);
     } // else "not" a V2 request...
 
     try {
@@ -1500,59 +1456,47 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return res;
   }
 
+  /** for Javabin request, JSON response */
   public static Map<?, ?> postDataAndGetResponse(
-      CloudSolrClient cloudClient, String uri, ByteBuffer bytarr, String username, boolean usePut)
-      throws IOException {
-    HttpEntityEnclosingRequestBase httpRequest = null;
-    HttpEntity entity;
-    String response = null;
-    Map<?, ?> m = null;
-
-    try {
-      if (usePut) {
-        httpRequest = new HttpPut(uri);
-      } else {
-        httpRequest = new HttpPost(uri);
-      }
-
-      if (username != null) {
-        httpRequest.addHeader(new BasicHeader("user", username));
-      }
-
-      httpRequest.setHeader("Content-Type", "application/octet-stream");
-      httpRequest.setEntity(
-          new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
-      log.info("Uploading configset with user {}", username);
-      entity =
-          ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
-      try {
-        response = EntityUtils.toString(entity, UTF_8);
-        m = (Map<?, ?>) Utils.fromJSONString(response);
-      } catch (JSONParser.ParseException e) {
-        System.err.println("err response: " + response);
-        throw new AssertionError(e);
-      }
-    } finally {
-      httpRequest.releaseConnection();
-    }
-    return m;
+      JettySolrRunner jetty, String uri, ByteBuffer javabinBody, String username, boolean usePut)
+      throws Exception {
+    return postDataAndGetResponse(
+        jetty, uri, "application/octet-stream", javabinBody, username, usePut);
   }
 
-  private static Object getObjectByPath(Map<?, ?> root, List<String> hierarchy) {
-    Map<?, ?> obj = root;
-    for (int i = 0; i < hierarchy.size(); i++) {
-      String s = hierarchy.get(i);
-      if (i < hierarchy.size() - 1) {
-        if (!(obj.get(s) instanceof Map)) return null;
-        obj = (Map<?, ?>) obj.get(s);
-        if (obj == null) return null;
-      } else {
-        Object val = obj.get(s);
-        return val;
-      }
+  /** for {@code contentType} request, JSON response */
+  public static Map<?, ?> postDataAndGetResponse(
+      JettySolrRunner jetty,
+      String uri, // possibly relative to jetty URI
+      String contentType,
+      ByteBuffer payload,
+      String username,
+      boolean usePut)
+      throws Exception {
+    if (!uri.contains("://")) {
+      uri = jetty.getBaseUrl() + uri;
     }
+    HttpClient httpClient = jetty.getSolrClient().getHttpClient();
+    ContentResponse rsp =
+        httpClient
+            .newRequest(uri)
+            .method(usePut ? HttpMethod.PUT : HttpMethod.POST)
+            .headers(h -> h.add("user", username))
+            .body(new ByteBufferRequestContent(contentType, payload))
+            .send();
+    String response = rsp.getContentAsString();
+    try {
+      return (Map<?, ?>) Utils.fromJSONString(response);
+    } catch (JSONParser.ParseException e) {
+      System.err.println("err response: " + response);
+      throw new AssertionError(e);
+    }
+  }
 
-    return false;
+  private static int getStatusCode(Map<?, ?> rsp) {
+    assertNotNull("no response", rsp);
+    Object sObj = Utils.getObjectByPath(rsp, false, List.of("responseHeader", "status"));
+    return ((Number) sObj).intValue();
   }
 
   private byte[] readFile(String fname) throws IOException {
@@ -1759,8 +1703,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws Exception {
       if (request.getHeader("user") != null) {
-        final Principal p = new BasicUserPrincipal("solr");
-        filterChain.doFilter(wrap(request, p, "solr"), response);
+        var principal = new SimplePrincipal("solr");
+        filterChain.doFilter(wrap(request, principal, "solr"), response);
         return true;
       }
       return super.doAuthenticate(request, response, filterChain);
