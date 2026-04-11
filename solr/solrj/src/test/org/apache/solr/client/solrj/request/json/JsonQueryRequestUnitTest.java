@@ -91,8 +91,20 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
   @Test
   public void testWritesProvidedQueriesMapToJsonCorrectly() {
     final Map<String, Object> queriesMap = new HashMap<>();
-    queriesMap.put("query1", Map.of("lucene", Map.of("query", "*:*", "df", "text")));
-    queriesMap.put("query2", Map.of("edismax", Map.of("query", "solr", "df", "text")));
+    queriesMap.put(
+        "query1",
+        Map.of(
+            "lucene",
+            Map.of(
+                "query", "*:*",
+                "df", "text")));
+    queriesMap.put(
+        "query2",
+        Map.of(
+            "edismax",
+            Map.of(
+                "query", "solr",
+                "df", "text")));
     final JsonQueryRequest request = new JsonQueryRequest().setQueries(queriesMap);
     final String requestBody = writeRequestToJson(request);
     assertThat(requestBody, containsString("\"query1\":{\"lucene\":"));

@@ -115,12 +115,8 @@ public class JsonQueryRequest extends QueryRequest {
    *
    * @param queriesJson a Map of values representing the query subtree of the JSON request you wish
    *     to send.
-   * @throws IllegalArgumentException if {@code queriesJson} is null.
    */
   public JsonQueryRequest setQueries(Map<String, Object> queriesJson) {
-    if (queriesJson == null) {
-      throw new IllegalArgumentException("'queriesJson' parameter must be non-null");
-    }
     jsonRequestMap.put("queries", queriesJson);
     return this;
   }

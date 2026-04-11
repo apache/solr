@@ -100,15 +100,14 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
     final Map<String, Object> queriesMap = new HashMap<>();
     queriesMap.put("query1", "{!lucene df=genre_s v='scifi'}");
     queriesMap.put("query2", "{!edismax df=author_t v='martin'}");
-    ModifiableSolrParams queryParams = new ModifiableSolrParams();
-    queryParams.set("qt", "/search");
     final JsonQueryRequest query =
-        new JsonQueryRequest(queryParams)
+        new JsonQueryRequest()
             .setQueries(queriesMap)
             .withFilter("inStock:true")
             .withParam("fl", "name")
             .withParam("combiner", "true")
             .withParam("combiner.query", List.of("query1", "query2"));
+    query.setPath("/search");
     QueryResponse queryResponse = query.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS + NUM_MARTIN_BOOKS, queryResponse.getResults().size());
