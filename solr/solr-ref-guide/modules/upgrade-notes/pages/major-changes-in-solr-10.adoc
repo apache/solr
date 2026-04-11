@@ -301,6 +301,28 @@ Attention:
 
 == Solr 10.1
 
+=== OpenTelemetry
+
+The new OTEL based metric system introduced in 10.0 is considered BETA, and some breaking changes are to be expected in this and coming minor releases.
+
+==== OTLP Metric Names Changed to Dot-Separated Format
+
+*Breaking change for OTLP consumers.*
+
+Solr's metric names exported via OTLP now follow the https://opentelemetry.io/docs/specs/semconv/general/naming/[OpenTelemetry semantic convention] of using dot-separated names instead of the underscore-separated names used in Solr 10.0.
+
+For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_executor` is now `solr.node.executor`.
+
+*Prometheus output is unaffected.* The OTel Prometheus exporter automatically converts dots to underscores, so the `/admin/metrics?wt=prometheus` endpoint continues to produce the same metric names as before (e.g., `solr_core_requests_total`).
+
+*Workaround for OTLP consumers depending on the old names:*
+Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
+
+==== Metric `solr_core_indexsearcher_open_warmup_time` removed
+
+The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`.
+Update your dashboards to use `solr_core_indexsearcher_warmup_time` instead.
+
 === Lucene Codec Change
 
 Solr 10.1 upgrades the underlying Lucene library from 10.3 to 10.4, which introduces a new index codec (`Lucene104`).

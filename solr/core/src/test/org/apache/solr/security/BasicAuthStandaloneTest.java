@@ -26,23 +26,15 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Properties;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.message.AbstractHttpMessage;
-import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,7 +57,6 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     instance.setUp();
     jetty = createAndStartJetty(instance);
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
-    HttpClientUtil.clearRequestInterceptors(); // Clear out any old Authorization headers
   }
 
   @Override
@@ -84,10 +75,10 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
 
-    HttpClient httpClient = null;
+    HttpClient httpClient;
     SolrClient solrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      httpClient = jetty.getSolrClient().getHttpClient();
       String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
@@ -141,8 +132,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
             httpClient, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
       }
     } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
+      if (solrClient != null) {
         solrClient.close();
       }
     }
@@ -155,7 +145,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   static void doHttpPost(
-      HttpClient cl,
+      HttpClient httpClient,
       String url,
       String jsonCommand,
       String basicUser,
@@ -163,40 +153,48 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       int expectStatusCode)
       throws IOException {
     doHttpPostWithHeader(
-        cl, url, jsonCommand, getBasicAuthHeader(basicUser, basicPass), expectStatusCode);
+        httpClient,
+        url,
+        jsonCommand,
+        "Authorization",
+        encodeBasicAuthHeaderIfNotNull(basicUser, basicPass),
+        expectStatusCode);
   }
 
   static void doHttpPostWithHeader(
-      HttpClient cl, String url, String jsonCommand, Header header, int expectStatusCode)
+      HttpClient httpClient,
+      String url,
+      String jsonCommand,
+      String headerName,
+      String headerValue,
+      int expectStatusCode)
       throws IOException {
-    HttpPost httpPost = new HttpPost(url);
-    httpPost.setHeader(header);
-    httpPost.setEntity(new ByteArrayEntity(jsonCommand.replace("'", "\"").getBytes(UTF_8)));
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-    HttpResponse r = cl.execute(httpPost);
-    int statusCode = r.getStatusLine().getStatusCode();
-    HttpClientUtil.consumeFully(r.getEntity());
-    assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
-  }
-
-  private static Header getBasicAuthHeader(String user, String pwd) {
-    String userPass = user + ":" + pwd;
-    String encoded = Base64.getEncoder().encodeToString(userPass.getBytes(UTF_8));
-    return new BasicHeader("Authorization", "Basic " + encoded);
-  }
-
-  public static void setBasicAuthHeader(AbstractHttpMessage httpMsg, String user, String pwd) {
-    final Header basicAuthHeader = getBasicAuthHeader(user, pwd);
-    httpMsg.setHeader(basicAuthHeader);
-    if (log.isInfoEnabled()) {
-      log.info("Added Basic Auth security Header {}", basicAuthHeader.getValue());
+    try {
+      var rsp =
+          httpClient
+              .POST(url)
+              .headers(h -> h.add(headerName, headerValue))
+              .body(
+                  new StringRequestContent(
+                      "application/json", jsonCommand.replace("'", "\""), UTF_8))
+              .send();
+      int statusCode = rsp.getStatus();
+      assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
+    } catch (Exception e) {
+      throw new IOException(e);
     }
   }
 
+  private static String encodeBasicAuthHeaderIfNotNull(String user, String pwd) {
+    if (user == null && pwd == null) {
+      return null;
+    }
+    String userPass = user + ":" + pwd;
+    return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(UTF_8));
+  }
+
   static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    JettySolrRunner jetty =
-        new JettySolrRunner(
-            instance.getHomeDir().toString(), new Properties(), JettyConfig.builder().build());
+    var jetty = new JettySolrRunner(instance.getHomeDir().toString(), 0);
     jetty.start();
     return jetty;
   }

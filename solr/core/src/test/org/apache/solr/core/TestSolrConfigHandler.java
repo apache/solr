@@ -30,8 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -48,7 +46,6 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.noggit.JSONParser;
@@ -85,18 +82,10 @@ public class TestSolrConfigHandler extends RestTestBase {
     Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome,
-        "solrconfig-managed-schema.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        extraServlets);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml");
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness =

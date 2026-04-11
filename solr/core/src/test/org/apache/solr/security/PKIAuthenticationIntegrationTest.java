@@ -23,14 +23,13 @@ import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,7 +64,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testPkiAuth() throws Exception {
-    HttpClient httpClient = ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
+    HttpClient httpClient = cluster.getRandomJetty(random()).getSolrClient().getHttpClient();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String baseUrl = jetty.getBaseUrl().toString();
       verifySecurityStatus(

@@ -29,8 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,7 +41,6 @@ import org.apache.solr.client.solrj.response.schema.SchemaRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -101,13 +98,10 @@ public class SchemaTest extends RestTestBase {
     Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(getFile("solrj/solr/collection1").getParent(), tmpSolrHome);
 
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml", "/solr", true, extraServlets);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml");
   }
 
   @After
