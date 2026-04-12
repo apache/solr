@@ -22,11 +22,9 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.embedded.JettyConfig;
@@ -47,12 +45,8 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
   protected static RestTestHarness restTestHarness;
 
   @AfterClass
-  public static void cleanUpHarness() throws IOException {
-    RestTestHarness localHarness = restTestHarness;
-    if (localHarness != null) {
-      localHarness.close();
-      restTestHarness = null;
-    }
+  public static void cleanUpHarness() {
+    restTestHarness = null;
   }
 
   /**
@@ -78,11 +72,21 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
         .withSchemaFile(schemaFile)
         .create();
 
-    restTestHarness = new RestTestHarness(RestTestBase::getCoreUrl);
+    restTestHarness = getJetty().getRestClient(DEFAULT_TEST_CORENAME);
   }
 
   protected static JettySolrRunner getJetty() {
     return solrTestRule.getJetty();
+  }
+
+  /**
+   * Restarts Jetty and recreates the RestTestHarness with a new HttpClient. Use this instead of
+   * calling getJetty().stop()/start() directly.
+   */
+  protected static void restartJetty() throws Exception {
+    getJetty().stop();
+    getJetty().start();
+    restTestHarness = getJetty().getRestClient(DEFAULT_TEST_CORENAME);
   }
 
   /** URL to Solr */
@@ -97,11 +101,6 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
 
   protected static SolrClient getSolrClient() {
     return solrTestRule.getSolrClient();
-  }
-
-  protected static HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    return client.getHttpClient();
   }
 
   /** Validates an update XML String is successful */
@@ -213,12 +212,6 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
       log.error("REQUEST FAILED: {}", request, e2);
       throw new RuntimeException("Exception during query", e2);
     }
-  }
-
-  public static void assertHead(String request, int expectedStatusCode) throws IOException {
-    String response = restTestHarness.head(request);
-    assertTrue(response.contains("HTTP/1.1 " + expectedStatusCode));
-    assertTrue(response.contains("Content-Length: 0"));
   }
 
   /**
