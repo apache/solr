@@ -149,11 +149,11 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
       RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
       try {
-        // Check for nested documents before processing - we don't support them
-        if (indexContainsNestedDocs(searcherRef.get())) {
+        // Check for child documents before processing - we don't support them
+        if (indexContainsChildDocs(searcherRef.get())) {
           throw new SolrException(
               BAD_REQUEST,
-              "UPGRADECOREINDEX does not support indexes containing nested documents. "
+              "UPGRADECOREINDEX does not support indexes containing child documents. "
                   + " Consider reindexing your data "
                   + "from the original source.");
         }
@@ -259,10 +259,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     return (segmentMinVersion == null || segmentMinVersion.major < Version.LATEST.major);
   }
 
-  private boolean indexContainsNestedDocs(SolrIndexSearcher searcher) throws IOException {
+  private boolean indexContainsChildDocs(SolrIndexSearcher searcher) throws IOException {
     IndexSchema schema = searcher.getSchema();
 
-    // First check if schema supports nested docs
+    // First check if schema supports child docs
     if (!schema.isUsableForChildDocs()) {
       return false;
     }
@@ -270,8 +270,8 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     String uniqueKeyFieldName = schema.getUniqueKeyField().getName();
 
     // Compare unique _root_ values against unique id values per segment.
-    // For non-nested docs, every document's _root_ equals its own id, so the number of
-    // distinct _root_ values equals the number of distinct id values. For nested docs,
+    // For non-child docs, every document's _root_ equals its own id, so the number of
+    // distinct _root_ values equals the number of distinct id values. For child docs,
     // children share the parent's _root_ value, so there are fewer distinct _root_ values
     // than distinct id values.
     //
@@ -279,20 +279,20 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     // (the number of documents with the _root_ field) because segment-level term statistics
     // include deleted documents. Updates (delete + re-add of the same id) can leave multiple
     // documents with the same _root_ value within a segment, causing getDocCount() to exceed
-    // the unique _root_ count even when no nested docs exist.
+    // the unique _root_ count even when no child docs exist.
     IndexReader reader = searcher.getIndexReader();
     for (LeafReaderContext leaf : reader.leaves()) {
       Terms rootTerms = leaf.reader().terms(IndexSchema.ROOT_FIELD_NAME);
       if (rootTerms != null) {
         long uniqueRootValues = rootTerms.size();
         if (uniqueRootValues == -1) {
-          return true; // Codec doesn't report term count; assume nested docs as a safe fallback
+          return true; // Codec doesn't report term count; assume child docs as a safe fallback
         }
 
         Terms idTerms = leaf.reader().terms(uniqueKeyFieldName);
         long uniqueIdValues = (idTerms != null) ? idTerms.size() : -1;
         if (uniqueIdValues == -1) {
-          return true; // Codec doesn't report term count; assume nested docs as a safe fallback
+          return true; // Codec doesn't report term count; assume child docs as a safe fallback
         }
 
         if (uniqueRootValues < uniqueIdValues) {
