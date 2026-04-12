@@ -323,11 +323,11 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   private record SegmentLayout(String coreName, String seg1, String seg2, String seg3) {}
 
   @Test
-  public void testUpgradeCoreIndexFailsWithNestedDocuments() throws Exception {
+  public void testUpgradeCoreIndexFailsWithChildDocuments() throws Exception {
     final SolrCore core = h.getCore();
     final String coreName = core.getName();
 
-    // Create a parent document with a child document (nested doc)
+    // Create a parent document with a child document
     SolrInputDocument parentDoc = new SolrInputDocument();
     parentDoc.addField("id", "100");
     parentDoc.addField("title", "Parent Document");
@@ -338,7 +338,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
 
     parentDoc.addChildDocument(childDoc);
 
-    // Index the nested document
+    // Index the parent+child document
     try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = parentDoc;
@@ -349,7 +349,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     // Verify documents were indexed (parent + child = 2 docs)
     assertQ(req("q", "*:*"), "//result[@numFound='2']");
 
-    // Attempt to upgrade the index - should fail because of nested documents
+    // Attempt to upgrade the index - should fail because of child documents
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
       final SolrQueryResponse resp = new SolrQueryResponse();
@@ -365,44 +365,44 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
                           coreName),
                       resp));
 
-      // Verify the exception message indicates nested documents are not supported
+      // Verify the exception message indicates child documents are not supported
       assertThat(
           thrown.getMessage(),
-          containsString("does not support indexes containing nested documents"));
+          containsString("does not support indexes containing child documents"));
     } finally {
       admin.shutdown();
       admin.close();
     }
   }
 
-  // --- Nested docs detection tests ---
+  // --- Child docs detection tests ---
   //
-  // These tests verify that the nested document detection in the upgrade path
-  // correctly distinguishes between genuine nested docs and non-nested docs,
+  // These tests verify that the child document detection in the upgrade path
+  // correctly distinguishes between genuine child docs and non-child docs,
   // even in the presence of updates and deletes that leave deleted documents
   // in segments (since NoMergePolicy prevents segment merges from purging them).
 
   @Test
-  public void testNestedDocsDetection_nonNestedJustAdd() throws Exception {
+  public void testChildDocsDetection_noChildDocsJustAdd() throws Exception {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
     }
     assertU(commit("openSearcher", "true"));
 
-    assertUpgradeDoesNotDetectNestedDocs();
+    assertUpgradeDoesNotDetectChildDocs();
   }
 
   @Test
-  public void testNestedDocsDetection_nestedJustAdd() throws Exception {
-    addNestedDoc("100", "101");
-    addNestedDoc("200", "201");
+  public void testChildDocsDetection_withChildDocsJustAdd() throws Exception {
+    addChildDoc("100", "101");
+    addChildDoc("200", "201");
     assertU(commit("openSearcher", "true"));
 
-    assertUpgradeDetectsNestedDocs();
+    assertUpgradeDetectsChildDocs();
   }
 
   @Test
-  public void testNestedDocsDetection_nonNestedWithWithinCommitUpdates() throws Exception {
+  public void testChildDocsDetection_noChildDocsWithWithinCommitUpdates() throws Exception {
     // Add docs and then update some of them BEFORE committing, so both the old
     // (deleted) and new versions end up in the same flushed segment.
     // With NoMergePolicy and a 100MB RAM buffer (from SolrIndexConfig defaults),
@@ -412,7 +412,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     //   Terms.size()     = N  (unique _root_ values, one per unique id)
     //   Terms.getDocCount() = N + updates  (includes deleted doc entries)
     //
-    // The current check (uniqueRootValues < docsWithRoot) may false-positive here
+    // A naive check (uniqueRootValues < docsWithRoot) may false-positive here
     // because multiple docs share the same _root_ value within the segment.
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
@@ -425,15 +425,15 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
 
     // 10 live docs — the updates replaced 3 docs in-place
     assertQ(req("q", "*:*"), "//result[@numFound='10']");
-    assertUpgradeDoesNotDetectNestedDocs();
+    assertUpgradeDoesNotDetectChildDocs();
   }
 
   @Test
-  public void testNestedDocsDetection_nestedWithWithinCommitUpdates() throws Exception {
-    // Same within-commit pattern but with actual nested docs present
-    addNestedDoc("100", "101");
+  public void testChildDocsDetection_withChildDocsWithWithinCommitUpdates() throws Exception {
+    // Same within-commit pattern but with actual child docs present
+    addChildDoc("100", "101");
 
-    // Add and immediately re-add some non-nested docs
+    // Add and immediately re-add some non-child docs
     for (int i = 0; i < 5; i++) {
       assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
     }
@@ -442,14 +442,15 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     }
     assertU(commit("openSearcher", "true"));
 
-    assertUpgradeDetectsNestedDocs();
+    assertUpgradeDetectsChildDocs();
   }
 
   @Test
-  public void testNestedDocsDetection_nonNestedWithWithinCommitDeletesAndUpdates() throws Exception {
+  public void testChildDocsDetection_noChildDocsWithWithinCommitDeletesAndUpdates()
+      throws Exception {
     // Add docs, delete some, and update others — all before committing.
     // Deleted and updated docs leave behind deleted entries in the same segment,
-    // which can cause false positives in the current nested docs detection.
+    // which can cause false positives in the child docs detection.
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
     }
@@ -465,12 +466,13 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
 
     // 7 live docs: ids 0,1,2 (updated), 6,7,8,9 (untouched); 3,4,5 deleted
     assertQ(req("q", "*:*"), "//result[@numFound='7']");
-    assertUpgradeDoesNotDetectNestedDocs();
+    assertUpgradeDoesNotDetectChildDocs();
   }
 
   @Test
-  public void testNestedDocsDetection_nestedWithWithinCommitDeletesAndUpdates() throws Exception {
-    addNestedDoc("100", "101");
+  public void testChildDocsDetection_withChildDocsWithWithinCommitDeletesAndUpdates()
+      throws Exception {
+    addChildDoc("100", "101");
 
     for (int i = 0; i < 5; i++) {
       assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
@@ -480,11 +482,11 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "0", "title", "updated_doc0"));
     assertU(commit("openSearcher", "true"));
 
-    assertUpgradeDetectsNestedDocs();
+    assertUpgradeDetectsChildDocs();
   }
 
   /** Index a parent document with a single child via the update handler. */
-  private void addNestedDoc(String parentId, String childId) throws Exception {
+  private void addChildDoc(String parentId, String childId) throws Exception {
     SolrCore core = h.getCore();
     SolrInputDocument parentDoc = new SolrInputDocument();
     parentDoc.addField("id", parentId);
@@ -504,10 +506,10 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Assert that the upgrade endpoint does NOT throw the nested-documents error. This verifies that
-   * {@code indexContainsNestedDocs} returns false.
+   * Assert that the upgrade endpoint does NOT throw the child-documents error. This verifies that
+   * {@code indexContainsChildDocs} returns false.
    */
-  private void assertUpgradeDoesNotDetectNestedDocs() throws Exception {
+  private void assertUpgradeDoesNotDetectChildDocs() throws Exception {
     final String coreName = h.getCore().getName();
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
@@ -527,10 +529,10 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Assert that the upgrade endpoint DOES throw the nested-documents error. This verifies that
-   * {@code indexContainsNestedDocs} returns true.
+   * Assert that the upgrade endpoint DOES throw the child-documents error. This verifies that
+   * {@code indexContainsChildDocs} returns true.
    */
-  private void assertUpgradeDetectsNestedDocs() throws Exception {
+  private void assertUpgradeDetectsChildDocs() throws Exception {
     final String coreName = h.getCore().getName();
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
@@ -548,7 +550,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
                       resp));
       assertThat(
           thrown.getMessage(),
-          containsString("does not support indexes containing nested documents"));
+          containsString("does not support indexes containing child documents"));
     } finally {
       admin.shutdown();
       admin.close();
