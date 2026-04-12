@@ -16,8 +16,6 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
@@ -34,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -575,7 +572,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             handler,
             "params",
-            new MapSolrParams(emptyMap())),
+            new MapSolrParams(Map.of())),
         STATUS_OK);
   }
 
@@ -622,7 +619,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             handler,
             "params",
-            new MapSolrParams(emptyMap())),
+            new MapSolrParams(Map.of())),
         STATUS_OK);
   }
 
@@ -669,7 +666,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             handler,
             "params",
-            new MapSolrParams(emptyMap())),
+            new MapSolrParams(Map.of())),
         FORBIDDEN);
   }
 
@@ -681,14 +678,14 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       plugin.init(rules);
       assertEquals(
           Set.of("mycoll_update", "read"), plugin.getPermissionNamesForRoles(Set.of("dev")));
-      assertEquals(emptySet(), plugin.getPermissionNamesForRoles(Set.of("user")));
+      assertEquals(Set.of(), plugin.getPermissionNamesForRoles(Set.of("user")));
       assertEquals(
           Set.of("schema-edit", "collection-admin-edit", "mycoll_update"),
           plugin.getPermissionNamesForRoles(Set.of("admin")));
       assertEquals(
           Set.of("schema-edit", "collection-admin-edit", "mycoll_update", "read"),
           plugin.getPermissionNamesForRoles(Set.of("admin", "dev")));
-      assertEquals(emptySet(), plugin.getPermissionNamesForRoles(null));
+      assertEquals(Set.of(), plugin.getPermissionNamesForRoles(null));
       assertEquals(
           Set.of("collection-admin-read"),
           plugin.getPermissionNamesForRoles(Collections.singletonList(null)));
@@ -820,7 +817,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       @Override
       public Principal getUserPrincipal() {
         Object userPrincipal = values.get("userPrincipal");
-        return userPrincipal == null ? null : new BasicUserPrincipal(String.valueOf(userPrincipal));
+        return userPrincipal == null ? null : new SimplePrincipal(String.valueOf(userPrincipal));
       }
 
       @Override

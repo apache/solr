@@ -1011,7 +1011,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
       updateShardHandlers.add(updateShardHandler);
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
       Overseer overseer =
           new Overseer(
@@ -1724,7 +1724,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     updateShardHandlers.add(updateShardHandler);
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-    httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+    httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
     // Set system property to ensure tests use Overseer mode

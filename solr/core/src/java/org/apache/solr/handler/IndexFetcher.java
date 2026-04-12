@@ -49,7 +49,6 @@ import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -72,7 +71,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
@@ -184,8 +182,6 @@ public class IndexFetcher {
   private Integer soTimeout;
 
   private boolean skipCommitOnLeaderVersionZero = true;
-
-  private boolean clearLocalIndexFirst = false;
 
   private static final String INTERRUPT_RESPONSE_MESSAGE =
       "Interrupted while waiting for modify lock";
@@ -381,7 +377,7 @@ public class IndexFetcher {
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
       else {
-        filesToDownload = Collections.emptyList();
+        filesToDownload = List.of();
         log.error("No files to download for index generation: {}", gen);
       }
 
@@ -409,7 +405,6 @@ public class IndexFetcher {
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload)
       throws IOException, InterruptedException {
 
-    this.clearLocalIndexFirst = false;
     boolean cleanupDone = false;
     boolean successfulInstall = false;
     markReplicationStart();
@@ -697,9 +692,7 @@ public class IndexFetcher {
                 // let the system know we are changing dir's and the old one
                 // may be closed
                 if (indexDir != null) {
-                  if (!this.clearLocalIndexFirst) { // it was closed earlier
-                    solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-                  }
+                  solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
                   // Cleanup all index files not associated with any *named* snapshot.
                   solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
                 }
@@ -722,8 +715,6 @@ public class IndexFetcher {
             }
           }
         } finally {
-          solrCore.searchEnabled = true;
-          solrCore.indexEnabled = true;
           if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
@@ -927,9 +918,6 @@ public class IndexFetcher {
       props.setProperty(INDEX_REPLICATED_AT, String.valueOf(replicationTime));
       props.setProperty(PREVIOUS_CYCLE_TIME_TAKEN, String.valueOf(replicationTimeTaken));
       props.setProperty(TIMES_INDEX_REPLICATED, String.valueOf(indexCount));
-      if (clearLocalIndexFirst) {
-        props.setProperty(CLEARED_LOCAL_IDX, "true");
-      }
       if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
         props.setProperty(CONF_FILES_REPLICATED, confFiles.toString());
         props.setProperty(CONF_FILES_REPLICATED_AT, String.valueOf(replicationTime));
@@ -1128,21 +1116,11 @@ public class IndexFetcher {
                 || (tmpIndexDir instanceof FilterDirectory
                     && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
 
-    long totalSpaceRequired = 0;
-    for (Map<String, Object> file : filesToDownload) {
-      long size = (Long) file.get(SIZE);
-      totalSpaceRequired += size;
-    }
-
     if (log.isInfoEnabled()) {
       log.info(
           "tmpIndexDir_type  : {} , {}",
           tmpIndexDir.getClass(),
           FilterDirectory.unwrap(tmpIndexDir));
-    }
-    long usableSpace = usableDiskSpaceProvider.apply(tmpIndexDirPath);
-    if (getApproxTotalSpaceReqd(totalSpaceRequired) > usableSpace) {
-      deleteFilesInAdvance(indexDir, indexDirPath, totalSpaceRequired, usableSpace);
     }
 
     for (Map<String, Object> file : filesToDownload) {
@@ -1201,84 +1179,8 @@ public class IndexFetcher {
   // only for testing purposes. do not use this anywhere else
   // -----------START----------------------
   static BooleanSupplier testWait = () -> true;
-  static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
 
   // ------------ END---------------------
-
-  private static Long getUsableSpace(String dir) {
-    try {
-      Path file = Path.of(dir);
-      if (Files.notExists(file)) {
-        file = file.getParent();
-        // this is not a disk directory. so just pretend that there is enough space
-        if (Files.notExists(file)) {
-          return Long.MAX_VALUE;
-        }
-      }
-      FileStore fileStore = Files.getFileStore(file);
-      return fileStore.getUsableSpace();
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not free disk space", e);
-    }
-  }
-
-  private long getApproxTotalSpaceReqd(long totalSpaceRequired) {
-    long approxTotalSpaceReqd = (long) (totalSpaceRequired * 1.05); // add 5% extra for safety
-    // we should have an extra of 100MB free after everything is downloaded
-    approxTotalSpaceReqd += (100 * 1024 * 1024);
-    return approxTotalSpaceReqd;
-  }
-
-  private void deleteFilesInAdvance(
-      Directory indexDir, String indexDirPath, long usableDiskSpace, long totalSpaceRequired)
-      throws IOException {
-    long actualSpaceReqd = totalSpaceRequired;
-    List<String> filesTobeDeleted = new ArrayList<>();
-    long clearedSpace = 0;
-    // go through each file to check if this needs to be deleted
-    for (String f : indexDir.listAll()) {
-      for (Map<String, Object> fileInfo : filesToDownload) {
-        if (f.equals(fileInfo.get(NAME))) {
-          String filename = (String) fileInfo.get(NAME);
-          long size = (Long) fileInfo.get(SIZE);
-          CompareResult compareResult =
-              compareFile(indexDir, filename, size, (Long) fileInfo.get(CHECKSUM));
-          if (!compareResult.equal || filesToAlwaysDownloadIfNoChecksums(f, size, compareResult)) {
-            filesTobeDeleted.add(f);
-            clearedSpace += size;
-          } else {
-            /*this file will not be downloaded*/
-            actualSpaceReqd -= size;
-          }
-        }
-      }
-    }
-    if (usableDiskSpace > getApproxTotalSpaceReqd(actualSpaceReqd)) {
-      // after considering the files actually available locally we really don't need to do any
-      // delete
-      return;
-    }
-    log.info(
-        "This disk does not have enough space to download the index from leader. So cleaning up the local index. "
-            + " This may lead to loss of data/or node if index replication fails in between");
-    // now we should disable searchers and index writers because this core will not have all the
-    // required files
-    this.clearLocalIndexFirst = true;
-    this.solrCore.searchEnabled = false;
-    this.solrCore.indexEnabled = false;
-    solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-    solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
-    this.solrCore.closeSearcher();
-    assert testWait.getAsBoolean();
-    solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
-    for (String f : filesTobeDeleted) {
-      try {
-        indexDir.deleteFile(f);
-      } catch (FileNotFoundException | NoSuchFileException e) {
-        // no problem , it was deleted by someone else
-      }
-    }
-  }
 
   static boolean filesToAlwaysDownloadIfNoChecksums(
       String filename, long size, CompareResult compareResult) {
@@ -1300,11 +1202,11 @@ public class IndexFetcher {
       Directory indexDir, String filename, Long backupIndexFileLen, Long backupIndexFileChecksum) {
     CompareResult compareResult = new CompareResult();
     try {
-      try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
-        long indexFileLen = indexInput.length();
-        long indexFileChecksum = 0;
-
-        if (backupIndexFileChecksum != null) {
+      long indexFileLen;
+      long indexFileChecksum = 0;
+      if (backupIndexFileChecksum != null) {
+        try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
+          indexFileLen = indexInput.length();
           try {
             indexFileChecksum = CodecUtil.retrieveChecksum(indexInput);
             compareResult.checkSummed = true;
@@ -1312,47 +1214,49 @@ public class IndexFetcher {
             log.warn("Could not retrieve checksum from file.", e);
           }
         }
+      } else {
+        indexFileLen = indexDir.fileLength(filename);
+      }
 
-        if (!compareResult.checkSummed) {
-          // we don't have checksums to compare
+      if (!compareResult.checkSummed) {
+        // we don't have checksums to compare
 
-          if (indexFileLen == backupIndexFileLen) {
-            compareResult.equal = true;
-            return compareResult;
-          } else {
-            log.info(
-                "File {} did not match. expected length is {} and actual length is {}",
-                filename,
-                backupIndexFileLen,
-                indexFileLen);
-            compareResult.equal = false;
-            return compareResult;
-          }
-        }
-
-        // we have checksums to compare
-
-        if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+        if (indexFileLen == backupIndexFileLen) {
           compareResult.equal = true;
           return compareResult;
         } else {
-          log.warn(
-              "File {} did not match. expected checksum is {} and actual is checksum {}. "
-                  + "expected length is {} and actual length is {}",
+          log.info(
+              "File {} did not match. expected length is {} and actual length is {}",
               filename,
-              backupIndexFileChecksum,
-              indexFileChecksum,
               backupIndexFileLen,
               indexFileLen);
           compareResult.equal = false;
           return compareResult;
         }
       }
+
+      // we have checksums to compare
+
+      if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+        compareResult.equal = true;
+        return compareResult;
+      } else {
+        log.warn(
+            "File {} did not match. expected checksum is {} and actual is checksum {}. "
+                + "expected length is {} and actual length is {}",
+            filename,
+            backupIndexFileChecksum,
+            indexFileChecksum,
+            backupIndexFileLen,
+            indexFileLen);
+        compareResult.equal = false;
+        return compareResult;
+      }
     } catch (NoSuchFileException | FileNotFoundException e) {
       compareResult.equal = false;
       return compareResult;
     } catch (IOException e) {
-      log.error("Could not read file {}. Downloading it again", filename, e);
+      log.error("Could not read file {}. Assuming it is out of date", filename, e);
       compareResult.equal = false;
       return compareResult;
     }
@@ -1383,22 +1287,9 @@ public class IndexFetcher {
       String filename = (String) file.get(NAME);
       Long length = (Long) file.get(SIZE);
       Long checksum = (Long) file.get(CHECKSUM);
-      if (slowFileExists(dir, filename)) {
-        if (checksum != null) {
-          if (!(compareFile(dir, filename, length, checksum).equal)) {
-            // file exists and size or checksum is different, therefore we must download it again
-            return true;
-          }
-        } else {
-          if (length != dir.fileLength(filename)) {
-            log.warn(
-                "File {} did not match. expected length is {} and actual length is {}",
-                filename,
-                length,
-                dir.fileLength(filename));
-            return true;
-          }
-        }
+      if (!(compareFile(dir, filename, length, checksum).equal)) {
+        // file exists and size or checksum is different, therefore we must download it again
+        return true;
       }
     }
     return false;
@@ -1473,7 +1364,7 @@ public class IndexFetcher {
       return Files.walk(dir).filter(Files::isRegularFile).collect(Collectors.toList());
     } catch (IOException e) {
       log.warn("Could not walk file tree", e);
-      return Collections.emptyList();
+      return List.of();
     }
   }
 
@@ -1532,8 +1423,7 @@ public class IndexFetcher {
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(
       List<Map<String, Object>> confFilesToDownload) {
-    if (confFilesToDownload == null || confFilesToDownload.isEmpty())
-      return Collections.emptyList();
+    if (confFilesToDownload == null || confFilesToDownload.isEmpty()) return List.of();
     // build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
     NamedList<String> names = new NamedList<>();
@@ -1555,7 +1445,7 @@ public class IndexFetcher {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }
-    return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
+    return nameVsFile.isEmpty() ? List.of() : nameVsFile.values();
   }
 
   static boolean delTree(Path dir) {
@@ -1600,25 +1490,25 @@ public class IndexFetcher {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     // create a new instance. or else iterator may fail
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesDownloaded() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesToDownload() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   // TODO: currently does not reflect conf files
@@ -2072,8 +1962,6 @@ public class IndexFetcher {
   static final String INDEX_REPLICATED_AT = "indexReplicatedAt";
 
   static final String TIMES_INDEX_REPLICATED = "timesIndexReplicated";
-
-  static final String CLEARED_LOCAL_IDX = "clearedLocalIndexFirst";
 
   static final String CONF_FILES_REPLICATED = "confFilesReplicated";
 

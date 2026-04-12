@@ -166,7 +166,11 @@ solrAdminServices.factory('System',
         $http.post(url, fd, {
             transformRequest: angular.identity,
             headers: {'Content-Type': undefined}
-        }).success(success).error(error);
+        }).then(function(response) {
+            success(response.data);
+        }, function(response) {
+            error(response.data);
+        });
     }
 })
 .filter('splitByComma', function() {

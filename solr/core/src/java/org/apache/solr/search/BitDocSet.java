@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
@@ -331,7 +331,7 @@ public class BitDocSet extends DocSet {
 
   @Override
   public Collection<Accountable> getChildResources() {
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override

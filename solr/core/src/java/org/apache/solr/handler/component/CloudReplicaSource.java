@@ -109,12 +109,13 @@ class CloudReplicaSource implements ReplicaSource {
       if (sliceOrUrl.indexOf('/') < 0) {
         // this is a logical shard
         this.slices[i] = sliceOrUrl;
-        replicas[i] =
-            findReplicas(
-                builder,
-                shardsParam,
-                clusterState,
-                clusterState.getCollection(builder.collection).getSlice(sliceOrUrl));
+        DocCollection coll = clusterState.getCollectionOrNull(builder.collection, true);
+        if (coll == null) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Could not find collection to resolve replicas: " + builder.collection);
+        }
+        replicas[i] = findReplicas(builder, shardsParam, clusterState, coll.getSlice(sliceOrUrl));
       } else {
         // this has urls
         this.replicas[i] = StrUtils.splitSmart(sliceOrUrl, "|", true);
@@ -160,7 +161,7 @@ class CloudReplicaSource implements ReplicaSource {
     if (slice == null) {
       // Treat this the same as "all servers down" for a slice, and let things continue
       // if partial results are acceptable
-      return Collections.emptyList();
+      return List.of();
     } else {
       final Predicate<Replica> isShardLeader =
           new IsLeaderPredicate(
@@ -189,7 +190,12 @@ class CloudReplicaSource implements ReplicaSource {
       String collectionName,
       String shardKeys,
       boolean multiCollection) {
-    DocCollection coll = state.getCollection(collectionName);
+    DocCollection coll = state.getCollectionOrNull(collectionName, true);
+    if (coll == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Could not find collection to add slices: " + collectionName);
+    }
     Collection<Slice> slices = coll.getRouter().getSearchSlices(shardKeys, params, coll);
     ClientUtils.addSlices(target, collectionName, slices, multiCollection);
   }

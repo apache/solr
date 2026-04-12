@@ -36,7 +36,7 @@
     </fieldType>
 
     <!-- for versioning -->
-    <field name="_version_" type="long" indexed="true" stored="true"/>
+    <field name="_version_" type="long" indexed="true" stored="true" docValues="true"/>
     <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="id" type="string" indexed="true" stored="true"/>
     <field name="text" type="text" indexed="true" stored="false"/>

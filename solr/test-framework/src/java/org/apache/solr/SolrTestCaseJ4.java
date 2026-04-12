@@ -69,7 +69,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
@@ -2114,6 +2113,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * using {@code this.getClass()}.
    */
   public static Path getFile(String name) {
+    // see if it's a classpath resource
     final URL url =
         SolrTestCaseJ4.class
             .getClassLoader()
@@ -2128,10 +2128,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                 + name);
       }
     }
+
+    // see if it's a file path resource
     final Path file = Path.of(name);
     if (Files.exists(file)) {
-      return file;
+      return file.toAbsolutePath(); // absolute to reduce ambiguity
     }
+
     throw new RuntimeException(
         "Cannot find resource in classpath or in file-system (relative to CWD): "
             + file.toAbsolutePath());
@@ -2553,18 +2556,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       this.shardLeadersOnly = random().nextBoolean();
       this.parallelUpdates = random().nextBoolean();
     }
-  }
-
-  /**
-   * This method creates a HttpClient from a URL.
-   *
-   * <p><b>WARNING:</b> if you use this method, the <code>HttpClient</code> returned is tracked by
-   * <code>ObjectReleaseTracker</code>. Your test will fail if you do not pass the <code>HttpClient
-   * </code> to {@link HttpClientUtil#close(HttpClient)} when you are done with it.
-   */
-  @Deprecated // We are migrating away from Apache HttpClient.
-  public static HttpClient getHttpClient(String url) {
-    return new HttpSolrClient.Builder(url).build().getHttpClient();
   }
 
   /**

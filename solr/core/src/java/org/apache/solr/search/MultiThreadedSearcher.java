@@ -349,7 +349,7 @@ public class MultiThreadedSearcher {
       TopDocs mergedTopDocs = null;
 
       if (topDocs.length > 0 && topDocs[0] != null) {
-        if (topDocs[0] instanceof TopFieldDocs) {
+        if (Arrays.stream(topDocs).allMatch(td -> td instanceof TopFieldDocs)) {
           TopFieldDocs[] topFieldDocs =
               Arrays.copyOf(topDocs, topDocs.length, TopFieldDocs[].class);
           mergedTopDocs = TopFieldDocs.merge(searcher.weightSort(cmd.getSort()), len, topFieldDocs);

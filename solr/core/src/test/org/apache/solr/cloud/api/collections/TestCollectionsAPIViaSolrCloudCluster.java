@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,11 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -46,6 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.Test;
 
 /** Test of the Collections API with the MiniSolrCloudCluster. */
@@ -317,22 +314,22 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     String collectionName = "testUserDefinedPropertiesCollection";
 
     switch (random().nextInt(3)) {
-      case 0:
+      case 0 -> {
         CollectionAdminRequest.Create createOp =
             CollectionAdminRequest.createCollection(collectionName, confName, 1, 2);
         createOp.withProperty("my.custom.prop", "customProp");
         CollectionAdminResponse rsp = createOp.process(cluster.getSolrClient());
         assertNull(rsp.getErrorMessages());
         assertSame(0, rsp.getStatus());
-        break;
-
-      case 1:
+      }
+      case 1 -> {
         // Sometimes use v1 API
+        var jetty = cluster.getRandomJetty(random());
         String url =
             String.format(
                 Locale.ROOT,
                 "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&nrtReplicas=%s&tlogReplicas=%s&pullReplicas=%s&&property.my.custom.prop=%s",
-                cluster.getRandomJetty(random()).getBaseUrl(),
+                jetty.getBaseUrl(),
                 collectionName,
                 confName,
                 2,
@@ -341,37 +338,43 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
                 0,
                 "customProp");
 
-        HttpGet createCollectionGet = new HttpGet(url);
-        HttpResponse httpResponseV1 =
-            ((CloudLegacySolrClient) cluster.getSolrClient())
-                .getHttpClient()
-                .execute(createCollectionGet);
-        assertEquals(200, httpResponseV1.getStatusLine().getStatusCode());
-        break;
-
-      case 2:
+        var response = jetty.getSolrClient().getHttpClient().GET(url);
+        assertEquals(200, response.getStatus());
+      }
+      case 2 -> {
         // Sometimes use V2 API
-        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
+        var jetty = cluster.getRandomJetty(random());
+        String url = jetty.getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
-                "{\"name\":\"%s\", \"config\":\"%s\", \"numShards\":%s, \"nrtReplicas\":%s, \"tlogReplicas\":%s, \"pullReplicas\":%s,"
-                    + " \"properties\": { \"my.custom.prop\": \"test\" } }",
+                """
+                {
+                  "name": "%s",
+                  "config": "%s",
+                  "numShards": %s,
+                  "nrtReplicas": %s,
+                  "tlogReplicas": %s,
+                  "pullReplicas": %s,
+                  "properties": { "my.custom.prop": "test" }
+                }""",
                 collectionName,
                 confName,
                 2,
                 2,
                 2,
                 0);
-        HttpPost createCollectionPost = new HttpPost(url);
-        createCollectionPost.setHeader("Content-type", "application/json");
-        createCollectionPost.setEntity(new StringEntity(requestBody));
-        HttpResponse httpResponseV2 =
-            ((CloudLegacySolrClient) cluster.getSolrClient())
+        var response =
+            jetty
+                .getSolrClient()
                 .getHttpClient()
-                .execute(createCollectionPost);
-        assertEquals(200, httpResponseV2.getStatusLine().getStatusCode());
-        break;
+                .POST(url)
+                .body(
+                    new StringRequestContent(
+                        "application/json", requestBody, StandardCharsets.UTF_8))
+                .send();
+        assertEquals(200, response.getStatus());
+      }
     }
   }
 }

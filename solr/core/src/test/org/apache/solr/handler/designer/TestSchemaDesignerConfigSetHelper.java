@@ -110,7 +110,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.emptyList(), true, DEFAULT_CONFIGSET_NAME);
+            configSet, schema, List.of(), true, DEFAULT_CONFIGSET_NAME);
     assertEquals(2, schema.getSchemaZkVersion());
 
     byte[] zipped = helper.downloadAndZipConfigSet(mutableId);
@@ -207,7 +207,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.emptyList(), true, DEFAULT_CONFIGSET_NAME);
+            configSet, schema, List.of(), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
@@ -217,7 +217,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Collections.emptyList(), false, DEFAULT_CONFIGSET_NAME);
+            configSet, schema, List.of(), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));

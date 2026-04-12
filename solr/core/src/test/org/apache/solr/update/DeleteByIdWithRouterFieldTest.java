@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
@@ -77,7 +78,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .isSuccess());
 
-    solrClient = cluster.basicSolrClientBuilder().withDefaultCollection(COLL).build();
+    solrClient = cluster.newSolrClient(COLL);
 
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
@@ -123,7 +124,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
             assertEquals(
                 "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
-                Collections.emptySet(),
+                Set.of(),
                 CloudInspectUtil.showDiff(
                     leaderResults,
                     replicaResults,

@@ -97,10 +97,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Override
@@ -665,5 +662,23 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       assertTrue(ee.getCause() instanceof RemoteSolrException);
       assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
+  }
+
+  // formerly SolrExceptionTest.testSolrException
+  public void testConnectionToNonExistentServer() throws Exception {
+    // test a connection to a solr server that probably doesn't exist
+    // this is a very simple test and most of the test should be considered verified
+    // if the compiler won't let you by without the try/catch
+
+    // test a connection to a solr server that probably doesn't exist
+    // set a 1ms timeout to let the connection fail faster
+    boolean gotExpectedError = false;
+    try (var client = builder("http://" + DEAD_HOST_1 + "/solr/", 1, 1000).build()) {
+      SolrQuery query = new SolrQuery("test123");
+      client.query(query);
+    } catch (SolrServerException sse) {
+      gotExpectedError = true;
+    }
+    assertTrue(gotExpectedError);
   }
 }
