@@ -334,6 +334,7 @@ task testSmokeBats(type: BatsTask) {
 
   inputs.dir(distDir)
   outputs.dir(integrationTestOutput)
+  outputs.upToDateWhen { false }
 
   doFirst {
     mkdir integrationTestOutput
