@@ -17,6 +17,7 @@
 package org.apache.solr.languagemodels.documentenrichment.model;
 
 import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -31,6 +32,9 @@ import dev.langchain4j.model.chat.response.ChatResponse;
  */
 public class DummyChatModel implements ChatModel {
 
+  /** The text of the last prompt received by any instance. Useful for test assertions. */
+  public static String lastReceivedPrompt;
+
   private final String response;
 
   public DummyChatModel(String response) {
@@ -39,6 +43,7 @@ public class DummyChatModel implements ChatModel {
 
   @Override
   public ChatResponse chat(ChatRequest chatRequest) {
+    lastReceivedPrompt = ((UserMessage) chatRequest.messages().getFirst()).singleText();
     return ChatResponse.builder().aiMessage(AiMessage.from(response)).build();
   }
 

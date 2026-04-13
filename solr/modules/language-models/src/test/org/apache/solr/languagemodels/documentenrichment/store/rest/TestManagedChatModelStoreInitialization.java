@@ -31,7 +31,7 @@ public class TestManagedChatModelStoreInitialization extends TestLanguageModelBa
   public void managedChatModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
       throws Exception {
     setupTest(
-        "solrconfig-document-enrichment-update-request-processor-only.xml",
+        "solrconfig-document-enrichment.xml",
         "schema-language-models.xml",
         false,
         false);

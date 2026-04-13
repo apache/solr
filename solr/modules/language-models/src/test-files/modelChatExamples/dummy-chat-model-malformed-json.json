@@ -1,7 +1,0 @@
-{
-  "class": "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel",
-  "name": "dummy-chat-1",
-  "params": {
-    "response": "not valid json at all"
-  }
-}

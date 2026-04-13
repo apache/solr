@@ -37,18 +37,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link ChatModel} to produce the content of new fields from another.
- * It's meant to be used as a managed resource with the {@link
+ * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to produce the content of a field based on the
+ * content of other fields specified as input. It's meant to be used as a managed resource with the {@link
  * ManagedChatModelStore}
  */
 public class SolrChatModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(SolrChatModel.class);
-  // timeout is type Duration
   private static final String TIMEOUT_PARAM = "timeout";
-
-  // the followings are Integer type
   private static final String MAX_RETRIES_PARAM = "maxRetries";
   private static final String THINKING_BUDGET_TOKENS = "thinkingBudgetTokens";
   private static final String RANDOM_SEED = "randomSeed";
@@ -71,15 +68,15 @@ public class SolrChatModel implements Accountable {
        * Each model has its own list of parameters we don't know beforehand, but each {@link dev.langchain4j.model.chat.ChatModel} class
        * has its own builder that uses setters with the same name of the parameter in input.
        * */
-      ChatModel textToTextModel;
+      ChatModel chatModel;
       Class<?> modelClass = solrResourceLoader.findClass(className, ChatModel.class);
       var builder = modelClass.getMethod("builder").invoke(null);
       if (params != null) {
         /*
          * This block of code has the responsibility of instantiate a {@link
-         * dev.langchain4j.model.chat.ChatModel} using the params provided.classes have
-         * params of The specific implementation of {@link
-         * dev.langchain4j.model.chat.ChatModel} is not known beforehand. So we benefit of
+         * dev.langchain4j.model.chat.ChatModel} using the params provided. Classes have
+         * params of the specific implementation of {@link
+         * dev.langchain4j.model.chat.ChatModel}, which is not known beforehand. So we benefit of
          * the design choice in langchain4j that each subclass implementing {@link
          * dev.langchain4j.model.chat.ChatModel} uses setters with the same name of the
          * param.
@@ -130,8 +127,8 @@ public class SolrChatModel implements Accountable {
           }
         }
       }
-      textToTextModel = (ChatModel) builder.getClass().getMethod("build").invoke(builder);
-      return new SolrChatModel(name, textToTextModel, params);
+      chatModel = (ChatModel) builder.getClass().getMethod("build").invoke(builder);
+      return new SolrChatModel(name, chatModel, params);
     } catch (final Exception e) {
       throw new ChatModelException("Model loading failed for " + className, e);
     }
@@ -149,21 +146,21 @@ public class SolrChatModel implements Accountable {
    * Sends a structured chat request and returns the parsed value from the {@code {"value": ...}}
    * JSON object that the model is instructed to produce via {@code responseFormat}.
    *
-   * @return the extracted value: a {@link String}, {@link Number}, {@link Boolean}, or {@link
+   * @return the extracted value: a {@link String}, {@link Number}, {@link Integer}, {@link Boolean}, or {@link
    *     java.util.List} depending on the Solr output field type
    */
-  public Object chat(String text, ResponseFormat responseFormat) {
+  public Object chat(String prompt, ResponseFormat responseFormat) {
     ChatRequest chatRequest =
         ChatRequest.builder()
             .responseFormat(responseFormat)
-            .messages(UserMessage.from(text))
+            .messages(UserMessage.from(prompt))
             .build();
     String rawJson = chatModel.chat(chatRequest).aiMessage().text();
     Object parsed = Utils.fromJSONString(rawJson);
     if (!(parsed instanceof Map<?, ?> map) || !map.containsKey("value")) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "LLM response is missing the 'value' key: " + rawJson);
+          "LLM was not able to format the response correctly: " + rawJson);
     }
     return map.get("value");
   }

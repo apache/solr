@@ -1,7 +1,0 @@
-{
-  "class": "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel",
-  "name": "dummy-double-multi",
-  "params": {
-    "response": "{\"value\": [3.14, 2.71]}"
-  }
-}

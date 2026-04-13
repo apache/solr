@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+
+<enumsConfig>
+  <enum name="priority">
+    <value>Low</value>
+    <value>Medium</value>
+    <value>High</value>
+  </enum>
+</enumsConfig>

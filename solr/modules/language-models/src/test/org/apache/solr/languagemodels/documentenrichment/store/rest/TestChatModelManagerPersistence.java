@@ -44,7 +44,7 @@ public class TestChatModelManagerPersistence extends TestLanguageModelBase {
 
     final String JSONOnDisk = Files.readString(chatModelStoreFile, StandardCharsets.UTF_8);
     Object objectFromDisk = Utils.fromJSONString(JSONOnDisk);
-    assertEquals(new String(Utils.toJSON(objectFromDisk, -1), UTF_8), JSONOnDisk);
+    assertEquals(new String(Utils.toJSON(objectFromDisk), UTF_8), JSONOnDisk);
   }
 
   @Test
@@ -79,6 +79,10 @@ public class TestChatModelManagerPersistence extends TestLanguageModelBase {
         ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
     assertJQ(
         ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     // check persistence after restart
     getJetty().stop();

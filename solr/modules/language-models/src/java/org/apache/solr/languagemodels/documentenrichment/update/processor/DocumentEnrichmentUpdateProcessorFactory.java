@@ -32,7 +32,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -58,15 +57,17 @@ import org.apache.solr.schema.FloatPointField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.LongPointField;
+import org.apache.solr.schema.NestPathField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
+import org.apache.solr.schema.UUIDField;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * Insert in an existing field the output of the model coming from one or more textual field values.
+ * Generate the content of a field based on other fields specified as input.
  *
  * <p>One or more {@code inputField} parameters specify the Solr fields to use as input. Each field
  * name must appear as a {@code {fieldName}} placeholder in the prompt. Exactly one of {@code
@@ -76,6 +77,20 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;inputField&quot;&gt;title_field&lt;/str&gt;
  *   &lt;str name=&quot;inputField&quot;&gt;body_field&lt;/str&gt;
+ *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
+ *   &lt;str name=&quot;prompt&quot;&gt;Title: {title_field}. Body: {body_field}.&lt;/str&gt;
+ *   &lt;str name=&quot;model&quot;&gt;ChatModel&lt;/str&gt;
+ * &lt;/processor&gt;
+ * </pre>
+ *
+ * <p>Multiple {@code inputField} values can also be declared as an array using {@code arr}:
+ *
+ * <pre class="prettyprint" >
+ * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
+ *   &lt;arr name=&quot;inputField&quot;&gt;
+ *     &lt;str&gt;title_field&lt;/str&gt;
+ *     &lt;str&gt;body_field&lt;/str&gt;
+ *   &lt;/arr&gt;
  *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
  *   &lt;str name=&quot;prompt&quot;&gt;Title: {title_field}. Body: {body_field}.&lt;/str&gt;
  *   &lt;str name=&quot;model&quot;&gt;ChatModel&lt;/str&gt;
@@ -243,7 +258,9 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
   private static JsonSchemaElement toJsonSchemaElement(FieldType fieldType) {
     // DenseVectorField extends FloatPointField, so it must be rejected before the numeric checks
-    if (fieldType instanceof DenseVectorField) {
+    if (fieldType instanceof DenseVectorField
+        || fieldType instanceof UUIDField
+        || fieldType instanceof NestPathField) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "field type is not supported by Document Enrichment: "
@@ -268,26 +285,26 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   }
 
   private static void validatePromptPlaceholders(String prompt, List<String> fieldNames) {
-    Set<String> promptPlaceholders = new LinkedHashSet<>();
+    Set<String> promptPlaceholders = new HashSet<>();
     Matcher m = PLACEHOLDER_PATTERN.matcher(prompt);
     while (m.find()) {
       promptPlaceholders.add(m.group(1));
     }
 
-    Set<String> missingInPrompt = new LinkedHashSet<>(fieldNames);
-    missingInPrompt.removeAll(promptPlaceholders);
-    if (!missingInPrompt.isEmpty()) {
+    Set<String> fieldsWithoutPlaceholder = new HashSet<>(fieldNames);
+    fieldsWithoutPlaceholder.removeAll(promptPlaceholders);
+    if (!fieldsWithoutPlaceholder.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "prompt is missing placeholders for inputField(s): " + missingInPrompt);
+          "prompt is missing placeholders for inputField(s): " + fieldsWithoutPlaceholder);
     }
 
-    Set<String> unknownInPrompt = new LinkedHashSet<>(promptPlaceholders);
-    unknownInPrompt.removeAll(new HashSet<>(fieldNames));
-    if (!unknownInPrompt.isEmpty()) {
+    Set<String> placeholdersWithoutField = new HashSet<>(promptPlaceholders);
+    placeholdersWithoutField.removeAll(new HashSet<>(fieldNames));
+    if (!placeholdersWithoutField.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "prompt contains placeholders not declared as inputField(s): " + unknownInPrompt);
+          "prompt contains placeholders not declared as inputField(s): " + placeholdersWithoutField);
     }
   }
 

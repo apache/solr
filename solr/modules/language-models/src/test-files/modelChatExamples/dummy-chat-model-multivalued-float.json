@@ -1,7 +1,0 @@
-{
-  "class": "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel",
-  "name": "dummy-float-multi",
-  "params": {
-    "response": "{\"value\": [1.5, 2.5]}"
-  }
-}

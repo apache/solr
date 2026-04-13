@@ -94,7 +94,7 @@ public class ManagedChatModelStore extends ManagedResource
   }
 
   private static LinkedHashMap<String, Object> toModelMap(SolrChatModel model) {
-    final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(5, 1.0f);
+    final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(3, 1.0f);
     modelMap.put(NAME_KEY, model.getName());
     modelMap.put(CLASS_KEY, model.getChatModelClassName());
     modelMap.put(PARAMS_KEY, model.getParams());
@@ -114,7 +114,7 @@ public class ManagedChatModelStore extends ManagedResource
   @Override
   protected ManagedResourceStorage createStorage(
       ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
-    return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
+    return new ManagedResourceStorage.JsonStorage(storageIO, loader);
   }
 
   @Override

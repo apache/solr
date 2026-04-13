@@ -1,7 +1,0 @@
-{
-  "class": "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel",
-  "name": "dummy-boolean-multi",
-  "params": {
-    "response": "{\"value\": [true, false]}"
-  }
-}
