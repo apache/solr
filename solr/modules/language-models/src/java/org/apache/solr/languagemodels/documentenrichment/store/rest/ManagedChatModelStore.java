@@ -111,11 +111,6 @@ public class ManagedChatModelStore extends ManagedResource
     store = new ChatModelStore();
   }
 
-  @Override
-  protected ManagedResourceStorage createStorage(
-      ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
-    return new ManagedResourceStorage.JsonStorage(storageIO, loader);
-  }
 
   @Override
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)

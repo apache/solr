@@ -286,25 +286,25 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
   private static void validatePromptPlaceholders(String prompt, List<String> fieldNames) {
     Set<String> promptPlaceholders = new HashSet<>();
-    Matcher m = PLACEHOLDER_PATTERN.matcher(prompt);
-    while (m.find()) {
-      promptPlaceholders.add(m.group(1));
+    Matcher matcher = PLACEHOLDER_PATTERN.matcher(prompt);
+    while (matcher.find()) {
+      promptPlaceholders.add(matcher.group(1));
     }
 
-    Set<String> fieldsWithoutPlaceholder = new HashSet<>(fieldNames);
-    fieldsWithoutPlaceholder.removeAll(promptPlaceholders);
-    if (!fieldsWithoutPlaceholder.isEmpty()) {
+    Set<String> fieldsWithoutPlaceholderInPrompt = new HashSet<>(fieldNames);
+    fieldsWithoutPlaceholderInPrompt.removeAll(promptPlaceholders);
+    if (!fieldsWithoutPlaceholderInPrompt.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "prompt is missing placeholders for inputField(s): " + fieldsWithoutPlaceholder);
+          "prompt is missing placeholders for inputField(s): " + fieldsWithoutPlaceholderInPrompt);
     }
 
-    Set<String> placeholdersWithoutField = new HashSet<>(promptPlaceholders);
-    placeholdersWithoutField.removeAll(new HashSet<>(fieldNames));
-    if (!placeholdersWithoutField.isEmpty()) {
+    Set<String> placeholdersInPromptWithoutField = new HashSet<>(promptPlaceholders);
+    placeholdersInPromptWithoutField.removeAll(new HashSet<>(fieldNames));
+    if (!placeholdersInPromptWithoutField.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "prompt contains placeholders not declared as inputField(s): " + placeholdersWithoutField);
+          "prompt contains placeholders not declared as inputField(s): " + placeholdersInPromptWithoutField);
     }
   }
 

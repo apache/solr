@@ -435,7 +435,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_singleTypedOutputField_shouldPopulateValue() throws Exception {
     record TypedCase(String modelId, String response, String chain, String field, String expectedValue) {}
-    List<TypedCase> cases = List.of(
+    List<TypedCase> typedCases = List.of(
         new TypedCase("dummy-long",    "{\"value\": 3000000000}",               "documentEnrichmentSingleLong",    "output_long",    "3000000000"),
         new TypedCase("dummy-int",     "{\"value\": 7}",                        "documentEnrichmentSingleInt",     "output_int",     "7"),
         new TypedCase("dummy-float",   "{\"value\": 1.5}",                      "documentEnrichmentSingleFloat",   "output_float",   "1.5"),
@@ -444,22 +444,22 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         new TypedCase("dummy-date",    "{\"value\": \"2024-01-15T00:00:00Z\"}", "documentEnrichmentSingleDate",    "output_date",    "'2024-01-15T00:00:00Z'")
     );
 
-    for (TypedCase c : cases) {
-      loadDummyChatModel(c.modelId(), c.response());
-      addWithChain(sdoc("id", "99", "string_field", "some content"), c.chain());
-      addWithChain(sdoc("id", "98", "string_field", "other content"), c.chain());
+    for (TypedCase typedCase : typedCases) {
+      loadDummyChatModel(typedCase.modelId(), typedCase.response());
+      addWithChain(sdoc("id", "99", "string_field", "some content"), typedCase.chain());
+      addWithChain(sdoc("id", "98", "string_field", "other content"), typedCase.chain());
       assertU(commit());
 
-      final SolrQuery query = getEnrichmentQuery(c.field());
+      final SolrQuery query = getEnrichmentQuery(typedCase.field());
       assertJQ(
           "/query" + query.toQueryString(),
           "/response/numFound==2]",
           "/response/docs/[0]/id=='99'",
-          "/response/docs/[0]/" + c.field() + "==" + c.expectedValue(),
+          "/response/docs/[0]/" + typedCase.field() + "==" + typedCase.expectedValue(),
           "/response/docs/[1]/id=='98'",
-          "/response/docs/[1]/" + c.field() + "==" + c.expectedValue());
+          "/response/docs/[1]/" + typedCase.field() + "==" + typedCase.expectedValue());
 
-      restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + c.modelId());
+      restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }
@@ -469,7 +469,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_multivaluedTypedOutputField_shouldPopulateAllValues() throws Exception {
     record TypeCaseMulti(String modelId, String response, String chain, String field, List<String> expectedValues) {}
-    List<TypeCaseMulti> cases = List.of(
+    List<TypeCaseMulti> typedCaseMultis = List.of(
         new TypeCaseMulti("dummy-chat-multivalued-1", "{\"value\": [\"tag1\", \"tag2\"]}",
             "documentEnrichmentMultivaluedString",  "enriched_field_multi",  List.of("'tag1'", "'tag2'")),
         new TypeCaseMulti("dummy-long-multi",  "{\"value\": [1000000000, 2000000000, 3000000000]}",
@@ -486,25 +486,25 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
             "documentEnrichmentMultivaluedDate",    "output_date_multi",     List.of("'2024-01-15T00:00:00Z'", "'2025-06-30T00:00:00Z'"))
     );
 
-    for (TypeCaseMulti c : cases) {
-      loadDummyChatModel(c.modelId(), c.response());
-      addWithChain(sdoc("id", "99", "string_field", "some content"), c.chain());
-      addWithChain(sdoc("id", "98", "string_field", "other content"), c.chain());
+    for (TypeCaseMulti typedCase : typedCaseMultis) {
+      loadDummyChatModel(typedCase.modelId(), typedCase.response());
+      addWithChain(sdoc("id", "99", "string_field", "some content"), typedCase.chain());
+      addWithChain(sdoc("id", "98", "string_field", "other content"), typedCase.chain());
       assertU(commit());
 
-      final SolrQuery query = getEnrichmentQuery(c.field());
+      final SolrQuery query = getEnrichmentQuery(typedCase.field());
       List<String> assertions = new ArrayList<>();
       assertions.add("/response/numFound==2]");
       for (int docIdx = 0; docIdx < 2; docIdx++) {
         String docId = docIdx == 0 ? "'99'" : "'98'";
         assertions.add("/response/docs/[" + docIdx + "]/id==" + docId);
-        for (int i = 0; i < c.expectedValues().size(); i++) {
-          assertions.add("/response/docs/[" + docIdx + "]/" + c.field() + "/[" + i + "]==" + c.expectedValues().get(i));
+        for (int i = 0; i < typedCase.expectedValues().size(); i++) {
+          assertions.add("/response/docs/[" + docIdx + "]/" + typedCase.field() + "/[" + i + "]==" + typedCase.expectedValues().get(i));
         }
       }
       assertJQ("/query" + query.toQueryString(), assertions.toArray(new String[0]));
 
-      restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + c.modelId());
+      restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }
