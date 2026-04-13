@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -30,7 +31,71 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-/** Factory for {@link ContentHashVersionProcessor} instances. */
+/**
+ * Factory for {@link ContentHashVersionProcessor} instances.
+ *
+ * <p>This processor computes a hash of document field values to detect and optionally reject
+ * duplicate or no-op updates (updates that don't change document content). The hash is stored in a
+ * configurable field and compared on subsequent updates to the same document.
+ *
+ * <h2>Configuration</h2>
+ *
+ * <p>The following configuration parameters are supported:
+ *
+ * <ul>
+ *   <li><b>hashFieldName</b> (required): The name of the field where the computed hash will be
+ *       stored. This field must have docValues enabled for hash retrieval. The hash field is
+ *       automatically excluded from hash computation.
+ *   <li><b>includeFields</b> (optional, default="*"): Comma-separated list of fields to include in
+ *       hash computation. Supports wildcard patterns (e.g., "name*"). Use "*" to include all
+ *       fields.
+ *   <li><b>excludeFields</b> (optional): Comma-separated list of fields to exclude from hash
+ *       computation. Supports wildcard patterns. Cannot be "*" (cannot exclude all fields).
+ *   <li><b>hashCompareStrategy</b> (optional, default="drop"): Controls behavior when duplicate
+ *       content is detected:
+ *       <ul>
+ *         <li>"drop": Silently drops documents with matching hash (no-op updates)
+ *         <li>"log": Logs duplicate detection but still processes the update
+ *       </ul>
+ * </ul>
+ *
+ * <h2>Configuration Example</h2>
+ *
+ * <pre class="prettyprint">
+ * &lt;processor class="solr.ContentHashVersionProcessorFactory"&gt;
+ *   &lt;str name="hashFieldName"&gt;content_hash&lt;/str&gt;
+ *   &lt;str name="includeFields"&gt;title,body,author&lt;/str&gt;
+ *   &lt;str name="excludeFields"&gt;timestamp,version&lt;/str&gt;
+ *   &lt;str name="hashCompareStrategy"&gt;drop&lt;/str&gt;
+ * &lt;/processor&gt;
+ * </pre>
+ *
+ * <h2>Important Considerations</h2>
+ *
+ * <ul>
+ *   <li><b>In-Place Updates</b>: Fields updated via in-place (partial) updates should be excluded
+ *       from hash computation using <code>excludeFields</code>, as these are updated independently
+ *       and should not affect duplicate detection.
+ *   <li><b>Schema Requirements</b>: The schema must have a uniqueKey field defined. The hash field
+ *       must have docValues enabled.
+ *   <li><b>Hash Algorithm</b>: Uses {@link Lookup3Signature} for hash computation. Field values
+ *       are processed in sorted field name order for consistency.
+ * </ul>
+ *
+ * <h2>Monitoring</h2>
+ *
+ * <p>The processor logs duplicate statistics in the response:
+ *
+ * <ul>
+ *   <li><code>contentHash.duplicatesDropped</code>: Count of duplicates dropped (when
+ *       hashCompareStrategy=drop)
+ *   <li><code>contentHash.duplicatesDetected</code>: Count of duplicates detected (when
+ *       hashCompareStrategy=log)
+ * </ul>
+ *
+ * @see ContentHashVersionProcessor
+ * @see Lookup3Signature
+ */
 public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
   private static final char SEPARATOR = ','; // Separator for included/excluded fields
@@ -118,10 +183,10 @@ public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFa
             buildFieldMatcher(includeFields),
             buildFieldMatcher(excludeFields),
             hashFieldName,
+            dropSameDocuments,
             req,
             rsp,
             next);
-    processor.setDropSameDocuments(dropSameDocuments);
     return processor;
   }
 
@@ -148,12 +213,13 @@ public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFa
     return dropSameDocuments;
   }
 
-  static Predicate<String> buildFieldMatcher(List<String> fieldNames) {
-    return fieldName -> {
+  static Predicate<SolrInputField> buildFieldMatcher(List<String> fieldNames) {
+    return inputField -> {
       for (String currentFieldName : fieldNames) {
         if ("*".equals(currentFieldName)) {
           return true;
         }
+        final String fieldName = inputField.getName();
         if (fieldName.equals(currentFieldName)) {
           return true;
         }

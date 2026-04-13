@@ -410,6 +410,12 @@ When using any of these factories, please consult the {solr-javadocs}/core/org/a
 
 {solr-javadocs}/core/org/apache/solr/update/processor/UniqFieldsUpdateProcessorFactory.html[UniqFieldsUpdateProcessorFactory]:: Removes duplicate values found in fields matching the specified conditions.
 
+{solr-javadocs}/core/org/apache/solr/update/processor/ContentHashVersionProcessorFactory.html[ContentHashVersionProcessorFactory]:: Removes duplicate documents detected using a configurable hash of field values.
+[WARNING]
+====
+This URP should be configured to exclude fields that are updated with xref:indexing-guide:partial-document-updates.adoc[in-place updates] from the content hash calculation, as these fields are updated independently and should not affect duplicate detection.
+====
+
 === Update Processor Factories That Can Be Loaded as Plugins
 
 These processors are included in Solr releases as "module", and require additional jars loaded at runtime.

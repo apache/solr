@@ -17,14 +17,19 @@
 package org.apache.solr.update.processor;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.BinaryField;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.jspecify.annotations.NonNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -86,11 +91,19 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
 
   private ContentHashVersionProcessor getContentHashVersionProcessor(
       List<String> includedFields, List<String> excludedFields) {
+    final SolrQueryRequest req = mock(SolrQueryRequest.class);
+    final SolrCore solrCore = mock(SolrCore.class);
+    final IndexSchema indexSchema = mock(IndexSchema.class);
+    when(indexSchema.getField("_hash_")).thenReturn(new SchemaField("_hash_", new BinaryField()));
+
+    when(solrCore.getLatestSchema()).thenReturn(indexSchema);
+    when(req.getCore()).thenReturn(solrCore);
     return new ContentHashVersionProcessor(
         ContentHashVersionProcessorFactory.buildFieldMatcher(includedFields),
         ContentHashVersionProcessorFactory.buildFieldMatcher(excludedFields),
         "_hash_",
-        mock(SolrQueryRequest.class),
+        false,
+        req,
         mock(SolrQueryResponse.class),
         mock(UpdateRequestProcessor.class));
   }
@@ -132,7 +145,8 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(FOURTH_FIELD, "constant to have a constant hash for field4"));
 
     // Then
-    assertArrayEquals(Base64.getDecoder().decode("PozPs2qZQtw="), processor.computeDocHash(inputDocument));
+    assertArrayEquals(
+        Base64.getDecoder().decode("PozPs2qZQtw="), processor.computeDocHash(inputDocument));
   }
 
   @Test
@@ -151,7 +165,8 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(FOURTH_FIELD, "constant to have a constant hash for field4"));
 
     // Then
-    assertArrayEquals(Base64.getDecoder().decode("PozPs2qZQtw="), processor.computeDocHash(inputDocument));
+    assertArrayEquals(
+        Base64.getDecoder().decode("PozPs2qZQtw="), processor.computeDocHash(inputDocument));
   }
 
   @Test
@@ -175,8 +190,12 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
             f(FOURTH_FIELD, "constant to have a constant hash for field4"));
 
     // Then
-    assertArrayEquals(Base64.getDecoder().decode("XavrOYGlkXM="), processorWithDuplicatedFieldName.computeDocHash(inputDocument));
-    assertArrayEquals(Base64.getDecoder().decode("XavrOYGlkXM="), processorWithWildcard.computeDocHash(inputDocument));
+    assertArrayEquals(
+        Base64.getDecoder().decode("XavrOYGlkXM="),
+        processorWithDuplicatedFieldName.computeDocHash(inputDocument));
+    assertArrayEquals(
+        Base64.getDecoder().decode("XavrOYGlkXM="),
+        processorWithWildcard.computeDocHash(inputDocument));
   }
 
   @Test
@@ -216,8 +235,8 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     assertU(commit());
 
     // Then
-    assertResponse(update1, 0, 0, 0);
-    assertResponse(update2, 0, 0, 1);
+    assertResponse(update1, -1, -1);
+    assertResponse(update2, 0, -1);
   }
 
   @Test
@@ -246,7 +265,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     assertU(commit());
 
     // Then: Response should show duplicate was detected but NOT dropped
-    assertResponse(duplicateResponse, 0, 1, 0);
+    assertResponse(duplicateResponse, -1, 1);
 
     // Then: Document should still exist in index
     assertQ(req("q", ID_FIELD + ":" + docId), "//result[@numFound='1']");
@@ -266,7 +285,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     assertU(commit());
 
     // Then: Response should show content changed
-    assertResponse(changedResponse, 0, 0, 1);
+    assertResponse(changedResponse, -1, 0);
 
     // Then: Hash should be updated
     String newHash = getHashFieldValue(docId);
@@ -305,7 +324,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     assertU(commit());
 
     // Then: Verify response shows duplicate was dropped
-    assertResponse(solrQueryResponse, 1, 1, 0);
+    assertResponse(solrQueryResponse, 1, -1);
 
     // Then: Verify document was NOT actually added/updated (still only 1 doc in index)
     assertQ(req("q", "*:*"), "//result[@numFound='1']");
@@ -418,19 +437,16 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
   }
 
   private static void assertResponse(
-      SolrQueryResponse solrQueryResponse,
-      int droppedDocCount,
-      int duplicateDocCount,
-      int changedDocCount) {
-    assertNotNull(solrQueryResponse.getToLog().get("contentHash.duplicatesDropped"));
-    assertNotNull(solrQueryResponse.getToLog().get("contentHash.duplicatesDetected"));
-    assertNotNull(solrQueryResponse.getToLog().get("contentHash.changed"));
-
-    int droppedDocs = (int) solrQueryResponse.getToLog().get("contentHash.duplicatesDropped");
-    int duplicateDocs = (int) solrQueryResponse.getToLog().get("contentHash.duplicatesDetected");
-    int changedDocs = (int) solrQueryResponse.getToLog().get("contentHash.changed");
-    assertEquals(droppedDocCount, droppedDocs);
-    assertEquals(duplicateDocCount, duplicateDocs);
-    assertEquals(changedDocCount, changedDocs);
+      SolrQueryResponse solrQueryResponse, int droppedDocCount, int duplicateDocCount) {
+    if (droppedDocCount >= 0) {
+      assertNotNull(solrQueryResponse.getToLog().get("contentHash.duplicatesDropped"));
+      int droppedDocs = (int) solrQueryResponse.getToLog().get("contentHash.duplicatesDropped");
+      assertEquals(droppedDocCount, droppedDocs);
+    }
+    if (duplicateDocCount >= 0) {
+      assertNotNull(solrQueryResponse.getToLog().get("contentHash.duplicatesDetected"));
+      int duplicateDocs = (int) solrQueryResponse.getToLog().get("contentHash.duplicatesDetected");
+      assertEquals(duplicateDocCount, duplicateDocs);
+    }
   }
 }

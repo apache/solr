@@ -22,21 +22,21 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.handler.component.RealTimeGetComponent.Resolution;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.BinaryField;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.UpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,22 +65,26 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
   private final SchemaField hashField;
   private final SolrQueryResponse rsp;
   private final SolrCore core;
-  private final Predicate<String> includedFields; // Matcher for included fields in hash
-  private final Predicate<String> excludedFields; // Matcher for excluded fields from hash
+  private final Predicate<SolrInputField> includedFields; // Matcher for included fields in hash
+  private final Predicate<SolrInputField> excludedFields; // Matcher for excluded fields from hash
   private boolean dropSameDocuments;
   private int sameCount = 0;
   private int differentCount = 0;
 
   public ContentHashVersionProcessor(
-      Predicate<String> hashIncludedFields,
-      Predicate<String> hashExcludedFields,
+      Predicate<SolrInputField> hashIncludedFields,
+      Predicate<SolrInputField> hashExcludedFields,
       String hashFieldName,
+      boolean dropSameDocuments,
       SolrQueryRequest req,
       SolrQueryResponse rsp,
       UpdateRequestProcessor next) {
     super(next);
     this.core = req.getCore();
-    this.hashField = new SchemaField(hashFieldName, new BinaryField());
+
+    IndexSchema schema = core.getLatestSchema();
+    this.hashField = schema.getField(hashFieldName);
+    this.dropSameDocuments = dropSameDocuments;
     this.rsp = rsp;
     this.includedFields = hashIncludedFields;
     this.excludedFields = hashExcludedFields;
@@ -95,19 +99,7 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     if (!isHashAcceptable(cmd.getIndexedId(), newHash)) {
       return;
     }
-
-    for (int i = 0; ; i++) {
-      logOverlyFailedRetries(i, cmd);
-      try {
-        super.processAdd(cmd);
-        return;
-      } catch (SolrException e) {
-        if (e.code() != 409) {
-          throw e;
-        }
-        ++i;
-      }
-    }
+    super.processAdd(cmd);
   }
 
   @Override
@@ -115,33 +107,14 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     try {
       super.finish();
     } finally {
-      // Only log when there are updates to existing documents
-      int totalUpdates = sameCount + differentCount;
-      if (totalUpdates > 0) {
+      if (sameCount + differentCount > 0) {
         if (dropSameDocuments) {
           rsp.addToLog("contentHash.duplicatesDropped", sameCount);
-          rsp.addToLog("contentHash.duplicatesDetected", sameCount);
         } else {
-          rsp.addToLog("contentHash.duplicatesDropped", 0);
           rsp.addToLog("contentHash.duplicatesDetected", sameCount);
         }
-        rsp.addToLog("contentHash.changed", differentCount);
-      } else {
-        rsp.addToLog("contentHash.duplicatesDropped", 0);
-        rsp.addToLog("contentHash.duplicatesDetected", 0);
-        rsp.addToLog("contentHash.changed", 0);
       }
     }
-  }
-
-  private static void logOverlyFailedRetries(int i, UpdateCommand cmd) {
-    if ((i & 255) == 255) {
-      log.warn("Unusual number of optimistic concurrency retries: retries={} cmd={}", i, cmd);
-    }
-  }
-
-  void setDropSameDocuments(boolean dropSameDocuments) {
-    this.dropSameDocuments = dropSameDocuments;
   }
 
   private boolean isHashAcceptable(BytesRef indexedDocId, byte[] newHash) throws IOException {
@@ -183,14 +156,18 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     final Signature sig = new Lookup3Signature();
 
     // Stream field names, filter, sort, and process in a single pass
-    doc.getFieldNames().stream()
+    doc.values().stream()
         .filter(includedFields) // Keep fields that match 'included fields' matcher
         .filter(excludedFields.negate()) // Exclude fields that match 'excluded fields' matcher
-        .sorted() // Sort to ensure consistent field order across different doc field orders
+        .sorted(
+            Comparator.comparing(
+                SolrInputField
+                    ::getName)) // Sort to ensure consistent field order across different doc field
+        // orders
         .forEach(
-            fieldName -> {
-              sig.add(fieldName);
-              Object o = doc.getFieldValue(fieldName);
+            inputField -> {
+              sig.add(inputField.getName());
+              Object o = inputField.getValue();
               if (o instanceof Collection) {
                 for (Object oo : (Collection<?>) o) {
                   sig.add(String.valueOf(oo));
