@@ -489,7 +489,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     @Override
     public void close() {
       if (closed.compareAndSet(false, true)) {
-        rstAll();
         try {
           serverSocket.close();
         } catch (IOException ignored) {

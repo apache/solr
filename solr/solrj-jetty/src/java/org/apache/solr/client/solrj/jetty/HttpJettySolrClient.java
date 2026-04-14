@@ -32,7 +32,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -444,9 +443,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
           @Override
           public void onFailure(Response response, Throwable failure) {
             super.onFailure(response, failure);
-            // Dispatch off the IO thread so any whenComplete retry won't block on
-            // semaphore.acquire(). Fall back to the IO thread if the executor rejects
-            // (shutdown or overloaded) to ensure the future is always completed.
+            // Dispatch off the IO thread to avoid blocking semaphore.acquire() on retry.
+            // Fall back to IO thread if executor rejects (shutdown/overloaded).
             SolrServerException ex = new SolrServerException(failure.getMessage(), failure);
             try {
               executor.execute(() -> future.completeExceptionally(ex));
@@ -912,7 +910,16 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     }
 
     public void waitForComplete() {
-      phaser.arriveAndAwaitAdvance();
+      // Use awaitAdvanceInterruptibly() instead of arriveAndAwaitAdvance() so that
+      // ExecutorUtil.shutdownNow() can unblock this during container shutdown.
+      int phase = phaser.arrive();
+      try {
+        phaser.awaitAdvanceInterruptibly(phase);
+      } catch (InterruptedException e) {
+        // Terminate phaser on interrupt so in-flight onComplete callbacks don't stall.
+        phaser.forceTermination();
+        Thread.currentThread().interrupt();
+      }
       phaser.arriveAndDeregister();
     }
   }
