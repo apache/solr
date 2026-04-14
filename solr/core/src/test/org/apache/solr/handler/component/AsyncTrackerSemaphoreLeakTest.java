@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -148,9 +148,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
       // Each requestAsync() call acquires a semaphore permit synchronously during send().
       // After NUM_RETRY_REQUESTS calls, the semaphore is at 0.
       for (int i = 0; i < NUM_RETRY_REQUESTS; i++) {
-        ModifiableSolrParams qparams = new ModifiableSolrParams();
-        qparams.set("q", "*:*");
-        QueryRequest qr = new QueryRequest(qparams);
+        QueryRequest qr = new QueryRequest(SolrParams.of("q", "*:*"));
         LBSolrClient.Req req =
             new LBSolrClient.Req(
                 qr,
@@ -259,12 +257,10 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           testClient.asyncTrackerAvailablePermits());
 
       for (int i = 0; i < numRequests; i++) {
-        ModifiableSolrParams p = new ModifiableSolrParams();
-        p.set("q", "*:*");
         futures.add(
             lbClient.requestAsync(
                 new LBSolrClient.Req(
-                    new QueryRequest(p),
+                    new QueryRequest(SolrParams.of("q", "*:*")),
                     List.of(
                         new LBSolrClient.Endpoint(fakeServer.baseUrl()),
                         new LBSolrClient.Endpoint(realBaseUrl)))));
