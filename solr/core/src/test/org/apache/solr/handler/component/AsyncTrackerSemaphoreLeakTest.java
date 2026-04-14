@@ -40,6 +40,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,43 +50,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Reproduces the {@link org.apache.solr.client.solrj.impl.LBAsyncSolrClient} semaphore leak that
- * causes distributed queries to hang permanently.
+ * Tests for two semaphore-permit leak bugs in {@link HttpJettySolrClient}'s {@code AsyncTracker}
+ * that cause distributed queries to hang permanently.
  *
- * <h3>Bug scenario</h3>
+ * <h3>Pattern A – HTTP/2 GOAWAY double-queue leak</h3>
  *
- * <ol>
- *   <li>A shard HTTP request fails with a <em>connection-level</em> error (not an HTTP-level
- *       error). Jetty fires the {@code onFailure} response callback directly on the IO selector
- *       thread.
- *   <li>{@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient#requestAsync} completes its
- *       {@code CompletableFuture} exceptionally from within that {@code onFailure} callback — still
- *       on the IO thread.
- *   <li>{@code LBAsyncSolrClient.doAsyncRequest} registered a {@code whenComplete} on that future.
- *       Because the future completes on the IO thread, {@code whenComplete} also fires
- *       <em>synchronously on the IO thread</em>.
- *   <li>The {@code whenComplete} action calls {@code doAsyncRequest} again (retry to the next
- *       endpoint), which eventually calls Jetty's {@code HttpClient.send()}. That triggers the
- *       {@code AsyncTracker.queuedListener} — which calls {@code semaphore.acquire()} — still on
- *       the IO thread, before the original request's {@code completeListener.onComplete()} has had
- *       a chance to call {@code semaphore.release()}.
- *   <li>If the semaphore is at zero, {@code acquire()} <em>blocks the IO thread</em>. The blocked
- *       IO thread cannot execute the {@code completeListener} that would release the original
- *       permit. The permit is permanently leaked, and the IO thread is permanently stuck. Repeat
- *       until all permits are exhausted: distributed queries hang forever.
- * </ol>
+ * <p>Jetty HTTP/2 can re-queue the same exchange after a GOAWAY/connection race, firing {@code
+ * onRequestQueued} twice for one logical request. Because {@code onComplete} fires only once, one
+ * permit is permanently consumed per occurrence, gradually draining the semaphore over hours or
+ * days until Pattern B triggers.
  *
- * <h3>Test setup</h3>
+ * <h3>Pattern B – IO-thread deadlock on LB retry when permits depleted</h3>
  *
- * <p>A raw TCP server accepts {@value #NUM_RETRY_REQUESTS} connections and holds them open until
- * all are established (so all semaphore permits are consumed). It then closes all connections
- * simultaneously via TCP RST, causing all Jetty {@code onFailure} events to fire on the IO threads
- * at the same time. Because the semaphore is already at 0, every retry's {@code acquire()} blocks
- * the IO thread immediately, and no {@code onComplete} release can fire.
- *
- * <p>The test asserts that after a short wait the semaphore is at 0 and none of the {@code
- * CompletableFuture}s returned by {@code requestAsync} have completed — proving the permanent
- * permit exhaustion.
+ * <p>When a connection-level failure causes {@link
+ * org.apache.solr.client.solrj.jetty.LBJettySolrClient} to retry synchronously inside a {@code
+ * whenComplete} callback on the Jetty IO selector thread, the retry calls {@code acquire()} on that
+ * same IO thread before the original request's {@code onComplete} can call {@code release()}. No
+ * permits are permanently lost — the deadlock simply requires two permits to be available
+ * simultaneously — but if the semaphore is at zero, {@code acquire()} blocks the IO thread
+ * permanently and distributed queries hang forever.
  */
 public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
 
@@ -126,20 +109,17 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
   }
 
   /**
-   * Demonstrates the permanent IO-thread deadlock caused by {@link
-   * org.apache.solr.client.solrj.impl.LBAsyncSolrClient} retrying a request synchronously inside a
+   * Demonstrates the permanent IO-thread deadlock (Pattern B) caused by {@link
+   * org.apache.solr.client.solrj.jetty.LBJettySolrClient} retrying a request synchronously inside a
    * {@link CompletableFuture#whenComplete} callback that runs on the Jetty IO selector thread.
    *
-   * <p>This assertion <b>FAILS</b> with the current code, demonstrating the bug. After a fix (e.g.
-   * dispatching the retry to an executor thread instead of running it synchronously on the IO
-   * thread), the retries proceed on executor threads, the IO threads remain free to fire {@code
-   * onComplete → release()}, and all futures eventually complete via the real server.
+   * <p>This assertion <b>FAILS</b> with the current code, demonstrating the bug. The fix would
+   * dispatch retries to an executor thread so the IO thread remains free to fire {@code onComplete
+   * → release()}.
    */
   @Test
   public void testSemaphoreLeakOnLBRetry() throws Exception {
-    // Create a dedicated HttpJettySolrClient for this test so that if the IO threads are
-    // permanently deadlocked they don't affect the cluster's shared client.
-    // The system property is still set to MAX_PERMITS from setupCluster().
+    // Dedicated client so that permanently deadlocked IO threads don't affect the cluster's client.
     HttpJettySolrClient testClient =
         new HttpJettySolrClient.Builder()
             .withConnectionTimeout(5, TimeUnit.SECONDS)
@@ -219,10 +199,8 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           testClient.asyncTrackerAvailablePermits());
 
       // Close all fake connections simultaneously with TCP RST.
-      // This fires Jetty's onFailure callback on the IO selector thread for each request.
-      // The onFailure path → future.completeExceptionally() → whenComplete fires synchronously
-      // on the IO thread → LBAsyncSolrClient.doAsyncRequest (retry) → send() →
-      // onRequestQueued → semaphore.acquire() → BLOCKS (semaphore = 0) → IO thread stuck.
+      // onFailure fires on the IO thread → LBJettySolrClient retry → acquire() blocks
+      // (semaphore=0).
       int connCount = fakeConnections.size();
       log.info("Closing {} fake connections via RST...", connCount);
       for (Socket s : fakeConnections) {
@@ -245,10 +223,8 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           completedCount,
           NUM_RETRY_REQUESTS);
 
-      // With the bug: the IO threads are deadlocked. Permits remain at 0 and no future completes.
-      // This assertion FAILS with the current code, demonstrating the bug.
       assertEquals(
-          "BUG (LBAsyncSolrClient retry leak): all "
+          "BUG (LBJettySolrClient retry leak): all "
               + NUM_RETRY_REQUESTS
               + " semaphore permits should be released once the retries complete on the"
               + " real server. Instead the IO threads are permanently blocked in"
@@ -284,7 +260,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    * With plenty of permits available, {@code acquire()} on the IO thread returns immediately (does
    * not block), so {@code onComplete} fires normally and every permit is returned.
    *
-   * <p>This test <b>passes both with and without the Pattern A fix</b>. Run it with the fix
+   * <p>This test <b>passes both with and without the Pattern B fix</b>. Run it with the fix
    * commented out to confirm that the deadlock only manifests when the semaphore is fully exhausted
    * (as demonstrated by {@link #testSemaphoreLeakOnLBRetry}).
    */
@@ -422,41 +398,14 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
   }
 
   /**
-   * Demonstrates the <em>gradual</em> permit leak caused by Jetty HTTP/2 internally re-queuing the
-   * same request when it is dispatched to a connection that has already been marked {@code
-   * closed=true} (post-GOAWAY race).
+   * Verifies that the {@code PERMIT_ACQUIRED_ATTR} idempotency guard prevents the Pattern A permit
+   * leak where Jetty HTTP/2 re-queues the same exchange after a GOAWAY/connection race, firing
+   * {@code onRequestQueued} twice for one logical request while {@code onComplete} fires only once.
    *
-   * <h3>Root cause</h3>
-   *
-   * <p>In Jetty 12, {@code HttpConnectionOverHTTP2.send(HttpExchange)} returns {@code
-   * SendFailure(ClosedChannelException, retry=true)} when the target connection is already marked
-   * closed (e.g. because the server sent a GOAWAY frame while the request was being dispatched from
-   * the destination queue). {@code HttpDestination.process()} then calls {@code send(HttpExchange)}
-   * again — re-enqueuing the <em>same</em> exchange object and re-firing {@code notifyQueued()} —
-   * which invokes {@code AsyncTracker.queuedListener} a <b>second time</b>, calling {@code
-   * semaphore.acquire()} again. Because {@code onComplete} still fires only once for the logical
-   * request, there is no matching second {@code release()}. One permit is permanently consumed per
-   * occurrence.
-   *
-   * <h3>Production impact</h3>
-   *
-   * <p>In a 2-node/2-shard cluster with default 1000 permits, each HTTP/2 connection close (server
-   * restart, load-balancer connection draining, etc.) that races with an in-flight request leaks
-   * one permit. Over hours or days, permits gradually drain from 1000 toward zero. Once the
-   * semaphore is nearly exhausted, even a small burst of connection failures triggers the Pattern A
-   * IO-thread deadlock and the cluster hangs permanently.
-   *
-   * <h3>Test approach</h3>
-   *
-   * <p>Rather than setting up a real HTTP/2 server with GOAWAY, this test directly simulates the
-   * double {@code onRequestQueued} notification via reflection. It accesses {@code
-   * AsyncTracker.queuedListener} and {@code AsyncTracker.completeListener}, invokes the queued
-   * listener twice for the same {@code Request} object, and invokes the complete listener once.
-   * With the bug present the semaphore count drops by one; with the fix (idempotency guard on the
-   * request attribute) the count is unchanged.
-   *
-   * <p>This test <b>FAILS</b> without the {@code PERMIT_ACQUIRED_ATTR} idempotency guard,
-   * demonstrating the leak.
+   * <p>Rather than setting up a real HTTP/2 server, this test uses reflection to invoke {@code
+   * AsyncTracker.queuedListener} twice and {@code AsyncTracker.completeListener} once for the same
+   * {@code Request} object. Without the guard the semaphore count drops by one; with the guard the
+   * second queued call is a no-op and the count is unchanged.
    */
   @Test
   @SuppressForbidden(
@@ -500,9 +449,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
       Response.CompleteListener completeListener =
           (Response.CompleteListener) completeListenerField.get(asyncTracker);
 
-      // Build a minimal fake Request that supports attribute get/set.
-      // The fix reads request.getAttributes().get(key) and writes request.attribute(key, value).
-      // Without the fix the request parameter is ignored, so null would also suffice here.
+      // Fake Request that supports the attribute get/set used by the idempotency guard.
       Map<String, Object> reqAttributes = new HashMap<>();
       Request fakeRequest = Mockito.mock(Request.class);
       Mockito.when(fakeRequest.getAttributes()).thenReturn(reqAttributes);
@@ -513,28 +460,24 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
                 return fakeRequest;
               });
 
-      // Simulate the Jetty HTTP/2 GOAWAY race:
-      //   1st call — normal queueing; acquire() consumes one permit.
-      //   2nd call — Jetty internal retry after ClosedChannelException; BUG: acquire() again.
+      // Simulate the GOAWAY double-fire: 1st call acquires a permit; 2nd is the bug trigger.
       queuedListener.onQueued(fakeRequest);
       queuedListener.onQueued(fakeRequest);
 
+      Result fakeResult = Mockito.mock(Result.class);
+      Mockito.when(fakeResult.getRequest()).thenReturn(fakeRequest);
       // Only one onComplete fires for the logical request (regardless of internal retries).
-      completeListener.onComplete(null);
+      completeListener.onComplete(fakeResult);
 
       int permitsAfter = testClient.asyncTrackerAvailablePermits();
       log.info("Permits after double-queued + single complete: {}/{}", permitsAfter, maxPermits);
 
-      // BUG: the second acquire() has no matching release(). One permit is permanently leaked.
-      // This assertion FAILS with the current code, demonstrating the bug.
-      // After applying the PERMIT_ACQUIRED_ATTR idempotency guard the second onQueued call is
-      // a no-op, acquire() is called only once, and this assertion passes.
       assertEquals(
           "BUG (Jetty HTTP/2 GOAWAY retry permit leak): onRequestQueued fired twice for the"
               + " same Request object but onComplete fired only once. The second acquire()"
               + " was not matched by a release(), permanently leaking one permit per"
               + " occurrence. In production this causes gradual semaphore depletion over"
-              + " hours/days until Pattern A IO-thread deadlock triggers.",
+              + " hours/days until Pattern B IO-thread deadlock triggers.",
           maxPermits,
           permitsAfter);
 
@@ -544,9 +487,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
         System.setProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP, savedMax);
       }
 
-      // Force-terminate the Phaser as a safety net in case close() would otherwise hang.
-      // With the PERMIT_ACQUIRED_ATTR fix the second onQueued() call is a no-op (the attribute
-      // is already set), so the phaser is balanced. forceTermination() is therefore harmless here.
+      // Force-terminate the Phaser as a safety net; without the fix the phaser would be unbalanced.
       try {
         Field phaserField = asyncTrackerClass.getDeclaredField("phaser");
         phaserField.setAccessible(true);
