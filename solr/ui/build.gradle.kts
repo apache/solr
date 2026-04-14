@@ -70,13 +70,12 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project.dependencies.platform(project(":platform")))
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
-                implementation(compose.components.resources)
-                implementation(compose.components.uiToolingPreview)
-                implementation(compose.materialIconsExtended)
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.components.resources)
+                implementation(libs.compose.uiToolingPreview)
 
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
@@ -91,6 +90,7 @@ kotlin {
                 implementation(libs.mvikotlin.main)
                 implementation(libs.mvikotlin.logging)
 
+                implementation(project.dependencies.platform(libs.ktor.bom))
                 implementation(libs.ktor.client.auth)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.cio)
@@ -107,8 +107,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
-                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-                implementation(compose.uiTest)
+                implementation(libs.compose.uiTest)
                 implementation(libs.ktor.client.mock)
             }
         }
