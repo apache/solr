@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -120,7 +119,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               return new SocketException("TEST");
             }
             if (i == 3) {
-              return new NoHttpResponseException("TEST");
+              return new ConnectException("TEST");
             }
             return okResponse;
           });

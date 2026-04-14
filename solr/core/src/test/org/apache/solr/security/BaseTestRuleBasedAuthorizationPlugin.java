@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -818,7 +817,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       @Override
       public Principal getUserPrincipal() {
         Object userPrincipal = values.get("userPrincipal");
-        return userPrincipal == null ? null : new BasicUserPrincipal(String.valueOf(userPrincipal));
+        return userPrincipal == null ? null : new SimplePrincipal(String.valueOf(userPrincipal));
       }
 
       @Override

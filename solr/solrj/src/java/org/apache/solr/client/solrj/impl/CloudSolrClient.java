@@ -241,6 +241,30 @@ public abstract class CloudSolrClient extends SolrClient {
       this.stateProvider = stateProvider;
     }
 
+    /**
+     * Creates a client builder based on a connection string of 2 possible formats:
+     *
+     * <ul>
+     *   <li>ZooKeeper connection string (optionally with chroot), e.g. {@code
+     *       zk1:2181,zk2:2181,zk3:2181/solr}
+     *   <li>Comma-separated list of Solr node base URLs (HTTP or HTTPS), e.g. {@code
+     *       http://solr1:8983/solr,http://solr2:8983/solr}
+     * </ul>
+     *
+     * @param connectionString a string specifying either ZooKeeper connection string or HTTP(S)
+     *     Solr URLs
+     * @throws IllegalArgumentException if string is null, empty, or malformed
+     */
+    public Builder(String connectionString) {
+      CloudSolrClientConnection connection = CloudSolrClientConnection.parse(connectionString);
+      if (connection.isZk()) {
+        this.zkHosts = connection.quorumItems();
+        this.zkChroot = connection.zkChroot();
+      } else {
+        this.solrUrls = connection.quorumItems();
+      }
+    }
+
     /** Whether to use the default ZK ACLs when building a ZK Client. */
     public Builder canUseZkACLs(boolean canUseZkACLs) {
       this.canUseZkACLs = canUseZkACLs;
@@ -771,6 +795,9 @@ public abstract class CloudSolrClient extends SolrClient {
             "directUpdatesToLeadersOnly==true but could not find leader(s)");
       } else {
         // we could not find a leader or routes yet - use unoptimized general path
+        log.warn(
+            "No routing info found for update to collection '{}', broadcasting to all shards.",
+            collection);
         return null;
       }
     }
@@ -1801,6 +1828,10 @@ public abstract class CloudSolrClient extends SolrClient {
     return results;
   }
 
+  /**
+   * Determines whether an UpdateRequest contains sufficient routing information to identify shard
+   * leaders for direct updates when directUpdatesToLeadersOnly is enabled.
+   */
   private static boolean hasInfoToFindLeaders(UpdateRequest updateRequest, String idField) {
     final Map<SolrInputDocument, Map<String, Object>> documents = updateRequest.getDocumentsMap();
     final Map<String, Map<String, Object>> deleteById = updateRequest.getDeleteByIdMap();
@@ -1823,6 +1854,64 @@ public abstract class CloudSolrClient extends SolrClient {
       }
     }
 
+    if (deleteById != null) {
+      for (final Map.Entry<String, Map<String, Object>> entry : deleteById.entrySet()) {
+        final Map<String, Object> params = entry.getValue();
+        if (params == null || params.get(ShardParams._ROUTE_) == null) {
+          // deleteById entry lacks explicit route parameter, can't find leader for it
+          return false;
+        }
+      }
+    }
+
     return true;
+  }
+
+  /** Universal connection string parser logic. */
+  public record CloudSolrClientConnection(boolean isZk, List<String> quorumItems, String zkChroot) {
+
+    public CloudSolrClientConnection {
+      if (quorumItems == null || quorumItems.isEmpty()) {
+        throw new IllegalArgumentException("No valid hosts/urls found");
+      }
+    }
+
+    public static CloudSolrClientConnection parse(String connectionString) {
+      if (connectionString == null || connectionString.trim().isEmpty()) {
+        throw new IllegalArgumentException("Connection string must not be null or empty");
+      }
+      connectionString = connectionString.trim();
+      if (connectionString.contains("://")) {
+        return parseHttpQuorum(connectionString);
+      }
+      return parseZkQuorum(connectionString);
+    }
+
+    private static CloudSolrClientConnection parseZkQuorum(String connectionString) {
+      String zkChroot = null;
+      String zkHosts = connectionString;
+      int slashIndex = connectionString.indexOf('/');
+      if (slashIndex != -1) {
+        zkHosts = connectionString.substring(0, slashIndex);
+        zkChroot = connectionString.substring(slashIndex);
+      }
+      List<String> quorumItems = StrUtils.split(zkHosts, ',');
+      for (String host : quorumItems) {
+        if (host == null || host.isBlank()) {
+          throw new IllegalArgumentException("Empty host in Zookeeper connection string");
+        }
+      }
+      return new CloudSolrClientConnection(true, quorumItems, zkChroot);
+    }
+
+    private static CloudSolrClientConnection parseHttpQuorum(String connectionString) {
+      List<String> quorumItems = StrUtils.split(connectionString, ',');
+      for (String url : quorumItems) {
+        if (url == null || url.isBlank()) {
+          throw new IllegalArgumentException("Empty URL in HTTP(S) connection string");
+        }
+      }
+      return new CloudSolrClientConnection(false, quorumItems, null);
+    }
   }
 }

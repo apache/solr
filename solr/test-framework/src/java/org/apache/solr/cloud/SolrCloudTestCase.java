@@ -43,11 +43,8 @@ import java.util.function.Predicate;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -408,13 +405,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static CoreStatusResponse.SingleCoreData getCoreStatus(Replica replica)
       throws IOException, SolrServerException {
-    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (SolrClient client =
-        new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
-            .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
-            .build()) {
-      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
-    }
+    var solrClient = cluster.getReplicaJetty(replica).getSolrClient();
+    return CoreAdminRequest.getCoreStatus(replica.getCoreName(), solrClient);
   }
 
   protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(

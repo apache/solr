@@ -73,8 +73,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // configure the client with the default collection name, to simplify our example below.
-    IndexingNestedDocuments.clientUsedInSolrJExample =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build();
+    IndexingNestedDocuments.clientUsedInSolrJExample = cluster.newSolrClient(collection);
 
     //
     // DO NOT MODIFY THESE EXAMPLE DOCS WITHOUT MAKING THE SAME CHANGES TO THE JSON AND XML
@@ -165,8 +164,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, 1, 1).process(cluster.getSolrClient());
 
     // configure the client with the default collection name, to simplify our example below.
-    IndexingNestedDocuments.clientUsedInSolrJExample =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build();
+    IndexingNestedDocuments.clientUsedInSolrJExample = cluster.newSolrClient(collection);
 
     //
     // DO NOT MODIFY THESE EXAMPLE DOCS WITHOUT MAKING THE SAME CHANGES TO THE JSON AND XML
