@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +79,13 @@ public class DistributedMultiLock {
 
   public String getLockId() {
     return locks.stream().map(DistributedLock::getLockId).collect(Collectors.joining(","));
+  }
+
+  public static List<String> splitLockIds(String lockIds) {
+    if (StrUtils.isBlank(lockIds)) {
+      return List.of();
+    }
+    return List.of(lockIds.split(","));
   }
 
   @VisibleForTesting

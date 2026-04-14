@@ -252,7 +252,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     coll1Lock2 =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.RELOAD)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             null,
             null);
@@ -264,7 +264,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     DistributedMultiLock shard1Lock =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.ADDREPLICA)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             "shard1",
             null);
@@ -275,7 +275,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     DistributedMultiLock shard1Lock2 =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.ADDREPLICA)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             "shard1",
             null);
@@ -287,7 +287,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     DistributedMultiLock shard2Lock =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.ADDREPLICA)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             "shard2",
             null);
@@ -302,7 +302,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     DistributedMultiLock replica1Lock =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.MOCK_REPLICA_TASK)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             "shard1",
             "replica1");
@@ -313,7 +313,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     DistributedMultiLock replica2Lock =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.MOCK_REPLICA_TASK)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             "shard1",
             "replica1");
@@ -325,7 +325,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     shard1Lock =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.ADDREPLICA)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             "shard1",
             null);
@@ -337,7 +337,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     replica2Lock =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.MOCK_REPLICA_TASK)
-                .withCallingLockIds(coll1Lock.getLockId()),
+                .withCallingLockId(coll1Lock.getLockId()),
             "coll1",
             "shard1",
             "replica2");
@@ -377,14 +377,14 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
         () ->
             apiLockingHelper.createCollectionApiLock(
                 new AdminCmdContext(CollectionParams.CollectionAction.INSTALLSHARDDATA)
-                    .withCallingLockIds(badLockId),
+                    .withCallingLockId(badLockId),
                 "coll1",
                 "shard1",
                 null));
     DistributedMultiLock shard1Lock3 =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.INSTALLSHARDDATA)
-                .withCallingLockIds(shard1Lock1.getLockId()),
+                .withCallingLockId(shard1Lock1.getLockId()),
             "coll1",
             "shard1",
             null);
@@ -410,7 +410,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
         () ->
             apiLockingHelper.createCollectionApiLock(
                 new AdminCmdContext(CollectionParams.CollectionAction.RELOAD)
-                    .withCallingLockIds(shard1Lock1.getLockId()),
+                    .withCallingLockId(shard1Lock1.getLockId()),
                 "coll1",
                 null,
                 null));
@@ -423,7 +423,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
         () ->
             apiLockingHelper.createCollectionApiLock(
                 new AdminCmdContext(CollectionParams.CollectionAction.CREATE)
-                    .withCallingLockIds(shard1Lock1.getLockId()),
+                    .withCallingLockId(shard1Lock1.getLockId()),
                 "coll2",
                 null,
                 null));

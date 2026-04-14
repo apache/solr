@@ -18,7 +18,7 @@
 package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN_OR_REMOTEPROXY;
 import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
@@ -214,9 +214,9 @@ public class V2HttpCall extends HttpSolrCall {
     requestType = AuthorizationContext.RequestType.ADMIN;
     action = ADMIN;
 
-    String callingLockIds = req.getHeader(CALLING_LOCK_IDS_HEADER);
-    if (callingLockIds != null && !callingLockIds.isBlank()) {
-      solrReq.getContext().put(CALLING_LOCK_IDS_HEADER, callingLockIds);
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
     }
   }
 

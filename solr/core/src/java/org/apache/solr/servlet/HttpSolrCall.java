@@ -19,7 +19,7 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
@@ -739,9 +739,9 @@ public class HttpSolrCall {
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
     SolrCore.preDecorateResponse(solrReq, solrResp);
-    String callingLockIds = req.getHeader(CALLING_LOCK_IDS_HEADER);
+    String callingLockIds = req.getHeader(CALLING_LOCK_ID_HEADER);
     if (callingLockIds != null && !callingLockIds.isBlank()) {
-      solrReq.getContext().put(CALLING_LOCK_IDS_HEADER, callingLockIds);
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockIds);
     }
     handler.handleRequest(solrReq, solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);

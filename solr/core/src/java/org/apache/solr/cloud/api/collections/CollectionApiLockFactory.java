@@ -107,7 +107,8 @@ public class CollectionApiLockFactory {
       // CollectionParams.LockLevel.COLLECTION;
     }
 
-    List<String> callingLockIdList = adminCmdContext.getCallingLockIdList();
+    List<String> callingLockIdList =
+        DistributedMultiLock.splitLockIds(adminCmdContext.getCallingLockId());
 
     final CollectionParams.LockLevel[] iterationOrder = {
       CollectionParams.LockLevel.COLLECTION,
