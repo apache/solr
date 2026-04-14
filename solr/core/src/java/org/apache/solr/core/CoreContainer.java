@@ -124,7 +124,6 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
@@ -721,7 +720,7 @@ public class CoreContainer {
     return objectCache;
   }
 
-  private void registerV2ApiIfEnabled(Object apiObject) {
+  private void registerV2Api(Object apiObject) {
     if (apiObject == null || containerHandlers.getApiBag() == null) {
       return;
     }
@@ -729,7 +728,7 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(apiObject);
   }
 
-  private void registerV2ApiIfEnabled(Class<? extends JerseyResource> clazz) {
+  private void registerV2Api(Class<? extends JerseyResource> clazz) {
     if (containerHandlers.getJerseyEndpoints() == null) {
       return;
     }
@@ -764,6 +763,10 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+
+    initGpuMetricsService(); // Initialize GPU metrics service
+
     ClusterPluginsSource pluginsSource =
         ClusterPluginsSource.loadClusterPluginsSource(this, loader);
     containerPluginsRegistry =
@@ -780,10 +783,12 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
-
-    // Initialize GPU metrics service
-    initGpuMetricsService();
+    // PublicKeyHandler was added to containerHandlers in the constructor before metrics were ready
+    containerHandlers
+        .get(PublicKeyHandler.PATH)
+        .initializeMetrics(
+            solrMetricsContext,
+            Attributes.builder().put(HANDLER_ATTR, PublicKeyHandler.PATH).build());
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -809,7 +814,7 @@ public class CoreContainer {
           caffeineCache.initializeMetrics(
               solrMetricsContext,
               Attributes.builder().put(NAME_ATTR, cacheName).build(),
-              "solr_node_cache");
+              "solr.node.cache");
         }
         m.put(cacheName, c);
       }
@@ -839,12 +844,12 @@ public class CoreContainer {
           Attributes.builder().put(HANDLER_ATTR, "/authentication/pki").build());
 
       fileStore = new DistribFileStore(this);
-      registerV2ApiIfEnabled(ClusterFileStore.class);
+      registerV2Api(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
-      registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-      registerV2ApiIfEnabled(ZookeeperRead.class);
+      registerV2Api(packageLoader.getPackageAPI().editAPI);
+      registerV2Api(packageLoader.getPackageAPI().readAPI);
+      registerV2Api(ZookeeperRead.class);
     }
 
     MDCLoggingContext.setNode(this);
@@ -866,11 +871,11 @@ public class CoreContainer {
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
-    registerV2ApiIfEnabled(clusterAPI);
-    registerV2ApiIfEnabled(clusterAPI.commands);
+    registerV2Api(clusterAPI);
+    registerV2Api(clusterAPI.commands);
 
     if (isZooKeeperAware()) {
-      registerV2ApiIfEnabled(new SchemaDesignerAPI(this));
+      registerV2Api(new SchemaDesignerAPI(this));
     } // else Schema Designer not available in standalone (non-cloud) mode
 
     /*
@@ -952,7 +957,7 @@ public class CoreContainer {
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            "solr_node_executor",
+            "solr.node.executor",
             "coreLoadExecutor",
             SolrInfoBean.Category.CONTAINER);
 
@@ -1021,8 +1026,8 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
-      registerV2ApiIfEnabled(pluginsSource.getReadApi());
-      registerV2ApiIfEnabled(pluginsSource.getEditApi());
+      registerV2Api(pluginsSource.getReadApi());
+      registerV2Api(pluginsSource.getEditApi());
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry
@@ -1045,51 +1050,49 @@ public class CoreContainer {
               });
     }
 
-    if (V2ApiUtils.isEnabled()) {
-      final CoreContainer thisCCRef = this;
-      // Init the Jersey app once all CC endpoints have been registered
-      containerHandlers
-          .getJerseyEndpoints()
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
-                      .to(CoreContainer.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
-                      .to(SolrNodeKeyPair.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
-                      .to(DistribFileStore.class)
-                      .in(Singleton.class);
-                }
-              })
-          .register(
-              new AbstractBinder() {
-                @Override
-                protected void configure() {
-                  bindFactory(
-                          new InjectionFactories.SingletonFactory<>(
-                              coreAdminHandler.getCoreAdminAsyncTracker()))
-                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
-                      .in(Singleton.class);
-                }
-              });
-      jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
-    }
+    final CoreContainer thisCCRef = this;
+    // Init the Jersey app once all CC endpoints have been registered
+    containerHandlers
+        .getJerseyEndpoints()
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
+                    .to(CoreContainer.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                    .to(SolrNodeKeyPair.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
+                    .to(DistribFileStore.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(
+                        new InjectionFactories.SingletonFactory<>(
+                            coreAdminHandler.getCoreAdminAsyncTracker()))
+                    .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                    .in(Singleton.class);
+              }
+            });
+    jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
 
     // Do Node setup logic after all handlers have been registered.
     if (isZooKeeperAware()) {
@@ -1248,6 +1251,10 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
+      // Shut down the coreZkRegister executor early so that any in-progress async reloads
+      // (triggered by ZK config watchers) complete before we close cores.
+      ExecutorUtil.shutdownAndAwaitTermination(zkSys.getCoreZkRegisterExecutorService());
+
       ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // Now clear all the cores that are being operated upon.
@@ -1278,14 +1285,6 @@ public class CoreContainer {
       }
 
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
-
-      // Shutdown GPU metrics service if it was initialized
-      shutdownGpuMetricsService();
-
-      if (metricManager != null) {
-        // Close all OTEL meter providers and metrics
-        metricManager.closeAllRegistries();
-      }
 
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
@@ -1340,6 +1339,14 @@ public class CoreContainer {
 
     // It should be safe to close the authentication plugin at this point.
     try {
+      if (pkiAuthenticationSecurityBuilder != null) {
+        pkiAuthenticationSecurityBuilder.close();
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing PKI authentication plugin.", e);
+    }
+
+    try {
       if (authenticationPlugin != null) {
         authenticationPlugin.plugin.close();
         authenticationPlugin = null;
@@ -1362,6 +1369,14 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
+
+    containerHandlers.close();
+
+    shutdownGpuMetricsService(); // Shutdown GPU metrics service if it was initialized
+
+    IOUtils.closeQuietly(solrMetricsContext);
+
+    metricManager.closeAllRegistries(); // Close all OTEL meter providers and metrics
   }
 
   public void cancelCoreRecoveries() {

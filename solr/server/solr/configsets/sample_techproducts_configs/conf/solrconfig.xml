@@ -516,12 +516,6 @@
 
   </query>
 
-  <!-- Request Dispatcher
-
-       This section contains instructions for how the SolrDispatchFilter
-       should behave when processing requests for this SolrCore.
-
-    -->
   <requestDispatcher>
     <!-- Request Parsing
 

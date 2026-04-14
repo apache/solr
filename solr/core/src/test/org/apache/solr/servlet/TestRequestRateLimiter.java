@@ -67,13 +67,13 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @Test
   public void testConcurrentQueries() throws Exception {
-    try (CloudSolrClient client =
-        cluster.basicSolrClientBuilder().withDefaultCollection(FIRST_COLLECTION).build()) {
+    try (CloudSolrClient client = cluster.newSolrClient(FIRST_COLLECTION)) {
 
       CollectionAdminRequest.createCollection(FIRST_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(FIRST_COLLECTION, 1, 1);
 
-      RateLimitFilter rateLimitFilter = cluster.getJettySolrRunner(0).getSolrRateLimitFilter();
+      RateLimitFilter rateLimitFilter =
+          cluster.getJettySolrRunner(0).getFilter(RateLimitFilter.class);
 
       RateLimiterConfig rateLimiterConfig =
           new RateLimiterConfig(
@@ -287,13 +287,12 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @Nightly
   public void testSlotBorrowing() throws Exception {
-    try (CloudSolrClient client =
-        cluster.basicSolrClientBuilder().withDefaultCollection(SECOND_COLLECTION).build()) {
+    try (CloudSolrClient client = cluster.newSolrClient(SECOND_COLLECTION)) {
 
       CollectionAdminRequest.createCollection(SECOND_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(SECOND_COLLECTION, 1, 1);
 
-      RateLimitFilter rateLimitFilter = cluster.getJettySolrRunner(0).getSolrRateLimitFilter();
+      var rateLimitFilter = cluster.getJettySolrRunner(0).getFilter(RateLimitFilter.class);
 
       RateLimiterConfig queryRateLimiterConfig =
           new RateLimiterConfig(

@@ -36,7 +36,6 @@ import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
-import org.apache.solr.util.RestTestHarness;
 import org.junit.AfterClass;
 import org.junit.Test;
 
@@ -63,7 +62,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
   @Override
   public void tearDown() throws Exception {
-    restTestHarness.close();
     restTestHarness = null;
     solrCluster.shutdown();
     super.tearDown();
@@ -332,8 +330,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
       if (!solrRunner.getCoreContainer().getCores().isEmpty()) {
         String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
-        restTestHarness =
-            new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
+        restTestHarness = solrRunner.getRestClient(coreName);
         break;
       }
     }
