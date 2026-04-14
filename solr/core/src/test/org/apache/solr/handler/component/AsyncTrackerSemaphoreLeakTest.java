@@ -256,9 +256,9 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    * Verifies that no semaphore permits are permanently leaked when connection-level failures
    * trigger LB retries on the Jetty IO selector thread, provided the semaphore is not exhausted.
    *
-   * <p>This test uses the production default ({@code 1000}) permits and only {@code 20} requests.
-   * With plenty of permits available, {@code acquire()} on the IO thread returns immediately (does
-   * not block), so {@code onComplete} fires normally and every permit is returned.
+   * <p>Uses only {@code 20} requests, well below the configured permit limit. With plenty of
+   * permits available, {@code acquire()} on the IO thread returns immediately (does not block), so
+   * {@code onComplete} fires normally and every permit is returned.
    *
    * <p>This test <b>passes both with and without the Pattern B fix</b>. Run it with the fix
    * commented out to confirm that the deadlock only manifests when the semaphore is fully exhausted
@@ -266,11 +266,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    */
   @Test
   public void testNoPermitLeakOnLBRetryWithDefaultPermits() throws Exception {
-    // The @BeforeClass set ASYNC_REQUESTS_MAX_SYSPROP=40 for the cluster. Clear it temporarily
-    // so this test's dedicated client uses the real production default (1000 permits).
-    String savedMax = System.getProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP);
-    System.clearProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP);
-
     final int numRequests = 20;
 
     HttpJettySolrClient testClient =
@@ -309,7 +304,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     try (LBJettySolrClient lbClient = new LBJettySolrClient.Builder(testClient).build()) {
 
       int initialPermits = testClient.asyncTrackerMaxPermits();
-      assertEquals("Should use the production default of 1000 permits", 1000, initialPermits);
+      assertTrue("numRequests must be well below permit limit", numRequests < initialPermits);
       assertEquals(
           "All permits available before test",
           initialPermits,
@@ -378,10 +373,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           permitsAfter);
 
     } finally {
-      // Restore the property so subsequent tests (and @AfterClass) see the expected value.
-      if (savedMax != null) {
-        System.setProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP, savedMax);
-      }
       fakeServer.close();
       try {
         testClient.getHttpClient().stop();
@@ -413,9 +404,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           "Reflection needed to access AsyncTracker's private fields for white-box testing without exposing them in the production API")
   public void testPermitLeakOnHttp2GoAwayDoubleQueuedListener() throws Exception {
     assumeWorkingMockito();
-    // Clear the @BeforeClass 40-permit cap so this client gets the production default (1000).
-    String savedMax = System.getProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP);
-    System.clearProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP);
 
     HttpJettySolrClient testClient =
         new HttpJettySolrClient.Builder()
@@ -432,7 +420,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
 
     try {
       int maxPermits = testClient.asyncTrackerMaxPermits();
-      assertEquals("Should use production default of 1000 permits", 1000, maxPermits);
       assertEquals(
           "All permits available before test",
           maxPermits,
@@ -482,11 +469,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           permitsAfter);
 
     } finally {
-      // Restore the system property for subsequent tests.
-      if (savedMax != null) {
-        System.setProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP, savedMax);
-      }
-
       // Force-terminate the Phaser as a safety net; without the fix the phaser would be unbalanced.
       try {
         Field phaserField = asyncTrackerClass.getDeclaredField("phaser");

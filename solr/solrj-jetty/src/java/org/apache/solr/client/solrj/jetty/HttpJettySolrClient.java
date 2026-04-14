@@ -863,7 +863,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   private static class AsyncTracker {
-    private static final int MAX_OUTSTANDING_REQUESTS = 1000;
+    private static final int MAX_OUTSTANDING_REQUESTS =
+        EnvUtils.getPropertyAsInteger(ASYNC_REQUESTS_MAX_SYSPROP, 1000);
 
     /**
      * Request attribute key used to mark that a semaphore permit has been acquired for a given
@@ -875,8 +876,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
      */
     private static final String PERMIT_ACQUIRED_ATTR = "solr.async_tracker.permit_acquired";
 
-    private final int maxRequests;
-
     // wait for async requests
     private final Phaser phaser;
     // maximum outstanding requests left
@@ -885,10 +884,9 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     private final Response.CompleteListener completeListener;
 
     AsyncTracker() {
-      maxRequests = Integer.getInteger(ASYNC_REQUESTS_MAX_SYSPROP, MAX_OUTSTANDING_REQUESTS);
       // TODO: what about shared instances?
       phaser = new Phaser(1);
-      available = new Semaphore(maxRequests, false);
+      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
       queuedListener =
           request -> {
             if (request.getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
@@ -918,11 +916,11 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
     int getMaxRequestsQueuedPerDestination() {
       // comfortably above max outstanding requests
-      return maxRequests * 3;
+      return MAX_OUTSTANDING_REQUESTS * 3;
     }
 
     int maxPermits() {
-      return maxRequests;
+      return MAX_OUTSTANDING_REQUESTS;
     }
 
     int availablePermits() {
