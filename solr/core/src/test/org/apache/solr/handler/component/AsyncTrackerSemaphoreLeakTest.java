@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -129,35 +130,13 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
             .useHttp1_1(true) // HTTP/1.1: every request gets its own TCP connection
             .build();
 
-    // Fake TCP server: accepts exactly NUM_RETRY_REQUESTS connections and holds them open.
-    // Once all are established (semaphore exhausted), closes all with RST simultaneously.
-    ServerSocket fakeServer = new ServerSocket(0);
-    CountDownLatch allConnected = new CountDownLatch(NUM_RETRY_REQUESTS);
-    List<Socket> fakeConnections = Collections.synchronizedList(new ArrayList<>());
-
-    Thread fakeServerThread =
-        new Thread(
-            () -> {
-              try {
-                while (fakeConnections.size() < NUM_RETRY_REQUESTS && !fakeServer.isClosed()) {
-                  Socket s = fakeServer.accept();
-                  fakeConnections.add(s);
-                  allConnected.countDown();
-                }
-              } catch (IOException ignored) {
-              }
-            },
-            "fake-tcp-server");
-    fakeServerThread.setDaemon(true);
-    fakeServerThread.start();
-
-    String fakeBaseUrl = "http://127.0.0.1:" + fakeServer.getLocalPort() + "/solr";
     String realBaseUrl =
         cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTION;
 
     List<CompletableFuture<LBSolrClient.Rsp>> futures = new ArrayList<>();
 
-    try (LBJettySolrClient lbClient = new LBJettySolrClient.Builder(testClient).build()) {
+    try (FakeTcpServer fakeServer = new FakeTcpServer(NUM_RETRY_REQUESTS);
+        LBJettySolrClient lbClient = new LBJettySolrClient.Builder(testClient).build()) {
 
       assertEquals(
           "All permits should be available before the test (verifies sysprop was applied)",
@@ -176,7 +155,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
             new LBSolrClient.Req(
                 qr,
                 List.of(
-                    new LBSolrClient.Endpoint(fakeBaseUrl),
+                    new LBSolrClient.Endpoint(fakeServer.baseUrl()),
                     new LBSolrClient.Endpoint(realBaseUrl)));
         futures.add(lbClient.requestAsync(req));
       }
@@ -191,9 +170,9 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           "All "
               + NUM_RETRY_REQUESTS
               + " connections should be established within 15 s, but only "
-              + (NUM_RETRY_REQUESTS - allConnected.getCount())
+              + fakeServer.connectionCount()
               + " were.",
-          allConnected.await(15, TimeUnit.SECONDS));
+          fakeServer.awaitAllConnected(15, TimeUnit.SECONDS));
 
       assertEquals(
           "Semaphore should be fully consumed after queuing all requests",
@@ -203,15 +182,8 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
       // Close all fake connections simultaneously with TCP RST.
       // onFailure fires on the IO thread → LBJettySolrClient retry → acquire() blocks
       // (semaphore=0).
-      int connCount = fakeConnections.size();
-      log.info("Closing {} fake connections via RST...", connCount);
-      for (Socket s : fakeConnections) {
-        try {
-          s.setSoLinger(true, 0); // send RST instead of FIN
-          s.close();
-        } catch (IOException ignored) {
-        }
-      }
+      log.info("Closing {} fake connections via RST...", fakeServer.connectionCount());
+      fakeServer.rstAll();
 
       try {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
@@ -239,7 +211,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           MAX_PERMITS,
           permitsAfterFailures);
     } finally {
-      fakeServer.close();
       try {
         testClient.close();
       } catch (Exception ignored) {
@@ -272,33 +243,13 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
             .useHttp1_1(true)
             .build();
 
-    ServerSocket fakeServer = new ServerSocket(0);
-    CountDownLatch allConnected = new CountDownLatch(numRequests);
-    List<Socket> fakeConnections = Collections.synchronizedList(new ArrayList<>());
-
-    Thread fakeServerThread =
-        new Thread(
-            () -> {
-              try {
-                while (fakeConnections.size() < numRequests && !fakeServer.isClosed()) {
-                  Socket s = fakeServer.accept();
-                  fakeConnections.add(s);
-                  allConnected.countDown();
-                }
-              } catch (IOException ignored) {
-              }
-            },
-            "fake-tcp-server");
-    fakeServerThread.setDaemon(true);
-    fakeServerThread.start();
-
-    String fakeBaseUrl = "http://127.0.0.1:" + fakeServer.getLocalPort() + "/solr";
     String realBaseUrl =
         cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTION;
 
     List<CompletableFuture<LBSolrClient.Rsp>> futures = new ArrayList<>();
 
-    try (LBJettySolrClient lbClient = new LBJettySolrClient.Builder(testClient).build()) {
+    try (FakeTcpServer fakeServer = new FakeTcpServer(numRequests);
+        LBJettySolrClient lbClient = new LBJettySolrClient.Builder(testClient).build()) {
 
       int initialPermits = testClient.asyncTrackerMaxPermits();
       assertTrue("numRequests must be well below permit limit", numRequests < initialPermits);
@@ -315,7 +266,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
                 new LBSolrClient.Req(
                     new QueryRequest(p),
                     List.of(
-                        new LBSolrClient.Endpoint(fakeBaseUrl),
+                        new LBSolrClient.Endpoint(fakeServer.baseUrl()),
                         new LBSolrClient.Endpoint(realBaseUrl)))));
       }
 
@@ -326,17 +277,10 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           initialPermits);
       assertTrue(
           "All " + numRequests + " connections should be established within 15 s",
-          allConnected.await(15, TimeUnit.SECONDS));
+          fakeServer.awaitAllConnected(15, TimeUnit.SECONDS));
 
-      int rstCount = fakeConnections.size();
-      log.info("RST-ing {} fake connections...", rstCount);
-      for (Socket s : fakeConnections) {
-        try {
-          s.setSoLinger(true, 0);
-          s.close();
-        } catch (IOException ignored) {
-        }
-      }
+      log.info("RST-ing {} fake connections...", fakeServer.connectionCount());
+      fakeServer.rstAll();
 
       // With permits >> 0, acquire() on the IO thread returns immediately (no blocking).
       // onComplete fires normally after each retry and restores every permit.
@@ -370,7 +314,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           permitsAfter);
 
     } finally {
-      fakeServer.close();
       try {
         testClient.close();
       } catch (Exception ignored) {
@@ -474,6 +417,83 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
       try {
         testClient.close();
       } catch (Exception ignored) {
+      }
+    }
+  }
+
+  /**
+   * A minimal fake TCP server that accepts a fixed number of connections and holds them open,
+   * allowing tests to simulate connection-level failures by RST-ing all sockets at once.
+   *
+   * <p>Implements {@link AutoCloseable} so that the server socket and any open connections are
+   * always cleaned up when used in a try-with-resources block, even if the test fails or throws.
+   */
+  private static class FakeTcpServer implements AutoCloseable {
+    private final ServerSocket serverSocket;
+    private final List<Socket> connections = Collections.synchronizedList(new ArrayList<>());
+    private final CountDownLatch allConnected;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
+    FakeTcpServer(int expectedConnections) throws IOException {
+      this.serverSocket = new ServerSocket(0);
+      this.allConnected = new CountDownLatch(expectedConnections);
+      Thread acceptThread =
+          new Thread(
+              () -> {
+                try {
+                  while (connections.size() < expectedConnections && !serverSocket.isClosed()) {
+                    Socket s = serverSocket.accept();
+                    connections.add(s);
+                    allConnected.countDown();
+                  }
+                } catch (IOException ignored) {
+                }
+              },
+              "fake-tcp-server");
+      acceptThread.setDaemon(true);
+      acceptThread.start();
+    }
+
+    /** Returns the base URL clients should connect to, e.g. {@code http://127.0.0.1:PORT/solr}. */
+    String baseUrl() {
+      return "http://127.0.0.1:" + serverSocket.getLocalPort() + "/solr";
+    }
+
+    /** Waits until all expected connections have been accepted. */
+    boolean awaitAllConnected(long timeout, TimeUnit unit) throws InterruptedException {
+      return allConnected.await(timeout, unit);
+    }
+
+    /** Returns the number of connections accepted so far. */
+    int connectionCount() {
+      return connections.size();
+    }
+
+    /**
+     * Closes all accepted connections with TCP RST, triggering onFailure on the Jetty IO thread.
+     */
+    void rstAll() {
+      for (Socket s : connections) {
+        try {
+          s.setSoLinger(true, 0); // send RST instead of FIN
+          s.close();
+        } catch (IOException ignored) {
+        }
+      }
+    }
+
+    /**
+     * RSTs any remaining open connections and closes the server socket, stopping the accept thread.
+     * Safe to call multiple times.
+     */
+    @Override
+    public void close() {
+      if (closed.compareAndSet(false, true)) {
+        rstAll();
+        try {
+          serverSocket.close();
+        } catch (IOException ignored) {
+        }
       }
     }
   }

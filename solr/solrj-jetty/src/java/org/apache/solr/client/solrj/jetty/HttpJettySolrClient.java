@@ -112,7 +112,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   public static final String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.jetty.customizer";
 
   /** System property to cap the maximum number of outstanding async HTTP requests. Default 1000. */
-  public static final String ASYNC_REQUESTS_MAX_SYSPROP = "solr.solrj.http.jetty.async_requests.max";
+  public static final String ASYNC_REQUESTS_MAX_SYSPROP =
+      "solr.solrj.http.jetty.async_requests.max";
 
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
