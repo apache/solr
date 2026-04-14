@@ -906,8 +906,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
           };
       completeListener =
           result -> {
-            if (result == null
-                || result.getRequest().getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
+            if (result != null
+                && result.getRequest().getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
               phaser.arriveAndDeregister();
               available.release();
             }
