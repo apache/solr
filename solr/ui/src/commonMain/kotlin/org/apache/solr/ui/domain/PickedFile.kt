@@ -14,14 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.views.configsets
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
+package org.apache.solr.ui.domain
 
-@Composable
-fun ConfigsetsOverviewContent(component: ConfigsetsOverviewComponent, modifier: Modifier = Modifier) {
-    Text("Overview section")
+data class PickedFile(
+    val name: String,
+    val bytes: ByteArray,
+    val extension: String? = null,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as PickedFile
+
+        if (name != other.name) return false
+        if (!bytes.contentEquals(other.bytes)) return false
+        if (extension != other.extension) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + bytes.contentHashCode()
+        result = 31 * result + (extension?.hashCode() ?: 0)
+        return result
+    }
 }

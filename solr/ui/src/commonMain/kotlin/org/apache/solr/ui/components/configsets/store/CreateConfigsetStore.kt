@@ -14,30 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.ui.components.configsets.store
 
 import com.arkivanov.mvikotlin.core.store.Store
-import org.apache.solr.ui.components.configsets.data.ListConfigsets
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
+import org.apache.solr.ui.components.configsets.store.CreateConfigsetStore.Intent
+import org.apache.solr.ui.components.configsets.store.CreateConfigsetStore.Label
+import org.apache.solr.ui.components.configsets.store.CreateConfigsetStore.State
+import org.apache.solr.ui.domain.Configset
 
-internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
+internal interface CreateConfigsetStore : Store<Intent, State, Label> {
 
     sealed interface Intent {
-        /**
-         * Intent for selecting configset.
-         *
-         * @property configSetName Name of the configset to select.
-         * @property reload Whether to reload the configset before selecting.
-         */
-        data class SelectConfigset(
-            val configSetName: String,
-            val reload: Boolean = false,
-        ) : Intent
+        data class ChangeConfigsetName(val configsetName: String) : Intent
+
+        data class SelectConfigsetFile(val configsetFile: String) : Intent
+
+        data class ChangeBaseConfigset(val baseConfigset: String?) : Intent
+
+        data object CreateConfigset : Intent
     }
 
     data class State(
-        val selectedConfigset: String? = null,
-        val configSets: ListConfigsets = ListConfigsets(),
+        val configsetName: String = "",
+        val baseConfigset: String? = null,
+        val configsets: List<Configset> = emptyList(),
+        val isLoading: Boolean = false,
     )
+
+    sealed interface Label {
+        data class ConfigsetCreated(val configset: Configset) : Label
+    }
 }

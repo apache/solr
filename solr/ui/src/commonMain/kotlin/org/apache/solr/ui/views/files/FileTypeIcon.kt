@@ -14,14 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.views.configsets
 
-import androidx.compose.material3.Text
+package org.apache.solr.ui.views.files
+
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
+import org.apache.solr.ui.generated.resources.Res
+import org.apache.solr.ui.generated.resources.draft
+import org.apache.solr.ui.generated.resources.folder_zip
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun ConfigsetsOverviewContent(component: ConfigsetsOverviewComponent, modifier: Modifier = Modifier) {
-    Text("Overview section")
-}
+fun FileTypeIcon(
+    fileType: String,
+    modifier: Modifier = Modifier,
+) = Icon(
+    modifier = modifier,
+    painter = painterResource(
+        when (fileType) {
+            "zip", "rar", "gz", "7z" -> Res.drawable.folder_zip
+            else -> Res.drawable.draft
+        },
+    ),
+    contentDescription = null,
+)

@@ -15,45 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets.integration
+package org.apache.solr.ui.components.files.integration
 
 import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
-import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStoreProvider
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import org.apache.solr.ui.components.files.FilePickerComponent
+import org.apache.solr.ui.components.files.FilePickerComponent.Output
+import org.apache.solr.ui.components.files.store.FilePickerStore
+import org.apache.solr.ui.components.files.store.FilePickerStore.Intent
+import org.apache.solr.ui.components.files.store.FilePickerStoreProvider
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
 
-/**
- * Default implementation of the [ConfigsetsComponent].
- */
-internal class DefaultConfigsetsComponent(
+class DefaultFilePickerComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
-    httpClient: HttpClient,
-) : ConfigsetsComponent,
+    output: (Output) -> Unit = {},
+) : FilePickerComponent,
     AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
 
-    private val store = instanceKeeper.getStore {
-        ConfigsetsStoreProvider(
+    private val store: FilePickerStore = instanceKeeper.getStore {
+        FilePickerStoreProvider(
             storeFactory = storeFactory,
-            client = HttpConfigsetsStoreClient(httpClient),
             mainContext = mainScope.coroutineContext,
             ioContext = ioScope.coroutineContext,
         ).provide()
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val model = store.stateFlow.map(mainScope, configsetsStateToModel)
+    init {
+        store.labels.onEach { label ->
+            when (label) {
+                is FilePickerStore.Label.FilePicked -> output(Output.FilePicked(label.file))
+            }
+        }.launchIn(mainScope)
+    }
 
-    override fun onSelectConfigset(name: String, reload: Boolean) = store.accept(Intent.SelectConfigset(configSetName = name, reload = reload))
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val model: StateFlow<FilePickerComponent.Model> =
+        store.stateFlow.map(mainScope, filePickerStateToModel)
+
+    override fun onSelectFile() = store.accept(Intent.OpenFilePicker)
+
+    override fun clearSelection() = store.accept(Intent.ClearSelection)
 }

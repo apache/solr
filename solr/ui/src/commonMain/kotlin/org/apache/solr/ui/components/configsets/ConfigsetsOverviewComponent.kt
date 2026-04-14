@@ -15,15 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.components.configsets
 
 import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.Value
 import kotlinx.serialization.Serializable
 
-interface TabNavigationComponent<T : Any, C : Any> {
+interface ConfigsetsOverviewComponent {
 
-    val tabSlot: Value<ChildSlot<T, C>>
+    val dialog: Value<ChildSlot<CreateConfigsetDialogConfig, *>>
 
-    fun onNavigate(tab: T)
+    /**
+     * Initiates the creation of a new configset.
+     */
+    fun createConfigset()
+
+    /**
+     * Initiates the import of a configset.
+     */
+    fun importConfigset()
+
+    /**
+     * Closes any opened dialog.
+     */
+    fun closeDialog()
+
+    /**
+     * Edit solrconfig.xml for the configset with the given [name].
+     *
+     * @param name the name of the configset to edit.
+     */
+    fun editSolrConfig(name: String)
+
+    @Serializable
+    sealed interface CreateConfigsetDialogConfig {
+
+        @Serializable
+        data object CreateConfigsetWithInputDialogConfig : CreateConfigsetDialogConfig
+
+        @Serializable
+        data object ImportConfigsetDialogConfig : CreateConfigsetDialogConfig
+    }
 }

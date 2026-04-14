@@ -14,30 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.ui.components.configsets.store
 
 import com.arkivanov.mvikotlin.core.store.Store
-import org.apache.solr.ui.components.configsets.data.ListConfigsets
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
-import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
+import org.apache.solr.ui.components.configsets.store.ImportConfigsetStore.Intent
+import org.apache.solr.ui.components.configsets.store.ImportConfigsetStore.Label
+import org.apache.solr.ui.components.configsets.store.ImportConfigsetStore.State
+import org.apache.solr.ui.domain.Configset
+import org.apache.solr.ui.domain.PickedFile
 
-internal interface ConfigsetsStore : Store<Intent, State, Nothing> {
+internal interface ImportConfigsetStore : Store<Intent, State, Label> {
 
     sealed interface Intent {
-        /**
-         * Intent for selecting configset.
-         *
-         * @property configSetName Name of the configset to select.
-         * @property reload Whether to reload the configset before selecting.
-         */
-        data class SelectConfigset(
-            val configSetName: String,
-            val reload: Boolean = false,
-        ) : Intent
+        data class ChangeConfigsetName(val configsetName: String) : Intent
+
+        data class ImportConfigset(val file: PickedFile) : Intent
     }
 
+    /**
+     * @property name The name to use for the configset. Normally populated from the file name.
+     * @property isLoading Whether the import is currently in progress.
+     */
     data class State(
-        val selectedConfigset: String? = null,
-        val configSets: ListConfigsets = ListConfigsets(),
+        val name: String = "",
+        val isNameEdited: Boolean = false,
+        val isLoading: Boolean = false,
     )
+
+    sealed interface Label {
+        data class ConfigsetImported(val configset: Configset) : Label
+    }
 }

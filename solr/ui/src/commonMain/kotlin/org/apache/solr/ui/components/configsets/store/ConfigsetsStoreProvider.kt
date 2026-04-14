@@ -28,7 +28,6 @@ import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.Intent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore.State
-import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /**
  * Store provider that [provide]s instances of [ConfigsetsStore].
@@ -69,20 +68,29 @@ internal class ConfigsetsStoreProvider(
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, Nothing>(mainContext) {
         override fun executeAction(action: Action) = when (action) {
             Action.FetchInitialConfigsets -> {
-                fetchConfigSets()
+                fetchConfigsets()
             }
         }
 
         override fun executeIntent(intent: Intent) = when (intent) {
-            is Intent.SelectConfigSet -> dispatch(Message.SelectedConfigSetChanged(intent.configSetName))
+            is Intent.SelectConfigset -> {
+                if (intent.reload) {
+                    fetchConfigsets {
+                        dispatch(Message.SelectedConfigSetChanged(intent.configSetName))
+                    }
+                } else {
+                    dispatch(Message.SelectedConfigSetChanged(intent.configSetName))
+                }
+            }
         }
 
-        private fun fetchConfigSets() {
+        private fun fetchConfigsets(callback: () -> Unit = {}) {
             scope.launch {
                 withContext(ioContext) {
                     client.fetchConfigSets()
                 }.onSuccess { sets ->
                     dispatch(Message.ConfigSetsUpdated(sets))
+                    callback()
                 }
             }
         }
@@ -104,5 +112,7 @@ internal class ConfigsetsStoreProvider(
     interface Client {
         /** To fetch a list of configsets. */
         suspend fun fetchConfigSets(): Result<ListConfigsets>
+
+        suspend fun deleteConfigset(configsetName: String): Result<Unit>
     }
 }

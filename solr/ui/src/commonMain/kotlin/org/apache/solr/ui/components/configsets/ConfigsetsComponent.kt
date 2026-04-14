@@ -18,28 +18,13 @@
 package org.apache.solr.ui.components.configsets
 
 import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
-import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
-import org.apache.solr.ui.components.navigation.TabNavigationComponent
 import org.apache.solr.ui.domain.Configset
-import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 
 /**
- * The configsets component provides the main entry point for managing Solr's configets.
+ * The configsets component keeps record of the currently available configsets, and a selected
+ * configset that may be used for additional operations.
  */
-interface ConfigsetsComponent : TabNavigationComponent<ConfigsetsTab, Child> {
-
-    /**
-     * All possible navigation targets (children) within the Configsets section.
-     */
-    sealed interface Child {
-        data class Overview(val component: ConfigsetsOverviewComponent) : Child
-
-        /**
-         * TODO Remove once other sections are added
-         */
-        data class Placeholder(val tabName: String) : Child
-    }
+interface ConfigsetsComponent {
 
     /**
      * Model that holds the data of the [ConfigsetsComponent].
@@ -56,6 +41,12 @@ interface ConfigsetsComponent : TabNavigationComponent<ConfigsetsTab, Child> {
     /** Hot, observable stream of [Model] for Compose/UI. */
     val model: StateFlow<Model>
 
-    /** Select the active configset by name. */
-    fun onSelectConfigset(name: String)
+    /**
+     * Select the active configset by name.
+     *
+     * @param name The name of the configset to select.
+     * @param reload Whether to reload the list before selecting the configset. This is useful when
+     * the configset has newly been added and the list has to be reloaded.
+     */
+    fun onSelectConfigset(name: String, reload: Boolean = false)
 }

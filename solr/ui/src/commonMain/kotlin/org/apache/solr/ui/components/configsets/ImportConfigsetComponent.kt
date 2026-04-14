@@ -14,14 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.views.configsets
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
+package org.apache.solr.ui.components.configsets
 
-@Composable
-fun ConfigsetsOverviewContent(component: ConfigsetsOverviewComponent, modifier: Modifier = Modifier) {
-    Text("Overview section")
+import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.components.files.FilePickerComponent
+import org.apache.solr.ui.domain.Configset
+
+/**
+ * Component that holds the state and behavior for importing a configset.
+ */
+interface ImportConfigsetComponent {
+
+    val filePicker: FilePickerComponent
+
+    val model: StateFlow<Model>
+
+    fun onImportConfigset()
+
+    fun onConfigsetNameChange(configsetName: String)
+
+    data class Model(
+        val configsetName: String = "",
+        val isLoading: Boolean = false,
+    )
+
+    sealed interface Output {
+        data class ConfigsetImported(val configset: Configset) : Output
+    }
 }
