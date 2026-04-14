@@ -739,9 +739,9 @@ public class HttpSolrCall {
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
     SolrCore.preDecorateResponse(solrReq, solrResp);
-    String callingLockIds = req.getHeader(CALLING_LOCK_ID_HEADER);
-    if (callingLockIds != null && !callingLockIds.isBlank()) {
-      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockIds);
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
     }
     handler.handleRequest(solrReq, solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
