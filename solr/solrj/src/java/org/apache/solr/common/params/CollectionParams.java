@@ -69,6 +69,10 @@ public interface CollectionParams {
     public boolean isHigherOrEqual(LockLevel that) {
       return height >= that.height;
     }
+
+    public boolean isEqual(LockLevel that) {
+      return height == that.height;
+    }
   }
 
   /**
@@ -136,7 +140,7 @@ public interface CollectionParams {
     // TODO when we have a node level lock use it here
     BALANCE_REPLICAS(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    MOCK_REPLICA_TASK(true, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),
     // TODO: not implemented yet
     MERGESHARDS(true, LockLevel.SHARD),

@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerMessageHandler.Lock;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
@@ -189,12 +190,16 @@ public class TestLockTree extends SolrTestCaseJ4 {
             .getSession()
             .lock(CollectionAction.INSTALLSHARDDATA, List.of("coll2", "shard1"), List.of());
     assertNotNull(shard1Lock2);
-    assertNull(
+    assertThrows(
         "Should not be able to lock coll1/shard1 since our callingLockId is coll2",
-        lockTree
-            .getSession()
-            .lock(
-                CollectionAction.SYNCSHARD, List.of("coll1", "shard1"), List.of(shard1Lock2.id())));
+        SolrException.class,
+        () ->
+            lockTree
+                .getSession()
+                .lock(
+                    CollectionAction.SYNCSHARD,
+                    List.of("coll1", "shard1"),
+                    List.of(shard1Lock2.id())));
     Lock shard1Lock3 =
         lockTree
             .getSession()
@@ -208,19 +213,32 @@ public class TestLockTree extends SolrTestCaseJ4 {
     assertNull(
         "Should not be able to lock coll1 since we have no callingLockId and shard1 is already locked. Cannot move up",
         lockTree.getSession().lock(CollectionAction.RELOAD, List.of("coll1"), List.of()));
-    assertNull(
+    assertThrows(
         "Should not be able to lock coll1 since our callingLockId is coll1/shard1. Cannot move up",
-        lockTree
-            .getSession()
-            .lock(CollectionAction.RELOAD, List.of("coll1"), List.of(shard1Lock1.id())));
+        SolrException.class,
+        () ->
+            lockTree
+                .getSession()
+                .lock(CollectionAction.RELOAD, List.of("coll1"), List.of(shard1Lock1.id())));
 
     // Test an unrelated lock
-    Lock coll2Lock =
-        lockTree
-            .getSession()
-            .lock(CollectionAction.CREATE, List.of("coll2"), List.of(shard1Lock1.id()));
-    assertNotNull(coll2Lock);
-    coll2Lock.unlock();
+    assertThrows(
+        "Should not be able to lock coll2 since our callingLockId is coll1/shard1. Cannot lock an unrelated resource",
+        SolrException.class,
+        () ->
+            lockTree
+                .getSession()
+                .lock(CollectionAction.CREATE, List.of("coll2"), List.of(shard1Lock1.id())));
+    assertThrows(
+        "Should not be able to lock coll1/shard2 since our callingLockId is coll1/shard1. Cannot lock an unrelated resource",
+        SolrException.class,
+        () ->
+            lockTree
+                .getSession()
+                .lock(
+                    CollectionAction.SYNCSHARD,
+                    List.of("coll1", "shard2"),
+                    List.of(shard1Lock1.id())));
     shard1Lock1.unlock();
   }
 

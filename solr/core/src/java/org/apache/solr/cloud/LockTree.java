@@ -21,9 +21,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.solr.cloud.OverseerMessageHandler.Lock;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.LockLevel;
 import org.apache.solr.common.util.StrUtils;
@@ -99,13 +101,23 @@ public class LockTree {
       // locking below the calling lock
       Lock callingLock = callingLockIds.isEmpty() ? null : allLocks.get(callingLockIds.getLast());
       boolean reuseCurrentLock = false;
-      if (callingLock != null && callingLock.validateSubpath(action.lockLevel.getHeight(), path)) {
-        startingNode = ((LockImpl) callingLock).node;
-        startingSession = startingSession.find(startingNode.level.getHeight(), path);
-        if (startingSession == null) {
-          startingSession = root;
+      if (callingLock != null) {
+        if (callingLock.validateSubpath(action.lockLevel.getHeight(), path)) {
+          startingNode = ((LockImpl) callingLock).node;
+          startingSession = startingSession.find(startingNode.level.getHeight(), path);
+          if (startingSession == null) {
+            startingSession = root;
+          }
+          reuseCurrentLock = true;
+        } else {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              String.format(
+                  Locale.ROOT,
+                  "Cannot lock an action under a different path than the calling action. Calling action lock path: %s, Requested action lock path: %s",
+                  callingLock,
+                  String.join("/", path)));
         }
-        reuseCurrentLock = true;
       }
       synchronized (LockTree.this) {
         if (startingSession.isBusy(action.lockLevel, path)) return null;

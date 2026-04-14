@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -52,9 +53,9 @@ abstract class ZkDistributedLock implements DistributedLock {
 
   /** Read lock. */
   static class Read extends ZkDistributedLock {
-    protected Read(SolrZkClient zkClient, String lockPath, String mirroredLockId)
+    protected Read(SolrZkClient zkClient, String lockPath, String lockIdToMirror)
         throws KeeperException, InterruptedException {
-      super(zkClient, lockPath, READ_LOCK_PREFIX, mirroredLockId);
+      super(zkClient, lockPath, READ_LOCK_PREFIX, lockIdToMirror);
     }
 
     @Override
@@ -72,9 +73,9 @@ abstract class ZkDistributedLock implements DistributedLock {
 
   /** Write lock. */
   static class Write extends ZkDistributedLock {
-    protected Write(SolrZkClient zkClient, String lockPath, String mirroredLockId)
+    protected Write(SolrZkClient zkClient, String lockPath, String lockIdToMirror)
         throws KeeperException, InterruptedException {
-      super(zkClient, lockPath, WRITE_LOCK_PREFIX, mirroredLockId);
+      super(zkClient, lockPath, WRITE_LOCK_PREFIX, lockIdToMirror);
     }
 
     @Override
@@ -103,14 +104,14 @@ abstract class ZkDistributedLock implements DistributedLock {
   protected final boolean mirrored;
 
   protected ZkDistributedLock(
-      SolrZkClient zkClient, String lockDir, String lockNodePrefix, String mirroredLockId)
+      SolrZkClient zkClient, String lockDir, String lockNodePrefix, String lockIdToMirror)
       throws KeeperException, InterruptedException {
     this.zkClient = zkClient;
     this.lockDir = lockDir;
 
     // Create the SEQUENTIAL EPHEMERAL node. We enter the locking rat race here. We MUST eventually
     // call release() or we block others.
-    if (mirroredLockId == null || !mirroredLockId.startsWith(lockDir)) {
+    if (StrUtils.isBlank(lockIdToMirror)) {
       lockNode =
           zkClient.create(
               lockDir
@@ -121,12 +122,20 @@ abstract class ZkDistributedLock implements DistributedLock {
 
       mirrored = false;
     } else {
-      if (!canMirrorLock(mirroredLockId)) {
+      if (!lockIdToMirror.startsWith(lockDir)) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Cannot mirror lock " + mirroredLockId + " with given lockPrefix: " + lockNodePrefix);
+            "Requested lock with path: "
+                + lockDir
+                + " cannot mirror the callingLock with id: "
+                + lockIdToMirror);
       }
-      lockNode = mirroredLockId;
+      if (!canMirrorLock(lockIdToMirror)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Cannot mirror lock " + lockIdToMirror + " with given lockPrefix: " + lockNodePrefix);
+      }
+      lockNode = lockIdToMirror;
       mirrored = true;
     }
     sequence = getSequenceFromNodename(lockNode);

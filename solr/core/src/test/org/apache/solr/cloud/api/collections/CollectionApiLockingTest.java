@@ -319,7 +319,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             "replica1");
     assertEquals("Wrong number of internalLocks", 3, replica2Lock.getCountInternalLocks());
     assertFalse(
-        "Should not be able to lock coll1/shard1/replica2 since our callingLockId is only coll1, not replica1, which is already locked",
+        "Should not be able to lock coll1/shard1/replica1 since our callingLockId is only coll1, not replica1, which is already locked",
         replica2Lock.isAcquired());
     replica2Lock.release();
     shard1Lock =
@@ -370,18 +370,18 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     assertTrue(
         "Should  be able to lock coll2/shard1 when not using a callingLockId since shard1 has not been locked yet for coll2",
         shard1Lock2.isAcquired());
-    DistributedMultiLock shard1Lock3 =
-        apiLockingHelper.createCollectionApiLock(
-            new AdminCmdContext(CollectionParams.CollectionAction.INSTALLSHARDDATA)
-                .withCallingLockIds(shard1Lock2.getLockId()),
-            "coll1",
-            "shard1",
-            null);
-    assertEquals("Wrong number of internalLocks", 2, shard1Lock3.getCountInternalLocks());
-    assertFalse(
+    String badLockId = shard1Lock2.getLockId();
+    assertThrows(
         "Should not be able to lock coll1/shard1 since our callingLockId is coll2",
-        shard1Lock3.isAcquired());
-    shard1Lock3 =
+        SolrException.class,
+        () ->
+            apiLockingHelper.createCollectionApiLock(
+                new AdminCmdContext(CollectionParams.CollectionAction.INSTALLSHARDDATA)
+                    .withCallingLockIds(badLockId),
+                "coll1",
+                "shard1",
+                null));
+    DistributedMultiLock shard1Lock3 =
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.INSTALLSHARDDATA)
                 .withCallingLockIds(shard1Lock1.getLockId()),
@@ -417,18 +417,16 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     shard1Lock3.release();
 
     // Test an unrelated lock
-    DistributedMultiLock coll2Lock =
-        apiLockingHelper.createCollectionApiLock(
-            new AdminCmdContext(CollectionParams.CollectionAction.CREATE)
-                .withCallingLockIds(shard1Lock1.getLockId()),
-            "coll2",
-            null,
-            null);
-    assertEquals("Wrong number of internalLocks", 1, coll2Lock.getCountInternalLocks());
-    assertTrue(
-        "Should be able to lock coll2even though callingLockId is coll1 and unrelated",
-        coll2Lock.isAcquired());
-    coll2Lock.release();
+    assertThrows(
+        "Should not be able to lock coll2even since callingLockId is coll1 and unrelated",
+        SolrException.class,
+        () ->
+            apiLockingHelper.createCollectionApiLock(
+                new AdminCmdContext(CollectionParams.CollectionAction.CREATE)
+                    .withCallingLockIds(shard1Lock1.getLockId()),
+                "coll2",
+                null,
+                null));
     shard1Lock1.release();
   }
 }
