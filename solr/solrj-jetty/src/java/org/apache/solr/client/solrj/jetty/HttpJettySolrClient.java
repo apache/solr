@@ -131,7 +131,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   private ExecutorService executor;
   private boolean shutdownExecutor;
 
-  /** Fallback for {@code onFailure} dispatch; unbounded so it never rejects. */
+  /** Executor for {@code onFailure} dispatch; unbounded so it never rejects. */
   private final ExecutorService failureDispatchExecutor =
       new ExecutorUtil.MDCAwareThreadPoolExecutor(
           1,

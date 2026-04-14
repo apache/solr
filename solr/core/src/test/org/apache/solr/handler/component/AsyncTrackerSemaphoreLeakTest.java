@@ -115,9 +115,9 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    * org.apache.solr.client.solrj.jetty.LBJettySolrClient} retrying a request synchronously inside a
    * {@link CompletableFuture#whenComplete} callback that runs on the Jetty IO selector thread.
    *
-   * <p>This assertion <b>FAILS</b> with the current code, demonstrating the bug. The fix would
-   * dispatch retries to an executor thread so the IO thread remains free to fire {@code onComplete
-   * → release()}.
+   * <p>This test <b>passes</b> with the {@code failureDispatchExecutor} fix in this branch. Without
+   * the fix, the IO thread would block forever in {@code semaphore.acquire()} and this test would
+   * time out.
    */
   @Test
   public void testSemaphoreLeakOnLBRetry() throws Exception {
@@ -254,16 +254,15 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    * Verifies that no semaphore permits are permanently leaked when connection-level failures
    * trigger LB retries on the Jetty IO selector thread, provided the semaphore is not exhausted.
    *
-   * <p>Uses only {@code 20} requests, well below the configured permit limit. With plenty of
-   * permits available, {@code acquire()} on the IO thread returns immediately (does not block), so
+   * <p>Uses only {@code 20} requests, well below the configured limit of {@code 40}. With permits
+   * still available, {@code acquire()} on the IO thread returns immediately (does not block), so
    * {@code onComplete} fires normally and every permit is returned.
    *
-   * <p>This test <b>passes both with and without the Pattern B fix</b>. Run it with the fix
-   * commented out to confirm that the deadlock only manifests when the semaphore is fully exhausted
-   * (as demonstrated by {@link #testSemaphoreLeakOnLBRetry}).
+   * <p>This test <b>passes both with and without the Pattern B fix</b>. The deadlock only manifests
+   * when the semaphore is fully exhausted (demonstrated by {@link #testSemaphoreLeakOnLBRetry}).
    */
   @Test
-  public void testNoPermitLeakOnLBRetryWithDefaultPermits() throws Exception {
+  public void testNoPermitLeakOnLBRetryWhenSemaphoreNotExhausted() throws Exception {
     final int numRequests = 20;
 
     HttpJettySolrClient testClient =
