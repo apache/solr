@@ -94,7 +94,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     // be set BEFORE the cluster (and its HttpShardHandlerFactory) starts up.
     System.setProperty(HttpJettySolrClient.ASYNC_REQUESTS_MAX_SYSPROP, String.valueOf(MAX_PERMITS));
 
-    configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
+    configureCluster(1).addConfig("conf", configset("cloud-dynamic")).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
