@@ -32,6 +32,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
@@ -130,6 +131,16 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   private final boolean closeClient;
   private ExecutorService executor;
   private boolean shutdownExecutor;
+
+  /** Fallback for {@code onFailure} dispatch; unbounded so it never rejects. */
+  private final ExecutorService failureDispatchExecutor =
+      new ExecutorUtil.MDCAwareThreadPoolExecutor(
+          1,
+          4,
+          60,
+          TimeUnit.SECONDS,
+          new LinkedBlockingQueue<>(),
+          new SolrNamedThreadFactory("h2sc-failure-dispatch"));
 
   private AuthenticationStoreHolder authenticationStore;
 
@@ -376,6 +387,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       if (shutdownExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(executor);
       }
+      ExecutorUtil.shutdownAndAwaitTermination(failureDispatchExecutor);
     }
     assert ObjectReleaseTracker.release(this);
   }
@@ -451,8 +463,11 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
                       future.completeExceptionally(
                           new SolrServerException(failure.getMessage(), failure)));
             } catch (RejectedExecutionException ree) {
-              // Executor shut down; safe to complete inline since retries will fail immediately.
-              future.completeExceptionally(new SolrServerException(failure.getMessage(), failure));
+              // Never complete inline on the IO thread; use the unbounded fallback instead.
+              failureDispatchExecutor.execute(
+                  () ->
+                      future.completeExceptionally(
+                          new SolrServerException(failure.getMessage(), failure)));
             }
           }
         });
