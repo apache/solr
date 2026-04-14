@@ -42,7 +42,6 @@ import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -143,19 +142,11 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
       SolrIndexSearcher searcher,
       Map<Integer, Float> uniqueDocIds,
       DocSet combinedDocSet) {
-    DocIterator iter = combinedDocSet.iterator();
-    int[] docs = new int[combinedDocSet.size()];
-    int i = 0;
-    while (iter.hasNext()) {
-      docs[i++] = iter.nextDoc();
-    }
-    SortedIntDocSet sortedCombinedDocSet = new SortedIntDocSet(docs);
-
     IntDoubleHashMap scoreMap = new IntDoubleHashMap(uniqueDocIds.size());
     uniqueDocIds.forEach((doc, score) -> scoreMap.put(doc, score.doubleValue()));
     Query scoredQuery =
         FunctionScoreQuery.boostByValue(
-            sortedCombinedDocSet.makeQuery(), new PrecomputedScoreValuesSource(scoreMap));
+            combinedDocSet.makeQuery(), new PrecomputedScoreValuesSource(scoreMap));
 
     try {
       QueryCommand cmd =
@@ -215,9 +206,6 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
    * A {@link DoubleValuesSource} that returns pre-computed scores for specific document IDs. Used
    * with {@link FunctionScoreQuery#boostByValue} to assign original combined sub-query scores to a
    * DocSetQuery, enabling the collapse filter to select group heads based on these scores.
-   *
-   * <p>Translates segment-local doc IDs to global IDs (via {@code ctx.docBase}) for lookup in the
-   * score map.
    */
   private static class PrecomputedScoreValuesSource extends DoubleValuesSource {
 
@@ -241,8 +229,9 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
         @Override
         public boolean advanceExact(int doc) {
           int globalDoc = base + doc;
-          if (scoreMap.containsKey(globalDoc)) {
-            currentScore = scoreMap.get(globalDoc);
+          double score = scoreMap.get(globalDoc);
+          if (score != 0) {
+            currentScore = score;
             return true;
           }
           return false;
