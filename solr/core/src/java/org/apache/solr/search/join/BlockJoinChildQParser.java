@@ -39,7 +39,7 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   }
 
   @Override
-  protected String getParentFilterLocalParamName() {
+  protected String getLegacyParentFilterParamName() {
     return "of";
   }
 

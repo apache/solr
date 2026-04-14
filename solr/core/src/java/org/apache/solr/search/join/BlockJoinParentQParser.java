@@ -78,7 +78,8 @@ public class BlockJoinParentQParser extends FiltersQParser {
    */
   public static final String CHILD_PATH_PARAM = "childPath";
 
-  protected String getParentFilterLocalParamName() {
+  // most users should use parentPath instead
+  protected String getLegacyParentFilterParamName() {
     return "which";
   }
 
@@ -96,12 +97,12 @@ public class BlockJoinParentQParser extends FiltersQParser {
   public Query parse() throws SyntaxError {
     String parentPath = localParams.get(PARENT_PATH_PARAM);
     if (parentPath != null) {
-      if (localParams.get(getParentFilterLocalParamName()) != null) {
+      if (localParams.get(getLegacyParentFilterParamName()) != null) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             PARENT_PATH_PARAM
                 + " and "
-                + getParentFilterLocalParamName()
+                + getLegacyParentFilterParamName()
                 + " local params are mutually exclusive");
       }
       if (!parentPath.startsWith("/")) {
@@ -132,11 +133,11 @@ public class BlockJoinParentQParser extends FiltersQParser {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " requires " + PARENT_PATH_PARAM);
     }
-    if (localParams.get(getParentFilterLocalParamName()) == null) {
+    if (localParams.get(getLegacyParentFilterParamName()) == null) {
       throw new SyntaxError(
           String.format(
               "'%s' or '%s' is required for the '%s' query parser",
-              getParentFilterLocalParamName(),
+              getLegacyParentFilterParamName(),
               PARENT_PATH_PARAM,
               localParams.get("type", "parent")));
     }
@@ -274,7 +275,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
   }
 
   protected Query parseParentFilter() throws SyntaxError {
-    String filter = localParams.get(getParentFilterLocalParamName());
+    String filter = localParams.get(getLegacyParentFilterParamName());
     QParser parentParser = subQuery(filter, null);
     Query parentQ = parentParser.getQuery();
     return parentQ;
