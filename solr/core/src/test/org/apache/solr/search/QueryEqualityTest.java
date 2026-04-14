@@ -740,12 +740,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
               + ")");
     }
 
-    // Test parentPath with empty v: {!parent parentPath=/ v=''} returns all root-level docs.
-    // This is a useful trick to query docs at a specific nest path without using _nest_path_
+    // Test parentPath with no subordinate query: {!parent parentPath=/ v=''} returns all root-level
+    // docs. This is a useful trick to query docs at a specific nest path without using _nest_path_
     // directly.
     try (SolrQueryRequest req = req()) {
-      // {!parent parentPath=/ v=''} returns BooleanQuery: +MatchAllDocs,
-      // -FieldExistsQuery(_nest_path_)
+      // {!parent parentPath=/ v=''} returns BooleanQuery:
+      //   clause 0: MUST  MatchAllDocsQuery
+      //   clause 1: MUST_NOT FieldExistsQuery(_nest_path_)
       Query q =
           assertQueryEqualsAndReturn(
               "parent",
@@ -754,7 +755,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
               "{!parent parentPath=/}"); // omitting v is equivalent to empty v
       assertTrue(q instanceof BooleanQuery);
       BooleanQuery bq = (BooleanQuery) q;
-      assertEquals(2, bq.clauses().size());
+      assertEquals(2, bq.clauses().size()); // MUST MatchAllDocs + MUST_NOT FieldExists
       assertEquals(Occur.MUST, bq.clauses().get(0).occur());
       assertTrue(bq.clauses().get(0).query() instanceof MatchAllDocsQuery);
       assertEquals(Occur.MUST_NOT, bq.clauses().get(1).occur());

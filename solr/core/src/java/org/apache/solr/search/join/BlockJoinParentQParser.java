@@ -134,13 +134,11 @@ public class BlockJoinParentQParser extends FiltersQParser {
     }
     if (localParams.get(getParentFilterLocalParamName()) == null) {
       throw new SyntaxError(
-          "'"
-              + getParentFilterLocalParamName()
-              + "' or '"
-              + PARENT_PATH_PARAM
-              + "' is required for the '"
-              + localParams.get("type", "parent")
-              + "' query parser");
+          String.format(
+              "'%s' or '%s' is required for the '%s' query parser",
+              getParentFilterLocalParamName(),
+              PARENT_PATH_PARAM,
+              localParams.get("type", "parent")));
     }
     return super.parse();
   }
