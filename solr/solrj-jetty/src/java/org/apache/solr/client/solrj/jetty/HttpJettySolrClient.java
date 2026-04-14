@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Phaser;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -457,18 +456,10 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
             super.onFailure(response, failure);
             // Dispatch off the IO thread so any whenComplete retry won't block on
             // semaphore.acquire().
-            try {
-              executor.execute(
-                  () ->
-                      future.completeExceptionally(
-                          new SolrServerException(failure.getMessage(), failure)));
-            } catch (RejectedExecutionException ree) {
-              // Never complete inline on the IO thread; use the unbounded fallback instead.
-              failureDispatchExecutor.execute(
-                  () ->
-                      future.completeExceptionally(
-                          new SolrServerException(failure.getMessage(), failure)));
-            }
+            failureDispatchExecutor.execute(
+                () ->
+                    future.completeExceptionally(
+                        new SolrServerException(failure.getMessage(), failure)));
           }
         });
 
