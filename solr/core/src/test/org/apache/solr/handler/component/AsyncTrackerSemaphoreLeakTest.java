@@ -28,8 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -211,41 +213,37 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
         }
       }
 
-      // Give IO threads time to process the failure events and attempt the retry acquires.
-      Thread.sleep(2000);
+      try {
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
+            .get(30, TimeUnit.SECONDS);
+      } catch (ExecutionException e) {
+        // Individual request failure is fine; permits are released by onComplete regardless.
+        log.warn("Some requests failed during retry", e);
+      } catch (TimeoutException e) {
+        // Force-stop the HttpClient to unblock any threads stuck in semaphore.acquire()
+        // before asserting failure, so the finally block can close the client without hanging.
+        try {
+          testClient.getHttpClient().stop();
+        } catch (Exception ignored) {
+        }
+        fail(
+            "BUG (LBJettySolrClient retry deadlock): futures did not complete within 30s."
+                + " IO threads are permanently blocked in semaphore.acquire() because the retry"
+                + " fires synchronously on the IO thread before onComplete can release().");
+      }
 
       int permitsAfterFailures = testClient.asyncTrackerAvailablePermits();
-      long completedCount = futures.stream().filter(CompletableFuture::isDone).count();
-      log.info(
-          "Permits after 2s: {}/{}; futures completed: {}/{}",
-          permitsAfterFailures,
-          MAX_PERMITS,
-          completedCount,
-          NUM_RETRY_REQUESTS);
-
+      log.info("Permits after retries: {}/{}", permitsAfterFailures, MAX_PERMITS);
       assertEquals(
-          "BUG (LBJettySolrClient retry leak): all "
-              + NUM_RETRY_REQUESTS
-              + " semaphore permits should be released once the retries complete on the"
-              + " real server. Instead the IO threads are permanently blocked in"
-              + " semaphore.acquire() because the retry fires synchronously on the IO thread"
-              + " before the original request's completeListener can call release().",
+          "All permits should be restored after retries complete",
           MAX_PERMITS,
           permitsAfterFailures);
     } finally {
       fakeServer.close();
-
-      // Force-stop the underlying Jetty HttpClient to unblock any IO threads permanently
-      // stuck in semaphore.acquire(), so that the test client can be closed without hanging.
-      try {
-        testClient.getHttpClient().stop();
-      } catch (Exception ignored) {
-      }
       try {
         testClient.close();
       } catch (Exception ignored) {
       }
-
       for (CompletableFuture<LBSolrClient.Rsp> f : futures) {
         f.cancel(true);
       }
@@ -374,10 +372,6 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
 
     } finally {
       fakeServer.close();
-      try {
-        testClient.getHttpClient().stop();
-      } catch (Exception ignored) {
-      }
       try {
         testClient.close();
       } catch (Exception ignored) {
