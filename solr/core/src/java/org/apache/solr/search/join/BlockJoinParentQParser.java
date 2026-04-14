@@ -132,6 +132,16 @@ public class BlockJoinParentQParser extends FiltersQParser {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " requires " + PARENT_PATH_PARAM);
     }
+    if (localParams.get(getParentFilterLocalParamName()) == null) {
+      throw new SyntaxError(
+          "'"
+              + getParentFilterLocalParamName()
+              + "' or '"
+              + PARENT_PATH_PARAM
+              + "' is required for the '"
+              + localParams.get("type", "parent")
+              + "' query parser");
+    }
     return super.parse();
   }
 
@@ -277,7 +287,6 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
   @Override
   protected Query noClausesQuery() throws SyntaxError {
-    assert false : "dead code";
     return new BitSetProducerQuery(getBitSetProducer(parseParentFilter()));
   }
 

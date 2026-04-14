@@ -167,6 +167,19 @@ To instead return the `skus` that are ancestors of one-page _manuals_ (only manu
 [source,text]
 q={!parent parentPath="/skus" childPath="manuals"}pages_i:1
 
+==== Filtering to a Specific Nest Path
+
+When the subordinate query is omitted (empty), `{!parent parentPath=<path>}` is a convenient way to filter documents to exactly a specific nest path without needing to reference `_nest_path_` directly:
+
+[source,text]
+----
+# Return all root-level documents (no _nest_path_):
+q={!parent parentPath=/}
+
+# Return all documents at exactly /skus (not deeper descendants like /skus/manuals):
+q={!parent parentPath=/skus}
+----
+
 === Using the `which` Parameter
 
 This approach is used with anonymous child documents (schemas without `_nest_path_`).
