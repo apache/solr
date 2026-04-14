@@ -56,6 +56,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -271,6 +272,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       throws IOException, URISyntaxException {
     validateGetRequest(solrRequest);
     reqb.GET();
+    reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+    reqb.header(CommonParams.SOLR_REQUEST_CONTEXT_PARAM,  SolrRequest.SolrClientContext.CLIENT.toString());
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + queryParams.toQueryString()));
     return new PreparedRequest(reqb, null);

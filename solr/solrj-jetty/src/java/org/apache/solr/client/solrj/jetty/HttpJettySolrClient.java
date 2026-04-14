@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseLis
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
@@ -626,6 +627,11 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       req.onRequestQueued(asyncTracker.queuedListener);
       req.onComplete(asyncTracker.completeListener);
     }
+
+    solrRequest.addHeader(
+        CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+    solrRequest.addHeader(
+        CommonParams.SOLR_REQUEST_CONTEXT_PARAM, SolrRequest.SolrClientContext.CLIENT.toString());
 
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
