@@ -195,6 +195,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
         try {
           testClient.getHttpClient().stop();
         } catch (Exception ignored) {
+          log.debug("Failed to stop HttpClient");
         }
         fail(
             "BUG (LBJettySolrClient retry deadlock): futures did not complete within 30s."
@@ -212,6 +213,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
       try {
         testClient.close();
       } catch (Exception ignored) {
+        log.debug("Failed to close LBJettySolrClient");
       }
       for (CompletableFuture<LBSolrClient.Rsp> f : futures) {
         f.cancel(true);
@@ -313,6 +315,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
       try {
         testClient.close();
       } catch (Exception ignored) {
+        log.debug("Failed to close LBJettySolrClient");
       }
       for (CompletableFuture<LBSolrClient.Rsp> f : futures) {
         f.cancel(true);
@@ -408,11 +411,13 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
         Phaser phaser = (Phaser) phaserField.get(asyncTracker);
         phaser.forceTermination();
       } catch (Exception ignored) {
+        log.debug("Failed to force-terminate Phaser");
       }
 
       try {
         testClient.close();
       } catch (Exception ignored) {
+        log.debug("Failed to close HttpJettySolrClient");
       }
     }
   }
@@ -442,7 +447,8 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
                     connections.add(s);
                     allConnected.countDown();
                   }
-                } catch (IOException ignored) {
+                } catch (IOException ioe) {
+                  log.debug("Failed to accept connection: {}", ioe.getMessage());
                 }
               },
               "fake-tcp-server");
@@ -474,6 +480,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
           s.setSoLinger(true, 0); // send RST instead of FIN
           s.close();
         } catch (IOException ignored) {
+          log.debug("Failed to close connection");
         }
       }
     }
@@ -485,9 +492,11 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     @Override
     public void close() {
       if (closed.compareAndSet(false, true)) {
+        rstAll();
         try {
           serverSocket.close();
         } catch (IOException ignored) {
+          log.debug("Failed to close server socket");
         }
       }
     }
