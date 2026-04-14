@@ -46,6 +46,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
@@ -170,28 +171,35 @@ public class BlockJoinParentQParser extends FiltersQParser {
   protected Query parseUsingParentPath(String parentPath, String childPath) throws SyntaxError {
     final BooleanQuery parsedChildQuery = parseImpl();
 
+    final SchemaField nestPathField =
+        req.getSchema().getFieldOrNull(IndexSchema.NEST_PATH_FIELD_NAME);
+    final Query nestPathExistsQuery =
+        nestPathField != null
+            ? nestPathField.getType().getExistenceQuery(this, nestPathField)
+            : new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
+
     if (parsedChildQuery.clauses().isEmpty()) { // i.e. all children
       // no block-join needed; just return all "parent" docs at this level
-      return wrapWithParentPathConstraint(parentPath, new MatchAllDocsQuery());
+      return wrapWithParentPathConstraint(parentPath, new MatchAllDocsQuery(), nestPathExistsQuery);
     }
 
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
-    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
+    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath, nestPathExistsQuery);
 
     // constrain child query: (+<original_child> +{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (+<original_child> +_nest_path_:*)
     // If childPath specified: (+<original_child> +{!term f="_nest_path_"
     // v="<parentPath>/<childPath>"})
     final Query constrainedChildQuery =
-        wrapWithChildPathConstraint(parentPath, childPath, parsedChildQuery);
+        wrapWithChildPathConstraint(parentPath, childPath, parsedChildQuery, nestPathExistsQuery);
 
     final String scoreMode = localParams.get("score", ScoreMode.None.name());
     final Query parentJoinQuery = createQuery(allParentsFilter, constrainedChildQuery, scoreMode);
 
     // wrap result: (+<parent_join> +{!field f="_nest_path_" v="<parentPath>"})
     // For root: (+<parent_join> -_nest_path_:*)
-    return wrapWithParentPathConstraint(parentPath, parentJoinQuery);
+    return wrapWithParentPathConstraint(parentPath, parentJoinQuery, nestPathExistsQuery);
   }
 
   /**
@@ -209,10 +217,11 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * <p>Equivalent to: {@code (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})} For root ({@code
    * /}): {@code (*:* -_nest_path_:*)}
    */
-  protected static Query buildAllParentsFilterFromPath(String parentPath) {
+  protected static Query buildAllParentsFilterFromPath(
+      String parentPath, Query nestPathExistsQuery) {
     final Query excludeQuery;
     if (parentPath.equals("/")) {
-      excludeQuery = new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
+      excludeQuery = nestPathExistsQuery;
     } else {
       excludeQuery = new PrefixQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath + "/"));
     }
@@ -226,10 +235,11 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * Wraps the given query with a constraint ensuring only docs at exactly {@code parentPath} are
    * matched.
    */
-  protected static Query wrapWithParentPathConstraint(String parentPath, Query query) {
+  protected static Query wrapWithParentPathConstraint(
+      String parentPath, Query query, Query nestPathExistsQuery) {
     final BooleanQuery.Builder builder = new BooleanQuery.Builder().add(query, Occur.MUST);
     if (parentPath.equals("/")) {
-      builder.add(new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME), Occur.MUST_NOT);
+      builder.add(nestPathExistsQuery, Occur.MUST_NOT);
     } else {
       final Query constraint =
           new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath));
@@ -247,7 +257,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * {@code parentPath/childPath}.
    */
   protected static Query wrapWithChildPathConstraint(
-      String parentPath, String childPath, Query subQuery) {
+      String parentPath, String childPath, Query subQuery, Query nestPathExistsQuery) {
     final Query nestPathConstraint;
     if (childPath != null) {
       String effectiveChildPath =
@@ -255,7 +265,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
       nestPathConstraint =
           new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, effectiveChildPath));
     } else if (parentPath.equals("/")) {
-      nestPathConstraint = new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
+      nestPathConstraint = nestPathExistsQuery;
     } else {
       nestPathConstraint =
           new PrefixQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath + "/"));
