@@ -645,10 +645,10 @@ public class CollectionHandlingUtils {
   }
 
   protected static ShardRequestTracker requestTracker(
-      String asyncId, String lockIds, String adminPath, CollectionCommandContext ccc) {
+      String asyncId, String lockId, String adminPath, CollectionCommandContext ccc) {
     return new ShardRequestTracker(
         asyncId,
-        lockIds,
+        lockId,
         adminPath,
         ccc.getZkStateReader(),
         ccc.newShardHandler().getShardHandlerFactory());
@@ -656,7 +656,7 @@ public class CollectionHandlingUtils {
 
   public static class ShardRequestTracker {
     private final String asyncId;
-    private final String lockIdList;
+    private final String lockId;
     private final String adminPath;
     private final ZkStateReader zkStateReader;
     private final ShardHandlerFactory shardHandlerFactory;
@@ -664,12 +664,12 @@ public class CollectionHandlingUtils {
 
     public ShardRequestTracker(
         String asyncId,
-        String lockIdList,
+        String lockId,
         String adminPath,
         ZkStateReader zkStateReader,
         ShardHandlerFactory shardHandlerFactory) {
       this.asyncId = asyncId;
-      this.lockIdList = lockIdList;
+      this.lockId = lockId;
       this.adminPath = adminPath;
       this.zkStateReader = zkStateReader;
       this.shardHandlerFactory = shardHandlerFactory;
@@ -742,8 +742,8 @@ public class CollectionHandlingUtils {
       sreq.nodeName = nodeName;
       sreq.coreNodeName = coreNodeName;
       sreq.params = params;
-      if (lockIdList != null && !lockIdList.isBlank()) {
-        sreq.headers = Map.of(CALLING_LOCK_ID_HEADER, lockIdList);
+      if (StrUtils.isNotBlank(lockId)) {
+        sreq.headers = Map.of(CALLING_LOCK_ID_HEADER, lockId);
       }
 
       shardHandler.submit(sreq, replica, sreq.params);
