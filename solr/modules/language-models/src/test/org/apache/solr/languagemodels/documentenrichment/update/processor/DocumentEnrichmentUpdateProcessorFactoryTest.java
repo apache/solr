@@ -65,7 +65,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
     assertEquals(List.of("string_field"), factory.getInputFields());
     assertEquals("enriched_field", factory.getOutputField());
-    assertEquals("Summarize: {string_field}", factory.getPrompt());
+    assertEquals("Summarize: {string_field}.", factory.getPrompt());
     assertEquals("model1", factory.getModelName());
   }
 
@@ -95,7 +95,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   public void init_noInputField_shouldThrowExceptionWithDetailedMessage() {
     NamedList<String> args = new NamedList<>();
     args.add("outputField", "enriched_field");
-    args.add("prompt", "Summarize: {string_field}");
+    args.add("prompt", "Summarize: {string_field}.");
     args.add("model", "model1");
 
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
@@ -386,9 +386,12 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     }
     args.add("outputField", outputFieldName);
 
-    args.add(
-        "prompt",
-        Objects.requireNonNullElseGet(prompt, () -> "Summarize: {" + String.join("}. {", inputFieldNames) + "}."));
+    if (prompt != null) {
+      args.add("promptFile", prompt);
+    }
+    else {
+      args.add("prompt", "Summarize: {" + String.join("}. {", inputFieldNames) + "}.");
+    }
 
     args.add("model", modelName);
 

@@ -71,20 +71,21 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 ----
 [NOTE]
 ====
-If no component is configured in `solrconfig.xml`, the `ChatModel` store will not be registered and requests to `/schema/chat-model-store` will return an error.
+If no component is configured in `solrconfig.xml`, the `ChatModel` store will not be registered and requests to
+`/schema/chat-model-store` will return an error.
 ====
 
-== Document Enrichment Lifecycle
+== Chat Model Configuration
 
 === Models
 
 * A model in this module is a chat model, that answers with text given a prompt.
-* A model in this Solr module is a reference to an external API that runs the Large Language Model responsible chat
+* A model in this Solr module is a reference to an external API that runs the Large Language Model responsible for chat
 completion.
 
 [IMPORTANT]
 ====
-the Solr chat model specifies the parameters to access the APIs, the LLM doesn't run internally in Solr
+The Solr chat model specifies the parameters to access the APIs, the LLM doesn't run internally in Solr
 
 ====
 
@@ -127,7 +128,7 @@ Each model class has potentially different params.
 Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr: https://docs.langchain4j.dev/category/language-models[Chat Models in LangChain4j].
 
 === Supported Models
-Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support document enrichement with LLMs.
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support document enrichment with LLMs.
 The models currently supported are:
 
 [tabs#supported-chat-models]
@@ -259,7 +260,7 @@ To view all models:
 http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store
 
 
-.Example: /path/myModel.json
+.Example: /path/myOpenAIModel.json
 [source,json]
 ----
 {
@@ -277,7 +278,7 @@ http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store
 }
 ----
 
-=== How to Trigger Document Enrichment during Indexing
+== How to Trigger Document Enrichment during Indexing
 To create new fields starting from existent ones in your documents at indexing time you need to configure an {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[Update Request Processor Chain] that includes at least one `DocumentEnrichmentUpdateProcessor` update request processor in one of the 2 following way:
 
 * Update processor with parameter `prompt`
@@ -313,8 +314,9 @@ To create new fields starting from existent ones in your documents at indexing t
 Exactly one of the following parameters is required: `prompt` or `promptFile`.
 
 Another important feature of this module is that one (or more) `inputField` needs to be injected in the prompt. This is
-done by some special tokens, that are the `fieldName` surrounded by curly brackets (e.g., `{fieldName}`). These tokens
-are _mandatory_ for this module to work properly. Solr will throw an error if the parameters are not properly defined.
+done by some special tokens, that are the `fieldName` surrounded by curly brackets (e.g., `{string_field}`, in the
+example above). These tokens are _mandatory_ for this module to work properly. Solr will throw an error if the
+parameters are not properly defined.
 For example, both the prompt and the content of the file prompt.txt, must contain the text '{string_field}', which
 will be substituted with the content of the `string_field` field for each document. An example of a valid prompt with
 multiple input fields is as follows:
@@ -333,16 +335,26 @@ multiple input fields is as follows:
  </updateRequestProcessorChain>
 ----
 
+Another way of using more than one `inputField` is by using the following notation, instead of more than one parameter
+with the same name:
+[source,xml]
+----
+<arr name="inputField">
+    <str>title</str>
+    <str>body</str>
+</arr>
+----
+
 The LLM response is mapped to the specified `outputField`. Note that this module only supports a subset of Solr's
 available field types, which includes:
 
-* *String/Text*: `StrField`, `TextField`
-* *Date*: `DatePointField`
-* *Numeric*: `IntPointField`, `LongPointField, `FloatPointField`, `DoublePointField`
+* *String/Text*: `StrField`, `TextField`, `SortableTextField`
+* *Date*: `DatePointField` (the LLM must return an ISO-8601 date string; it might be useful to tune your prompt accordingly, to avoid indexing errors)
+* *Numeric*: `IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`
 * *Boolean*: `BoolField`
 
 
-This fields _can_ be multivalued. Solr uses structured output form LangChain4j to deal with LLMs' responses.
+These fields _can_ be multivalued. Solr uses structured output from LangChain4j to deal with LLMs' responses.
 
 
 For more details on how to work with update request processors in Apache Solr, please refer to the dedicated page:
@@ -356,12 +368,22 @@ It will slow down substantially your indexing pipeline so make sure to stress te
 
 ====
 
+[NOTE]
+====
+If any `inputField` value is absent or empty for a given document, enrichment is silently skipped for that document:
+the `outputField` is not added and the document is indexed as-is.
+
+If the LLM call fails at runtime (e.g., network error, model timeout), the exception is caught and logged but is
+*non-fatal*: the document is still indexed without the `outputField`.
+Monitor your indexing logs to detect documents that were not enriched as expected.
+====
+
 === Index first and enrich your documents on a second pass
 LLM calls are usually quite slow, so, depending on your use case it could be a good idea to index first your documents
 enrich them with new LLM-generated fields later on.
 
 This can be done in Solr defining two update request processors chains: one that includes all the processors you need,
-excluded the `DocumentEnrichmentUpdateProcessor` (let's call it 'no-enrichment') and one that includes the
+excluding the `DocumentEnrichmentUpdateProcessor` (let's call it 'no-enrichment') and one that includes the
 `DocumentEnrichmentUpdateProcessor` (let's call it 'enrichment').
 
 [source,xml]
@@ -412,7 +434,7 @@ repeated the second time as we are literally replacing the indexed documents one
 If your use case is compatible with xref:indexing-guide:partial-document-updates.adoc[Partial Updates], you can do better:
 
 You still define two chains, but this time the 'enrichment' one only includes the 'DocumentEnrichmentUpdateProcessor'
-(and the xref:configuration-guide:update-request-processors.adoc[Mandatory Processors] )
+(and the xref:configuration-guide:update-request-processors.adoc[Mandatory Processors])
 
 [source,xml]
 ----
