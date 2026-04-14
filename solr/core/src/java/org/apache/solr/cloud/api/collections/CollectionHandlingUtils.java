@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -630,7 +630,7 @@ public class CollectionHandlingUtils {
 
   public static ShardRequestTracker syncRequestTracker(
       AdminCmdContext adminCmdContext, String adminPath, CollectionCommandContext ccc) {
-    return requestTracker(null, adminCmdContext.getSubRequestCallingLockIds(), adminPath, ccc);
+    return requestTracker(null, adminCmdContext.getLockId(), adminPath, ccc);
   }
 
   public static ShardRequestTracker asyncRequestTracker(
@@ -641,10 +641,7 @@ public class CollectionHandlingUtils {
   public static ShardRequestTracker asyncRequestTracker(
       AdminCmdContext adminCmdContext, String adminPath, CollectionCommandContext ccc) {
     return requestTracker(
-        adminCmdContext.getAsyncId(),
-        adminCmdContext.getSubRequestCallingLockIds(),
-        adminPath,
-        ccc);
+        adminCmdContext.getAsyncId(), adminCmdContext.getLockId(), adminPath, ccc);
   }
 
   protected static ShardRequestTracker requestTracker(
@@ -746,7 +743,7 @@ public class CollectionHandlingUtils {
       sreq.coreNodeName = coreNodeName;
       sreq.params = params;
       if (lockIdList != null && !lockIdList.isBlank()) {
-        sreq.headers = Map.of(CALLING_LOCK_IDS_HEADER, lockIdList);
+        sreq.headers = Map.of(CALLING_LOCK_ID_HEADER, lockIdList);
       }
 
       shardHandler.submit(sreq, replica, sreq.params);

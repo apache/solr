@@ -21,14 +21,13 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logF
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -130,10 +129,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       CollectionAction action = getCollectionAction(operation);
       CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
       if (command != null) {
-        AdminCmdContext adminCmdContext = new AdminCmdContext(action, message.getStr(ASYNC));
-        adminCmdContext.setLockId(lock.id());
-        adminCmdContext.setCallingLockIds(message.getStr(CALLING_LOCK_IDS_HEADER));
-        adminCmdContext.withClusterState(cloudManager.getClusterState());
+        AdminCmdContext adminCmdContext =
+            new AdminCmdContext(action, message.getStr(ASYNC))
+                .withLockId(lock.id())
+                .withCallingLockId(message.getStr(CALLING_LOCK_ID_HEADER))
+                .withClusterState(cloudManager.getClusterState());
         command.call(adminCmdContext, message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
@@ -186,7 +186,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
    *     because it happens that a lock got released).
    */
   @Override
-  public Lock lockTask(ZkNodeProps message, long batchSessionId, List<String> callingLockIds) {
+  public Lock lockTask(ZkNodeProps message, long batchSessionId, String callingLockId) {
     if (sessionId != batchSessionId) {
       // this is always called in the same thread.
       // Each batch is supposed to have a new taskBatch
@@ -201,7 +201,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
             getTaskKey(message),
             message.getStr(ZkStateReader.SHARD_ID_PROP),
             message.getStr(ZkStateReader.REPLICA_PROP)),
-        callingLockIds);
+        callingLockId);
   }
 
   @Override

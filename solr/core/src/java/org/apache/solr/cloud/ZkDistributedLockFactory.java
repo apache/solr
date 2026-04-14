@@ -17,10 +17,10 @@
 
 package org.apache.solr.cloud;
 
-import java.util.List;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
@@ -35,19 +35,18 @@ abstract class ZkDistributedLockFactory {
   }
 
   protected DistributedLock doCreateLock(
-      boolean isWriteLock, String lockPath, List<String> callingLockIds) {
+      boolean isWriteLock, String lockPath, String lockIdToMirror) {
     try {
-      // TODO optimize by first attempting to create the ZkDistributedLock without calling
-      // makeLockPath() and only call it if the lock creation fails. This will be less costly on
-      // high contention (and slightly more on low contention)
-      makeLockPath(lockPath);
-      // If a callingLock has the same lockPath as this lock, we just want to mirror that lock
-      String mirroredLockId =
-          callingLockIds.stream().filter(p -> p.startsWith(lockPath)).findFirst().orElse(null);
+      if (StrUtils.isBlank(lockIdToMirror)) {
+        // TODO optimize by first attempting to create the ZkDistributedLock without calling
+        // makeLockPath() and only call it if the lock creation fails. This will be less costly on
+        // high contention (and slightly more on low contention)
+        makeLockPath(lockPath);
+      }
 
       return isWriteLock
-          ? new ZkDistributedLock.Write(zkClient, lockPath, mirroredLockId)
-          : new ZkDistributedLock.Read(zkClient, lockPath, mirroredLockId);
+          ? new ZkDistributedLock.Write(zkClient, lockPath, lockIdToMirror)
+          : new ZkDistributedLock.Read(zkClient, lockPath, lockIdToMirror);
     } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {

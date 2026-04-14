@@ -34,7 +34,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -369,8 +369,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (adminCmdContext.getAsyncId() != null && !adminCmdContext.getAsyncId().isBlank()) {
         additionalProps.put(ASYNC, adminCmdContext.getAsyncId());
       }
-      if (StrUtils.isNotBlank(adminCmdContext.getCallingLockIds())) {
-        additionalProps.put(CALLING_LOCK_IDS_HEADER, adminCmdContext.getCallingLockIds());
+      if (StrUtils.isNotBlank(adminCmdContext.getLockId())) {
+        additionalProps.put(CALLING_LOCK_ID_HEADER, adminCmdContext.getCallingLockId());
       }
       m = m.plus(additionalProps);
       if (adminCmdContext.getAsyncId() != null) {

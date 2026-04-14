@@ -58,7 +58,7 @@ public interface CollectionCommandContext {
   default ShardRequestTracker asyncRequestTracker(AdminCmdContext adminCmdContext) {
     return new ShardRequestTracker(
         adminCmdContext.getAsyncId(),
-        adminCmdContext.getSubRequestCallingLockIds(),
+        adminCmdContext.getLockId(),
         getAdminPath(),
         getZkStateReader(),
         newShardHandler().getShardHandlerFactory());
