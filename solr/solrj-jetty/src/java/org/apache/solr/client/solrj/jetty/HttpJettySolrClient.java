@@ -132,16 +132,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   private ExecutorService executor;
   private boolean shutdownExecutor;
 
-  /** Executor for {@code onFailure} dispatch; unbounded so it never rejects. */
-  private final ExecutorService failureDispatchExecutor =
-      new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          1,
-          4,
-          60,
-          TimeUnit.SECONDS,
-          new LinkedBlockingQueue<>(),
-          new SolrNamedThreadFactory("h2sc-failure-dispatch"));
-
   private AuthenticationStoreHolder authenticationStore;
 
   private KeyStoreScanner scanner;
@@ -387,7 +377,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       if (shutdownExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(executor);
       }
-      ExecutorUtil.shutdownAndAwaitTermination(failureDispatchExecutor);
     }
     assert ObjectReleaseTracker.release(this);
   }
@@ -456,11 +445,14 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
           public void onFailure(Response response, Throwable failure) {
             super.onFailure(response, failure);
             // Dispatch off the IO thread so any whenComplete retry won't block on
-            // semaphore.acquire().
-            failureDispatchExecutor.execute(
-                () ->
-                    future.completeExceptionally(
-                        new SolrServerException(failure.getMessage(), failure)));
+            // semaphore.acquire(). Fall back to the IO thread if the executor rejects
+            // (shutdown or overloaded) to ensure the future is always completed.
+            SolrServerException ex = new SolrServerException(failure.getMessage(), failure);
+            try {
+              executor.execute(() -> future.completeExceptionally(ex));
+            } catch (java.util.concurrent.RejectedExecutionException ree) {
+              future.completeExceptionally(ex);
+            }
           }
         });
 
