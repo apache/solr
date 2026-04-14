@@ -16,27 +16,21 @@
  */
 package org.apache.solr.handler.component.combine;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.internal.hppc.IntDoubleHashMap;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TotalHits;
-import org.apache.lucene.search.Weight;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -48,7 +42,7 @@ import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
+import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -139,8 +133,8 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
 
   /**
    * Removes collapsed duplicates by delegating to SolrIndexSearcher with the CollapsingPostFilter.
-   * Uses a PrecomputedScoreQuery to preserve original scores from combined sub-queries, then
-   * applies the collapse filter to determine surviving doc IDs.
+   * Uses a DocSetQuery wrapped with FunctionScoreQuery.boostByValue to preserve original scores
+   * from combined sub-queries, then applies the collapse filter to determine surviving doc IDs.
    *
    * <p>This leverages Solr's native collapse infrastructure instead of manually reading DocValues.
    */
@@ -149,19 +143,33 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
       SolrIndexSearcher searcher,
       Map<Integer, Float> uniqueDocIds,
       DocSet combinedDocSet) {
+    DocIterator iter = combinedDocSet.iterator();
+    int[] docs = new int[combinedDocSet.size()];
+    int i = 0;
+    while (iter.hasNext()) {
+      docs[i++] = iter.nextDoc();
+    }
+    SortedIntDocSet sortedCombinedDocSet = new SortedIntDocSet(docs);
+
+    IntDoubleHashMap scoreMap = new IntDoubleHashMap(uniqueDocIds.size());
+    uniqueDocIds.forEach((doc, score) -> scoreMap.put(doc, score.doubleValue()));
+    Query scoredQuery =
+        FunctionScoreQuery.boostByValue(
+            sortedCombinedDocSet.makeQuery(), new PrecomputedScoreValuesSource(scoreMap));
+
     try {
       QueryCommand cmd =
           new QueryCommand()
-              .setQuery(new PrecomputedScoreQuery(uniqueDocIds))
-              .setFilterList(List.of(combinedDocSet.makeQuery(), collapseFilter))
+              .setQuery(scoredQuery)
+              .setFilterList(List.of(collapseFilter))
               .setLen(uniqueDocIds.size())
               .setNeedDocSet(true);
       QueryResult result = searcher.search(cmd);
 
       Set<Integer> survivingDocIds = new HashSet<>();
-      DocIterator iter = result.getDocList().iterator();
-      while (iter.hasNext()) {
-        survivingDocIds.add(iter.nextDoc());
+      DocIterator convergingIter = result.getDocList().iterator();
+      while (convergingIter.hasNext()) {
+        survivingDocIds.add(convergingIter.nextDoc());
       }
       uniqueDocIds.keySet().retainAll(survivingDocIds);
       return result.getDocSet();
@@ -204,153 +212,72 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
   }
 
   /**
-   * A query that returns pre-computed scores for specific doc IDs. Used to preserve original scores
-   * from combined sub-queries when delegating collapse to the searcher.
+   * A {@link DoubleValuesSource} that returns pre-computed scores for specific document IDs. Used
+   * with {@link FunctionScoreQuery#boostByValue} to assign original combined sub-query scores to a
+   * DocSetQuery, enabling the collapse filter to select group heads based on these scores.
+   *
+   * <p>Translates segment-local doc IDs to global IDs (via {@code ctx.docBase}) for lookup in the
+   * score map.
    */
-  private static class PrecomputedScoreQuery extends Query {
-    private final Map<Integer, Float> docScores;
+  private static class PrecomputedScoreValuesSource extends DoubleValuesSource {
 
-    PrecomputedScoreQuery(Map<Integer, Float> docScores) {
-      this.docScores = docScores;
+    private final IntDoubleHashMap scoreMap;
+
+    PrecomputedScoreValuesSource(IntDoubleHashMap scoreMap) {
+      this.scoreMap = scoreMap;
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
-      return new PrecomputedScoreWeight(this, docScores, boost);
-    }
+    public DoubleValues getValues(LeafReaderContext ctx, DoubleValues existing) {
+      int base = ctx.docBase;
+      return new DoubleValues() {
+        private double currentScore;
 
-    @Override
-    public String toString(String field) {
-      return "PrecomputedScoreQuery(docs=" + docScores.size() + ")";
-    }
-
-    @Override
-    public void visit(QueryVisitor visitor) {
-      visitor.visitLeaf(this);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return other instanceof PrecomputedScoreQuery otherQuery
-          && docScores.equals(otherQuery.docScores);
-    }
-
-    @Override
-    public int hashCode() {
-      return classHash() * 31 + docScores.hashCode();
-    }
-  }
-
-  private static class PrecomputedScoreWeight extends Weight {
-    private final Map<Integer, Float> docScores;
-    private final float boost;
-
-    PrecomputedScoreWeight(Query query, Map<Integer, Float> docScores, float boost) {
-      super(query);
-      this.docScores = docScores;
-      this.boost = boost;
-    }
-
-    @Override
-    public Explanation explain(LeafReaderContext context, int doc) {
-      int globalDoc = context.docBase + doc;
-      Float score = docScores.get(globalDoc);
-      if (score != null) {
-        return Explanation.match(score * boost, "precomputed score");
-      }
-      return Explanation.noMatch("no precomputed score");
-    }
-
-    @Override
-    public ScorerSupplier scorerSupplier(LeafReaderContext context) {
-      List<Integer> localDocs = getLocalDocs(context);
-      if (localDocs.isEmpty()) {
-        return null;
-      }
-      Scorer scorer = new PrecomputedScoreScorer(localDocs, context.docBase, docScores, boost);
-      return new SolrDefaultScorerSupplier(scorer);
-    }
-
-    private List<Integer> getLocalDocs(LeafReaderContext context) {
-      List<Integer> localDocs = new ArrayList<>();
-      int maxDoc = context.reader().maxDoc();
-      for (int globalDoc : docScores.keySet()) {
-        int local = globalDoc - context.docBase;
-        if (local >= 0 && local < maxDoc) {
-          localDocs.add(local);
+        @Override
+        public double doubleValue() {
+          return currentScore;
         }
-      }
-      Collections.sort(localDocs);
-      return localDocs;
+
+        @Override
+        public boolean advanceExact(int doc) {
+          int globalDoc = base + doc;
+          if (scoreMap.containsKey(globalDoc)) {
+            currentScore = scoreMap.get(globalDoc);
+            return true;
+          }
+          return false;
+        }
+      };
+    }
+
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
+
+    @Override
+    public DoubleValuesSource rewrite(IndexSearcher searcher) {
+      return this;
     }
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return false;
     }
-  }
 
-  private static class PrecomputedScoreScorer extends Scorer {
-    private final List<Integer> localDocs;
-    private final int docBase;
-    private final Map<Integer, Float> docScores;
-    private final float boost;
-    private int idx = -1;
-
-    PrecomputedScoreScorer(
-        List<Integer> localDocs, int docBase, Map<Integer, Float> docScores, float boost) {
-      this.localDocs = localDocs;
-      this.docBase = docBase;
-      this.docScores = docScores;
-      this.boost = boost;
+    @Override
+    public boolean equals(Object o) {
+      return o instanceof PrecomputedScoreValuesSource other && scoreMap.equals(other.scoreMap);
     }
 
     @Override
-    public DocIdSetIterator iterator() {
-      return new DocIdSetIterator() {
-        @Override
-        public int docID() {
-          return PrecomputedScoreScorer.this.docID();
-        }
-
-        @Override
-        public int nextDoc() {
-          idx++;
-          return docID();
-        }
-
-        @Override
-        public int advance(int target) {
-          do {
-            idx++;
-          } while (idx < localDocs.size() && localDocs.get(idx) < target);
-          return docID();
-        }
-
-        @Override
-        public long cost() {
-          return localDocs.size();
-        }
-      };
+    public int hashCode() {
+      return scoreMap.hashCode();
     }
 
     @Override
-    public float getMaxScore(int upTo) {
-      return Float.MAX_VALUE;
-    }
-
-    @Override
-    public float score() {
-      Float s = docScores.get(localDocs.get(idx) + docBase);
-      return (s != null ? s : 0f) * boost;
-    }
-
-    @Override
-    public int docID() {
-      if (idx < 0) {
-        return -1;
-      }
-      return idx < localDocs.size() ? localDocs.get(idx) : NO_MORE_DOCS;
+    public String toString() {
+      return "PrecomputedScoreValuesSource(docs=" + scoreMap.size() + ")";
     }
   }
 }
