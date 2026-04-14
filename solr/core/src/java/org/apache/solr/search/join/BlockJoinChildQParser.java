@@ -18,14 +18,11 @@ package org.apache.solr.search.join;
 
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SyntaxError;
 
 /** Matches child documents based on parent doc criteria. */
@@ -88,28 +85,19 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
 
     final BooleanQuery parsedParentQuery = parseImpl();
 
-    final SchemaField nestPathField =
-        req.getSchema().getFieldOrNull(IndexSchema.NEST_PATH_FIELD_NAME);
-    final Query nestPathExistsQuery =
-        nestPathField != null
-            ? nestPathField.getType().getExistenceQuery(this, nestPathField)
-            : new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
-
     if (parsedParentQuery.clauses().isEmpty()) { // i.e. match all parents
       // no block-join needed; just filter to certain children
-      return wrapWithChildPathConstraint(
-          parentPath, childPath, new MatchAllDocsQuery(), nestPathExistsQuery);
+      return wrapWithChildPathConstraint(parentPath, childPath, new MatchAllDocsQuery());
     }
 
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
-    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath, nestPathExistsQuery);
+    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
     // constrain the parent query to only match docs at exactly parentPath
     // (+<original_parent> +{!field f="_nest_path_" v="<parentPath>"})
     // For root: (+<original_parent> -_nest_path_:*)
-    Query constrainedParentQuery =
-        wrapWithParentPathConstraint(parentPath, parsedParentQuery, nestPathExistsQuery);
+    Query constrainedParentQuery = wrapWithParentPathConstraint(parentPath, parsedParentQuery);
 
     Query joinQuery = createQuery(allParentsFilter, constrainedParentQuery, null);
     // matches all children of matching parents
@@ -117,6 +105,6 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
       return joinQuery;
     }
     // need to constrain to certain children
-    return wrapWithChildPathConstraint(parentPath, childPath, joinQuery, nestPathExistsQuery);
+    return wrapWithChildPathConstraint(parentPath, childPath, joinQuery);
   }
 }

@@ -20,22 +20,14 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.numericrange.IntRangeQParserPlugin;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -744,35 +736,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     // docs. This is a useful trick to query docs at a specific nest path without using _nest_path_
     // directly.
     try (SolrQueryRequest req = req()) {
-      // {!parent parentPath=/ v=''} returns BooleanQuery:
-      //   clause 0: MUST  MatchAllDocsQuery
-      //   clause 1: MUST_NOT FieldExistsQuery(_nest_path_)
       Query q =
           assertQueryEqualsAndReturn(
               "parent",
               req,
               "{!parent parentPath=/ v=''}",
               "{!parent parentPath=/}"); // omitting v is equivalent to empty v
-      assertTrue(q instanceof BooleanQuery);
-      BooleanQuery bq = (BooleanQuery) q;
-      assertEquals(2, bq.clauses().size()); // MUST MatchAllDocs + MUST_NOT FieldExists
-      assertEquals(Occur.MUST, bq.clauses().get(0).occur());
-      assertTrue(bq.clauses().get(0).query() instanceof MatchAllDocsQuery);
-      assertEquals(Occur.MUST_NOT, bq.clauses().get(1).occur());
-      assertTrue(bq.clauses().get(1).query() instanceof FieldExistsQuery);
+      assertEquals("+*:* -FieldExistsQuery [field=_nest_path_]", q.toString());
 
-      // {!parent parentPath=/aa/bb v=''} returns ConstantScoreQuery(TermQuery(_nest_path_:/aa/bb))
       q =
           assertQueryEqualsAndReturn(
               "parent",
               req,
-              "{!parent parentPath=/aa/bb v=''}",
+              "{!parent parentPath=/aa/bb v=}",
               "{!parent parentPath=/aa/bb}"); // omitting v is equivalent to empty v
-      assertTrue(q instanceof ConstantScoreQuery);
-      Query innerQ = ((ConstantScoreQuery) q).getQuery();
-      assertTrue(innerQ instanceof TermQuery);
-      assertEquals(
-          new Term(IndexSchema.NEST_PATH_FIELD_NAME, "/aa/bb"), ((TermQuery) innerQ).getTerm());
+      assertEquals("ConstantScore(_nest_path_:/aa/bb)", q.toString());
     }
 
     // Test that {!parent} and {!child} without required 'which'/'of' or 'parentPath' throw error
