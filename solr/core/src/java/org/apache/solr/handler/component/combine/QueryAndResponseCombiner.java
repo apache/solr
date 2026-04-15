@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component.combine;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +43,7 @@ import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -131,39 +133,47 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
   }
 
   /**
-   * Removes collapsed duplicates by delegating to SolrIndexSearcher with the CollapsingPostFilter.
-   * Uses a DocSetQuery wrapped with FunctionScoreQuery.boostByValue to preserve original scores
-   * from combined sub-queries, then applies the collapse filter to determine surviving doc IDs.
+   * Removes collapsed duplicates across combined sub-queries. Entries removed by collapsing are
+   * also removed from {@code uniqueDocIds} (mutated in place).
    *
-   * <p>This leverages Solr's native collapse infrastructure instead of manually reading DocValues.
+   * @return the updated combined DocSet with collapsed docs excluded, or null if combinedDocSet was
+   *     null
    */
   private static DocSet removeCollapsedDuplicatesViaSearcher(
       CollapsingPostFilter collapseFilter,
       SolrIndexSearcher searcher,
       Map<Integer, Float> uniqueDocIds,
       DocSet combinedDocSet) {
+    int[] queryDocIds =
+        uniqueDocIds.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
+    SortedIntDocSet querySortedIntDocSet = new SortedIntDocSet(queryDocIds);
     IntDoubleHashMap scoreMap = new IntDoubleHashMap(uniqueDocIds.size());
     uniqueDocIds.forEach((doc, score) -> scoreMap.put(doc, score.doubleValue()));
     Query scoredQuery =
         FunctionScoreQuery.boostByValue(
-            combinedDocSet.makeQuery(), new PrecomputedScoreValuesSource(scoreMap));
+            querySortedIntDocSet.makeQuery(), new PrecomputedScoreValuesSource(scoreMap));
 
     try {
       QueryCommand cmd =
           new QueryCommand()
               .setQuery(scoredQuery)
               .setFilterList(List.of(collapseFilter))
-              .setLen(uniqueDocIds.size())
-              .setNeedDocSet(true);
+              .setLen(uniqueDocIds.size());
       QueryResult result = searcher.search(cmd);
 
-      Set<Integer> survivingDocIds = new HashSet<>();
+      Set<Integer> survivingDocIds = HashSet.newHashSet(result.getDocList().size());
       DocIterator convergingIter = result.getDocList().iterator();
       while (convergingIter.hasNext()) {
         survivingDocIds.add(convergingIter.nextDoc());
       }
+
       uniqueDocIds.keySet().retainAll(survivingDocIds);
-      return result.getDocSet();
+      if (combinedDocSet == null) {
+        return null;
+      }
+      int[] removedDocIds =
+          Arrays.stream(queryDocIds).filter(id -> !survivingDocIds.contains(id)).toArray();
+      return combinedDocSet.andNot(new SortedIntDocSet(removedDocIds));
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -203,16 +213,15 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
   }
 
   /**
-   * A {@link DoubleValuesSource} that returns pre-computed scores for specific document IDs. Used
-   * with {@link FunctionScoreQuery#boostByValue} to assign original combined sub-query scores to a
-   * DocSetQuery, enabling the collapse filter to select group heads based on these scores.
+   * A {@link DoubleValuesSource} backed by a global doc ID to score map. Returns pre-computed
+   * scores for specific document IDs.
    */
   private static class PrecomputedScoreValuesSource extends DoubleValuesSource {
 
-    private final IntDoubleHashMap scoreMap;
+    private final IntDoubleHashMap scoreByDoc;
 
-    PrecomputedScoreValuesSource(IntDoubleHashMap scoreMap) {
-      this.scoreMap = scoreMap;
+    PrecomputedScoreValuesSource(IntDoubleHashMap scoreByDoc) {
+      this.scoreByDoc = scoreByDoc;
     }
 
     @Override
@@ -229,7 +238,7 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
         @Override
         public boolean advanceExact(int doc) {
           int globalDoc = base + doc;
-          double score = scoreMap.get(globalDoc);
+          double score = scoreByDoc.get(globalDoc);
           if (score != 0) {
             currentScore = score;
             return true;
@@ -256,17 +265,17 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
 
     @Override
     public boolean equals(Object o) {
-      return o instanceof PrecomputedScoreValuesSource other && scoreMap.equals(other.scoreMap);
+      return o instanceof PrecomputedScoreValuesSource other && scoreByDoc.equals(other.scoreByDoc);
     }
 
     @Override
     public int hashCode() {
-      return scoreMap.hashCode();
+      return scoreByDoc.hashCode();
     }
 
     @Override
     public String toString() {
-      return "PrecomputedScoreValuesSource(docs=" + scoreMap.size() + ")";
+      return "PrecomputedScoreValuesSource(docs=" + scoreByDoc.size() + ")";
     }
   }
 }
