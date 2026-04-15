@@ -849,12 +849,12 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
         EnvUtils.getPropertyAsInteger(ASYNC_REQUESTS_MAX_SYSPROP, 1000);
 
     /**
-     * Request attribute key used to mark that a semaphore permit has been acquired for a given
-     * request. Jetty can internally re-queue the same exchange object and re-fire {@code
-     * onRequestQueued} more than once (e.g. when retrying after a connection-level failure), while
-     * {@code onComplete} always fires exactly once. This attribute makes the queued/complete
-     * listeners idempotent: a second {@code onRequestQueued} for the same request is a no-op, and
-     * {@code onComplete} releases the permit only when one was actually acquired.
+     * Request attribute key used to guard idempotency across both listeners. Set immediately after
+     * {@code phaser.register()} — before {@code available.acquire()} — so that {@code onComplete}
+     * can never fire between registration and attribute-set and leave a phaser party stranded.
+     * Jetty can re-fire {@code onRequestQueued} for the same exchange (e.g. after a GOAWAY retry);
+     * the attribute makes the second call a no-op. {@code onComplete} always fires exactly once and
+     * uses the attribute to call {@code arriveAndDeregister()} + {@code release()} exactly once.
      */
     private static final String PERMIT_ACQUIRED_ATTR = "solr.async_tracker.permit_acquired";
 
@@ -875,16 +875,15 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
               return;
             }
             phaser.register();
+            // Set the attribute before acquire() so onComplete can never race between
+            // phaser.register() and attribute-set, which would strand a phaser party forever.
+            request.attribute(PERMIT_ACQUIRED_ATTR, Boolean.TRUE);
             try {
               available.acquire();
             } catch (InterruptedException e) {
-              // Undo phaser registration: no permit was acquired so completeListener must not
-              // release.
-              phaser.arriveAndDeregister();
+              // completeListener will call arriveAndDeregister() when onComplete fires.
               Thread.currentThread().interrupt();
-              return;
             }
-            request.attribute(PERMIT_ACQUIRED_ATTR, Boolean.TRUE);
           };
       completeListener =
           result -> {
