@@ -446,7 +446,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     if (defaultClient != null) {
       asyncRequestsGauge =
           solrMetricsContext.observableLongGauge(
-              "solr.http.client.async_permits",
+              "solr.client.request.async_permits",
               "Outstanding async HTTP request permits in the Jetty SolrJ client"
                   + " (state=max: configured ceiling; state=available: currently unused permits).",
               measurement -> {
