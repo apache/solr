@@ -20,7 +20,7 @@ This module brings the power of *Large Language Models* to Solr.
 
 More specifically, it enables calling an LLM at indexing time to enrich documents with additional/generated/extracted
 data. Given a prompt and a set of input fields, for each document, the LLM is invoked through
-https://github.com/langchain4j/langchain4j[LangChain4j], and the result is stored in an outputField, which can support
+https://github.com/langchain4j/langchain4j[LangChain4j], and the result is stored in an output field, which can support
 multiple types and may also be multivalued.
 
 _Without_ this module, the LLM calls to enrich documents must be done _outside_ Solr, before indexing.
@@ -56,7 +56,87 @@ Language Models is a module and therefore its plugins must be configured in `sol
 * Enable the `language-models` module to make the Language Models classes available on Solr's classpath.
 See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 
-* An update processor, similar to the one below, must be declared in `solrconfig.xml`:
+* An {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[UpdateRequestProcessorChain]
+that includes at least one `DocumentEnrichmentUpdateProcessor` update processor.
+
+=== Update Processor Chain Design
+
+To properly design the Update Processor Chain for Document Enrichment, several parameters must be defined:
+
+`inputField`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The field whose content is passed to the LLM to enrich the documents. Every `inputField` declared must be referred to in
+the prompt.
+
++
+Multiple `inputField` are supported and can be defined by using one of the following notations:
+
+* Add more than one `inputField` string element
++
+[source,xml]
+----
+<updateRequestProcessorChain name="documentEnrichment">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">title</str>
+   <str name="inputField">body</str>
+   <str name="outputField">summary</str>
+   <str name="prompt">Summarize with the following information. Title: {title}. Body: {body}.</str>
+   <str name="model">chat-model</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+* Substitute the `inputField` string element with an array of string elements with the same name
++
+[source,xml]
+----
+<arr name="inputField">
+    <str>title</str>
+    <str>body</str>
+</arr>
+----
+
+
+`outputField`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The LLM response is mapped to the specified `outputField`, and only one field is supported as output. Note that this
+module only supports a subset of Solr's available field types, which includes:
+
+* *String/Text*: `StrField`, `TextField`, `SortableTextField`
+* *Date*: `DatePointField` (the LLM must return an ISO-8601 date string; it might be useful to tune your prompt accordingly, to avoid indexing errors)
+* *Numeric*: `IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`
+* *Boolean*: `BoolField`
+
+
+These fields _can_ be multivalued. Solr uses structured output from LangChain4j to deal with LLMs' responses.
+
+
+`prompt` or `promptFile`::
++
+[%autowidth,frame=none]
+|===
+s|Exactly one of these parameters is required |Default: none
+|===
++
+Two different ways to define a prompt are available: one directly in the solrconfig and one through a dedicated file.
+Either way, the content of the prompt _must_ contain a special token for each `inputField` declared, that are the
+`fieldName` surrounded by curly brackets (e.g., `{string_field}`, in the example below). Solr will throw an error if
+the parameters are not properly defined.
++
+These parameters can be defined in one of the following ways:
+
+* Update processor definition with the `prompt` parameter
 +
 [source,xml]
 ----
@@ -71,6 +151,55 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
  </updateRequestProcessorChain>
 ----
 
+* Update processor definition with the parameter `promptFile` parameter: in this case, the file `prompt.txt` must be
+uploaded to Solr inside the config folder of the collection (e.g., similarly to `solrconfig.xml`, `synonyms.txt`, etc.)
++
+[source,xml]
+----
+<updateRequestProcessorChain name="documentEnrichment">
+  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">summary</str>
+   <str name="promptFile">prompt.txt</str>
+   <str name="model">model-name</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+`model`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+
+The name of the model that will be uploaded via REST. See xref:document-enrichment-with-llms.adoc#chat-model-setup[] for
+more information.
+
+
+For more details on how to work with update request processors in Apache Solr, please refer to the dedicated page:
+xref:configuration-guide:update-request-processors.adoc[Update Request Processor]
+
+[IMPORTANT]
+====
+This update processor sends your document field content off to some hosted service on the internet.
+There are serious performance implications that should be diligently examined before employing this component in production.
+It will slow down substantially your indexing pipeline so make sure to stress test your solution before going live.
+
+====
+
+[NOTE]
+====
+If any `inputField` value is absent or empty for a given document, enrichment is silently skipped for that document:
+the `outputField` is not added and the document is indexed as-is.
+
+If the LLM call fails at runtime (e.g., network error, model timeout), the exception is caught and logged but is
+*non-fatal*: the document is still indexed without the `outputField`.
+Monitor your indexing logs to detect documents that were not enriched as expected.
+====
+
 == Chat Model Setup
 
 === Models
@@ -80,7 +209,7 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 
 [IMPORTANT]
 ====
-The Solr chat model specifies the parameters to access the APIs, the LLM doesn't run internally in Solr
+The Solr chat model specifies the parameters to access the APIs, the LLM doesn't run internally in Solr.
 
 ====
 
@@ -110,7 +239,8 @@ Accepted values:
 s|Required |Default: none
 |===
 +
-The identifier of your model, this is used by any component that intends to use the model (e.g., `DocumentEnrichmentUpdateProcessorFactory` update processor).
+The identifier of your model, this is used by any component that intends to use the model
+(e.g., `DocumentEnrichmentUpdateProcessorFactory` update processor).
 
 `params`::
 +
@@ -120,7 +250,9 @@ The identifier of your model, this is used by any component that intends to use 
 |===
 +
 Each model class has potentially different params.
-Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr: https://docs.langchain4j.dev/category/language-models[Chat Models in LangChain4j].
+Many are shared but for the full set of parameters of the model you are interested in please refer to the official
+documentation of the LangChain4j version included in Solr:
+https://docs.langchain4j.dev/category/language-models[Chat Models in LangChain4j].
 
 === Supported Models
 Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support document enrichment with LLMs.
@@ -273,149 +405,8 @@ http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store
 }
 ----
 
-== How to Trigger Document Enrichment during Indexing
-To create new fields from existing document fields at indexing time, configure an
-{solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[UpdateRequestProcessorChain] that
-includes at least one DocumentEnrichmentUpdateProcessor update request processor.
 
-Several parameters must be defined:
-
-`inputField`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-One (or more) `inputField` needs to be injected in the prompt. This is  done by some special tokens, that are the
-`fieldName` surrounded by curly brackets (e.g., `{string_field}`, in the example at the
-xref:document-enrichment-with-llms.adoc#minimum-requirements[top of the page]). These tokens are _mandatory_ for this
-module to work properly. Solr will throw an error if the parameters are not properly defined.
-For example, both the prompt or the content of the file `prompt.txt`, must contain the text '{string_field}', which
-will be substituted with the content of the `string_field` field for each document. An example of a valid prompt with
-multiple input fields is as follows:
-
-+
-[source,xml]
-----
-<updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
-   <str name="inputField">title</str>
-   <str name="inputField">body</str>
-   <str name="outputField">summary</str>
-   <str name="prompt">Summarize with the following information. Title: {title}. Body: {body}.</str>
-   <str name="model">chat-model</str>
-  </processor>
-  <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
-----
-
-+
-Multiple `inputField` could also be defined by using the following notation:
-
-+
-[source,xml]
-----
-<arr name="inputField">
-    <str>title</str>
-    <str>body</str>
-</arr>
-----
-
-
-`outputField`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The LLM response is mapped to the specified `outputField`, and only one field is supported as output. Note that this
-module only supports a subset of Solr's available field types, which includes:
-
-* *String/Text*: `StrField`, `TextField`, `SortableTextField`
-* *Date*: `DatePointField` (the LLM must return an ISO-8601 date string; it might be useful to tune your prompt accordingly, to avoid indexing errors)
-* *Numeric*: `IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`
-* *Boolean*: `BoolField`
-
-
-These fields _can_ be multivalued. Solr uses structured output from LangChain4j to deal with LLMs' responses.
-
-
-`prompt` or `promptFile`::
-+
-[%autowidth,frame=none]
-|===
-s|Exactly one of these parameters is required |Default: none
-|===
-+
-These parameters can be defined in the following ways:
-
-* Update processor definition with the `prompt` parameter
-+
-[source,xml]
-----
-<updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
-   <str name="inputField">string_field</str>
-   <str name="outputField">summary</str>
-   <str name="prompt">Summarize this content: {string_field}</str>
-   <str name="model">model-name</str>
-  </processor>
-  <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
-----
-
-* Update processor definition with the parameter `promptFile` parameter: in this case, the file `prompt.txt` must be
-uploaded to Solr inside the config folder of the collection (e.g., similarly to `solrconfig.xml`, `synonyms.txt`, etc.)
-+
-[source,xml]
-----
-<updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
-   <str name="inputField">string_field</str>
-   <str name="outputField">summary</str>
-   <str name="promptFile">prompt.txt</str>
-   <str name="model">model-name</str>
-  </processor>
-  <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
-----
-
-`model`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-
-The name of the model that will be uploaded via REST (as shown above).
-
-
-
-For more details on how to work with update request processors in Apache Solr, please refer to the dedicated page:
-xref:configuration-guide:update-request-processors.adoc[Update Request Processor]
-
-[IMPORTANT]
-====
-This update processor sends your document field content off to some hosted service on the internet.
-There are serious performance implications that should be diligently examined before employing this component in production.
-It will slow down substantially your indexing pipeline so make sure to stress test your solution before going live.
-
-====
-
-[NOTE]
-====
-If any `inputField` value is absent or empty for a given document, enrichment is silently skipped for that document:
-the `outputField` is not added and the document is indexed as-is.
-
-If the LLM call fails at runtime (e.g., network error, model timeout), the exception is caught and logged but is
-*non-fatal*: the document is still indexed without the `outputField`.
-Monitor your indexing logs to detect documents that were not enriched as expected.
-====
-
-=== Index first and enrich your documents on a second pass
+== Index First and Enrich your Documents on a Second Pass
 LLM calls are typically slow, so depending on your use case, it may be preferable to first index your documents and
 enrich them with LLM-generated fields at a later stage.
 
