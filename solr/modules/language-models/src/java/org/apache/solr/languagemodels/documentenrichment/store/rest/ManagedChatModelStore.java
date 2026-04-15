@@ -135,7 +135,7 @@ public class ManagedChatModelStore extends ManagedResource
     try {
       addModel(fromModelMap(solrResourceLoader, modelMap));
     } catch (final ChatModelException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     }
   }
 

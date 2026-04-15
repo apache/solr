@@ -114,7 +114,21 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("Missing required parameter: outputField", e.getMessage());
+    assertEquals("Exactly one 'outputField' must be provided", e.getMessage());
+  }
+
+  @Test
+  public void init_moreThanOneOutputField_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
+    args.add("inputField", "string_field");
+    args.add("outputField", "enriched_field");
+    args.add("outputField", "body_field");
+    args.add("prompt", "Summarize: {string_field}");
+    args.add("model", "model1");
+
+    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
+    assertEquals("Only one 'outputField' can be provided, but found: [enriched_field, body_field]", e.getMessage());
   }
 
   @Test

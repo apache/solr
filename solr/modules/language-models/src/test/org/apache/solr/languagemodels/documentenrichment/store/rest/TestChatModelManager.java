@@ -223,7 +223,18 @@ public class TestChatModelManager extends TestLanguageModelBase {
 
   @Test
   public void loadChatModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
-    loadChatModel("dummy-chat-model-unsupported.json", "400");
+    loadChatModel(
+        "dummy-chat-model-unsupported.json",
+        "400",
+        "/error/msg=='Model loading failed for org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel'");
+  }
+
+  @Test
+  public void loadChatModel_notAChatModel_shouldRaiseError() throws Exception {
+    loadChatModel(
+        "not-a-chat-model.json",
+        "400",
+        "/error/msg=='Model loading failed for com.example.NonExistentChatModel'");
   }
 
   @Test

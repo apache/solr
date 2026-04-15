@@ -145,9 +145,20 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
     inputFields = List.copyOf(fieldNames);
 
+    Collection<String> outputFields = args.removeConfigArgs(OUTPUT_FIELD_PARAM);
+    if (outputFields.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Exactly one 'outputField' must be provided");
+    }
+    if (outputFields.size() > 1) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Only one 'outputField' can be provided, but found: " + outputFields);
+    }
+    outputField = outputFields.iterator().next();
+
     SolrParams params = args.toSolrParams();
     RequiredSolrParams required = params.required();
-    outputField = required.get(OUTPUT_FIELD_PARAM);
     modelName = required.get(MODEL_NAME);
 
     String inlinePrompt = params.get(PROMPT);
