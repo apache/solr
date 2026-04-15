@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -448,7 +449,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
             SolrServerException ex = new SolrServerException(failure.getMessage(), failure);
             try {
               executor.execute(() -> future.completeExceptionally(ex));
-            } catch (java.util.concurrent.RejectedExecutionException ree) {
+            } catch (RejectedExecutionException ree) {
               future.completeExceptionally(ex);
             }
           }
