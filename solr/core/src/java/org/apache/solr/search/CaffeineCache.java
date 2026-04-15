@@ -469,7 +469,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    initializeMetrics(parentContext, attributes, "solr_caffeine_cache");
+    initializeMetrics(parentContext, attributes, "solr.caffeine_cache");
   }
 
   public void initializeMetrics(
@@ -480,23 +480,23 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
     ObservableLongMeasurement cacheLookupsMetric =
         solrMetricsContext.longCounterMeasurement(
-            metricName + "_lookups", "Number of cumulative cache lookup results (hits and misses)");
+            metricName + ".lookups", "Number of cumulative cache lookup results (hits and misses)");
 
     ObservableLongMeasurement cacheOperationMetric =
         solrMetricsContext.longCounterMeasurement(
-            metricName + "_ops", "Number of cumulative cache operations (inserts and evictions)");
+            metricName + ".ops", "Number of cumulative cache operations (inserts and evictions)");
 
     ObservableLongMeasurement sizeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricName + "_size", "Current number cache entries");
+            metricName + ".size", "Current number cache entries");
 
     ObservableLongMeasurement ramBytesUsedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricName + "_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
+            metricName + ".ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
 
     ObservableLongMeasurement warmupTimeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricName + "_warmup_time", "Cache warmup time (most recent)", OtelUnit.MILLISECONDS);
+            metricName + ".warmup_time", "Cache warmup time (most recent)", OtelUnit.MILLISECONDS);
 
     solrMetricsContext.batchCallback(
         () -> {

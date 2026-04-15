@@ -33,7 +33,7 @@ import org.apache.solr.opentelemetry.OtlpExporterFactory;
 public class OtelMetrics implements ConsumerMetrics {
 
   public static final String REGISTRY = "crossdc.consumer.registry";
-  public static final String NAME_PREFIX = "crossdc_consumer_";
+  public static final String NAME_PREFIX = "crossdc.consumer.";
   public static final String ATTR_TYPE = "type";
   public static final String ATTR_SUBTYPE = "subtype";
   public static final String ATTR_RESULT = "result";
@@ -61,36 +61,36 @@ public class OtelMetrics implements ConsumerMetrics {
 
     inputMsg =
         metricsContext.longCounter(
-            NAME_PREFIX + "input_msg_total", "Total number of input Kafka messages");
+            NAME_PREFIX + "input.msg.total", "Total number of input Kafka messages");
 
     inputReq =
         metricsContext.longCounter(
-            NAME_PREFIX + "input_req_total", "Total number of input Solr requests");
+            NAME_PREFIX + "input.req.total", "Total number of input Solr requests");
 
     collapsed =
         metricsContext.longCounter(
-            NAME_PREFIX + "collapsed_total", "Total number of collapsed update requests");
+            NAME_PREFIX + "collapsed.total", "Total number of collapsed update requests");
 
     output =
-        metricsContext.longCounter(NAME_PREFIX + "output_total", "Total number of output requests");
+        metricsContext.longCounter(NAME_PREFIX + "output.total", "Total number of output requests");
 
     outputBatchSizeHistogram =
         metricsContext.longHistogram(
-            NAME_PREFIX + "output_batch_size", "Histogram of output batch sizes");
+            NAME_PREFIX + "output.batch_size", "Histogram of output batch sizes");
 
     outputBackoffHistogram =
         metricsContext.longHistogram(
-            NAME_PREFIX + "output_backoff_time", "Histogram of output backoff sleep times");
+            NAME_PREFIX + "output.backoff_time", "Histogram of output backoff sleep times");
 
     outputTimeHistogram =
         metricsContext.longHistogram(
-            NAME_PREFIX + "output_time",
+            NAME_PREFIX + "output.time",
             "Histogram of output request times",
             OtelUnit.MILLISECONDS);
 
     outputFirstAttemptHistogram =
         metricsContext.longHistogram(
-            NAME_PREFIX + "output_first_attempt_time",
+            NAME_PREFIX + "output.first_attempt_time",
             "Histogram of first attempt request times",
             OtelUnit.MILLISECONDS);
   }
