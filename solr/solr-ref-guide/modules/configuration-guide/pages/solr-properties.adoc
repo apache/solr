@@ -106,6 +106,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.solrj.http.cookies.enabled|!solr.http.disableCookies| false |If Http2SolrClient should support cookies.
 
+|solr.solrj.http.jetty.async_requests.max||1000|Maximum number of outstanding async HTTP requests allowed concurrently in the Jetty-based SolrJ HTTP client. Increase if you observe semaphore exhaustion under heavy distributed query load; decrease to limit resource usage. Related metric: `solr.client.request.async_permits`.
+
 |solr.solrj.http.jetty.customizer|solr.httpclient.builder.factory||A class loaded to customize HttpJettySolrClient upon creation.
 
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
