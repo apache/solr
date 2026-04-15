@@ -450,6 +450,9 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
             try {
               executor.execute(() -> future.completeExceptionally(ex));
             } catch (RejectedExecutionException ree) {
+              log.warn(
+                  "Failed to complete future exceptionally due to executor rejection, completing on IO thread.",
+                  ree);
               future.completeExceptionally(ex);
             }
           }
