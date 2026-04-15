@@ -18,6 +18,7 @@ package org.apache.solr.search.join;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Locale;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -132,6 +133,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
     if (localParams.get(getLegacyParentFilterParamName()) == null) {
       throw new SyntaxError(
           String.format(
+              Locale.ROOT,
               "'%s' or '%s' is required for the '%s' query parser",
               getLegacyParentFilterParamName(),
               PARENT_PATH_PARAM,
