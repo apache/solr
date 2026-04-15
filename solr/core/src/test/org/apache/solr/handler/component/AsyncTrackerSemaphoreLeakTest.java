@@ -180,7 +180,8 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
       // Close all fake connections simultaneously with TCP RST.
       // onFailure fires on the IO thread → LBJettySolrClient retry → acquire() blocks
       // (semaphore=0).
-      log.info("Closing {} fake connections via RST...", fakeServer.connectionCount());
+      int connCount = fakeServer.connectionCount();
+      log.info("Closing {} fake connections via RST...", connCount);
       fakeServer.rstAll();
 
       try {
@@ -346,7 +347,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
                     allConnected.countDown();
                   }
                 } catch (IOException ioe) {
-                  log.debug("Failed to accept connection: {}", ioe.getMessage());
+                  log.debug("Failed to accept connection", ioe);
                 }
               },
               "fake-tcp-server");
