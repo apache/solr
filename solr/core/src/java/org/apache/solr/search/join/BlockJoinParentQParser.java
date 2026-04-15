@@ -47,7 +47,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ExtendedQueryBase;
-import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
@@ -78,11 +77,6 @@ public class BlockJoinParentQParser extends FiltersQParser {
    */
   public static final String CHILD_PATH_PARAM = "childPath";
 
-  // most users should use parentPath instead
-  protected String getLegacyParentFilterParamName() {
-    return "which";
-  }
-
   @Override
   protected String getFiltersParamName() {
     return "filters";
@@ -95,6 +89,8 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
   @Override
   public Query parse() throws SyntaxError {
+    // Dispatch based on parentPath or none (DIY/legacy)
+
     String parentPath = localParams.get(PARENT_PATH_PARAM);
     if (parentPath != null) {
       if (localParams.get(getLegacyParentFilterParamName()) != null) {
@@ -127,7 +123,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
       return parseUsingParentPath(parentPath, childPath);
     }
 
-    // NO parentPath; use classic/advanced/DIY code path:
+    // NO parentPath; use legacy/advanced/DIY code path:
 
     if (localParams.get(CHILD_PATH_PARAM) != null) {
       throw new SolrException(
@@ -141,7 +137,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
               PARENT_PATH_PARAM,
               localParams.get("type", "parent")));
     }
-    return super.parse();
+    return parseWithLegacyParam();
   }
 
   /**
@@ -274,23 +270,32 @@ public class BlockJoinParentQParser extends FiltersQParser {
         .build();
   }
 
-  protected Query parseParentFilter() throws SyntaxError {
-    String filter = localParams.get(getLegacyParentFilterParamName());
-    QParser parentParser = subQuery(filter, null);
-    Query parentQ = parentParser.getQuery();
-    return parentQ;
-  }
+  //
+  // Advanced/DIY parsing follows
+  //
 
-  @Override
-  protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
+  protected Query parseWithLegacyParam() throws SyntaxError {
+    BooleanQuery subordinateQuery = parseImpl();
+
+    if (subordinateQuery.clauses().isEmpty()) { // i.e. all children
+      return noClausesQueryLegacy();
+    }
+
     String scoreMode = localParams.get("score", ScoreMode.None.name());
-    Query parentQ = parseParentFilter();
-    return createQuery(parentQ, subordinate, scoreMode);
+    Query parentQ = parseLegacyParentFilter();
+    return createQuery(parentQ, subordinateQuery, scoreMode);
   }
 
-  @Override
-  protected Query noClausesQuery() throws SyntaxError {
-    return new BitSetProducerQuery(getBitSetProducer(parseParentFilter()));
+  protected Query parseLegacyParentFilter() throws SyntaxError {
+    return subQuery(localParams.get(getLegacyParentFilterParamName()), null).getQuery();
+  }
+
+  protected Query noClausesQueryLegacy() throws SyntaxError {
+    return new BitSetProducerQuery(getBitSetProducer(parseLegacyParentFilter()));
+  }
+
+  protected String getLegacyParentFilterParamName() {
+    return "which";
   }
 
   /**

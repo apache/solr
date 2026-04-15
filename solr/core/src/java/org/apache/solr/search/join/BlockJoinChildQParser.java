@@ -44,8 +44,8 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   }
 
   @Override
-  protected Query noClausesQuery() throws SyntaxError {
-    final Query parents = parseParentFilter();
+  protected Query noClausesQueryLegacy() throws SyntaxError {
+    final Query parents = parseLegacyParentFilter();
     final BooleanQuery notParents =
         new BooleanQuery.Builder()
             .add(new MatchAllDocsQuery(), Occur.MUST)
@@ -82,7 +82,6 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
    */
   @Override
   protected Query parseUsingParentPath(String parentPath, String childPath) throws SyntaxError {
-
     final BooleanQuery parsedParentQuery = parseImpl();
 
     if (parsedParentQuery.clauses().isEmpty()) { // i.e. match all parents

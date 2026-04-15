@@ -278,6 +278,44 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  /** Test the {@code filters} local-param works with {@code parentPath}. */
+  @Test
+  public void testFiltersWithParentPath() {
+    // integer IDs required: schema copies id→id_i (int) so auto-generated "p1/items#0" would fail
+    SolrInputDocument p1 = sdoc("id", "1", "name_s", "p1");
+    p1.addField("items", sdoc("id", "11", "status_s", "active"));
+    p1.addField("items", sdoc("id", "12", "status_s", "inactive"));
+    assertU(adoc(p1));
+
+    SolrInputDocument p2 = sdoc("id", "2", "name_s", "p2");
+    p2.addField("items", sdoc("id", "21", "status_s", "inactive"));
+    assertU(adoc(p2));
+
+    SolrInputDocument p3 = sdoc("id", "3", "name_s", "p3");
+    p3.addField("items", sdoc("id", "31", "status_s", "active"));
+    assertU(adoc(p3));
+
+    assertU(commit());
+
+    // {!parent parentPath=/}: parents with children matching v AND filters
+    assertQ(
+        req(
+            "q", "{!parent parentPath=/ filters=$cf}*:*",
+            "cf", "status_s:active",
+            "fl", "id",
+            "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//doc[1]/str[@name='id']='1'",
+        "//doc[2]/str[@name='id']='3'");
+
+    // {!child parentPath=/}: children of parents matching v AND filters
+    assertQ(
+        req(
+            "q", "{!child parentPath=/ filters=$pf}*:*",
+            "pf", "name_s:p1"),
+        "//*[@numFound='2']");
+  }
+
   /**
    * Randomized test to look for flaws in the documented approach for building "safe" values of the
    * <code>of</code> / <code>which</code> params in the <code>child</code> / <code>parent</code>
