@@ -375,17 +375,6 @@ Both threads could receive a top-level request concurrently, and make sub-reques
 Because there are no more remaining threads to service requests, the incoming requests will be blocked until the other pending requests are finished, but they will not finish since they are waiting for the sub-requests.
 By ensuring that Solr is configured to handle a sufficient number of threads, you can avoid deadlock situations like this.
 
-A related bottleneck exists on the outbound (client) side: the internal Jetty HTTP client used for shard sub-requests has a configurable limit on the number of concurrent async requests it will issue simultaneously (default: 1000, controlled by the system property `solr.solrj.http.jetty.async_requests.max`).
-In large clusters with many shards, a single top-level query can fan out to hundreds of sub-requests per node, quickly exhausting this limit and causing new shard requests to queue inside the client.
-If you see distributed queries stalling or timing out on large collections, consider raising this limit:
-
-[source,plain]
-----
-SOLR_OPTS="$SOLR_OPTS -Dsolr.solrj.http.jetty.async_requests.max=2000"
-----
-
-The current permit utilization can be observed via the `solr_client_request_async_permits` metric (see xref:metrics-reporting.adoc#http-client-registry[HTTP Client Registry]).
-
 == Distributed Tracing and Debugging
 
 The `debug` parameter with a value of `track` can be used to trace the request as well as find timing information for each phase of a distributed request.
