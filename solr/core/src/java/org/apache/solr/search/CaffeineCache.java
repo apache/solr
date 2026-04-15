@@ -488,7 +488,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
     ObservableLongMeasurement sizeMetric =
         solrMetricsContext.longGaugeMeasurement(
-            metricName + ".size", "Current number cache entries");
+            metricName + ".size", "Current number of cache entries");
 
     ObservableLongMeasurement ramBytesUsedMetric =
         solrMetricsContext.longGaugeMeasurement(
