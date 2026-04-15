@@ -334,5 +334,4 @@ If you require the ability to roll back, back up your indexes before upgrading.
 
 === Docker
 
-The `gosu` binary is no longer installed in the Solr Docker image.
-If your Docker setup relies on `gosu` for privilege dropping (e.g., running `gosu solr <command>`), you should replace it with an alternative such as `su-exec`, `setpriv`, or by using Docker's built-in `--user` flag to run containers as the appropriate user.
+The `gosu` binary is no longer installed in the Solr Docker image. See https://github.com/tianon/gosu[gosu github page] for alternatives, such as `runuser`, `setpriv` or `chroot`.
