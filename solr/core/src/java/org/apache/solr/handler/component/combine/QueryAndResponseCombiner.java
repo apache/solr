@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component.combine;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -133,47 +132,50 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
   }
 
   /**
-   * Removes collapsed duplicates across combined sub-queries. Entries removed by collapsing are
-   * also removed from {@code uniqueDocIds} (mutated in place).
+   * Removes collapsed duplicates across combined sub-queries. Ensures that only one document per
+   * collapse field value survives across the merged results. Entries removed by collapsing are also
+   * removed from {@code uniqueDocIds} (mutated in place).
    *
-   * @return the updated combined DocSet with collapsed docs excluded, or null if combinedDocSet was
-   *     null
+   * @return the collapsed combined DocSet, or null if combinedDocSet was null
    */
   private static DocSet removeCollapsedDuplicatesViaSearcher(
       CollapsingPostFilter collapseFilter,
       SolrIndexSearcher searcher,
       Map<Integer, Float> uniqueDocIds,
       DocSet combinedDocSet) {
-    int[] queryDocIds =
-        uniqueDocIds.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
-    SortedIntDocSet querySortedIntDocSet = new SortedIntDocSet(queryDocIds);
     IntDoubleHashMap scoreMap = new IntDoubleHashMap(uniqueDocIds.size());
     uniqueDocIds.forEach((doc, score) -> scoreMap.put(doc, score.doubleValue()));
+    Query baseQuery;
+    boolean needDocSet;
+    if (combinedDocSet != null) {
+      baseQuery = combinedDocSet.makeQuery();
+      needDocSet = true;
+    } else {
+      int[] queryDocIds =
+          uniqueDocIds.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
+      baseQuery = new SortedIntDocSet(queryDocIds).makeQuery();
+      needDocSet = false;
+    }
     Query scoredQuery =
-        FunctionScoreQuery.boostByValue(
-            querySortedIntDocSet.makeQuery(), new PrecomputedScoreValuesSource(scoreMap));
+        FunctionScoreQuery.boostByValue(baseQuery, new PrecomputedScoreValuesSource(scoreMap));
 
     try {
       QueryCommand cmd =
           new QueryCommand()
               .setQuery(scoredQuery)
               .setFilterList(List.of(collapseFilter))
-              .setLen(uniqueDocIds.size());
+              .setLen(uniqueDocIds.size())
+              .setNeedDocSet(needDocSet);
       QueryResult result = searcher.search(cmd);
 
       Set<Integer> survivingDocIds = HashSet.newHashSet(result.getDocList().size());
-      DocIterator convergingIter = result.getDocList().iterator();
-      while (convergingIter.hasNext()) {
-        survivingDocIds.add(convergingIter.nextDoc());
+      DocIterator iter = result.getDocList().iterator();
+      while (iter.hasNext()) {
+        survivingDocIds.add(iter.nextDoc());
       }
 
       uniqueDocIds.keySet().retainAll(survivingDocIds);
-      if (combinedDocSet == null) {
-        return null;
-      }
-      int[] removedDocIds =
-          Arrays.stream(queryDocIds).filter(id -> !survivingDocIds.contains(id)).toArray();
-      return combinedDocSet.andNot(new SortedIntDocSet(removedDocIds));
+      return needDocSet ? result.getDocSet() : null;
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -238,12 +240,8 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
         @Override
         public boolean advanceExact(int doc) {
           int globalDoc = base + doc;
-          double score = scoreByDoc.get(globalDoc);
-          if (score != 0) {
-            currentScore = score;
-            return true;
-          }
-          return false;
+          currentScore = scoreByDoc.get(globalDoc);
+          return true;
         }
       };
     }
