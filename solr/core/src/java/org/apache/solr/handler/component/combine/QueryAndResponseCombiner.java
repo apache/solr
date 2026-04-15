@@ -133,7 +133,7 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
 
   /**
    * Removes collapsed duplicates across combined sub-queries. Ensures that only one document per
-   * collapse field value survives across the merged results. Entries removed by collapsing are also
+   * collapse field value retained across the merged results. Entries removed by collapsing are also
    * removed from {@code uniqueDocIds} (mutated in place).
    *
    * @return the collapsed combined DocSet, or null if combinedDocSet was null
@@ -168,13 +168,13 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
               .setNeedDocSet(needDocSet);
       QueryResult result = searcher.search(cmd);
 
-      Set<Integer> survivingDocIds = HashSet.newHashSet(result.getDocList().size());
+      Set<Integer> retainedDocIds = HashSet.newHashSet(result.getDocList().size());
       DocIterator iter = result.getDocList().iterator();
       while (iter.hasNext()) {
-        survivingDocIds.add(iter.nextDoc());
+        retainedDocIds.add(iter.nextDoc());
       }
 
-      uniqueDocIds.keySet().retainAll(survivingDocIds);
+      uniqueDocIds.keySet().retainAll(retainedDocIds);
       return needDocSet ? result.getDocSet() : null;
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

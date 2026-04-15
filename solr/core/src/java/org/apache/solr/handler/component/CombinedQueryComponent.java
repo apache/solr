@@ -317,6 +317,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     long approximateTotalHits = 0;
     Map<String, List<ShardDoc>> shardDocMap = new HashMap<>();
     String[] queriesToCombineKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
+    // Build per-shard set of doc IDs retained after collapse in simpleCombine.
+    // Used to filter per-query docs so that RRF doesn't reintroduce docs
+    // excluded by collapse at the shard level.
+    Map<String, Set<Object>> combinedDocIds = new HashMap<>();
     // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
@@ -398,9 +402,15 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 : new NamedList<>();
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the uniqueDoc to dedup
+        Set<Object> combinedIds =
+            combinedDocIds.computeIfAbsent(
+                srsp.getShard(), shard -> extractIdsFromCombinedResponse(rb, srsp, uniqueKeyField));
         for (int i = 0; i < docs.size(); i++) {
           SolrDocument doc = docs.get(i);
           Object id = doc.getFieldValue(uniqueKeyField.getName());
+          if (!combinedIds.contains(id)) {
+            continue;
+          }
           ShardDoc shardDoc = new ShardDoc();
           shardDoc.id = id;
           shardDoc.orderInShard = i;
@@ -630,5 +640,20 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     responseDocs.setMaxScore(maxScore);
     for (int i = 0; i < resultSize; i++) responseDocs.add(null);
     return resultIds;
+  }
+
+  /**
+   * Extracts the set of doc IDs from the shard's combined response (produced by simpleCombine).
+   * Returns an empty set if the combined response is not available.
+   */
+  private static Set<Object> extractIdsFromCombinedResponse(
+      ResponseBuilder rb, ShardResponse srsp, SchemaField uniqueKeyField) {
+    Object response = SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false);
+    if (response instanceof SolrDocumentList docList) {
+      return docList.stream()
+          .map(doc -> doc.getFieldValue(uniqueKeyField.getName()))
+          .collect(Collectors.toSet());
+    }
+    return Set.of();
   }
 }

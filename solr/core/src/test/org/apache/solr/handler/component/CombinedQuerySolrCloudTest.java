@@ -282,29 +282,26 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(CQ!2^2 OR CQ!3^1 OR CQ!6^2 OR CQ!5^1)\"}},"
             + "\"lexical2\":{\"lucene\":{\"query\":\"id:(CQ!8^1 OR CQ!5^2 OR CQ!7^3 OR CQ!10^2)\"}}},"
-            + "\"limit\":4,"
+            + "\"limit\":1,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"id\","
-            + "\"fq\": [\"{!collapse field=mod3_idv sort='id desc'}\"],"
+            + "\"fq\": [\"{!collapse field=mod3_idv sort='id asc'}\"],"
             + "\"expand\": true, \"expand.q\": \"*:*\","
             + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true,"
             + "\"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}";
     handle.put("expanded", UNORDERED);
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
-    assertEquals(3, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "CQ!7", "CQ!8", "CQ!6");
+    assertEquals(1, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "CQ!2");
     assertEquals("id", rsp.getFacetFields().getFirst().getName());
     assertEquals(
-        "[CQ!6 (1), CQ!7 (1), CQ!8 (1), CQ!1 (0), CQ!10 (0), CQ!2 (0), CQ!3 (0), CQ!4 (0), CQ!5 (0), CQ!9 (0)]",
+        "[CQ!10 (1), CQ!2 (1), CQ!3 (1), CQ!1 (0), CQ!4 (0), CQ!5 (0), CQ!6 (0), CQ!7 (0), CQ!8 (0), CQ!9 (0)]",
         rsp.getFacetFields().getFirst().getValues().toString());
-    assertEquals(3, rsp.getHighlighting().size());
+    assertEquals(1, rsp.getHighlighting().size());
     assertEquals(
-        "title <em>test</em> for <em>doc</em> 8",
-        rsp.getHighlighting().get("CQ!8").get("title").getFirst());
-    assertEquals(
-        "title <em>test</em> for <em>doc</em> 6",
-        rsp.getHighlighting().get("CQ!6").get("title").getFirst());
-    assertEquals(3, rsp.getExpandedResults().size());
+        "title <em>test</em> for <em>doc</em> 2",
+        rsp.getHighlighting().get("CQ!2").get("title").getFirst());
+    assertEquals(1, rsp.getExpandedResults().size());
   }
 
   /** To test that we can force distrib */
