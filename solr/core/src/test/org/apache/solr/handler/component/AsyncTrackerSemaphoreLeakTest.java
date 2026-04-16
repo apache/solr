@@ -347,7 +347,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
                     allConnected.countDown();
                   }
                 } catch (IOException ioe) {
-                  log.debug("Failed to accept connection", ioe);
+                  log.warn("Failed to accept connection", ioe);
                 }
               },
               "fake-tcp-server");
