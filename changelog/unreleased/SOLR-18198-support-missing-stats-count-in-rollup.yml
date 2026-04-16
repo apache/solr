@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: "SOLR-18198: Support 'missing' stats count in rollup function for streaming expressions"
+title: "Support 'missing' stats count in rollup function for streaming expressions"
 type: added
 authors:
   - name: khushjain

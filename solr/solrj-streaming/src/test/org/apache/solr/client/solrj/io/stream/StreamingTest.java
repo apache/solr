@@ -1967,12 +1967,51 @@ public class StreamingTest extends SolrCloudTestCase {
           "expr",
           "rollup(search("
               + COLLECTIONORALIAS
-              + ",q=\"*:*\",fl=\"a_s,a_i,a_f\",sort=\"a_s desc\",partitionKeys=\"a_s\", qt=\"/export\"),over=\"a_s\")\n");
+              + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", qt=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
       SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
       streamContext = new StreamContext();
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(3, tuples.size());
+
+      Tuple exprTuple = tuples.get(0);
+      assertEquals("hello0", exprTuple.getString("a_s"));
+      assertEquals(17, exprTuple.getDouble("sum(a_i)"), 0.001);
+      assertEquals(18, exprTuple.getDouble("sum(a_f)"), 0.001);
+      assertEquals(0, exprTuple.getDouble("min(a_i)"), 0.001);
+      assertEquals(1, exprTuple.getDouble("min(a_f)"), 0.001);
+      assertEquals(14, exprTuple.getDouble("max(a_i)"), 0.001);
+      assertEquals(10, exprTuple.getDouble("max(a_f)"), 0.001);
+      assertEquals(4.25, exprTuple.getDouble("avg(a_i)"), 0.001);
+      assertEquals(4.5, exprTuple.getDouble("avg(a_f)"), 0.001);
+      assertEquals(4, exprTuple.getDouble("count(*)"), 0.001);
+      assertEquals(2, exprTuple.getDouble("missing(b_f)"), 0.001);
+
+      exprTuple = tuples.get(1);
+      assertEquals("hello3", exprTuple.getString("a_s"));
+      assertEquals(38, exprTuple.getDouble("sum(a_i)"), 0.001);
+      assertEquals(26, exprTuple.getDouble("sum(a_f)"), 0.001);
+      assertEquals(3, exprTuple.getDouble("min(a_i)"), 0.001);
+      assertEquals(3, exprTuple.getDouble("min(a_f)"), 0.001);
+      assertEquals(13, exprTuple.getDouble("max(a_i)"), 0.001);
+      assertEquals(9, exprTuple.getDouble("max(a_f)"), 0.001);
+      assertEquals(9.5, exprTuple.getDouble("avg(a_i)"), 0.001);
+      assertEquals(6.5, exprTuple.getDouble("avg(a_f)"), 0.001);
+      assertEquals(4, exprTuple.getDouble("count(*)"), 0.001);
+      assertEquals(3, exprTuple.getDouble("missing(b_f)"), 0.001);
+
+      exprTuple = tuples.get(2);
+      assertEquals("hello4", exprTuple.getString("a_s"));
+      assertEquals(15, exprTuple.getDouble("sum(a_i)"), 0.001);
+      assertEquals(11, exprTuple.getDouble("sum(a_f)"), 0.001);
+      assertEquals(4, exprTuple.getDouble("min(a_i)"), 0.001);
+      assertEquals(4, exprTuple.getDouble("min(a_f)"), 0.001);
+      assertEquals(11, exprTuple.getDouble("max(a_i)"), 0.001);
+      assertEquals(7, exprTuple.getDouble("max(a_f)"), 0.001);
+      assertEquals(7.5, exprTuple.getDouble("avg(a_i)"), 0.001);
+      assertEquals(5.5, exprTuple.getDouble("avg(a_f)"), 0.001);
+      assertEquals(2, exprTuple.getDouble("count(*)"), 0.001);
+      assertEquals(0, exprTuple.getDouble("missing(b_f)"), 0.001);
     } finally {
       solrClientCache.close();
     }
