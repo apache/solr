@@ -68,12 +68,12 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     commit();
   }
 
-  /** Index all docs to the same shard for co-location (limitation for collapse in SolrCloud). */
+  /** Index all docs to the same shard for co-location (limitation for collapse). */
   private synchronized void prepareIndexDocsColocated() throws Exception {
     del("*:*");
     List<SolrInputDocument> docs = getSolrDocuments();
     for (SolrInputDocument doc : docs) {
-      doc.setField("id", "CQ!" + doc.getField("id").getValue());
+      doc.setField("id", doc.getFieldValue("mod3_idv") + "!" + doc.getField("id").getValue());
     }
     for (SolrInputDocument doc : docs) {
       indexDoc(doc);
@@ -276,31 +276,59 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
    */
   @Test
   public void testQueriesWithFacetAndHighlightsCollapse() throws Exception {
-    // Re-index all docs to the first shard for co-location (required for collapse in SolrCloud).
+    // Re-index all docs to the first shard for co-location (required for collapse).
     prepareIndexDocsColocated();
     String jsonQuery =
-        "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(CQ!2^2 OR CQ!3^1 OR CQ!6^2 OR CQ!5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(CQ!8^1 OR CQ!5^2 OR CQ!7^3 OR CQ!10^2)\"}}},"
-            + "\"limit\":1,"
-            + "\"fields\":[\"id\",\"score\",\"title\"],"
-            + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"id\","
-            + "\"fq\": [\"{!collapse field=mod3_idv sort='id asc'}\"],"
-            + "\"expand\": true, \"expand.q\": \"*:*\","
-            + "\"combiner.query\":[\"lexical1\",\"lexical2\"], \"hl\": true,"
-            + "\"hl.fl\": \"title\",\"hl.q\":\"test doc\"}}";
+        """
+          {
+            "queries": {
+                "lexical1": {
+                    "lucene": {
+                        "query": "id:(2!2^2 OR 0!3^1 OR 0!6^2 OR 2!5^1)"
+                    }
+                },
+                "lexical2": {
+                    "lucene": {
+                        "query": "id:(2!8^1 OR 2!5^2 OR 1!7^3 OR 1!10^2)"
+                    }
+                }
+            },
+            "limit": 1,
+            "fields": [
+                "id",
+                "score",
+                "title"
+            ],
+            "params": {
+                "combiner": true,
+                "facet": true,
+                "facet.field": "id",
+                "fq": [
+                    "{!collapse field=mod3_idv sort='id asc'}"
+                ],
+                "expand": true,
+                "expand.q": "*:*",
+                "combiner.query": [
+                    "lexical1",
+                    "lexical2"
+                ],
+                "hl": true,
+                "hl.fl": "title",
+                "hl.q": "test doc"
+            }
+        }""";
     handle.put("expanded", UNORDERED);
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(1, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "CQ!2");
+    assertFieldValues(rsp.getResults(), id, "2!2");
     assertEquals("id", rsp.getFacetFields().getFirst().getName());
     assertEquals(
-        "[CQ!10 (1), CQ!2 (1), CQ!3 (1), CQ!1 (0), CQ!4 (0), CQ!5 (0), CQ!6 (0), CQ!7 (0), CQ!8 (0), CQ!9 (0)]",
+        "[0!3 (1), 1!10 (1), 2!2 (1), 0!6 (0), 0!9 (0), 1!1 (0), 1!4 (0), 1!7 (0), 2!5 (0), 2!8 (0)]",
         rsp.getFacetFields().getFirst().getValues().toString());
     assertEquals(1, rsp.getHighlighting().size());
     assertEquals(
         "title <em>test</em> for <em>doc</em> 2",
-        rsp.getHighlighting().get("CQ!2").get("title").getFirst());
+        rsp.getHighlighting().get("2!2").get("title").getFirst());
     assertEquals(1, rsp.getExpandedResults().size());
   }
 

@@ -33,9 +33,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ShardDoc;
-import org.apache.solr.search.CollapsingQParserPlugin.CollapsingPostFilter;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSlice;
@@ -69,15 +69,13 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
    * combined queries.
    *
    * @param queryResults the query results to be combined
-   * @param collapseFilter the collapse post filter, or null if no collapse dedup is needed
-   * @param searcher the searcher to read field values from, required when collapseFilter is
-   *     non-null
+   * @param collapseFilters the collapse post filters, or empty if no collapse dedup is needed
+   * @param searcher the searcher to read field values from, required when collapseFilters is
+   *     non-empty
    * @return the combined query result
    */
   public static QueryResult simpleCombine(
-      List<QueryResult> queryResults,
-      CollapsingPostFilter collapseFilter,
-      SolrIndexSearcher searcher) {
+      List<QueryResult> queryResults, List<Query> collapseFilters, SolrIndexSearcher searcher) {
     QueryResult combinedQueryResults = new QueryResult();
     DocSet combinedDocSet = null;
     Map<Integer, Float> uniqueDocIds = new HashMap<>();
@@ -95,15 +93,15 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
       }
     }
 
-    // If a collapse field is specified, deduplicate by field value across combined queries.
+    // If collapse fields are specified, deduplicate by field value across combined queries.
     // Each sub-query already collapsed individually, but different sub-queries may have
     // selected different group heads for the same field value.
     int removedByCollapse = 0;
-    if (collapseFilter != null && searcher != null && queryResults.size() > 1) {
+    if (CollectionUtil.isNotEmpty(collapseFilters) && searcher != null && queryResults.size() > 1) {
       int preCollapseSize = uniqueDocIds.size();
       combinedDocSet =
           removeCollapsedDuplicatesViaSearcher(
-              collapseFilter, searcher, uniqueDocIds, combinedDocSet);
+              collapseFilters, searcher, uniqueDocIds, combinedDocSet);
       removedByCollapse = preCollapseSize - uniqueDocIds.size();
     }
 
@@ -139,7 +137,7 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
    * @return the collapsed combined DocSet, or null if combinedDocSet was null
    */
   private static DocSet removeCollapsedDuplicatesViaSearcher(
-      CollapsingPostFilter collapseFilter,
+      List<Query> collapseFilters,
       SolrIndexSearcher searcher,
       Map<Integer, Float> uniqueDocIds,
       DocSet combinedDocSet) {
@@ -163,7 +161,7 @@ public abstract class QueryAndResponseCombiner implements NamedListInitializedPl
       QueryCommand cmd =
           new QueryCommand()
               .setQuery(scoredQuery)
-              .setFilterList(List.of(collapseFilter))
+              .setFilterList(collapseFilters)
               .setLen(uniqueDocIds.size())
               .setNeedDocSet(needDocSet);
       QueryResult result = searcher.search(cmd);

@@ -360,15 +360,44 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // q1 -> 1,2,2,0,0    q2 -> 2,1,0,0,2
     // q1 -> 1 for sure, 2,3  => 4 for sure, 3 and 2
     String jsonQuery =
-        "{\"queries\":"
-            + "{\"q1\":{\"lucene\":{\"query\":\"text:alpha OR text:bravo\"}},"
-            + "\"q2\":{\"lucene\":{\"query\":\"text:charlie OR text:delta\"}}},"
-            + "\"limit\":10,"
-            + "\"fields\":[\"id\",\"score\",\"mod3_idv\"],"
-            + "\"params\":{\"combiner\":true, \"combiner.query\":[\"q1\",\"q2\"], "
-            + "\"fq\": [\"{!collapse field=mod3_idv sort='mod3_sdv asc, id desc'}\"], \"facet\": true, \"facet.field\": \"id\","
-            + "\"hl\": true, \"hl.fl\": \"title\",\"hl.q\":\"alpha delta\", "
-            + "\"expand\": true, \"expand.q\": \"text:alpha OR text:bravo OR text:charlie OR text:delta\"}}";
+        """
+        {
+         "queries": {
+             "q1": {
+                 "lucene": {
+                     "query": "text:alpha OR text:bravo"
+                 }
+             },
+             "q2": {
+                 "lucene": {
+                     "query": "text:charlie OR text:delta"
+                 }
+             }
+         },
+         "limit": 10,
+         "fields": [
+             "id",
+             "score",
+             "mod3_idv"
+         ],
+         "params": {
+             "combiner": true,
+             "combiner.query": [
+                 "q1",
+                 "q2"
+             ],
+             "fq": [
+                 "{!collapse field=mod3_idv sort='mod3_sdv asc, id desc'}"
+             ],
+             "facet": true,
+             "facet.field": "id",
+             "hl": true,
+             "hl.fl": "title",
+             "hl.q": "alpha delta",
+             "expand": true,
+             "expand.q": "text:alpha OR text:bravo OR text:charlie OR text:delta"
+         }
+     }""";
 
     handle.put("expanded", UNORDERED);
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");

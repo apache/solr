@@ -241,10 +241,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean segmentTerminatedEarly,
       Boolean setMaxHitsTerminatedEarly) {
     SolrIndexSearcher searcher = crb.req.getSearcher();
-    CollapsingQParserPlugin.CollapsingPostFilter collapseFilter =
-        getCollapseFilter(crb.getFilters());
+    List<Query> collapseFilters = getCollapseFilters(crb.getFilters());
     QueryResult combinedQueryResult =
-        QueryAndResponseCombiner.simpleCombine(queryResults, collapseFilter, searcher);
+        QueryAndResponseCombiner.simpleCombine(queryResults, collapseFilters, searcher);
     combinedQueryResult.setPartialResults(partialResults);
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
@@ -266,17 +265,14 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     }
   }
 
-  /** Extracts the CollapsingPostFilter from the filter list, if present. */
-  private static CollapsingQParserPlugin.CollapsingPostFilter getCollapseFilter(
-      List<Query> filters) {
+  /** Extracts the list of CollapsingPostFilter query from the filter list, if present. */
+  private static List<Query> getCollapseFilters(List<Query> filters) {
     if (CollectionUtil.isNotEmpty(filters)) {
-      for (Query q : filters) {
-        if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter cp) {
-          return cp;
-        }
-      }
+      return filters.stream()
+          .filter(q -> q instanceof CollapsingQParserPlugin.CollapsingPostFilter)
+          .toList();
     }
-    return null;
+    return List.of();
   }
 
   @Override
@@ -320,7 +316,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     // Build per-shard set of doc IDs retained after collapse in simpleCombine.
     // Used to filter per-query docs so that RRF doesn't reintroduce docs
     // excluded by collapse at the shard level.
-    Map<String, Set<Object>> combinedDocIds = new HashMap<>();
+    Map<String, Set<Object>> combinedDocIdsPerShard = HashMap.newHashMap(sreq.responses.size());
     // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
@@ -402,13 +398,13 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 : new NamedList<>();
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the uniqueDoc to dedup
-        Set<Object> combinedIds =
-            combinedDocIds.computeIfAbsent(
+        Set<Object> thisShardCombinedIds =
+            combinedDocIdsPerShard.computeIfAbsent(
                 srsp.getShard(), shard -> extractIdsFromCombinedResponse(rb, srsp, uniqueKeyField));
         for (int i = 0; i < docs.size(); i++) {
           SolrDocument doc = docs.get(i);
           Object id = doc.getFieldValue(uniqueKeyField.getName());
-          if (!combinedIds.contains(id)) {
+          if (!thisShardCombinedIds.contains(id)) {
             continue;
           }
           ShardDoc shardDoc = new ShardDoc();

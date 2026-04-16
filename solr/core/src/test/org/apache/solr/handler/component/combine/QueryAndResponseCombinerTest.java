@@ -115,7 +115,8 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
       SolrIndexSearcher searcher = searcherRef.get();
 
       QueryResult combined =
-          QueryAndResponseCombiner.simpleCombine(getQueryResults(), collapseFilter, searcher);
+          QueryAndResponseCombiner.simpleCombine(
+              getQueryResults(), List.of(collapseFilter), searcher);
 
       // group=1: doc 0 (0.87) beats doc 1 (0.67) → keep doc 0
       // group=2: doc 2 (0.62) → kept
@@ -149,7 +150,8 @@ public class QueryAndResponseCombinerTest extends SolrTestCaseJ4 {
       SolrIndexSearcher searcher = searcherRef.get();
 
       QueryResult combined =
-          QueryAndResponseCombiner.simpleCombine(getQueryResults(), collapseFilter, searcher);
+          QueryAndResponseCombiner.simpleCombine(
+              getQueryResults(), List.of(collapseFilter), searcher);
 
       // group=1: doc 0 (0.87) > doc 1 (0.67) → keep doc 1
       // doc 2 has no group value → kept (null policy)
