@@ -77,6 +77,10 @@ Due to changes in Lucene 9, that isn't possible any more.
 
 == Solr 9.11
 
+=== Docker
+
+The `gosu` binary is no longer installed in the Solr Docker image. See https://github.com/tianon/gosu[gosu github page] for alternatives, such as `runuser`, `setpriv` or `chroot`.
+
 === Removing 'local' Tika
 
 The project normally doesn't remove functionality in a minor release, but we made an exception to avoid shipping Tika 1.x with known vulnerabilities.
