@@ -275,6 +275,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     return List.of();
   }
 
+  /**
+   * Each shard response contains both "response" and "response_per_query". Only "response" is
+   * deduplicated across sub-queries, so any processing of "response_per_query" must exclude docs
+   * not present in "response" to avoid reintroducing docs that were eliminated while deduplication.
+   */
   @Override
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
     SortSpec ss = rb.getSortSpec();
@@ -313,7 +318,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     long approximateTotalHits = 0;
     Map<String, List<ShardDoc>> shardDocMap = new HashMap<>();
     String[] queriesToCombineKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
-    // Build per-shard set of doc IDs retained after collapse in simpleCombine.
+    // Build per-shard set of doc IDs from the shard's combined (deduplicated) response.
     // Used to filter per-query docs so that RRF doesn't reintroduce docs
     // excluded by collapse at the shard level.
     Map<String, Set<Object>> combinedDocIdsPerShard = HashMap.newHashMap(sreq.responses.size());
