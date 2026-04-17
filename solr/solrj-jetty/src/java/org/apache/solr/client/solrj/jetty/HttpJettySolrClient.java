@@ -849,8 +849,11 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   private static class AsyncTracker {
-    private static final int MAX_OUTSTANDING_REQUESTS =
-        EnvUtils.getPropertyAsInteger(ASYNC_REQUESTS_MAX_SYSPROP, 1000);
+    /**
+     * Read per-instance so that tests can set the sysprop before constructing a client and have it
+     * take effect without relying on class-load ordering across test suites in the same JVM.
+     */
+    private final int maxOutstandingRequests;
 
     /**
      * Request attribute key used to guard idempotency across both listeners. Set immediately after
@@ -871,8 +874,9 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
     AsyncTracker() {
       // TODO: what about shared instances?
+      maxOutstandingRequests = EnvUtils.getPropertyAsInteger(ASYNC_REQUESTS_MAX_SYSPROP, 1000);
       phaser = new Phaser(1);
-      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
+      available = new Semaphore(maxOutstandingRequests, false);
       queuedListener =
           request -> {
             if (request.getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
@@ -901,11 +905,11 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
     int getMaxRequestsQueuedPerDestination() {
       // comfortably above max outstanding requests
-      return MAX_OUTSTANDING_REQUESTS * 3;
+      return maxOutstandingRequests * 3;
     }
 
     int maxPermits() {
-      return MAX_OUTSTANDING_REQUESTS;
+      return maxOutstandingRequests;
     }
 
     int availablePermits() {
