@@ -421,7 +421,7 @@ The {solr-javadocs}/modules/language-models/index.html[`language-models`] module
 It uses external text to vectors language models to perform the vectorisation for each processed document.
 For more information: xref:query-guide:text-to-vector.adoc[Update Request Processor]
 
-{solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/documentenrichment/update/processor/DocumentEnrichmentProcessorFactory.html[DocumentEnrichmentProcessorFactory]:: Update processor which, starting from one or more fields in input and a given prompt, adds the output of an LLM as the value of a new field.
+{solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/documentenrichment/update/processor/DocumentEnrichmentUpdateProcessorFactory.html[DocumentEnrichmentUpdateProcessorFactory]:: Update processor which, starting from one or more fields in input and a given prompt, adds the output of an LLM as the value of a new field.
 It uses external chat language models to perform the enrichment of each processed document.
 For more information: xref:indexing-guide:document-enrichment-with-llms.adoc[Document Enrichment documentation]
 

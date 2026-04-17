@@ -81,8 +81,7 @@ public class TestChatModelManagerPersistence extends TestLanguageModelBase {
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     // check persistence after restart
-    getJetty().stop();
-    getJetty().start();
+    restartJetty();
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
 
@@ -93,8 +92,7 @@ public class TestChatModelManagerPersistence extends TestLanguageModelBase {
     restTestHarness.reload();
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/==[]");
 
-    getJetty().stop();
-    getJetty().start();
+    restartJetty();
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/==[]");
   }
 }
