@@ -55,11 +55,6 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
     }
-
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test

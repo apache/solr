@@ -663,4 +663,22 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
   }
+
+  // formerly SolrExceptionTest.testSolrException
+  public void testConnectionToNonExistentServer() throws Exception {
+    // test a connection to a solr server that probably doesn't exist
+    // this is a very simple test and most of the test should be considered verified
+    // if the compiler won't let you by without the try/catch
+
+    // test a connection to a solr server that probably doesn't exist
+    // set a 1ms timeout to let the connection fail faster
+    boolean gotExpectedError = false;
+    try (var client = builder("http://" + DEAD_HOST_1 + "/solr/", 1, 1000).build()) {
+      SolrQuery query = new SolrQuery("test123");
+      client.query(query);
+    } catch (SolrServerException sse) {
+      gotExpectedError = true;
+    }
+    assertTrue(gotExpectedError);
+  }
 }

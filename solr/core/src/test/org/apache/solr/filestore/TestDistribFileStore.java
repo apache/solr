@@ -17,7 +17,6 @@
 
 package org.apache.solr.filestore;
 
-import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -33,13 +32,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -49,6 +45,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -194,10 +191,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       JettySolrRunner j = cluster.getRandomJetty(random());
       String path =
           j.getBaseURLV2() + "/cluster/filestore/files" + "/package/mypkg/v1.0/runtimelibs.jar";
-      HttpDelete del = new HttpDelete(path);
-      try (HttpSolrClient cl = (HttpSolrClient) j.newClient()) {
-        HttpClientUtil.executeHttpMethod(cl.getHttpClient(), path, Utils.JSONCONSUMER, del);
-      }
+      var resp = j.getSolrClient().getHttpClient().newRequest(path).method("DELETE").send();
+      assertEquals(200, resp.getStatus());
+
       expected = Collections.singletonMap(":files:/package/mypkg/v1.0/runtimelibs.jar", null);
       checkAllNodesForFile(cluster, "/package/mypkg/v1.0/runtimelibs.jar", expected, false);
     } finally {
@@ -217,16 +213,16 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
       if (verifyContent) {
-        try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
-          ByteBuffer buf =
-              HttpClientUtil.executeGET(
-                  solrClient.getHttpClient(),
-                  baseUrl + "/cluster/filestore/files" + path,
-                  Utils.newBytesConsumer(Integer.MAX_VALUE));
-          assertEquals(
-              "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
-              DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
-        }
+        var resp =
+            jettySolrRunner
+                .getSolrClient()
+                .getHttpClient()
+                .GET(baseUrl + "/cluster/filestore/files" + path);
+        assertEquals(200, resp.getStatus());
+        ByteBuffer buf = ByteBuffer.wrap(resp.getContent());
+        assertEquals(
+            "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
+            DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
       }
     }
   }
@@ -242,10 +238,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
     @Override
     public NavigableObject call() throws Exception {
-      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
-        return (NavigableObject)
-            HttpClientUtil.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
-      }
+      var resp = jetty.getSolrClient().getHttpClient().GET(this.url);
+      assertEquals(200, resp.getStatus());
+      return NavigableObject.wrap(new JavaBinCodec().unmarshal(resp.getContent()));
     }
 
     @Override
@@ -334,15 +329,12 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster)
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getSolrHome());
+    PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getSolrHome());
 
-      final var syncReq = new FileStoreApi.SyncFile(path);
-      final var syncRsp = syncReq.process(client);
-      if (log.isInfoEnabled()) {
-        log.info("sync resp for path {} was {}", path, syncRsp.responseHeader.status);
-      }
-    }
+    final var syncReq = new FileStoreApi.SyncFile(path);
+    final var syncRsp = syncReq.process(jetty.getSolrClient());
+    log.info("sync resp for path {} was {}", path, syncRsp.responseHeader.status);
+
     checkAllNodesForFile(
         cluster,
         path,

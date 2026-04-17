@@ -48,7 +48,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -131,7 +130,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static DistribStateManager distribStateManagerMock;
   private static CoreContainer coreContainerMock;
   private static UpdateShardHandler updateShardHandlerMock;
-  private static HttpClient httpClientMock;
 
   @SuppressWarnings("rawtypes")
   private final PlacementPluginFactory placementPluginFactory = new SimplePlacementFactory();
@@ -258,7 +256,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     distribStateManagerMock = mock(DistribStateManager.class);
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
-    httpClientMock = mock(HttpClient.class);
     solrMetricsContextMock = mock(SolrMetricsContext.class);
   }
 
@@ -285,7 +282,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     distribStateManagerMock = null;
     coreContainerMock = null;
     updateShardHandlerMock = null;
-    httpClientMock = null;
     solrMetricsContextMock = null;
   }
 
@@ -318,7 +314,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(distribStateManagerMock);
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
-    reset(httpClientMock);
     reset(solrMetricsContextMock);
 
     zkClientData.clear();

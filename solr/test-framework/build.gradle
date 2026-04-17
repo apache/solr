@@ -79,6 +79,8 @@ dependencies {
 
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
+  implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.session
   implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.eclipse.jetty.util
@@ -103,6 +105,4 @@ dependencies {
     exclude group: "commons-codec", module: "commons-codec"
     exclude group: "commons-logging", module: "commons-logging"
   })
-  implementation libs.apache.httpcomponents.httpclient
-  implementation libs.apache.httpcomponents.httpcore
 }

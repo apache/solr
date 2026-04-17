@@ -257,8 +257,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
 
-  public volatile boolean searchEnabled = true;
-  public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
 
   private PackageListeners packageListeners = new PackageListeners(this);
@@ -2138,11 +2136,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @see #withSearcher(IOFunction)
    */
   public RefCounted<SolrIndexSearcher> getSearcher() {
-    if (searchEnabled) {
-      return getSearcher(false, true, null);
-    }
-    throw new SolrException(
-        SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Search is temporarily disabled");
+    return getSearcher(false, true, null);
   }
 
   /**
