@@ -28,6 +28,7 @@ import org.apache.solr.languagemodels.documentenrichment.model.SolrChatModel;
 import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedChatModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import dev.langchain4j.model.chat.request.ResponseFormatType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -389,7 +390,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     var schemaField = collection1.getLatestSchema().getField("output_sortable_text");
     var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
     assertNotNull(responseFormat);
-    assertEquals(dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertEquals(ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 
@@ -401,7 +402,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     assertTrue(schemaField.multiValued());
     var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
     assertNotNull(responseFormat);
-    assertEquals(dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertEquals(ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 
@@ -412,7 +413,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     assertFalse(schemaField.multiValued());
     var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
     assertNotNull(responseFormat);
-    assertEquals(dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertEquals(ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 

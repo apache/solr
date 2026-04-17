@@ -2,3 +2,6 @@ title: Add DocumentEnrichmentUpdateProcessorFactory for LLM-based document enric
 type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
 - name: Nicolò Rinaldi
+links:
+  - name: SOLR-18187
+    url: https://issues.apache.org/jira/browse/SOLR-18187
