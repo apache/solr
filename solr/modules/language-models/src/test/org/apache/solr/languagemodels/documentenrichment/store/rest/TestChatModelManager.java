@@ -127,11 +127,8 @@ public class TestChatModelManager extends TestLanguageModelBase {
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT,
-        "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -149,8 +146,7 @@ public class TestChatModelManager extends TestLanguageModelBase {
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.mistral.ai/v1'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='mistral-small-latest'");
@@ -171,8 +167,7 @@ public class TestChatModelManager extends TestLanguageModelBase {
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.anthropic.com/v1'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-anthropic'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-anthropic'");
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='claude-3-5-haiku-latest'");
@@ -193,8 +188,7 @@ public class TestChatModelManager extends TestLanguageModelBase {
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='http://localhost:11434'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='llama3.2'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='llama3.2'");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -208,11 +202,9 @@ public class TestChatModelManager extends TestLanguageModelBase {
 
     final String modelName = "gemini-chat-1";
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-gemini'");
     assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-gemini'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT,
-        "/models/[0]/params/modelName=='gemini-2.0-flash'");
+        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gemini-2.0-flash'");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");

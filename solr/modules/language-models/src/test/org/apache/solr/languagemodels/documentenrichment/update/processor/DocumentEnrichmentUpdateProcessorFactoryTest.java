@@ -19,7 +19,6 @@ package org.apache.solr.languagemodels.documentenrichment.update.processor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -61,7 +60,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
   @Test
   public void init_fullArgs_shouldInitAllParams() {
-    DocumentEnrichmentUpdateProcessorFactory factory = initializeUpdateProcessorFactory(List.of("string_field"), "enriched_field", null, "model1");
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        initializeUpdateProcessorFactory(List.of("string_field"), "enriched_field", null, "model1");
 
     assertEquals(List.of("string_field"), factory.getInputFields());
     assertEquals("enriched_field", factory.getOutputField());
@@ -71,7 +71,9 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
   @Test
   public void init_multipleInputFields_shouldInitAllFields() {
-    DocumentEnrichmentUpdateProcessorFactory factory = initializeUpdateProcessorFactory(List.of("string_field", "body_field"), "enriched_field", null, "model1");
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        initializeUpdateProcessorFactory(
+            List.of("string_field", "body_field"), "enriched_field", null, "model1");
 
     assertEquals(List.of("string_field", "body_field"), factory.getInputFields());
   }
@@ -84,7 +86,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("prompt", "Title: {string_field}. Body: {body_field}.");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
     factory.init(args);
 
     assertEquals(List.of("string_field", "body_field"), factory.getInputFields());
@@ -98,7 +101,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("prompt", "Summarize: {string_field}.");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals("At least one 'inputField' must be provided", e.getMessage());
@@ -111,7 +115,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals("Exactly one 'outputField' must be provided", e.getMessage());
@@ -126,9 +131,12 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("prompt", "Summarize: {string_field}");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("Only one 'outputField' can be provided, but found: [enriched_field, body_field]", e.getMessage());
+    assertEquals(
+        "Only one 'outputField' can be provided, but found: [enriched_field, body_field]",
+        e.getMessage());
   }
 
   @Test
@@ -138,7 +146,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("outputField", "enriched_field");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals("Either 'prompt' or 'promptFile' must be provided", e.getMessage());
@@ -153,28 +162,33 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("promptFile", "prompt.txt");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals("Only one of 'prompt' or 'promptFile' can be provided, not both", e.getMessage());
   }
 
   @Test
-  public void init_promptMissingPlaceholderForDeclaredField_shouldThrowExceptionWithDetailedMessage() {
+  public void
+      init_promptMissingPlaceholderForDeclaredField_shouldThrowExceptionWithDetailedMessage() {
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "enriched_field");
     args.add("prompt", "Summarize:");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
-    assertEquals("prompt is missing placeholders for inputField(s): [string_field]", e.getMessage());
+    assertEquals(
+        "prompt is missing placeholders for inputField(s): [string_field]", e.getMessage());
   }
 
   @Test
-  public void init_promptMissingOnePlaceholderOfMultipleFields_shouldThrowExceptionWithDetailedMessage() {
+  public void
+      init_promptMissingOnePlaceholderOfMultipleFields_shouldThrowExceptionWithDetailedMessage() {
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("inputField", "body_field");
@@ -182,21 +196,24 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("prompt", "Title: {string_field}.");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals("prompt is missing placeholders for inputField(s): [body_field]", e.getMessage());
   }
 
   @Test
-  public void init_promptHasExtraPlaceholderNotDeclaredAsInputField_shouldThrowExceptionWithDetailedMessage() {
+  public void
+      init_promptHasExtraPlaceholderNotDeclaredAsInputField_shouldThrowExceptionWithDetailedMessage() {
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "string_field");
     args.add("outputField", "enriched_field");
     args.add("prompt", "Title: {string_field}. Extra: {unknown_field}.");
     args.add("model", "model1");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals(
@@ -211,7 +228,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     args.add("outputField", "enriched_field");
     args.add("prompt", "Summarize: {string_field}");
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
 
     SolrException e = assertThrows(SolrException.class, () -> factory.init(args));
     assertEquals("Missing required parameter: model", e.getMessage());
@@ -219,7 +237,9 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
   @Test
   public void init_promptFile_shouldLoadPromptFromFile() {
-    DocumentEnrichmentUpdateProcessorFactory factory = initializeUpdateProcessorFactory(List.of("string_field"), "enriched_field", "prompt.txt", "model1");
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        initializeUpdateProcessorFactory(
+            List.of("string_field"), "enriched_field", "prompt.txt", "model1");
     factory.inform(collection1);
 
     assertEquals("prompt.txt", factory.getPromptFile());
@@ -229,7 +249,12 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
   @Test
   public void init_promptFileMultiField_shouldLoadAndValidateBothPlaceholders() {
-    DocumentEnrichmentUpdateProcessorFactory factory = initializeUpdateProcessorFactory(List.of("string_field", "body_field"), "enriched_field", "prompt-multi-field.txt", "model1");
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        initializeUpdateProcessorFactory(
+            List.of("string_field", "body_field"),
+            "enriched_field",
+            "prompt-multi-field.txt",
+            "model1");
     factory.inform(collection1);
 
     assertNotNull(factory.getPrompt());
@@ -239,7 +264,9 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
   @Test
   public void init_promptFileWithMissingPlaceholder_shouldThrowExceptionInInform() {
-    DocumentEnrichmentUpdateProcessorFactory factory = initializeUpdateProcessorFactory(List.of("string_field"), "enriched_field", "prompt-no-placeholder.txt", "model1");
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        initializeUpdateProcessorFactory(
+            List.of("string_field"), "enriched_field", "prompt-no-placeholder.txt", "model1");
 
     SolrException e = assertThrows(SolrException.class, () -> factory.inform(collection1));
     assertEquals(
@@ -249,40 +276,73 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   /* Following tests depend on a real solr schema and depend on BeforeClass-AfterClass methods */
 
   @Test
-  public void init_notExistentOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
-    SolrException e = assertThrows(SolrException.class, () -> createUpdateProcessor(List.of("string_field"),"notExistentOutput", null, collection1, "model1"));
+  public void init_notExistentOutputField_shouldThrowExceptionWithDetailedMessage()
+      throws Exception {
+    SolrException e =
+        assertThrows(
+            SolrException.class,
+            () ->
+                createUpdateProcessor(
+                    List.of("string_field"), "notExistentOutput", null, collection1, "model1"));
     assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
-  public void init_notTextualOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception{
+  public void init_notTextualOutputField_shouldThrowExceptionWithDetailedMessage()
+      throws Exception {
     // vector is a DenseVectorField and it's not supported
-    SolrException e = assertThrows(SolrException.class, () -> createUpdateProcessor(List.of("string_field"), "vector", null, collection1, "model1"));
+    SolrException e =
+        assertThrows(
+            SolrException.class,
+            () ->
+                createUpdateProcessor(
+                    List.of("string_field"), "vector", null, collection1, "model1"));
     assertEquals(
         "field type is not supported by Document Enrichment: DenseVectorField", e.getMessage());
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
-  public void init_unsupportedOutputFieldType_shouldThrowExceptionWithDetailedMessage() throws Exception {
+  public void init_unsupportedOutputFieldType_shouldThrowExceptionWithDetailedMessage()
+      throws Exception {
     // output_binary is a BinaryField, which is not supported (and is not DenseVectorField)
-    SolrException e = assertThrows(SolrException.class, () -> createUpdateProcessor(List.of("string_field"), "output_binary", null, collection1, "model1"));
-    assertEquals(
-        "field type is not supported by Document Enrichment: BinaryField", e.getMessage());
+    SolrException e =
+        assertThrows(
+            SolrException.class,
+            () ->
+                createUpdateProcessor(
+                    List.of("string_field"), "output_binary", null, collection1, "model1"));
+    assertEquals("field type is not supported by Document Enrichment: BinaryField", e.getMessage());
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
-  public void init_notExistentInputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
-    SolrException e = assertThrows(SolrException.class, () -> createUpdateProcessor(List.of("notExistentInput"), "enriched_field", null, collection1, "model1"));
+  public void init_notExistentInputField_shouldThrowExceptionWithDetailedMessage()
+      throws Exception {
+    SolrException e =
+        assertThrows(
+            SolrException.class,
+            () ->
+                createUpdateProcessor(
+                    List.of("notExistentInput"), "enriched_field", null, collection1, "model1"));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
-  public void init_multipleInputFields_oneNotExistent_shouldThrowExceptionWithDetailedMessage() throws Exception {
-    SolrException e = assertThrows(SolrException.class, () -> createUpdateProcessor(List.of("string_field", "notExistentInput"), "enriched_field_multi", null, collection1, "model1"));
+  public void init_multipleInputFields_oneNotExistent_shouldThrowExceptionWithDetailedMessage()
+      throws Exception {
+    SolrException e =
+        assertThrows(
+            SolrException.class,
+            () ->
+                createUpdateProcessor(
+                    List.of("string_field", "notExistentInput"),
+                    "enriched_field_multi",
+                    null,
+                    collection1,
+                    "model1"));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
@@ -290,7 +350,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   @Test
   public void init_multivaluedStringOutputField_shouldNotThrowException() throws Exception {
     UpdateRequestProcessor instance =
-        createUpdateProcessor(List.of("string_field"), "enriched_field_multi", null, collection1, "model1");
+        createUpdateProcessor(
+            List.of("string_field"), "enriched_field_multi", null, collection1, "model1");
     assertNotNull(instance);
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
@@ -299,25 +360,28 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
 
   @Test
   public void buildResponseFormat_unsupportedFieldTypes_shouldThrowUnsupportedFieldTypeException() {
-    var cases = Map.of(
-        "output_collation",   "CollationField",
-        "output_date_range",  "DateRangeField",
-        "output_enum",        "EnumFieldType",
-        "output_lat_lon",     "LatLonPointSpatialField",
-        "output_random_sort", "RandomSortField",
-        "output_rank",        "RankField",
-        "output_uuid",        "UUIDField",
-        "output_nest_path",   "NestPathField"
-    );
+    var cases =
+        Map.of(
+            "output_collation", "CollationField",
+            "output_date_range", "DateRangeField",
+            "output_enum", "EnumFieldType",
+            "output_lat_lon", "LatLonPointSpatialField",
+            "output_random_sort", "RandomSortField",
+            "output_rank", "RankField",
+            "output_uuid", "UUIDField",
+            "output_nest_path", "NestPathField");
     var schema = collection1.getLatestSchema();
-    cases.forEach((fieldName, expectedTypeName) -> {
-      var schemaField = schema.getField(fieldName);
-      SolrException e = assertThrows(SolrException.class,
-          () -> DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField));
-      assertEquals(
-          "field type is not supported by Document Enrichment: " + expectedTypeName,
-          e.getMessage());
-    });
+    cases.forEach(
+        (fieldName, expectedTypeName) -> {
+          var schemaField = schema.getField(fieldName);
+          SolrException e =
+              assertThrows(
+                  SolrException.class,
+                  () -> DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField));
+          assertEquals(
+              "field type is not supported by Document Enrichment: " + expectedTypeName,
+              e.getMessage());
+        });
   }
 
   @Test
@@ -325,8 +389,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     var schemaField = collection1.getLatestSchema().getField("output_sortable_text");
     var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
     assertNotNull(responseFormat);
-    assertEquals(
-        dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertEquals(dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 
@@ -338,8 +401,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     assertTrue(schemaField.multiValued());
     var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
     assertNotNull(responseFormat);
-    assertEquals(
-        dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertEquals(dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 
@@ -350,13 +412,12 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     assertFalse(schemaField.multiValued());
     var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
     assertNotNull(responseFormat);
-    assertEquals(
-        dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
+    assertEquals(dev.langchain4j.model.chat.request.ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 
   @Test
-  public void init_dynamicInputField_shouldNotThrowException() throws Exception{
+  public void init_dynamicInputField_shouldNotThrowException() throws Exception {
     UpdateRequestProcessor instance =
         createUpdateProcessor(List.of("text_s"), "enriched_field", null, collection1, "model1");
     assertNotNull(instance);
@@ -364,9 +425,10 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   }
 
   @Test
-  public void init_multipleDynamicInputFields_shouldNotThrowException() throws Exception{
+  public void init_multipleDynamicInputFields_shouldNotThrowException() throws Exception {
     UpdateRequestProcessor instance =
-        createUpdateProcessor(List.of("text_s", "body_field"), "enriched_field", null, collection1, "model1");
+        createUpdateProcessor(
+            List.of("text_s", "body_field"), "enriched_field", null, collection1, "model1");
     assertNotNull(instance);
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
   }
@@ -377,7 +439,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
       String prompt,
       SolrCore core,
       String modelName)
-  throws Exception {
+      throws Exception {
 
     ManagedChatModelStore.getManagedModelStore(core)
         .addModel(new SolrChatModel(modelName, null, null));
@@ -395,21 +457,21 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
       List<String> inputFieldNames, String outputFieldName, String prompt, String modelName) {
     NamedList<String> args = new NamedList<>();
 
-    for  (String fieldName : inputFieldNames) {
+    for (String fieldName : inputFieldNames) {
       args.add("inputField", fieldName);
     }
     args.add("outputField", outputFieldName);
 
     if (prompt != null) {
       args.add("promptFile", prompt);
-    }
-    else {
+    } else {
       args.add("prompt", "Summarize: {" + String.join("}. {", inputFieldNames) + "}.");
     }
 
     args.add("model", modelName);
 
-    DocumentEnrichmentUpdateProcessorFactory factory = new DocumentEnrichmentUpdateProcessorFactory();
+    DocumentEnrichmentUpdateProcessorFactory factory =
+        new DocumentEnrichmentUpdateProcessorFactory();
     factory.init(args);
     return factory;
   }

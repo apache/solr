@@ -30,11 +30,7 @@ public class TestManagedChatModelStoreInitialization extends TestLanguageModelBa
   @Test
   public void managedChatModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
       throws Exception {
-    setupTest(
-        "solrconfig-document-enrichment.xml",
-        "schema-language-models.xml",
-        false,
-        false);
+    setupTest("solrconfig-document-enrichment.xml", "schema-language-models.xml", false, false);
 
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/responseHeader/status==0");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models==[]");

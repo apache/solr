@@ -60,10 +60,8 @@ public class TestChatModelManagerPersistence extends TestLanguageModelBase {
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -75,10 +73,8 @@ public class TestChatModelManagerPersistence extends TestLanguageModelBase {
     assertJQ(
         ManagedChatModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -88,8 +84,7 @@ public class TestChatModelManagerPersistence extends TestLanguageModelBase {
     getJetty().stop();
     getJetty().start();
     assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(
-        ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
 
     // delete model and verify persistence of the empty state
     restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + modelName);

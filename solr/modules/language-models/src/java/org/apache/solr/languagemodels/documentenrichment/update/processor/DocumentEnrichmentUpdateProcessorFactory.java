@@ -140,8 +140,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     Collection<String> fieldNames = args.removeConfigArgs(INPUT_FIELD_PARAM);
     if (fieldNames.isEmpty()) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "At least one 'inputField' must be provided");
+          SolrException.ErrorCode.SERVER_ERROR, "At least one 'inputField' must be provided");
     }
     inputFields = List.copyOf(fieldNames);
 
@@ -166,8 +165,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
     if (inlinePrompt == null && promptFilePath == null) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Either 'prompt' or 'promptFile' must be provided");
+          SolrException.ErrorCode.SERVER_ERROR, "Either 'prompt' or 'promptFile' must be provided");
     }
     if (inlinePrompt != null && promptFilePath != null) {
       throw new SolrException(
@@ -190,9 +188,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
         promptText = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
       } catch (IOException e) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Cannot read prompt file: " + promptFile,
-            e);
+            SolrException.ErrorCode.SERVER_ERROR, "Cannot read prompt file: " + promptFile, e);
       }
       validatePromptPlaceholders(promptText, inputFields);
     }
@@ -244,8 +240,8 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
    * is wrapped in a {@link JsonArraySchema} nested inside the root {@link JsonObjectSchema}.
    *
    * <p>Nesting {@link JsonArraySchema} inside a {@link JsonObjectSchema} property is supported by
-   * all langchain4j providers that implement structured outputs with {@link JsonObjectSchema} (OpenAI, Azure OpenAI,
-   * Google AI, Gemini, Mistral, Ollama, Amazon Bedrock, Watsonx).
+   * all langchain4j providers that implement structured outputs with {@link JsonObjectSchema}
+   * (OpenAI, Azure OpenAI, Google AI, Gemini, Mistral, Ollama, Amazon Bedrock, Watsonx).
    */
   static ResponseFormat buildResponseFormat(SchemaField schemaField) {
     JsonSchemaElement valueElement = toJsonSchemaElement(schemaField.getType());
@@ -315,7 +311,8 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     if (!placeholdersInPromptWithoutField.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "prompt contains placeholders not declared as inputField(s): " + placeholdersInPromptWithoutField);
+          "prompt contains placeholders not declared as inputField(s): "
+              + placeholdersInPromptWithoutField);
     }
   }
 

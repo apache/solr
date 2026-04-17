@@ -42,8 +42,7 @@ public class ChatModelStore {
 
   public List<SolrChatModel> getModels() {
     synchronized (availableModels) {
-      final List<SolrChatModel> availableModelsValues =
-          new ArrayList<>(availableModels.values());
+      final List<SolrChatModel> availableModelsValues = new ArrayList<>(availableModels.values());
       return Collections.unmodifiableList(availableModelsValues);
     }
   }

@@ -67,7 +67,10 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     model.put("class", "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel");
     model.put("name", modelId);
     model.put("params", Map.of("response", response));
-    assertJPut(ManagedChatModelStore.REST_END_POINT, Utils.toJSONString(model), "/responseHeader/status==0");
+    assertJPut(
+        ManagedChatModelStore.REST_END_POINT,
+        Utils.toJSONString(model),
+        "/responseHeader/status==0");
     loadedModelId = modelId;
   }
 
@@ -75,8 +78,11 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   public void processAdd_inputField_shouldEnrichInputField() throws Exception {
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
 
-    addWithChain(sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
-    addWithChain(sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "documentEnrichment");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("enriched_field");
@@ -115,7 +121,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   public void processAdd_emptyInputField_shouldLogAndIndexWithNoEnrichedField() throws Exception {
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
     addWithChain(sdoc("id", "99", "string_field", ""), "documentEnrichment");
-    addWithChain(sdoc("id", "98", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("enriched_field");
@@ -132,7 +139,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_nullInputField_shouldLogAndIndexWithNoEnrichedField() throws Exception {
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
-    addWithChain(sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
     assertU(adoc("id", "98")); // no string_field
     assertU(commit());
 
@@ -150,8 +158,12 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_failingEnrichment_shouldLogAndIndexWithNoEnrichedField() throws Exception {
     loadTestChatModel("exception-throwing-chat-model.json", "exception-throwing-chat-model");
-    addWithChain(sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "failingDocumentEnrichment");
-    addWithChain(sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."), "failingDocumentEnrichment");
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."),
+        "failingDocumentEnrichment");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "failingDocumentEnrichment");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("enriched_field");
@@ -201,8 +213,17 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     // modified via atomic update, the enriched content is recomputed and replaces the previous
     // value rather than being appended.
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
-    assertU(adoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "enriched_field", "old content"));
-    addWithChain(sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."), "documentEnrichment");
+    assertU(
+        adoc(
+            "id",
+            "99",
+            "string_field",
+            "Vegeta is the saiyan prince.",
+            "enriched_field",
+            "old content"));
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "documentEnrichment");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("enriched_field");
@@ -217,7 +238,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
     SolrInputDocument atomicDoc = new SolrInputDocument();
     atomicDoc.setField("id", "99");
-    atomicDoc.setField("string_field", Map.of("set", "Vegeta is the saiyan prince from the Dragon Ball series."));
+    atomicDoc.setField(
+        "string_field", Map.of("set", "Vegeta is the saiyan prince from the Dragon Ball series."));
     addWithChain(atomicDoc, "documentEnrichmentForPartialUpdates");
     assertU(commit());
 
@@ -241,10 +263,22 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     DummyChatModel.lastReceivedPrompt = null;
 
     addWithChain(
-        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "body_field", "He is very proud."),
+        sdoc(
+            "id",
+            "99",
+            "string_field",
+            "Vegeta is the saiyan prince.",
+            "body_field",
+            "He is very proud."),
         "documentEnrichmentArrInputField");
     addWithChain(
-        sdoc("id", "98", "string_field", "Kakaroth is a saiyan.", "body_field", "He grew up on Earth."),
+        sdoc(
+            "id",
+            "98",
+            "string_field",
+            "Kakaroth is a saiyan.",
+            "body_field",
+            "He grew up on Earth."),
         "documentEnrichmentArrInputField");
     assertU(commit());
 
@@ -260,16 +294,29 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_multipleInputFields_allPresent_shouldEnrichDocumentWithBothFields() throws Exception {
+  public void processAdd_multipleInputFields_allPresent_shouldEnrichDocumentWithBothFields()
+      throws Exception {
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
 
     DummyChatModel.lastReceivedPrompt = null;
 
     addWithChain(
-        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "body_field", "He is very proud."),
+        sdoc(
+            "id",
+            "99",
+            "string_field",
+            "Vegeta is the saiyan prince.",
+            "body_field",
+            "He is very proud."),
         "documentEnrichmentMultiField");
     addWithChain(
-        sdoc("id", "98", "string_field", "Kakaroth is a saiyan.", "body_field", "He grew up on Earth."),
+        sdoc(
+            "id",
+            "98",
+            "string_field",
+            "Kakaroth is a saiyan.",
+            "body_field",
+            "He grew up on Earth."),
         "documentEnrichmentMultiField");
     assertU(commit());
 
@@ -290,7 +337,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_multipleInputFields_firstFieldNull_shouldSkipEnrichment() throws Exception {
+  public void processAdd_multipleInputFields_firstFieldNull_shouldSkipEnrichment()
+      throws Exception {
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
 
     addWithChain(
@@ -313,7 +361,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_multipleInputFields_secondFieldEmpty_shouldSkipEnrichment() throws Exception {
+  public void processAdd_multipleInputFields_secondFieldEmpty_shouldSkipEnrichment()
+      throws Exception {
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
 
     addWithChain(
@@ -336,7 +385,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_multipleInputFields_bothFieldsAbsent_shouldSkipEnrichment() throws Exception {
+  public void processAdd_multipleInputFields_bothFieldsAbsent_shouldSkipEnrichment()
+      throws Exception {
     loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
 
     addWithChain(sdoc("id", "99"), "documentEnrichmentMultiField");
@@ -355,14 +405,27 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_multipleInputFields_failingModel_shouldLogAndSkipEnrichment() throws Exception {
+  public void processAdd_multipleInputFields_failingModel_shouldLogAndSkipEnrichment()
+      throws Exception {
     loadTestChatModel("exception-throwing-chat-model.json", "exception-throwing-chat-model");
 
     addWithChain(
-        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "body_field", "He is very proud."),
+        sdoc(
+            "id",
+            "99",
+            "string_field",
+            "Vegeta is the saiyan prince.",
+            "body_field",
+            "He is very proud."),
         "failingDocumentEnrichmentMultiField");
     addWithChain(
-        sdoc("id", "98", "string_field", "Kakaroth is a saiyan.", "body_field", "He grew up on Earth."),
+        sdoc(
+            "id",
+            "98",
+            "string_field",
+            "Kakaroth is a saiyan.",
+            "body_field",
+            "He grew up on Earth."),
         "failingDocumentEnrichmentMultiField");
     assertU(commit());
 
@@ -378,7 +441,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_multivaluedInputField_shouldInterpolateCollectionAndEnrichDocument() throws Exception {
+  public void processAdd_multivaluedInputField_shouldInterpolateCollectionAndEnrichDocument()
+      throws Exception {
     // When an input field is multivalued, SolrInputField.getValue() returns the Collection,
     // whose toString() is used for prompt interpolation (e.g. "[tag1, tag2, tag3]").
     // Enrichment must proceed — the collection is non-null and non-empty.
@@ -406,8 +470,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "/response/docs/[1]/id=='98'",
         "/response/docs/[1]/enriched_field=='enriched content'");
 
-    assertEquals(
-        "Classify these tags: [tag1, tag2, tag3]", DummyChatModel.lastReceivedPrompt);
+    assertEquals("Classify these tags: [tag1, tag2, tag3]", DummyChatModel.lastReceivedPrompt);
   }
 
   @Test
@@ -434,15 +497,42 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
   @Test
   public void processAdd_singleTypedOutputField_shouldPopulateValue() throws Exception {
-    record TypedCase(String modelId, String response, String chain, String field, String expectedValue) {}
-    List<TypedCase> typedCases = List.of(
-        new TypedCase("dummy-long",    "{\"value\": 3000000000}",               "documentEnrichmentSingleLong",    "output_long",    "3000000000"),
-        new TypedCase("dummy-int",     "{\"value\": 7}",                        "documentEnrichmentSingleInt",     "output_int",     "7"),
-        new TypedCase("dummy-float",   "{\"value\": 1.5}",                      "documentEnrichmentSingleFloat",   "output_float",   "1.5"),
-        new TypedCase("dummy-double",  "{\"value\": 1e308}",                    "documentEnrichmentSingleDouble",  "output_double",  "1e308"),
-        new TypedCase("dummy-boolean", "{\"value\": true}",                     "documentEnrichmentSingleBoolean", "output_boolean", "true"),
-        new TypedCase("dummy-date",    "{\"value\": \"2024-01-15T00:00:00Z\"}", "documentEnrichmentSingleDate",    "output_date",    "'2024-01-15T00:00:00Z'")
-    );
+    record TypedCase(
+        String modelId, String response, String chain, String field, String expectedValue) {}
+    List<TypedCase> typedCases =
+        List.of(
+            new TypedCase(
+                "dummy-long",
+                "{\"value\": 3000000000}",
+                "documentEnrichmentSingleLong",
+                "output_long",
+                "3000000000"),
+            new TypedCase(
+                "dummy-int", "{\"value\": 7}", "documentEnrichmentSingleInt", "output_int", "7"),
+            new TypedCase(
+                "dummy-float",
+                "{\"value\": 1.5}",
+                "documentEnrichmentSingleFloat",
+                "output_float",
+                "1.5"),
+            new TypedCase(
+                "dummy-double",
+                "{\"value\": 1e308}",
+                "documentEnrichmentSingleDouble",
+                "output_double",
+                "1e308"),
+            new TypedCase(
+                "dummy-boolean",
+                "{\"value\": true}",
+                "documentEnrichmentSingleBoolean",
+                "output_boolean",
+                "true"),
+            new TypedCase(
+                "dummy-date",
+                "{\"value\": \"2024-01-15T00:00:00Z\"}",
+                "documentEnrichmentSingleDate",
+                "output_date",
+                "'2024-01-15T00:00:00Z'"));
 
     for (TypedCase typedCase : typedCases) {
       loadDummyChatModel(typedCase.modelId(), typedCase.response());
@@ -468,23 +558,52 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
   @Test
   public void processAdd_multivaluedTypedOutputField_shouldPopulateAllValues() throws Exception {
-    record TypeCaseMulti(String modelId, String response, String chain, String field, List<String> expectedValues) {}
-    List<TypeCaseMulti> typedCaseMultis = List.of(
-        new TypeCaseMulti("dummy-chat-multivalued-1", "{\"value\": [\"tag1\", \"tag2\"]}",
-            "documentEnrichmentMultivaluedString",  "enriched_field_multi",  List.of("'tag1'", "'tag2'")),
-        new TypeCaseMulti("dummy-long-multi",  "{\"value\": [1000000000, 2000000000, 3000000000]}",
-            "documentEnrichmentMultivaluedLong",    "output_long_multi",     List.of("1000000000", "2000000000", "3000000000")),
-        new TypeCaseMulti("dummy-int-multi",   "{\"value\": [1, 2]}",
-            "documentEnrichmentMultivaluedInt",     "output_int_multi",      List.of("1", "2")),
-        new TypeCaseMulti("dummy-float-multi", "{\"value\": [1.5, 2.5]}",
-            "documentEnrichmentMultivaluedFloat",   "output_float_multi",    List.of("1.5", "2.5")),
-        new TypeCaseMulti("dummy-double-multi","{\"value\": [1e308, 1.1e308]}",
-            "documentEnrichmentMultivaluedDouble",  "output_double_multi",   List.of("1e308", "1.1e308")),
-        new TypeCaseMulti("dummy-boolean-multi", "{\"value\": [true, false]}",
-            "documentEnrichmentMultivaluedBoolean", "output_boolean_multi",  List.of("true", "false")),
-        new TypeCaseMulti("dummy-date-multi",  "{\"value\": [\"2024-01-15T00:00:00Z\", \"2025-06-30T00:00:00Z\"]}",
-            "documentEnrichmentMultivaluedDate",    "output_date_multi",     List.of("'2024-01-15T00:00:00Z'", "'2025-06-30T00:00:00Z'"))
-    );
+    record TypeCaseMulti(
+        String modelId, String response, String chain, String field, List<String> expectedValues) {}
+    List<TypeCaseMulti> typedCaseMultis =
+        List.of(
+            new TypeCaseMulti(
+                "dummy-chat-multivalued-1",
+                "{\"value\": [\"tag1\", \"tag2\"]}",
+                "documentEnrichmentMultivaluedString",
+                "enriched_field_multi",
+                List.of("'tag1'", "'tag2'")),
+            new TypeCaseMulti(
+                "dummy-long-multi",
+                "{\"value\": [1000000000, 2000000000, 3000000000]}",
+                "documentEnrichmentMultivaluedLong",
+                "output_long_multi",
+                List.of("1000000000", "2000000000", "3000000000")),
+            new TypeCaseMulti(
+                "dummy-int-multi",
+                "{\"value\": [1, 2]}",
+                "documentEnrichmentMultivaluedInt",
+                "output_int_multi",
+                List.of("1", "2")),
+            new TypeCaseMulti(
+                "dummy-float-multi",
+                "{\"value\": [1.5, 2.5]}",
+                "documentEnrichmentMultivaluedFloat",
+                "output_float_multi",
+                List.of("1.5", "2.5")),
+            new TypeCaseMulti(
+                "dummy-double-multi",
+                "{\"value\": [1e308, 1.1e308]}",
+                "documentEnrichmentMultivaluedDouble",
+                "output_double_multi",
+                List.of("1e308", "1.1e308")),
+            new TypeCaseMulti(
+                "dummy-boolean-multi",
+                "{\"value\": [true, false]}",
+                "documentEnrichmentMultivaluedBoolean",
+                "output_boolean_multi",
+                List.of("true", "false")),
+            new TypeCaseMulti(
+                "dummy-date-multi",
+                "{\"value\": [\"2024-01-15T00:00:00Z\", \"2025-06-30T00:00:00Z\"]}",
+                "documentEnrichmentMultivaluedDate",
+                "output_date_multi",
+                List.of("'2024-01-15T00:00:00Z'", "'2025-06-30T00:00:00Z'")));
 
     for (TypeCaseMulti typedCase : typedCaseMultis) {
       loadDummyChatModel(typedCase.modelId(), typedCase.response());
@@ -499,7 +618,15 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         String docId = docIdx == 0 ? "'99'" : "'98'";
         assertions.add("/response/docs/[" + docIdx + "]/id==" + docId);
         for (int i = 0; i < typedCase.expectedValues().size(); i++) {
-          assertions.add("/response/docs/[" + docIdx + "]/" + typedCase.field() + "/[" + i + "]==" + typedCase.expectedValues().get(i));
+          assertions.add(
+              "/response/docs/["
+                  + docIdx
+                  + "]/"
+                  + typedCase.field()
+                  + "/["
+                  + i
+                  + "]=="
+                  + typedCase.expectedValues().get(i));
         }
       }
       assertJQ("/query" + query.toQueryString(), assertions.toArray(new String[0]));
@@ -517,8 +644,11 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     // Model returns valid JSON but without the required "value" key
     loadDummyChatModel("dummy-chat-1", "{\"result\": \"some value\"}");
 
-    addWithChain(sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
-    addWithChain(sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "documentEnrichment");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("enriched_field");
@@ -538,8 +668,11 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     // Model returns a plain string that cannot be parsed as JSON
     loadDummyChatModel("dummy-chat-1", "not valid json at all");
 
-    addWithChain(sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
-    addWithChain(sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "documentEnrichment");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("enriched_field");
@@ -569,8 +702,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         RemoteSolrException.class,
         () ->
             addWithChain(
-                sdoc("id", "99", "string_field", "some content"),
-                "documentEnrichmentSingleDate"));
+                sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleDate"));
   }
 
   @Test
@@ -599,8 +731,10 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   public void processAdd_doubleOutputField_intResponse_shouldConvertAndIndex() throws Exception {
     loadDummyChatModel("dummy-double", "{\"value\": 3}");
 
-    addWithChain(sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleDouble");
-    addWithChain(sdoc("id", "98", "string_field", "other content"), "documentEnrichmentSingleDouble");
+    addWithChain(
+        sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleDouble");
+    addWithChain(
+        sdoc("id", "98", "string_field", "other content"), "documentEnrichmentSingleDouble");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("output_double");
@@ -622,7 +756,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     loadDummyChatModel("dummy-float", "{\"value\": 3.141592653589793}");
 
     addWithChain(sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleFloat");
-    addWithChain(sdoc("id", "98", "string_field", "other content"), "documentEnrichmentSingleFloat");
+    addWithChain(
+        sdoc("id", "98", "string_field", "other content"), "documentEnrichmentSingleFloat");
     assertU(commit());
 
     final SolrQuery query = getEnrichmentQuery("output_float");
@@ -641,7 +776,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   public void processAdd_multivaluedOutputField_singleValuedLlmResponse_shouldStoreSingleValue()
       throws Exception {
     // Model returns {"value": "a single string"} for a multivalued output field.
-    // The scalar is stored as a single-element multivalued field content (e.g., list with only one element).
+    // The scalar is stored as a single-element multivalued field content (e.g., list with only one
+    // element).
     loadDummyChatModel("dummy-chat-multivalued-1", "{\"value\": \"a single string\"}");
 
     addWithChain(
@@ -666,7 +802,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   private SolrQuery getEnrichmentQuery(String enrichedFieldName) {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "id,"+enrichedFieldName);
+    query.add("fl", "id," + enrichedFieldName);
     query.add("sort", "id desc");
     return query;
   }

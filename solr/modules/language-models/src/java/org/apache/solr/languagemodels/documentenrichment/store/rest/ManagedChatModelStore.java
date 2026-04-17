@@ -78,9 +78,7 @@ public class ManagedChatModelStore extends ManagedResource
    * @return the available models as a list of Maps objects
    */
   private static List<Object> modelsAsManagedResources(List<SolrChatModel> models) {
-    return models.stream()
-        .map(ManagedChatModelStore::toModelMap)
-        .collect(Collectors.toList());
+    return models.stream().map(ManagedChatModelStore::toModelMap).collect(Collectors.toList());
   }
 
   @SuppressWarnings("unchecked")
@@ -110,7 +108,6 @@ public class ManagedChatModelStore extends ManagedResource
     super(resourceId, loader, storageIO);
     store = new ChatModelStore();
   }
-
 
   @Override
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)

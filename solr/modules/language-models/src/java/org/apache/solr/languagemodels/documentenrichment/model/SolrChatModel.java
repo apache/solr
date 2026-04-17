@@ -37,9 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to produce the content of a field based on the
- * content of other fields specified as input. It's meant to be used as a managed resource with the {@link
- * ManagedChatModelStore}
+ * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to produce the content of a
+ * field based on the content of other fields specified as input. It's meant to be used as a managed
+ * resource with the {@link ManagedChatModelStore}
  */
 public class SolrChatModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -90,9 +90,9 @@ public class SolrChatModel implements Accountable {
            */
           switch (paramName) {
             case TIMEOUT_PARAM -> builder
-                  .getClass()
-                  .getMethod(paramName, Duration.class)
-                  .invoke(builder, Duration.ofSeconds((Long) params.get(paramName)));
+                .getClass()
+                .getMethod(paramName, Duration.class)
+                .invoke(builder, Duration.ofSeconds((Long) params.get(paramName)));
 
             case MAX_RETRIES_PARAM, THINKING_BUDGET_TOKENS, RANDOM_SEED -> builder
                 .getClass()
@@ -134,8 +134,7 @@ public class SolrChatModel implements Accountable {
     }
   }
 
-  public SolrChatModel(
-      String name, ChatModel chatModel, Map<String, Object> params) {
+  public SolrChatModel(String name, ChatModel chatModel, Map<String, Object> params) {
     this.name = name;
     this.chatModel = chatModel;
     this.params = params;
@@ -146,8 +145,8 @@ public class SolrChatModel implements Accountable {
    * Sends a structured chat request and returns the parsed value from the {@code {"value": ...}}
    * JSON object that the model is instructed to produce via {@code responseFormat}.
    *
-   * @return the extracted value: a {@link String}, {@link Number}, {@link Integer}, {@link Boolean}, or {@link
-   *     java.util.List} depending on the Solr output field type
+   * @return the extracted value: a {@link String}, {@link Number}, {@link Integer}, {@link
+   *     Boolean}, or {@link java.util.List} depending on the Solr output field type
    */
   public Object chat(String prompt, ResponseFormat responseFormat) {
     ChatRequest chatRequest =

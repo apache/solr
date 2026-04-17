@@ -82,7 +82,8 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
     }
 
     try {
-      // as for now, only a plain text as prompt is sent to the model (no support for tools/skills/agents)
+      // as for now, only a plain text as prompt is sent to the model (no support for
+      // tools/skills/agents)
       // chatModel.chat returns the parsed value from the structured JSON response
       Object value = chatModel.chat(injectedPrompt, responseFormat);
       if (multiValued && value instanceof List<?> list) {
