@@ -16,89 +16,107 @@
  limitations under the License.
 -->
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-         version="6.0"
-         metadata-complete="true">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+  version="6.0"
+  metadata-complete="true">
 
   <listener>
-   <listener-class>org.apache.solr.servlet.CoreContainerProvider</listener-class>
+    <listener-class>org.apache.solr.servlet.CoreContainerProvider</listener-class>
   </listener>
-  <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
-  <filter>
-    <filter-name>PathExclusionsFilter</filter-name>
-    <filter-class>org.apache.solr.servlet.PathExclusionFilter</filter-class>
-    <!--
-    Exclude patterns is a list of directories that would be short-circuited by this
-    Filter. It includes all Admin UI related static content.
-    NOTE: It is NOT a pattern but only matches the start of the HTTP ServletPath.
-    -->
-    <init-param>
-      <param-name>excludePatterns</param-name>
-      <param-value>/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+,/ui/.*</param-value>
-    </init-param>
-  </filter>
-
-  <filter-mapping>
-    <filter-name>PathExclusionsFilter</filter-name>
-    <url-pattern>/*</url-pattern>
-  </filter-mapping>
 
   <filter>
     <filter-name>SolrFilter</filter-name>
     <filter-class>org.apache.solr.servlet.RequiredSolrRequestFilter</filter-class>
   </filter>
-
   <filter-mapping>
     <filter-name>SolrFilter</filter-name>
-    <url-pattern>/*</url-pattern>
+    <servlet-name>SolrServlet</servlet-name>
   </filter-mapping>
 
   <filter>
     <filter-name>RateLimitFilter</filter-name>
     <filter-class>org.apache.solr.servlet.RateLimitFilter</filter-class>
   </filter>
-
   <filter-mapping>
     <filter-name>RateLimitFilter</filter-name>
-    <url-pattern>/*</url-pattern>
+    <servlet-name>SolrServlet</servlet-name>
   </filter-mapping>
 
   <filter>
     <filter-name>TracingFilter</filter-name>
     <filter-class>org.apache.solr.servlet.TracingFilter</filter-class>
   </filter>
-
   <filter-mapping>
     <filter-name>TracingFilter</filter-name>
-    <url-pattern>/*</url-pattern>
+    <servlet-name>SolrServlet</servlet-name>
   </filter-mapping>
 
   <filter>
     <filter-name>AuthenticationFilter</filter-name>
     <filter-class>org.apache.solr.servlet.AuthenticationFilter</filter-class>
   </filter>
-
   <filter-mapping>
     <filter-name>AuthenticationFilter</filter-name>
-    <url-pattern>/*</url-pattern>
+    <servlet-name>SolrServlet</servlet-name>
   </filter-mapping>
 
   <servlet>
     <servlet-name>SolrServlet</servlet-name>
     <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
   </servlet>
-
   <servlet-mapping>
     <servlet-name>SolrServlet</servlet-name>
     <url-pattern>/*</url-pattern>
+  </servlet-mapping>
+
+  <!-- Define servlet for static Admin UI resources -->
+  <servlet>
+    <servlet-name>static</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee10.servlet.ResourceServlet</servlet-class>
+    <init-param>
+      <param-name>pathInfoOnly</param-name>
+      <param-value>false</param-value>
+    </init-param>
+    <init-param>
+      <param-name>dirAllowed</param-name>
+      <param-value>false</param-value>
+    </init-param>
+  </servlet>
+  <!-- Map static Admin UI resources to the static servlet -->
+  <servlet-mapping>
+    <servlet-name>static</servlet-name>
+    <url-pattern>/partials/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>static</servlet-name>
+    <url-pattern>/libs/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>static</servlet-name>
+    <url-pattern>/css/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>static</servlet-name>
+    <url-pattern>/js/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>static</servlet-name>
+    <url-pattern>/img/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>static</servlet-name>
+    <url-pattern>/templates/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>static</servlet-name>
+    <url-pattern>/ui/*</url-pattern>
   </servlet-mapping>
 
   <servlet>
     <servlet-name>LoadAdminUI</servlet-name>
     <servlet-class>org.apache.solr.servlet.LoadAdminUiServlet</servlet-class>
   </servlet>
-
   <servlet-mapping>
     <servlet-name>LoadAdminUI</servlet-name>
     <url-pattern>/index.html</url-pattern>
