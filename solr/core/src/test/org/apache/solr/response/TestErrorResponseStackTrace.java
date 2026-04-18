@@ -18,16 +18,14 @@ package org.apache.solr.response;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.codec.CharEncoding;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -74,29 +72,26 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
   public void testFullStackTrace() throws Exception {
     final String url =
         solrTestRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
-    final HttpGet get = new HttpGet(url);
-    var client = HttpClientUtil.createClient(null);
-    try (CloseableHttpResponse responseRaw = client.execute(get)) {
+    var httpClient = solrTestRule.getJetty().getSolrClient().getHttpClient();
+    var responseRaw = httpClient.GET(url);
 
-      assertEquals(500, responseRaw.getStatusLine().getStatusCode());
-      NamedList<Object> response =
-          new JsonMapResponseParser()
-              .processResponse(responseRaw.getEntity().getContent(), CharEncoding.UTF_8);
+    assertEquals(500, responseRaw.getStatus());
+    NamedList<Object> response =
+        new JsonMapResponseParser()
+            .processResponse(
+                new ByteArrayInputStream(responseRaw.getContent()), StandardCharsets.UTF_8.name());
 
-      assertEquals(500L, response._get("error/code"));
-      assertEquals("java.lang.RuntimeException", response._get("error/errorClass"));
-      assertEquals("Stacktrace should be populated.", response._get("error/msg"));
-      assertTrue(
-          ((String) response._get("error/trace/stackTrace[0]"))
-              .contains("org.apache.solr.response.TestErrorResponseStackTrace$ErrorComponent"));
-      assertEquals("java.io.IOException", response._get("error/trace/causedBy/errorClass"));
-      assertEquals("This is the cause", response._get("error/trace/causedBy/msg"));
-      assertTrue(
-          ((String) response._get("error/trace/causedBy/trace/stackTrace[0]"))
-              .contains("org.apache.solr.response.TestErrorResponseStackTrace$ErrorComponent"));
-    } finally {
-      HttpClientUtil.close(client);
-    }
+    assertEquals(500L, response._get("error/code"));
+    assertEquals("java.lang.RuntimeException", response._get("error/errorClass"));
+    assertEquals("Stacktrace should be populated.", response._get("error/msg"));
+    assertTrue(
+        ((String) response._get("error/trace/stackTrace[0]"))
+            .contains("org.apache.solr.response.TestErrorResponseStackTrace$ErrorComponent"));
+    assertEquals("java.io.IOException", response._get("error/trace/causedBy/errorClass"));
+    assertEquals("This is the cause", response._get("error/trace/causedBy/msg"));
+    assertTrue(
+        ((String) response._get("error/trace/causedBy/trace/stackTrace[0]"))
+            .contains("org.apache.solr.response.TestErrorResponseStackTrace$ErrorComponent"));
   }
 
   @Test

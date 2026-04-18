@@ -24,7 +24,6 @@ import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,13 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.message.AbstractHttpMessage;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -50,6 +42,7 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TimeOut;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -294,12 +287,13 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   }
 
   public static void verifySecurityStatus(
-      HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
-    verifySecurityStatus(cl, url, objPath, expected, count, (String) null);
+      HttpClient httpClient, String url, String objPath, Object expected, int count)
+      throws Exception {
+    verifySecurityStatus(httpClient, url, objPath, expected, count, (String) null);
   }
 
   public static void verifySecurityStatus(
-      HttpClient cl,
+      HttpClient httpClient,
       String url,
       String objPath,
       Object expected,
@@ -307,29 +301,30 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       String user,
       String pwd)
       throws Exception {
-    verifySecurityStatus(cl, url, objPath, expected, count, makeBasicAuthHeader(user, pwd));
+    verifySecurityStatus(httpClient, url, objPath, expected, count, makeBasicAuthHeader(user, pwd));
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   protected static void verifySecurityStatus(
-      HttpClient cl, String url, String objPath, Object expected, int count, String authHeader)
-      throws IOException, InterruptedException {
+      HttpClient httpClient,
+      String url,
+      String objPath,
+      Object expected,
+      int count,
+      String authHeader)
+      throws Exception {
     boolean success = false;
     String s = null;
-    List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
-      HttpGet get = new HttpGet(url);
-      if (authHeader != null) setAuthorizationHeader(get, authHeader);
-      HttpResponse rsp = cl.execute(get);
-      s = EntityUtils.toString(rsp.getEntity());
+      var rsp = httpClient.newRequest(url).headers(h -> h.add("Authorization", authHeader)).send();
+      s = rsp.getContentAsString();
       Map m = null;
       try {
         m = (Map) Utils.fromJSONString(s);
       } catch (Exception e) {
         fail("Invalid json " + s);
       }
-      HttpClientUtil.consumeFully(rsp.getEntity());
-      Object actual = Utils.getObjectByPath(m, true, hierarchy);
+      Object actual = Utils.getObjectByPath(m, true, StrUtils.splitSmart(objPath, '/'));
       if (expected instanceof Predicate predicate) {
         if (predicate.test(actual)) {
           success = true;
@@ -339,19 +334,16 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
         success = true;
         break;
       }
+
       Thread.sleep(50);
     }
     assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
   }
 
   protected static String makeBasicAuthHeader(String user, String pwd) {
+    if (user == null && pwd == null) return null;
     String userPass = user + ":" + pwd;
     return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(UTF_8));
-  }
-
-  public static void setAuthorizationHeader(AbstractHttpMessage httpMsg, String headerString) {
-    httpMsg.setHeader(new BasicHeader("Authorization", headerString));
-    log.info("Added Authorization Header {}", headerString);
   }
 
   /**
