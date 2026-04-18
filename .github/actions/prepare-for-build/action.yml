@@ -26,7 +26,7 @@ runs:
         java-package: jdk
 
     - name: Cache gradle-wrapper.jar
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: gradle/wrapper/gradle-wrapper.jar
         key: gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.jar.sha256') }}
