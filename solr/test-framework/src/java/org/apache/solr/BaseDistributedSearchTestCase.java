@@ -572,10 +572,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   /** Indexes the document in both the control client, and a randomly selected client */
   protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
-    indexDoc(clientFor(doc), null, doc);
+    indexDoc(clientFor(doc), doc);
   }
 
-  protected void indexDoc(SolrClient client, SolrParams params, SolrInputDocument doc)
+  protected void indexDoc(SolrClient client, SolrInputDocument doc)
       throws IOException, SolrServerException {
     controlClient.add(doc);
     if (shardCount == 0) { // mostly for temp debugging
