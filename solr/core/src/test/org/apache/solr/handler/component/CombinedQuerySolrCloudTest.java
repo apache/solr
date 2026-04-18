@@ -293,7 +293,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
                     }
                 }
             },
-            "limit": 1,
+            "limit": 3,
             "fields": [
                 "id",
                 "score",
@@ -319,17 +319,17 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         }""";
     handle.put("expanded", UNORDERED);
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
-    assertEquals(1, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2!2");
+    assertEquals(3, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "2!2", "1!10", "0!3");
     assertEquals("id", rsp.getFacetFields().getFirst().getName());
     assertEquals(
         "[0!3 (1), 1!10 (1), 2!2 (1), 0!6 (0), 0!9 (0), 1!1 (0), 1!4 (0), 1!7 (0), 2!5 (0), 2!8 (0)]",
         rsp.getFacetFields().getFirst().getValues().toString());
-    assertEquals(1, rsp.getHighlighting().size());
+    assertEquals(3, rsp.getHighlighting().size());
     assertEquals(
         "title <em>test</em> for <em>doc</em> 2",
         rsp.getHighlighting().get("2!2").get("title").getFirst());
-    assertEquals(1, rsp.getExpandedResults().size());
+    assertEquals(3, rsp.getExpandedResults().size());
   }
 
   /** To test that we can force distrib */
