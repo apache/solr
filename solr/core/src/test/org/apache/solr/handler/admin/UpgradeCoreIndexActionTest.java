@@ -375,141 +375,10 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     }
   }
 
-  // --- Child docs detection tests ---
-  //
-  // These tests verify that the child document detection in the upgrade path
-  // correctly distinguishes between genuine child docs and non-child docs,
-  // even in the presence of updates and deletes that leave deleted documents
-  // in segments (since NoMergePolicy prevents segment merges from purging them).
-
   @Test
-  public void testChildDocsDetection_noChildDocsJustAdd() throws Exception {
-    for (int i = 0; i < 10; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
-    }
-    assertU(commit("openSearcher", "true"));
+  public void testChildDocsDetection_noChildDocs() throws Exception {
+    addDocsWithRandomUpdatesAndDeletes();
 
-    assertUpgradeDoesNotDetectChildDocs();
-  }
-
-  @Test
-  public void testChildDocsDetection_withChildDocsJustAdd() throws Exception {
-    addChildDoc("100", "101");
-    addChildDoc("200", "201");
-    assertU(commit("openSearcher", "true"));
-
-    assertUpgradeDetectsChildDocs();
-  }
-
-  @Test
-  public void testChildDocsDetection_noChildDocsWithWithinCommitUpdates() throws Exception {
-    // Add docs and then update some of them BEFORE committing, so both the old
-    // (deleted) and new versions end up in the same flushed segment.
-    // With NoMergePolicy and a 100MB RAM buffer (from SolrIndexConfig defaults),
-    // no flush or merge occurs mid-batch, guaranteeing co-location.
-    //
-    // In the resulting segment, _root_ Terms stats will show:
-    //   Terms.size()     = N  (unique _root_ values, one per unique id)
-    //   Terms.getDocCount() = N + updates  (includes deleted doc entries)
-    //
-    // A naive check (uniqueRootValues < docsWithRoot) may false-positive here
-    // because multiple docs share the same _root_ value within the segment.
-    for (int i = 0; i < 10; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
-    }
-    // Re-add a few docs with the same ids (within-commit updates)
-    for (int i = 0; i < 3; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "updated_doc" + i));
-    }
-    assertU(commit("openSearcher", "true"));
-
-    // 10 live docs — the updates replaced 3 docs in-place
-    assertQ(req("q", "*:*"), "//result[@numFound='10']");
-    assertUpgradeDoesNotDetectChildDocs();
-  }
-
-  @Test
-  public void testChildDocsDetection_withChildDocsWithWithinCommitUpdates() throws Exception {
-    // Same within-commit pattern but with actual child docs present
-    addChildDoc("100", "101");
-
-    // Add and immediately re-add some non-child docs
-    for (int i = 0; i < 5; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
-    }
-    for (int i = 0; i < 3; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "updated_doc" + i));
-    }
-    assertU(commit("openSearcher", "true"));
-
-    assertUpgradeDetectsChildDocs();
-  }
-
-  @Test
-  public void testChildDocsDetection_noChildDocsWithWithinCommitDeletesAndUpdates()
-      throws Exception {
-    // Add docs, delete some, and update others — all before committing.
-    // Deleted and updated docs leave behind deleted entries in the same segment,
-    // which can cause false positives in the child docs detection.
-    for (int i = 0; i < 10; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
-    }
-    // Delete a few
-    assertU(delI("3"));
-    assertU(delI("4"));
-    assertU(delI("5"));
-    // Update a few others
-    for (int i = 0; i < 3; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "updated_doc" + i));
-    }
-    assertU(commit("openSearcher", "true"));
-
-    // 7 live docs: ids 0,1,2 (updated), 6,7,8,9 (untouched); 3,4,5 deleted
-    assertQ(req("q", "*:*"), "//result[@numFound='7']");
-    assertUpgradeDoesNotDetectChildDocs();
-  }
-
-  @Test
-  public void testChildDocsDetection_withChildDocsWithWithinCommitDeletesAndUpdates()
-      throws Exception {
-    addChildDoc("100", "101");
-
-    for (int i = 0; i < 5; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
-    }
-    assertU(delI("3"));
-    assertU(delI("4"));
-    assertU(adoc("id", "0", "title", "updated_doc0"));
-    assertU(commit("openSearcher", "true"));
-
-    assertUpgradeDetectsChildDocs();
-  }
-
-  /** Index a parent document with a single child via the update handler. */
-  private void addChildDoc(String parentId, String childId) throws Exception {
-    SolrCore core = h.getCore();
-    SolrInputDocument parentDoc = new SolrInputDocument();
-    parentDoc.addField("id", parentId);
-    parentDoc.addField("title", "Parent " + parentId);
-
-    SolrInputDocument childDoc = new SolrInputDocument();
-    childDoc.addField("id", childId);
-    childDoc.addField("title", "Child " + childId);
-    parentDoc.addChildDocument(childDoc);
-
-    try (SolrQueryRequestBase solrReq =
-        new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
-      AddUpdateCommand cmd = new AddUpdateCommand(solrReq);
-      cmd.solrDoc = parentDoc;
-      core.getUpdateHandler().addDoc(cmd);
-    }
-  }
-
-  /**
-   * Assert that the upgrade endpoint does NOT throw the child-documents error. This verifies that
-   * {@code indexContainsChildDocs} returns false.
-   */
-  private void assertUpgradeDoesNotDetectChildDocs() throws Exception {
     final String coreName = h.getCore().getName();
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
@@ -528,11 +397,11 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     }
   }
 
-  /**
-   * Assert that the upgrade endpoint DOES throw the child-documents error. This verifies that
-   * {@code indexContainsChildDocs} returns true.
-   */
-  private void assertUpgradeDetectsChildDocs() throws Exception {
+  @Test
+  public void testChildDocsDetection_withChildDocs() throws Exception {
+    addChildDoc("100", "101");
+    addDocsWithRandomUpdatesAndDeletes();
+
     final String coreName = h.getCore().getName();
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
@@ -554,6 +423,50 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     } finally {
       admin.shutdown();
       admin.close();
+    }
+  }
+
+  /**
+   * Add non-child docs with a random number of within-commit updates and deletes. This exercises
+   * the false-positive scenario for child doc detection: updates and deletes leave behind deleted
+   * entries in the same segment, causing multiple docs to share the same {@code _root_} value.
+   *
+   * <p>With NoMergePolicy and a 100MB RAM buffer (from SolrIndexConfig defaults), no flush or merge
+   * occurs mid-batch, guaranteeing co-location in a single segment.
+   */
+  private void addDocsWithRandomUpdatesAndDeletes() {
+    int numDocs = 10;
+    for (int i = 0; i < numDocs; i++) {
+      assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
+    }
+    int numUpdates = random().nextInt(numDocs);
+    for (int i = 0; i < numUpdates; i++) {
+      assertU(adoc("id", String.valueOf(i), "title", "updated_doc" + i));
+    }
+    int numDeletes = random().nextInt(2);
+    for (int i = 0; i < numDeletes; i++) {
+      assertU(delI(String.valueOf(numDocs - 1 - i)));
+    }
+    assertU(commit("openSearcher", "true"));
+  }
+
+  /** Index a parent document with a single child via the update handler. */
+  private void addChildDoc(String parentId, String childId) throws Exception {
+    SolrCore core = h.getCore();
+    SolrInputDocument parentDoc = new SolrInputDocument();
+    parentDoc.addField("id", parentId);
+    parentDoc.addField("title", "Parent " + parentId);
+
+    SolrInputDocument childDoc = new SolrInputDocument();
+    childDoc.addField("id", childId);
+    childDoc.addField("title", "Child " + childId);
+    parentDoc.addChildDocument(childDoc);
+
+    try (SolrQueryRequestBase solrReq =
+        new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
+      AddUpdateCommand cmd = new AddUpdateCommand(solrReq);
+      cmd.solrDoc = parentDoc;
+      core.getUpdateHandler().addDoc(cmd);
     }
   }
 }
