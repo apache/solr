@@ -335,3 +335,11 @@ If you require the ability to roll back, back up your indexes before upgrading.
 === Docker
 
 The `gosu` binary is no longer installed in the Solr Docker image. See https://github.com/tianon/gosu[gosu github page] for alternatives, such as `runuser`, `setpriv` or `chroot`.
+
+=== Max distributed requests now configurable
+
+The internal HTTP client used for distributed shard sub-requests previously had a hard-coded limit of 1000 concurrent async requests per node.
+In large clusters, a single query can fan out to hundreds of sub-requests, quickly exhausting this limit and causing requests to queue, potentially leading to stalls or timeouts.
+This limit is now configurable via the system property `solr.solrj.http.jetty.async_requests.max`.
+
+Current permit utilization can be monitored via the `solr_client_request_async_permits` metric (see xref:deployment-guide:metrics-reporting.adoc#http-client-registry[HTTP Client Registry]).
