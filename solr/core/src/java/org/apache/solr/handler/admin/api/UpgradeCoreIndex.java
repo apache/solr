@@ -153,7 +153,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         if (indexContainsChildDocs(searcherRef.get())) {
           throw new SolrException(
               BAD_REQUEST,
-              "UPGRADECOREINDEX does not support indexes containing child documents. "
+              "UPGRADECOREINDEX does not support indexes containing child/nested documents. "
                   + " Consider reindexing your data "
                   + "from the original source.");
         }
