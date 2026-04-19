@@ -101,7 +101,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
 
-    waitForState("Expected 1 active shard with 1 replica", COLLECTION, clusterShape(2, 1));
+    waitForState("Expected 2 active shards with 1 replica each", COLLECTION, clusterShape(2, 2));
   }
 
   @AfterClass
@@ -138,7 +138,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
 
     try (FakeTcpServer fakeServer = new FakeTcpServer(NUM_RETRY_REQUESTS);
         LBHttp2SolrClient lbClient =
-            new LBHttp2SolrClient.Builder(testClient, new String[0]).build()) {
+            new LBHttp2SolrClient.Builder(testClient, new LBSolrClient.Endpoint[0]).build()) {
 
       assertEquals(
           "All permits should be available before the test (verifies sysprop was applied)",
