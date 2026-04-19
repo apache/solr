@@ -445,5 +445,15 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             null,
             solrMetricsContext.getMetricRegistry(),
             SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
+    if (defaultClient != null) {
+      solrMetricsContext.gauge(
+          defaultClient::asyncTrackerAvailablePermits,
+          true,
+          "asyncPermits.available",
+          expandedScope,
+          "threadPool");
+      solrMetricsContext.gauge(
+          defaultClient::asyncTrackerMaxPermits, true, "asyncPermits.max", expandedScope, "threadPool");
+    }
   }
 }

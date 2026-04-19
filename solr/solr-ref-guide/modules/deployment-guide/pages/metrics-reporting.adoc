@@ -647,6 +647,18 @@ example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.mean_rate 0.5698031798408144 1482932097
 ----
 
+=== HTTP Client Registry
+
+Solr exposes metrics for the internal Jetty-based HTTP client used for distributed (shard) requests.
+These gauges are registered under the `QUERY` category in the node metrics registry:
+
+[cols="2,1,3",options="header"]
+|===
+| Metric Name Suffix | Type | Description
+| `asyncPermits.max` | gauge | Configured maximum number of outstanding concurrent async HTTP requests (controlled by `solr.solrj.http.jetty.async_requests.max`, default 1000).
+| `asyncPermits.available` | gauge | Number of async request permits currently available (i.e., not in use). When this approaches zero, new distributed requests will block waiting for a permit.
+|===
+
 == Core Level Metrics
 
 These metrics are available only on a per-core basis.
