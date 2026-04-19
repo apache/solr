@@ -368,7 +368,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
       // Verify the exception message indicates child documents are not supported
       assertThat(
           thrown.getMessage(),
-          containsString("does not support indexes containing child documents"));
+          containsString("does not support indexes containing child/nested documents"));
     } finally {
       admin.shutdown();
       admin.close();
@@ -419,7 +419,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
                       resp));
       assertThat(
           thrown.getMessage(),
-          containsString("does not support indexes containing child documents"));
+          containsString("does not support indexes containing child/nested documents"));
     } finally {
       admin.shutdown();
       admin.close();
