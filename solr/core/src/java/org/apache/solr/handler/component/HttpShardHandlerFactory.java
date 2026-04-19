@@ -453,7 +453,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
           expandedScope,
           "threadPool");
       solrMetricsContext.gauge(
-          defaultClient::asyncTrackerMaxPermits, true, "asyncPermits.max", expandedScope, "threadPool");
+          defaultClient::asyncTrackerMaxPermits,
+          true,
+          "asyncPermits.max",
+          expandedScope,
+          "threadPool");
     }
   }
 }

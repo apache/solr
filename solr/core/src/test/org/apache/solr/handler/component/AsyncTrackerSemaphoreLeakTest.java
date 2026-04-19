@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -41,9 +42,9 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
-import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,8 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tests for two semaphore-permit leak bugs in {@link Http2SolrClient}'s {@code AsyncTracker}
- * that cause distributed queries to hang permanently.
+ * Tests for two semaphore-permit leak bugs in {@link Http2SolrClient}'s {@code AsyncTracker} that
+ * cause distributed queries to hang permanently.
  *
  * <h3>Pattern A – HTTP/2 GOAWAY double-queue leak</h3>
  *
@@ -100,10 +101,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
 
-    waitForState(
-        "Expected 1 active shard with 1 replica",
-        COLLECTION,
-        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 1));
+    waitForState("Expected 1 active shard with 1 replica", COLLECTION, clusterShape(2, 1));
   }
 
   @AfterClass
@@ -121,6 +119,9 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    * time out.
    */
   @Test
+  @SuppressForbidden(
+      reason =
+          "Reflection needed to access Http2SolrClient's package-private getHttpClient() to force-stop it during timeout recovery")
   public void testSemaphoreLeakOnLBRetry() throws Exception {
     // Dedicated client so that permanently deadlocked IO threads don't affect the cluster's client.
     Http2SolrClient testClient =
@@ -136,7 +137,8 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     List<CompletableFuture<LBSolrClient.Rsp>> futures = new ArrayList<>();
 
     try (FakeTcpServer fakeServer = new FakeTcpServer(NUM_RETRY_REQUESTS);
-        LBHttp2SolrClient lbClient = new LBHttp2SolrClient.Builder(testClient).build()) {
+        LBHttp2SolrClient lbClient =
+            new LBHttp2SolrClient.Builder(testClient, new String[0]).build()) {
 
       assertEquals(
           "All permits should be available before the test (verifies sysprop was applied)",
@@ -194,7 +196,9 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
         // Force-stop the HttpClient to unblock any threads stuck in semaphore.acquire()
         // before asserting failure, so the finally block can close the client without hanging.
         try {
-          testClient.getHttpClient().stop();
+          Method getHttpClient = Http2SolrClient.class.getDeclaredMethod("getHttpClient");
+          getHttpClient.setAccessible(true);
+          ((org.eclipse.jetty.client.HttpClient) getHttpClient.invoke(testClient)).stop();
         } catch (Exception ignored) {
           log.debug("Failed to stop HttpClient");
         }
