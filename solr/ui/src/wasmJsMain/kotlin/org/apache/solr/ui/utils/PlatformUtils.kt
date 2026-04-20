@@ -17,14 +17,6 @@
 
 package org.apache.solr.ui.utils
 
-/**
- * The default Solr URL that may be used in various places.
- */
-const val DEFAULT_SOLR_URL = "http://127.0.0.1:8983/"
+import kotlinx.browser.window
 
-/**
- * Returns the default Solr URL for the current platform. On web, this is derived from
- * the browser's current origin so the URL is always same-origin and avoids CORS issues.
- * On desktop, falls back to [DEFAULT_SOLR_URL].
- */
-expect fun defaultSolrUrl(): String
+actual fun defaultSolrUrl(): String = window.location.origin + "/"

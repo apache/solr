@@ -36,7 +36,7 @@ import org.apache.solr.ui.domain.AuthOption
  * URL.
  */
 fun getDefaultClient(
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     block: HttpClientConfig<*>.() -> Unit = {},
 ) = HttpClient {
     defaultRequest {
@@ -74,7 +74,7 @@ fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
 fun getHttpClientWithCredentials(
     username: String,
     password: String,
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     realm: String? = null,
 ) = getDefaultClient(url) {
     install(Auth) {
@@ -91,7 +91,7 @@ fun getHttpClientWithCredentials(
 fun getHttpClientWithBearerTokens(
     accessToken: String,
     refreshToken: String? = null,
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     realm: String? = null,
 ) = getDefaultClient(url) {
     install(Auth) {
