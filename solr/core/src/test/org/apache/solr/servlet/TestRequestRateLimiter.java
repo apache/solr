@@ -72,7 +72,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(FIRST_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(FIRST_COLLECTION, 1, 1);
 
-      RateLimitFilter rateLimitFilter = cluster.getJettySolrRunner(0).getSolrRateLimitFilter();
+      RateLimitFilter rateLimitFilter =
+          cluster.getJettySolrRunner(0).getFilter(RateLimitFilter.class);
 
       RateLimiterConfig rateLimiterConfig =
           new RateLimiterConfig(
@@ -291,7 +292,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(SECOND_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(SECOND_COLLECTION, 1, 1);
 
-      RateLimitFilter rateLimitFilter = cluster.getJettySolrRunner(0).getSolrRateLimitFilter();
+      var rateLimitFilter = cluster.getJettySolrRunner(0).getFilter(RateLimitFilter.class);
 
       RateLimiterConfig queryRateLimiterConfig =
           new RateLimiterConfig(

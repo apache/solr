@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
@@ -50,6 +51,7 @@ import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrack
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -1021,6 +1023,39 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertNotNull("Couldn't upload xml files", result);
     rsp = client.query(new SolrQuery("*:*"));
     assertEquals(5, rsp.getResults().getNumFound());
+  }
+
+  @Test
+  public void testArbitraryJsonIndexing() throws Exception {
+    try (SolrClient client = getSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
+      assertNumFound("*:*", 0); // make sure it got in
+
+      // two docs, one with uniqueKey, another without it
+      String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
+      var request =
+          new GenericSolrRequest(
+                  SolrRequest.METHOD.POST, "/update/json/docs", SolrRequest.SolrRequestType.UPDATE)
+              .setRequiresCollection(true)
+              .withContent(json.getBytes(StandardCharsets.UTF_8), "application/json");
+      client.request(request);
+      client.commit();
+      QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
+      assertEquals(2, rsp.getResults().getNumFound());
+
+      SolrDocument doc = rsp.getResults().get(0);
+      String src = (String) doc.getFieldValue("_src_");
+      @SuppressWarnings({"rawtypes"})
+      Map m = (Map) fromJSONString(src);
+      assertEquals("abc1", m.get("id"));
+      assertEquals("name1", m.get("name"));
+
+      doc = rsp.getResults().get(1);
+      src = (String) doc.getFieldValue("_src_");
+      m = (Map) fromJSONString(src);
+      assertEquals("name2", m.get("name"));
+    }
   }
 
   @Test

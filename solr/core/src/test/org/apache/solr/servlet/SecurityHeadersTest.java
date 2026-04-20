@@ -16,15 +16,9 @@
  */
 package org.apache.solr.servlet;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
@@ -67,20 +61,20 @@ public class SecurityHeadersTest extends SolrCloudTestCase {
     // it shouldn't matter what node our lone replica/core wound up on, headers should be the
     // same...
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      try (SolrClient solrClient = jetty.newClient()) {
-        final HttpClient client = ((HttpSolrClient) solrClient).getHttpClient();
+      var httpClient = jetty.getSolrClient().getHttpClient();
 
-        // path shouldn't matter -- even if bogus / 404
-        for (String path : Arrays.asList("/select", "/bogus")) {
-          final HttpResponse resp =
-              client.execute(
-                  new HttpGet(URI.create(jetty.getBaseUrl().toString() + "/" + COLLECTION + path)));
+      // path shouldn't matter -- even if bogus / 404
+      for (String path : Arrays.asList("/select", "/bogus")) {
+        var resp = httpClient.GET(jetty.getBaseUrl().toString() + "/" + COLLECTION + path);
 
-          for (Map.Entry<String, String[]> entry : EXPECTED_HEADERS) {
-            // these exact arrays (of 1 element each) should be *ALL* of the header instances...
-            // no more, no less.
-            assertEquals(entry.getValue(), resp.getHeaders(entry.getKey()));
-          }
+        for (Map.Entry<String, String[]> entry : EXPECTED_HEADERS) {
+          // these exact arrays (of 1 element each) should be *ALL* of the header instances...
+          // no more, no less.
+          String[] expectedValues = entry.getValue();
+          String headerName = entry.getKey();
+          var actualHeaders = resp.getHeaders().getValuesList(headerName);
+          assertEquals(
+              "Header " + headerName + " mismatch", Arrays.asList(expectedValues), actualHeaders);
         }
       }
     }
