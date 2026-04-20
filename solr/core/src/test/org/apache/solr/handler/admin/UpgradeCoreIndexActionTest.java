@@ -439,11 +439,11 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     for (int i = 0; i < numDocs; i++) {
       assertU(adoc("id", String.valueOf(i), "title", "doc" + i));
     }
-    int numUpdates = random().nextInt(numDocs);
+    int numUpdates = random().nextInt(4);
     for (int i = 0; i < numUpdates; i++) {
       assertU(adoc("id", String.valueOf(i), "title", "updated_doc" + i));
     }
-    int numDeletes = random().nextInt(2);
+    int numDeletes = random().nextInt(4);
     for (int i = 0; i < numDeletes; i++) {
       assertU(delI(String.valueOf(numDocs - 1 - i)));
     }
