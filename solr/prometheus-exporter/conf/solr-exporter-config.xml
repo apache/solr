@@ -563,6 +563,20 @@
               value        : $value
             }
           </str>
+          <str>
+            .metrics["solr.node"] | to_entries | .[] |
+            select(.key | startswith("QUERY.httpShardHandler.threadPool.asyncPermits.")) as $object |
+            $object.key | split(".") | last as $state |
+            $object.value as $value |
+            {
+              name         : "solr_client_request_async_permits",
+              type         : "GAUGE",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
+              label_names  : ["state"],
+              label_values : [$state],
+              value        : $value
+            }
+          </str>
 
           <!--
           Query related core metrics; see jq-templates for details on the core-query template used below
