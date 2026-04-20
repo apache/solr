@@ -1,4 +1,4 @@
-title: Update com.fasterxml.jackson:jackson-bom to v2.21.0
+title: Update com.fasterxml.jackson:jackson-bom to v2.21.2
 type: dependency_update
 authors:
 - name: solrbot
