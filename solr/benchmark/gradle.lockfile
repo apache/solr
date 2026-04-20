@@ -1,7 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.3=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.4=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.20=compileClasspath,jarValidation,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-core:2.20.1=jarValidation,runtimeClasspath,testRuntimeClasspath
