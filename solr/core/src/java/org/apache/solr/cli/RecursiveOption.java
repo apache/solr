@@ -19,34 +19,13 @@ package org.apache.solr.cli;
 import picocli.CommandLine;
 
 /**
- * This class is currently only used for printing CLI usage. The stop logic is currently handled in
- * start script.
+ * Picocli mixin providing the {@code --recursive} option shared by ZooKeeper sub-commands that
+ * support recursive traversal (cp, ls, rm).
  */
-@CommandLine.Command(name = "stop", description = "Stops Solr.")
-public class StopCommand {
-
-  @CommandLine.Mixin HelpMixin helpMixin;
+public class RecursiveOption {
 
   @CommandLine.Option(
-      names = {"-p", "--port"},
-      description =
-          "Specify the port the Solr HTTP listener is bound to.\n"
-              + "The STOP_PORT is derived as ($SOLR_PORT-1000).")
-  String port;
-
-  @CommandLine.Option(
-      names = {"-k", "--key"},
-      description = "Stop key; default is solrrocks",
-      defaultValue = "solrrocks")
-  String key;
-
-  @CommandLine.Option(
-      names = "--all",
-      description = "Find and stop all running Solr servers on this host")
-  boolean all;
-
-  @CommandLine.Option(
-      names = {"--verbose"},
-      description = "Enable verbose mode.")
-  boolean verbose;
+      names = {"-r", "--recursive"},
+      description = "Apply the command recursively.")
+  public boolean recursive;
 }

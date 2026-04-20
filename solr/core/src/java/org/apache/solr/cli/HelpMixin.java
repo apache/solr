@@ -16,36 +16,17 @@
  */
 package org.apache.solr.cli;
 
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
 /**
- * Sub commands for working with ZooKeeper, only here to provide a common parent for the subcommands
- * and print tool help.
+ * Picocli mixin that adds a {@code --help} option to a command without also adding {@code
+ * --version}. Prefer this over {@code mixinStandardHelpOptions = true} on subcommands, since {@code
+ * --version} is only meaningful on the top-level {@code bin/solr} command.
  */
-@CommandLine.Command(
-    name = "zk",
-    description = "Sub commands for working with ZooKeeper.",
-    footer = "\nPass --help or -h after any COMMAND to see command-specific usage information.",
-    subcommands = {
-      ConfigSetDownloadTool.class,
-      ConfigSetUploadTool.class,
-      ZkCpTool.class,
-      ZkLsTool.class,
-      ZkMkrootTool.class,
-      ZkMvTool.class,
-      ZkRmTool.class,
-      UpdateACLTool.class
-    })
-public class ZkTool implements Callable<Integer> {
-
-  @CommandLine.Mixin HelpMixin helpMixin;
-
-  @CommandLine.Spec CommandLine.Model.CommandSpec spec;
-
-  @Override
-  public Integer call() {
-    spec.commandLine().usage(CLIO.getOutStream());
-    return 0;
-  }
+public class HelpMixin {
+  @CommandLine.Option(
+      names = {"-h", "--help"},
+      usageHelp = true,
+      description = "Print this help message and exit.")
+  public boolean help;
 }

@@ -19,14 +19,21 @@ package org.apache.solr.cli;
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Supports zk mkroot command in the bin/solr script. */
+@picocli.CommandLine.Command(
+    name = "mkroot",
+    description =
+        "Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary depth"
+            + " but primarily intended to create a 'chroot'.")
 public class ZkMkrootTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -36,6 +43,25 @@ public class ZkMkrootTool extends ToolBase {
           .hasArg()
           .desc("Raise an error if the root exists.  Defaults to false.")
           .get();
+
+  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      description = "The ZooKeeper znode path to create.")
+  private String path;
+
+  @picocli.CommandLine.Option(
+      names = {"--fail-on-exists"},
+      arity = "0..1",
+      fallbackValue = "true",
+      description = "Raise an error if the znode already exists. Defaults to false.")
+  private boolean failOnExists;
+
+  public ZkMkrootTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ZkMkrootTool(ToolRuntime runtime) {
     super(runtime);
@@ -76,18 +102,34 @@ public class ZkMkrootTool extends ToolBase {
     boolean failOnExists = cli.hasOption(FAIL_ON_EXISTS_OPTION);
 
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-
-      echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
-      zkClient.makePath(znode, failOnExists);
+      doMkroot(zkClient, zkHost, znode, failOnExists);
     } catch (Exception e) {
       log.error("Could not complete mkroot operation for reason: ", e);
       throw (e);
     }
   }
 
+  private void doMkroot(SolrZkClient zkClient, String zkHost, String znode, boolean failOnExists)
+      throws Exception {
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
+    zkClient.makePath(znode, failOnExists);
+  }
+
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    String zkHost = zkOpts.resolveZkHost();
+
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      doMkroot(zkClient, zkHost, path, failOnExists);
+      return 0;
+    } catch (Exception e) {
+      log.error("Could not complete mkroot operation for reason: ", e);
+      throw (e);
+    }
   }
 }

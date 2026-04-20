@@ -55,18 +55,18 @@ import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
 @picocli.CommandLine.Command(
-    name = "solr",
+    name = "bin/solr",
     version = "Apache Solr version " + SolrVersion.LATEST_STRING,
     mixinStandardHelpOptions = true,
+    synopsisHeading = "usage: ",
     commandListHeading = "\nCommands:\n",
-    descriptionHeading = "Global options:\n",
     footer = {
       "",
       "SolrCloud example (embedded Zookeeper):",
       "",
       "  ./solr start",
       "",
-      "Get help for a command by running 'solr COMMAND --help'.",
+      "Get help for a command by running 'bin/solr COMMAND --help'.",
       "",
       "For more help on how to use Solr, head to https://solr.apache.org/"
     },
@@ -112,9 +112,6 @@ public class SolrCLI implements CLIO {
   private static void propagateCommandSettings(picocli.CommandLine cmd) {
     for (picocli.CommandLine subcommand : cmd.getSubcommands().values()) {
       subcommand.getCommandSpec().defaultValueProvider(cmd.getCommandSpec().defaultValueProvider());
-      subcommand
-          .getCommandSpec()
-          .mixinStandardHelpOptions(cmd.getCommandSpec().mixinStandardHelpOptions());
       subcommand.getCommandSpec().usageMessage().width(cmd.getCommandSpec().usageMessage().width());
       subcommand
           .getCommandSpec()
@@ -127,8 +124,14 @@ public class SolrCLI implements CLIO {
       subcommand
           .getCommandSpec()
           .usageMessage()
-          .footer(
-              "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html");
+          .synopsisHeading(cmd.getCommandSpec().usageMessage().synopsisHeading());
+      if (subcommand.getSubcommands().isEmpty()) {
+        subcommand
+            .getCommandSpec()
+            .usageMessage()
+            .footer(
+                "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html");
+      }
       propagateCommandSettings(subcommand);
     }
   }
