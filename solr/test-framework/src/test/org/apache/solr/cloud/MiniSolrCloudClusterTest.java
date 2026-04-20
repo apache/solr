@@ -32,6 +32,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
+import org.apache.solr.util.ServletFixtures;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -103,7 +104,7 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
   public void testExtraFilters() throws Exception {
     JettyConfig.Builder jettyConfig = JettyConfig.builder();
     jettyConfig.waitForLoadingCoresToFinish(null);
-    jettyConfig.withFilter(JettySolrRunner.DebugFilter.class, "*");
+    jettyConfig.withFilter(ServletFixtures.DelayServlet.class, "*");
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(random().nextInt(3) + 1, createTempDir(), jettyConfig.build());
     cluster.shutdown();
