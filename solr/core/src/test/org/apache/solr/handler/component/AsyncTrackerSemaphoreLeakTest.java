@@ -101,7 +101,7 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
 
-    waitForState("Expected 2 active shards with 1 replica each", COLLECTION, clusterShape(2, 2));
+    waitForState("Expected 2 active shards with 1 replica each", COLLECTION, clusterShape(2, 1));
   }
 
   @AfterClass
