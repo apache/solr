@@ -114,7 +114,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
             .withParam("fl", "name")
             .withParam("combiner", "true")
             .withParam("combiner.query", List.of("query1", "query2"));
-    query.setPath("/search");
+    query.setPath("/rrf");
     QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
     assertResponseFoundNumDocs(queryResponse, expectedResults);
   }

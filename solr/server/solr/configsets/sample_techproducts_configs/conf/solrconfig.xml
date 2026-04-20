@@ -640,7 +640,7 @@
      </lst>
   </requestHandler>
 
-  <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
+  <requestHandler name="/rrf" class="solr.CombinedQuerySearchHandler">
   </requestHandler>
 
   <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
