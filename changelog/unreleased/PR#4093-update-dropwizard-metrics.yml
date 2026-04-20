@@ -1,0 +1,7 @@
+title: Update dropwizard.metrics to v4.2.38
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4093
+  url: https://github.com/apache/solr/pull/4093
