@@ -30,6 +30,7 @@ import org.apache.lucene.search.Scorable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.ResultContext;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -142,7 +143,7 @@ public class ValueSourceAugmenter extends DocTransformer {
   IntObjectHashMap<Object> cachedValuesById;
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docIterationInfo) {
     Object cacheValue = (cachedValuesById != null) ? cachedValuesById.get(docid) : null;
     if (cacheValue != null) {
       setValue(doc, cacheValue != NULL_SENTINEL ? cacheValue : null);
@@ -153,8 +154,8 @@ public class ValueSourceAugmenter extends DocTransformer {
         LeafReaderContext rcontext = readerContexts.get(idx);
         int localId = docid - rcontext.docBase;
 
-        if (context.wantsScores()) {
-          fcontext.put("scorer", new ScoreAndDoc(localId, (float) doc.get("score")));
+        if (context.wantsScores() && docIterationInfo != null) {
+          fcontext.put("scorer", new ScoreAndDoc(localId, docIterationInfo.score()));
         }
 
         FunctionValues values = valueSource.getValues(fcontext, rcontext);
@@ -166,6 +167,11 @@ public class ValueSourceAugmenter extends DocTransformer {
             e);
       }
     }
+  }
+
+  @Override
+  public void transform(SolrDocument doc, int docid) {
+    transform(doc, docid, null);
   }
 
   private abstract static class MutableScorable extends Scorable {
