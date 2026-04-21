@@ -44,7 +44,7 @@ import org.apache.solr.ui.generated.resources.connecting
 import org.apache.solr.ui.generated.resources.desc_to_get_started
 import org.apache.solr.ui.generated.resources.solr_sun
 import org.apache.solr.ui.generated.resources.title_welcome_to_solr
-import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
+import org.apache.solr.ui.utils.defaultSolrUrl
 import org.apache.solr.ui.views.components.SolrButton
 import org.apache.solr.ui.views.components.SolrCard
 import org.apache.solr.ui.views.components.SolrLinearProgressIndicator
@@ -101,7 +101,7 @@ fun StartContent(
                 value = model.url,
                 singleLine = true,
                 onValueChange = component::onSolrUrlChange,
-                placeholder = { Text(text = DEFAULT_SOLR_URL) },
+                placeholder = { Text(text = defaultSolrUrl()) },
                 enabled = !model.isConnecting,
                 supportingText = {
                     model.error?.let {

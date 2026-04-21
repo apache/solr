@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
@@ -85,6 +86,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
   protected LBAsyncSolrClient loadbalancer;
+  private ObservableLongGauge asyncRequestsGauge;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -352,6 +354,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
         ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
       }
     }
+    IOUtils.closeQuietly(asyncRequestsGauge);
     try {
       SolrMetricProducer.super.close();
     } catch (Exception e) {
@@ -440,5 +443,20 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     commExecutor =
         solrMetricsContext.instrumentedExecutorService(
             commExecutor, "solr.core.executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
+    if (defaultClient != null) {
+      asyncRequestsGauge =
+          solrMetricsContext.observableLongGauge(
+              "solr.client.request.async_permits",
+              "Outstanding async HTTP request permits in the Jetty SolrJ client"
+                  + " (state=max: configured ceiling; state=available: currently unused permits).",
+              measurement -> {
+                measurement.record(
+                    defaultClient.asyncTrackerMaxPermits(), Attributes.of(STATE_KEY_ATTR, "max"));
+                measurement.record(
+                    defaultClient.asyncTrackerAvailablePermits(),
+                    Attributes.of(STATE_KEY_ATTR, "available"));
+              },
+              null);
+    }
   }
 }
