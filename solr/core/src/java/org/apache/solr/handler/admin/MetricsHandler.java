@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
+
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
@@ -165,6 +167,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       @Override
       protected SolrRequest<?> createGenericRequest(String apiPath, SolrParams params) {
         final var toProxy = super.createGenericRequest(apiPath, params);
+        // Metrics proxy might be called from either v1 or v2, but end up proxying to v1 for
+        // simplicity
+        toProxy.setPath(METRICS_PATH);
         String wt = params.get(CommonParams.WT, MetricUtils.PROMETHEUS_METRICS_WT);
         toProxy.setResponseParser(new InputStreamResponseParser(wt));
 

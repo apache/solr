@@ -138,9 +138,9 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
 
   private boolean proxyToNodes() {
     try {
-      if (coreContainer != null) {
-        final var reqProxy =
-            MetricsHandler.createMetricProxy(coreContainer, solrQueryRequest, solrQueryResponse);
+      final var reqProxy =
+          MetricsHandler.createMetricProxy(coreContainer, solrQueryRequest, solrQueryResponse);
+      if (coreContainer != null && reqProxy.shouldProxy()) {
         reqProxy.proxyRequest();
         return true; // Request was proxied to other node
       }
