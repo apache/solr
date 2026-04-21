@@ -22,6 +22,7 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -57,6 +58,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.MapWriter;
@@ -74,6 +76,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -1430,5 +1433,110 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     waitForEmptyQueue();
     stopProcessor();
+  }
+
+  /**
+   * Verify that when lockTask throws a SolrException due to a callingLockId from an unrelated
+   * collection, the async task is properly marked as failed rather than silently swallowed or
+   * retried forever. This test exercises the real LockTree validation code path.
+   */
+  @Test
+  public void testLockTaskExceptionFailsAsyncTask() throws Exception {
+    commonMocks(2, false);
+
+    String asyncId = "lock-fail-test-async-123";
+
+    // Create a real OverseerCollectionMessageHandler so we exercise the real LockTree locking
+    OverseerCollectionMessageHandler collHandler =
+        new OverseerCollectionMessageHandler(
+            zkStateReaderMock,
+            "1234",
+            shardHandlerFactoryMock,
+            ADMIN_PATH,
+            new Stats(),
+            overseerMock,
+            new OverseerNodePrioritizer(
+                zkStateReaderMock, overseerMock, ADMIN_PATH, shardHandlerFactoryMock));
+
+    // Acquire a lock on collA by calling lockTask directly.
+    // This puts a real lock into the LockTree's allLocks map.
+    ZkNodeProps collAMessage =
+        new ZkNodeProps(
+            Map.of(
+                Overseer.QUEUE_OPERATION,
+                CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+                "name",
+                "collA"));
+    OverseerMessageHandler.Lock collALock = collHandler.lockTask(collAMessage, 1, null);
+    assertNotNull("Should have acquired lock on collA", collALock);
+    String collALockId = collALock.id();
+
+    // Build a selector that always returns our real handler
+    OverseerTaskProcessor.OverseerMessageHandlerSelector selector =
+        new OverseerTaskProcessor.OverseerMessageHandlerSelector() {
+          @Override
+          public void close() {
+            IOUtils.closeQuietly(collHandler);
+          }
+
+          @Override
+          public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
+            return collHandler;
+          }
+        };
+
+    // Create a processor using the real handler
+    OverseerTaskProcessor processor =
+        new OverseerTaskProcessor(
+            zkStateReaderMock,
+            "1234",
+            new Stats(),
+            selector,
+            mock(OverseerNodePrioritizer.class),
+            workQueueMock,
+            runningMapMock,
+            completedMapMock,
+            failureMapMock,
+            solrMetricsContextMock) {
+          @Override
+          protected LeaderStatus amILeader() {
+            return LeaderStatus.YES;
+          }
+        };
+
+    Thread processorThread = new Thread(processor);
+    processorThread.start();
+
+    try {
+      // Submit an async task for collB, but with collA's lock ID as the callingLockId.
+      // The real LockTree will find collA's lock, call validateSubpath, and throw SolrException
+      // because collB != collA.
+      Map<String, Object> propMap =
+          Map.of(
+              Overseer.QUEUE_OPERATION,
+              CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+              "name",
+              "collB",
+              CollectionAdminParams.CALLING_LOCK_ID_HEADER,
+              collALockId,
+              "async",
+              asyncId);
+      ZkNodeProps props = new ZkNodeProps(propMap);
+      QueueEvent qe = new QueueEvent("lockFailTask", Utils.toJSON(props), null);
+      queue.add(qe);
+
+      waitForEmptyQueue();
+
+      // Verify the task was put in the failure map
+      verify(failureMapMock, times(1)).put(eq(asyncId), any(byte[].class));
+
+      // Verify the task was NOT put in the running map (it should fail before reaching that point)
+      verify(runningMapMock, times(0)).put(eq(asyncId), any());
+    } finally {
+      collALock.unlock();
+      processor.close();
+      processorThread.interrupt();
+      processorThread.join(MAX_WAIT_MS);
+    }
   }
 }
