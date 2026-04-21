@@ -39,7 +39,11 @@ import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Proxies an API call to remote nodes; exposing hooks to process responses */
+/**
+ * Proxies an API call to remote nodes; exposing hooks to process responses
+ *
+ * @lucene.experimental
+ */
 public abstract class RemoteRequestProxy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final String PARAM_NODES = "nodes";
