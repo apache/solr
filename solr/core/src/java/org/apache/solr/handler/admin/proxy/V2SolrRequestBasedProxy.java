@@ -31,7 +31,7 @@ import org.apache.solr.core.CoreContainer;
  * well by overriding {@link #processProxiedResponse(String, NamedList)} to do something more
  * appropriate with the response.
  */
-public abstract class V2SolrRequestBasedProxy<T> extends AdminHandlersProxy {
+public abstract class V2SolrRequestBasedProxy<T> extends RemoteRequestProxy {
 
   private SolrRequest<T> solrRequest;
 

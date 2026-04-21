@@ -39,19 +39,14 @@ import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Static methods to proxy calls to an Admin (GET) API to other nodes in the cluster and return a
- * combined response
- */
-public abstract class AdminHandlersProxy {
+/** Proxies an API call to remote nodes; exposing hooks to process responses */
+public abstract class RemoteRequestProxy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final String PARAM_NODES = "nodes";
-  private static final String PARAM_NODE = "node";
-  private static final long PROMETHEUS_FETCH_TIMEOUT_SECONDS = 10;
 
   protected final CoreContainer coreContainer;
 
-  public AdminHandlersProxy(CoreContainer container) {
+  public RemoteRequestProxy(CoreContainer container) {
     this.coreContainer = container;
   }
 

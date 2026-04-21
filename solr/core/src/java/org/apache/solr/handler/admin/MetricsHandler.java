@@ -37,8 +37,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetMetrics;
-import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
 import org.apache.solr.handler.admin.proxy.GenericV1RequestProxy;
+import org.apache.solr.handler.admin.proxy.RemoteRequestProxy;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -153,7 +153,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     consumer.accept("metrics", mergedSnapshots);
   }
 
-  public static AdminHandlersProxy createMetricProxy(
+  public static RemoteRequestProxy createMetricProxy(
       CoreContainer cc, SolrQueryRequest req, SolrQueryResponse rsp) {
     return new GenericV1RequestProxy(cc, req, rsp) {
 

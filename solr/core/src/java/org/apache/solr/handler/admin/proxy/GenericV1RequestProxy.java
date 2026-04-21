@@ -27,7 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** Uses a v1 {@link GenericSolrRequest} to proxy the executing (v1) request to remote nodes */
-public class GenericV1RequestProxy extends AdminHandlersProxy {
+public class GenericV1RequestProxy extends RemoteRequestProxy {
 
   private final ModifiableSolrParams params;
   private final SolrQueryRequest req;
