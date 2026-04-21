@@ -107,7 +107,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
             .withParam("fl", "name")
             .withParam("combiner", "true")
             .withParam("combiner.query", List.of("query1", "query2"));
-    query.setPath("/search");
+    query.setPath("/rrf");
     QueryResponse queryResponse = query.process(cluster.getSolrClient(), COLLECTION_NAME);
     assertEquals(0, queryResponse.getStatus());
     assertEquals(NUM_SCIFI_BOOKS + NUM_MARTIN_BOOKS, queryResponse.getResults().size());
