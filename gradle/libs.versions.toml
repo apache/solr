@@ -158,6 +158,8 @@ ktor = "3.2.2"
 langchain4j-bom = "1.9.1"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
+# @keep Stoplight Elements version used in ref-guide for OpenAPI rendering
+stoplight-elements = "8.4.0"
 littlerobots-versioncatalogupdate = "0.8.5"
 lmax-disruptor = "4.0.0"
 logchange = "1.19.13"

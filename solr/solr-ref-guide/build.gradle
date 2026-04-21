@@ -60,11 +60,13 @@ configurations {
   officialPlaybook
   localPlaybook
   localJavadocs
+  openapiSpec
 }
 
 dependencies {
   localJavadocs project(path: ":solr:documentation", configuration: 'javadocs')
   localJavadocs project(path: ":solr:documentation", configuration: 'site')
+  openapiSpec project(path: ":solr:api", configuration: 'openapiSpec')
 }
 
 ext {
@@ -253,6 +255,15 @@ task downloadAsciidoctorTabsExtension(type: NpmTask) {
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/@asciidoctor/tabs")
 }
 
+task downloadStoplightElements(type: NpmTask) {
+  group = 'Build Dependency Download'
+  description "Download Stoplight Elements bundle for OpenAPI rendering in the ref-guide."
+  args = ["install", "@stoplight/elements@${libs.versions.stoplight.elements.get()}"]
+
+  inputs.property("stoplight-elements version", libs.versions.stoplight.elements.get())
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/@stoplight/elements")
+}
+
 task downloadAntora {
   group = 'Build Dependency Download'
   description "Download all Antora build dependencies for site generation."
@@ -262,6 +273,7 @@ task downloadAntora {
   dependsOn tasks.downloadAntoraLunrExtension
   dependsOn tasks.downloadAsciidoctorMathjaxExtension
   dependsOn tasks.downloadAsciidoctorTabsExtension
+  dependsOn tasks.downloadStoplightElements
 }
 
 task downloadLinkValidator(type: NpmTask) {
@@ -384,12 +396,42 @@ task setupLocalSiteStagingDir(type: Sync) {
   into project.ext.siteStagingDir
 }
 
+task stageOpenApiAssets(type: Copy) {
+  group = 'Site - Local'
+  description "Copies the OpenAPI spec and supplemental UI files into the site staging directory."
+
+  dependsOn configurations.openapiSpec
+  dependsOn tasks.setupLocalSiteStagingDir
+
+  // Copy the OpenAPI spec JSON into the api-reference module's attachments
+  from(configurations.openapiSpec) {
+    rename { "solr-openapi.json" }
+    into "modules/api-reference/attachments"
+  }
+
+  into project.ext.siteStagingDir
+}
+
+// Copy the custom layout into nodeProjectDir so ~+ paths in the playbook can resolve it
+task stageSupplementalUIAssets(type: Copy) {
+  group = 'Site - Local'
+  description "Copies supplemental UI assets (layouts, etc.) into the node project dir for playbook resolution."
+
+  from("${projectDir}/ui-src/layouts/api-reference.hbs") {
+    into "supplemental-ui/layouts"
+  }
+
+  into project.ext.nodeProjectDir
+}
+
 task buildLocalAntoraSite(type: NpxTask) {
   group = 'Site - Local'
   description "Creates a local build of the ref-guide."
 
   dependsOn tasks.downloadAntora
   dependsOn tasks.setupLocalSiteStagingDir
+  dependsOn tasks.stageOpenApiAssets
+  dependsOn tasks.stageSupplementalUIAssets
 
   command = "antora"
 
