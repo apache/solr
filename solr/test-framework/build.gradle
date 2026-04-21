@@ -96,9 +96,8 @@ dependencies {
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
 
-  implementation(libs.prometheus.metrics.expositionformats, {
+  implementation(libs.prometheus.metrics.expositiontextformats, {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
-    exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
 
   implementation(libs.apache.httpcomponents.httpmime, {

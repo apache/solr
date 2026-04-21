@@ -162,9 +162,8 @@ dependencies {
 
   // For the PrometheusResponseWriter
   implementation libs.prometheus.metrics.model
-  implementation(libs.prometheus.metrics.expositionformats, {
+  implementation(libs.prometheus.metrics.expositiontextformats, {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
-    exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
 
   // For faster XML processing than the JDK
