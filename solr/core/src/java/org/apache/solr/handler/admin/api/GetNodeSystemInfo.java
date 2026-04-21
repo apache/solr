@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.request.SystemApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.SystemInfoProvider;
-import org.apache.solr.handler.admin.proxy.V2RequestProxy;
+import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -73,7 +73,7 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
         final var req = new SystemApi.GetNodeSystemInfo();
         req.setNodes(nodes);
         final var reqProxy =
-            new V2RequestProxy<NodeSystemResponse>(coreContainer, req) {
+            new V2SolrRequestBasedProxy<NodeSystemResponse>(coreContainer, req) {
               @Override
               public void processTypedProxiedResponse(
                   String nodeName, NodeSystemResponse proxiedResponse) {

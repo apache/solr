@@ -24,11 +24,18 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 
-public abstract class V2RequestProxy<T> extends AdminHandlersProxy {
+/**
+ * Uses a v2 {@link SolrRequest} instance to proxy requests to other nodes.
+ *
+ * <p>While this implementation is intended for v2 requests, callers may use it for v1 requests as
+ * well by overriding {@link #processProxiedResponse(String, NamedList)} to do something more
+ * appropriate with the response.
+ */
+public abstract class V2SolrRequestBasedProxy<T> extends AdminHandlersProxy {
 
   private SolrRequest<T> solrRequest;
 
-  public V2RequestProxy(CoreContainer coreContainer, SolrRequest<T> solrRequest) {
+  public V2SolrRequestBasedProxy(CoreContainer coreContainer, SolrRequest<T> solrRequest) {
     super(coreContainer);
     this.solrRequest = solrRequest;
   }
@@ -66,12 +73,9 @@ public abstract class V2RequestProxy<T> extends AdminHandlersProxy {
   @Override
   @SuppressWarnings("unchecked")
   public void processProxiedResponse(String nodeName, NamedList<Object> proxiedResponse) {
-    final var typedResponse = (T) proxiedResponse.get("response"); // TODO handle this cast better
+    final var typedResponse = (T) proxiedResponse.get("response");
     processTypedProxiedResponse(nodeName, typedResponse);
   }
 
-  // TODO This is where I left off on this on 4/8 - let's see what I think of it when I return
-  // tomorrow
-
-  public abstract void processTypedProxiedResponse(String nodeName, T proxiedResponse);
+  protected abstract void processTypedProxiedResponse(String nodeName, T proxiedResponse);
 }
