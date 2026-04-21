@@ -152,7 +152,7 @@ kotlinx-atomicfu = "0.29.0"
 # @keep for version alignment
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
-kotlinx-datetime = "0.7.1"
+kotlinx-datetime = "0.7.1-0.6.x-compat"
 kotlinx-serialization = "1.9.0"
 # @keep used by spotless
 ktlint = "1.7.1"
