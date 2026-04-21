@@ -164,37 +164,9 @@ grant {
   // Needed by BouncyCastle in jwt-auth tests
   permission java.security.SecurityPermission "putProviderProperty.BC";
   permission java.security.SecurityPermission "removeProviderProperty.BC";
-  // BC property reads (expanded for 1.84 which added several new property lookups)
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.allow_unsafe_integer";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.allow_wrong_oid_enc";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_cons_depth";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_limit";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.bks.enable_v1";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.constraints.allow_override";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.dh.allow_unsafe_p_value";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.drbg.effective_256bits_entropy";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.drbg.entropy_thread";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.drbg.gather_pause_secs";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.disable_f2m";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.disable_mqv";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.enable_pc";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.fp_certainty";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.fp_max_size";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.max_f2m_field_size";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.fpe.disable_ff1";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs1.not_strict";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.default";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.ignore_useless_passwd";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.max_it_count";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs8.v1_info_only";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.rsa.allow_unsafe_mod";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.rsa.max_mr_tests";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.rsa.max_size";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.rsa.no_lenstra_check";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.x509.allow_absent_equiv_dn";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.x509.allow_ca_without_crl_sign";
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.x509.allow_non-der_tbscert";
-  permission java.security.SecurityPermission "getProperty.org.bouncycastle.x509.ignore_repeated_extensions";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_cons_depth";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.max_f2m_field_size";
 
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
