@@ -1313,9 +1313,26 @@ public abstract class CloudSolrClient extends SolrClient {
           // Without this wait, all MAX_STALE_RETRIES retries fire within milliseconds of each
           // other using the same stale routes, hitting the same dead leader repeatedly and
           // exhausting all retries before leader election can complete.
+          // We use a bounded wait (10 s) so a stuck ZK / stalled election cannot block
+          // the caller thread indefinitely; on timeout we log and continue with the retry
+          // using whatever state is currently available.
           if (!wasCommError && requestedCollections != null && !requestedCollections.isEmpty()) {
             for (DocCollection ext : requestedCollections) {
-              waitForCollectionRefresh(ext.getName(), triggerCollectionRefresh(ext.getName()));
+              try {
+                triggerCollectionRefresh(ext.getName()).get(10, TimeUnit.SECONDS);
+              } catch (TimeoutException te) {
+                log.warn(
+                    "Timed out waiting for cluster state refresh for collection {} before retry; "
+                        + "proceeding with retry using current state",
+                    ext.getName());
+              } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+              } catch (ExecutionException ee) {
+                log.warn(
+                    "Error refreshing cluster state for collection {} before retry",
+                    ext.getName(),
+                    ee.getCause());
+              }
             }
           }
           return requestWithRetryOnStaleState(
