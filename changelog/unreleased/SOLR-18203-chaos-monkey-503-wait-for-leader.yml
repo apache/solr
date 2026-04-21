@@ -1,0 +1,11 @@
+title: >
+  CloudSolrClient now waits for cluster state refresh before retrying updates that fail with
+  503 (no leader). Previously all retries fired immediately, exhausting the retry budget before
+  leader election completed and causing spurious update failures during node restarts.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18203
+    url: https://issues.apache.org/jira/browse/SOLR-18203

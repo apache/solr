@@ -1285,15 +1285,10 @@ public abstract class CloudSolrClient extends SolrClient {
             String name = ext.getName();
             ExpiringCachedDocCollection cacheEntry = collectionStateCache.peek(name);
             if (cacheEntry != null) {
-              if (wasCommError) {
-                cacheEntry.maybeStale = true;
-              } else {
-                boolean markedStale =
-                    cacheEntry.markMaybeStaleIfOutsideBackoff(retryExpiryTimeNano);
-                if (markedStale && cacheEntry.shouldRetry()) {
-                  triggerCollectionRefresh(name);
-                }
-              }
+              // For both comm errors and 503 (no leader), mark state as stale immediately.
+              // For 503 we bypass the backoff since we will wait for the refresh below
+              // before retrying, which naturally throttles the retry rate.
+              cacheEntry.maybeStale = true;
             } else {
               triggerCollectionRefresh(name);
             }
@@ -1313,6 +1308,16 @@ public abstract class CloudSolrClient extends SolrClient {
               MAX_STALE_RETRIES,
               wasCommError,
               errorCode);
+          // For 503 "no leader" errors (not plain comm errors where the node is fully dead),
+          // wait for the cluster state to refresh from ZooKeeper before retrying.
+          // Without this wait, all MAX_STALE_RETRIES retries fire within milliseconds of each
+          // other using the same stale routes, hitting the same dead leader repeatedly and
+          // exhausting all retries before leader election can complete.
+          if (!wasCommError && requestedCollections != null && !requestedCollections.isEmpty()) {
+            for (DocCollection ext : requestedCollections) {
+              waitForCollectionRefresh(ext.getName(), triggerCollectionRefresh(ext.getName()));
+            }
+          }
           return requestWithRetryOnStaleState(
               request,
               retryCount + 1,
