@@ -1,4 +1,4 @@
-title: Update jersey to v4
+title: Update org.glassfish.jersey:jersey-bom to v4
 type: dependency_update
 authors:
 - name: solrbot
