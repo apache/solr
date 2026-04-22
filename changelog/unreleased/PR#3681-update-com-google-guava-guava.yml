@@ -5,3 +5,5 @@ authors:
 links:
 - name: PR#3681
   url: https://github.com/apache/solr/pull/3681
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305
