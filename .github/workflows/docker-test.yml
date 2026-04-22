@@ -10,6 +10,10 @@ on:
       - 'solr/docker/**'
       - 'solr/packaging/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Build and test Docker image

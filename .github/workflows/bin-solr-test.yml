@@ -10,6 +10,10 @@ on:
       - 'solr/packaging/**'
       - 'solr/core/src/java/org/apache/solr/cli/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run Solr Script Tests
