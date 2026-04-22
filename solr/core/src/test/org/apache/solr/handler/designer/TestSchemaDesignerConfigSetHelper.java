@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.designer;
 
-import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -250,10 +249,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     doc.setField("pages", 809);
     doc.setField("published_year", 1989);
 
-    helper.postDataToBlobStore(
-        cluster.getSolrClient(),
-        configSet + "_sample",
-        DefaultSampleDocumentsLoader.streamAsBytes(toJavabin(Collections.singletonList(doc))));
+    helper.storeSampleDocs(configSet, Collections.singletonList(doc));
 
     List<SolrInputDocument> docs = helper.getStoredSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);
