@@ -374,23 +374,27 @@ public class S3StorageClient {
       GetObjectRequest.Builder getBuilder =
           GetObjectRequest.builder().bucket(bucketName).key(s3Path);
       // This InputStream instance needs to be closed by the caller
-      return s3Client.getObject(
-          getBuilder.build(),
-          ResponseTransformer.unmanaged(
-              (response, inputStream) -> {
-                final long contentLength = response.contentLength();
-                return new ResumableInputStream(
-                    inputStream,
-                    bytesRead -> {
-                      if (contentLength > 0 && bytesRead >= contentLength) {
-                        // No more bytes to read
-                        return null;
-                      } else if (bytesRead > 0) {
-                        getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
-                      }
-                      return s3Client.getObject(getBuilder.build());
-                    });
-              }));
+      // Use Duration.ZERO to disable timeout and prevent response-input-stream-timeout-scheduler
+      // thread leak (see https://github.com/aws/aws-sdk-java-v2/issues/6567)
+      software.amazon.awssdk.core.ResponseInputStream<
+              software.amazon.awssdk.services.s3.model.GetObjectResponse>
+          responseStream =
+              s3Client.getObject(
+                  getBuilder.build(), ResponseTransformer.toInputStream(java.time.Duration.ZERO));
+      final long contentLength = responseStream.response().contentLength();
+      return new ResumableInputStream(
+          responseStream,
+          bytesRead -> {
+            if (contentLength > 0 && bytesRead >= contentLength) {
+              // No more bytes to read
+              return null;
+            } else if (bytesRead > 0) {
+              getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
+            }
+            // Use Duration.ZERO to disable timeout on resumed streams as well
+            return s3Client.getObject(
+                getBuilder.build(), ResponseTransformer.toInputStream(java.time.Duration.ZERO));
+          });
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }

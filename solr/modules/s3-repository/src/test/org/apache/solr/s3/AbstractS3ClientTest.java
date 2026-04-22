@@ -36,9 +36,8 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   protected static final String BUCKET_NAME = "test-bucket";
 
   @ClassRule
-  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).build();
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
 
   S3StorageClient client;
   private SocketProxy proxy;
