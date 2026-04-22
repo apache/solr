@@ -46,6 +46,7 @@ public class WrappedSolrRequestTest extends SolrTestCase {
   private WrappedSolrRequest<SimpleSolrResponse> wrapper;
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     inner = new GenericSolrRequest(SolrRequest.METHOD.GET, "/test");
@@ -182,6 +183,7 @@ public class WrappedSolrRequestTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressWarnings("UndefinedEquals") // Reference-check equality here is fine.
   public void testGetContentStreams() throws Exception {
     assertEquals(inner.getContentStreams(), wrapper.getContentStreams());
   }
