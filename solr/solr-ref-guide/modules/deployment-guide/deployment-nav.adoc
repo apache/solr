@@ -18,7 +18,7 @@
 .Deployment Guide
 
 * xref:solr-control-script-reference.adoc[]
-
+* xref:deployment-topology-overview.adoc[]
 * Installation & Deployment
 ** xref:system-requirements.adoc[]
 ** xref:installing-solr.adoc[]
