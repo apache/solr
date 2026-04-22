@@ -11,6 +11,10 @@ on:
       - 'solr/core/src/java/org/apache/solr/cli/**'
       - 'solr/prometheus-exporter/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run Solr Script Tests
