@@ -3,7 +3,5 @@ type: dependency_update
 authors:
 - name: Jan Høydahl
 links:
-- name: PR#4093
-  url: https://github.com/apache/solr/pull/4093
 - name: PR#4305
   url: https://github.com/apache/solr/pull/4305
