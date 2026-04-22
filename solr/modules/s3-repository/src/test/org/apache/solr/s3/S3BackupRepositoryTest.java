@@ -54,6 +54,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public Path temporaryFolder;
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
       S3MockRule.builder()
           .silent()
