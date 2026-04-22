@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -351,7 +352,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       InputStream input =
           s3.getObject(
               b -> b.bucket(BUCKET_NAME).key(path),
-              ResponseTransformer.toInputStream(java.time.Duration.ZERO));
+              ResponseTransformer.toInputStream(Duration.ZERO));
       Files.copy(input, file, StandardCopyOption.REPLACE_EXISTING);
       return file;
     }
