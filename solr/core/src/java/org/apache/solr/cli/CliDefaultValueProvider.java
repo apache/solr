@@ -14,40 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.common.util.EnvUtils;
+import picocli.CommandLine;
 
-@picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
-public class VersionTool extends ToolBase {
-
-  public VersionTool() {
-    this(new DefaultToolRuntime());
-  }
-
-  public VersionTool(ToolRuntime runtime) {
-    super(runtime);
-  }
-
+/** Provides default values for CLI arguments. */
+public class CliDefaultValueProvider implements CommandLine.IDefaultValueProvider {
   @Override
-  public String getName() {
-    return "version";
-  }
-
-  @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    printVersion();
-  }
-
-  @Override
-  public int callTool() throws Exception {
-    printVersion();
-    return 0;
-  }
-
-  private void printVersion() {
-    CLIO.out("Solr version is: " + SolrVersion.LATEST);
+  public String defaultValue(CommandLine.Model.ArgSpec argSpec) throws Exception {
+    return switch (argSpec.paramLabel()) {
+      case "<zkHost>" -> EnvUtils.getProperty("zkHost");
+      case "<solrUrl>" -> EnvUtils.getProperty("solr.url");
+      case "<port>" -> EnvUtils.getProperty("solr.port", "8983");
+      case "<maxWaitSecs>" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");
+      default -> null;
+    };
   }
 }

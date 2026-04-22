@@ -626,4 +626,9 @@ public class PostLogsTool extends ToolBase {
     map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
     purposes = Collections.unmodifiableMap(map);
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

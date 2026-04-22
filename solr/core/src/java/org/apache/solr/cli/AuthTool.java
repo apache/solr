@@ -452,4 +452,9 @@ public class AuthTool extends ToolBase {
       throw new IllegalStateException("Only type=basicAuth supported at the moment.");
     }
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

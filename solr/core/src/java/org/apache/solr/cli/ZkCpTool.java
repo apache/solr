@@ -39,6 +39,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Supports zk cp command in the bin/solr script. */
+@picocli.CommandLine.Command(
+    name = "cp",
+    description = {
+      "Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.",
+      "",
+      "<src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node",
+      "NOTE: <src> and <dest> may both be ZooKeeper resources prefixed by 'zk:'",
+      "When <src> is a zk resource, <dest> may be '.'",
+      "If <dest> ends with '/', then <dest> will be a local folder or parent znode",
+      "and the last element of the <src> path will be appended unless <src> also ends in a slash."
+    })
 public class ZkCpTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -49,6 +60,32 @@ public class ZkCpTool extends ToolBase {
           .argName("DIR")
           .desc("Required to look up configuration for compressing state.json.")
           .get();
+
+  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      description = "Source path: [file:][/]path/to/local/file or zk:/path/to/zk/node.")
+  private String src;
+
+  @picocli.CommandLine.Parameters(
+      index = "1",
+      arity = "1",
+      description = "Destination path: [file:][/]path/to/local/file or zk:/path/to/zk/node.")
+  private String dst;
+
+  @picocli.CommandLine.Mixin RecursiveOption recursiveOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"--solr-home"},
+      description = "Required to look up configuration for compressing state.json.",
+      paramLabel = "DIR")
+  private String solrHome;
+
+  public ZkCpTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ZkCpTool(ToolRuntime runtime) {
     super(runtime);
@@ -119,11 +156,16 @@ public class ZkCpTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String zkHost = CLIUtils.getZkHost(cli);
-
-    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
     boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
+    String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
+    doCp(zkHost, src, dst, recursive, solrHome);
+  }
+
+  private void doCp(String zkHost, String src, String dst, boolean recursive, String solrHome)
+      throws Exception {
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
@@ -152,7 +194,6 @@ public class ZkCpTool extends ToolBase {
     Compressor compressor = new ZLibCompressor();
 
     if (dstIsZk) {
-      String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
       if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }
@@ -206,5 +247,11 @@ public class ZkCpTool extends ToolBase {
       log.error("Could not complete the zk operation for reason: ", e);
       throw (e);
     }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    doCp(zkOpts.resolveZkHost(), src, dst, recursiveOpt.recursive, solrHome);
+    return 0;
   }
 }

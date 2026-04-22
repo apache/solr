@@ -213,6 +213,11 @@ public class HealthcheckTool extends ToolBase {
     new JSONWriter(arr, 2).write(report);
     echo(arr.toString());
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }
 
 class ReplicaHealth implements Comparable<ReplicaHealth> {

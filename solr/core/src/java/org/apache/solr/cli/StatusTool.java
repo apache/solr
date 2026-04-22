@@ -44,8 +44,36 @@ import org.noggit.JSONWriter;
  *
  * <p>Get the status of a Solr server.
  */
+@picocli.CommandLine.Command(name = "status", description = "Get the status of a Solr server.")
 public class StatusTool extends ToolBase {
+  @picocli.CommandLine.Option(
+      names = {"--max-wait-secs"},
+      description = "Wait up to the specified number of seconds to see Solr running.")
+  private Integer maxWaitSecs;
 
+  @picocli.CommandLine.Option(
+      names = {"-p", "--port"},
+      description = "Port on localhost to check status for")
+  private Integer port;
+
+  @picocli.CommandLine.Option(
+      names = {"-s", "--solr-url"},
+      description = "Base Solr URL, which can be used to determine the zk-host if that's not known")
+  private String solrUrl;
+
+  @picocli.CommandLine.Option(
+      names = {"--short"},
+      paramLabel = "short",
+      description = "Short format. Prints one URL per line for running instances")
+  private boolean shortFormat;
+
+  @picocli.CommandLine.Option(
+      names = {"-u", "--credentials"},
+      description =
+          "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+  private String credentials;
+
+  @Deprecated
   private static final Option MAX_WAIT_SECS_OPTION =
       Option.builder()
           .longOpt("max-wait-secs")
@@ -56,6 +84,7 @@ public class StatusTool extends ToolBase {
           .desc("Wait up to the specified number of seconds to see Solr running.")
           .get();
 
+  @Deprecated
   public static final Option PORT_OPTION =
       Option.builder("p")
           .longOpt("port")
@@ -65,6 +94,7 @@ public class StatusTool extends ToolBase {
           .desc("Port on localhost to check status for")
           .get();
 
+  @Deprecated
   public static final Option SHORT_OPTION =
       Option.builder()
           .longOpt("short")
@@ -73,6 +103,10 @@ public class StatusTool extends ToolBase {
           .get();
 
   private final SolrProcessManager processMgr;
+
+  public StatusTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public StatusTool(ToolRuntime runtime) {
     super(runtime);
@@ -98,11 +132,15 @@ public class StatusTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
-    Integer port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
-    boolean shortFormat = cli.hasOption(SHORT_OPTION);
-    int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
+    solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
+    port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
+    shortFormat = cli.hasOption(SHORT_OPTION);
+    maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
 
+    runTool();
+  }
+
+  public int runTool() throws Exception {
     if (solrUrl != null) {
       if (!URLUtil.hasScheme(solrUrl)) {
         CLIO.err("Invalid URL provided: " + solrUrl);
@@ -113,14 +151,14 @@ public class StatusTool extends ToolBase {
       if (maxWaitSecs > 0) {
         // Used by Windows start script when starting Solr
         try {
-          waitForSolrUpAndPrintStatus(solrUrl, cli, maxWaitSecs);
+          waitForSolrUpAndPrintStatus(solrUrl);
           runtime.exit(0);
         } catch (Exception e) {
           CLIO.err(e.getMessage());
           runtime.exit(1);
         }
       } else {
-        boolean running = printStatusFromRunningSolr(solrUrl, cli);
+        boolean running = printStatusFromRunningSolr(solrUrl);
         runtime.exit(running ? 0 : 1);
       }
     }
@@ -135,7 +173,7 @@ public class StatusTool extends ToolBase {
         if (shortFormat) {
           CLIO.out(solrUrl);
         } else {
-          printProcessStatus(proc.get(), cli);
+          printProcessStatus(proc.get());
         }
         runtime.exit(0);
       }
@@ -148,7 +186,7 @@ public class StatusTool extends ToolBase {
         if (shortFormat) {
           CLIO.out(process.getLocalUrl());
         } else {
-          printProcessStatus(process, cli);
+          printProcessStatus(process);
         }
       }
     } else {
@@ -156,17 +194,16 @@ public class StatusTool extends ToolBase {
         CLIO.out("\nNo Solr nodes are running.\n");
       }
     }
+    return 0;
   }
 
-  private void printProcessStatus(SolrProcess process, CommandLine cli) throws Exception {
-    int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
-    boolean shortFormat = cli.hasOption(SHORT_OPTION);
+  private void printProcessStatus(SolrProcess process) throws Exception {
     String pidUrl = process.getLocalUrl();
     if (shortFormat) {
       CLIO.out(pidUrl);
     } else {
       if (maxWaitSecs > 0) {
-        waitForSolrUpAndPrintStatus(pidUrl, cli, maxWaitSecs);
+        waitForSolrUpAndPrintStatus(pidUrl);
       } else {
         CLIO.out(
             String.format(
@@ -174,23 +211,22 @@ public class StatusTool extends ToolBase {
                 "\nSolr process %s running on port %s",
                 process.pid(),
                 process.port()));
-        printStatusFromRunningSolr(pidUrl, cli);
+        printStatusFromRunningSolr(pidUrl);
       }
     }
     CLIO.out("");
   }
 
-  public void waitForSolrUpAndPrintStatus(String solrUrl, CommandLine cli, int maxWaitSecs)
-      throws Exception {
+  public void waitForSolrUpAndPrintStatus(String pidUrl) throws Exception {
     int solrPort = -1;
     try {
-      solrPort = CLIUtils.portFromUrl(solrUrl);
+      solrPort = CLIUtils.portFromUrl(pidUrl);
     } catch (Exception e) {
       CLIO.err("Invalid URL provided, does not contain port");
       runtime.exit(1);
     }
     echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
-    boolean solrUp = waitForSolrUp(solrUrl, cli, maxWaitSecs);
+    boolean solrUp = waitForSolrUp(pidUrl);
     if (solrUp) {
       echo("Started Solr server on port " + solrPort + ". Happy searching!");
     } else {
@@ -202,35 +238,28 @@ public class StatusTool extends ToolBase {
   /**
    * Wait for Solr to come online and return true if it does, false otherwise.
    *
-   * @param solrUrl the URL of the Solr server
-   * @param cli the command line options
-   * @param maxWaitSecs the maximum number of seconds to wait
    * @return true if Solr comes online, false otherwise
    */
-  public boolean waitForSolrUp(String solrUrl, CommandLine cli, int maxWaitSecs) throws Exception {
+  public boolean waitForSolrUp(String pidUrl) throws Exception {
     try {
-      waitToSeeSolrUp(
-          solrUrl,
-          cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
-          maxWaitSecs,
-          TimeUnit.SECONDS);
+      waitToSeeSolrUp(pidUrl, credentials, maxWaitSecs, TimeUnit.SECONDS);
       return true;
     } catch (TimeoutException timeout) {
       return false;
     }
   }
 
-  public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) {
+  public boolean printStatusFromRunningSolr(String pidUrl) {
     String statusJson = null;
     try {
-      statusJson = statusFromRunningSolr(solrUrl, cli);
+      statusJson = statusFromRunningSolr(pidUrl);
     } catch (Exception e) {
       /* ignore */
     }
     if (statusJson != null) {
       runtime.println(statusJson);
     } else {
-      CLIO.err("Solr at " + solrUrl + " not online.");
+      CLIO.err("Solr at " + pidUrl + " not online.");
     }
     return statusJson != null;
   }
@@ -238,16 +267,13 @@ public class StatusTool extends ToolBase {
   /**
    * Get the status of a Solr server and responds with a JSON status string.
    *
-   * @param solrUrl the URL of the Solr server
-   * @param cli the command line options
    * @return the status of the Solr server or null if the server is not online
    * @throws Exception if there is an error getting the status
    */
-  public String statusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
+  public String statusFromRunningSolr(String pidUrl) throws Exception {
     try {
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2)
-          .write(getStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION)));
+      new JSONWriter(arr, 2).write(getStatus(pidUrl));
       return arr.toString();
     } catch (Exception exc) {
       if (CLIUtils.exceptionIsAuthRelated(exc)) {
@@ -257,19 +283,23 @@ public class StatusTool extends ToolBase {
         // this is not actually an error from the tool as it's ok if Solr is not online.
         return null;
       } else {
-        throw new Exception("Failed to get system information from " + solrUrl + " due to: " + exc);
+        throw new Exception("Failed to get system information from " + pidUrl + " due to: " + exc);
       }
     }
   }
 
+  public Map<String, Object> waitToSeeSolrUp(String pidUrl) throws Exception {
+    return waitToSeeSolrUp(pidUrl, credentials, maxWaitSecs, TimeUnit.SECONDS);
+  }
+
   @SuppressWarnings("BusyWait")
   public Map<String, Object> waitToSeeSolrUp(
-      String solrUrl, String credentials, long maxWait, TimeUnit unit) throws Exception {
+      String pidUrl, String credentials, long maxWait, TimeUnit unit) throws Exception {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWait, unit);
     while (System.nanoTime() < timeout) {
 
       try {
-        return getStatus(solrUrl, credentials);
+        return getStatus(pidUrl);
       } catch (Exception exc) {
         if (CLIUtils.exceptionIsAuthRelated(exc)) {
           throw exc;
@@ -289,8 +319,12 @@ public class StatusTool extends ToolBase {
             + " seconds!");
   }
 
-  public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
-    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
+  public Map<String, Object> getStatus(String pidUrl) throws Exception {
+    return getStatus(pidUrl, credentials);
+  }
+
+  public Map<String, Object> getStatus(String pidUrl, String credentials) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(pidUrl, credentials)) {
       return reportStatus(solrClient);
     }
   }
@@ -339,5 +373,10 @@ public class StatusTool extends ToolBase {
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    return runTool();
   }
 }

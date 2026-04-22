@@ -14,40 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.solr.client.api.util.SolrVersion;
+import picocli.CommandLine;
 
-@picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
-public class VersionTool extends ToolBase {
+/**
+ * Picocli mixin providing common configset options shared by upconfig and downconfig sub-commands.
+ *
+ * <p>Use {@code @CommandLine.Mixin ConfigSetOptions configSetOpts} in a command class to inherit
+ * these options.
+ */
+public class ConfigSetOptions {
 
-  public VersionTool() {
-    this(new DefaultToolRuntime());
-  }
+  @CommandLine.Option(
+      names = {"-n", "--conf-name"},
+      description = "Configset name in ZooKeeper.",
+      required = true)
+  public String confName;
 
-  public VersionTool(ToolRuntime runtime) {
-    super(runtime);
-  }
-
-  @Override
-  public String getName() {
-    return "version";
-  }
-
-  @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    printVersion();
-  }
-
-  @Override
-  public int callTool() throws Exception {
-    printVersion();
-    return 0;
-  }
-
-  private void printVersion() {
-    CLIO.out("Solr version is: " + SolrVersion.LATEST);
-  }
+  @CommandLine.Option(
+      names = {"-d", "--conf-dir"},
+      description = "Local directory with configs.",
+      required = true,
+      paramLabel = "DIR")
+  public String confDir;
 }

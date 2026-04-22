@@ -14,40 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.solr.client.api.util.SolrVersion;
+import java.util.concurrent.Callable;
+import picocli.CommandLine;
 
-@picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
-public class VersionTool extends ToolBase {
+/**
+ * Sub commands for working with ZooKeeper, only here to provide a common parent for the subcommands
+ * and print tool help.
+ */
+@CommandLine.Command(
+    name = "zk",
+    description = "Sub commands for working with ZooKeeper.",
+    footer = "\nPass --help or -h after any COMMAND to see command-specific usage information.",
+    subcommands = {
+      ConfigSetDownloadTool.class,
+      ConfigSetUploadTool.class,
+      ZkCpTool.class,
+      ZkLsTool.class,
+      ZkMkrootTool.class,
+      ZkMvTool.class,
+      ZkRmTool.class,
+      UpdateACLTool.class
+    })
+public class ZkTool implements Callable<Integer> {
 
-  public VersionTool() {
-    this(new DefaultToolRuntime());
-  }
+  @CommandLine.Mixin HelpMixin helpMixin;
 
-  public VersionTool(ToolRuntime runtime) {
-    super(runtime);
-  }
+  @CommandLine.Spec CommandLine.Model.CommandSpec spec;
 
   @Override
-  public String getName() {
-    return "version";
-  }
-
-  @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    printVersion();
-  }
-
-  @Override
-  public int callTool() throws Exception {
-    printVersion();
+  public Integer call() {
+    spec.commandLine().usage(CLIO.getOutStream());
     return 0;
-  }
-
-  private void printVersion() {
-    CLIO.out("Solr version is: " + SolrVersion.LATEST);
   }
 }

@@ -18,17 +18,22 @@
 package org.apache.solr.cli;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.concurrent.Callable;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.util.StartupLoggingUtils;
 
-public abstract class ToolBase implements Tool {
+public abstract class ToolBase implements Tool, Callable<Integer> {
+  @picocli.CommandLine.Mixin HelpMixin helpMixin;
+
+  @picocli.CommandLine.Option(
+      names = {"-v", "--verbose"},
+      description = "Enable verbose mode.")
+  private boolean verbose = false;
 
   protected final ToolRuntime runtime;
-
-  private boolean verbose = false;
 
   protected ToolBase(ToolRuntime runtime) {
     this.runtime = runtime;
@@ -75,6 +80,7 @@ public abstract class ToolBase implements Tool {
    *
    * @return OptionGroup validates that only one option is supplied by the caller.
    */
+  @Deprecated
   public OptionGroup getConnectionOptions() {
     OptionGroup optionGroup = new OptionGroup();
     optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
@@ -112,5 +118,36 @@ public abstract class ToolBase implements Tool {
     }
   }
 
+  @Deprecated
   public abstract void runImpl(CommandLine cli) throws Exception;
+
+  /**
+   * Called by picocli to execute the tool's logic. Each tool must implement this method to support
+   * the picocli-based invocation path.
+   */
+  public abstract int callTool() throws Exception;
+
+  /** Called by picocli for a tool invocation. Delegates to {@link #callTool()}. */
+  @Override
+  public Integer call() {
+    raiseLogLevelUnlessVerbose();
+
+    int toolExitStatus = 0;
+    try {
+      toolExitStatus = callTool();
+    } catch (Exception exc) {
+      // since this is a CLI, spare the user the stacktrace
+      String excMsg = exc.getMessage();
+      if (excMsg != null) {
+        CLIO.err("\nERROR: " + excMsg + "\n");
+        if (verbose) {
+          exc.printStackTrace(CLIO.getErrStream());
+        }
+        toolExitStatus = 1;
+      } else {
+        throw new RuntimeException(exc);
+      }
+    }
+    return toolExitStatus;
+  }
 }
