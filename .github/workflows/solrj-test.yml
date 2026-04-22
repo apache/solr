@@ -8,6 +8,10 @@ on:
       - '.github/workflows/solrj-test.yml'
       - 'solr/solrj/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run SolrJ Tests
