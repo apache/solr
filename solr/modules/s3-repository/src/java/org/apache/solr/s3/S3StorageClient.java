@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
@@ -57,6 +59,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.DeletedObject;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -376,11 +379,8 @@ public class S3StorageClient {
       // This InputStream instance needs to be closed by the caller
       // Use Duration.ZERO to disable timeout and prevent response-input-stream-timeout-scheduler
       // thread leak (see https://github.com/aws/aws-sdk-java-v2/issues/6567)
-      software.amazon.awssdk.core.ResponseInputStream<
-              software.amazon.awssdk.services.s3.model.GetObjectResponse>
-          responseStream =
-              s3Client.getObject(
-                  getBuilder.build(), ResponseTransformer.toInputStream(java.time.Duration.ZERO));
+      ResponseInputStream<GetObjectResponse> responseStream =
+          s3Client.getObject(getBuilder.build(), ResponseTransformer.toInputStream(Duration.ZERO));
       final long contentLength = responseStream.response().contentLength();
       return new ResumableInputStream(
           responseStream,
@@ -393,7 +393,7 @@ public class S3StorageClient {
             }
             // Use Duration.ZERO to disable timeout on resumed streams as well
             return s3Client.getObject(
-                getBuilder.build(), ResponseTransformer.toInputStream(java.time.Duration.ZERO));
+                getBuilder.build(), ResponseTransformer.toInputStream(Duration.ZERO));
           });
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
