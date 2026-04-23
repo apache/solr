@@ -188,17 +188,23 @@ private fun getMenuIcon(
     isSelected: Boolean = false,
 ): DrawableResource = when (item) {
     MainMenu.Dashboard -> if (isSelected) Res.drawable.dashboard_filled else Res.drawable.dashboard
+
     MainMenu.Metrics -> if (isSelected) Res.drawable.analytics_filled else Res.drawable.analytics
+
     MainMenu.Cluster -> if (isSelected) Res.drawable.hub_filled else Res.drawable.hub
+
     MainMenu.Security -> Res.drawable.security
+
     MainMenu.Configsets ->
         if (isSelected) Res.drawable.folder_data_filled else Res.drawable.folder_data
 
     MainMenu.Collections -> Res.drawable.apps
+
     MainMenu.QueriesAndOperations ->
         if (isSelected) Res.drawable.other_admission_filled else Res.drawable.other_admission
 
     MainMenu.Environment -> if (isSelected) Res.drawable.memory_filled else Res.drawable.memory
+
     MainMenu.Logging ->
         if (isSelected) Res.drawable.text_snippet_filled else Res.drawable.text_snippet
 
