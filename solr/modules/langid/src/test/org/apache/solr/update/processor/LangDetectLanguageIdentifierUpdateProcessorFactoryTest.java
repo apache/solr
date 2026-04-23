@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import io.github.azagniotov.language.LanguageDetectionOrchestrator;
-import io.github.azagniotov.language.LanguageDetectionSettings;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
@@ -25,15 +23,14 @@ import org.junit.Test;
 public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
     extends LanguageIdentifierUpdateProcessorFactoryTestCase {
 
-  private static final LanguageDetectionOrchestrator ORCHESTRATOR =
-      LanguageDetectionOrchestrator.fromSettings(
-          LanguageDetectionSettings.fromAllIsoCodes639_1().build());
-
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters)
       throws Exception {
     return new LangDetectLanguageIdentifierUpdateProcessor(
-        _parser.buildRequestFrom(h.getCore(), parameters, null), resp, null, ORCHESTRATOR);
+        _parser.buildRequestFrom(h.getCore(), parameters, null),
+        resp,
+        null,
+        LangDetectLanguageIdentifierUpdateProcessorFactory.ORCHESTRATOR);
   }
 
   // this one actually works better it seems with short docs

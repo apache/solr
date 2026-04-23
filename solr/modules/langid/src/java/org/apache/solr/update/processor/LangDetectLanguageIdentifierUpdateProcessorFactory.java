@@ -53,7 +53,11 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory
   protected SolrParams appends;
   protected SolrParams invariants;
 
-  private LanguageDetectionOrchestrator orchestrator;
+  // Built once for the JVM lifetime; LanguageDetectionOrchestrator is thread-safe and
+  // stateless after construction, so sharing it across all factory instances is safe.
+  static final LanguageDetectionOrchestrator ORCHESTRATOR =
+      LanguageDetectionOrchestrator.fromSettings(
+          LanguageDetectionSettings.fromAllIsoCodes639_1().build());
 
   @Override
   public void inform(SolrCore core) {}
@@ -66,8 +70,6 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory
    */
   @Override
   public void init(NamedList<?> args) {
-    LanguageDetectionSettings settings = LanguageDetectionSettings.fromAllIsoCodes639_1().build();
-    orchestrator = LanguageDetectionOrchestrator.fromSettings(settings);
 
     if (args != null) {
       Object o;
@@ -94,6 +96,6 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory
     if (req != null) {
       SolrPluginUtils.setDefaults(req, defaults, appends, invariants);
     }
-    return new LangDetectLanguageIdentifierUpdateProcessor(req, rsp, next, orchestrator);
+    return new LangDetectLanguageIdentifierUpdateProcessor(req, rsp, next, ORCHESTRATOR);
   }
 }
