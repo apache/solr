@@ -1,3 +1,4 @@
 language-detection
+Copyright 2025 Alexander Zagniotov
 
 https://github.com/azagniotov/language-detection
