@@ -26,26 +26,22 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Factory for {@link ContentHashVersionProcessor} instances.
  *
- * <p>This processor computes a hash of document field values to detect and optionally reject
- * duplicate or no-op updates (updates that don't change document content). The hash is stored in a
- * configurable field and compared on subsequent updates to the same document.
+ * <p>This processor computes a hash from the document content and sees if an existing (indexed)
+ * document also has this hash, stored in a designated field. If so, it drops the document to avoid
+ * needless index churn. Alternatively, it can be configured to merely log the fact.
  *
  * <h2>Configuration</h2>
  *
- * <p>The following configuration parameters are supported:
- *
  * <ul>
- *   <li><b>hashFieldName</b> (required): The name of the field where the computed hash will be
- *       stored. This field must have docValues enabled for hash retrieval. The hash field is
- *       automatically excluded from hash computation.
+ *   <li><b>hashField</b> (required): The name of the field where the computed hash will be stored.
+ *       This field must have docValues enabled for hash retrieval. The hash field is automatically
+ *       excluded from hash computation.
  *   <li><b>includeFields</b> (optional, default="*"): Comma-separated list of fields to include in
  *       hash computation. Supports wildcard patterns (e.g., "name*"). Use "*" to include all
  *       fields.
@@ -63,7 +59,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.ContentHashVersionProcessorFactory"&gt;
- *   &lt;str name="hashFieldName"&gt;content_hash&lt;/str&gt;
+ *   &lt;str name="hashField"&gt;content_hash&lt;/str&gt;
  *   &lt;str name="includeFields"&gt;title,body,author&lt;/str&gt;
  *   &lt;str name="excludeFields"&gt;timestamp,version&lt;/str&gt;
  *   &lt;str name="hashCompareStrategy"&gt;drop&lt;/str&gt;
@@ -78,8 +74,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *       and should not affect duplicate detection.
  *   <li><b>Schema Requirements</b>: The schema must have a uniqueKey field defined. The hash field
  *       must have docValues enabled.
- *   <li><b>Hash Algorithm</b>: Uses {@link Lookup3Signature} for hash computation. Field values
- *       are processed in sorted field name order for consistency.
+ *   <li><b>Hash Algorithm</b>: Uses {@link Lookup3Signature} for hash computation. Field values are
+ *       processed in sorted field name order for consistency.
  * </ul>
  *
  * <h2>Monitoring</h2>
@@ -96,12 +92,11 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * @see ContentHashVersionProcessor
  * @see Lookup3Signature
  */
-public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFactory
-    implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
+public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFactory {
   private static final char SEPARATOR = ','; // Separator for included/excluded fields
   private List<String> includeFields = List.of("*"); // Included fields defaults to 'all'
   private List<String> excludeFields = new ArrayList<>();
-  private String hashFieldName; // Must be explicitly configured
+  private String hashField; // Must be explicitly configured
   private boolean dropSameDocuments = true;
 
   public ContentHashVersionProcessorFactory() {}
@@ -120,17 +115,17 @@ public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFa
               .map(String::trim)
               .collect(Collectors.toList());
     }
-    tmp = args.remove("hashFieldName");
+    tmp = args.remove("hashField");
     if (tmp == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "'hashFieldName' is required and must be explicitly configured");
+          "'hashField' is required and must be explicitly configured");
     }
     if (!(tmp instanceof String)) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "'hashFieldName' must be configured as a <str>");
+          SolrException.ErrorCode.SERVER_ERROR, "'hashField' must be configured as a <str>");
     }
-    this.hashFieldName = (String) tmp;
+    this.hashField = (String) tmp;
 
     tmp = args.remove("excludeFields");
     if (tmp != null) {
@@ -150,7 +145,7 @@ public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFa
               .map(String::trim)
               .collect(Collectors.toList());
     }
-    excludeFields.add(hashFieldName); // Hash field name is excluded from hash computation
+    excludeFields.add(hashField); // Hash field name is excluded from hash computation
 
     tmp = args.remove("hashCompareStrategy");
     if (tmp != null) {
@@ -178,27 +173,18 @@ public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFa
 
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    ContentHashVersionProcessor processor =
-        new ContentHashVersionProcessor(
-            buildFieldMatcher(includeFields),
-            buildFieldMatcher(excludeFields),
-            hashFieldName,
-            dropSameDocuments,
-            req,
-            rsp,
-            next);
-    return processor;
+    return new ContentHashVersionProcessor(
+        buildFieldMatcher(includeFields),
+        buildFieldMatcher(excludeFields),
+        hashField,
+        dropSameDocuments,
+        req,
+        rsp,
+        next);
   }
 
-  public void inform(SolrCore core) {
-    if (core.getLatestSchema().getUniqueKeyField() == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "schema must have uniqueKey defined.");
-    }
-  }
-
-  public String getHashFieldName() {
-    return hashFieldName;
+  public String getHashField() {
+    return hashField;
   }
 
   public List<String> getIncludeFields() {

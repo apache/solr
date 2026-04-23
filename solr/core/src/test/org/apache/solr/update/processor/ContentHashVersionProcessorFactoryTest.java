@@ -45,17 +45,17 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldInitWithHashFieldName() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "_hash_field_");
+    args.add("hashField", "_hash_field_");
     factory.init(args);
 
-    assertEquals("_hash_field_", factory.getHashFieldName());
+    assertEquals("_hash_field_", factory.getHashField());
   }
 
   @Test
   public void shouldInitWithAllField() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "content_hash");
+    args.add("hashField", "content_hash");
     args.add("includeFields", "*");
     factory.init(args);
 
@@ -67,7 +67,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldInitWithIncludedFields() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "content_hash");
+    args.add("hashField", "content_hash");
     args.add("includeFields", " field1,field2 , field3 ");
     factory.init(args);
 
@@ -79,7 +79,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldInitWithExcludedFields() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "content_hash");
+    args.add("hashField", "content_hash");
     args.add("excludeFields", " field1,field2 , field3 ");
     factory.init(args);
 
@@ -91,7 +91,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldSelectDropStrategy() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "content_hash");
+    args.add("hashField", "content_hash");
     args.add("hashCompareStrategy", "drop");
     factory.init(args);
 
@@ -102,7 +102,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldSelectLogStrategy() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "content_hash");
+    args.add("hashField", "content_hash");
     args.add("hashCompareStrategy", "log");
     factory.init(args);
 
@@ -113,7 +113,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldSelectUnsupportedStrategy() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "content_hash");
+    args.add("hashField", "content_hash");
     args.add("hashCompareStrategy", "unsupported value");
     factory.init(args);
   }
@@ -122,7 +122,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldRejectExcludeAllFields() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "content_hash");
+    args.add("hashField", "content_hash");
     args.add("excludeFields", "*");
     factory.init(args);
   }
@@ -131,7 +131,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldRequireExplicitHashFieldName() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    // Intentionally not setting hashFieldName
+    // Intentionally not setting hashField
     factory.init(args);
   }
 
@@ -139,7 +139,7 @@ public class ContentHashVersionProcessorFactoryTest {
   public void shouldAutoExcludeHashFieldFromHashComputation() {
     ContentHashVersionProcessorFactory factory = new ContentHashVersionProcessorFactory();
     NamedList<String> args = new NamedList<>();
-    args.add("hashFieldName", "my_hash_field");
+    args.add("hashField", "my_hash_field");
     args.add("excludeFields", "field1,field2");
     factory.init(args);
 
