@@ -156,6 +156,7 @@ littlerobots-versioncatalogupdate = "1.1.0"
 lmax-disruptor = "4.0.0"
 logchange = "1.19.15"
 ltgt-errorprone = "5.1.0"
+material3 = "1.10.0-alpha05"
 mockito = "5.23.0"
 morethan-jmhreport = "0.9.6"
 mvikotlin = "4.4.0"
@@ -302,6 +303,13 @@ codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", versi
 commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
 commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
 commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons-io" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+compose-uiTest = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
+compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
 cuvs-java = { module = "com.nvidia.cuvs:cuvs-java", version.ref = "cuvs-java" }
 cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cuvs-lucene" }
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }

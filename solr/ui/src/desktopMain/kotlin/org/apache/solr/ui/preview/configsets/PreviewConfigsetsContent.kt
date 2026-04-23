@@ -18,6 +18,7 @@
 package org.apache.solr.ui.preview.configsets
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import com.arkivanov.decompose.Child
 import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.MutableValue
@@ -32,7 +33,6 @@ import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.configsets.ConfigsetsContent
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Preview
 @Composable
