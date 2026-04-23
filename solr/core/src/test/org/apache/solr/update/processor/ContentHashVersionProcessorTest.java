@@ -219,14 +219,14 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     // Given (command to update existing doc)
     final String newDocId = UUID.randomUUID().toString();
     final SolrQueryResponse update1 =
-        addDocWithResponse(
+        addDoc(
             adoc(
                 ID_FIELD, newDocId,
                 FIRST_FIELD, INITIAL_FIELD1_VALUE,
                 SECOND_FIELD, INITIAL_FIELD2_VALUE),
             "contenthashversion-default");
     final SolrQueryResponse update2 =
-        addDocWithResponse(
+        addDoc(
             adoc(
                 ID_FIELD, newDocId,
                 FIRST_FIELD, "This is a doc with values",
@@ -256,7 +256,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
 
     // When: Try to add the same content again (duplicate)
     SolrQueryResponse duplicateResponse =
-        addDocWithResponse(
+        addDoc(
             adoc(
                 ID_FIELD, docId,
                 FIRST_FIELD, "original value",
@@ -276,7 +276,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
 
     // When: Update with different content
     SolrQueryResponse changedResponse =
-        addDocWithResponse(
+        addDoc(
             adoc(
                 ID_FIELD, docId,
                 FIRST_FIELD, "changed value",
@@ -315,7 +315,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     // When: Try to add the same document again (duplicate content) using URP chain WITH drop doc
     // (drop mode)
     SolrQueryResponse solrQueryResponse =
-        addDocWithResponse(
+        addDoc(
             adoc(
                 ID_FIELD, INITIAL_DOC_ID,
                 FIRST_FIELD, INITIAL_FIELD1_VALUE,

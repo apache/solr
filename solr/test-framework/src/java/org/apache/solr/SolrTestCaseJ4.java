@@ -1160,11 +1160,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return out.toString();
   }
 
-  public static void addDoc(String doc, String updateRequestProcessorChain) throws Exception {
-    addDocWithResponse(doc, updateRequestProcessorChain);
-  }
-
-  public static SolrQueryResponse addDocWithResponse(String doc, String updateRequestProcessorChain)
+  public static SolrQueryResponse addDoc(String doc, String updateRequestProcessorChain)
       throws Exception {
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
