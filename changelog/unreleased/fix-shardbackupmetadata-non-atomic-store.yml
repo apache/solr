@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix non-atomic write in ShardBackupMetadata.store() that can destroy backup metadata
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Mark Miller
+links:
+  - name: SOLR-18249
+    url: https://issues.apache.org/jira/browse/SOLR-18249
