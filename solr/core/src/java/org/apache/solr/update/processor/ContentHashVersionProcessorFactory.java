@@ -40,8 +40,8 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <ul>
  *   <li><b>hashField</b> (required): The name of the field where the computed hash will be stored.
- *       This field must have docValues enabled for hash retrieval. The hash field is automatically
- *       excluded from hash computation.
+ *       It should be of type BinaryField. This field must have docValues enabled for hash
+ *       retrieval. The hash field is automatically excluded from hash computation.
  *   <li><b>includeFields</b> (optional, default="*"): Comma-separated list of fields to include in
  *       hash computation. Supports wildcard patterns (e.g., "name*"). Use "*" to include all
  *       fields.
@@ -72,10 +72,6 @@ import org.apache.solr.response.SolrQueryResponse;
  *   <li><b>In-Place Updates</b>: Fields updated via in-place (partial) updates should be excluded
  *       from hash computation using <code>excludeFields</code>, as these are updated independently
  *       and should not affect duplicate detection.
- *   <li><b>Schema Requirements</b>: The schema must have a uniqueKey field defined. The hash field
- *       must have docValues enabled.
- *   <li><b>Hash Algorithm</b>: Uses {@link Lookup3Signature} for hash computation. Field values are
- *       processed in sorted field name order for consistency.
  * </ul>
  *
  * <h2>Monitoring</h2>

@@ -18,7 +18,6 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,8 +36,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link UpdateRequestProcessor} which computes a hash of field values, and
@@ -61,7 +58,6 @@ import org.slf4j.LoggerFactory;
  * @see Lookup3Signature
  */
 public class ContentHashVersionProcessor extends UpdateRequestProcessor {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SchemaField hashField;
   private final SolrQueryResponse rsp;
   private final SolrCore core;
