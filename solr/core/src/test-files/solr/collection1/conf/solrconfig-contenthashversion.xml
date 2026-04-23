@@ -34,10 +34,9 @@
     </updateLog>
   </updateHandler>
 
-
   <updateRequestProcessorChain name="contenthashversion-default" default="true">
     <processor class="org.apache.solr.update.processor.ContentHashVersionProcessorFactory">
-      <str name="hashFieldName">_hash_</str>
+      <str name="hashField">_hash_</str>
       <str name="excludeFields">_id</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory"/>
@@ -45,7 +44,7 @@
 
   <updateRequestProcessorChain name="contenthashversion-log">
     <processor class="org.apache.solr.update.processor.ContentHashVersionProcessorFactory">
-      <str name="hashFieldName">_hash_</str>
+      <str name="hashField">_hash_</str>
       <str name="excludeFields">_id</str>
       <str name="hashCompareStrategy">log</str>
     </processor>
@@ -54,7 +53,7 @@
 
   <updateRequestProcessorChain name="contenthashversion-drop">
     <processor class="org.apache.solr.update.processor.ContentHashVersionProcessorFactory">
-      <str name="hashFieldName">_hash_</str>
+      <str name="hashField">_hash_</str>
       <str name="excludeFields">_id</str>
       <str name="hashCompareStrategy">drop</str>
     </processor>
