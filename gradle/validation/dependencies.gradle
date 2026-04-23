@@ -56,7 +56,6 @@ allprojects {
     conf.shouldResolveConsistentlyWith(project.configurations.runtimeClasspath)
   }
 
-
   dependencies {
     modules {
       module("org.hamcrest:hamcrest-core") {
