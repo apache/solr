@@ -77,6 +77,13 @@ public class GpuMetricsService implements GpuMetricsProvider {
 
   public void initialize(CoreContainer coreContainer) {
     if (initialized.compareAndSet(false, true)) {
+      // Ensure CUDA runtime is loaded before any cuVS provider access
+      try {
+        System.loadLibrary("cudart");
+      } catch (UnsatisfiedLinkError e) {
+        log.warn(
+            "Could not load CUDA runtime library (libcudart not available): {}", e.getMessage());
+      }
       this.metricManager = coreContainer.getMetricManager();
       startBackgroundService();
       log.info("GPU metrics service initialized");
