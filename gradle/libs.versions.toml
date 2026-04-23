@@ -48,6 +48,7 @@ apiguardian = "1.1.2"
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
+azagniotov-langdetect = "12.5.2"
 # @keep bats-assert (node) version used in packaging
 bats-assert = "2.0.0"
 # @keep bats-core (node) version used in packaging
@@ -74,7 +75,6 @@ compose = "1.10.3"
 cutterslade-analyze = "1.10.0"
 cuvs-java = "25.10.0"
 cuvs-lucene = "25.10.0"
-cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.4.0"
 diffplug-spotless = "8.3.0"
 # @keep Use for dockerfile JRE version
@@ -295,6 +295,7 @@ apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", versio
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
 # @keep transitive dependency for version alignment
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
+azagniotov-langdetect = { module = "io.github.azagniotov:language-detection", version.ref = "azagniotov-langdetect" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
@@ -319,7 +320,6 @@ compose-uiTest = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "c
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
 cuvs-java = { module = "com.nvidia.cuvs:cuvs-java", version.ref = "cuvs-java" }
 cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cuvs-lucene" }
-cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }

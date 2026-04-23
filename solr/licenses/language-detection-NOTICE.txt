@@ -1,0 +1,3 @@
+language-detection
+
+https://github.com/azagniotov/language-detection

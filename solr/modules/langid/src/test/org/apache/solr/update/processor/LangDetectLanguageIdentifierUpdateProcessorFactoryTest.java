@@ -16,17 +16,24 @@
  */
 package org.apache.solr.update.processor;
 
+import io.github.azagniotov.language.LanguageDetectionOrchestrator;
+import io.github.azagniotov.language.LanguageDetectionSettings;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
     extends LanguageIdentifierUpdateProcessorFactoryTestCase {
+
+  private static final LanguageDetectionOrchestrator ORCHESTRATOR =
+      LanguageDetectionOrchestrator.fromSettings(
+          LanguageDetectionSettings.fromAllIsoCodes639_1().build());
+
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters)
       throws Exception {
     return new LangDetectLanguageIdentifierUpdateProcessor(
-        _parser.buildRequestFrom(h.getCore(), parameters, null), resp, null);
+        _parser.buildRequestFrom(h.getCore(), parameters, null), resp, null, ORCHESTRATOR);
   }
 
   // this one actually works better it seems with short docs
@@ -37,8 +44,22 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
     return doc;
   }
 
-  /* we don't return 'un' for the super-short one (this detector things hungarian?).
-   * replace this with japanese
+  /**
+   * Override the base class test with LangDetect-specific text samples.
+   *
+   * <p>Two differences from the base class:
+   *
+   * <ul>
+   *   <li>The "too short" test case is replaced with Japanese (this detector returns Hungarian for
+   *       short ambiguous text rather than "un").
+   *   <li>The Russian text is replaced with a cleaner Cyrillic-only sample. The base class uses a
+   *       text that starts with the English brand name "The Apache Lucene", which creates genuine
+   *       ambiguity between Russian and Serbian: the old com.cybozu.labs:langdetect library did not
+   *       include Serbian in its profile set, so that ambiguity never arose. The new library
+   *       io.github.azagniotov:language-detection supports Serbian, so mixed Latin+Cyrillic text
+   *       with many international technical terms can score close to Serbian. The replacement text
+   *       is about the Russian language itself and contains only Cyrillic characters.
+   * </ul>
    */
   @Test
   @Override
@@ -97,14 +118,16 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
         "บทความคัดสรรเดือนนี้",
         "subject",
         "อันเนอลีส มารี อันเนอ ฟรังค์ หรือมักรู้จักในภาษาไทยว่า แอนน์ แฟรงค์ เป็นเด็กหญิงชาวยิว เกิดที่เมืองแฟรงก์เฟิร์ต ประเทศเยอรมนี เธอมีชื่อเสียงโด่งดังในฐานะผู้เขียนบันทึกประจำวันซึ่งต่อมาได้รับการตีพิมพ์เป็นหนังสือ บรรยายเหตุการณ์ขณะหลบซ่อนตัวจากการล่าชาวยิวในประเทศเนเธอร์แลนด์ ระหว่างที่ถูกเยอรมนีเข้าครอบครองในช่วงสงครามโลกครั้งที่สอง");
+    // Pure Cyrillic text about the Russian language; see class Javadoc for why the base class
+    // Russian text (which mixes Latin brand names into Cyrillic) cannot be used here.
     assertLang(
         "ru",
         "id",
         "7ru",
         "name",
-        "Lucene",
+        "Russian",
         "subject",
-        "The Apache Lucene — это свободная библиотека для высокоскоростного полнотекстового поиска, написанная на Java. Может быть использована для поиска в интернете и других областях компьютерной лингвистики (аналитическая философия).");
+        "Русский язык принадлежит к группе восточнославянских языков индоевропейской семьи и является официальным языком в Российской Федерации. По числу носителей русский язык занимает восьмое место в мире и первое место среди славянских языков.");
     assertLang(
         "de",
         "id",
@@ -145,5 +168,72 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
         "Lucene",
         "subject",
         "Apache Lucene, ou simplesmente Lucene, é um software de busca e uma API de indexação de documentos, escrito na linguagem de programação Java. É um software de código aberto da Apache Software Foundation licenciado através da licença Apache.");
+  }
+
+  /**
+   * Override the base class multi-value test to use text that works correctly with the
+   * io.github.azagniotov:language-detection library.
+   *
+   * <p>The base class uses Russian + English + English across three multi-value field entries. With
+   * the new library this fails in two ways:
+   *
+   * <ol>
+   *   <li>Russian is misidentified as Serbian (see {@link #testLangIdGlobal()} Javadoc).
+   *   <li>Even if the script issue were solved, CJK languages (Japanese, Chinese, Korean) cannot be
+   *       used as the minority language in mixed multi-value fields: the library applies a fast CJK
+   *       heuristic before the statistical Naive Bayes classifier, so any CJK content in the
+   *       concatenated text causes CJK to be returned regardless of the volume of Latin-script text
+   *       in the other field values.
+   * </ol>
+   *
+   * <p>For Latin-script minority languages the library uses Naive Bayes on the full concatenated
+   * text, so volume does determine the outcome. This test uses Norwegian (one short paragraph) as
+   * the minority language in the first field value, with two longer English paragraphs in the
+   * remaining values. If only the first value were considered, Norwegian would be detected; when
+   * all values are concatenated, English dominates by volume.
+   */
+  @Test
+  @Override
+  public void testPreExistingMultiValueMixedLang() throws Exception {
+    SolrInputDocument doc;
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "text_multivalue");
+    parameters.add("langid.langField", "language");
+    parameters.add("langid.langsField", "languages");
+    parameters.add("langid.enforceSchema", "false");
+    parameters.add("langid.map", "true");
+    liProcessor = createLangIdProcessor(parameters);
+
+    // First value: Norwegian (detected as "no" when isolated).
+    // Second + third values: English (dominant by volume across all values).
+    // If only the first value were used, "no" would be detected; reading all values gives "en".
+    doc = new SolrInputDocument();
+    doc.addField(
+        "text_multivalue",
+        new String[] {
+          "Lucene er et fri/åpen kildekode programvarebibliotek for informasjonsgjenfinning, opprinnelig utviklet i programmeringsspråket Java av Doug Cutting.",
+          "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.",
+          "Solr (pronounced \"solar\") is an open source enterprise search platform from the Apache Lucene project. Its major features include full-text search, hit highlighting, faceted search, dynamic clustering, database integration, and rich document handling."
+        });
+    SolrInputDocument result = doc.deepCopy();
+    liProcessor.process(result);
+    assertEquals("en", result.getFieldValue("language"));
+    assertEquals("en", result.getFieldValue("languages"));
+
+    // Pre-existing language field must not be overwritten.
+    doc = new SolrInputDocument();
+    doc.addField(
+        "text_multivalue",
+        new String[] {
+          "Lucene er et fri/åpen kildekode programvarebibliotek for informasjonsgjenfinning, opprinnelig utviklet i programmeringsspråket Java av Doug Cutting.",
+          "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.",
+          "Solr (pronounced \"solar\") is an open source enterprise search platform from the Apache Lucene project. Its major features include full-text search, hit highlighting, faceted search, dynamic clustering, database integration, and rich document handling."
+        });
+    doc.setField("language", "no");
+    result = doc.deepCopy();
+    liProcessor.process(result);
+    assertEquals("no", result.getFieldValue("language"));
+    assertEquals("no", result.getFieldValue("languages"));
+    assertNotNull(result.getFieldValue("text_multivalue_no"));
   }
 }
