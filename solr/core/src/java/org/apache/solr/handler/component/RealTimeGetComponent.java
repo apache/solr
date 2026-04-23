@@ -241,7 +241,6 @@ public class RealTimeGetComponent extends SearchComponent {
 
       boolean opennedRealtimeSearcher = false;
       BytesRefBuilder idBytes = new BytesRefBuilder();
-      DocValuesIteratorCache reuseDvIters = null;
       for (String idStr : reqIds.allIds) {
         fieldType.readableToIndexed(idStr, idBytes);
         // if _route_ is passed, id is a child doc.  TODO remove in SOLR-15064
@@ -349,14 +348,10 @@ public class RealTimeGetComponent extends SearchComponent {
         if (docid < 0) continue;
 
         SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
-        Document luceneDocument =
-            docFetcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
-        SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
-        if (reuseDvIters == null) {
-          reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
-        }
-        docFetcher.decorateDocValueFields(
-            doc, docid, docFetcher.getNonStoredDVs(true), reuseDvIters);
+        SolrReturnFields solrReturnFields = (SolrReturnFields) rsp.getReturnFields();
+        solrReturnFields.resetFetchOptimizer();
+        SolrDocument doc = docFetcher.solrDoc(docid, solrReturnFields);
+        removeCopyFieldTargets(doc, req.getSchema());
         if (null != transformer) {
           if (null == resultContext) {
             // either first pass, or we've re-opened searcher - either way now we setContext
@@ -618,7 +613,10 @@ public class RealTimeGetComponent extends SearchComponent {
   private static SolrDocument fetchSolrDoc(
       SolrIndexSearcher searcher, int docId, ReturnFields returnFields) throws IOException {
     final SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-    final SolrDocument solrDoc = docFetcher.solrDoc(docId, (SolrReturnFields) returnFields);
+    final SolrReturnFields solrReturnFields = (SolrReturnFields) returnFields;
+    solrReturnFields.resetFetchOptimizer();
+    final SolrDocument solrDoc = docFetcher.solrDoc(docId, solrReturnFields);
+    removeCopyFieldTargets(solrDoc, searcher.getSchema());
     final DocTransformer transformer = returnFields.getTransformer();
     if (transformer != null) {
       transformer.setContext(

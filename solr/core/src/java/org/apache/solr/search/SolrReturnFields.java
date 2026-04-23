@@ -161,6 +161,11 @@ public class SolrReturnFields extends ReturnFields {
     return fetchOptimizer;
   }
 
+  public void resetFetchOptimizer() {
+    fetchOptimizer = null;
+    fieldSources = FIELD_SOURCES.NOT_SET;
+  }
+
   /**
    * Parsing is done in two passes (see javadocs for {@link
    * org.apache.solr.response.transform.TransformerFactory.FieldRenamer} for an explanation of the
