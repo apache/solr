@@ -39,6 +39,9 @@ Just ask your AI assistant:
 
 The Solr MCP Server makes this possible by exposing Solr operations -- searching, indexing, collection management, and schema introspection -- as tools that any MCP-compatible AI client can invoke.
 
+TIP: Visit the https://solr.apache.org/mcp[Solr MCP Server website] for features, community, and downloads.
+The source code is at https://github.com/apache/solr-mcp[github.com/apache/solr-mcp].
+
 == Quick Start
 
 Get from zero to a working Claude + Solr integration in under 2 minutes.
@@ -1331,6 +1334,13 @@ Spring Boot auto-instruments:
 
 Actuator endpoints (`/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`) are provided by Spring Boot Actuator and exposed in HTTP mode.
 
+== Community
+
+* *Website:* https://solr.apache.org/mcp
+* *Slack:* https://the-asf.slack.com/archives/C09TVG3BM1P[`#solr-mcp`] in the `the-asf` Slack workspace
+* *Mailing lists:* Shared with Apache Solr -- see https://solr.apache.org/community.html#mailing-lists-chat[mailing lists]
+* *Issues:* https://github.com/apache/solr-mcp/issues[GitHub Issues]
+
 == Contributing
 
 We welcome contributions!
@@ -1370,6 +1380,7 @@ For the full contributing guide, development workflows, and architecture details
 
 === Apache Solr
 
+* https://solr.apache.org/mcp[Solr MCP Server Website]
 * https://solr.apache.org/guide/[Apache Solr Documentation]
 * https://solr.apache.org/guide/solr/latest/deployment-guide/solrj.html[SolrJ Client Library]
 
