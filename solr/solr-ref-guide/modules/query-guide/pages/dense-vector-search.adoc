@@ -242,7 +242,7 @@ client.add(Arrays.asList(d1, d2));
 
 Here's how a `DenseVectorField` should be indexed when multi-valued:
 
-[tabs#densevectorfield-index]
+[tabs#densevectorfield-index-multivalued]
 ======
 JSON::
 +

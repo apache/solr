@@ -18,9 +18,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Core Admin API is primarily used under the covers by the xref:collections-api.adoc[] when running a xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud] cluster.
+The Core Admin API is primarily used under the covers by the xref:collections-api.adoc[] when running a xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] cluster.
 
-SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of user-managed clusters or single-node installations for core maintenance operations.
+SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of user-managed clusters or standalone installations for core maintenance operations.
 
 The CoreAdmin API is implemented by the CoreAdminHandler, which is a special purpose xref:requesthandlers-searchcomponents.adoc[request handler] that is used to manage Solr cores.
 Unlike other request handlers, the CoreAdminHandler is not attached to a single core.
