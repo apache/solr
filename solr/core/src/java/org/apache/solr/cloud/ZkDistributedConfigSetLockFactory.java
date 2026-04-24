@@ -40,7 +40,7 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
     Objects.requireNonNull(configSetName, "configSetName can't be null");
 
     String lockPath = getLockPath(configSetName);
-    return doCreateLock(isWriteLock, lockPath);
+    return doCreateLock(isWriteLock, lockPath, null);
   }
 
   /**

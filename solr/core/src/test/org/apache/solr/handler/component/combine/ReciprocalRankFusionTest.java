@@ -55,7 +55,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
   @Test
   public void testSimpleCombine() {
     List<QueryResult> rankedList = QueryAndResponseCombinerTest.getQueryResults();
-    QueryResult result = QueryAndResponseCombiner.simpleCombine(rankedList);
+    QueryResult result = QueryAndResponseCombiner.simpleCombine(rankedList, null, null);
     assertEquals(3, result.getDocList().size());
     assertEquals(4, result.getDocSet().size());
   }

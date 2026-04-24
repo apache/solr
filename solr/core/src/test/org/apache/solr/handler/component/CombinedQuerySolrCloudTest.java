@@ -45,6 +45,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     super();
     sliceCount = 2;
     fixShardCount(2);
+    schemaString = "schema-vector-catchall.xml";
+    configString = "solrconfig-combined-query.xml";
   }
 
   @Override
@@ -58,6 +60,28 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
   }
 
   private synchronized void prepareIndexDocs() throws Exception {
+    List<SolrInputDocument> docs = getSolrDocuments();
+    del("*:*");
+    for (SolrInputDocument doc : docs) {
+      indexDoc(doc);
+    }
+    commit();
+  }
+
+  /** Index all docs to the same shard for co-location (limitation for collapse). */
+  private synchronized void prepareIndexDocsColocated() throws Exception {
+    del("*:*");
+    List<SolrInputDocument> docs = getSolrDocuments();
+    for (SolrInputDocument doc : docs) {
+      doc.setField("id", "CO!" + doc.getField("id").getValue());
+    }
+    for (SolrInputDocument doc : docs) {
+      indexDoc(doc);
+    }
+    commit();
+  }
+
+  private static synchronized List<SolrInputDocument> getSolrDocuments() {
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -87,11 +111,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     docs.get(8).addField(vectorField, Arrays.asList(200f, 50f, 100f, 25f));
     // cosine distance vector1= 0.997
     docs.get(9).addField(vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f));
-    del("*:*");
-    for (SolrInputDocument doc : docs) {
-      indexDoc(doc);
-    }
-    commit();
+    return docs;
   }
 
   @Test
@@ -247,6 +267,69 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     assertEquals(
         "title <em>test</em> for <em>doc</em> 5",
         rsp.getHighlighting().get("5").get("title").getFirst());
+  }
+
+  /**
+   * Tests the combined query feature with faceting, highlighting and collapse.
+   *
+   * @throws Exception if any unexpected error occurs during the test execution.
+   */
+  @Test
+  public void testQueriesWithFacetAndHighlightsCollapse() throws Exception {
+    // Re-index all docs to the first shard for co-location (required for collapse).
+    prepareIndexDocsColocated();
+    String jsonQuery =
+        """
+          {
+            "queries": {
+                "lexical1": {
+                    "lucene": {
+                        "query": "id:(CO!2^3 OR CO!3^1 OR CO!6^2 OR CO!5^1)"
+                    }
+                },
+                "lexical2": {
+                    "lucene": {
+                        "query": "id:(CO!8^1 OR CO!5^2 OR CO!7^3 OR CO!10^2)"
+                    }
+                }
+            },
+            "limit": 3,
+            "fields": [
+                "id",
+                "score",
+                "title"
+            ],
+            "params": {
+                "combiner": true,
+                "facet": true,
+                "facet.field": "id",
+                "fq": [
+                    "{!collapse field=mod3_idv sort='id asc, score desc'}"
+                ],
+                "expand": true,
+                "expand.q": "*:*",
+                "combiner.query": [
+                    "lexical1",
+                    "lexical2"
+                ],
+                "hl": true,
+                "hl.fl": "title",
+                "hl.q": "test doc"
+            }
+        }""";
+    handle.put("expanded", UNORDERED);
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    assertEquals(3, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "CO!2", "CO!10", "CO!3");
+    assertEquals("id", rsp.getFacetFields().getFirst().getName());
+    assertEquals(
+        "[CO!10 (1), CO!2 (1), CO!3 (1), CO!1 (0), CO!4 (0), CO!5 (0), CO!6 (0), CO!7 (0), CO!8 (0), CO!9 (0)]",
+        rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(3, rsp.getHighlighting().size());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 2",
+        rsp.getHighlighting().get("CO!2").get("title").getFirst());
+    assertEquals(3, rsp.getExpandedResults().size());
   }
 
   /** To test that we can force distrib */

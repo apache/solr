@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,6 +43,7 @@ import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -53,8 +55,10 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.util.SolrResponseUtil;
@@ -236,7 +240,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       boolean partialResults,
       boolean segmentTerminatedEarly,
       Boolean setMaxHitsTerminatedEarly) {
-    QueryResult combinedQueryResult = QueryAndResponseCombiner.simpleCombine(queryResults);
+    SolrIndexSearcher searcher = crb.req.getSearcher();
+    List<Query> collapseFilters = getCollapseFilters(crb.getFilters());
+    QueryResult combinedQueryResult =
+        QueryAndResponseCombiner.simpleCombine(queryResults, collapseFilters, searcher);
     combinedQueryResult.setPartialResults(partialResults);
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
@@ -258,6 +265,21 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     }
   }
 
+  /** Extracts the list of CollapsingPostFilter query from the filter list, if present. */
+  private static List<Query> getCollapseFilters(List<Query> filters) {
+    if (CollectionUtil.isNotEmpty(filters)) {
+      return filters.stream()
+          .filter(q -> q instanceof CollapsingQParserPlugin.CollapsingPostFilter)
+          .toList();
+    }
+    return List.of();
+  }
+
+  /**
+   * Each shard response contains both "response" and "response_per_query". Only "response" is
+   * deduplicated across sub-queries, so any processing of "response_per_query" must exclude docs
+   * not present in "response" to avoid reintroducing docs that were eliminated while deduplication.
+   */
   @Override
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
     SortSpec ss = rb.getSortSpec();
@@ -296,6 +318,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     long approximateTotalHits = 0;
     Map<String, List<ShardDoc>> shardDocMap = new HashMap<>();
     String[] queriesToCombineKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
+    // Build per-shard set of doc IDs from the shard's combined (deduplicated) response.
+    // Used to filter per-query docs so that RRF doesn't reintroduce docs
+    // excluded by collapse at the shard level.
+    Map<String, Set<Object>> combinedDocIdsPerShard = HashMap.newHashMap(sreq.responses.size());
     // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
@@ -377,9 +403,15 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 : new NamedList<>();
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the uniqueDoc to dedup
+        Set<Object> thisShardCombinedIds =
+            combinedDocIdsPerShard.computeIfAbsent(
+                srsp.getShard(), shard -> extractIdsFromCombinedResponse(rb, srsp, uniqueKeyField));
         for (int i = 0; i < docs.size(); i++) {
           SolrDocument doc = docs.get(i);
           Object id = doc.getFieldValue(uniqueKeyField.getName());
+          if (!thisShardCombinedIds.contains(id)) {
+            continue;
+          }
           ShardDoc shardDoc = new ShardDoc();
           shardDoc.id = id;
           shardDoc.orderInShard = i;
@@ -609,5 +641,20 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     responseDocs.setMaxScore(maxScore);
     for (int i = 0; i < resultSize; i++) responseDocs.add(null);
     return resultIds;
+  }
+
+  /**
+   * Extracts the set of doc IDs from the shard's combined response (produced by simpleCombine).
+   * Returns an empty set if the combined response is not available.
+   */
+  private static Set<Object> extractIdsFromCombinedResponse(
+      ResponseBuilder rb, ShardResponse srsp, SchemaField uniqueKeyField) {
+    Object response = SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false);
+    if (response instanceof SolrDocumentList docList) {
+      return docList.stream()
+          .map(doc -> doc.getFieldValue(uniqueKeyField.getName()))
+          .collect(Collectors.toSet());
+    }
+    return Set.of();
   }
 }
