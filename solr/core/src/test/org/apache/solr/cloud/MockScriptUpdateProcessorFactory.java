@@ -25,10 +25,9 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
 /**
- * The scripting update processor capability is something that is only allowed by a trusted
- * configSet. The actual code lives in the /modules/scripting project, however the test for trusted
- * configsets lives in TestConfigSetsAPI. This class is meant to simulate the
- * ScriptUpdateProcessorFactory for this test.
+ * Mock implementation of ScriptUpdateProcessorFactory for testing purposes. The actual code lives
+ * in the /modules/scripting project, however the test lives in TestConfigSetsAPI. This class is
+ * meant to simulate the ScriptUpdateProcessorFactory for this test.
  */
 public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
