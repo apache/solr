@@ -912,8 +912,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         new AtomicReference<>(getCoreStatus(leader).startTime.getTime());
 
     // Check for value change
-    CollectionAdminRequest.modifyCollection(
-            collectionName, Collections.singletonMap(ZkStateReader.READ_ONLY, "true"))
+    CollectionAdminRequest.modifyCollection(collectionName, Map.of(ZkStateReader.READ_ONLY, "true"))
         .process(solrClient);
 
     DocCollection coll = solrClient.getClusterState().getCollection(collectionName);
@@ -986,8 +985,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     // Check for removing value
     // setting to empty string is equivalent to removing the property, see SOLR-12507
-    CollectionAdminRequest.modifyCollection(
-            collectionName, Collections.singletonMap(ZkStateReader.READ_ONLY, ""))
+    CollectionAdminRequest.modifyCollection(collectionName, Map.of(ZkStateReader.READ_ONLY, ""))
         .process(cluster.getSolrClient());
     coll = solrClient.getClusterState().getCollection(collectionName);
     assertNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));

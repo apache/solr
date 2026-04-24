@@ -32,7 +32,6 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.getSuffixedNameFor
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -200,7 +199,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command =
             new ClusterStateMutator(ccc.getSolrCloudManager()).createCollection(clusterState, m);
-        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+        byte[] data = Utils.toJSON(Map.of(collectionName, command.collection));
         ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
@@ -374,9 +373,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // Update the state.json for PRS collection in a single operation
       if (isPRS) {
         byte[] data =
-            Utils.toJSON(
-                Collections.singletonMap(
-                    collectionName, clusterState.getCollection(collectionName)));
+            Utils.toJSON(Map.of(collectionName, clusterState.getCollection(collectionName)));
         zkStateReader.getZkClient().setData(collectionPath, data);
       }
 

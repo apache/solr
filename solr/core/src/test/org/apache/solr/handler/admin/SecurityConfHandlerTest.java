@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.getContext().put("path", "/admin/authentication");
     ContentStreamBase.ByteArrayStream o =
         new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-    req.setContentStreams(Collections.singletonList(o));
+    req.setContentStreams(List.of(o));
     handler.handleRequestBody(req, new SolrQueryResponse());
 
     try (BasicAuthPlugin basicAuth = new BasicAuthPlugin()) {
@@ -59,7 +58,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
       command = "{\n" + "'set-user': {'harry':'HarryIsCool'},\n" + "'delete-user': ['tom']\n" + "}";
       o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-      req.setContentStreams(Collections.singletonList(o));
+      req.setContentStreams(List.of(o));
       handler.handleRequestBody(req, new SolrQueryResponse());
       securityCfg = handler.m.get("/security.json");
       assertEquals(3, securityCfg.getVersion());
@@ -81,7 +80,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
     req.getContext().put("path", "/admin/authorization");
     o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-    req.setContentStreams(Collections.singletonList(o));
+    req.setContentStreams(List.of(o));
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     assertNull(rsp.getValues().get(CommandOperation.ERR_MSGS));
@@ -105,7 +104,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
     req.getContext().put("path", "/admin/authorization");
     o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-    req.setContentStreams(Collections.singletonList(o));
+    req.setContentStreams(List.of(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     authzconf = (Map) handler.m.get("/security.json").getData().get("authorization");
@@ -126,7 +125,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
     req.getContext().put("path", "/admin/authorization");
     o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-    req.setContentStreams(Collections.singletonList(o));
+    req.setContentStreams(List.of(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     authzconf = (Map) handler.m.get("/security.json").getData().get("authorization");
@@ -143,7 +142,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
     req.getContext().put("path", "/admin/authorization");
     o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-    req.setContentStreams(Collections.singletonList(o));
+    req.setContentStreams(List.of(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     assertNull(rsp.getValues().get(CommandOperation.ERR_MSGS));
@@ -167,7 +166,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
     req.getContext().put("path", "/admin/authorization");
     o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-    req.setContentStreams(Collections.singletonList(o));
+    req.setContentStreams(List.of(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     @SuppressWarnings({"rawtypes"})
@@ -242,7 +241,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       req.getContext().put("path", "/admin/authentication");
       ContentStreamBase.ByteArrayStream o =
           new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-      req.setContentStreams(Collections.singletonList(o));
+      req.setContentStreams(List.of(o));
       handleRequestBody(req, new SolrQueryResponse());
 
       command =
@@ -253,7 +252,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
       req.getContext().put("path", "/admin/authorization");
       o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-      req.setContentStreams(Collections.singletonList(o));
+      req.setContentStreams(List.of(o));
       SolrQueryResponse rsp = new SolrQueryResponse();
       handleRequestBody(req, rsp);
       Map<String, Object> data = m.get("/security.json").getData();

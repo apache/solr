@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -260,7 +259,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       redirectUris = List.of();
       if (redirectUrisObj != null) {
         if (redirectUrisObj instanceof String) {
-          redirectUris = Collections.singletonList((String) redirectUrisObj);
+          redirectUris = List.of((String) redirectUrisObj);
         } else if (redirectUrisObj instanceof List) {
           redirectUris = (List<String>) redirectUrisObj;
         }

@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
@@ -333,7 +332,7 @@ public class ICUCollationField extends FieldType {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value));
+      return List.of(createField(field, value));
     }
   }
 

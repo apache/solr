@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -213,7 +212,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       params = new ModifiableSolrParams();
       params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
-      cmdDistrib.distribAdd(cmd3, Collections.singletonList(nodes.get(1)), params);
+      cmdDistrib.distribAdd(cmd3, List.of(nodes.get(1)), params);
 
       params = new ModifiableSolrParams();
       params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);

@@ -26,7 +26,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -280,7 +279,7 @@ public final class CLIUtils {
 
   public static CloudSolrClient getCloudSolrClient(
       String zkHost, HttpJettySolrClient.Builder builder) {
-    return new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+    return new CloudSolrClient.Builder(List.of(zkHost), Optional.empty())
         .withHttpClientBuilder(builder)
         .build();
   }

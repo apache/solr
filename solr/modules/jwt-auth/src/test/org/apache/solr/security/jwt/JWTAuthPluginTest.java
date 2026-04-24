@@ -36,7 +36,6 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -608,7 +607,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
             .setIss("1")
             .setAud("aud1")
             .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
-    authConf.put("issuers", Collections.singletonList(iss1.asConfig()));
+    authConf.put("issuers", List.of(iss1.asConfig()));
     authConf.put("aud", "aud2");
     authConf.put(
         "jwksUrl",

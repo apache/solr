@@ -301,7 +301,7 @@ public class IndexFetcher {
         solrCore
             .getCoreContainer()
             .getAllowListUrlChecker()
-            .checkAllowList(Collections.singletonList(leaderCoreUrl), clusterState);
+            .checkAllowList(List.of(leaderCoreUrl), clusterState);
       } catch (MalformedURLException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Malformed 'leaderUrl' " + leaderCoreUrl, e);
@@ -944,7 +944,7 @@ public class IndexFetcher {
       try (Writer outFile =
           new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8)) {
         props.store(outFile, "Replication details");
-        dir.sync(Collections.singleton(tmpFileName));
+        dir.sync(Set.of(tmpFileName));
       }
 
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
@@ -1843,7 +1843,7 @@ public class IndexFetcher {
 
     @Override
     public void sync() throws IOException {
-      copy2Dir.sync(Collections.singleton(saveAs));
+      copy2Dir.sync(Set.of(saveAs));
     }
 
     @Override
