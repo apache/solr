@@ -97,6 +97,7 @@ public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFa
 
   public ContentHashVersionProcessorFactory() {}
 
+  @Override
   public void init(NamedList<?> args) {
     Object tmp = args.remove("includeFields");
     if (tmp != null) {
@@ -167,6 +168,7 @@ public class ContentHashVersionProcessorFactory extends UpdateRequestProcessorFa
     super.init(args);
   }
 
+  @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new ContentHashVersionProcessor(
