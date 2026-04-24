@@ -1,6 +1,6 @@
 {
   "class": "dev.langchain4j.model.mistralai.MistralAiChatModel",
-  "name": "mistralai-chat-1",
+  "name": "mistralai-1",
   "params": {
     "baseUrl": "https://api.mistral.ai/v1",
     "apiKey": "apiKey-mistralAI",

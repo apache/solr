@@ -21,18 +21,18 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrChatModel;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
 
-/** Simple store to manage CRUD operations on the {@link SolrChatModel} */
-public class ChatModelStore {
+/** Simple store to manage CRUD operations on the {@link SolrFieldGenerationModel} */
+public class FieldGenerationModelStore {
 
-  private final Map<String, SolrChatModel> availableModels;
+  private final Map<String, SolrFieldGenerationModel> availableModels;
 
-  public ChatModelStore() {
+  public FieldGenerationModelStore() {
     availableModels = Collections.synchronizedMap(new LinkedHashMap<>());
   }
 
-  public SolrChatModel getModel(String name) {
+  public SolrFieldGenerationModel getModel(String name) {
     return availableModels.get(name);
   }
 
@@ -40,26 +40,26 @@ public class ChatModelStore {
     availableModels.clear();
   }
 
-  public List<SolrChatModel> getModels() {
+  public List<SolrFieldGenerationModel> getModels() {
     synchronized (availableModels) {
-      final List<SolrChatModel> availableModelsValues = new ArrayList<>(availableModels.values());
+      final List<SolrFieldGenerationModel> availableModelsValues = new ArrayList<>(availableModels.values());
       return Collections.unmodifiableList(availableModelsValues);
     }
   }
 
   @Override
   public String toString() {
-    return "ChatModelStore [availableModels=" + availableModels.keySet() + "]";
+    return "FieldGenerationModelStore [availableModels=" + availableModels.keySet() + "]";
   }
 
-  public SolrChatModel delete(String modelName) {
+  public SolrFieldGenerationModel delete(String modelName) {
     return availableModels.remove(modelName);
   }
 
-  public void addModel(SolrChatModel modeldata) throws ChatModelException {
+  public void addModel(SolrFieldGenerationModel modeldata) throws FieldGenerationModelException {
     final String name = modeldata.getName();
     if (availableModels.putIfAbsent(modeldata.getName(), modeldata) != null) {
-      throw new ChatModelException(
+      throw new FieldGenerationModelException(
           "model '" + name + "' already exists. Please use a different name");
     }
   }

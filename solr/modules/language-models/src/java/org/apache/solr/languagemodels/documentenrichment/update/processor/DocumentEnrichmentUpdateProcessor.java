@@ -23,7 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrChatModel;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -39,7 +39,7 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
   private final List<String> inputFields;
   private final String outputField;
   private final String prompt;
-  private final SolrChatModel chatModel;
+  private final SolrFieldGenerationModel fieldGenerationModel;
   private final boolean multiValued;
   private final ResponseFormat responseFormat;
 
@@ -47,7 +47,7 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
       List<String> inputFields,
       String outputField,
       String prompt,
-      SolrChatModel chatModel,
+      SolrFieldGenerationModel fieldGenerationModel,
       boolean multiValued,
       ResponseFormat responseFormat,
       SolrQueryRequest req,
@@ -57,7 +57,7 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
     this.inputFields = inputFields;
     this.outputField = outputField;
     this.prompt = prompt;
-    this.chatModel = chatModel;
+    this.fieldGenerationModel  = fieldGenerationModel;
     this.multiValued = multiValued;
     this.responseFormat = responseFormat;
   }
@@ -85,15 +85,15 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
       // as for now, only a plain text as prompt is sent to the model (no support for
       // tools/skills/agents)
       // chatModel.chat returns the parsed value from the structured JSON response
-      Object value = chatModel.chat(injectedPrompt, responseFormat);
-      if (multiValued && value instanceof List<?> list) {
-        for (Object item : list) {
+      Object generatedFieldValue = fieldGenerationModel.generateFieldValue(injectedPrompt, responseFormat);
+      if (multiValued && generatedFieldValue instanceof List<?> generatedFieldValueList) {
+        for (Object item : generatedFieldValueList) {
           doc.addField(outputField, item);
         }
       } else {
-        doc.setField(outputField, value);
+        doc.setField(outputField, generatedFieldValue);
       }
-    } catch (RuntimeException chatModelFailure) {
+    } catch (RuntimeException fieldGenerationModelFailure) {
       if (log.isErrorEnabled()) {
         SchemaField uniqueKeyField = schema.getUniqueKeyField();
         String uniqueKeyFieldName = uniqueKeyField.getName();
@@ -102,7 +102,7 @@ class DocumentEnrichmentUpdateProcessor extends UpdateRequestProcessor {
             inputFields,
             uniqueKeyFieldName,
             doc.getFieldValue(uniqueKeyFieldName),
-            chatModelFailure);
+            fieldGenerationModelFailure);
       }
     }
     super.processAdd(cmd);

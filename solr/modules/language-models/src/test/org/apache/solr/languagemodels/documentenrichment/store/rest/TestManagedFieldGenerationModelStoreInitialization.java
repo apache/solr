@@ -20,7 +20,7 @@ import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.After;
 import org.junit.Test;
 
-public class TestManagedChatModelStoreInitialization extends TestLanguageModelBase {
+public class TestManagedFieldGenerationModelStoreInitialization extends TestLanguageModelBase {
 
   @After
   public void cleanUp() throws Exception {
@@ -32,8 +32,8 @@ public class TestManagedChatModelStoreInitialization extends TestLanguageModelBa
       throws Exception {
     setupTest("solrconfig-document-enrichment.xml", "schema-language-models.xml", false, false);
 
-    assertJQ(ManagedChatModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedChatModelStore.REST_END_POINT, "/models==[]");
+    assertJQ(ManagedFieldGenerationModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(ManagedFieldGenerationModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test
@@ -41,10 +41,10 @@ public class TestManagedChatModelStoreInitialization extends TestLanguageModelBa
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(
-        ManagedChatModelStore.REST_END_POINT,
+        ManagedFieldGenerationModelStore.REST_END_POINT,
         "/responseHeader/status==400",
         "/error/msg=='No REST managed resource registered for path "
-            + ManagedChatModelStore.REST_END_POINT
+            + ManagedFieldGenerationModelStore.REST_END_POINT
             + "'");
   }
 }

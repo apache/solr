@@ -86,7 +86,7 @@ Multiple `inputField` are supported and can be defined by using one of the follo
    <str name="inputField">body</str>
    <str name="outputField">summary</str>
    <str name="prompt">Summarize with the following information. Title: {title}. Body: {body}.</str>
-   <str name="model">chat-model</str>
+   <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
@@ -175,7 +175,7 @@ s|Required |Default: none
 |===
 +
 
-The name of the model that will be uploaded via REST. See xref:document-enrichment-with-llms.adoc#chat-model-setup[] for
+The name of the model that will be uploaded via REST. See xref:document-enrichment-with-llms.adoc#general-purpose-llm-setup[] for
 more information.
 
 
@@ -200,16 +200,16 @@ If the LLM call fails at runtime (e.g., network error, model timeout), the excep
 Monitor your indexing logs to detect documents that were not enriched as expected.
 ====
 
-== Chat Model Setup
+== General Purpose LLM Setup
 
 === Models
 
-* A model is a chat model that generates a text response given a prompt.
-* A model is a reference to an external API that runs the Large Language Model responsible for chat completion.
+* A model is a https://docs.langchain4j.dev/category/language-models/[Langchain4j ChatModel] that generates a response given a prompt.
+* A model is a reference to an external API that runs the Large Language Model.
 
 [IMPORTANT]
 ====
-The Solr chat model specifies the parameters to access the APIs, the LLM doesn't run internally in Solr.
+The Solr model specifies the parameters to access the APIs, the LLM doesn't run internally in Solr.
 
 ====
 
@@ -223,7 +223,7 @@ A model is described by these parameters:
 s|Required |Default: none
 |===
 +
-The model implementation.
+The model https://github.com/langchain4j/langchain4j[LangChain4j] implementation.
 Accepted values:
 
 * `dev.langchain4j.model.ollama.OllamaChatModel`
@@ -371,20 +371,20 @@ To upload the model in a `/path/myModel.json` file, please run:
 
 [source,bash]
 ----
-curl -XPUT 'http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+curl -XPUT 'http://localhost:8983/solr/YOUR_COLLECTION/schema/field-generation-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
 ----
 
 To delete the `currentModel` model:
 
 [source,bash]
 ----
-curl -XDELETE 'http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store/currentModel'
+curl -XDELETE 'http://localhost:8983/solr/YOUR_COLLECTION/schema/field-generation-model-store/currentModel'
 ----
 
 To view all models:
 
 [source,text]
-http://localhost:8983/solr/YOUR_COLLECTION/schema/chat-model-store
+http://localhost:8983/solr/YOUR_COLLECTION/schema/field-generation-model-store
 
 
 .Example: /path/myOpenAIModel.json
@@ -442,7 +442,7 @@ excluding the `DocumentEnrichmentUpdateProcessor` (let's call it 'no-enrichment'
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
    <str name="prompt">Summarize this content: {string_field}</str>
-   <str name="model">chat-model</str>
+   <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
 </updateRequestProcessorChain>
@@ -486,7 +486,7 @@ You still define two chains, but this time the 'enrichment' one only includes th
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
    <str name="prompt">Summarize this content: {string_field}</str>
-   <str name="model">chat-model</str>
+   <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
 </updateRequestProcessorChain>

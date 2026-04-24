@@ -29,7 +29,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedChatModelStore;
+import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedFieldGenerationModelStore;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -52,23 +52,23 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @After
   public void afterEachTest() throws Exception {
     if (loadedModelId != null) {
-      restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + loadedModelId);
+      restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/" + loadedModelId);
       loadedModelId = null;
     }
   }
 
-  private void loadTestChatModel(String fileName, String modelId) throws Exception {
-    loadChatModel(fileName);
+  private void loadTestFieldGenerationModel(String fileName, String modelId) throws Exception {
+    loadFieldGenerationModel(fileName);
     loadedModelId = modelId;
   }
 
-  private void loadDummyChatModel(String modelId, String response) throws Exception {
+  private void loadDummyFieldGenerationModel(String modelId, String response) throws Exception {
     Map<String, Object> model = new LinkedHashMap<>();
     model.put("class", "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel");
     model.put("name", modelId);
     model.put("params", Map.of("response", response));
     assertJPut(
-        ManagedChatModelStore.REST_END_POINT,
+        ManagedFieldGenerationModelStore.REST_END_POINT,
         Utils.toJSONString(model),
         "/responseHeader/status==0");
     loadedModelId = modelId;
@@ -76,7 +76,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
   @Test
   public void processAdd_inputField_shouldEnrichInputField() throws Exception {
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
 
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
@@ -97,7 +97,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   /*
-   This test looks for the 'dummy-chat-1' model, but such model is not loaded —
+   This test looks for the 'dummy-1' model, but such model is not loaded —
    the model store is empty, so the update fails.
   */
   @Test
@@ -114,12 +114,12 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         thrown
             .getMessage()
             .contains(
-                "The model configured in the Update Request Processor 'dummy-chat-1' can't be found in the store: /schema/chat-model-store"));
+                "The model configured in the Update Request Processor 'dummy-1' can't be found in the store: /schema/field-generation-model-store"));
   }
 
   @Test
   public void processAdd_emptyInputField_shouldLogAndIndexWithNoEnrichedField() throws Exception {
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
     addWithChain(sdoc("id", "99", "string_field", ""), "documentEnrichment");
     addWithChain(
         sdoc("id", "98", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
@@ -138,7 +138,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
   @Test
   public void processAdd_nullInputField_shouldLogAndIndexWithNoEnrichedField() throws Exception {
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
     assertU(adoc("id", "98")); // no string_field
@@ -157,7 +157,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
   @Test
   public void processAdd_failingEnrichment_shouldLogAndIndexWithNoEnrichedField() throws Exception {
-    loadTestChatModel("exception-throwing-chat-model.json", "exception-throwing-chat-model");
+    loadTestFieldGenerationModel("exception-throwing-field-generation-model.json", "exception-throwing-model");
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."),
         "failingDocumentEnrichment");
@@ -184,7 +184,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     // (i.e., DistributedUpdateProcessorFactory before DocumentEnrichmentUpdateProcessorFactory),
     // the system correctly retrieves the stored value of string_field and generates the
     // enriched content for the document.
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
     assertU(adoc("id", "99", "string_field", "Vegeta is the saiyan prince."));
     assertU(adoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."));
     assertU(commit());
@@ -212,7 +212,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     // Verifies that when a document already contains an enriched_field and string_field is
     // modified via atomic update, the enriched content is recomputed and replaces the previous
     // value rather than being appended.
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
     assertU(
         adoc(
             "id",
@@ -258,7 +258,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   public void processAdd_arrInputField_shouldEnrichDocument() throws Exception {
     // Verifies that <arr name="inputField"> in solrconfig behaves identically to
     // multiple <str name="inputField"> entries — both are accepted by removeConfigArgs.
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
 
     DummyChatModel.lastReceivedPrompt = null;
 
@@ -296,7 +296,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_multipleInputFields_allPresent_shouldEnrichDocumentWithBothFields()
       throws Exception {
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
 
     DummyChatModel.lastReceivedPrompt = null;
 
@@ -339,7 +339,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_multipleInputFields_firstFieldNull_shouldSkipEnrichment()
       throws Exception {
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
 
     addWithChain(
         sdoc("id", "99", "body_field", "He is very proud."), // string_field absent
@@ -363,7 +363,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_multipleInputFields_secondFieldEmpty_shouldSkipEnrichment()
       throws Exception {
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
 
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince.", "body_field", ""),
@@ -387,7 +387,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_multipleInputFields_bothFieldsAbsent_shouldSkipEnrichment()
       throws Exception {
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
 
     addWithChain(sdoc("id", "99"), "documentEnrichmentMultiField");
     addWithChain(sdoc("id", "98"), "documentEnrichmentMultiField");
@@ -407,7 +407,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_multipleInputFields_failingModel_shouldLogAndSkipEnrichment()
       throws Exception {
-    loadTestChatModel("exception-throwing-chat-model.json", "exception-throwing-chat-model");
+    loadTestFieldGenerationModel("exception-throwing-field-generation-model.json", "exception-throwing-model");
 
     addWithChain(
         sdoc(
@@ -446,7 +446,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     // When an input field is multivalued, SolrInputField.getValue() returns the Collection,
     // whose toString() is used for prompt interpolation (e.g. "[tag1, tag2, tag3]").
     // Enrichment must proceed — the collection is non-null and non-empty.
-    loadTestChatModel("dummy-chat-model.json", "dummy-chat-1");
+    loadTestFieldGenerationModel("dummy-field-generation-model.json", "dummy-1");
 
     DummyChatModel.lastReceivedPrompt = null;
 
@@ -476,7 +476,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_multivaluedStringOutputField_emptyInput_shouldSkipEnrichment()
       throws Exception {
-    loadDummyChatModel("dummy-chat-multivalued-1", "{\"value\": [\"tag1\", \"tag2\"]}");
+    loadDummyFieldGenerationModel("dummy-multivalued-1", "{\"value\": [\"tag1\", \"tag2\"]}");
 
     addWithChain(sdoc("id", "99", "string_field", ""), "documentEnrichmentMultivaluedString");
     addWithChain(sdoc("id", "98", "string_field", ""), "documentEnrichmentMultivaluedString");
@@ -535,7 +535,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
                 "'2024-01-15T00:00:00Z'"));
 
     for (TypedCase typedCase : typedCases) {
-      loadDummyChatModel(typedCase.modelId(), typedCase.response());
+      loadDummyFieldGenerationModel(typedCase.modelId(), typedCase.response());
       addWithChain(sdoc("id", "99", "string_field", "some content"), typedCase.chain());
       addWithChain(sdoc("id", "98", "string_field", "other content"), typedCase.chain());
       assertU(commit());
@@ -549,7 +549,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
           "/response/docs/[1]/id=='98'",
           "/response/docs/[1]/" + typedCase.field() + "==" + typedCase.expectedValue());
 
-      restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + typedCase.modelId());
+      restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }
@@ -563,7 +563,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     List<TypeCaseMulti> typedCaseMultis =
         List.of(
             new TypeCaseMulti(
-                "dummy-chat-multivalued-1",
+                "dummy-multivalued-1",
                 "{\"value\": [\"tag1\", \"tag2\"]}",
                 "documentEnrichmentMultivaluedString",
                 "enriched_field_multi",
@@ -606,7 +606,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
                 List.of("'2024-01-15T00:00:00Z'", "'2025-06-30T00:00:00Z'")));
 
     for (TypeCaseMulti typedCase : typedCaseMultis) {
-      loadDummyChatModel(typedCase.modelId(), typedCase.response());
+      loadDummyFieldGenerationModel(typedCase.modelId(), typedCase.response());
       addWithChain(sdoc("id", "99", "string_field", "some content"), typedCase.chain());
       addWithChain(sdoc("id", "98", "string_field", "other content"), typedCase.chain());
       assertU(commit());
@@ -631,7 +631,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
       }
       assertJQ("/query" + query.toQueryString(), assertions.toArray(new String[0]));
 
-      restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/" + typedCase.modelId());
+      restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }
@@ -642,7 +642,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   public void processAdd_llmResponseMissingValueKey_shouldLogAndIndexWithNoEnrichedField()
       throws Exception {
     // Model returns valid JSON but without the required "value" key
-    loadDummyChatModel("dummy-chat-1", "{\"result\": \"some value\"}");
+    loadDummyFieldGenerationModel("dummy-1", "{\"result\": \"some value\"}");
 
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
@@ -666,7 +666,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   public void processAdd_llmResponseMalformedJson_shouldLogAndIndexWithNoEnrichedField()
       throws Exception {
     // Model returns a plain string that cannot be parsed as JSON
-    loadDummyChatModel("dummy-chat-1", "not valid json at all");
+    loadDummyFieldGenerationModel("dummy-1", "not valid json at all");
 
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."), "documentEnrichment");
@@ -695,7 +695,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     // DateMathParser and causes the update to fail.
     // Unlike model exceptions (caught inside processAdd), this error occurs during Solr field
     // conversion in super.processAdd() and propagates as a RemoteSolrException to the caller.
-    loadDummyChatModel("dummy-date", "{\"value\": \"2024-01-15\"}");
+    loadDummyFieldGenerationModel("dummy-date", "{\"value\": \"2024-01-15\"}");
 
     assertThrows(
         "date string without time component should fail to index",
@@ -706,12 +706,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_intOutputField_decimalResponse_shouldTruncateAndIndex() throws Exception {
-    // JSON numbers with a decimal point are parsed as Double (e.g. 3.7 → Double(3.7)).
-    // When stored in a pint field, IntPointField converts via ((Number) value).intValue(),
-    // silently truncating to 3. No exception is thrown — the document is indexed with the
-    // truncated integer value.
-    loadDummyChatModel("dummy-int", "{\"value\": 3.7}");
+  public void processAdd_intOutputField_decimalResponse_shouldLogAndIndexWithNoEnrichedField() throws Exception {
+    loadDummyFieldGenerationModel("dummy-int", "{\"value\": 3.7}");
 
     addWithChain(sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleInt");
     addWithChain(sdoc("id", "98", "string_field", "other content"), "documentEnrichmentSingleInt");
@@ -722,14 +718,14 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/output_int==3",
+        "!/response/docs/[0]/output_int==",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/output_int==3");
+        "!/response/docs/[1]/output_int==");
   }
 
   @Test
   public void processAdd_doubleOutputField_intResponse_shouldConvertAndIndex() throws Exception {
-    loadDummyChatModel("dummy-double", "{\"value\": 3}");
+    loadDummyFieldGenerationModel("dummy-double", "{\"value\": 3}");
 
     addWithChain(
         sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleDouble");
@@ -750,10 +746,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @Test
   public void processAdd_floatOutputField_doubleResponse_shouldRoundToFloatPrecision()
       throws Exception {
-    // JSON numbers are always parsed as Double. When stored in a pfloat field,
-    // FloatPointField converts via ((Number) value).floatValue(), silently rounding to float
-    // precision. No exception is thrown — the document is indexed with the rounded value.
-    loadDummyChatModel("dummy-float", "{\"value\": 3.141592653589793}");
+    loadDummyFieldGenerationModel("dummy-float", "{\"value\": 3.141592653589793}");
 
     addWithChain(sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleFloat");
     addWithChain(
@@ -773,12 +766,9 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   // --- multivalued output field / scalar response test ---
 
   @Test
-  public void processAdd_multivaluedOutputField_singleValuedLlmResponse_shouldStoreSingleValue()
+  public void processAdd_multivaluedOutputField_singleValuedLlmResponse_shouldSkipEnrichment()
       throws Exception {
-    // Model returns {"value": "a single string"} for a multivalued output field.
-    // The scalar is stored as a single-element multivalued field content (e.g., list with only one
-    // element).
-    loadDummyChatModel("dummy-chat-multivalued-1", "{\"value\": \"a single string\"}");
+    loadDummyFieldGenerationModel("dummy-multivalued-1", "{\"value\": \"a single string\"}");
 
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."),
@@ -794,9 +784,9 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/enriched_field_multi/[0]=='a single string'",
+        "!/response/docs/[0]/enriched_field_multi==",
         "/response/docs/[1]/id=='98'",
-        "/response/docs/[1]/enriched_field_multi/[0]=='a single string'");
+        "!/response/docs/[1]/enriched_field_multi==");
   }
 
   private SolrQuery getEnrichmentQuery(String enrichedFieldName) {

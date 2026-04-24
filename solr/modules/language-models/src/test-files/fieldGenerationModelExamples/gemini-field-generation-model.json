@@ -1,6 +1,6 @@
 {
   "class": "dev.langchain4j.model.googleai.GoogleAiGeminiChatModel",
-  "name": "gemini-chat-1",
+  "name": "gemini-1",
   "params": {
     "apiKey": "apiKey-gemini",
     "modelName": "gemini-2.0-flash",

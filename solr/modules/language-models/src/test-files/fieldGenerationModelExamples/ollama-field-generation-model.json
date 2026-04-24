@@ -1,6 +1,6 @@
 {
   "class": "dev.langchain4j.model.ollama.OllamaChatModel",
-  "name": "ollama-chat-1",
+  "name": "ollama-1",
   "params": {
     "baseUrl": "http://localhost:11434",
     "modelName": "llama3.2",

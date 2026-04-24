@@ -26,9 +26,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrChatModel;
-import org.apache.solr.languagemodels.documentenrichment.store.ChatModelException;
-import org.apache.solr.languagemodels.documentenrichment.store.ChatModelStore;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
+import org.apache.solr.languagemodels.documentenrichment.store.FieldGenerationModelException;
+import org.apache.solr.languagemodels.documentenrichment.store.FieldGenerationModelStore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -37,14 +37,14 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Managed Resource wrapper for the {@link ChatModelStore} to expose it via REST */
+/** Managed Resource wrapper for the {@link FieldGenerationModelStore} to expose it via REST */
 @ThreadSafe
-public class ManagedChatModelStore extends ManagedResource
+public class ManagedFieldGenerationModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** the model store rest endpoint */
-  public static final String REST_END_POINT = "/schema/chat-model-store";
+  public static final String REST_END_POINT = "/schema/field-generation-model-store";
 
   /** Managed model store: the name of the attribute containing all the models of a model store */
   private static final String MODELS_JSON_FIELD = "models";
@@ -58,16 +58,16 @@ public class ManagedChatModelStore extends ManagedResource
   /** name of the attribute containing parameters */
   static final String PARAMS_KEY = "params";
 
-  public static void registerManagedChatModelStore(
+  public static void registerManagedFieldGenerationModelStore(
       SolrResourceLoader solrResourceLoader, ManagedResourceObserver managedResourceObserver) {
     solrResourceLoader
         .getManagedResourceRegistry()
         .registerManagedResource(
-            REST_END_POINT, ManagedChatModelStore.class, managedResourceObserver);
+            REST_END_POINT, ManagedFieldGenerationModelStore.class, managedResourceObserver);
   }
 
-  public static ManagedChatModelStore getManagedModelStore(SolrCore core) {
-    return (ManagedChatModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
+  public static ManagedFieldGenerationModelStore getManagedModelStore(SolrCore core) {
+    return (ManagedFieldGenerationModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
   /**
@@ -77,21 +77,21 @@ public class ManagedChatModelStore extends ManagedResource
    *
    * @return the available models as a list of Maps objects
    */
-  private static List<Object> modelsAsManagedResources(List<SolrChatModel> models) {
-    return models.stream().map(ManagedChatModelStore::toModelMap).collect(Collectors.toList());
+  private static List<Object> modelsAsManagedResources(List<SolrFieldGenerationModel> models) {
+    return models.stream().map(ManagedFieldGenerationModelStore::toModelMap).collect(Collectors.toList());
   }
 
   @SuppressWarnings("unchecked")
-  public static SolrChatModel fromModelMap(
-      SolrResourceLoader solrResourceLoader, Map<String, Object> chatModel) {
-    return SolrChatModel.getInstance(
+  public static SolrFieldGenerationModel fromModelMap(
+      SolrResourceLoader solrResourceLoader, Map<String, Object> modelMap) {
+    return SolrFieldGenerationModel.getInstance(
         solrResourceLoader,
-        (String) chatModel.get(CLASS_KEY), // modelClassName
-        (String) chatModel.get(NAME_KEY), // modelName
-        (Map<String, Object>) chatModel.get(PARAMS_KEY));
+        (String) modelMap.get(CLASS_KEY), // modelClassName
+        (String) modelMap.get(NAME_KEY), // modelName
+        (Map<String, Object>) modelMap.get(PARAMS_KEY));
   }
 
-  private static LinkedHashMap<String, Object> toModelMap(SolrChatModel model) {
+  private static LinkedHashMap<String, Object> toModelMap(SolrFieldGenerationModel model) {
     final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(3, 1.0f);
     modelMap.put(NAME_KEY, model.getName());
     modelMap.put(CLASS_KEY, model.getChatModelClassName());
@@ -99,14 +99,14 @@ public class ManagedChatModelStore extends ManagedResource
     return modelMap;
   }
 
-  private final ChatModelStore store;
+  private final FieldGenerationModelStore store;
   private Object managedData;
 
-  public ManagedChatModelStore(
+  public ManagedFieldGenerationModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
-    store = new ChatModelStore();
+    store = new FieldGenerationModelStore();
   }
 
   @Override
@@ -121,9 +121,9 @@ public class ManagedChatModelStore extends ManagedResource
 
     if ((managedData != null) && (managedData instanceof List)) {
       @SuppressWarnings({"unchecked"})
-      final List<Map<String, Object>> chatModels = (List<Map<String, Object>>) managedData;
-      for (final Map<String, Object> chatModel : chatModels) {
-        addModelFromMap(chatModel);
+      final List<Map<String, Object>> modelMaps = (List<Map<String, Object>>) managedData;
+      for (final Map<String, Object> modelMap : modelMaps) {
+        addModelFromMap(modelMap);
       }
     }
   }
@@ -131,18 +131,18 @@ public class ManagedChatModelStore extends ManagedResource
   private void addModelFromMap(Map<String, Object> modelMap) {
     try {
       addModel(fromModelMap(solrResourceLoader, modelMap));
-    } catch (final ChatModelException e) {
+    } catch (final FieldGenerationModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     }
   }
 
-  public void addModel(SolrChatModel model) throws SolrException {
+  public void addModel(SolrFieldGenerationModel model) throws SolrException {
     try {
       if (log.isInfoEnabled()) {
         log.info("adding model {}", model.getName());
       }
       store.addModel(model);
-    } catch (final ChatModelException e) {
+    } catch (final FieldGenerationModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
@@ -151,15 +151,15 @@ public class ManagedChatModelStore extends ManagedResource
   @Override
   protected Object applyUpdatesToManagedData(Object updates) {
     if (updates instanceof List) {
-      final List<Map<String, Object>> chatModels = (List<Map<String, Object>>) updates;
-      for (final Map<String, Object> chatModel : chatModels) {
-        addModelFromMap(chatModel);
+      final List<Map<String, Object>> modelMaps = (List<Map<String, Object>>) updates;
+      for (final Map<String, Object> modelMap : modelMaps) {
+        addModelFromMap(modelMap);
       }
     }
 
     if (updates instanceof Map) {
-      final Map<String, Object> map = (Map<String, Object>) updates;
-      addModelFromMap(map);
+      final Map<String, Object> modelMap = (Map<String, Object>) updates;
+      addModelFromMap(modelMap);
     }
 
     return modelsAsManagedResources(store.getModels());
@@ -181,12 +181,12 @@ public class ManagedChatModelStore extends ManagedResource
     response.add(MODELS_JSON_FIELD, modelsAsManagedResources(store.getModels()));
   }
 
-  public SolrChatModel getModel(String modelName) {
+  public SolrFieldGenerationModel getModel(String modelName) {
     return store.getModel(modelName);
   }
 
   @Override
   public String toString() {
-    return "ManagedChatModelStore [store=" + store + "]";
+    return "ManagedFieldGenerationModelStore [store=" + store + "]";
   }
 }

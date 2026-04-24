@@ -16,15 +16,15 @@
  */
 package org.apache.solr.languagemodels.documentenrichment.store;
 
-public class ChatModelException extends RuntimeException {
+public class FieldGenerationModelException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
-  public ChatModelException(String message) {
+  public FieldGenerationModelException(String message) {
     super(message);
   }
 
-  public ChatModelException(String message, Exception cause) {
+  public FieldGenerationModelException(String message, Exception cause) {
     super(message, cause);
   }
 }

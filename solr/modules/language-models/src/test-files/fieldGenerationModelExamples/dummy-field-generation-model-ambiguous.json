@@ -1,7 +1,8 @@
 {
   "class": "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel",
-  "name": "dummy-chat-1",
+  "name": "dummy-1",
   "params": {
-    "response": "{\"value\": \"enriched content\"}"
+    "response": "enriched content",
+    "ambiguousTypeParam": 10
   }
 }

@@ -1,6 +1,6 @@
 {
   "class": "dev.langchain4j.model.anthropic.AnthropicChatModel",
-  "name": "anthropic-chat-1",
+  "name": "anthropic-1",
   "params": {
     "baseUrl": "https://api.anthropic.com/v1",
     "apiKey": "apiKey-anthropic",

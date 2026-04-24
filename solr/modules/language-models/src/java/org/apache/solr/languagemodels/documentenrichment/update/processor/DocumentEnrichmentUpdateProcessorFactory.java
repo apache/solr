@@ -42,8 +42,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrChatModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedChatModelStore;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
+import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedFieldGenerationModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResource;
@@ -67,48 +67,9 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * Generate the content of a field based on other fields specified as input.
+ * Generate the content of {@code outputField} based on other fields specified as {@code inputField}s.
  *
- * <p>One or more {@code inputField} parameters specify the Solr fields to use as input. Each field
- * name must appear as a {@code {fieldName}} placeholder in the prompt. Exactly one of {@code
- * prompt} or {@code promptFile} must be provided.
- *
- * <pre class="prettyprint" >
- * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
- *   &lt;str name=&quot;inputField&quot;&gt;title_field&lt;/str&gt;
- *   &lt;str name=&quot;inputField&quot;&gt;body_field&lt;/str&gt;
- *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
- *   &lt;str name=&quot;prompt&quot;&gt;Title: {title_field}. Body: {body_field}.&lt;/str&gt;
- *   &lt;str name=&quot;model&quot;&gt;ChatModel&lt;/str&gt;
- * &lt;/processor&gt;
- * </pre>
- *
- * <p>Multiple {@code inputField} values can also be declared as an array using {@code arr}:
- *
- * <pre class="prettyprint" >
- * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
- *   &lt;arr name=&quot;inputField&quot;&gt;
- *     &lt;str&gt;title_field&lt;/str&gt;
- *     &lt;str&gt;body_field&lt;/str&gt;
- *   &lt;/arr&gt;
- *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
- *   &lt;str name=&quot;prompt&quot;&gt;Title: {title_field}. Body: {body_field}.&lt;/str&gt;
- *   &lt;str name=&quot;model&quot;&gt;ChatModel&lt;/str&gt;
- * &lt;/processor&gt;
- * </pre>
- *
- * <p>Alternatively, the prompt can be loaded from a text file using {@code promptFile}:
- *
- * <pre class="prettyprint" >
- * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
- *   &lt;str name=&quot;inputField&quot;&gt;title_field&lt;/str&gt;
- *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
- *   &lt;str name=&quot;promptFile&quot;&gt;prompt.txt&lt;/str&gt;
- *   &lt;str name=&quot;model&quot;&gt;ChatModel&lt;/str&gt;
- * &lt;/processor&gt;
- * </pre>
- *
- * <p>Validation rules:
+ * <p>The following validation rules are applied:
  *
  * <ul>
  *   <li>At least one {@code inputField} must be declared.
@@ -116,7 +77,27 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *   <li>Every declared {@code inputField} must have a corresponding {@code {fieldName}} placeholder
  *       in the prompt.
  *   <li>Every {@code {placeholder}} in the prompt must correspond to a declared {@code inputField}.
+ *   <li>One and only one {@code outputField} is allowed.
  * </ul>
+ *
+ * <pre class="prettyprint" >
+ * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
+ *   &lt;str name=&quot;inputField&quot;&gt;title_field&lt;/str&gt;
+ *   &lt;str name=&quot;inputField&quot;&gt;body_field&lt;/str&gt;
+ *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
+ *   &lt;str name=&quot;prompt&quot;&gt;Title: {title_field}. Body: {body_field}.&lt;/str&gt; // or &lt;str name=&quot;promptFile&quot;&gt;prompt.txt&lt;/str&gt;
+ *   &lt;str name=&quot;model&quot;&gt;model-name&lt;/str&gt;
+ * &lt;/processor&gt;
+ * </pre>
+ *
+ * <p>Multiple {@code inputField} values can also be declared as an array using {@code arr}:
+ *
+ * <pre class="prettyprint" >
+ * &lt;arr name=&quot;inputField&quot;&gt;
+ *   &lt;str&gt;title_field&lt;/str&gt;
+ *   &lt;str&gt;body_field&lt;/str&gt;
+ * &lt;/arr&gt;
+ * </pre>
  */
 public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware, ManagedResourceObserver {
@@ -125,6 +106,8 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   private static final String PROMPT = "prompt";
   private static final String PROMPT_FILE = "promptFile";
   private static final String MODEL_NAME = "model";
+  private static final String JSON_SCHEMA_NAME = "output";
+  public static final String JSON_FIELD_PROPERTY = "value";
   private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
 
   private List<String> inputFields;
@@ -182,7 +165,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   @Override
   public void inform(SolrCore core) {
     final SolrResourceLoader solrResourceLoader = core.getResourceLoader();
-    ManagedChatModelStore.registerManagedChatModelStore(solrResourceLoader, this);
+    ManagedFieldGenerationModelStore.registerManagedFieldGenerationModelStore(solrResourceLoader, this);
     if (promptFile != null) {
       try (InputStream is = solrResourceLoader.openResource(promptFile)) {
         promptText = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
@@ -197,7 +180,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   @Override
   public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
       throws SolrException {
-    if (res instanceof ManagedChatModelStore store) {
+    if (res instanceof ManagedFieldGenerationModelStore store) {
       store.loadStoredModels();
     }
   }
@@ -216,22 +199,22 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
 
-    ResponseFormat responseFormat = buildResponseFormat(outputFieldSchema);
+    ResponseFormat responseFormat = getJsonSchema(outputFieldSchema);
     boolean multiValued = outputFieldSchema.multiValued();
 
-    ManagedChatModelStore store = ManagedChatModelStore.getManagedModelStore(req.getCore());
-    SolrChatModel chatModel = store.getModel(modelName);
-    if (chatModel == null) {
+    ManagedFieldGenerationModelStore store = ManagedFieldGenerationModelStore.getManagedModelStore(req.getCore());
+    SolrFieldGenerationModel fieldGenerationModel = store.getModel(modelName);
+    if (fieldGenerationModel == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "The model configured in the Update Request Processor '"
               + modelName
               + "' can't be found in the store: "
-              + ManagedChatModelStore.REST_END_POINT);
+              + ManagedFieldGenerationModelStore.REST_END_POINT);
     }
 
     return new DocumentEnrichmentUpdateProcessor(
-        inputFields, outputField, promptText, chatModel, multiValued, responseFormat, req, next);
+        inputFields, outputField, promptText, fieldGenerationModel, multiValued, responseFormat, req, next);
   }
 
   /**
@@ -243,62 +226,65 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
    * all langchain4j providers that implement structured outputs with {@link JsonObjectSchema}
    * (OpenAI, Azure OpenAI, Google AI, Gemini, Mistral, Ollama, Amazon Bedrock, Watsonx).
    */
-  static ResponseFormat buildResponseFormat(SchemaField schemaField) {
+  static ResponseFormat getJsonSchema(SchemaField schemaField) {
     JsonSchemaElement valueElement = toJsonSchemaElement(schemaField.getType());
     JsonSchemaElement valueSchema =
         schemaField.multiValued()
             ? JsonArraySchema.builder().items(valueElement).build()
             : valueElement;
+    //estrai costanti output e value
     return ResponseFormat.builder()
         .type(ResponseFormatType.JSON)
         .jsonSchema(
             JsonSchema.builder()
-                .name("output")
+                .name(JSON_SCHEMA_NAME)
                 .rootElement(
                     JsonObjectSchema.builder()
-                        .addProperty("value", valueSchema)
-                        .required("value")
+                        .addProperty(JSON_FIELD_PROPERTY, valueSchema)
+                        .required(JSON_FIELD_PROPERTY)
                         .build())
                 .build())
         .build();
   }
 
   private static JsonSchemaElement toJsonSchemaElement(FieldType fieldType) {
-    // DenseVectorField extends FloatPointField, so it must be rejected before the numeric checks
-    if (fieldType instanceof DenseVectorField
-        || fieldType instanceof UUIDField
-        || fieldType instanceof NestPathField) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "field type is not supported by Document Enrichment: "
-              + fieldType.getClass().getSimpleName());
-    }
-    if (fieldType instanceof StrField
-        || fieldType instanceof TextField
-        || fieldType instanceof DatePointField) {
-      return new JsonStringSchema();
-    } else if (fieldType instanceof IntPointField || fieldType instanceof LongPointField) {
-      return new JsonIntegerSchema();
-    } else if (fieldType instanceof FloatPointField || fieldType instanceof DoublePointField) {
-      return new JsonNumberSchema();
-    } else if (fieldType instanceof BoolField) {
-      return new JsonBooleanSchema();
-    } else {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "field type is not supported by Document Enrichment: "
-              + fieldType.getClass().getSimpleName());
-    }
+    SolrException unsupportedFieldTypeException = new SolrException(
+        SolrException.ErrorCode.SERVER_ERROR,
+        "field type is not supported by Document Enrichment: "
+            + fieldType.getClass().getSimpleName());
+
+    return switch (fieldType) {
+      // first check unsupported types and throw SolrException
+      case DenseVectorField f -> throw unsupportedFieldTypeException;
+      case UUIDField f -> throw unsupportedFieldTypeException;
+      case NestPathField f -> throw unsupportedFieldTypeException;
+
+      // build JsonSchemaElement for supported types
+      case StrField f -> new JsonStringSchema();
+      case TextField f -> new JsonStringSchema();
+      case DatePointField f -> new JsonStringSchema();
+
+      case IntPointField f -> new JsonIntegerSchema();
+      case LongPointField f -> new JsonIntegerSchema();
+
+      case FloatPointField f -> new JsonNumberSchema();
+      case DoublePointField f -> new JsonNumberSchema();
+
+      case BoolField f -> new JsonBooleanSchema();
+
+      // fall-back to SolrException
+      default -> throw unsupportedFieldTypeException;
+    };
   }
 
-  private static void validatePromptPlaceholders(String prompt, List<String> fieldNames) {
+  private static void validatePromptPlaceholders(String prompt, List<String> inputFields) {
     Set<String> promptPlaceholders = new HashSet<>();
     Matcher matcher = PLACEHOLDER_PATTERN.matcher(prompt);
     while (matcher.find()) {
       promptPlaceholders.add(matcher.group(1));
     }
 
-    Set<String> fieldsWithoutPlaceholderInPrompt = new HashSet<>(fieldNames);
+    Set<String> fieldsWithoutPlaceholderInPrompt = new HashSet<>(inputFields);
     fieldsWithoutPlaceholderInPrompt.removeAll(promptPlaceholders);
     if (!fieldsWithoutPlaceholderInPrompt.isEmpty()) {
       throw new SolrException(
@@ -307,7 +293,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
 
     Set<String> placeholdersInPromptWithoutField = new HashSet<>(promptPlaceholders);
-    placeholdersInPromptWithoutField.removeAll(new HashSet<>(fieldNames));
+    placeholdersInPromptWithoutField.removeAll(new HashSet<>(inputFields));
     if (!placeholdersInPromptWithoutField.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

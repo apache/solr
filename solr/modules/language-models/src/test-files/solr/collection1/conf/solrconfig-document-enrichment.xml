@@ -54,7 +54,7 @@
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
-   <str name="model">dummy-chat-1</str>
+   <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
@@ -67,7 +67,7 @@
       </arr>
       <str name="outputField">enriched_field</str>
       <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
-      <str name="model">dummy-chat-1</str>
+      <str name="model">dummy-1</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
@@ -77,7 +77,7 @@
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
-   <str name="model">exception-throwing-chat-model</str>
+   <str name="model">exception-throwing-model</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
@@ -88,7 +88,7 @@
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
-   <str name="model">dummy-chat-1</str>
+   <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
@@ -99,7 +99,7 @@
    <str name="inputField">body_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
-   <str name="model">dummy-chat-1</str>
+   <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
@@ -109,7 +109,7 @@
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field_multi</str>
    <str name="prompt">Extract tags from: {string_field}</str>
-   <str name="model">dummy-chat-multivalued-1</str>
+   <str name="model">dummy-multivalued-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
@@ -120,7 +120,7 @@
    <str name="inputField">body_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Title: {string_field}. Body: {body_field}.</str>
-   <str name="model">exception-throwing-chat-model</str>
+   <str name="model">exception-throwing-model</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
@@ -250,7 +250,7 @@
       <str name="inputField">tags_field</str>
       <str name="outputField">enriched_field</str>
       <str name="prompt">Classify these tags: {tags_field}</str>
-      <str name="model">dummy-chat-1</str>
+      <str name="model">dummy-1</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>

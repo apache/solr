@@ -24,8 +24,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrChatModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedChatModelStore;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
+import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedFieldGenerationModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import dev.langchain4j.model.chat.request.ResponseFormatType;
@@ -286,36 +286,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
                 createUpdateProcessor(
                     List.of("string_field"), "notExistentOutput", null, collection1, "model1"));
     assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
-  }
-
-  @Test
-  public void init_notTextualOutputField_shouldThrowExceptionWithDetailedMessage()
-      throws Exception {
-    // vector is a DenseVectorField and it's not supported
-    SolrException e =
-        assertThrows(
-            SolrException.class,
-            () ->
-                createUpdateProcessor(
-                    List.of("string_field"), "vector", null, collection1, "model1"));
-    assertEquals(
-        "field type is not supported by Document Enrichment: DenseVectorField", e.getMessage());
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
-  }
-
-  @Test
-  public void init_unsupportedOutputFieldType_shouldThrowExceptionWithDetailedMessage()
-      throws Exception {
-    // output_binary is a BinaryField, which is not supported (and is not DenseVectorField)
-    SolrException e =
-        assertThrows(
-            SolrException.class,
-            () ->
-                createUpdateProcessor(
-                    List.of("string_field"), "output_binary", null, collection1, "model1"));
-    assertEquals("field type is not supported by Document Enrichment: BinaryField", e.getMessage());
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -328,7 +299,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
                 createUpdateProcessor(
                     List.of("notExistentInput"), "enriched_field", null, collection1, "model1"));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -345,7 +316,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
                     collection1,
                     "model1"));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -354,23 +325,19 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         createUpdateProcessor(
             List.of("string_field"), "enriched_field_multi", null, collection1, "model1");
     assertNotNull(instance);
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
   }
 
-  /* buildResponseFormat tests for field types from the Solr documentation */
+  /* buildResponseFormat tests for unsupported field types from the Solr documentation: 1 general (Binary) + 3 via inheritance */
 
   @Test
-  public void buildResponseFormat_unsupportedFieldTypes_shouldThrowUnsupportedFieldTypeException() {
+  public void getJsonSchema_unsupportedFieldTypes_shouldThrowUnsupportedFieldTypeException() {
     var cases =
         Map.of(
-            "output_collation", "CollationField",
-            "output_date_range", "DateRangeField",
-            "output_enum", "EnumFieldType",
-            "output_lat_lon", "LatLonPointSpatialField",
-            "output_random_sort", "RandomSortField",
-            "output_rank", "RankField",
+            "output_binary", "BinaryField",
             "output_uuid", "UUIDField",
-            "output_nest_path", "NestPathField");
+            "output_nest_path", "NestPathField",
+            "vector", "DenseVectorField");
     var schema = collection1.getLatestSchema();
     cases.forEach(
         (fieldName, expectedTypeName) -> {
@@ -378,7 +345,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
           SolrException e =
               assertThrows(
                   SolrException.class,
-                  () -> DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField));
+                  () -> DocumentEnrichmentUpdateProcessorFactory.getJsonSchema(schemaField));
           assertEquals(
               "field type is not supported by Document Enrichment: " + expectedTypeName,
               e.getMessage());
@@ -386,32 +353,32 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   }
 
   @Test
-  public void init_sortableTextOutputField_buildResponseFormat_shouldProduceStringSchema() {
+  public void init_sortableTextOutputField_getJsonSchema_shouldProduceStringSchema() {
     var schemaField = collection1.getLatestSchema().getField("output_sortable_text");
-    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
+    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.getJsonSchema(schemaField);
     assertNotNull(responseFormat);
     assertEquals(ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 
   @Test
-  public void init_multivaluedStringOutputField_buildResponseFormat_shouldProduceArraySchema() {
+  public void init_multivaluedStringOutputField_getJsonSchema_shouldProduceArraySchema() {
     // verify the ResponseFormat is constructed correctly for the multivalued field
     var schema = collection1.getLatestSchema();
     var schemaField = schema.getField("enriched_field_multi");
     assertTrue(schemaField.multiValued());
-    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
+    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.getJsonSchema(schemaField);
     assertNotNull(responseFormat);
     assertEquals(ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
   }
 
   @Test
-  public void init_singleValuedStringOutputField_buildResponseFormat_shouldProduceStringSchema() {
+  public void init_singleValuedStringOutputField_getJsonSchema_shouldProduceStringSchema() {
     var schema = collection1.getLatestSchema();
     var schemaField = schema.getField("enriched_field");
     assertFalse(schemaField.multiValued());
-    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.buildResponseFormat(schemaField);
+    var responseFormat = DocumentEnrichmentUpdateProcessorFactory.getJsonSchema(schemaField);
     assertNotNull(responseFormat);
     assertEquals(ResponseFormatType.JSON, responseFormat.type());
     assertNotNull(responseFormat.jsonSchema());
@@ -422,7 +389,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     UpdateRequestProcessor instance =
         createUpdateProcessor(List.of("text_s"), "enriched_field", null, collection1, "model1");
     assertNotNull(instance);
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -431,7 +398,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         createUpdateProcessor(
             List.of("text_s", "body_field"), "enriched_field", null, collection1, "model1");
     assertNotNull(instance);
-    restTestHarness.delete(ManagedChatModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
   }
 
   private UpdateRequestProcessor createUpdateProcessor(
@@ -442,8 +409,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
       String modelName)
       throws Exception {
 
-    ManagedChatModelStore.getManagedModelStore(core)
-        .addModel(new SolrChatModel(modelName, null, null));
+    ManagedFieldGenerationModelStore.getManagedModelStore(core)
+        .addModel(new SolrFieldGenerationModel(modelName, null, null));
 
     DocumentEnrichmentUpdateProcessorFactory factory =
         initializeUpdateProcessorFactory(inputFieldNames, outputFieldName, prompt, modelName);

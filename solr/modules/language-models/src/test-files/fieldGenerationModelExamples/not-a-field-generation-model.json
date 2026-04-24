@@ -1,6 +1,6 @@
 {
   "class": "com.example.NonExistentChatModel",
-  "name": "not-a-chat-model-1",
+  "name": "not-a-field-generation-model-1",
   "params": {
     "apiKey": "test-api-key"
   }
