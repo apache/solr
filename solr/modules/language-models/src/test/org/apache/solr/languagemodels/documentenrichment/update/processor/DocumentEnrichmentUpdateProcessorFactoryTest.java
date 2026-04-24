@@ -328,7 +328,11 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
   }
 
-  /* buildResponseFormat tests for unsupported field types from the Solr documentation: 1 general (Binary) + 3 via inheritance */
+  /* getJsonSchema tests for unsupported field types from the Solr documentation:
+  * - BinaryField: not supported
+  * - UUIDField, NestPathField, DenseVectorField: explicitly removed support for these fields since the Java classes
+  *   extend some supported field types
+  *  */
 
   @Test
   public void getJsonSchema_unsupportedFieldTypes_shouldThrowUnsupportedFieldTypeException() {

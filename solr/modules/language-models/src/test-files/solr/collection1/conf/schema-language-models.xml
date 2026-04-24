@@ -60,12 +60,11 @@
   <field name="output_double_multi"  type="pdouble" indexed="true" stored="true" multiValued="true"/>
   <field name="output_boolean_multi" type="boolean" indexed="true" stored="true" multiValued="true"/>
   <field name="output_date_multi"    type="pdate"   indexed="true" stored="true" multiValued="true"/>
-  <field name="output_binary"        type="binary"           indexed="false" stored="true"  multiValued="false"/>
 
-  <!-- output fields for unsupported types -->
-  <field name="output_bynary"     type="binary"   indexed="true"  stored="true"  multiValued="false"/>
+  <!-- output fields for an unsupported type -->
+  <field name="output_binary"     type="binary"   indexed="true"  stored="true"  multiValued="false"/>
 
-  <!-- output fields for types explicitly unsupported (without they are supported via inheritance) -->
+  <!-- output fields for types that would be implicitly supported via class inheritance, but are intentionally disabled -->
   <field name="output_uuid"          type="uuid_type"            indexed="true" stored="true" multiValued="false"/>
   <field name="output_sortable_text" type="sortable_text_type"   indexed="true" stored="true" multiValued="false"/>
   <field name="output_nest_path"     type="nest_path_type"       indexed="true" stored="true" multiValued="false"/>

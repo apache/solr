@@ -181,7 +181,7 @@ public class SolrFieldGenerationModel implements Accountable {
             .build();
     String rawJson = chatModel.chat(chatRequest).aiMessage().text();
     Object parsed = Utils.fromJSONString(rawJson);
-    // It makes sense to keep this due to Ollama support
+    // Guardrails for OllamaChatModel, since it doesn't support strict JSON structured output mode
     if (!(parsed instanceof Map<?, ?> map) || !map.containsKey(DocumentEnrichmentUpdateProcessorFactory.JSON_FIELD_PROPERTY)) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
