@@ -386,6 +386,9 @@
       </arr>
  </requestHandler>
 
+  <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+  </searchComponent>
+
   <requestHandler name="/mltrh" class="org.apache.solr.handler.component.SearchHandler">
 
   </requestHandler>
