@@ -136,6 +136,10 @@ public class FileTypeMagicUtil {
     if (isZip(bytes)) return "application/zip";
     if (isTar(bytes)) return "application/x-tar";
     if (isShellScript(bytes)) return "text/x-shellscript";
+    if (isMzExecutable(bytes)) return "application/x-dosexec";
+    if (isElf(bytes)) return "application/x-executable";
+    if (isJavaSerialized(bytes)) return "application/x-java-serialized-object";
+    if (isMachO(bytes)) return "application/x-mach-binary";
     return "application/octet-stream";
   }
 
@@ -199,7 +203,9 @@ public class FileTypeMagicUtil {
           Arrays.asList(
               System.getProperty(
                       "solr.configset.upload.mimetypes.forbidden",
-                      "application/x-java-applet,application/zip,application/x-tar,text/x-shellscript")
+                      "application/x-java-applet,application/zip,application/x-tar,text/x-shellscript,"
+                          + "application/x-dosexec,application/x-executable,"
+                          + "application/x-java-serialized-object,application/x-mach-binary")
                   .split(",")));
 
   /**
@@ -253,6 +259,41 @@ public class FileTypeMagicUtil {
         && b[3] == 'X'
         && b[4] == 'Z'
         && b[5] == 0x00;
+  }
+
+  /** Detects Windows PE/EXE/DLL and self-extracting ZIPs by the MZ header. */
+  private static boolean isMzExecutable(byte[] b) {
+    return b.length >= 2 && b[0] == 'M' && b[1] == 'Z';
+  }
+
+  /** Detects Linux/Unix ELF executables and shared libraries. */
+  private static boolean isElf(byte[] b) {
+    return b.length >= 4 && (b[0] & 0xFF) == 0x7F && b[1] == 'E' && b[2] == 'L' && b[3] == 'F';
+  }
+
+  /**
+   * Detects Java serialized object streams. Deserialization of untrusted data is a known RCE vector
+   * and has been exploited in Solr in the past.
+   */
+  private static boolean isJavaSerialized(byte[] b) {
+    return b.length >= 4
+        && (b[0] & 0xFF) == 0xAC
+        && (b[1] & 0xFF) == 0xED
+        && b[2] == 0x00
+        && b[3] == 0x05;
+  }
+
+  /**
+   * Detects macOS Mach-O binaries in all four variants (32/64-bit, big/little-endian). Fat binaries
+   * (0xCAFEBABE) are already blocked by isJavaClass().
+   */
+  private static boolean isMachO(byte[] b) {
+    if (b.length < 4) return false;
+    int m = ((b[0] & 0xFF) << 24) | ((b[1] & 0xFF) << 16) | ((b[2] & 0xFF) << 8) | (b[3] & 0xFF);
+    return m == 0xFEEDFACE // 32-bit big-endian
+        || m == 0xFEEDFACF // 64-bit big-endian
+        || m == 0xCEFAEDFE // 32-bit little-endian
+        || m == 0xCFFAEDFE; // 64-bit little-endian
   }
 
   private static boolean isShellScript(byte[] b) {

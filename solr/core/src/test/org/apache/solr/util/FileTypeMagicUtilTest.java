@@ -78,6 +78,28 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     assertShellScript("#! /bin/bash\necho hi\n");
     assertShellScript("#!/nix/store/xxx-bash/bin/bash\necho hi\n");
 
+    // MZ: Windows EXE / self-extracting ZIP
+    byte[] mz = {'M', 'Z', 0, 0};
+    assertEquals("application/x-dosexec", FileTypeMagicUtil.INSTANCE.guessMimeType(mz));
+
+    // ELF: Linux native binary
+    byte[] elf = {0x7F, 'E', 'L', 'F', 0x02, 0x01};
+    assertEquals("application/x-executable", FileTypeMagicUtil.INSTANCE.guessMimeType(elf));
+
+    // Java serialized object
+    byte[] ser = {(byte) 0xAC, (byte) 0xED, 0x00, 0x05};
+    assertEquals(
+        "application/x-java-serialized-object", FileTypeMagicUtil.INSTANCE.guessMimeType(ser));
+
+    // Mach-O: all four variants (32/64-bit, big/little-endian)
+    byte[] macho32be = {(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE};
+    byte[] macho64be = {(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCF};
+    byte[] macho32le = {(byte) 0xCE, (byte) 0xFA, (byte) 0xED, (byte) 0xFE};
+    byte[] macho64le = {(byte) 0xCF, (byte) 0xFA, (byte) 0xED, (byte) 0xFE};
+    for (byte[] m : new byte[][] {macho32be, macho64be, macho32le, macho64le}) {
+      assertEquals("application/x-mach-binary", FileTypeMagicUtil.INSTANCE.guessMimeType(m));
+    }
+
     // Plain text: not forbidden
     assertEquals(
         "application/octet-stream",

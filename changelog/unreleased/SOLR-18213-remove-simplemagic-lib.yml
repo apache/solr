@@ -1,4 +1,4 @@
-title: Replace simplemagic with built-in magic-byte file type detection for configset uploads
+title: Replace simplemagic with built-in magic-byte detection; detect more file types
 type: changed
 authors:
   - name: Jan Høydahl
