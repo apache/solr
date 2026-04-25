@@ -42,9 +42,7 @@ The simplest possible `security.json` for registering the plugin without configu
 }
 ----
 
-With `blockUnknown` set to `false` as in the above example, unauthenticated requests are allowed through. To enforce JWT authentication for all traffic, set `blockUnknown` to `true`.
-
-If the `blockUnknown` property is set to `false` as in the above example, it is possible to start configuring the plugin using unauthenticated REST API calls, which is further described in section <<Editing JWT Authentication Plugin Configuration>>.
+By default (`blockUnknown=false`), requests without a JWT are allowed through, which makes it possible to configure the plugin using unauthenticated REST API calls as described in <<Editing JWT Authentication Plugin Configuration>>. Set `blockUnknown=true` to require a valid JWT for all requests.
 
 == Configuration Parameters
 
@@ -52,7 +50,7 @@ If the `blockUnknown` property is set to `false` as in the above example, it is 
 [%header,format=csv,separator=;,cols="25%,50%,25%"]
 |===
 Key                  ; Description                                             ; Default
-blockUnknown         ; Set to `true` to require a valid JWT for all requests, or `false` to allow unauthenticated requests through (e.g., when using an Authorization Plugin for path-specific protection). ; `false`
+blockUnknown         ; Controls whether requests without a JWT are blocked (`true`) or passed through (`false`). Set to `true` to enforce authentication on all requests. Set to `false` when you need to configure the plugin via unauthenticated REST API calls, or when an Authorization Plugin is used for path-level access control. ; `false`
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
 scope                ; Whitespace separated list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
 requireIss           ; Fails requests that lacks an `iss` (issuer) claim                          ; `true`
