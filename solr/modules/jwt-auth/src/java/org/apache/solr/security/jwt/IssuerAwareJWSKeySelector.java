@@ -41,7 +41,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.net.ssl.SSLHandshakeException;
-import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -191,8 +190,7 @@ public class IssuerAwareJWSKeySelector implements JWSKeySelector<SecurityContext
       } else if (issuerConfigs.size() == 1) {
         return issuerConfigs.values().iterator().next();
       } else {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
+        throw new KeySourceException(
             "Signature verification not supported for multiple issuers without 'iss' claim in token.");
       }
     } else {
