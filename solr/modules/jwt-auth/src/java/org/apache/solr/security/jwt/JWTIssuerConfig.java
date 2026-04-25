@@ -31,6 +31,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -47,6 +48,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
@@ -439,7 +441,7 @@ public class JWTIssuerConfig {
   }
 
   /** Builds an SSL socket factory trusting the given certificates. */
-  static javax.net.ssl.SSLSocketFactory buildSSLSocketFactory(
+  static SSLSocketFactory buildSSLSocketFactory(
       Collection<X509Certificate> trustedCerts) {
     try {
       KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -470,20 +472,20 @@ public class JWTIssuerConfig {
     if (trustedCerts == null) {
       return new DefaultResourceRetriever();
     }
-    javax.net.ssl.SSLSocketFactory ssf = buildSSLSocketFactory(trustedCerts);
+    SSLSocketFactory ssf = buildSSLSocketFactory(trustedCerts);
     InetAddress loopback = InetAddress.getLoopbackAddress();
     boolean disableHostnameVerification =
         loopback.getCanonicalHostName().equals(url.getHost())
             || loopback.getHostName().equals(url.getHost());
     return resourceUrl -> {
-      java.net.URLConnection conn = resourceUrl.openConnection();
+      URLConnection conn = resourceUrl.openConnection();
       if (conn instanceof HttpsURLConnection httpsConn) {
         httpsConn.setSSLSocketFactory(ssf);
         if (disableHostnameVerification) {
           httpsConn.setHostnameVerifier((hostname, session) -> true);
         }
       }
-      try (java.io.InputStream in = conn.getInputStream()) {
+      try (InputStream in = conn.getInputStream()) {
         String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         return new Resource(content, conn.getContentType());
       }
