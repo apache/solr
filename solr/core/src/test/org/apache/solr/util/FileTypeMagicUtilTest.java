@@ -20,7 +20,13 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 
 public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
   public void testGuessMimeType() throws IOException {
@@ -34,6 +40,7 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     // Empty / null
     assertEquals("application/octet-stream", FileTypeMagicUtil.INSTANCE.guessMimeType(new byte[0]));
     assertFalse(FileTypeMagicUtil.isFileForbiddenInConfigset(new byte[0]));
+    assertFalse(FileTypeMagicUtil.isFileForbiddenInConfigset((byte[]) null));
 
     // Java class: 0xCAFEBABE + version 52 (Java 8)
     byte[] javaClass = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE, 0, 0, 0, 52};
@@ -125,6 +132,59 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     // by Solr's configset processing and never extracted as a ZIP by Solr itself.
     byte[] jpegMagic = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
     assertEquals("application/octet-stream", FileTypeMagicUtil.INSTANCE.guessMimeType(jpegMagic));
+  }
+
+  public void testGuessMimeTypeTarBytes() {
+    byte[] tar = new byte[512];
+    tar[257] = 'u';
+    tar[258] = 's';
+    tar[259] = 't';
+    tar[260] = 'a';
+    tar[261] = 'r';
+    assertEquals("application/x-tar", FileTypeMagicUtil.INSTANCE.guessMimeType(tar));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(tar));
+  }
+
+  public void testBuildForbiddenTypes() {
+    // Valid subset — succeeds and returns exactly the configured types
+    assertEquals(
+        Set.of("application/zip", "application/gzip"),
+        FileTypeMagicUtil.buildForbiddenTypes(List.of("application/zip", "application/gzip")));
+
+    // Full default set — succeeds
+    assertEquals(
+        new HashSet<>(FileTypeMagicUtil.DEFAULT_FORBIDDEN_MIME_TYPES),
+        FileTypeMagicUtil.buildForbiddenTypes(FileTypeMagicUtil.DEFAULT_FORBIDDEN_MIME_TYPES));
+
+    // Unknown type — throws SolrException naming the bad type
+    SolrException ex =
+        assertThrows(
+            SolrException.class,
+            () -> FileTypeMagicUtil.buildForbiddenTypes(List.of("application/zip", "text/html")));
+    assertTrue(ex.getMessage().contains("text/html"));
+  }
+
+  public void testAssertConfigSetFolderLegal() throws IOException {
+    // Clean directory — must not throw
+    Path dir = createTempDir();
+    Files.writeString(dir.resolve("schema.xml"), "<schema/>");
+    FileTypeMagicUtil.assertConfigSetFolderLegal(dir);
+
+    // Forbidden file (Java class magic bytes) — SolrException
+    byte[] javaClass = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE, 0, 0, 0, 52};
+    Files.write(dir.resolve("Evil.class"), javaClass);
+    assertThrows(SolrException.class, () -> FileTypeMagicUtil.assertConfigSetFolderLegal(dir));
+
+    // Symbolic link — SolrException (skip on platforms without symlink support)
+    Path cleanDir = createTempDir();
+    Files.writeString(cleanDir.resolve("safe.txt"), "safe");
+    try {
+      Files.createSymbolicLink(cleanDir.resolve("link.txt"), cleanDir.resolve("safe.txt"));
+      assertThrows(
+          SolrException.class, () -> FileTypeMagicUtil.assertConfigSetFolderLegal(cleanDir));
+    } catch (UnsupportedOperationException | IOException | SecurityException ignored) {
+      // symlinks not supported on this platform or blocked by security manager — skip
+    }
   }
 
   private void assertShellScript(String content) {

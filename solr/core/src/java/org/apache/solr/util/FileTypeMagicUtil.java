@@ -206,9 +206,13 @@ public class FileTypeMagicUtil {
   private static final Set<String> forbiddenTypes = buildForbiddenTypes();
 
   private static Set<String> buildForbiddenTypes() {
-    List<String> configured =
+    return buildForbiddenTypes(
         EnvUtils.getPropertyAsList(
-            "solr.configset.upload.mimetypes.forbidden", DEFAULT_FORBIDDEN_MIME_TYPES);
+            "solr.configset.upload.mimetypes.forbidden", DEFAULT_FORBIDDEN_MIME_TYPES));
+  }
+
+  // Package-private to allow direct testing without system-property manipulation.
+  static Set<String> buildForbiddenTypes(List<String> configured) {
     Set<String> known = new HashSet<>(DEFAULT_FORBIDDEN_MIME_TYPES);
     if (!known.containsAll(configured)) {
       Set<String> unknown = new HashSet<>(configured);
