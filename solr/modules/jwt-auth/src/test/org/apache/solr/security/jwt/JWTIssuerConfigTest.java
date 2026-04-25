@@ -20,6 +20,7 @@ package org.apache.solr.security.jwt;
 import static org.apache.solr.security.jwt.JWTAuthPluginTest.JWT_TEST_PATH;
 import static org.apache.solr.security.jwt.JWTAuthPluginTest.testJwk;
 
+import com.nimbusds.jose.jwk.JWKSet;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
-import org.jose4j.jwk.JsonWebKeySet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -126,7 +126,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
   @Test(expected = SolrException.class)
   public void notValidBothJwksAndJwk() {
-    testIssuer.setJsonWebKeySet(new JsonWebKeySet());
+    testIssuer.setJsonWebKeySet(new JWKSet());
     testIssuer.isValid();
   }
 

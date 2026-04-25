@@ -16,6 +16,15 @@
  */
 package org.apache.solr.security.jwt;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.proc.BadJOSEException;
+import com.nimbusds.jose.proc.BadJWSException;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,15 +71,6 @@ import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpHeader;
-import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
-import org.jose4j.jwt.consumer.JwtConsumer;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
-import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,7 +128,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
           JWTIssuerConfig.PARAM_TOKEN_ENDPOINT,
           JWTIssuerConfig.PARAM_AUTHORIZATION_FLOW);
 
-  private JwtConsumer jwtConsumer;
+  private DefaultJWTProcessor<SecurityContext> jwtProcessor;
   private boolean requireExpirationTime;
   private List<String> algAllowlist;
   private String principalClaim;
@@ -354,9 +355,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
         log.debug("No issuer configured in top level config");
         return Optional.empty();
       }
-    } catch (JoseException je) {
+    } catch (ParseException pe) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Failed parsing issuer from top level config", je);
+          SolrException.ErrorCode.SERVER_ERROR, "Failed parsing issuer from top level config", pe);
     }
   }
 
@@ -414,7 +415,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       throws Exception {
     String header = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
-    if (jwtConsumer == null) {
+    if (jwtProcessor == null) {
       if (header == null && !blockUnknown) {
         log.info(
             "JWTAuth not configured, but allowing anonymous access since {}==false",
@@ -429,7 +430,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             "Retrying JWTAuthPlugin initialization (retry delay={}s)", RETRY_INIT_DELAY_SECONDS);
         init(pluginConfig);
       }
-      if (jwtConsumer == null) {
+      if (jwtProcessor == null) {
         log.warn("JWTAuth not configured");
         numErrors.inc();
         throw new SolrException(
@@ -443,7 +444,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode())) {
       String jwt = parseAuthorizationHeader(header);
       try {
-        String issuer = jwtConsumer.processToClaims(jwt).getIssuer();
+        String issuer = SignedJWT.parse(jwt).getJWTClaimsSet().getIssuer();
         if (issuer != null) {
           Optional<JWTIssuerConfig> issuerConfig =
               issuerConfigs.stream().filter(ic -> issuer.equals(ic.getIss())).findFirst();
@@ -452,8 +453,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                 "Signature validation failed for issuer {}. Refreshing JWKs from IdP before trying again: {}",
                 issuer,
                 exceptionMessage);
-            for (HttpsJwks httpsJwks : issuerConfig.get().getHttpsJwks()) {
-              httpsJwks.refresh();
+            for (JWTIssuerConfig.JwkSetFetcher fetcher : issuerConfig.get().getHttpsJwks()) {
+              try {
+                fetcher.refresh();
+              } catch (IOException | java.text.ParseException e) {
+                log.warn("Failed to refresh JWKs from {}", fetcher.getLocation(), e);
+              }
             }
             authResponse = authenticate(header); // Retry
             exceptionMessage =
@@ -462,7 +467,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                     : "";
           }
         }
-      } catch (InvalidJwtException ex) {
+      } catch (ParseException ex) {
         /* ignored */
       }
     }
@@ -561,150 +566,195 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       String jwtCompact = parseAuthorizationHeader(authorizationHeader);
       if (jwtCompact != null) {
         try {
+          // Pre-parse JWT (without signature verification) to get issuer and check algorithm
+          SignedJWT signedJWT;
           try {
-            JwtClaims jwtClaims = jwtConsumer.processToClaims(jwtCompact);
-            String principal = jwtClaims.getStringClaimValue(principalClaim);
-            if (principal == null || principal.isEmpty()) {
-              return new JWTAuthenticationResponse(
-                  AuthCode.PRINCIPAL_MISSING,
-                  "Cannot identify principal from JWT. Required claim "
-                      + principalClaim
-                      + " missing. Cannot authenticate");
+            signedJWT = SignedJWT.parse(jwtCompact);
+          } catch (ParseException e) {
+            if (e.getMessage() != null
+                && e.getMessage().contains("Invalid JOSE Compact Serialization")) {
+              return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, e.getMessage());
             }
-            if (claimsMatchCompiled != null) {
-              for (Map.Entry<String, Pattern> entry : claimsMatchCompiled.entrySet()) {
-                String claim = entry.getKey();
-                if (jwtClaims.hasClaim(claim)) {
-                  Object claimValue = jwtClaims.getClaimValue(claim);
-                  String claimValueStr = (claimValue != null) ? String.valueOf(claimValue) : "";
-                  if (!entry.getValue().matcher(claimValueStr).matches()) {
-                    return new JWTAuthenticationResponse(
-                        AuthCode.CLAIM_MISMATCH,
-                        "Claim "
-                            + claim
-                            + "="
-                            + claimValueStr
-                            + " does not match required regular expression "
-                            + entry.getValue().pattern());
-                  }
-                } else {
-                  return new JWTAuthenticationResponse(
-                      AuthCode.CLAIM_MISMATCH,
-                      "Claim " + claim + " is required but does not exist in JWT");
-                }
-              }
-            }
-            if (!requiredScopes.isEmpty() && !jwtClaims.hasClaim(CLAIM_SCOPE)) {
-              // Fail if we require scopes but they don't exist
-              return new JWTAuthenticationResponse(
-                  AuthCode.CLAIM_MISMATCH,
-                  "Claim " + CLAIM_SCOPE + " is required but does not exist in JWT");
-            }
+            return new JWTAuthenticationResponse(
+                AuthCode.JWT_PARSE_ERROR, "Failed to parse JWT: " + e.getMessage());
+          }
 
-            // Find scopes for user
-            Set<String> scopes = Set.of();
-            Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
-            if (scopesObj != null) {
-              if (scopesObj instanceof String) {
-                scopes = new HashSet<>(Arrays.asList(((String) scopesObj).split("\\s+")));
-              } else if (scopesObj instanceof List) {
-                scopes = new HashSet<>(jwtClaims.getStringListClaimValue(CLAIM_SCOPE));
-              }
-              // Validate that at least one of the required scopes are present in the scope claim
-              if (!requiredScopes.isEmpty()) {
-                if (scopes.stream().noneMatch(requiredScopes::contains)) {
-                  return new JWTAuthenticationResponse(
-                      AuthCode.SCOPE_MISSING,
-                      "Claim "
-                          + CLAIM_SCOPE
-                          + " does not contain any of the required scopes: "
-                          + requiredScopes);
-                }
-              }
-            }
+          // Check algorithm allowlist before full processing
+          if (algAllowlist != null
+              && !algAllowlist.contains(signedJWT.getHeader().getAlgorithm().getName())) {
+            return new JWTAuthenticationResponse(
+                AuthCode.JWT_VALIDATION_EXCEPTION,
+                new RuntimeException(
+                    "Algorithm "
+                        + signedJWT.getHeader().getAlgorithm()
+                        + " is not a permitted algorithm"));
+          }
 
-            // Determine roles of user, either from 'rolesClaim' or from 'scope' as parsed above
-            final Set<String> finalRoles = new HashSet<>();
-            if (rolesClaim == null) {
-              // Pass scopes with principal to signal to any Authorization plugins that user has
-              // some verified role claims
-              finalRoles.addAll(scopes);
-              finalRoles.remove("openid"); // Remove standard scope
-            } else {
-              // Pull roles from separate claim, either as whitespace separated list or as JSON
-              // array
-              Object rolesObj = jwtClaims.getClaimValue(rolesClaim);
-              if (rolesObj == null && rolesClaim.indexOf('.') > 0) {
-                // support map resolution of nested values
-                String[] nestedKeys = rolesClaim.split("\\.");
-                rolesObj = jwtClaims.getClaimValue(nestedKeys[0]);
-                for (int i = 1; i < nestedKeys.length; i++) {
-                  if (rolesObj instanceof Map) {
-                    String key = nestedKeys[i];
-                    rolesObj = ((Map<?, ?>) rolesObj).get(key);
-                  }
-                }
-              }
+          // Extract unverified issuer to pass to key selector via context
+          String tokenIssuer;
+          try {
+            tokenIssuer = signedJWT.getJWTClaimsSet().getIssuer();
+          } catch (ParseException e) {
+            return new JWTAuthenticationResponse(
+                AuthCode.JWT_PARSE_ERROR, "Malformed claim: " + e.getMessage());
+          }
 
-              if (rolesObj != null) {
-                if (rolesObj instanceof String) {
-                  finalRoles.addAll(Arrays.asList(((String) rolesObj).split("\\s+")));
-                } else if (rolesObj instanceof List) {
-                  ((List<?>) rolesObj)
-                      .forEach(
-                          entry -> {
-                            if (entry instanceof String) {
-                              finalRoles.add((String) entry);
-                            } else {
-                              throw new SolrException(
-                                  SolrException.ErrorCode.BAD_REQUEST,
-                                  String.format(
-                                      Locale.ROOT,
-                                      "Could not parse roles from JWT claim %s; expected array of strings, got array with a value of type %s",
-                                      rolesClaim,
-                                      entry.getClass().getSimpleName()));
-                            }
-                          });
-                } else {
-                  throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST,
-                      String.format(
-                          Locale.ROOT,
-                          "Could not parse roles from JWT claim %s; got %s",
-                          rolesClaim,
-                          rolesObj.getClass().getSimpleName()));
-                }
-              }
-            }
-            if (!finalRoles.isEmpty()) {
+          JWTClaimsSet jwtClaims;
+          try {
+            // Use the already-parsed SignedJWT to avoid redundant parsing and ParseException
+            jwtClaims =
+                jwtProcessor.process(
+                    signedJWT, new JWTVerificationkeyResolver.IssuerContext(tokenIssuer));
+          } catch (BadJWSException e) {
+            return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, e);
+          } catch (BadJWTException e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.startsWith("Expired JWT") || msg.contains("expir"))) {
               return new JWTAuthenticationResponse(
-                  AuthCode.AUTHENTICATED,
-                  new JWTPrincipalWithUserRoles(
-                      principal, jwtCompact, jwtClaims.getClaimsMap(), finalRoles));
-            } else {
-              return new JWTAuthenticationResponse(
-                  AuthCode.AUTHENTICATED,
-                  new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
-            }
-          } catch (InvalidJwtSignatureException ise) {
-            return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, ise);
-          } catch (InvalidJwtException e) {
-            // Whether or not the JWT has expired being one common reason for invalidity
-            if (e.hasExpired()) {
-              return new JWTAuthenticationResponse(
-                  AuthCode.JWT_EXPIRED,
-                  "Authentication failed due to expired JWT token. Expired at "
-                      + e.getJwtContext().getJwtClaims().getExpirationTime());
-            }
-            if (e.getCause() != null
-                && e.getCause() instanceof JoseException
-                && e.getCause().getMessage().contains("Invalid JOSE Compact Serialization")) {
-              return new JWTAuthenticationResponse(
-                  AuthCode.JWT_PARSE_ERROR, e.getCause().getMessage());
+                  AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. " + msg);
             }
             return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
+          } catch (BadJOSEException e) {
+            return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
+          } catch (JOSEException e) {
+            return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
           }
-        } catch (MalformedClaimException e) {
+
+          // Validate issuer value against configured issuers (only when iss is explicitly
+          // configured)
+          if (requireIssuer
+              && tokenIssuer != null
+              && issuerConfigs.stream().anyMatch(ic -> ic.getIss() != null)) {
+            boolean issuerMatched =
+                issuerConfigs.stream()
+                    .anyMatch(ic -> ic.getIss() != null && ic.getIss().equals(tokenIssuer));
+            if (!issuerMatched) {
+              return new JWTAuthenticationResponse(
+                  AuthCode.JWT_VALIDATION_EXCEPTION,
+                  new RuntimeException(
+                      "Token issuer '" + tokenIssuer + "' does not match any configured issuer"));
+            }
+          }
+
+          String principal = jwtClaims.getStringClaim(principalClaim);
+          if (principal == null || principal.isEmpty()) {
+            return new JWTAuthenticationResponse(
+                AuthCode.PRINCIPAL_MISSING,
+                "Cannot identify principal from JWT. Required claim "
+                    + principalClaim
+                    + " missing. Cannot authenticate");
+          }
+          if (claimsMatchCompiled != null) {
+            for (Map.Entry<String, Pattern> entry : claimsMatchCompiled.entrySet()) {
+              String claim = entry.getKey();
+              if (jwtClaims.getClaim(claim) != null) {
+                Object claimValue = jwtClaims.getClaim(claim);
+                String claimValueStr = (claimValue != null) ? String.valueOf(claimValue) : "";
+                if (!entry.getValue().matcher(claimValueStr).matches()) {
+                  return new JWTAuthenticationResponse(
+                      AuthCode.CLAIM_MISMATCH,
+                      "Claim "
+                          + claim
+                          + "="
+                          + claimValueStr
+                          + " does not match required regular expression "
+                          + entry.getValue().pattern());
+                }
+              } else {
+                return new JWTAuthenticationResponse(
+                    AuthCode.CLAIM_MISMATCH,
+                    "Claim " + claim + " is required but does not exist in JWT");
+              }
+            }
+          }
+          if (!requiredScopes.isEmpty() && jwtClaims.getClaim(CLAIM_SCOPE) == null) {
+            return new JWTAuthenticationResponse(
+                AuthCode.CLAIM_MISMATCH,
+                "Claim " + CLAIM_SCOPE + " is required but does not exist in JWT");
+          }
+
+          // Find scopes for user
+          Set<String> scopes = Set.of();
+          Object scopesObj = jwtClaims.getClaim(CLAIM_SCOPE);
+          if (scopesObj != null) {
+            if (scopesObj instanceof String) {
+              scopes = new HashSet<>(Arrays.asList(((String) scopesObj).split("\\s+")));
+            } else if (scopesObj instanceof List) {
+              scopes = new HashSet<>(jwtClaims.getStringListClaim(CLAIM_SCOPE));
+            }
+            // Validate that at least one of the required scopes are present in the scope claim
+            if (!requiredScopes.isEmpty()) {
+              if (scopes.stream().noneMatch(requiredScopes::contains)) {
+                return new JWTAuthenticationResponse(
+                    AuthCode.SCOPE_MISSING,
+                    "Claim "
+                        + CLAIM_SCOPE
+                        + " does not contain any of the required scopes: "
+                        + requiredScopes);
+              }
+            }
+          }
+
+          // Determine roles of user, either from 'rolesClaim' or from 'scope' as parsed above
+          final Set<String> finalRoles = new HashSet<>();
+          if (rolesClaim == null) {
+            finalRoles.addAll(scopes);
+            finalRoles.remove("openid"); // Remove standard scope
+          } else {
+            Object rolesObj = jwtClaims.getClaim(rolesClaim);
+            if (rolesObj == null && rolesClaim.indexOf('.') > 0) {
+              // support map resolution of nested values
+              String[] nestedKeys = rolesClaim.split("\\.");
+              rolesObj = jwtClaims.getClaim(nestedKeys[0]);
+              for (int i = 1; i < nestedKeys.length; i++) {
+                if (rolesObj instanceof Map) {
+                  String key = nestedKeys[i];
+                  rolesObj = ((Map<?, ?>) rolesObj).get(key);
+                }
+              }
+            }
+
+            if (rolesObj != null) {
+              if (rolesObj instanceof String) {
+                finalRoles.addAll(Arrays.asList(((String) rolesObj).split("\\s+")));
+              } else if (rolesObj instanceof List) {
+                ((List<?>) rolesObj)
+                    .forEach(
+                        entry -> {
+                          if (entry instanceof String) {
+                            finalRoles.add((String) entry);
+                          } else {
+                            throw new SolrException(
+                                SolrException.ErrorCode.BAD_REQUEST,
+                                String.format(
+                                    Locale.ROOT,
+                                    "Could not parse roles from JWT claim %s; expected array of strings, got array with a value of type %s",
+                                    rolesClaim,
+                                    entry.getClass().getSimpleName()));
+                          }
+                        });
+              } else {
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    String.format(
+                        Locale.ROOT,
+                        "Could not parse roles from JWT claim %s; got %s",
+                        rolesClaim,
+                        rolesObj.getClass().getSimpleName()));
+              }
+            }
+          }
+          if (!finalRoles.isEmpty()) {
+            return new JWTAuthenticationResponse(
+                AuthCode.AUTHENTICATED,
+                new JWTPrincipalWithUserRoles(
+                    principal, jwtCompact, jwtClaims.getClaims(), finalRoles));
+          } else {
+            return new JWTAuthenticationResponse(
+                AuthCode.AUTHENTICATED,
+                new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaims()));
+          }
+        } catch (ParseException e) {
           return new JWTAuthenticationResponse(
               AuthCode.JWT_PARSE_ERROR, "Malformed claim, error was: " + e.getMessage());
         }
@@ -736,43 +786,37 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   private void initConsumer() {
-    JwtConsumerBuilder jwtConsumerBuilder =
-        new JwtConsumerBuilder()
-            .setAllowedClockSkewInSeconds(
-                30); // allow some leeway in validating time based claims to account for clock skew
-    String[] issuers =
-        issuerConfigs.stream()
-            .map(JWTIssuerConfig::getIss)
-            .filter(Objects::nonNull)
-            .toArray(String[]::new);
-    if (issuers.length > 0) {
-      jwtConsumerBuilder.setExpectedIssuers(
-          requireIssuer, issuers); // whom the JWT needs to have been issued by
+    DefaultJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
+    processor.setJWSKeySelector(verificationKeyResolver);
+
+    // Build the set of required claims
+    Set<String> requiredClaims = new HashSet<>();
+    if (requireExpirationTime) {
+      requiredClaims.add("exp");
     }
-    String[] audiences =
+    if (requireIssuer) {
+      requiredClaims.add("iss");
+    }
+
+    // Build expected audiences
+    Set<String> audienceSet =
         issuerConfigs.stream()
             .map(JWTIssuerConfig::getAud)
             .filter(Objects::nonNull)
-            .toArray(String[]::new);
-    if (audiences.length > 0) {
-      jwtConsumerBuilder.setExpectedAudience(audiences); // to whom the JWT is intended for
-    } else {
-      jwtConsumerBuilder.setSkipDefaultAudienceValidation();
-    }
-    if (requireExpirationTime) jwtConsumerBuilder.setRequireExpirationTime();
-    if (algAllowlist != null)
-      jwtConsumerBuilder
-          .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the
-              // given context
-              new AlgorithmConstraints(
-                  AlgorithmConstraints.ConstraintType.PERMIT, algAllowlist.toArray(new String[0])));
-    jwtConsumerBuilder.setVerificationKeyResolver(verificationKeyResolver);
-    jwtConsumer = jwtConsumerBuilder.build(); // create the JwtConsumer instance
+            .collect(Collectors.toSet());
+
+    DefaultJWTClaimsVerifier<SecurityContext> verifier =
+        new DefaultJWTClaimsVerifier<>(
+            audienceSet.isEmpty() ? null : audienceSet, null, requiredClaims, Set.of());
+    verifier.setMaxClockSkew(30);
+    processor.setJWTClaimsSetVerifier(verifier);
+
+    jwtProcessor = processor;
   }
 
   @Override
   public void close() throws IOException {
-    jwtConsumer = null;
+    jwtProcessor = null;
     super.close();
   }
 
@@ -867,7 +911,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     private final Principal principal;
     private String errorMessage;
     private final AuthCode authCode;
-    private InvalidJwtException jwtException;
+    private Exception jwtException;
 
     enum AuthCode {
       PASS_THROUGH(
@@ -897,7 +941,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
     }
 
-    JWTAuthenticationResponse(AuthCode authCode, InvalidJwtException e) {
+    JWTAuthenticationResponse(AuthCode authCode, Exception e) {
       this.authCode = authCode;
       this.jwtException = e;
       principal = null;
@@ -932,7 +976,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       return errorMessage;
     }
 
-    InvalidJwtException getJwtException() {
+    Exception getJwtException() {
       return jwtException;
     }
 

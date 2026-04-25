@@ -1,0 +1,5 @@
+title: "Replace end-of-life bc-jose4j JWT library with nimbus-jose-jwt in the jwt-auth module."
+type: dependency_update
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
