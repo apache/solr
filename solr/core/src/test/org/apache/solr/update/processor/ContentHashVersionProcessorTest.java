@@ -60,6 +60,7 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
   }
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     assertU(delQ("*:*"));
