@@ -456,7 +456,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             for (JWTIssuerConfig.JwkSetFetcher fetcher : issuerConfig.get().getHttpsJwks()) {
               try {
                 fetcher.refresh();
-              } catch (IOException | java.text.ParseException e) {
+              } catch (IOException | ParseException e) {
                 log.warn("Failed to refresh JWKs from {}", fetcher.getLocation(), e);
               }
             }
