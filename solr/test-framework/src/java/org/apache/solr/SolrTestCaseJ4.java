@@ -1240,7 +1240,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return out.toString();
   }
 
-  public static void addDoc(String doc, String updateRequestProcessorChain) throws Exception {
+  public static SolrQueryResponse addDoc(String doc, String updateRequestProcessorChain)
+      throws Exception {
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] {updateRequestProcessorChain});
@@ -1251,8 +1252,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     ArrayList<ContentStream> streams = new ArrayList<>(2);
     streams.add(new ContentStreamBase.StringStream(doc));
     req.setContentStreams(streams);
-    handler.handleRequestBody(req, new SolrQueryResponse());
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequestBody(req, rsp);
     req.close();
+
+    return rsp;
   }
 
   /**
