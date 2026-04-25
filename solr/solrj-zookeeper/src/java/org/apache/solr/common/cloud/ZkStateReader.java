@@ -1245,14 +1245,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /**
-   * Returns the URL scheme for the host.
-   *
-   * <p>Examples:
-   *
-   * <ul>
-   *   <li>Returns {@code "https"} when SSL is enabled via configuration.
-   *   <li>Returns {@code "http"} when no explicit configuration is provided.
-   * </ul>
+   * Returns the URL scheme for hosts in the cluster.
    *
    * @return the URL scheme ("http" or "https")
    */
