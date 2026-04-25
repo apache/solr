@@ -62,14 +62,17 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     // gzip compressed file
     byte[] gzip = {(byte) 0x1F, (byte) 0x8B, 0x08, 0x00};
     assertEquals("application/gzip", FileTypeMagicUtil.INSTANCE.guessMimeType(gzip));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(gzip));
 
     // bzip2 compressed file
     byte[] bzip2 = {'B', 'Z', 'h', '9'};
     assertEquals("application/x-bzip2", FileTypeMagicUtil.INSTANCE.guessMimeType(bzip2));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(bzip2));
 
     // xz compressed file
     byte[] xz = {(byte) 0xFD, '7', 'z', 'X', 'Z', 0x00};
     assertEquals("application/x-xz", FileTypeMagicUtil.INSTANCE.guessMimeType(xz));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(xz));
 
     // Shell scripts — various interpreter paths
     assertShellScript("#!/bin/sh\necho hello\n");
@@ -81,15 +84,18 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     // MZ: Windows EXE / self-extracting ZIP
     byte[] mz = {'M', 'Z', 0, 0};
     assertEquals("application/x-dosexec", FileTypeMagicUtil.INSTANCE.guessMimeType(mz));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(mz));
 
     // ELF: Linux native binary
     byte[] elf = {0x7F, 'E', 'L', 'F', 0x02, 0x01};
     assertEquals("application/x-executable", FileTypeMagicUtil.INSTANCE.guessMimeType(elf));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(elf));
 
     // Java serialized object
     byte[] ser = {(byte) 0xAC, (byte) 0xED, 0x00, 0x05};
     assertEquals(
         "application/x-java-serialized-object", FileTypeMagicUtil.INSTANCE.guessMimeType(ser));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(ser));
 
     // Mach-O: all four variants (32/64-bit, big/little-endian)
     byte[] macho32be = {(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE};
@@ -98,6 +104,7 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     byte[] macho64le = {(byte) 0xCF, (byte) 0xFA, (byte) 0xED, (byte) 0xFE};
     for (byte[] m : new byte[][] {macho32be, macho64be, macho32le, macho64le}) {
       assertEquals("application/x-mach-binary", FileTypeMagicUtil.INSTANCE.guessMimeType(m));
+      assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(m));
     }
 
     // Plain text: not forbidden

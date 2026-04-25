@@ -28,7 +28,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 
 /** Utility class to guess the mime type of file based on its magic number. */
 public class FileTypeMagicUtil {
@@ -197,15 +199,17 @@ public class FileTypeMagicUtil {
   }
 
   private static final Set<String> forbiddenTypes =
-      new HashSet<>(
-          Arrays.asList(
-              System.getProperty(
+      Arrays.stream(
+              EnvUtils.getProperty(
                       "solr.configset.upload.mimetypes.forbidden",
                       "application/x-java-applet,application/zip,application/x-tar,"
                           + "application/gzip,application/x-bzip2,application/x-xz,"
                           + "text/x-shellscript,application/x-dosexec,application/x-executable,"
                           + "application/x-java-serialized-object,application/x-mach-binary")
-                  .split(",")));
+                  .split(","))
+          .map(String::strip)
+          .filter(s -> !s.isEmpty())
+          .collect(Collectors.toCollection(HashSet::new));
 
   /**
    * Detects JVM class files by the 0xCAFEBABE magic. Kotlin, Scala and Groovy use the same bytes.
@@ -268,7 +272,7 @@ public class FileTypeMagicUtil {
         && b[5] == 0x00;
   }
 
-  /** Detects shell scripts by the shebang (#!) at the start of the file. */
+  /** Detects shebang-based scripts by the {@code #!} marker at the start of the file. */
   private static boolean isShellScript(byte[] b) {
     return b.length >= 2 && b[0] == '#' && b[1] == '!';
   }
