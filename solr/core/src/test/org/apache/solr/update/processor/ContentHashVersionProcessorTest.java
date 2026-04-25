@@ -30,33 +30,32 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BinaryField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.jspecify.annotations.NonNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
 
-  public static final String ID_FIELD = "_id";
-  public static final String FIRST_FIELD = "field1";
-  public static final String SECOND_FIELD = "field2";
-  public static final String THIRD_FIELD = "docField3";
-  public static final String FOURTH_FIELD = "field4";
+  private static final String ID_FIELD = "_id";
+  private static final String FIRST_FIELD = "field1";
+  private static final String SECOND_FIELD = "field2";
+  private static final String THIRD_FIELD = "docField3";
+  private static final String FOURTH_FIELD = "field4";
 
-  public static final String INITIAL_DOC_ID = "1";
-  public static final String INITIAL_FIELD1_VALUE = "Initial values used to compute initial hash";
-  public static final String INITIAL_FIELD2_VALUE =
+  private static final String INITIAL_DOC_ID = "1";
+  private static final String INITIAL_FIELD1_VALUE = "Initial values used to compute initial hash";
+  private static final String INITIAL_FIELD2_VALUE =
       "This a constant value for testing include/exclude fields";
-  public static final String[] INITIAL_DOC =
-      new String[] {
-        ID_FIELD, INITIAL_DOC_ID,
-        FIRST_FIELD, INITIAL_FIELD1_VALUE,
-        SECOND_FIELD, INITIAL_FIELD2_VALUE
-      };
+  private static final String INITIAL_DOC =
+      adoc(
+          ID_FIELD, INITIAL_DOC_ID,
+          FIRST_FIELD, INITIAL_FIELD1_VALUE,
+          SECOND_FIELD, INITIAL_FIELD2_VALUE);
   private String initialDocHash;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeWorkingMockito();
     initCore("solrconfig-contenthashversion.xml", "schema16.xml");
   }
 
@@ -64,14 +63,14 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
   public void setUp() throws Exception {
     super.setUp();
     assertU(delQ("*:*"));
-    addDoc(adoc(INITIAL_DOC), "contenthashversion-default");
+    addDoc(INITIAL_DOC, "contenthashversion-default");
     assertU(commit());
 
     // Query for the document and extract _hash_ field value
     initialDocHash = getHashFieldValue(INITIAL_DOC_ID);
   }
 
-  private static @NonNull String getHashFieldValue(String docId) throws Exception {
+  private static String getHashFieldValue(String docId) throws Exception {
     String response = h.query(req("q", ID_FIELD + ":" + docId, "fl", "_hash_"));
 
     // Parse XML response to extract _hash_ field value
