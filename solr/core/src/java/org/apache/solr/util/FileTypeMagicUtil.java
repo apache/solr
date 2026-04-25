@@ -210,15 +210,15 @@ public class FileTypeMagicUtil {
         EnvUtils.getPropertyAsList(
             "solr.configset.upload.mimetypes.forbidden", DEFAULT_FORBIDDEN_MIME_TYPES);
     Set<String> known = new HashSet<>(DEFAULT_FORBIDDEN_MIME_TYPES);
-    for (String type : configured) {
-      if (!known.contains(type)) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "System property solr.configset.upload.mimetypes.forbidden contains unrecognized MIME type '"
-                + type
-                + "'. Only the following types are supported: "
-                + DEFAULT_FORBIDDEN_MIME_TYPES);
-      }
+    if (!known.containsAll(configured)) {
+      Set<String> unknown = new HashSet<>(configured);
+      unknown.removeAll(known);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "System property solr.configset.upload.mimetypes.forbidden contains unrecognized MIME type(s) "
+              + unknown
+              + ". Only the following types are supported: "
+              + DEFAULT_FORBIDDEN_MIME_TYPES);
     }
     return new HashSet<>(configured);
   }
