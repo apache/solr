@@ -495,13 +495,20 @@ public class JWTIssuerConfig {
     private final String url;
     private final ResourceRetriever retriever;
     private final long cacheDurationSeconds;
+    private final long refreshReprieveThresholdMs;
     private JWKSet cachedSet;
     private Instant cacheExpiry = Instant.EPOCH;
+    private Instant lastRefreshTime = Instant.EPOCH;
 
-    JwkSetFetcher(String url, ResourceRetriever retriever, long cacheDurationSeconds) {
+    JwkSetFetcher(
+        String url,
+        ResourceRetriever retriever,
+        long cacheDurationSeconds,
+        long refreshReprieveThresholdMs) {
       this.url = url;
       this.retriever = retriever;
       this.cacheDurationSeconds = cacheDurationSeconds;
+      this.refreshReprieveThresholdMs = refreshReprieveThresholdMs;
     }
 
     public synchronized List<JWK> getKeys() throws IOException, ParseException {
@@ -511,11 +518,21 @@ public class JWTIssuerConfig {
       return cachedSet.getKeys();
     }
 
+    /**
+     * Fetches fresh keys from the remote JWK endpoint. Calls within the refresh reprieve window are
+     * ignored to avoid hammering the IdP on repeated unknown-key requests.
+     */
     public synchronized void refresh() throws IOException, ParseException {
+      Instant now = Instant.now();
+      if (cachedSet != null
+          && now.isBefore(lastRefreshTime.plusMillis(refreshReprieveThresholdMs))) {
+        return;
+      }
       try {
         Resource resource = retriever.retrieveResource(URI.create(url).toURL());
         cachedSet = JWKSet.parse(resource.getContent());
-        cacheExpiry = Instant.now().plusSeconds(cacheDurationSeconds);
+        cacheExpiry = now.plusSeconds(cacheDurationSeconds);
+        lastRefreshTime = now;
       } catch (MalformedURLException e) {
         throw new IOException("Malformed JWK URL: " + url, e);
       }
@@ -557,7 +574,7 @@ public class JWTIssuerConfig {
       }
 
       ResourceRetriever retriever = buildResourceRetriever(trustedCerts, jwksUrl);
-      return new JwkSetFetcher(url, retriever, jwkCacheDuration);
+      return new JwkSetFetcher(url, retriever, jwkCacheDuration, refreshReprieveThreshold);
     }
 
     public List<JwkSetFetcher> createList(List<String> jwkUrls) {
