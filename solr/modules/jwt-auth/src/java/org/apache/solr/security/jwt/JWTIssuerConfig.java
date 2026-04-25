@@ -389,10 +389,11 @@ public class JWTIssuerConfig {
     putIfNotNull(config, PARAM_TOKEN_ENDPOINT, tokenEndpoint);
     putIfNotNull(config, PARAM_AUTHORIZATION_FLOW, authorizationFlow);
     if (jsonWebKeySet != null) {
-      putIfNotNull(
-          config,
-          PARAM_JWK,
+      Map<String, Object> jwkSetMap = new HashMap<>();
+      jwkSetMap.put(
+          "keys",
           jsonWebKeySet.getKeys().stream().map(JWK::toJSONObject).collect(Collectors.toList()));
+      putIfNotNull(config, PARAM_JWK, jwkSetMap);
     }
     return config;
   }
@@ -441,8 +442,7 @@ public class JWTIssuerConfig {
   }
 
   /** Builds an SSL socket factory trusting the given certificates. */
-  static SSLSocketFactory buildSSLSocketFactory(
-      Collection<X509Certificate> trustedCerts) {
+  static SSLSocketFactory buildSSLSocketFactory(Collection<X509Certificate> trustedCerts) {
     try {
       KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
       ks.load(null, null);
