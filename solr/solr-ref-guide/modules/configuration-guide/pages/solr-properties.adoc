@@ -58,6 +58,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.configset.upload.enabled|configset.upload.enabled|true|Controls whether configset uploads are enabled.
 
+|solr.configset.upload.mimetypes.forbidden||_see description_|Comma-separated list of MIME types that are forbidden in configset uploads, detected by magic-byte inspection. Defaults to `application/x-java-applet`, `application/zip`, `application/x-tar`, `application/gzip`, `application/x-bzip2`, `application/x-xz`, `text/x-shellscript`, `application/x-dosexec`, `application/x-executable`, `application/x-java-serialized-object`, `application/x-mach-binary`.
+
 |solr.filestore.filesize.max|max.file.store.size|100MB|Defines the maximum file size allowed in Solr's filestore.
 
 |solr.host.advertise| host | | This is the host that is advertised by the Solr node in the ZK live nodes
