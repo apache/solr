@@ -203,10 +203,25 @@ public class FileTypeMagicUtil {
     return forbiddenTypes.contains(FileTypeMagicUtil.INSTANCE.guessMimeType(bytes));
   }
 
-  private static final Set<String> forbiddenTypes =
-      new HashSet<>(
-          EnvUtils.getPropertyAsList(
-              "solr.configset.upload.mimetypes.forbidden", DEFAULT_FORBIDDEN_MIME_TYPES));
+  private static final Set<String> forbiddenTypes = buildForbiddenTypes();
+
+  private static Set<String> buildForbiddenTypes() {
+    List<String> configured =
+        EnvUtils.getPropertyAsList(
+            "solr.configset.upload.mimetypes.forbidden", DEFAULT_FORBIDDEN_MIME_TYPES);
+    Set<String> known = new HashSet<>(DEFAULT_FORBIDDEN_MIME_TYPES);
+    for (String type : configured) {
+      if (!known.contains(type)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "System property solr.configset.upload.mimetypes.forbidden contains unrecognized MIME type '"
+                + type
+                + "'. Only the following types are supported: "
+                + DEFAULT_FORBIDDEN_MIME_TYPES);
+      }
+    }
+    return new HashSet<>(configured);
+  }
 
   /**
    * Detects JVM class files by the 0xCAFEBABE magic. Kotlin, Scala and Groovy use the same bytes.
