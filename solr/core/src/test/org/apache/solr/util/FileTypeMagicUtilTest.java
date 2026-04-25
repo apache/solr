@@ -59,17 +59,17 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     byte[] ddZip = {'P', 'K', 0x07, 0x08, 0, 0, 0, 0};
     assertEquals("application/zip", FileTypeMagicUtil.INSTANCE.guessMimeType(ddZip));
 
-    // gzip-compressed archive
+    // gzip compressed file
     byte[] gzip = {(byte) 0x1F, (byte) 0x8B, 0x08, 0x00};
-    assertEquals("application/x-tar", FileTypeMagicUtil.INSTANCE.guessMimeType(gzip));
+    assertEquals("application/gzip", FileTypeMagicUtil.INSTANCE.guessMimeType(gzip));
 
-    // bzip2-compressed archive
+    // bzip2 compressed file
     byte[] bzip2 = {'B', 'Z', 'h', '9'};
-    assertEquals("application/x-tar", FileTypeMagicUtil.INSTANCE.guessMimeType(bzip2));
+    assertEquals("application/x-bzip2", FileTypeMagicUtil.INSTANCE.guessMimeType(bzip2));
 
-    // xz-compressed archive
+    // xz compressed file
     byte[] xz = {(byte) 0xFD, '7', 'z', 'X', 'Z', 0x00};
-    assertEquals("application/x-tar", FileTypeMagicUtil.INSTANCE.guessMimeType(xz));
+    assertEquals("application/x-xz", FileTypeMagicUtil.INSTANCE.guessMimeType(xz));
 
     // Shell scripts — various interpreter paths
     assertShellScript("#!/bin/sh\necho hello\n");

@@ -19,7 +19,6 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +28,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 
 /** Utility class to guess the mime type of file based on its magic number. */
@@ -41,9 +39,6 @@ public class FileTypeMagicUtil {
   // TAR ustar magic is at offset 257-261; 512 bytes (one full TAR block) covers all formats.
   private static final int HEADER_BYTES = 512;
 
-  // Matches any shebang (#!) at the start of a file, regardless of interpreter path.
-  private static final Pattern SHELL_SHEBANG = Pattern.compile("^#!");
-
   FileTypeMagicUtil() {}
 
   /**
@@ -53,7 +48,6 @@ public class FileTypeMagicUtil {
    * @throws SolrException if an illegal file is found in the folder structure
    */
   public static void assertConfigSetFolderLegal(Path confPath) throws IOException {
-    //noinspection NullableProblems
     Files.walkFileTree(
         confPath,
         new SimpleFileVisitor<>() {
@@ -100,7 +94,8 @@ public class FileTypeMagicUtil {
     try (InputStream in = Files.newInputStream(file)) {
       return guessMimeType(in);
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Failed to guess mime type for file " + file, e);
     }
   }
 
@@ -135,6 +130,9 @@ public class FileTypeMagicUtil {
     if (isJavaClass(bytes)) return "application/x-java-applet";
     if (isZip(bytes)) return "application/zip";
     if (isTar(bytes)) return "application/x-tar";
+    if (isGzip(bytes)) return "application/gzip";
+    if (isBzip2(bytes)) return "application/x-bzip2";
+    if (isXz(bytes)) return "application/x-xz";
     if (isShellScript(bytes)) return "text/x-shellscript";
     if (isMzExecutable(bytes)) return "application/x-dosexec";
     if (isElf(bytes)) return "application/x-executable";
@@ -150,8 +148,15 @@ public class FileTypeMagicUtil {
    * <ul>
    *   <li><code>application/x-java-applet</code>: java class file
    *   <li><code>application/zip</code>: jar or zip archives
-   *   <li><code>application/x-tar</code>: tar archives (including gzip, bzip2, xz compressed)
+   *   <li><code>application/x-tar</code>: tar archives
+   *   <li><code>application/gzip</code>: gzip compressed files
+   *   <li><code>application/x-bzip2</code>: bzip2 compressed files
+   *   <li><code>application/x-xz</code>: xz compressed files
    *   <li><code>text/x-shellscript</code>: shell or bash script
+   *   <li><code>application/x-dosexec</code>: Windows EXE/DLL or self-extracting archive
+   *   <li><code>application/x-executable</code>: ELF executable or shared library
+   *   <li><code>application/x-java-serialized-object</code>: Java serialized object stream
+   *   <li><code>application/x-mach-binary</code>: macOS Mach-O binary
    * </ul>
    *
    * @param file file to check
@@ -169,15 +174,8 @@ public class FileTypeMagicUtil {
   }
 
   /**
-   * Determine forbidden file type based on magic bytes matching of the file itself. Forbidden types
-   * are:
-   *
-   * <ul>
-   *   <li><code>application/x-java-applet</code>: java class file
-   *   <li><code>application/zip</code>: jar or zip archives
-   *   <li><code>application/x-tar</code>: tar archives (including gzip, bzip2, xz compressed)
-   *   <li><code>text/x-shellscript</code>: shell or bash script
-   * </ul>
+   * Determine forbidden file type based on magic bytes matching of the file itself. See {@link
+   * #isFileForbiddenInConfigset(Path)} for the list of forbidden types.
    *
    * @param fileStream stream from the file content
    * @return true if file is among the forbidden mime-types
@@ -203,8 +201,9 @@ public class FileTypeMagicUtil {
           Arrays.asList(
               System.getProperty(
                       "solr.configset.upload.mimetypes.forbidden",
-                      "application/x-java-applet,application/zip,application/x-tar,text/x-shellscript,"
-                          + "application/x-dosexec,application/x-executable,"
+                      "application/x-java-applet,application/zip,application/x-tar,"
+                          + "application/gzip,application/x-bzip2,application/x-xz,"
+                          + "text/x-shellscript,application/x-dosexec,application/x-executable,"
                           + "application/x-java-serialized-object,application/x-mach-binary")
                   .split(",")));
 
@@ -236,29 +235,42 @@ public class FileTypeMagicUtil {
   }
 
   /**
-   * Detects TAR archives via the POSIX/GNU ustar magic at offset 257, and compressed archives
-   * (gzip, bzip2, xz) which commonly wrap tarballs. V7-format tars have no magic and are not
-   * detected, but they are essentially extinct. Plain compressed files without a tar payload are
-   * also blocked — they have no legitimate use in a Solr configset.
+   * Detects POSIX/GNU ustar TAR archives via the magic at offset 257. V7-format tars have no magic
+   * and are not detected, but they are essentially extinct.
    */
   private static boolean isTar(byte[] b) {
-    if (b.length >= 262
+    return b.length >= 262
         && b[257] == 'u'
         && b[258] == 's'
         && b[259] == 't'
         && b[260] == 'a'
-        && b[261] == 'r') {
-      return true;
-    }
-    if (b.length >= 2 && (b[0] & 0xFF) == 0x1F && (b[1] & 0xFF) == 0x8B) return true; // gzip
-    if (b.length >= 3 && b[0] == 'B' && b[1] == 'Z' && b[2] == 'h') return true; // bzip2
-    return b.length >= 6 // xz: FD 37 7A 58 5A 00
+        && b[261] == 'r';
+  }
+
+  /** Detects gzip compressed files (magic: 1F 8B). */
+  private static boolean isGzip(byte[] b) {
+    return b.length >= 2 && (b[0] & 0xFF) == 0x1F && (b[1] & 0xFF) == 0x8B;
+  }
+
+  /** Detects bzip2 compressed files (magic: "BZh"). */
+  private static boolean isBzip2(byte[] b) {
+    return b.length >= 3 && b[0] == 'B' && b[1] == 'Z' && b[2] == 'h';
+  }
+
+  /** Detects xz compressed files (magic: FD 37 7A 58 5A 00). */
+  private static boolean isXz(byte[] b) {
+    return b.length >= 6
         && (b[0] & 0xFF) == 0xFD
         && b[1] == '7'
         && b[2] == 'z'
         && b[3] == 'X'
         && b[4] == 'Z'
         && b[5] == 0x00;
+  }
+
+  /** Detects shell scripts by the shebang (#!) at the start of the file. */
+  private static boolean isShellScript(byte[] b) {
+    return b.length >= 2 && b[0] == '#' && b[1] == '!';
   }
 
   /** Detects Windows PE/EXE/DLL and self-extracting ZIPs by the MZ header. */
@@ -294,12 +306,5 @@ public class FileTypeMagicUtil {
         || m == 0xFEEDFACF // 64-bit big-endian
         || m == 0xCEFAEDFE // 32-bit little-endian
         || m == 0xCFFAEDFE; // 64-bit little-endian
-  }
-
-  private static boolean isShellScript(byte[] b) {
-    if (b.length < 2) return false;
-    // lookingAt() matches from the start without requiring a full-string match.
-    String prefix = new String(b, 0, Math.min(b.length, 64), StandardCharsets.ISO_8859_1);
-    return SHELL_SHEBANG.matcher(prefix).lookingAt();
   }
 }
