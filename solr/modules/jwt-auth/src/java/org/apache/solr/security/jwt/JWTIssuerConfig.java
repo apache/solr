@@ -463,9 +463,9 @@ public class JWTIssuerConfig {
   }
 
   /**
-   * Builds a ResourceRetriever with optional custom SSL trust store and localhost hostname bypass.
-   * Uses a custom implementation when trusted certs or localhost hostname bypass is needed, and the
-   * default DefaultResourceRetriever otherwise.
+   * Builds a ResourceRetriever with an optional custom SSL trust store. Uses a custom
+   * implementation when trusted certs are configured; in that case hostname verification is also
+   * bypassed for loopback hosts. Otherwise uses the default DefaultResourceRetriever.
    */
   static ResourceRetriever buildResourceRetriever(
       Collection<X509Certificate> trustedCerts, URL url) {
