@@ -62,10 +62,10 @@ If you want to use curl on OS X Yosemite (10.10), you'll need to create a certif
 $ openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
 ----
 
-=== Set Common SSL-Related System Properties
+=== Set Common SSL-Related Environment Variables
 
-The Solr Control Script is already setup to pass SSL-related Java system properties to the JVM.
-To activate the SSL settings, uncomment and update the set of properties beginning with `SOLR_SSL_*` in `bin/solr.in.sh` on *nix systems or `bin\solr.in.cmd` on Windows.
+The Solr Control Script is already setup to pass SSL-related environment variables.
+To activate the SSL settings, uncomment and update the set of variables beginning with `SOLR_SSL_*` in `bin/solr.in.sh` on *nix systems or `bin\solr.in.cmd` on Windows.
 
 [tabs#solr-in]
 ======
@@ -131,59 +131,6 @@ They are mutually exclusive and Jetty will select one of them which may not be w
 `SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification for client certificates.
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
-
-If you are using SolrCloud, you need to <<Configure ZooKeeper>> before starting Solr.
-
-If you are running Solr in a user-managed cluster or single-node installation, you can skip to <<Start User-Managed Cluster or Single-Node Solr>>.
-
-=== Configure ZooKeeper
-
-After creating the keystore described above and before you start any SolrCloud nodes, you must configure your Solr cluster properties in ZooKeeper so that Solr nodes know to communicate via SSL.
-
-This section assumes you have created and started an external ZooKeeper.
-See xref:zookeeper-ensemble.adoc[] for more information.
-
-The `urlScheme` cluster-wide property needs to be set to `https` before any Solr node starts up.
-The examples below use the `bin/solr` tool that comes with Solr to do this.
-
-[tabs#zkclusterprops]
-======
-*nix::
-+
-====
-[source,terminal]
-----
-$ bin/solr cluster --property urlScheme --value https --zk-host server1:2181,server2:2181,server3:2181
-----
-====
-
-Windows::
-+
-====
-[source,powershell]
-----
-C:\> bin/solr.cmd cluster --property urlScheme --value https --zk-host server1:2181,server2:2181,server3:2181
-----
-====
-======
-
-Be sure to use the correct `--zk-host` value for your system.
-If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkHost` string, e.g., `--zk-host server1:2181,server2:2181,server3:2181/solr`.
-
-=== Update Cluster Properties for Existing Collections
-
-If you are using SolrCloud and have collections created before enabling SSL, you will need to update the cluster properties to use HTTPS.
-
-If you do not have existing collections or are not using SolrCloud, you can skip ahead and start Solr.
-
-Updating cluster properties can be done with the Collections API xref:cluster-node-management.adoc#clusterprop[CLUSTERPROP command], as in this example (update the hostname and port as appropriate for your system):
-
-[source,terminal]
-$ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https
-
-This command only needs to be run on one node of the cluster, the change will apply to all nodes.
-
-Once this and all other steps are complete, you can go ahead and start Solr.
 
 == Starting Solr After Enabling SSL
 
