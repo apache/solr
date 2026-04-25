@@ -17,11 +17,9 @@
 
 package org.apache.solr.util;
 
-import com.j256.simplemagic.ContentInfo;
-import com.j256.simplemagic.ContentInfoUtil;
-import com.j256.simplemagic.ContentType;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,22 +29,22 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 
 /** Utility class to guess the mime type of file based on its magic number. */
-public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
-  private final ContentInfoUtil util;
+public class FileTypeMagicUtil {
   private static final Set<String> SKIP_FOLDERS = new HashSet<>(Arrays.asList(".", ".."));
 
-  public static FileTypeMagicUtil INSTANCE = new FileTypeMagicUtil();
+  public static final FileTypeMagicUtil INSTANCE = new FileTypeMagicUtil();
 
-  FileTypeMagicUtil() {
-    try {
-      util = new ContentInfoUtil("/magic/executables", this);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing magic file", e);
-    }
-  }
+  // TAR ustar magic is at offset 257-261; 512 bytes (one full TAR block) covers all formats.
+  private static final int HEADER_BYTES = 512;
+
+  // Matches any shebang (#!) at the start of a file, regardless of interpreter path.
+  private static final Pattern SHELL_SHEBANG = Pattern.compile("^#!");
+
+  FileTypeMagicUtil() {}
 
   /**
    * Asserts that an entire configset folder is legal to upload.
@@ -55,6 +53,7 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    * @throws SolrException if an illegal file is found in the folder structure
    */
   public static void assertConfigSetFolderLegal(Path confPath) throws IOException {
+    //noinspection NullableProblems
     Files.walkFileTree(
         confPath,
         new SimpleFileVisitor<>() {
@@ -68,14 +67,15 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
                       "Not uploading symbolic link %s to configset, as symbolic links are not supported in ZooKeeper",
                       file));
             }
-            if (FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
+            String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(file);
+            if (forbiddenTypes.contains(mimeType)) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
                   String.format(
                       Locale.ROOT,
                       "Not uploading file %s to configset, as it matched the MAGIC signature of a forbidden mime type %s",
                       file,
-                      FileTypeMagicUtil.INSTANCE.guessMimeType(file)));
+                      mimeType));
             }
             return FileVisitResult.CONTINUE;
           }
@@ -97,22 +97,28 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    * @return string with content-type or "application/octet-stream" if unknown
    */
   public String guessMimeType(Path file) {
-    try {
-      return guessTypeFallbackToOctetStream(util.findMatch(file.toFile()));
+    try (InputStream in = Files.newInputStream(file)) {
+      return guessMimeType(in);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
   /**
-   * Guess the mime type of file based on its magic number.
+   * Guess the mime type of file based on its magic number. Package-private; external callers with
+   * an InputStream should use {@link #isFileForbiddenInConfigset(InputStream)}.
    *
    * @param stream input stream of the file
    * @return string with content-type or "application/octet-stream" if unknown
    */
   String guessMimeType(InputStream stream) {
     try {
-      return guessTypeFallbackToOctetStream(util.findMatch(stream));
+      byte[] buf = new byte[HEADER_BYTES];
+      int n = 0, read;
+      while (n < HEADER_BYTES && (read = stream.read(buf, n, HEADER_BYTES - n)) != -1) {
+        n += read;
+      }
+      return guessMimeType(Arrays.copyOf(buf, n));
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -125,15 +131,12 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    * @return string with content-type or "application/octet-stream" if unknown
    */
   public String guessMimeType(byte[] bytes) {
-    return guessTypeFallbackToOctetStream(util.findMatch(bytes));
-  }
-
-  @Override
-  public void error(String line, String details, Exception e) {
-    throw new SolrException(
-        SolrException.ErrorCode.SERVER_ERROR,
-        String.format(Locale.ROOT, "%s: %s", line, details),
-        e);
+    if (bytes == null || bytes.length == 0) return "application/octet-stream";
+    if (isJavaClass(bytes)) return "application/x-java-applet";
+    if (isZip(bytes)) return "application/zip";
+    if (isTar(bytes)) return "application/x-tar";
+    if (isShellScript(bytes)) return "text/x-shellscript";
+    return "application/octet-stream";
   }
 
   /**
@@ -143,7 +146,7 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    * <ul>
    *   <li><code>application/x-java-applet</code>: java class file
    *   <li><code>application/zip</code>: jar or zip archives
-   *   <li><code>application/x-tar</code>: tar archives
+   *   <li><code>application/x-tar</code>: tar archives (including gzip, bzip2, xz compressed)
    *   <li><code>text/x-shellscript</code>: shell or bash script
    * </ul>
    *
@@ -168,7 +171,7 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    * <ul>
    *   <li><code>application/x-java-applet</code>: java class file
    *   <li><code>application/zip</code>: jar or zip archives
-   *   <li><code>application/x-tar</code>: tar archives
+   *   <li><code>application/x-tar</code>: tar archives (including gzip, bzip2, xz compressed)
    *   <li><code>text/x-shellscript</code>: shell or bash script
    * </ul>
    *
@@ -199,11 +202,63 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
                       "application/x-java-applet,application/zip,application/x-tar,text/x-shellscript")
                   .split(",")));
 
-  private String guessTypeFallbackToOctetStream(ContentInfo contentInfo) {
-    if (contentInfo == null) {
-      return ContentType.OTHER.getMimeType();
-    } else {
-      return contentInfo.getContentType().getMimeType();
+  /**
+   * Detects JVM class files by the 0xCAFEBABE magic. Kotlin, Scala and Groovy use the same bytes.
+   */
+  private static boolean isJavaClass(byte[] b) {
+    return b.length >= 4
+        && (b[0] & 0xFF) == 0xCA
+        && (b[1] & 0xFF) == 0xFE
+        && (b[2] & 0xFF) == 0xBA
+        && (b[3] & 0xFF) == 0xBE;
+  }
+
+  /**
+   * Detects ZIP/JAR archives by the PK magic at offset 0. Handles three signatures: PK\x03\x04
+   * (local file header), PK\x05\x06 (empty archive), PK\x07\x08 (data descriptor).
+   *
+   * <p>Polyglot files (e.g. JPEG+ZIP) are not detected: their ZIP content is appended after the
+   * outer format's end marker and does not appear at offset 0.
+   */
+  private static boolean isZip(byte[] b) {
+    return b.length >= 4
+        && b[0] == 'P'
+        && b[1] == 'K'
+        && ((b[2] == 0x03 && b[3] == 0x04)
+            || (b[2] == 0x05 && b[3] == 0x06)
+            || (b[2] == 0x07 && b[3] == 0x08));
+  }
+
+  /**
+   * Detects TAR archives via the POSIX/GNU ustar magic at offset 257, and compressed archives
+   * (gzip, bzip2, xz) which commonly wrap tarballs. V7-format tars have no magic and are not
+   * detected, but they are essentially extinct. Plain compressed files without a tar payload are
+   * also blocked — they have no legitimate use in a Solr configset.
+   */
+  private static boolean isTar(byte[] b) {
+    if (b.length >= 262
+        && b[257] == 'u'
+        && b[258] == 's'
+        && b[259] == 't'
+        && b[260] == 'a'
+        && b[261] == 'r') {
+      return true;
     }
+    if (b.length >= 2 && (b[0] & 0xFF) == 0x1F && (b[1] & 0xFF) == 0x8B) return true; // gzip
+    if (b.length >= 3 && b[0] == 'B' && b[1] == 'Z' && b[2] == 'h') return true; // bzip2
+    return b.length >= 6 // xz: FD 37 7A 58 5A 00
+        && (b[0] & 0xFF) == 0xFD
+        && b[1] == '7'
+        && b[2] == 'z'
+        && b[3] == 'X'
+        && b[4] == 'Z'
+        && b[5] == 0x00;
+  }
+
+  private static boolean isShellScript(byte[] b) {
+    if (b.length < 2) return false;
+    // lookingAt() matches from the start without requiring a full-string match.
+    String prefix = new String(b, 0, Math.min(b.length, 64), StandardCharsets.ISO_8859_1);
+    return SHELL_SHEBANG.matcher(prefix).lookingAt();
   }
 }

@@ -120,7 +120,6 @@ hk2 = "3.1.1"
 hsqldb = "2.7.4"
 ibm-icu = "77.1"
 immutables-valueannotations = "2.12.1"
-j256-simplemagic = "1.17"
 # Keep these Jakarta versions aligned with EE 10
 jakarta-annotation = "3.0.0"
 jakarta-inject = "2.0.1"
@@ -412,7 +411,6 @@ hk2-locator = { module = "org.glassfish.hk2:hk2-locator", version.ref = "hk2" }
 hsqldb-hsqldb = { module = "org.hsqldb:hsqldb", version.ref = "hsqldb" }
 ibm-icu-icu4j = { module = "com.ibm.icu:icu4j", version.ref = "ibm-icu" }
 immutables-valueannotations = { module = "org.immutables:value-annotations", version.ref = "immutables-valueannotations" }
-j256-simplemagic = { module = "com.j256.simplemagic:simplemagic", version.ref = "j256-simplemagic" }
 jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
 jakarta-inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
 jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakarta-servlet" }

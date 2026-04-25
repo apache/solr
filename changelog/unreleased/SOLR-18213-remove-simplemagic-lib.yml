@@ -1,0 +1,8 @@
+title: Replace simplemagic with built-in magic-byte file type detection for configset uploads
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18213
+    url: https://issues.apache.org/jira/browse/SOLR-18213
