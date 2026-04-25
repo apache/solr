@@ -1,4 +1,4 @@
-title: "Replace end-of-life bc-jose4j JWT library with nimbus-jose-jwt in the jwt-auth module."
+title: "Replace unmaintained bc-jose4j JWT library with nimbus-jose-jwt in the jwt-auth module."
 type: dependency_update
 authors:
   - name: Jan Høydahl
