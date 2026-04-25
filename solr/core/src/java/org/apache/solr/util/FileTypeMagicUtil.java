@@ -26,9 +26,9 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 
@@ -37,6 +37,24 @@ public class FileTypeMagicUtil {
   private static final Set<String> SKIP_FOLDERS = new HashSet<>(Arrays.asList(".", ".."));
 
   public static final FileTypeMagicUtil INSTANCE = new FileTypeMagicUtil();
+
+  /**
+   * Default set of MIME types forbidden in configsets. Overridable via the system property {@code
+   * solr.configset.upload.mimetypes.forbidden}.
+   */
+  public static final List<String> DEFAULT_FORBIDDEN_MIME_TYPES =
+      List.of(
+          "application/x-java-applet",
+          "application/zip",
+          "application/x-tar",
+          "application/gzip",
+          "application/x-bzip2",
+          "application/x-xz",
+          "text/x-shellscript",
+          "application/x-dosexec",
+          "application/x-executable",
+          "application/x-java-serialized-object",
+          "application/x-mach-binary");
 
   // TAR ustar magic is at offset 257-261; 512 bytes (one full TAR block) covers all formats.
   private static final int HEADER_BYTES = 512;
@@ -144,22 +162,9 @@ public class FileTypeMagicUtil {
   }
 
   /**
-   * Determine forbidden file type based on magic bytes matching of the file itself. Forbidden types
-   * are:
-   *
-   * <ul>
-   *   <li><code>application/x-java-applet</code>: java class file
-   *   <li><code>application/zip</code>: jar or zip archives
-   *   <li><code>application/x-tar</code>: tar archives
-   *   <li><code>application/gzip</code>: gzip compressed files
-   *   <li><code>application/x-bzip2</code>: bzip2 compressed files
-   *   <li><code>application/x-xz</code>: xz compressed files
-   *   <li><code>text/x-shellscript</code>: shell or bash script
-   *   <li><code>application/x-dosexec</code>: Windows EXE/DLL or self-extracting archive
-   *   <li><code>application/x-executable</code>: ELF executable or shared library
-   *   <li><code>application/x-java-serialized-object</code>: Java serialized object stream
-   *   <li><code>application/x-mach-binary</code>: macOS Mach-O binary
-   * </ul>
+   * Determine forbidden file type based on magic bytes matching of the file itself. The default
+   * forbidden types are listed in {@link #DEFAULT_FORBIDDEN_MIME_TYPES} and can be overridden via
+   * the system property {@code solr.configset.upload.mimetypes.forbidden}.
    *
    * @param file file to check
    * @return true if file is among the forbidden mime-types
@@ -199,17 +204,9 @@ public class FileTypeMagicUtil {
   }
 
   private static final Set<String> forbiddenTypes =
-      Arrays.stream(
-              EnvUtils.getProperty(
-                      "solr.configset.upload.mimetypes.forbidden",
-                      "application/x-java-applet,application/zip,application/x-tar,"
-                          + "application/gzip,application/x-bzip2,application/x-xz,"
-                          + "text/x-shellscript,application/x-dosexec,application/x-executable,"
-                          + "application/x-java-serialized-object,application/x-mach-binary")
-                  .split(","))
-          .map(String::strip)
-          .filter(s -> !s.isEmpty())
-          .collect(Collectors.toCollection(HashSet::new));
+      new HashSet<>(
+          EnvUtils.getPropertyAsList(
+              "solr.configset.upload.mimetypes.forbidden", DEFAULT_FORBIDDEN_MIME_TYPES));
 
   /**
    * Detects JVM class files by the 0xCAFEBABE magic. Kotlin, Scala and Groovy use the same bytes.
