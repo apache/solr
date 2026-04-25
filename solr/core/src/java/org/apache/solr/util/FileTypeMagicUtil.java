@@ -304,8 +304,7 @@ public class FileTypeMagicUtil {
   }
 
   /**
-   * Detects Java serialized object streams. Deserialization of untrusted data is a known RCE vector
-   * and has been exploited in Solr in the past.
+   * Detects Java serialized object streams.
    */
   private static boolean isJavaSerialized(byte[] b) {
     return b.length >= 4
