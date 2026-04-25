@@ -21,6 +21,7 @@ import static org.apache.solr.security.jwt.JWTAuthPluginTest.JWT_TEST_PATH;
 import static org.apache.solr.security.jwt.JWTAuthPluginTest.testJwk;
 
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.util.Resource;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
@@ -241,5 +243,52 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     assertEquals(
         "Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config",
         e.getMessage());
+  }
+
+  @Test
+  public void parseJwkSetSingleBareJwk() throws Exception {
+    // testJwk is a bare JWK map (no "keys" wrapper) — exercises the single-JWK branch
+    JWKSet result = JWTIssuerConfig.parseJwkSet(testJwk);
+    assertEquals(1, result.getKeys().size());
+    assertEquals("k1", result.getKeys().get(0).getKeyID());
+  }
+
+  @Test
+  public void jwkSetFetcherRefreshReprieveSuppressesSecondCall() throws Exception {
+    AtomicInteger fetchCount = new AtomicInteger();
+    JWKSet referenceSet = JWTIssuerConfig.parseJwkSet(testJwk);
+    String jwkSetJson = referenceSet.toString();
+    com.nimbusds.jose.util.ResourceRetriever countingRetriever =
+        url -> {
+          fetchCount.incrementAndGet();
+          return new Resource(jwkSetJson, "application/json");
+        };
+    // refreshReprieveThresholdMs=5000 → second call within that window is suppressed
+    JWTIssuerConfig.JwkSetFetcher fetcher =
+        new JWTIssuerConfig.JwkSetFetcher(
+            "https://example.com/jwks", countingRetriever, 3600L, 5000L);
+
+    fetcher.refresh(); // First call — fetches
+    fetcher.refresh(); // Second call within reprieve window — suppressed
+    assertEquals(1, fetchCount.get());
+  }
+
+  @Test
+  public void jwkSetFetcherCacheExpiryTriggersRefetch() throws Exception {
+    AtomicInteger fetchCount = new AtomicInteger();
+    JWKSet referenceSet = JWTIssuerConfig.parseJwkSet(testJwk);
+    String jwkSetJson = referenceSet.toString();
+    com.nimbusds.jose.util.ResourceRetriever countingRetriever =
+        url -> {
+          fetchCount.incrementAndGet();
+          return new Resource(jwkSetJson, "application/json");
+        };
+    // cacheDurationSeconds=0 and refreshReprieveThresholdMs=0 → every getKeys() re-fetches
+    JWTIssuerConfig.JwkSetFetcher fetcher =
+        new JWTIssuerConfig.JwkSetFetcher("https://example.com/jwks", countingRetriever, 0L, 0L);
+
+    fetcher.getKeys(); // First call — fetches
+    fetcher.getKeys(); // Second call — cache expired, fetches again
+    assertEquals(2, fetchCount.get());
   }
 }

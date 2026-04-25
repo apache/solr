@@ -18,6 +18,7 @@ package org.apache.solr.security.jwt;
 
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_EXPIRED;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH;
@@ -739,6 +740,120 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
             .toAbsolutePath()
             .toString();
     assertEquals(2, plugin.parseCertsFromFile(pemFilePath).size());
+  }
+
+  @Test
+  public void requireIssuerFalseButIssPresentAndMismatches() {
+    // requireIssuer=false controls whether iss must be present, not whether a mismatching value
+    // is silently accepted. A token with iss="IDServer" should fail when iss="NA" is configured.
+    testConfig.put("iss", "NA");
+    testConfig.put("requireIss", false);
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertFalse(resp.isAuthenticated());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+  }
+
+  @Test
+  public void requireIssuerFalseNoIssInTokenOrConfig() throws Exception {
+    // requireIssuer=false with no iss claim in token and no iss in config → authenticated
+    testConfig.put("requireIss", false);
+    testConfig.put("requireExp", false);
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(slimHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+  }
+
+  @Test
+  public void scopeClaimAsJsonArray() throws Exception {
+    // Verify that a scope claim expressed as a JSON array (not just a whitespace-separated String)
+    // is correctly parsed: authentication succeeds and "openid" is filtered out of the roles.
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("IDServer")
+            .audience("Solr")
+            .expirationTime(new Date(new Date().getTime() + 10 * 60 * 1000))
+            .subject("solruser")
+            .claim("scope", Arrays.asList("solr:read", "openid"))
+            .claim("customPrincipal", "custom")
+            .build();
+    SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), claims);
+    signedJWT.sign(new RSASSASigner(rsaKey));
+    String header = "Bearer " + signedJWT.serialize();
+
+    testConfig.put("scope", "solr:read");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+    Set<String> roles = ((VerifiedUserRoles) resp.getPrincipal()).getVerifiedRoles();
+    assertTrue(roles.contains("solr:read"));
+    assertFalse("openid should be filtered from roles", roles.contains("openid"));
+  }
+
+  @Test
+  public void asConfigJwkRoundTrip() {
+    // Verify that re-initialising a plugin from an issuer's asConfig() output still authenticates
+    Map<String, Object> issuerConf = plugin.getIssuerConfigs().get(0).asConfig();
+    JWTAuthPlugin roundTrippedPlugin = new JWTAuthPlugin();
+    HashMap<String, Object> newConfig = new HashMap<>();
+    newConfig.put("class", "org.apache.solr.security.jwt.JWTAuthPlugin");
+    newConfig.put("principalClaim", "customPrincipal");
+    newConfig.put("jwk", issuerConf.get("jwk"));
+    roundTrippedPlugin.init(newConfig);
+    try {
+      JWTAuthPlugin.JWTAuthenticationResponse resp = roundTrippedPlugin.authenticate(testHeader);
+      assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+    } finally {
+      try {
+        roundTrippedPlugin.close();
+      } catch (Exception ignored) {
+      }
+    }
+  }
+
+  @Test
+  public void tokenExpiredWithinClockSkewIsAuthenticated() throws Exception {
+    // Token expired 25 seconds ago — within the 30-second clock skew tolerance
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("IDServer")
+            .audience("Solr")
+            .expirationTime(new Date(new Date().getTime() - 25 * 1000))
+            .subject("solruser")
+            .claim("customPrincipal", "custom")
+            .build();
+    SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), claims);
+    signedJWT.sign(new RSASSASigner(rsaKey));
+    String header = "Bearer " + signedJWT.serialize();
+
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+  }
+
+  @Test
+  public void tokenExpiredBeyondClockSkewIsRejected() throws Exception {
+    // Token expired 35 seconds ago — beyond the 30-second clock skew tolerance
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("IDServer")
+            .audience("Solr")
+            .expirationTime(new Date(new Date().getTime() - 35 * 1000))
+            .subject("solruser")
+            .claim("customPrincipal", "custom")
+            .build();
+    SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), claims);
+    signedJWT.sign(new RSASSASigner(rsaKey));
+    String header = "Bearer " + signedJWT.serialize();
+
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
+    assertFalse(resp.isAuthenticated());
+    assertEquals(JWT_EXPIRED, resp.getAuthCode());
   }
 
   @Test

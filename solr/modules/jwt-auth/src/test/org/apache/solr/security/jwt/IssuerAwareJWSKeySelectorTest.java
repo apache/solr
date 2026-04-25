@@ -26,10 +26,16 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.KeySourceException;
 import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import java.security.Key;
+import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -117,6 +123,69 @@ public class IssuerAwareJWSKeySelectorTest extends SolrTestCaseJ4 {
         asList(asList(k3.getJwk()), asList(k4.getJwk()), asList(k5.getJwk())).iterator();
     // Will not find key since first refresh returns k4, and we only try one refresh.
     resolver.selectJWSKeys(k5.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+  }
+
+  @Test
+  public void noIssRequireIssuerFalseSingleIssuerFallback() throws Exception {
+    // null iss, requireIssuer=false, single issuer → falls back to that issuer
+    when(httpsJwksFactory.createList(ArgumentMatchers.anyList())).thenReturn(asList(firstJwkList));
+    JWTIssuerConfig singleIssuerConfig = new JWTIssuerConfig("single").setJwksUrl(asList("url1"));
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(singleIssuerConfig), false);
+
+    List<? extends Key> keys =
+        resolver.selectJWSKeys(
+            k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext(null));
+    assertFalse(keys.isEmpty());
+  }
+
+  @Test(expected = KeySourceException.class)
+  public void noIssRequireIssuerFalseMultipleIssuersThrows() throws Exception {
+    // null iss, requireIssuer=false, multiple issuers → KeySourceException (ambiguous)
+    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("A").setJwksUrl(asList("url1"));
+    JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("B").setJwksUrl(asList("url2"));
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(iss1, iss2), false);
+    resolver.selectJWSKeys(k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext(null));
+  }
+
+  @Test
+  public void issMismatchSingleIssuerBackCompatFallback() throws Exception {
+    // iss present but unrecognised, single issuer → back-compat fallback to that issuer
+    when(httpsJwksFactory.createList(ArgumentMatchers.anyList())).thenReturn(asList(firstJwkList));
+    JWTIssuerConfig singleIssuerConfig =
+        new JWTIssuerConfig("single").setIss("A").setJwksUrl(asList("url1"));
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(singleIssuerConfig), true);
+
+    List<? extends Key> keys =
+        resolver.selectJWSKeys(
+            k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("UNKNOWN"));
+    assertFalse(keys.isEmpty());
+  }
+
+  @Test(expected = KeySourceException.class)
+  public void issMismatchMultipleIssuersThrows() throws Exception {
+    // iss present but unrecognised, multiple issuers → KeySourceException
+    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("A").setJwksUrl(asList("url1"));
+    JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("B").setJwksUrl(asList("url2"));
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(iss1, iss2), true);
+    resolver.selectJWSKeys(
+        k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("UNKNOWN"));
+  }
+
+  @Test
+  public void ecKeyTypeMaterialisedCorrectly() throws Exception {
+    // EC key type should be returned as ECPublicKey, not RSAPublicKey
+    ECKey ecKey = new ECKeyGenerator(Curve.P_256).keyID("ec1").generate();
+    JWTIssuerConfig ecIssuerConfig =
+        new JWTIssuerConfig("ec-issuer")
+            .setIss("ec-iss")
+            .setJsonWebKeySet(new JWKSet(ecKey.toPublicJWK()));
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(ecIssuerConfig), false);
+
+    JWSHeader ecHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("ec1").build();
+    List<? extends Key> keys =
+        resolver.selectJWSKeys(ecHeader, new IssuerAwareJWSKeySelector.IssuerContext("ec-iss"));
+    assertFalse(keys.isEmpty());
+    assertTrue(keys.get(0) instanceof ECPublicKey);
   }
 
   @SuppressWarnings("NewClassNamingConvention")
