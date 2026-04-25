@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * <p>If a key is not found and the issuer is backed by HTTPS JWKs, one cache refresh is attempted
  * before failing.
  */
-public class JWTVerificationkeyResolver implements JWSKeySelector<SecurityContext> {
+public class IssuerAwareJWSKeySelector implements JWSKeySelector<SecurityContext> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, JWTIssuerConfig> issuerConfigs = new HashMap<>();
@@ -85,7 +85,7 @@ public class JWTVerificationkeyResolver implements JWSKeySelector<SecurityContex
    * @param issuerConfigs Collection of configuration objects for the issuer(s)
    * @param requireIssuer if true, will require 'iss' claim on jws
    */
-  public JWTVerificationkeyResolver(
+  public IssuerAwareJWSKeySelector(
       Collection<JWTIssuerConfig> issuerConfigs, boolean requireIssuer) {
     this.requireIssuer = requireIssuer;
     issuerConfigs.forEach(ic -> this.issuerConfigs.put(ic.getIss(), ic));

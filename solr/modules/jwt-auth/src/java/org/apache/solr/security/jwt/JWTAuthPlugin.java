@@ -142,7 +142,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   private List<String> redirectUris;
   private List<JWTIssuerConfig> issuerConfigs;
   private boolean requireIssuer;
-  private JWTVerificationkeyResolver verificationKeyResolver;
+  private IssuerAwareJWSKeySelector verificationKeyResolver;
   private Collection<X509Certificate> trustedSslCerts;
   String realm;
   private final CoreContainer coreContainer;
@@ -240,7 +240,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
     // Add issuers from 'issuers' key
     issuerConfigs.addAll(parseIssuers(pluginConfig));
-    verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfigs, requireIssuer);
+    verificationKeyResolver = new IssuerAwareJWSKeySelector(issuerConfigs, requireIssuer);
 
     if (!issuerConfigs.isEmpty() && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
       adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
@@ -604,7 +604,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             // Use the already-parsed SignedJWT to avoid redundant parsing and ParseException
             jwtClaims =
                 jwtProcessor.process(
-                    signedJWT, new JWTVerificationkeyResolver.IssuerContext(tokenIssuer));
+                    signedJWT, new IssuerAwareJWSKeySelector.IssuerContext(tokenIssuer));
           } catch (BadJWSException e) {
             return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, e);
           } catch (BadJWTException e) {

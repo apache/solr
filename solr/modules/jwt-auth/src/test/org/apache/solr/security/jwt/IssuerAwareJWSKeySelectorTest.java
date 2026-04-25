@@ -45,8 +45,8 @@ import org.mockito.junit.MockitoRule;
 
 /** Tests the multi jwks resolver that can fetch keys from multiple JWKs */
 @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
-  private JWTVerificationkeyResolver resolver;
+public class IssuerAwareJWSKeySelectorTest extends SolrTestCaseJ4 {
+  private IssuerAwareJWSKeySelector resolver;
 
   @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
@@ -94,7 +94,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     JWTIssuerConfig issuerConfig =
         new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
     JWTIssuerConfig.setHttpsJwksFactory(httpsJwksFactory);
-    resolver = new JWTVerificationkeyResolver(Arrays.asList(issuerConfig), true);
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(issuerConfig), true);
 
     assumeWorkingMockito();
   }
@@ -103,12 +103,12 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   public void findKeyFromFirstList() throws Exception {
     refreshSequenceForSecondJwk =
         asList(asList(k3.getJwk(), k4.getJwk()), asList(k5.getJwk())).iterator();
-    resolver.selectJWSKeys(k1.getJwsHeader(), new JWTVerificationkeyResolver.IssuerContext("foo"));
-    resolver.selectJWSKeys(k2.getJwsHeader(), new JWTVerificationkeyResolver.IssuerContext("foo"));
-    resolver.selectJWSKeys(k3.getJwsHeader(), new JWTVerificationkeyResolver.IssuerContext("foo"));
-    resolver.selectJWSKeys(k4.getJwsHeader(), new JWTVerificationkeyResolver.IssuerContext("foo"));
+    resolver.selectJWSKeys(k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+    resolver.selectJWSKeys(k2.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+    resolver.selectJWSKeys(k3.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+    resolver.selectJWSKeys(k4.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
     // Key k5 is not in cache, so a refresh will be done
-    resolver.selectJWSKeys(k5.getJwsHeader(), new JWTVerificationkeyResolver.IssuerContext("foo"));
+    resolver.selectJWSKeys(k5.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
   }
 
   @Test(expected = KeySourceException.class)
@@ -116,7 +116,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     refreshSequenceForSecondJwk =
         asList(asList(k3.getJwk()), asList(k4.getJwk()), asList(k5.getJwk())).iterator();
     // Will not find key since first refresh returns k4, and we only try one refresh.
-    resolver.selectJWSKeys(k5.getJwsHeader(), new JWTVerificationkeyResolver.IssuerContext("foo"));
+    resolver.selectJWSKeys(k5.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
   }
 
   @SuppressWarnings("NewClassNamingConvention")
