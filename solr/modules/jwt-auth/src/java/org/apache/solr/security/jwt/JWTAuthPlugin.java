@@ -620,11 +620,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
           }
 
-          // Validate issuer value against configured issuers (only when iss is explicitly
-          // configured)
-          if (requireIssuer
-              && tokenIssuer != null
-              && issuerConfigs.stream().anyMatch(ic -> ic.getIss() != null)) {
+          // Validate issuer value whenever the token carries an iss claim and at least one issuer
+          // is explicitly configured. requireIssuer controls whether iss must be present, not
+          // whether a mismatching value should be silently accepted when it is present.
+          if (tokenIssuer != null && issuerConfigs.stream().anyMatch(ic -> ic.getIss() != null)) {
             boolean issuerMatched =
                 issuerConfigs.stream()
                     .anyMatch(ic -> ic.getIss() != null && ic.getIss().equals(tokenIssuer));
