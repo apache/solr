@@ -96,8 +96,8 @@ import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,8 +112,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
   public static String TLOG_NAME = "tlog";
   public static String BUFFER_TLOG_NAME = "buffer.tlog";
-  private static final String UPDATELOG_REPLAY_SPAN_NAME = "updatelog.replay";
-  private static final String UPDATELOG_REPLAY_LOG_SPAN_NAME = "updatelog.replay.log";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
@@ -2141,7 +2139,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       long replayedOps = 0;
       final int replayErrorsStart = recoveryInfo.errors.get();
       final Span replaySpan =
-          TraceUtils.getGlobalTracer().spanBuilder(UPDATELOG_REPLAY_SPAN_NAME).startSpan();
+          TraceUtils.getGlobalTracer().spanBuilder("updatelog.replay").startSpan();
       TraceUtils.ifNotNoop(
           replaySpan,
           span -> {
@@ -2212,12 +2210,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       long replayedOps = 0L;
       final int replayErrorsStart = recoveryInfo.errors.get();
       final Span replayLogSpan =
-          TraceUtils.getGlobalTracer().spanBuilder(UPDATELOG_REPLAY_LOG_SPAN_NAME).startSpan();
+          TraceUtils.getGlobalTracer().spanBuilder("updatelog.replay.log").startSpan();
       TraceUtils.ifNotNoop(
           replayLogSpan,
           span -> {
             if (translog.tlog != null) {
-              span.setAttribute("updatelog.replay.log_file", translog.tlog.getFileName().toString());
+              span.setAttribute(
+                  "updatelog.replay.log_file", translog.tlog.getFileName().toString());
             }
             span.setAttribute("updatelog.replay.log_size_bytes", translog.getLogSize());
             span.setAttribute("updatelog.replay.active_log", activeLog);
