@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.junit.After;
 import org.junit.Before;
@@ -241,5 +242,13 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     assertEquals(
         "Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config",
         e.getMessage());
+  }
+
+  @Test
+  public void parseJwkSetSingleBareJwk() throws Exception {
+    // testJwk is a bare JWK map (no "keys" wrapper) — exercises the single-JWK branch
+    JsonWebKeySet result = JWTIssuerConfig.parseJwkSet(testJwk);
+    assertEquals(1, result.getJsonWebKeys().size());
+    assertEquals("k1", result.getJsonWebKeys().get(0).getKeyId());
   }
 }
