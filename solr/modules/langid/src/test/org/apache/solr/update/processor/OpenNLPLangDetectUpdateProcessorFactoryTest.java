@@ -40,7 +40,7 @@ public class OpenNLPLangDetectUpdateProcessorFactoryTest
         == null) { // handle superclass tests that don't provide confidence threshold
       parameters.set("langid.threshold", "0.3");
     }
-    SolrQueryRequest req = parser.buildRequestFrom(h.getCore(), new ModifiableSolrParams(), null);
+    SolrQueryRequest req = _parser.buildRequestFrom(h.getCore(), new ModifiableSolrParams(), null);
     OpenNLPLangDetectUpdateProcessorFactory factory = new OpenNLPLangDetectUpdateProcessorFactory();
     factory.init(new SimpleOrderedMap<>(parameters));
     factory.inform(h.getCore());

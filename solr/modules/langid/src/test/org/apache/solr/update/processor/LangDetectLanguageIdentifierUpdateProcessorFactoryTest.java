@@ -27,7 +27,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters)
       throws Exception {
     return new LangDetectLanguageIdentifierUpdateProcessor(
-        parser.buildRequestFrom(h.getCore(), parameters, null),
+        _parser.buildRequestFrom(h.getCore(), parameters, null),
         resp,
         null,
         LangDetectLanguageIdentifierUpdateProcessorFactory.ORCHESTRATOR);
