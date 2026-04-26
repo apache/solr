@@ -56,7 +56,8 @@ import org.slf4j.LoggerFactory;
  * <p>These tests verify correct handling of:
  *
  * <ul>
- *   <li>Files that are exact multiples of PACKET_SZ (1 MB) - triggers zero-length data packets
+ *   <li>Files that are exact multiples of PACKET_SZ (1 MB) - sender must not produce spurious
+ *       zero-length data packets
  *   <li>Files of arbitrary sizes - boundary conditions and edge cases
  *   <li>Checksum verification and error handling
  * </ul>
@@ -159,7 +160,7 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultipleExactPacketSizeFiles() throws Exception {
-    // Ensures zero-length packet handling works correctly in succession
+    // Ensures exact-multiple-of-PACKET_SZ handling works correctly in succession
     for (int i = 1; i <= 5; i++) {
       assertFetchPacketsSuccess(i * PACKET_SZ, "test-" + i + "mb-successive.bin");
     }
