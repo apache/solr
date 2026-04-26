@@ -91,7 +91,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -2147,7 +2146,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             span.setAttribute("updatelog.replay.active_log", activeLog);
             span.setAttribute("updatelog.replay.in_sorted_order", inSortedOrder);
             span.setAttribute("updatelog.replay.logs_total", initialLogCount);
-            span.setAttribute("updatelog.replay.core", req.getCore().getName());
             TraceUtils.setDbInstance(span, req.getCore().getName());
           });
 
@@ -2188,15 +2186,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             log.error("ERROR: didn't get to recover from tlog {}", translog);
             translog.decref();
           }
+          if (replaySpan.isRecording()) {
+            replaySpan.setAttribute("updatelog.replay.logs_replayed", logsReplayed);
+            replaySpan.setAttribute("updatelog.replay.ops_replayed", replayedOps);
+            replaySpan.setAttribute(
+                "updatelog.replay.errors", recoveryInfo.errors.get() - replayErrorsStart);
+          }
+          replaySpan.end();
         }
-      } finally {
-        if (replaySpan.isRecording()) {
-          replaySpan.setAttribute("updatelog.replay.logs_replayed", logsReplayed);
-          replaySpan.setAttribute("updatelog.replay.ops_replayed", replayedOps);
-          replaySpan.setAttribute(
-              "updatelog.replay.errors", recoveryInfo.errors.get() - replayErrorsStart);
-        }
-        replaySpan.end();
       }
 
       loglog.warn("Log replay finished. recoveryInfo={}", recoveryInfo);
@@ -2249,9 +2246,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
         TraceUtils.ifNotNoop(
             replayLogSpan,
-            span ->
-                span.setAttribute(
-                    "updatelog.replay.urp_chain", summarizeProcessorChain(processorChain)));
+            span -> span.setAttribute("updatelog.replay.urp_chain", processorChain.toString()));
         Collection<UpdateRequestProcessor> procPool =
             Collections.synchronizedList(new ArrayList<>());
         ThreadLocal<UpdateRequestProcessor> procThreadLocal =
@@ -2471,21 +2466,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         replayLogSpan.end();
       }
       return replayedOps;
-    }
-
-    private String summarizeProcessorChain(UpdateRequestProcessorChain processorChain) {
-      if (processorChain == null) {
-        return "none";
-      }
-      List<UpdateRequestProcessorFactory> processors = processorChain.getProcessors();
-      if (processors == null || processors.isEmpty()) {
-        return "empty";
-      }
-      List<String> names = new ArrayList<>(processors.size());
-      for (UpdateRequestProcessorFactory processor : processors) {
-        names.add(processor.getClass().getSimpleName());
-      }
-      return String.join(">", names);
     }
 
     private void waitForAllUpdatesGetExecuted(AtomicInteger pendingTasks) {
