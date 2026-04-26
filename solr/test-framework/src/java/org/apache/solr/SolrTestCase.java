@@ -25,7 +25,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -36,8 +35,7 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -117,59 +115,36 @@ public class SolrTestCase extends LuceneTestCase {
    *
    * <p>Logs INFO/WARNing messages as appropriate based on these 2 conditions.
    *
-   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR
    */
   @BeforeClass
   public static void beforeSolrTestCase() {
     final String existingValue =
-        EnvUtils.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR);
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           existingValue);
       return;
     }
     final Path extPath = ExternalPaths.DEFAULT_CONFIGSET;
-    if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
+    if (extPath != null) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
               + "does not exist or is not a readable directory, you may need to set the property yourself "
               + "for tests to run properly",
-          SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET);
-    }
-
-    final String allowPaths = EnvUtils.getProperty(CoreContainer.ALLOW_PATHS_SYSPROP);
-    if (null != allowPaths) {
-      log.info(
-          "Test env includes allow-paths system property '{}'='{}'",
-          CoreContainer.ALLOW_PATHS_SYSPROP,
-          allowPaths);
-    } else if (Files.isReadable(ExternalPaths.SERVER_HOME)
-        && Files.isDirectory(ExternalPaths.SERVER_HOME)) {
-      log.info(
-          "Setting '{}' system property to test-framework derived value of '{}'",
-          CoreContainer.ALLOW_PATHS_SYSPROP,
-          ExternalPaths.SERVER_HOME);
-      System.setProperty(
-          CoreContainer.ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toString());
-    } else {
-      log.warn(
-          "System property '{}' is not already set, but test-framework derived value ('{}') either "
-              + "does not exist or is not a readable directory; tests may need to set the property "
-              + "explicitly when loading external configsets",
-          CoreContainer.ALLOW_PATHS_SYSPROP,
-          ExternalPaths.SERVER_HOME);
     }
 
     // set solr.install.dir needed by some test configs outside the test sandbox (!)
