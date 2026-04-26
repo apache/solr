@@ -18,6 +18,7 @@ package org.apache.solr.security.jwt;
 
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_EXPIRED;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH;
@@ -52,6 +53,7 @@ import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.NumericDate;
 import org.jose4j.keys.BigEndianBigInteger;
 import org.jose4j.lang.JoseException;
 import org.junit.After;
@@ -745,5 +747,93 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals(
         "http://acmepaymentscorp/oauth/oauth20/token",
         EnvUtils.getProperty(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
+  }
+
+  @Test
+  public void requireIssuerFalseButIssPresentAndMismatches() {
+    // requireIssuer=false controls whether iss must be present, not whether a mismatching value
+    // is silently accepted. A token with iss="IDServer" should fail when iss="NA" is configured.
+    testConfig.put("iss", "NA");
+    testConfig.put("requireIss", false);
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertFalse(resp.isAuthenticated());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+  }
+
+  @Test
+  public void requireIssuerFalseNoIssInTokenOrConfig() {
+    // requireIssuer=false with no iss claim in token and no iss in config → authenticated
+    testConfig.put("requireIss", false);
+    testConfig.put("requireExp", false);
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(slimHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+  }
+
+  @Test
+  public void scopeClaimAsJsonArray() throws Exception {
+    // Verify that a scope claim expressed as a JSON array (not just a whitespace-separated String)
+    // is correctly parsed: authentication succeeds and "openid" is filtered out of the roles.
+    JwtClaims claims = generateClaims();
+    claims.setClaim("scope", Arrays.asList("solr:read", "openid"));
+    JsonWebSignature jws = new JsonWebSignature();
+    jws.setPayload(claims.toJson());
+    jws.setKey(rsaJsonWebKey.getPrivateKey());
+    jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
+    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+    String header = "Bearer " + jws.getCompactSerialization();
+
+    testConfig.put("scope", "solr:read");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+    Set<String> roles = ((VerifiedUserRoles) resp.getPrincipal()).getVerifiedRoles();
+    assertTrue(roles.contains("solr:read"));
+    assertFalse("openid should be filtered from roles", roles.contains("openid"));
+  }
+
+  @Test
+  public void tokenExpiredWithinClockSkewIsAuthenticated() throws Exception {
+    // Token expired 25 seconds ago — within the 30-second clock skew tolerance.
+    // All timestamps must be consistent: iat < exp, so iat is set 90 seconds in the past.
+    NumericDate now = NumericDate.now();
+    JwtClaims claims = new JwtClaims();
+    claims.setIssuer("IDServer");
+    claims.setClaim("customPrincipal", "custom");
+    claims.setIssuedAt(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setNotBefore(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setExpirationTime(NumericDate.fromSeconds(now.getValue() - 25));
+    JsonWebSignature jws = new JsonWebSignature();
+    jws.setPayload(claims.toJson());
+    jws.setKey(rsaJsonWebKey.getPrivateKey());
+    jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
+    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+    String header = "Bearer " + jws.getCompactSerialization();
+
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+  }
+
+  @Test
+  public void tokenExpiredBeyondClockSkewIsRejected() throws Exception {
+    // Token expired 35 seconds ago — beyond the 30-second clock skew tolerance.
+    NumericDate now = NumericDate.now();
+    JwtClaims claims = new JwtClaims();
+    claims.setIssuer("IDServer");
+    claims.setClaim("customPrincipal", "custom");
+    claims.setIssuedAt(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setNotBefore(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setExpirationTime(NumericDate.fromSeconds(now.getValue() - 35));
+    JsonWebSignature jws = new JsonWebSignature();
+    jws.setPayload(claims.toJson());
+    jws.setKey(rsaJsonWebKey.getPrivateKey());
+    jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
+    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+    String header = "Bearer " + jws.getCompactSerialization();
+
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
+    assertFalse(resp.isAuthenticated());
+    assertEquals(JWT_EXPIRED, resp.getAuthCode());
   }
 }
