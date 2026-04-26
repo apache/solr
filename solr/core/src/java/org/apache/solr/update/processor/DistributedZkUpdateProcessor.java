@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -554,20 +553,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         Replica leaderReplica =
             zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
         // DBQ forwarded to NRT and TLOG replicas
-        List<ZkCoreNodeProps> replicaProps =
+        List<Replica> foundReplicas =
             zkController
                 .getZkStateReader()
-                .getReplicaProps(
+                .getReplicas(
                     collection,
                     myShardId,
                     leaderReplica.getName(),
                     null,
                     Replica.State.DOWN,
                     EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-        if (replicaProps != null) {
-          final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(replicaProps.size());
-          for (ZkCoreNodeProps replicaProp : replicaProps) {
-            myReplicas.add(new SolrCmdDistributor.StdNode(replicaProp, collection, myShardId));
+        if (foundReplicas != null) {
+          final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(foundReplicas.size());
+          for (Replica replica : foundReplicas) {
+            myReplicas.add(new SolrCmdDistributor.StdNode(replica, collection, myShardId));
           }
           cmdDistrib.distribDelete(
               cmd, myReplicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
@@ -628,20 +627,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // TODO: what if we are no longer the leader?
 
       forwardToLeader = false;
-      List<ZkCoreNodeProps> replicaProps =
+      List<Replica> replicas =
           zkController
               .getZkStateReader()
-              .getReplicaProps(
+              .getReplicas(
                   collection,
                   shardId,
                   leaderReplica.getName(),
                   null,
                   Replica.State.DOWN,
                   EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-      if (replicaProps != null) {
-        nodes = new ArrayList<>(replicaProps.size());
-        for (ZkCoreNodeProps props : replicaProps) {
-          nodes.add(new SolrCmdDistributor.StdNode(props, collection, shardId));
+      if (replicas != null) {
+        nodes = new ArrayList<>(replicas.size());
+        for (Replica replica : replicas) {
+          nodes.add(new SolrCmdDistributor.StdNode(replica, collection, shardId));
         }
       }
     } catch (InterruptedException e) {
@@ -791,7 +790,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       } else {
         // I need to forward on to the leader...
         forwardToLeader = true;
-        return Collections.singletonList(
+        return List.of(
             new SolrCmdDistributor.ForwardNode(
                 new ZkCoreNodeProps(leaderReplica),
                 zkController.getZkStateReader(),
@@ -1279,14 +1278,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               getLeaderExc);
         }
 
-        List<ZkCoreNodeProps> myReplicas =
+        List<Replica> myReplicas =
             zkController
                 .getZkStateReader()
-                .getReplicaProps(collection, cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
+                .getReplicas(collection, cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
         boolean foundErrorNodeInReplicaList = false;
         if (myReplicas != null) {
-          for (ZkCoreNodeProps replicaProp : myReplicas) {
-            if (((Replica) replicaProp.getNodeProps())
+          for (Replica replica : myReplicas) {
+            if (replica
                 .getName()
                 .equals(((Replica) stdNode.getNodeProps().getNodeProps()).getName())) {
               foundErrorNodeInReplicaList = true;

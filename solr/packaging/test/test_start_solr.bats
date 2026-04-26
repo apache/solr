@@ -84,8 +84,8 @@ teardown() {
 }
 
 @test "deprecated system properties converted to modern properties" {
-  solr start -Ddisable.v2.api=true
-  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.v2.api and should upgrade to using solr.api.v2.enabled instead.'
+  solr start -Ddisable.config.edit=true
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.config.edit and should upgrade to using solr.api.config.edit.enabled instead.'
 }
 
 @test "start with custom jetty options" {

@@ -584,10 +584,7 @@ public class RealTimeGetComponent extends SearchComponent {
         searcher
             .getDocFetcher()
             .decorateDocValueFields(
-                doc,
-                docid,
-                Collections.singleton(VERSION_FIELD),
-                new DocValuesIteratorCache(searcher, false));
+                doc, docid, Set.of(VERSION_FIELD), new DocValuesIteratorCache(searcher, false));
       }
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
@@ -1374,7 +1371,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
   private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
     if (StrUtils.isNullOrEmpty(versionsStr)) {
-      return Collections.emptyList();
+      return List.of();
     }
 
     List<String> ranges = StrUtils.splitSmart(versionsStr, ",", true);
@@ -1457,7 +1454,7 @@ public class RealTimeGetComponent extends SearchComponent {
       final String ids[] = params.getParams("ids");
 
       if (id == null && ids == null) {
-        IdsRequested result = new IdsRequested(Collections.<String>emptyList(), true);
+        IdsRequested result = new IdsRequested(List.of(), true);
         req.getContext().put(contextKey, result);
         return result;
       }

@@ -10,6 +10,10 @@ on:
       - 'solr/packaging/**'
       - 'solr/core/src/java/org/apache/solr/cli/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run Solr Script Tests
@@ -19,7 +23,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
     - uses: ./.github/actions/prepare-for-build
 
@@ -28,7 +32,7 @@ jobs:
 
     - name: Archive logs
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       with:
         name: logs
         path: solr/packaging/build/test-output

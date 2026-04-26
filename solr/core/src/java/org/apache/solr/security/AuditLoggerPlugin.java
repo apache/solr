@@ -26,7 +26,6 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -388,12 +387,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       log.info("Shutting down async Auditlogger background thread(s)");
       ExecutorUtil.shutdownNowAndAwaitTermination(executorService);
       executorService = null;
-      try {
-        SolrInfoBean.super.close();
-      } catch (Exception e) {
-        throw new IOException("Exception closing", e);
-      }
     }
+    SolrInfoBean.super.close();
   }
 
   /**
@@ -433,7 +428,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
               .forEach(
                   l -> {
                     if (l instanceof String) {
-                      rules.add(Collections.singletonList(parseRule(l)));
+                      rules.add(List.of(parseRule(l)));
                     } else if (l instanceof List) {
                       List<MuteRule> rl = new ArrayList<>();
                       ((List<?>) l).forEach(r -> rl.add(parseRule(r)));

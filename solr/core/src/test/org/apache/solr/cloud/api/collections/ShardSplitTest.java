@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -153,8 +152,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
 
     var builder =
-        new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+        new RandomizingCloudSolrClientBuilder(List.of(zkServer.getZkAddress()), Optional.empty());
 
     try (CloudSolrClient client =
         builder

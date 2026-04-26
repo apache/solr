@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -243,7 +242,7 @@ public class AtomicUpdateDocumentMerger {
     // if _version_ field is not supported for in-place update, bail out early
     SchemaField versionField = schema.getFieldOrNull(CommonParams.VERSION_FIELD);
     if (versionField == null || !isSupportedFieldForInPlaceUpdate(versionField)) {
-      return Collections.emptySet();
+      return Set.of();
     }
 
     String routeFieldOrNull = getRouteField(cmd);
@@ -266,7 +265,7 @@ public class AtomicUpdateDocumentMerger {
       }
       if (!(fieldValue instanceof Map)) {
         // not an in-place update if there are fields that are not maps
-        return Collections.emptySet();
+        return Set.of();
       }
       // else it's an atomic update map...
       Map<String, Object> fieldValueMap = (Map<String, Object>) fieldValue;
@@ -275,23 +274,23 @@ public class AtomicUpdateDocumentMerger {
         Object obj = entry.getValue();
         if (!op.equals("set") && !op.equals("inc")) {
           // not a supported in-place update op
-          return Collections.emptySet();
+          return Set.of();
         } else if (op.equals("set")
             && (obj == null || (obj instanceof Collection && ((Collection) obj).isEmpty()))) {
           // when operation is set and value is either null or empty list
           // treat the update as atomic instead of inplace
-          return Collections.emptySet();
+          return Set.of();
         }
         // fail fast if child doc
         if (isChildDoc(((Map<String, Object>) fieldValue).get(op))) {
-          return Collections.emptySet();
+          return Set.of();
         }
       }
       candidateFields.add(fieldName);
     }
 
     if (candidateFields.isEmpty()) {
-      return Collections.emptySet();
+      return Set.of();
     }
 
     // second pass over the candidates for in-place updates
@@ -300,13 +299,12 @@ public class AtomicUpdateDocumentMerger {
       SchemaField schemaField = schema.getField(fieldName);
 
       if (!isSupportedFieldForInPlaceUpdate(schemaField)) {
-        return Collections.emptySet();
+        return Set.of();
       }
 
       // if this field has copy target which is not supported for in place, then empty
       for (CopyField copyField : schema.getCopyFieldsList(fieldName)) {
-        if (!isSupportedFieldForInPlaceUpdate(copyField.getDestination()))
-          return Collections.emptySet();
+        if (!isSupportedFieldForInPlaceUpdate(copyField.getDestination())) return Set.of();
       }
     }
 
@@ -323,7 +321,7 @@ public class AtomicUpdateDocumentMerger {
     }
     for (String fieldName : candidateFields) {
       if (segmentSortingFields.contains(fieldName)) {
-        return Collections.emptySet(); // if this is used for segment sorting, DV updates can't work
+        return Set.of(); // if this is used for segment sorting, DV updates can't work
       }
     }
 
@@ -484,7 +482,7 @@ public class AtomicUpdateDocumentMerger {
       return ((Collection<?>) fieldVal)
           .stream().map(SolrInputDocument.class::cast).collect(Collectors.toList());
     } else {
-      return Collections.singletonList((SolrInputDocument) fieldVal);
+      return List.of((SolrInputDocument) fieldVal);
     }
   }
 
@@ -497,7 +495,7 @@ public class AtomicUpdateDocumentMerger {
             .orElseGet(
                 () -> {
                   final SolrInputField replacement = new SolrInputField(name);
-                  replacement.setValue(Collections.emptyList());
+                  replacement.setValue(List.of());
                   return replacement;
                 });
 

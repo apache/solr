@@ -50,8 +50,8 @@ import org.apache.solr.search.QParser;
  * <h2>Schema Configuration</h2>
  *
  * <pre>
- * &lt;fieldType name="longrange" class="org.apache.solr.schema.numericrange.LongRangeField" numDimensions="1"/&gt;
- * &lt;fieldType name="longrange2d" class="org.apache.solr.schema.numericrange.LongRangeField" numDimensions="2"/&gt;
+ * &lt;fieldType name="longrange" class="solr.LongRangeField" numDimensions="1"/&gt;
+ * &lt;fieldType name="longrange2d" class="solr.LongRangeField" numDimensions="2"/&gt;
  * &lt;field name="long_range" type="longrange" indexed="true" stored="true"/&gt;
  * &lt;field name="long_range_2d" type="longrange2d" indexed="true" stored="true"/&gt;
  * </pre>

@@ -34,6 +34,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -106,7 +107,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -163,6 +163,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -320,7 +321,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     AdminCmdContext adminCmdContext =
-        new AdminCmdContext(operation.action, req.getParams().get(ASYNC));
+        new AdminCmdContext(operation.action, req.getParams().get(ASYNC), req);
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;
@@ -366,6 +367,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       additionalProps.put(QUEUE_OPERATION, operation);
       if (adminCmdContext.getAsyncId() != null && !adminCmdContext.getAsyncId().isBlank()) {
         additionalProps.put(ASYNC, adminCmdContext.getAsyncId());
+      }
+      if (StrUtils.isNotBlank(adminCmdContext.getCallingLockId())) {
+        additionalProps.put(CALLING_LOCK_ID_HEADER, adminCmdContext.getCallingLockId());
       }
       m = m.plus(additionalProps);
       if (adminCmdContext.getAsyncId() != null) {
@@ -1410,7 +1414,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   /** Copy all params to the given map or if the given map is null create a new one */
   static Map<String, Object> copy(
       SolrParams source, Map<String, Object> sink, String... paramNames) {
-    return copy(
-        source, sink, paramNames == null ? Collections.emptyList() : Arrays.asList(paramNames));
+    return copy(source, sink, paramNames == null ? List.of() : Arrays.asList(paramNames));
   }
 }

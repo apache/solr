@@ -29,7 +29,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Build and Development Workflow
 
-- When done or preparing to commit changes to java source files, be sure to run `gradlew tidy` to format the code
+- When done or preparing to commit changes to java source files, be sure to run `gradlew tidy` to format the code.  Don't bother beforehand.
 - Always run `gradlew check -x test` before declaring a feature done
 
 ## Code Quality and Best Practices
@@ -38,15 +38,25 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Be careful to not add non-essential logging! If you add slf4j log calls, make sure to wrap debug/trace level calls in `logger.isXxxEnabled()` clause
 - Validate user input. For file paths, always call `myCoreContainer.assertPathAllowed(myPath)` before using
 
-## Testing
+## Running Tests
+
+- See `dev-docs/gradle-help/tests.txt` for hints on running tests
+- To run a specific test: `gradlew :solr:core:test --tests "org.apache.solr.search.TestCaffeineCache"`
+- To run a specific BATS test: `gradlew iTest --tests test_adminconsole_urls.bats`
+- The randomization seed is important.  To repeat a failing tests, pass the same seed given in the failure by adding to Gradle: `-Ptests.seed=HEXADECIMALHERE`.
+- Test output goes to `solr/<module>/build/test-results/test/outputs/OUTPUT-<fully.qualified.TestName>.txt` (stdout/stderr log) and `solr/<module>/build/test-results/test/TEST-<fully.qualified.TestName>.xml` (JUnit XML with pass/fail/error details)
+- To scan test output for a specific issue across already-run tests: `grep -rl "pattern" solr/*/build/test-results/test/outputs/`
+
+## Writing Tests
 
 - When adding a test to an existing suite/file, keep the same style / design choices
 - When adding a *new* Java test suite/file:
-  - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
-  - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
-  - Avoid SolrTestCaseJ4 for new tests
-
-- See `dev-docs/gradle-help/tests.txt` for hints on running tests
+    - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
+    - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
+    - Avoid SolrTestCaseJ4 for new tests
+- For BATS shell integration tests in `solr/packaging/test/`:
+    - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
+    - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
 
 ## Documentation
 

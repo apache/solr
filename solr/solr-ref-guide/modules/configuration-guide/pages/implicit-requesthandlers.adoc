@@ -40,18 +40,24 @@ This handler must have a collection name in the path to the endpoint.
 |`solr/<collection>/admin/file` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
 |===
 
-Health:: Report the health of the node (_available only in SolrCloud mode_)
+Health:: Report the health of the node.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/health`
 
-v2: `api/node/health` |{solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
+v2: `api/node/health` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler]
+
+v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth] |
 |===
 +
-This endpoint also accepts additional request parameters.
-Please see {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
+In SolrCloud mode the handler checks that the node is connected to ZooKeeper and is listed in live nodes.
+The optional `requireHealthyCores=true` parameter additionally requires that all local replicas be in an active state, which is useful for rolling-restart probes.
++
+In user-managed (leader-follower) mode the handler checks replication lag.
+The optional `maxGenerationLag=<n>` parameter specifies the maximum number of Lucene commit generations by which a follower is allowed to trail its leader; the endpoint returns HTTP 503 if any core exceeds this threshold.
+See xref:deployment-guide:user-managed-index-replication.adoc#monitoring-follower-replication-lag[Monitoring Follower Replication Lag] for details and examples.
 
 Logging:: Retrieve and modify registered loggers.
 +

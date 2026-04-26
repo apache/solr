@@ -31,10 +31,10 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.ClusterApi;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -318,23 +318,24 @@ public class StatusTool extends ToolBase {
   }
 
   /**
-   * Calls the CLUSTERSTATUS endpoint in Solr to get basic status information about the SolrCloud
-   * cluster.
+   * Calls V2 API endpoints to get basic status information about the SolrCloud cluster.
+   *
+   * <p>Uses GET /cluster/nodes for live node count and GET /collections for collection count.
    */
-  @SuppressWarnings("unchecked")
   private static Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
       throws Exception {
     Map<String, String> cloudStatus = new LinkedHashMap<>();
     cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
 
-    // TODO add booleans to request just what we want; not everything
-    NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
+    var nodesResponse = new ClusterApi.ListClusterNodes().process(solrClient);
+    var liveNodes = nodesResponse != null ? nodesResponse.nodes : null;
+    cloudStatus.put("liveNodes", String.valueOf(liveNodes != null ? liveNodes.size() : 0));
 
-    List<String> liveNodes = (List<String>) json._get(List.of("cluster", "live_nodes"), null);
-    cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
-
-    // TODO get this as a metric from the metrics API instead, or something else.
-    var collections = (Map<String, Object>) json._get(List.of("cluster", "collections"), null);
+    var collectionsResponse = new CollectionsApi.ListCollections().process(solrClient);
+    var collections =
+        collectionsResponse != null && collectionsResponse.collections != null
+            ? collectionsResponse.collections
+            : List.of();
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

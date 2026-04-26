@@ -73,8 +73,7 @@ public class Sha256AuthenticationProvider
     }
 
     promptHeader =
-        Collections.unmodifiableMap(
-            Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
+        Collections.unmodifiableMap(Map.of("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
     credentials = new LinkedHashMap<>();
     @SuppressWarnings({"unchecked"})
     Map<String, String> users = (Map<String, String>) pluginConfig.get("credentials");

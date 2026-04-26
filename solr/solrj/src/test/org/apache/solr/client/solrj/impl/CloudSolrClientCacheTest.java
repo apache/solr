@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -94,7 +93,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     }
     Map<String, Function<?, ?>> responses = new HashMap<>();
     NamedList<Object> okResponse = new NamedList<>();
-    okResponse.add("responseHeader", new NamedList<>(Collections.singletonMap("status", 0)));
+    okResponse.add("responseHeader", new NamedList<>(Map.of("status", 0)));
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
@@ -106,7 +105,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
           ClusterState.createFromJson(
-              1, COLL1_STATE.getBytes(UTF_8), Collections.emptySet(), Instant.now(), null);
+              1, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put(
@@ -120,7 +119,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               return new SocketException("TEST");
             }
             if (i == 3) {
-              return new NoHttpResponseException("TEST");
+              return new ConnectException("TEST");
             }
             return okResponse;
           });
@@ -333,7 +332,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
       @Override
       public List<String> resolveAlias(String collection) {
-        return Collections.singletonList(collection);
+        return List.of(collection);
       }
 
       @Override
@@ -346,7 +345,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   private DocCollection loadCollection(String collection, int version) throws Exception {
     ClusterState state =
         ClusterState.createFromJson(
-            version, COLL1_STATE.getBytes(UTF_8), Collections.emptySet(), Instant.now(), null);
+            version, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
     return state.getCollectionOrNull(collection);
   }
 

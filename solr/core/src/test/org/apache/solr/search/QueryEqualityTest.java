@@ -733,6 +733,31 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
               + parent_path.replace("/", "\\/")
               + ")");
     }
+
+    // Test parentPath with no subordinate query: {!parent parentPath=/ v=''} returns all root-level
+    // docs. This is a useful trick to query docs at a specific nest path without using _nest_path_
+    // directly.
+    try (SolrQueryRequest req = req()) {
+      Query q =
+          assertQueryEqualsAndReturn(
+              "parent",
+              req,
+              "{!parent parentPath=/ v=''}",
+              "{!parent parentPath=/}"); // omitting v is equivalent to empty v
+      assertEquals("+*:* -FieldExistsQuery [field=_nest_path_]", q.toString());
+
+      q =
+          assertQueryEqualsAndReturn(
+              "parent",
+              req,
+              "{!parent parentPath=/aa/bb v=}",
+              "{!parent parentPath=/aa/bb}"); // omitting v is equivalent to empty v
+      assertEquals("ConstantScore(_nest_path_:/aa/bb)", q.toString());
+    }
+
+    // Test that {!parent} and {!child} without required 'which'/'of' or 'parentPath' throw error
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{!parent}", req()).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{!child}", req()).getQuery());
   }
 
   public void testFilters() throws Exception {

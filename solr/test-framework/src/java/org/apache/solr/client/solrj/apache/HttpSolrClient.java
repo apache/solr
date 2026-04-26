@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -105,7 +104,7 @@ public class HttpSolrClient extends SolrClient {
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
 
-  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
+  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Set.of(429);
 
   static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
@@ -703,7 +702,7 @@ public class HttpSolrClient extends SolrClient {
   }
 
   // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically
-  // true when SolrDispatchFilter uses the sendError mechanism since the expected MIME type of
+  // true when SolrServlet uses the sendError mechanism since the expected MIME type of
   // response is not HTML but HTTP sendError generates an HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
     if (mimeType == null) {

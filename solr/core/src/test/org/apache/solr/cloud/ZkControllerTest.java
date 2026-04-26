@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -250,14 +249,14 @@ public class ZkControllerTest extends SolrCloudTestCase {
                   new CoreDescriptor(
                       collectionName,
                       TEST_PATH(),
-                      Collections.emptyMap(),
+                      Map.of(),
                       new Properties(),
                       zkControllerRef.get());
               // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates
               // to wait indefinitely when using coreNodeName but usage of core name alone will
               // return immediately
               descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
-              return Collections.singletonList(descriptor);
+              return List.of(descriptor);
             }
           };
       ZkController zkController = null;
@@ -784,7 +783,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
       this.shardHandlerFactory = httpShardHandlerFactory;
       this.coreAdminHandler = new CoreAdminHandler();
       this.metricManager = mock(SolrMetricManager.class);

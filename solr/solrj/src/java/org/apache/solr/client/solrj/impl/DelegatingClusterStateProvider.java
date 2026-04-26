@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getLiveNodes();
     } else {
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 
@@ -55,7 +54,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.resolveAlias(alias);
     } else {
-      return Collections.singletonList(alias);
+      return List.of(alias);
     }
   }
 
@@ -64,7 +63,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getAliasProperties(alias);
     } else {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 
@@ -100,7 +99,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getClusterProperties();
     } else {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 

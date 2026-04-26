@@ -17,8 +17,6 @@
 package org.apache.solr.schema;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -1501,7 +1499,7 @@ public class IndexSchema {
   public List<String> getCopySources(String destField) {
     SchemaField f = getField(destField);
     if (!isCopyFieldTarget(f)) {
-      return Collections.emptyList();
+      return List.of();
     }
     List<String> fieldNames = new ArrayList<>();
     for (Map.Entry<String, List<CopyField>> cfs : copyFieldsMap.entrySet()) {
@@ -1556,7 +1554,7 @@ public class IndexSchema {
 
   /** Get a map of property name -&gt; value for the whole schema. */
   public Map<String, Object> getNamedPropertyValues() {
-    return getNamedPropertyValues(null, new MapSolrParams(Collections.emptyMap()));
+    return getNamedPropertyValues(null, new MapSolrParams(Map.of()));
   }
 
   public static class SchemaProps implements MapSerializable {
@@ -1801,7 +1799,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, boolean persist) {
-    return addFields(Collections.singletonList(newField), Collections.emptyMap(), persist);
+    return addFields(List.of(newField), Map.of(), persist);
   }
 
   public IndexSchema addField(SchemaField newField) {
@@ -1819,8 +1817,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
-    return addFields(
-        singletonList(newField), singletonMap(newField.getName(), copyFieldNames), true);
+    return addFields(List.of(newField), Map.of(newField.getName(), copyFieldNames), true);
   }
 
   /**
@@ -1832,7 +1829,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addFields(Collection<SchemaField> newFields) {
-    return addFields(newFields, Collections.<String, Collection<String>>emptyMap(), true);
+    return addFields(newFields, Map.of(), true);
   }
 
   /**

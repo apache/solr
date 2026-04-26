@@ -36,18 +36,14 @@ public class TestCustomStream extends AbstractFullDistribZkTestBase {
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(
         client,
-        null,
         "/config/overlay",
-        null,
         Arrays.asList("overlay", "expressible", "hello", "class"),
         "org.apache.solr.core.HelloStream",
         10);
 
     TestSolrConfigHandler.testForResponseElement(
         client,
-        null,
         "/stream?expr=hello()",
-        null,
         Arrays.asList("result-set", "docs[0]", "msg"),
         "Hello World!",
         10);
