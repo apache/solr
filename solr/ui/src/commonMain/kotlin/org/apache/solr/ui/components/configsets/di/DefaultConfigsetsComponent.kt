@@ -18,13 +18,14 @@
 package org.apache.solr.ui.components.configsets.di
 
 import io.ktor.client.HttpClient
-import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.components.configsets.data.HttpConfigsetsRepository
 import org.apache.solr.ui.components.configsets.domain.DefaultLoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.utils.AppDispatchers
+import org.apache.solr.ui.utils.platformDispatchers
 
 /**
  * Default implementation of [ConfigsetsComponent].
@@ -33,9 +34,10 @@ import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
  *
  * @param  httpClient The pre-configured HTTP client to use for user registration operations.
  */
-class DefaultConfigsetsComponent(httpClient: HttpClient) : ConfigsetsComponent {
-
-    private val ioDispatcher by lazy { Dispatchers.Unconfined } // TODO Change to platformDispatchers
+class DefaultConfigsetsComponent(
+    httpClient: HttpClient,
+    private val dispatchers: AppDispatchers = platformDispatchers(),
+) : ConfigsetsComponent {
 
     override val configsetsRepository: ConfigsetsRepository by lazy {
         HttpConfigsetsRepository(httpClient)
@@ -49,7 +51,7 @@ class DefaultConfigsetsComponent(httpClient: HttpClient) : ConfigsetsComponent {
         ConfigsetsRouteViewModel()
 
     override fun createConfigsetsViewModel(): ConfigsetsViewModel =
-        ConfigsetsViewModel(loadConfigsetsUseCase, ioDispatcher)
+        ConfigsetsViewModel(loadConfigsetsUseCase, dispatchers)
 
     override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent =
         DefaultConfigsetsOverviewComponent(configsetsRepository)

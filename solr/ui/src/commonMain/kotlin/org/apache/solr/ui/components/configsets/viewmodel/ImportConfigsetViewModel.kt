@@ -19,7 +19,6 @@ package org.apache.solr.ui.components.configsets.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,11 +33,12 @@ import org.apache.solr.ui.components.files.domain.FileSelectorEvent
 import org.apache.solr.ui.components.files.domain.SelectFileUseCase
 import org.apache.solr.ui.components.files.viewmodel.FileSelectorStateHolder
 import org.apache.solr.ui.domain.PickedFile
+import org.apache.solr.ui.utils.AppDispatchers
 
 class ImportConfigsetViewModel(
     private val importConfigsetUseCase: ImportConfigsetUseCase,
     selectFileUseCase: SelectFileUseCase,
-    private val ioDispatcher: CoroutineDispatcher, // TODO Change to AppDispatchers instead
+    private val dispatchers: AppDispatchers,
 ) : ViewModel() {
 
     private val fileSelectorState = FileSelectorStateHolder(
@@ -91,7 +91,7 @@ class ImportConfigsetViewModel(
         // TODO Validate input data or let use case validate data
 
         viewModelScope.launch {
-            val result = withContext(context = ioDispatcher) {
+            val result = withContext(context = dispatchers.io) {
                 importConfigsetUseCase(uiState.value.configsetName, file)
             }
 

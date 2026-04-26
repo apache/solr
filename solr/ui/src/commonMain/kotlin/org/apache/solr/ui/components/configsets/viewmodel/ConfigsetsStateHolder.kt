@@ -17,7 +17,6 @@
 
 package org.apache.solr.ui.components.configsets.viewmodel
 
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,11 +25,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.domain.Configset
+import org.apache.solr.ui.utils.AppDispatchers
 
 class ConfigsetsStateHolder(
     private val scope: CoroutineScope,
     private val loadConfigsetsUseCase: LoadConfigsetsUseCase,
-    private val ioDispatcher: CoroutineDispatcher // TODO Change to AppDispatchers instead
+    private val dispatchers: AppDispatchers,
 ) {
 
     /**
@@ -65,7 +65,7 @@ class ConfigsetsStateHolder(
     }
 
     private fun loadConfigsets(clearOnFailure: Boolean = false) = scope.launch {
-        withContext(ioDispatcher) {
+        withContext(dispatchers.io) {
             loadConfigsetsUseCase()
         }.onSuccess { configsets ->
             uiState.update { it.copy(configsets = configsets.sortedBy(Configset::name)) }

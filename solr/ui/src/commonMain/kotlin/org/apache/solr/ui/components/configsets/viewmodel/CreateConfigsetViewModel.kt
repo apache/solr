@@ -19,7 +19,6 @@ package org.apache.solr.ui.components.configsets.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -31,17 +30,18 @@ import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetResult
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
+import org.apache.solr.ui.utils.AppDispatchers
 
 class CreateConfigsetViewModel(
     private val createConfigsetUseCase: CreateConfigsetUseCase,
     loadConfigsetsUseCase: LoadConfigsetsUseCase,
-    private val ioDispatcher: CoroutineDispatcher, // TODO Change to AppDispatchers instead
+    private val dispatchers: AppDispatchers,
 ) : ViewModel() {
 
     private val configsetsState = ConfigsetsStateHolder(
         scope = viewModelScope,
         loadConfigsetsUseCase = loadConfigsetsUseCase,
-        ioDispatcher = ioDispatcher,
+        dispatchers = dispatchers,
     )
 
     /**
@@ -73,7 +73,7 @@ class CreateConfigsetViewModel(
         // TODO Validate input data or let use case validate data
 
         viewModelScope.launch {
-            val result = withContext(context = ioDispatcher) {
+            val result = withContext(context = dispatchers.io) {
                 createConfigsetUseCase(
                     configsetName = uiState.value.configsetName,
                     baseConfigset = configsetsState.uiState.value.selectedConfigset,

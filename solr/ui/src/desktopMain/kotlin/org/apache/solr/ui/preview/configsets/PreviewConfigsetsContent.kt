@@ -34,6 +34,7 @@ import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewMod
 import org.apache.solr.ui.components.files.domain.SelectFileUseCase
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.preview.PreviewContainer
+import org.apache.solr.ui.utils.platformDispatchers
 import org.apache.solr.ui.views.configsets.ConfigsetsScene
 
 @Preview
@@ -46,6 +47,8 @@ private class PreviewConfigsetsComponent(
     private val configsets: List<Configset> = emptyList(),
 ) : ConfigsetsComponent {
 
+    private val dispatchers = platformDispatchers()
+
     override val configsetsRepository: ConfigsetsRepository = error("Not used in previews")
 
     override val loadConfigsetsUseCase: LoadConfigsetsUseCase = object : LoadConfigsetsUseCase {
@@ -57,7 +60,7 @@ private class PreviewConfigsetsComponent(
 
     override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(
         loadConfigsetsUseCase = loadConfigsetsUseCase,
-        ioDispatcher = Dispatchers.Default,
+        dispatchers = dispatchers,
     )
 
     override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent =
@@ -65,6 +68,8 @@ private class PreviewConfigsetsComponent(
 }
 
 private class PreviewConfigsetsOverviewComponent(configsets: List<Configset> = emptyList()) : ConfigsetsOverviewComponent {
+
+    private val dispatchers = platformDispatchers()
 
     override val configsetsRepository: ConfigsetsRepository = error("Not used in previews")
 
@@ -80,21 +85,21 @@ private class PreviewConfigsetsOverviewComponent(configsets: List<Configset> = e
 
     override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(
         loadConfigsetsUseCase = loadConfigsetsUseCase,
-        ioDispatcher = Dispatchers.Default,
+        dispatchers = dispatchers,
     )
 
     override fun createCreateConfigsetViewModel(): CreateConfigsetViewModel =
         CreateConfigsetViewModel(
             createConfigsetUseCase = createConfigsetUseCase,
             loadConfigsetsUseCase = loadConfigsetsUseCase,
-            ioDispatcher = Dispatchers.Default
+            dispatchers = dispatchers,
         )
 
     override fun createImportConfigsetViewModel(): ImportConfigsetViewModel =
         ImportConfigsetViewModel(
             importConfigsetUseCase = importConfigsetUseCase,
             selectFileUseCase = selectFileUseCase,
-            ioDispatcher = Dispatchers.Default,
+            dispatchers = dispatchers,
         )
 
     override fun createConfigsetsOverviewViewModel(): ConfigsetsOverviewViewModel =

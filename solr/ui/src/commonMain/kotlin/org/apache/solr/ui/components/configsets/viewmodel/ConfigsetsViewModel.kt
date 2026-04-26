@@ -19,18 +19,18 @@ package org.apache.solr.ui.components.configsets.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineDispatcher
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
+import org.apache.solr.ui.utils.AppDispatchers
 
 class ConfigsetsViewModel(
     loadConfigsetsUseCase: LoadConfigsetsUseCase,
-    ioDispatcher: CoroutineDispatcher // TODO Change to AppDispatchers instead
+    dispatchers: AppDispatchers,
 ): ViewModel() {
 
     private val configsetsState = ConfigsetsStateHolder(
         scope = viewModelScope,
         loadConfigsetsUseCase = loadConfigsetsUseCase,
-        ioDispatcher = ioDispatcher,
+        dispatchers = dispatchers,
     )
 
     /**
