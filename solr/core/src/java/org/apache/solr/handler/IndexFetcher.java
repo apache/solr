@@ -1642,7 +1642,6 @@ public class IndexFetcher {
             aborted = true;
             throw new ReplicationHandlerException("User aborted replication");
           }
-
           long checkSumServer = -1;
 
           fis.readFully(intbytes);
