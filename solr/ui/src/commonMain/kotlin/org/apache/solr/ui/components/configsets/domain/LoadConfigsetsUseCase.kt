@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.files.integration
+package org.apache.solr.ui.components.configsets.domain
 
-import org.apache.solr.ui.components.files.FilePickerComponent
-import org.apache.solr.ui.components.files.store.FilePickerStore
+import org.apache.solr.ui.domain.Configset
+import org.apache.solr.ui.domain.PickedFile
 
-internal val filePickerStateToModel: (FilePickerStore.State) -> FilePickerComponent.Model = {
-    FilePickerComponent.Model(
-        selectedFile = it.selectedFile,
-        isFileSelectionEnabled = it.isFileSelectionEnabled,
-    )
+/**
+ * Use case for loading the available configsets.
+ */
+interface LoadConfigsetsUseCase {
+    /**
+     * Default invocation for loading the available configsets.
+     *
+     * @return A Result containing the list of available Configsets.
+     */
+    suspend operator fun invoke(): Result<List<Configset>>
 }

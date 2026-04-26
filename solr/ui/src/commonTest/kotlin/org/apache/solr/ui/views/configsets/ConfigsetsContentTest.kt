@@ -29,8 +29,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Model
+import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent.Model
 import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
 import org.apache.solr.ui.domain.Configset

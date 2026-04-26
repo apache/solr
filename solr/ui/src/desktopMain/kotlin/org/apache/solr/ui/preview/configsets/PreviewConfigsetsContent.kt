@@ -25,8 +25,8 @@ import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Model
+import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent.Model
 import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent.CreateConfigsetDialogConfig
 import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent

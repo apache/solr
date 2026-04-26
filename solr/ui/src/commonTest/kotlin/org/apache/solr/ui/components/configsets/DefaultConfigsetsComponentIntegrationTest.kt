@@ -35,13 +35,13 @@ import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.apache.solr.ui.TestAppComponentContext
 import org.apache.solr.ui.components.configsets.data.ListConfigsets
+import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsComponent
 import org.apache.solr.ui.components.start.integration.DefaultStartComponent
 import org.apache.solr.ui.createMockEngine

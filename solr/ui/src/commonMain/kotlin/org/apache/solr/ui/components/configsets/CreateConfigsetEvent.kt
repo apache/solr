@@ -17,32 +17,21 @@
 
 package org.apache.solr.ui.components.configsets
 
-import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.domain.Configset
 
-/**
- * Component that holds the state and behavior for creating a new configset.
- */
-interface CreateConfigsetComponent {
+sealed interface CreateConfigsetEvent {
 
-    val model: StateFlow<Model>
+    /**
+     * Event that is omitted when a configset was successfully created.
+     *
+     * @property configset The configset that has been created.
+     */
+    data class ConfigsetCreated(val configset: Configset) : CreateConfigsetEvent
 
-    fun onConfigsetNameChange(configsetName: String)
-
-    fun onBaseConfigsetChange(baseConfigset: String)
-
-    fun onCreateConfigset()
-
-    fun onClearBaseConfigset()
-
-    data class Model(
-        val configsetName: String = "",
-        val configsets: List<Configset> = emptyList(),
-        val selectedBaseConfigset: String = "",
-        val isLoading: Boolean = false,
-    )
-
-    sealed interface Output {
-        data class ConfigsetCreated(val configset: Configset) : Output
-    }
+    /**
+     * Event that is omitted when the creation process failed with an error.
+     *
+     * @property error The error that was thrown during the creation process.
+     */
+    data class ConfigsetCreationFailed(val error: Exception) : CreateConfigsetEvent
 }

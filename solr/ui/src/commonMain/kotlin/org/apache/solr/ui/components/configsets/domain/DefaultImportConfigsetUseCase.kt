@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.files.store
+package org.apache.solr.ui.components.configsets.domain
 
-import com.arkivanov.mvikotlin.core.store.Store
-import org.apache.solr.ui.components.files.store.FilePickerStore.Intent
-import org.apache.solr.ui.components.files.store.FilePickerStore.Label
-import org.apache.solr.ui.components.files.store.FilePickerStore.State
+import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.domain.PickedFile
 
-internal interface FilePickerStore : Store<Intent, State, Label> {
-
-    sealed interface Intent {
-        data object OpenFilePicker : Intent
-
-        data object ClearSelection : Intent
-    }
-
-    data class State(
-        val selectedFile: PickedFile? = null,
-        val isFileSelectionEnabled: Boolean = true,
-    )
-
-    sealed interface Label {
-        data class FilePicked(val file: PickedFile) : Label
+internal class DefaultImportConfigsetUseCase(
+    private val repository: ConfigsetsRepository,
+) : ImportConfigsetUseCase {
+    override suspend fun invoke(configsetName: String, file: PickedFile): Result<Configset> {
+        TODO("Not yet implemented")
     }
 }

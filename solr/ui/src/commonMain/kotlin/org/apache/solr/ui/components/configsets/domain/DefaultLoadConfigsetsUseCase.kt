@@ -15,25 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.files
+package org.apache.solr.ui.components.configsets.domain
 
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.domain.PickedFile
+import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.domain.Configset
 
-interface FilePickerComponent {
-
-    val model: StateFlow<Model>
-
-    fun onSelectFile()
-
-    fun clearSelection()
-
-    data class Model(
-        val selectedFile: PickedFile? = null,
-        val isFileSelectionEnabled: Boolean = true,
-    )
-
-    sealed interface Output {
-        data class FilePicked(val file: PickedFile) : Output
+internal class DefaultLoadConfigsetsUseCase(
+    private val repository: ConfigsetsRepository,
+) : LoadConfigsetsUseCase {
+    override suspend fun invoke(): Result<List<Configset>> {
+        TODO("Not yet implemented")
     }
 }

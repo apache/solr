@@ -17,43 +17,56 @@
 
 package org.apache.solr.ui.components.configsets
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.serialization.Serializable
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 
-interface ConfigsetsOverviewComponent {
+class ConfigsetsOverviewViewModel : ViewModel() {
 
-    val dialog: Value<ChildSlot<CreateConfigsetDialogConfig, *>>
+    /**
+     * The dialog that is currently open, if any.
+     */
+    val uiState: StateFlow<ConfigsetsOverviewUiState>
+        field = MutableStateFlow(ConfigsetsOverviewUiState())
 
     /**
      * Initiates the creation of a new configset.
      */
-    fun createConfigset()
+    fun createConfigset() = uiState.update {
+        it.copy(dialogState = DialogState.CreateConfigsetDialog)
+    }
 
     /**
      * Initiates the import of a configset.
      */
-    fun importConfigset()
+    fun importConfigset() = uiState.update {
+        it.copy(dialogState = DialogState.ImportConfigsetDialog)
+    }
 
     /**
      * Closes any opened dialog.
      */
-    fun closeDialog()
+    fun closeDialog() = uiState.update { it.copy(dialogState = null) }
 
     /**
      * Edit solrconfig.xml for the configset with the given [name].
      *
      * @param name the name of the configset to edit.
      */
-    fun editSolrConfig(name: String)
-
-    @Serializable
-    sealed interface CreateConfigsetDialogConfig {
-
-        @Serializable
-        data object CreateConfigsetWithInputDialogConfig : CreateConfigsetDialogConfig
-
-        @Serializable
-        data object ImportConfigsetDialogConfig : CreateConfigsetDialogConfig
+    fun editSolrConfig(name: String) {
+        TODO()
     }
+}
+
+data class ConfigsetsOverviewUiState(
+    val dialogState: DialogState? = null,
+)
+
+sealed interface DialogState {
+
+    // TODO Consider adding configsets and current configset selection as values to this class
+    data object CreateConfigsetDialog : DialogState
+
+    data object ImportConfigsetDialog : DialogState
 }

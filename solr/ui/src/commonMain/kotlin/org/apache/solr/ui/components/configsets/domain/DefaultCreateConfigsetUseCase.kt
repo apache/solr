@@ -15,31 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.configsets
+package org.apache.solr.ui.components.configsets.domain
 
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.files.FilePickerComponent
-import org.apache.solr.ui.domain.Configset
+import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
 
-/**
- * Component that holds the state and behavior for importing a configset.
- */
-interface ImportConfigsetComponent {
-
-    val filePicker: FilePickerComponent
-
-    val model: StateFlow<Model>
-
-    fun onImportConfigset()
-
-    fun onConfigsetNameChange(configsetName: String)
-
-    data class Model(
-        val configsetName: String = "",
-        val isLoading: Boolean = false,
-    )
-
-    sealed interface Output {
-        data class ConfigsetImported(val configset: Configset) : Output
+internal class DefaultCreateConfigsetUseCase(
+    private val repository: ConfigsetsRepository,
+) : CreateConfigsetUseCase {
+    override suspend fun invoke(
+        configsetName: String,
+        baseConfigset: String?
+    ): CreateConfigsetResult {
+        TODO("Not yet implemented")
     }
 }
