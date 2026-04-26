@@ -797,13 +797,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void tokenExpiredWithinClockSkewIsAuthenticated() throws Exception {
     // Token expired 25 seconds ago — within the 30-second clock skew tolerance.
     // All timestamps must be consistent: iat < exp, so iat is set 90 seconds in the past.
-    long nowMs = System.currentTimeMillis();
+    NumericDate now = NumericDate.now();
     JwtClaims claims = new JwtClaims();
     claims.setIssuer("IDServer");
     claims.setClaim("customPrincipal", "custom");
-    claims.setIssuedAt(NumericDate.fromMilliseconds(nowMs - 90 * 1000));
-    claims.setNotBefore(NumericDate.fromMilliseconds(nowMs - 90 * 1000));
-    claims.setExpirationTime(NumericDate.fromMilliseconds(nowMs - 25 * 1000));
+    claims.setIssuedAt(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setNotBefore(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setExpirationTime(NumericDate.fromSeconds(now.getValue() - 25));
     JsonWebSignature jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());
     jws.setKey(rsaJsonWebKey.getPrivateKey());
@@ -818,13 +818,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void tokenExpiredBeyondClockSkewIsRejected() throws Exception {
     // Token expired 35 seconds ago — beyond the 30-second clock skew tolerance.
-    long nowMs = System.currentTimeMillis();
+    NumericDate now = NumericDate.now();
     JwtClaims claims = new JwtClaims();
     claims.setIssuer("IDServer");
     claims.setClaim("customPrincipal", "custom");
-    claims.setIssuedAt(NumericDate.fromMilliseconds(nowMs - 90 * 1000));
-    claims.setNotBefore(NumericDate.fromMilliseconds(nowMs - 90 * 1000));
-    claims.setExpirationTime(NumericDate.fromMilliseconds(nowMs - 35 * 1000));
+    claims.setIssuedAt(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setNotBefore(NumericDate.fromSeconds(now.getValue() - 90));
+    claims.setExpirationTime(NumericDate.fromSeconds(now.getValue() - 35));
     JsonWebSignature jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());
     jws.setKey(rsaJsonWebKey.getPrivateKey());
