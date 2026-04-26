@@ -18,9 +18,9 @@ package org.apache.solr.crossdc.manager.consumer;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -146,7 +146,7 @@ public class PartitionManager {
           nextOffset);
     }
 
-    consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(nextOffset)));
+    consumer.commitSync(Map.of(partition, new OffsetAndMetadata(nextOffset)));
   }
 
   static long getOffsetForPartition(

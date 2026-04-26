@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -257,7 +256,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
               // to wait indefinitely when using coreNodeName but usage of core name alone will
               // return immediately
               descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
-              return Collections.singletonList(descriptor);
+              return List.of(descriptor);
             }
           };
       ZkController zkController = null;

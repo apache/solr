@@ -1562,7 +1562,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
       os = new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8);
       p.store(os, IndexFetcher.INDEX_PROPERTIES);
-      dir.sync(Collections.singleton(tmpFileName));
+      dir.sync(Set.of(tmpFileName));
     } catch (Exception e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
@@ -1686,9 +1686,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     map.computeIfAbsent(
         RunUpdateProcessorFactory.PRE_RUN_CHAIN_NAME,
-        k ->
-            new UpdateRequestProcessorChain(
-                Collections.singletonList(new NestedUpdateProcessorFactory()), this));
+        k -> new UpdateRequestProcessorChain(List.of(new NestedUpdateProcessorFactory()), this));
 
     return map;
   }

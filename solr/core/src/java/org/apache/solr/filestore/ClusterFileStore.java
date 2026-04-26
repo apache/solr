@@ -44,6 +44,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -208,6 +209,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   }
 
   @SuppressWarnings("fallthrough")
+  @SuppressForbidden(reason = "singletonMap with null value is intentional")
   public static FileStoreDirectoryListingResponse getMetadata(
       FileStore.FileType type, String path, FileStore fileStore) {
     final var dirListingResponse = new FileStoreDirectoryListingResponse();
@@ -234,7 +236,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
             fileStore.list(path, null).stream()
                 .map(details -> convertToResponse(details))
                 .collect(Collectors.toList());
-        dirListingResponse.files = Collections.singletonMap(path, directoryContents);
+        dirListingResponse.files = Map.of(path, directoryContents);
         break;
     }
 

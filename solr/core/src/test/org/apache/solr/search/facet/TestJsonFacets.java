@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
@@ -112,7 +113,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
-      return Collections.singleton(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
+      return Set.<Object[]>of(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
     } else if (TEST_NIGHTLY) {
       // wrap each enum val in an Object[] and return as Iterable
       return () ->
@@ -123,8 +124,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       // can't use LuceneTestCase.random() because we're not in the runner context yet
       String seed = System.getProperty("tests.seed", "");
-      return Collections.singleton(
-          new Object[] {methods[Math.abs(seed.hashCode()) % methods.length]});
+      return Set.<Object[]>of(new Object[] {methods[Math.abs(seed.hashCode()) % methods.length]});
     }
   }
 
@@ -1446,10 +1446,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   List<String> getAlternatives(String field) {
     int idx = field.lastIndexOf('_');
-    if (idx <= 0 || idx >= field.length()) return Collections.singletonList(field);
+    if (idx <= 0 || idx >= field.length()) return List.of(field);
     String suffix = field.substring(idx);
     String[] alternativeSuffixes = suffixMap.get(suffix);
-    if (alternativeSuffixes == null) return Collections.singletonList(field);
+    if (alternativeSuffixes == null) return List.of(field);
     String base = field.substring(0, idx);
     List<String> out = new ArrayList<>(alternativeSuffixes.length);
     for (String altS : alternativeSuffixes) {

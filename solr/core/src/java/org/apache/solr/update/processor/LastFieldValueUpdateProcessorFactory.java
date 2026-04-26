@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
@@ -48,6 +49,7 @@ import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSe
 public final class LastFieldValueUpdateProcessorFactory
     extends FieldValueSubsetUpdateProcessorFactory {
 
+  @SuppressForbidden(reason = "singletonList allows null field values")
   @Override
   public <T> Collection<T> pickSubset(Collection<T> values) {
 

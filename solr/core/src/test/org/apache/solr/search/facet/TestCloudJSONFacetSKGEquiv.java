@@ -821,10 +821,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           // it ignores the order of the keys in each bucket...
           final String pathToMismatch =
               BaseDistributedSearchTestCase.compare(
-                  expected,
-                  actual,
-                  0,
-                  Collections.singletonMap("buckets", BaseDistributedSearchTestCase.UNORDERED));
+                  expected, actual, 0, Map.of("buckets", BaseDistributedSearchTestCase.UNORDERED));
           if (null != pathToMismatch) {
             log.error("{}: expected = {}", options, expected);
             log.error("{}: actual = {}", options, actual);

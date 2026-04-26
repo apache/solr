@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,7 +65,7 @@ public class RequestParams implements MapSerializable {
     @SuppressWarnings("unchecked")
     Map<String, Long> meta = (Map<String, Long>) copy.remove("");
     if (meta == null && version != null) {
-      meta = Collections.singletonMap("v", version);
+      meta = Map.of("v", version);
     }
     Map invariants = (Map) copy.remove(INVARIANTS);
     Map appends = (Map) copy.remove(APPENDS);
@@ -250,7 +249,7 @@ public class RequestParams implements MapSerializable {
           mergeMaps(Utils.getDeepCopy(defaults, 2), p.defaults),
           mergeMaps(Utils.getDeepCopy(invariants, 2), p.invariants),
           mergeMaps(Utils.getDeepCopy(appends, 2), p.appends),
-          mergeMaps(Utils.getDeepCopy(meta, 2), Collections.singletonMap("v", getVersion() + 1)));
+          mergeMaps(Utils.getDeepCopy(meta, 2), Map.of("v", getVersion() + 1)));
     }
 
     private static <K, V> Map<K, V> mergeMaps(Map<K, V> m1, Map<K, V> m2) {

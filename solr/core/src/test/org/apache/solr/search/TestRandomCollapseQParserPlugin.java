@@ -20,7 +20,6 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
@@ -276,10 +275,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             + ", size="
             + collapseSize
             + "))";
-    List<String> expectedParsedFilterQuery = Collections.singletonList(expectedParsedFilterString);
+    List<String> expectedParsedFilterQuery = List.of(expectedParsedFilterString);
     assertEquals(expectedParsedFilterQuery, response.getDebugMap().get("parsed_filter_queries"));
-    assertEquals(
-        Collections.singletonList(filterQuery), response.getDebugMap().get("filter_queries"));
+    assertEquals(List.of(filterQuery), response.getDebugMap().get("filter_queries"));
   }
 
   public void testNullPolicy() {

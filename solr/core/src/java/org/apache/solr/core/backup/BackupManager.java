@@ -25,8 +25,8 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -240,8 +240,7 @@ public class BackupManager {
       throws IOException {
     URI dest = repository.resolve(getZkStateDir(), COLLECTION_PROPS_FILE);
     try (OutputStream collectionStateOs = repository.createOutput(dest)) {
-      collectionStateOs.write(
-          Utils.toJSON(Collections.singletonMap(collectionName, collectionState)));
+      collectionStateOs.write(Utils.toJSON(Map.of(collectionName, collectionState)));
     }
   }
 
