@@ -1,0 +1,7 @@
+title: Update plugin com.palantir.consistent-versions to v3 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4366
+  url: https://github.com/apache/solr/pull/4366
