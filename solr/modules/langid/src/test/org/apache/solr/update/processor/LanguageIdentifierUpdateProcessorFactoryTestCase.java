@@ -31,7 +31,7 @@ import org.junit.Test;
 
 public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends SolrTestCaseJ4 {
 
-  protected static final SolrRequestParsers _parser = new SolrRequestParsers(null);
+  protected static final SolrRequestParsers parser = new SolrRequestParsers(null);
   protected static final SolrQueryResponse resp = new SolrQueryResponse();
   protected LanguageIdentifierUpdateProcessor liProcessor;
 

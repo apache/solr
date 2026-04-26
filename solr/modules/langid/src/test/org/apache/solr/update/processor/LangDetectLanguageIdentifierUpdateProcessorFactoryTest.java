@@ -27,7 +27,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters)
       throws Exception {
     return new LangDetectLanguageIdentifierUpdateProcessor(
-        _parser.buildRequestFrom(h.getCore(), parameters, null),
+        parser.buildRequestFrom(h.getCore(), parameters, null),
         resp,
         null,
         LangDetectLanguageIdentifierUpdateProcessorFactory.ORCHESTRATOR);
@@ -42,21 +42,8 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
   }
 
   /**
-   * Override the base class test with LangDetect-specific text samples.
-   *
-   * <p>Two differences from the base class:
-   *
-   * <ul>
-   *   <li>The "too short" test case is replaced with Japanese (this detector returns Hungarian for
-   *       short ambiguous text rather than "un").
-   *   <li>The Russian text is replaced with a cleaner Cyrillic-only sample. The base class uses a
-   *       text that starts with the English brand name "The Apache Lucene", which creates genuine
-   *       ambiguity between Russian and Serbian: the old com.cybozu.labs:langdetect library did not
-   *       include Serbian in its profile set, so that ambiguity never arose. The new library
-   *       io.github.azagniotov:language-detection supports Serbian, so mixed Latin+Cyrillic text
-   *       with many international technical terms can score close to Serbian. The replacement text
-   *       is about the Russian language itself and contains only Cyrillic characters.
-   * </ul>
+   * Language detection using library-specific text samples. Japanese replaces the base class "too
+   * short" case, and the Russian sample uses pure Cyrillic to avoid ambiguity with Serbian.
    */
   @Test
   @Override
@@ -115,8 +102,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
         "บทความคัดสรรเดือนนี้",
         "subject",
         "อันเนอลีส มารี อันเนอ ฟรังค์ หรือมักรู้จักในภาษาไทยว่า แอนน์ แฟรงค์ เป็นเด็กหญิงชาวยิว เกิดที่เมืองแฟรงก์เฟิร์ต ประเทศเยอรมนี เธอมีชื่อเสียงโด่งดังในฐานะผู้เขียนบันทึกประจำวันซึ่งต่อมาได้รับการตีพิมพ์เป็นหนังสือ บรรยายเหตุการณ์ขณะหลบซ่อนตัวจากการล่าชาวยิวในประเทศเนเธอร์แลนด์ ระหว่างที่ถูกเยอรมนีเข้าครอบครองในช่วงสงครามโลกครั้งที่สอง");
-    // Pure Cyrillic text about the Russian language; see class Javadoc for why the base class
-    // Russian text (which mixes Latin brand names into Cyrillic) cannot be used here.
+    // Pure Cyrillic text; mixed Latin+Cyrillic text risks ambiguity with Serbian.
     assertLang(
         "ru",
         "id",
@@ -168,26 +154,8 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
   }
 
   /**
-   * Override the base class multi-value test to use text that works correctly with the
-   * io.github.azagniotov:language-detection library.
-   *
-   * <p>The base class uses Russian + English + English across three multi-value field entries. With
-   * the new library this fails in two ways:
-   *
-   * <ol>
-   *   <li>Russian is misidentified as Serbian (see {@link #testLangIdGlobal()} Javadoc).
-   *   <li>Even if the script issue were solved, CJK languages (Japanese, Chinese, Korean) cannot be
-   *       used as the minority language in mixed multi-value fields: the library applies a fast CJK
-   *       heuristic before the statistical Naive Bayes classifier, so any CJK content in the
-   *       concatenated text causes CJK to be returned regardless of the volume of Latin-script text
-   *       in the other field values.
-   * </ol>
-   *
-   * <p>For Latin-script minority languages the library uses Naive Bayes on the full concatenated
-   * text, so volume does determine the outcome. This test uses Norwegian (one short paragraph) as
-   * the minority language in the first field value, with two longer English paragraphs in the
-   * remaining values. If only the first value were considered, Norwegian would be detected; when
-   * all values are concatenated, English dominates by volume.
+   * Multi-value language detection: Norwegian is the first field value, but English dominates by
+   * volume across all values and wins. The pre-existing language field must not be overwritten.
    */
   @Test
   @Override
