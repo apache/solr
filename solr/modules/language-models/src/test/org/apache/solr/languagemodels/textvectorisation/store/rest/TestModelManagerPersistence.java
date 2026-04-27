@@ -39,12 +39,12 @@ public class TestModelManagerPersistence extends TestLanguageModelBase {
   }
 
   @Test
-  public void testModelAreStoredCompact() throws Exception {
+  public void testModelAreStored() throws Exception {
     loadModel("cohere-model.json");
 
     final String JSONOnDisk = Files.readString(embeddingModelStoreFile, StandardCharsets.UTF_8);
     Object objectFromDisk = Utils.fromJSONString(JSONOnDisk);
-    assertEquals(new String(Utils.toJSON(objectFromDisk, -1), UTF_8), JSONOnDisk);
+    assertEquals(new String(Utils.toJSON(objectFromDisk), UTF_8), JSONOnDisk);
   }
 
   @Test

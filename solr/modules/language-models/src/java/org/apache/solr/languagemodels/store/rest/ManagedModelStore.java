@@ -70,17 +70,11 @@ public abstract class ManagedModelStore<M extends SolrLanguageModel> extends Man
   protected abstract M fromModelMap(SolrResourceLoader loader, Map<String, Object> modelMap);
 
   private static LinkedHashMap<String, Object> toModelMap(SolrLanguageModel model) {
-    final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(5, 1.0f);
+    final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(3, 1.0f);
     modelMap.put(NAME_KEY, model.getName());
     modelMap.put(CLASS_KEY, model.getModelClassName());
     modelMap.put(PARAMS_KEY, model.getParams());
     return modelMap;
-  }
-
-  @Override
-  protected ManagedResourceStorage createStorage(
-      ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
-    return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
   }
 
   @Override
