@@ -1,0 +1,7 @@
+title: Update org.eclipse.jetty.toolchain:jetty-servlet-api to v4.0.9
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4296
+  url: https://github.com/apache/solr/pull/4296

@@ -1,0 +1,7 @@
+title: Update plugin net.ltgt.errorprone to v5
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4307
+  url: https://github.com/apache/solr/pull/4307
