@@ -14,25 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.store;
+package org.apache.solr.languagemodels.store;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.languagemodels.textvectorisation.model.SolrTextToVectorModel;
+import org.apache.solr.languagemodels.model.SolrLanguageModel;
 
-/** Simple store to manage CRUD operations on the {@link SolrTextToVectorModel} */
-public class TextToVectorModelStore {
+/** Generic store to manage CRUD operations on models that extend {@link SolrLanguageModel} */
+public class LanguageModelStore<M extends SolrLanguageModel> {
 
-  private final Map<String, SolrTextToVectorModel> availableModels;
+  private final Map<String, M> availableModels;
 
-  public TextToVectorModelStore() {
+  public LanguageModelStore() {
     availableModels = Collections.synchronizedMap(new LinkedHashMap<>());
   }
 
-  public SolrTextToVectorModel getModel(String name) {
+  public M getModel(String name) {
     return availableModels.get(name);
   }
 
@@ -40,27 +40,27 @@ public class TextToVectorModelStore {
     availableModels.clear();
   }
 
-  public List<SolrTextToVectorModel> getModels() {
+  public List<M> getModels() {
     synchronized (availableModels) {
-      final List<SolrTextToVectorModel> availableModelsValues =
-          new ArrayList<SolrTextToVectorModel>(availableModels.values());
+      final List<M> availableModelsValues =
+          new ArrayList<>(availableModels.values());
       return Collections.unmodifiableList(availableModelsValues);
     }
   }
 
   @Override
   public String toString() {
-    return "ModelStore [availableModels=" + availableModels.keySet() + "]";
+    return "LanguageModelStore [availableModels=" + availableModels.keySet() + "]";
   }
 
-  public SolrTextToVectorModel delete(String modelName) {
+  public M delete(String modelName) {
     return availableModels.remove(modelName);
   }
 
-  public void addModel(SolrTextToVectorModel modeldata) throws TextToVectorModelException {
-    final String name = modeldata.getName();
-    if (availableModels.putIfAbsent(modeldata.getName(), modeldata) != null) {
-      throw new TextToVectorModelException(
+  public void addModel(M modelData) throws LanguageModelException {
+    final String name = modelData.getName();
+    if (availableModels.putIfAbsent(name, modelData) != null) {
+      throw new LanguageModelException(
           "model '" + name + "' already exists. Please use a different name");
     }
   }

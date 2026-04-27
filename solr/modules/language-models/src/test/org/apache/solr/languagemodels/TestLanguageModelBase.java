@@ -38,7 +38,7 @@ public class TestLanguageModelBase extends RestTestBase {
   protected static Path tmpSolrHome;
   protected static Path tmpConfDir;
 
-  public static final String MODEL_FILE_NAME = "_schema_text-to-vector-model-store.json";
+  public static final String EMBEDDING_MODEL_FILE_NAME = "_schema_text-to-vector-model-store.json";
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
@@ -61,17 +61,17 @@ public class TestLanguageModelBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
-    final Path modelStore = tmpConfDir.resolve(MODEL_FILE_NAME);
+    final Path embeddingStore = tmpConfDir.resolve(EMBEDDING_MODEL_FILE_NAME);
 
     if (isPersistent) {
-      embeddingModelStoreFile = modelStore;
+      embeddingModelStoreFile = embeddingStore;
     }
 
-    if (Files.exists(modelStore)) {
+    if (Files.exists(embeddingStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", modelStore.toAbsolutePath());
+        log.info("remove model store config file in {}", embeddingStore.toAbsolutePath());
       }
-      Files.delete(modelStore);
+      Files.delete(embeddingStore);
     }
 
     System.setProperty("managed.schema.mutable", "true");
@@ -87,7 +87,7 @@ public class TestLanguageModelBase extends RestTestBase {
   }
 
   public static void loadModel(String fileName, String status) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/modelExamples/" + fileName);
+    final URL url = TestLanguageModelBase.class.getResource("/embeddingModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
@@ -97,7 +97,7 @@ public class TestLanguageModelBase extends RestTestBase {
   }
 
   public static void loadModel(String fileName) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/modelExamples/" + fileName);
+    final URL url = TestLanguageModelBase.class.getResource("/embeddingModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(

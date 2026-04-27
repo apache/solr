@@ -14,17 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.store;
 
-public class TextToVectorModelException extends RuntimeException {
+/** Contains model store related classes. */
+package org.apache.solr.languagemodels.store.rest;
 
-  private static final long serialVersionUID = 1L;
-
-  public TextToVectorModelException(String message) {
-    super(message);
-  }
-
-  public TextToVectorModelException(String message, Exception cause) {
-    super(message, cause);
-  }
-}

@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,6 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.languagemodels.store;
 
-/** Contains model store related classes. */
-package org.apache.solr.languagemodels.textvectorisation.store;
+public class LanguageModelException extends RuntimeException {
+
+  private static final long serialVersionUID = 1L;
+
+  public LanguageModelException(String message) {
+    super(message);
+  }
+
+  public LanguageModelException(String message, Exception cause) {
+    super(message, cause);
+  }
+}

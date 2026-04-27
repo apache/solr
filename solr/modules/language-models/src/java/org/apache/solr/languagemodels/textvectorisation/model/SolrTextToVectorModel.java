@@ -28,26 +28,23 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.textvectorisation.store.TextToVectorModelException;
+import org.apache.solr.languagemodels.model.SolrLanguageModel;
+import org.apache.solr.languagemodels.store.LanguageModelException;
 import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link dev.langchain4j.model.embedding.EmbeddingModel} to encode text to
+ * This object wraps a {@link EmbeddingModel} to encode text to
  * vector. It's meant to be used as a managed resource with the {@link
  * ManagedTextToVectorModelStore}
  */
-public class SolrTextToVectorModel implements Accountable {
+public class SolrTextToVectorModel extends SolrLanguageModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(SolrTextToVectorModel.class);
-  private static final String TIMEOUT_PARAM = "timeout";
   private static final String MAX_SEGMENTS_PER_BATCH_PARAM = "maxSegmentsPerBatch";
-  private static final String MAX_RETRIES_PARAM = "maxRetries";
 
-  private final String name;
-  private final Map<String, Object> params;
   private final EmbeddingModel textToVector;
   private final int hashCode;
 
@@ -56,7 +53,7 @@ public class SolrTextToVectorModel implements Accountable {
       String className,
       String name,
       Map<String, Object> params)
-      throws TextToVectorModelException {
+      throws LanguageModelException {
     try {
       /*
        * The idea here is to build a {@link dev.langchain4j.model.embedding.EmbeddingModel} using inversion
@@ -94,10 +91,10 @@ public class SolrTextToVectorModel implements Accountable {
                 .getMethod(paramName, Integer.class)
                 .invoke(builder, ((Long) params.get(paramName)).intValue());
 
-              /*
-               * For primitive params if there's only one setter available, we call it.
-               * If there's choice we default to the string one
-               */
+            /*
+             * For primitive params if there's only one setter available, we call it.
+             * If there's choice we default to the string one
+             */
             default -> {
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
@@ -125,21 +122,25 @@ public class SolrTextToVectorModel implements Accountable {
       textToVector = (EmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
       return new SolrTextToVectorModel(name, textToVector, params);
     } catch (final Exception e) {
-      throw new TextToVectorModelException("Model loading failed for " + className, e);
+      throw new LanguageModelException("Model loading failed for " + className, e);
     }
   }
 
   public SolrTextToVectorModel(
       String name, EmbeddingModel textToVector, Map<String, Object> params) {
-    this.name = name;
+    super(name, params);
     this.textToVector = textToVector;
-    this.params = params;
     this.hashCode = calculateHashCode();
   }
 
   public float[] vectorise(String text) {
     Embedding vector = textToVector.embed(text).content();
     return vector.vector();
+  }
+
+  @Override
+  public String getModelClassName() {
+    return textToVector.getClass().getName();
   }
 
   @Override
@@ -170,20 +171,7 @@ public class SolrTextToVectorModel implements Accountable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof SolrTextToVectorModel)) return false;
-    final SolrTextToVectorModel other = (SolrTextToVectorModel) obj;
+    if (!(obj instanceof SolrTextToVectorModel other)) return false;
     return Objects.equals(textToVector, other.textToVector) && Objects.equals(name, other.name);
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getEmbeddingModelClassName() {
-    return textToVector.getClass().getName();
-  }
-
-  public Map<String, Object> getParams() {
-    return params;
   }
 }
