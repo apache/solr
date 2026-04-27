@@ -81,9 +81,7 @@ public class GpuMetricsService implements GpuMetricsProvider {
       try {
         System.loadLibrary("cudart");
       } catch (UnsatisfiedLinkError e) {
-        if (log.isWarnEnabled()) {
-          log.warn("Could not load CUDA runtime library (libcudart not available) ", e);
-        }
+        log.warn("Could not load CUDA runtime library (libcudart not available) ", e);
       }
       this.metricManager = coreContainer.getMetricManager();
       startBackgroundService();
