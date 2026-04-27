@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.routing;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -219,7 +218,7 @@ public class NodePreferenceRulesComparator {
               // For SolrJ clients, which do not have Solr sysProps, this preference won't be used
               yield null;
             }
-            Collection<String> tags = Collections.singletonList(preferenceRule.value);
+            Collection<String> tags = List.of(preferenceRule.value);
             Map<String, Object> currentNodeMetric = sysProps.getSysProps(nodeName, tags);
             yield Comparator.comparing(
                 r -> currentNodeMetric.equals(sysProps.getSysProps(r.getNodeName(), tags)));

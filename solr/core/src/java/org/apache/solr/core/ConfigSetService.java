@@ -381,8 +381,8 @@ public abstract class ConfigSetService {
   public abstract void uploadConfig(String configName, Path dir) throws IOException;
 
   /**
-   * Upload a file to config If file does not exist, it will be uploaded If overwriteOnExists is set
-   * to true then file will be overwritten
+   * Upload a file to config. If file does not exist, it will be uploaded. If overwriteOnExists is
+   * set to true then the file will be overwritten.
    *
    * @param configName the name to give the config
    * @param fileName the name of the file with '/' used as the file path separator
@@ -395,7 +395,7 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Download all files from this config to the filesystem at dir
+   * Download all files from this config to the filesystem at dir.
    *
    * @param configName the config to download
    * @param dir the {@link Path} to write files under
@@ -403,7 +403,7 @@ public abstract class ConfigSetService {
   public abstract void downloadConfig(String configName, Path dir) throws IOException;
 
   /**
-   * Download a file from config If the file does not exist, it returns null
+   * Download a file from config. If the file does not exist, it returns null.
    *
    * @param configName the name of the config
    * @param filePath the file to download with '/' as the separator
@@ -413,7 +413,7 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Copy a config
+   * Copy a config.
    *
    * @param fromConfig the config to copy from
    * @param toConfig the config to copy to
@@ -421,7 +421,7 @@ public abstract class ConfigSetService {
   public abstract void copyConfig(String fromConfig, String toConfig) throws IOException;
 
   /**
-   * Check whether a config exists
+   * Check whether a config exists.
    *
    * @param configName the config to check if it exists
    * @return whether the config exists or not
@@ -429,14 +429,14 @@ public abstract class ConfigSetService {
   public abstract boolean checkConfigExists(String configName) throws IOException;
 
   /**
-   * Delete a config (recursively deletes its files if not empty)
+   * Delete a config (recursively deletes its files if not empty).
    *
    * @param configName the config to delete
    */
   public abstract void deleteConfig(String configName) throws IOException;
 
   /**
-   * Delete files in config
+   * Delete files in config.
    *
    * @param configName the name of the config
    * @param filesToDelete a list of file paths to delete using '/' as file path separator
@@ -445,8 +445,8 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Set the config metadata If config does not exist, it will be created and set metadata on it
-   * Else metadata will be replaced with the provided metadata
+   * Set the config metadata. If config does not exist, it will be created and set metadata on it.
+   * Else metadata will be replaced with the provided metadata.
    *
    * @param configName the config name
    * @param data the metadata to be set on config
@@ -455,7 +455,7 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Get the config metadata (mutable, non-null)
+   * Get the config metadata (mutable, non-null).
    *
    * @param configName the config name
    * @return the config metadata
@@ -463,7 +463,7 @@ public abstract class ConfigSetService {
   public abstract Map<String, Object> getConfigMetadata(String configName) throws IOException;
 
   /**
-   * List the names of configs (non-null)
+   * List the names of configs (non-null).
    *
    * @return list of config names
    */
@@ -471,7 +471,7 @@ public abstract class ConfigSetService {
 
   /**
    * Get the names of the files in config including dirs (mutable, non-null) sorted
-   * lexicographically e.g. solrconfig.xml, lang/, lang/stopwords_en.txt
+   * lexicographically e.g. solrconfig.xml, lang/, lang/stopwords_en.txt.
    *
    * @param configName the config name
    * @return list of file name paths in the config with '/' uses as file path separators

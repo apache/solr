@@ -69,7 +69,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
@@ -1160,7 +1159,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return out.toString();
   }
 
-  public static void addDoc(String doc, String updateRequestProcessorChain) throws Exception {
+  public static SolrQueryResponse addDoc(String doc, String updateRequestProcessorChain)
+      throws Exception {
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] {updateRequestProcessorChain});
@@ -1169,8 +1169,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
     req.setContentStreams(List.of(new ContentStreamBase.StringStream(doc)));
-    handler.handleRequestBody(req, new SolrQueryResponse());
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequestBody(req, rsp);
     req.close();
+
+    return rsp;
   }
 
   /**
@@ -2557,18 +2560,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       this.shardLeadersOnly = random().nextBoolean();
       this.parallelUpdates = random().nextBoolean();
     }
-  }
-
-  /**
-   * This method creates a HttpClient from a URL.
-   *
-   * <p><b>WARNING:</b> if you use this method, the <code>HttpClient</code> returned is tracked by
-   * <code>ObjectReleaseTracker</code>. Your test will fail if you do not pass the <code>HttpClient
-   * </code> to {@link HttpClientUtil#close(HttpClient)} when you are done with it.
-   */
-  @Deprecated // We are migrating away from Apache HttpClient.
-  public static HttpClient getHttpClient(String url) {
-    return new HttpSolrClient.Builder(url).build().getHttpClient();
   }
 
   /**

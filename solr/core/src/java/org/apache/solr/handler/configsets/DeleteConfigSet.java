@@ -32,7 +32,11 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API implementation for ConfigsetsApi.Delete */
+/**
+ * V2 API implementation for deleting a configset
+ *
+ * <p>This API (GET /v2/configsets) is analogous to the v1 /admin/configs?action=DELETE command.
+ */
 public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Delete {
 
   @Inject

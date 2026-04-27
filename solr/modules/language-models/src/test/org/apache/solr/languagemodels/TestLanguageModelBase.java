@@ -53,7 +53,7 @@ public class TestLanguageModelBase extends RestTestBase {
       String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
       throws Exception {
     initFolders(persistModelStore);
-    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema);
     if (buildIndex) prepareIndex();
   }
 
@@ -78,10 +78,7 @@ public class TestLanguageModelBase extends RestTestBase {
   }
 
   protected static void afterTest() throws Exception {
-    if (null != restTestHarness) {
-      restTestHarness.close();
-      restTestHarness = null;
-    }
+    restTestHarness = null;
     solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);

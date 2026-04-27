@@ -128,6 +128,7 @@ class OAuthStoreProvider(
             val mappedError: Throwable = when (error) {
                 // Unauthorized response means that the credentials are invalid
                 is UnauthorizedException -> InvalidCredentialsException()
+
                 else -> error
             }
 

@@ -27,10 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -237,7 +237,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
 
   public void testGetById(HttpSolrClientBase client) throws Exception {
     DebugServlet.clear();
-    Collection<String> ids = Collections.singletonList("a");
+    Collection<String> ids = List.of("a");
     try {
       client.getById("a");
     } catch (RemoteSolrException ignored) {
@@ -577,9 +577,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       client.commit(DEFAULT_COLLECTION);
       QueryResponse qr =
           client.query(
-              DEFAULT_COLLECTION,
-              new MapSolrParams(Collections.singletonMap("q", "*:*")),
-              SolrRequest.METHOD.POST);
+              DEFAULT_COLLECTION, new MapSolrParams(Map.of("q", "*:*")), SolrRequest.METHOD.POST);
       assertEquals(0, qr.getResults().getNumFound());
 
       for (int i = 0; i < limit; i++) {
@@ -595,9 +593,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       // check that the correct number of documents were added
       qr =
           client.query(
-              DEFAULT_COLLECTION,
-              new MapSolrParams(Collections.singletonMap("q", "*:*")),
-              SolrRequest.METHOD.POST);
+              DEFAULT_COLLECTION, new MapSolrParams(Map.of("q", "*:*")), SolrRequest.METHOD.POST);
       assertEquals(limit, qr.getResults().getNumFound());
 
       // clean up
@@ -620,8 +616,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
                 + i
                 + "</str></doc></result></response>");
-        QueryRequest query =
-            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        QueryRequest query = new QueryRequest(new MapSolrParams(Map.of("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
         futures.add(client.requestAsync(query));
       }
@@ -649,7 +644,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 
     try (HttpSolrClientBase client = b.build()) {
-      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      QueryRequest query = new QueryRequest(new MapSolrParams(Map.of("id", "1")));
       CompletableFuture<NamedList<Object>> future = client.requestAsync(query, DEFAULT_COLLECTION);
       ExecutionException ee = null;
       try {
@@ -662,5 +657,23 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       assertTrue(ee.getCause() instanceof RemoteSolrException);
       assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
+  }
+
+  // formerly SolrExceptionTest.testSolrException
+  public void testConnectionToNonExistentServer() throws Exception {
+    // test a connection to a solr server that probably doesn't exist
+    // this is a very simple test and most of the test should be considered verified
+    // if the compiler won't let you by without the try/catch
+
+    // test a connection to a solr server that probably doesn't exist
+    // set a 1ms timeout to let the connection fail faster
+    boolean gotExpectedError = false;
+    try (var client = builder("http://" + DEAD_HOST_1 + "/solr/", 1, 1000).build()) {
+      SolrQuery query = new SolrQuery("test123");
+      client.query(query);
+    } catch (SolrServerException sse) {
+      gotExpectedError = true;
+    }
+    assertTrue(gotExpectedError);
   }
 }

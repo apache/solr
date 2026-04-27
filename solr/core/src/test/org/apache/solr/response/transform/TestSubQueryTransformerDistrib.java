@@ -16,8 +16,6 @@
  */
 package org.apache.solr.response.transform;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import java.io.ByteArrayOutputStream;
@@ -86,9 +84,9 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                     "class",
                     RuleBasedAuthorizationPlugin.class.getName(),
                     "user-role",
-                    singletonMap(USER, "admin"),
+                    Map.of(USER, "admin"),
                     "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
+                    List.of(Map.of("name", "all", "role", "admin"))),
                 "authentication",
                 Map.of(
                     "class",
@@ -96,7 +94,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                     "blockUnknown",
                     true,
                     "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)),
+                    Map.of(USER, getSaltedHashedValue(PASS)),
                     "forwardCredentials", // forward basic auth credentials during internode
                     // requests instead of relying on PKI authentication; the test should pass
                     // regardless of the setting here, but "true" is the more interesting case that

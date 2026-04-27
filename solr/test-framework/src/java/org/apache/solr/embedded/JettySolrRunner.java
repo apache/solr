@@ -19,16 +19,9 @@ package org.apache.solr.embedded;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -37,18 +30,17 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -69,11 +61,13 @@ import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrServlet;
 import org.apache.solr.servlet.TracingFilter;
+import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.Source;
@@ -91,7 +85,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.GracefulHandler;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -116,12 +109,7 @@ public class JettySolrRunner implements SolrBackend {
 
   private Server server;
 
-  volatile FilterHolder debugFilter;
-  volatile FilterHolder requiredFilter;
-  volatile FilterHolder rateLimitFilter;
-  volatile FilterHolder authFilter;
-  volatile ServletHolder solrServlet;
-  private FilterHolder tracingFilter;
+  private volatile ServletHolder solrServlet;
 
   private int jettyPort = -1;
 
@@ -130,8 +118,6 @@ public class JettySolrRunner implements SolrBackend {
   private final Properties nodeProperties;
 
   private volatile boolean startedBefore = false;
-
-  private List<FilterHolder> extraFilters;
 
   private int proxyPort = -1;
 
@@ -146,69 +132,6 @@ public class JettySolrRunner implements SolrBackend {
   private volatile HttpJettySolrClient jettySolrClient;
 
   private volatile boolean started = false;
-
-  public static class DebugFilter implements Filter {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-    private AtomicLong nRequests = new AtomicLong();
-
-    List<Delay> delays = new ArrayList<>();
-
-    public long getTotalRequests() {
-      return nRequests.get();
-    }
-
-    /**
-     * Introduce a delay of specified milliseconds for the specified request.
-     *
-     * @param reason Info message logged when delay occurs
-     * @param count The count-th request will experience a delay
-     * @param delay There will be a delay of this many milliseconds
-     */
-    public void addDelay(String reason, int count, int delay) {
-      delays.add(new Delay(reason, count, delay));
-    }
-
-    /** Remove any delay introduced before. */
-    public void unsetDelay() {
-      delays.clear();
-    }
-
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {}
-
-    @Override
-    public void doFilter(
-        ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
-        throws IOException, ServletException {
-      nRequests.incrementAndGet();
-      executeDelay();
-      filterChain.doFilter(servletRequest, servletResponse);
-    }
-
-    @Override
-    public void destroy() {}
-
-    private void executeDelay() {
-      int delayMs = 0;
-      for (Delay delay : delays) {
-        log.info("Delaying {}, for reason: {}", delay.delayValue, delay.reason);
-        if (delay.counter.decrementAndGet() == 0) {
-          delayMs += delay.delayValue;
-        }
-      }
-
-      if (delayMs > 0) {
-        log.info("Pausing this socket connection for {}ms...", delayMs);
-        try {
-          Thread.sleep(delayMs);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-        log.info("Waking up after the delay of {}ms...", delayMs);
-      }
-    }
-  }
 
   /**
    * Create a new JettySolrRunner.
@@ -371,7 +294,7 @@ public class JettySolrRunner implements SolrBackend {
     {
       // Initialize the servlets
       final ServletContextHandler root =
-          new ServletContextHandler("/solr", ServletContextHandler.SESSIONS);
+          new ServletContextHandler("/solr", ServletContextHandler.NO_SESSIONS);
       root.setServer(server);
       root.setBaseResource(ResourceFactory.of(server).newResource("."));
       root.addEventListener(
@@ -397,11 +320,8 @@ public class JettySolrRunner implements SolrBackend {
             }
           });
 
-      debugFilter = root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-      extraFilters = new ArrayList<>();
       for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
-        extraFilters.add(
-            root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
+        root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST));
       }
 
       for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
@@ -410,43 +330,29 @@ public class JettySolrRunner implements SolrBackend {
       // TODO: This needs to be driven by a parsing of web.xml eventually
       //  though we still want to avoid classpath scanning.
 
-      // required request setup
-      requiredFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-      requiredFilter.setHeldClass(RequiredSolrRequestFilter.class);
-
-      // Ratelimit Requests
-      rateLimitFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-      rateLimitFilter.setHeldClass(RateLimitFilter.class);
-
-      // Trace Requests
-      tracingFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-      tracingFilter.setHeldClass(TracingFilter.class);
-
-      // Authenticate Requests
-      authFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-      authFilter.setHeldClass(AuthenticationFilter.class);
-
-      // Map filters in same path as in web.xml
-      root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
-      root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
-      root.addFilter(tracingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
-      root.addFilter(authFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
-
       // This is our main workhorse - now a servlet instead of filter
       solrServlet = root.getServletHandler().newServletHolder(Source.EMBEDDED);
+      solrServlet.setName("SolrServlet");
       solrServlet.setHeldClass(SolrServlet.class);
       root.addServlet(solrServlet, "/*");
 
-      // Default servlet as a fall-through
-      ServletHolder defaultHolder = root.getServletHandler().newServletHolder(Source.EMBEDDED);
-
-      // considered adding DefaultServlet.class here but perhaps that might grant our unit tests
-      // the power to serve static resources on the build machines? Not sure, so I'll just give a
-      // name to our existing hack. The tests passed without this, but it will ensure that if anyone
-      // ever hits the PathExcludeFilter in the unit test they get a 404 as before not a 500
-      defaultHolder.setHeldClass(Servlet404.class);
-      defaultHolder.setName("default");
-      root.addServlet(defaultHolder, "/");
+      // Map filters to SolrServlet by name (same order as web.xml)
+      for (var filterClass :
+          List.<Class<? extends Filter>>of(
+              RequiredSolrRequestFilter.class,
+              RateLimitFilter.class,
+              TracingFilter.class,
+              AuthenticationFilter.class)) {
+        FilterHolder fh = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+        fh.setName(filterClass.getSimpleName());
+        fh.setHeldClass(filterClass);
+        root.getServletHandler().addFilter(fh);
+        FilterMapping fm = new FilterMapping();
+        fm.setFilterName(fh.getName());
+        fm.setServletNames(new String[] {"SolrServlet"});
+        fm.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+        root.getServletHandler().addFilterMapping(fm);
+      }
 
       // TODO: end area that should be driven by web.xml and webdefault.xml
       chain = root;
@@ -462,13 +368,7 @@ public class JettySolrRunner implements SolrBackend {
       chain = rwh;
     }
 
-    GzipHandler gzipHandler = new GzipHandler();
-    gzipHandler.setHandler(chain);
-
-    gzipHandler.setMinGzipSize(23); // https://github.com/eclipse/jetty.project/issues/4191
-    gzipHandler.setIncludedMethods("GET");
-
-    server.setHandler(gzipHandler);
+    server.setHandler(chain);
 
     // Mimic "graceful.mod"
     GracefulHandler graceful = new GracefulHandler();
@@ -485,10 +385,15 @@ public class JettySolrRunner implements SolrBackend {
   }
 
   /**
-   * @return the {@link RateLimitFilter} for this node
+   * @return the first filter implemented by the specified class, or throws an exception
    */
-  public RateLimitFilter getSolrRateLimitFilter() {
-    return (RateLimitFilter) rateLimitFilter.getFilter();
+  public <T extends Filter> T getFilter(Class<T> filterClass) {
+    return Arrays.stream(solrServlet.getServletHandler().getFilters())
+        .filter(fh -> fh.getHeldClass() == filterClass)
+        .map(fh -> filterClass.cast(fh.getFilter()))
+        .findFirst()
+        .orElseThrow(
+            () -> new NoSuchElementException("No filter of class: " + filterClass.getName()));
   }
 
   @Override
@@ -808,19 +713,27 @@ public class JettySolrRunner implements SolrBackend {
     this.proxyPort = proxyPort;
   }
 
+  private URI getBaseUri(int jettyPort, String path) {
+    try {
+      return new URI(protocol, null, host, jettyPort, path, null, null);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /** Returns a base URL like {@code http://localhost:8983/solr} */
   public URL getBaseUrl() {
     try {
-      return new URI(protocol, null, host, jettyPort, "/solr", null, null).toURL();
-    } catch (URISyntaxException | MalformedURLException e) {
+      return getBaseUri(jettyPort, "/solr").toURL();
+    } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
   }
 
   public URL getBaseURLV2() {
     try {
-      return new URI(protocol, null, host, jettyPort, "/api", null, null).toURL();
-    } catch (MalformedURLException | URISyntaxException e) {
+      return getBaseUri(jettyPort, "/api").toURL();
+    } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
   }
@@ -831,8 +744,8 @@ public class JettySolrRunner implements SolrBackend {
    */
   public URL getProxyBaseUrl() {
     try {
-      return new URI(protocol, null, host, getLocalPort(), "/solr", null, null).toURL();
-    } catch (MalformedURLException | URISyntaxException e) {
+      return getBaseUri(getLocalPort(), "/solr").toURL();
+    } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
   }
@@ -848,20 +761,8 @@ public class JettySolrRunner implements SolrBackend {
         .build();
   }
 
-  public DebugFilter getDebugFilter() {
-    return (DebugFilter) debugFilter.getFilter();
-  }
-
   // --------------------------------------------------------------
   // --------------------------------------------------------------
-
-  /** This is a stupid hack to give jetty something to attach to */
-  public static class Servlet404 extends HttpServlet {
-    @Override
-    public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
-      res.sendError(404, "Can not find: " + req.getRequestURI());
-    }
-  }
 
   /** A main class that starts jetty+solr This is useful for debugging */
   public static void main(String[] args) throws Exception {
@@ -891,20 +792,20 @@ public class JettySolrRunner implements SolrBackend {
     cores.waitForLoadingCoresToFinish(timeoutMs);
   }
 
-  static class Delay {
-    final AtomicInteger counter;
-    final int delayValue;
-    final String reason;
-
-    public Delay(String reason, int counter, int delay) {
-      this.reason = reason;
-      this.counter = new AtomicInteger(counter);
-      this.delayValue = delay;
-    }
-  }
-
   public SocketProxy getProxy() {
     return proxy;
+  }
+
+  /**
+   * Creates a REST client useful for HTTP operations. It closes when this {@link JettySolrRunner}
+   * is stopped.
+   */
+  public RestTestHarness getRestClient(String collection) {
+    String path = "/solr";
+    if (collection != null) {
+      path += "/" + collection;
+    }
+    return new RestTestHarness(getSolrClient().getHttpClient(), getBaseUri(jettyPort, path));
   }
 
   // ---- SolrBackend implementation ----

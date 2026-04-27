@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -504,7 +503,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     return UninvertingReader.wrap(
         new ReaderWrapper(searcher.getSlowAtomicReader(), collapseField),
-        Collections.singletonMap(collapseField, type)::get);
+        Map.of(collapseField, type)::get);
   }
 
   private static class ReaderWrapper extends FilterLeafReader {

@@ -188,6 +188,9 @@ public class HttpShardHandler extends ShardHandler {
     params.remove(CommonParams.WT); // use default (currently javabin)
     QueryRequest req = createQueryRequest(sreq, params, shard);
     req.setMethod(SolrRequest.METHOD.POST);
+    if (sreq.headers != null) {
+      req.addHeaders(sreq.headers);
+    }
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     if (requestInfo != null) {
       req.setUserPrincipal(requestInfo.getUserPrincipal());
