@@ -41,15 +41,15 @@ asciidoc:
     # 'patch-version' is the 'z' part of x.y.z semantic version
     page-solr-javadocs: 'https://solr.apache.org/docs/10_1_0'
     solr-javadocs: 'https://solr.apache.org/docs/10_1_0'
-    lucene-javadocs: 'https://lucene.apache.org/core/10_3_1'
+    lucene-javadocs: 'https://lucene.apache.org/core/10_4_0'
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     solr-docs-version: '10.1'
     solr-full-version: '10.1.0'
 
-    dep-version-commons-codec: '1.19.0'
-    dep-version-log4j: '2.21.0'
-    dep-version-opennlp: '2.5.6'
-    dep-version-tika: '1.28.5'
+    dep-version-commons-codec: '1.21.0'
+    dep-version-log4j: '2.25.3'
+    dep-version-opennlp: '2.5.8'
+    dep-version-tika: '3.2.3'
     dep-version-zookeeper: '3.9.4'
-    dep-version-lucene: '10.3.1'
-    dep-version-opentelemetry: '1.53.0'
+    dep-version-lucene: '10.4.0'
+    dep-version-opentelemetry: '1.56.0'
