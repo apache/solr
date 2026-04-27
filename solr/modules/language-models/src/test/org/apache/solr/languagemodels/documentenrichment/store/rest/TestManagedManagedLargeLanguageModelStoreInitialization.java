@@ -20,7 +20,7 @@ import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.After;
 import org.junit.Test;
 
-public class TestManagedFieldGenerationModelStoreInitialization extends TestLanguageModelBase {
+public class TestManagedManagedLargeLanguageModelStoreInitialization extends TestLanguageModelBase {
 
   @After
   public void cleanUp() throws Exception {
@@ -28,23 +28,23 @@ public class TestManagedFieldGenerationModelStoreInitialization extends TestLang
   }
 
   @Test
-  public void managedChatModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
+  public void managedLargeLanguageModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
       throws Exception {
     setupTest("solrconfig-document-enrichment.xml", "schema-language-models.xml", false, false);
 
-    assertJQ(ManagedFieldGenerationModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedFieldGenerationModelStore.REST_END_POINT, "/models==[]");
+    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test
-  public void managedChatModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
+  public void managedLargeLanguageModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(
-        ManagedFieldGenerationModelStore.REST_END_POINT,
+        ManagedLargeLanguageModelStore.REST_END_POINT,
         "/responseHeader/status==400",
         "/error/msg=='No REST managed resource registered for path "
-            + ManagedFieldGenerationModelStore.REST_END_POINT
+            + ManagedLargeLanguageModelStore.REST_END_POINT
             + "'");
   }
 }

@@ -24,8 +24,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedFieldGenerationModelStore;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrLargeLanguageModel;
+import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import dev.langchain4j.model.chat.request.ResponseFormatType;
@@ -286,7 +286,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
                 createUpdateProcessor(
                     List.of("string_field"), "notExistentOutput", null, collection1, "model1"));
     assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
-    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -299,7 +299,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
                 createUpdateProcessor(
                     List.of("notExistentInput"), "enriched_field", null, collection1, "model1"));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
-    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -316,7 +316,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
                     collection1,
                     "model1"));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
-    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -325,7 +325,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         createUpdateProcessor(
             List.of("string_field"), "enriched_field_multi", null, collection1, "model1");
     assertNotNull(instance);
-    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/model1");
   }
 
   /* getJsonSchema tests for unsupported field types from the Solr documentation:
@@ -393,7 +393,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
     UpdateRequestProcessor instance =
         createUpdateProcessor(List.of("text_s"), "enriched_field", null, collection1, "model1");
     assertNotNull(instance);
-    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/model1");
   }
 
   @Test
@@ -402,7 +402,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
         createUpdateProcessor(
             List.of("text_s", "body_field"), "enriched_field", null, collection1, "model1");
     assertNotNull(instance);
-    restTestHarness.delete(ManagedFieldGenerationModelStore.REST_END_POINT + "/model1");
+    restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/model1");
   }
 
   private UpdateRequestProcessor createUpdateProcessor(
@@ -413,8 +413,8 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
       String modelName)
       throws Exception {
 
-    ManagedFieldGenerationModelStore.getManagedModelStore(core)
-        .addModel(new SolrFieldGenerationModel(modelName, null, null));
+    ManagedLargeLanguageModelStore.getManagedModelStore(core)
+        .addModel(new SolrLargeLanguageModel(modelName, null, null));
 
     DocumentEnrichmentUpdateProcessorFactory factory =
         initializeUpdateProcessorFactory(inputFieldNames, outputFieldName, prompt, modelName);

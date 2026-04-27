@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedFieldGenerationModelStore;
+import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
 import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
@@ -40,12 +40,12 @@ public class TestLanguageModelBase extends RestTestBase {
   protected static Path tmpConfDir;
 
   public static final String EMBEDDING_MODEL_FILE_NAME = "_schema_text-to-vector-model-store.json";
-  public static final String FIELD_GENERATION_MODEL_FILE_NAME = "_schema_field-generation-model-store.json";
+  public static final String LARGE_LANGUAGE_MODEL_FILE_NAME = "_schema_large-language-model-store.json";
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
   protected static Path embeddingModelStoreFile = null;
-  protected static Path fieldGenerationModelStoreFile = null;
+  protected static Path largeLanguageModelStoreFile = null;
 
   protected static String IDField = "id";
   protected static String vectorField = "vector";
@@ -64,26 +64,26 @@ public class TestLanguageModelBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
-    final Path embeddingStore = tmpConfDir.resolve(EMBEDDING_MODEL_FILE_NAME);
-    final Path fieldGenerationStore = tmpConfDir.resolve(FIELD_GENERATION_MODEL_FILE_NAME);
+    final Path embeddingModelStore = tmpConfDir.resolve(EMBEDDING_MODEL_FILE_NAME);
+    final Path largeLanguageModelStore = tmpConfDir.resolve(LARGE_LANGUAGE_MODEL_FILE_NAME);
 
     if (isPersistent) {
-      embeddingModelStoreFile = embeddingStore;
-      fieldGenerationModelStoreFile = fieldGenerationStore;
+      embeddingModelStoreFile = embeddingModelStore;
+      largeLanguageModelStoreFile = largeLanguageModelStore;
     }
 
-    if (Files.exists(embeddingStore)) {
+    if (Files.exists(embeddingModelStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove embedding model store config file in {}", embeddingStore.toAbsolutePath());
+        log.info("remove embedding model store config file in {}", embeddingModelStore.toAbsolutePath());
       }
-      Files.delete(embeddingStore);
+      Files.delete(embeddingModelStore);
     }
 
-    if (Files.exists(fieldGenerationStore)) {
+    if (Files.exists(largeLanguageModelStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove field generation model store config file in {}", fieldGenerationStore.toAbsolutePath());
+        log.info("remove large language model store config file in {}", largeLanguageModelStore.toAbsolutePath());
       }
-      Files.delete(fieldGenerationStore);
+      Files.delete(largeLanguageModelStore);
     }
 
     System.setProperty("managed.schema.mutable", "true");
@@ -116,27 +116,27 @@ public class TestLanguageModelBase extends RestTestBase {
         ManagedTextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
-  public static void loadFieldGenerationModel(String fileName, String status) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/fieldGenerationModelExamples/" + fileName);
+  public static void loadLargeLanguageModel(String fileName, String status) throws Exception {
+    final URL url = TestLanguageModelBase.class.getResource("/chatModelExamples/" + fileName);
     final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
-    assertJPut(ManagedFieldGenerationModelStore.REST_END_POINT, model, "/responseHeader/status==" + status);
+    assertJPut(ManagedLargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==" + status);
   }
 
-  public static void loadFieldGenerationModel(String fileName, String status, String message)
+  public static void loadLargeLanguageModel(String fileName, String status, String message)
       throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/fieldGenerationModelExamples/" + fileName);
+    final URL url = TestLanguageModelBase.class.getResource("/chatModelExamples/" + fileName);
     final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-        ManagedFieldGenerationModelStore.REST_END_POINT, model, "/responseHeader/status==" + status, message);
+        ManagedLargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==" + status, message);
   }
 
-  public static void loadFieldGenerationModel(String fileName) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/fieldGenerationModelExamples/" + fileName);
+  public static void loadLargeLanguageModel(String fileName) throws Exception {
+    final URL url = TestLanguageModelBase.class.getResource("/chatModelExamples/" + fileName);
     final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
-    assertJPut(ManagedFieldGenerationModelStore.REST_END_POINT, model, "/responseHeader/status==0");
+    assertJPut(ManagedLargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==0");
   }
 
   protected static void prepareIndex() throws Exception {

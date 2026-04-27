@@ -17,46 +17,32 @@
 package org.apache.solr.languagemodels.documentenrichment.model;
 
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.Capability;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ResponseFormat;
-import dev.langchain4j.model.chat.request.json.JsonArraySchema;
-import dev.langchain4j.model.chat.request.json.JsonBooleanSchema;
-import dev.langchain4j.model.chat.request.json.JsonIntegerSchema;
-import dev.langchain4j.model.chat.request.json.JsonNumberSchema;
-import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
-import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
-import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory;
-import org.apache.solr.languagemodels.documentenrichment.store.FieldGenerationModelException;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedFieldGenerationModelStore;
+import org.apache.solr.languagemodels.documentenrichment.store.LargeLanguageModelException;
+import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to produce the content of a
- * field based on the content of other fields specified as input. It's meant to be used as a managed
- * resource with the {@link ManagedFieldGenerationModelStore}
+ * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to some content given a prompt and a
+ * {@link ResponseFormat}. It's meant to be used as a managed resource with the {@link ManagedLargeLanguageModelStore}
  */
-public class SolrFieldGenerationModel implements Accountable {
+public class SolrLargeLanguageModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long BASE_RAM_BYTES =
-      RamUsageEstimator.shallowSizeOfInstance(SolrFieldGenerationModel.class);
+      RamUsageEstimator.shallowSizeOfInstance(SolrLargeLanguageModel.class);
   private static final String TIMEOUT_PARAM = "timeout";
   private static final String MAX_RETRIES_PARAM = "maxRetries";
   private static final String THINKING_BUDGET_TOKENS = "thinkingBudgetTokens";
@@ -67,12 +53,12 @@ public class SolrFieldGenerationModel implements Accountable {
   private final ChatModel chatModel;
   private final int hashCode;
 
-  public static SolrFieldGenerationModel getInstance(
+  public static SolrLargeLanguageModel getInstance(
       SolrResourceLoader solrResourceLoader,
       String className,
       String name,
       Map<String, Object> params)
-      throws FieldGenerationModelException {
+      throws LargeLanguageModelException {
     try {
       /*
        * The idea here is to build a {@link dev.langchain4j.model.chat.ChatModel} using inversion
@@ -153,13 +139,13 @@ public class SolrFieldGenerationModel implements Accountable {
         }
       }
       chatModel = (ChatModel) builder.getClass().getMethod("build").invoke(builder);
-      return new SolrFieldGenerationModel(name, chatModel, params);
+      return new SolrLargeLanguageModel(name, chatModel, params);
     } catch (final Exception e) {
-      throw new FieldGenerationModelException("Model loading failed for " + className, e);
+      throw new LargeLanguageModelException("Model loading failed for " + className, e);
     }
   }
 
-  public SolrFieldGenerationModel(String name, ChatModel chatModel, Map<String, Object> params) {
+  public SolrLargeLanguageModel(String name, ChatModel chatModel, Map<String, Object> params) {
     this.name = name;
     this.chatModel = chatModel;
     this.params = params;
@@ -167,46 +153,20 @@ public class SolrFieldGenerationModel implements Accountable {
   }
 
   /**
-   * Sends a structured chat request and returns the parsed value from the {@code {"value": ...}}
-   * JSON object that the model is instructed to produce via {@code responseFormat}.
+   * Sends a structured chat request to the language model and returns the raw text response.
    *
-   * @return the extracted value: a {@link String}, {@link Number}, {@link Integer}, {@link
-   *     Boolean}, or {@link java.util.List} depending on the Solr output field type
+   * @param prompt the user prompt to send to the language model
+   * @param responseFormat the format specification that instructs the model to produce structured
+   *     JSON output
+   * @return the raw text response from the language model
    */
-  public Object generateFieldValue(String prompt, ResponseFormat responseFormat) {
+  public String generate(String prompt, ResponseFormat responseFormat) {
     ChatRequest chatRequest =
         ChatRequest.builder()
             .responseFormat(responseFormat)
             .messages(UserMessage.from(prompt))
             .build();
-    String rawJson = chatModel.chat(chatRequest).aiMessage().text();
-    Object parsed = Utils.fromJSONString(rawJson);
-    // Guardrails for OllamaChatModel, since it doesn't support strict JSON structured output mode
-    if (!(parsed instanceof Map<?, ?> map) || !map.containsKey(DocumentEnrichmentUpdateProcessorFactory.JSON_FIELD_PROPERTY)) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "LLM was not able to format the response correctly: " + rawJson);
-    }
-    Object value = map.get(DocumentEnrichmentUpdateProcessorFactory.JSON_FIELD_PROPERTY);
-    JsonSchemaElement valueSchema =
-        ((JsonObjectSchema) responseFormat.jsonSchema().rootElement())
-            .properties()
-            .get(DocumentEnrichmentUpdateProcessorFactory.JSON_FIELD_PROPERTY);
-    boolean typeOk = switch (valueSchema) {
-      case JsonStringSchema  s -> value instanceof String;
-      case JsonIntegerSchema s -> value instanceof Integer ||  value instanceof Long;
-      case JsonNumberSchema  s -> value instanceof Number;
-      case JsonBooleanSchema s -> value instanceof Boolean;
-      case JsonArraySchema   s -> value instanceof List;
-      default -> true;
-    };
-    if (!typeOk) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "LLM returned wrong value type: expected " + valueSchema.getClass().getSimpleName()
-              + " but got " + value.getClass().getSimpleName());
-    }
-    return value;
+    return chatModel.chat(chatRequest).aiMessage().text();
   }
 
   @Override
@@ -237,8 +197,8 @@ public class SolrFieldGenerationModel implements Accountable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof SolrFieldGenerationModel)) return false;
-    final SolrFieldGenerationModel other = (SolrFieldGenerationModel) obj;
+    if (!(obj instanceof SolrLargeLanguageModel)) return false;
+    final SolrLargeLanguageModel other = (SolrLargeLanguageModel) obj;
     return Objects.equals(chatModel, other.chatModel) && Objects.equals(name, other.name);
   }
 

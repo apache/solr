@@ -26,9 +26,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
-import org.apache.solr.languagemodels.documentenrichment.store.FieldGenerationModelException;
-import org.apache.solr.languagemodels.documentenrichment.store.FieldGenerationModelStore;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrLargeLanguageModel;
+import org.apache.solr.languagemodels.documentenrichment.store.LargeLanguageModelException;
+import org.apache.solr.languagemodels.documentenrichment.store.LargeLanguageModelStore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -37,14 +37,14 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Managed Resource wrapper for the {@link FieldGenerationModelStore} to expose it via REST */
+/** Managed Resource wrapper for the {@link LargeLanguageModelStore} to expose it via REST */
 @ThreadSafe
-public class ManagedFieldGenerationModelStore extends ManagedResource
+public class ManagedLargeLanguageModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** the model store rest endpoint */
-  public static final String REST_END_POINT = "/schema/field-generation-model-store";
+  public static final String REST_END_POINT = "/schema/large-language-model-store";
 
   /** Managed model store: the name of the attribute containing all the models of a model store */
   private static final String MODELS_JSON_FIELD = "models";
@@ -58,16 +58,16 @@ public class ManagedFieldGenerationModelStore extends ManagedResource
   /** name of the attribute containing parameters */
   static final String PARAMS_KEY = "params";
 
-  public static void registerManagedFieldGenerationModelStore(
+  public static void registerManagedLargeLanguageModelStore(
       SolrResourceLoader solrResourceLoader, ManagedResourceObserver managedResourceObserver) {
     solrResourceLoader
         .getManagedResourceRegistry()
         .registerManagedResource(
-            REST_END_POINT, ManagedFieldGenerationModelStore.class, managedResourceObserver);
+            REST_END_POINT, ManagedLargeLanguageModelStore.class, managedResourceObserver);
   }
 
-  public static ManagedFieldGenerationModelStore getManagedModelStore(SolrCore core) {
-    return (ManagedFieldGenerationModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
+  public static ManagedLargeLanguageModelStore getManagedModelStore(SolrCore core) {
+    return (ManagedLargeLanguageModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
   /**
@@ -77,21 +77,21 @@ public class ManagedFieldGenerationModelStore extends ManagedResource
    *
    * @return the available models as a list of Maps objects
    */
-  private static List<Object> modelsAsManagedResources(List<SolrFieldGenerationModel> models) {
-    return models.stream().map(ManagedFieldGenerationModelStore::toModelMap).collect(Collectors.toList());
+  private static List<Object> modelsAsManagedResources(List<SolrLargeLanguageModel> models) {
+    return models.stream().map(ManagedLargeLanguageModelStore::toModelMap).collect(Collectors.toList());
   }
 
   @SuppressWarnings("unchecked")
-  public static SolrFieldGenerationModel fromModelMap(
+  public static SolrLargeLanguageModel fromModelMap(
       SolrResourceLoader solrResourceLoader, Map<String, Object> modelMap) {
-    return SolrFieldGenerationModel.getInstance(
+    return SolrLargeLanguageModel.getInstance(
         solrResourceLoader,
         (String) modelMap.get(CLASS_KEY), // modelClassName
         (String) modelMap.get(NAME_KEY), // modelName
         (Map<String, Object>) modelMap.get(PARAMS_KEY));
   }
 
-  private static LinkedHashMap<String, Object> toModelMap(SolrFieldGenerationModel model) {
+  private static LinkedHashMap<String, Object> toModelMap(SolrLargeLanguageModel model) {
     final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(3, 1.0f);
     modelMap.put(NAME_KEY, model.getName());
     modelMap.put(CLASS_KEY, model.getChatModelClassName());
@@ -99,14 +99,14 @@ public class ManagedFieldGenerationModelStore extends ManagedResource
     return modelMap;
   }
 
-  private final FieldGenerationModelStore store;
+  private final LargeLanguageModelStore store;
   private Object managedData;
 
-  public ManagedFieldGenerationModelStore(
+  public ManagedLargeLanguageModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
-    store = new FieldGenerationModelStore();
+    store = new LargeLanguageModelStore();
   }
 
   @Override
@@ -131,18 +131,18 @@ public class ManagedFieldGenerationModelStore extends ManagedResource
   private void addModelFromMap(Map<String, Object> modelMap) {
     try {
       addModel(fromModelMap(solrResourceLoader, modelMap));
-    } catch (final FieldGenerationModelException e) {
+    } catch (final LargeLanguageModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     }
   }
 
-  public void addModel(SolrFieldGenerationModel model) throws SolrException {
+  public void addModel(SolrLargeLanguageModel model) throws SolrException {
     try {
       if (log.isInfoEnabled()) {
         log.info("adding model {}", model.getName());
       }
       store.addModel(model);
-    } catch (final FieldGenerationModelException e) {
+    } catch (final LargeLanguageModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
@@ -181,12 +181,12 @@ public class ManagedFieldGenerationModelStore extends ManagedResource
     response.add(MODELS_JSON_FIELD, modelsAsManagedResources(store.getModels()));
   }
 
-  public SolrFieldGenerationModel getModel(String modelName) {
+  public SolrLargeLanguageModel getModel(String modelName) {
     return store.getModel(modelName);
   }
 
   @Override
   public String toString() {
-    return "ManagedFieldGenerationModelStore [store=" + store + "]";
+    return "ManagedLargeLanguageModelStore [store=" + store + "]";
   }
 }

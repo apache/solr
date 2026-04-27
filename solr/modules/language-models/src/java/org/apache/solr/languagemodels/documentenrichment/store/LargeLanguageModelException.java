@@ -16,15 +16,15 @@
  */
 package org.apache.solr.languagemodels.documentenrichment.store;
 
-public class FieldGenerationModelException extends RuntimeException {
+public class LargeLanguageModelException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
-  public FieldGenerationModelException(String message) {
+  public LargeLanguageModelException(String message) {
     super(message);
   }
 
-  public FieldGenerationModelException(String message, Exception cause) {
+  public LargeLanguageModelException(String message, Exception cause) {
     super(message, cause);
   }
 }

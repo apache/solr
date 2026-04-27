@@ -21,18 +21,18 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrLargeLanguageModel;
 
-/** Simple store to manage CRUD operations on the {@link SolrFieldGenerationModel} */
-public class FieldGenerationModelStore {
+/** Simple store to manage CRUD operations on the {@link SolrLargeLanguageModel} */
+public class LargeLanguageModelStore {
 
-  private final Map<String, SolrFieldGenerationModel> availableModels;
+  private final Map<String, SolrLargeLanguageModel> availableModels;
 
-  public FieldGenerationModelStore() {
+  public LargeLanguageModelStore() {
     availableModels = Collections.synchronizedMap(new LinkedHashMap<>());
   }
 
-  public SolrFieldGenerationModel getModel(String name) {
+  public SolrLargeLanguageModel getModel(String name) {
     return availableModels.get(name);
   }
 
@@ -40,26 +40,26 @@ public class FieldGenerationModelStore {
     availableModels.clear();
   }
 
-  public List<SolrFieldGenerationModel> getModels() {
+  public List<SolrLargeLanguageModel> getModels() {
     synchronized (availableModels) {
-      final List<SolrFieldGenerationModel> availableModelsValues = new ArrayList<>(availableModels.values());
+      final List<SolrLargeLanguageModel> availableModelsValues = new ArrayList<>(availableModels.values());
       return Collections.unmodifiableList(availableModelsValues);
     }
   }
 
   @Override
   public String toString() {
-    return "FieldGenerationModelStore [availableModels=" + availableModels.keySet() + "]";
+    return "LargeLanguageModelStore [availableModels=" + availableModels.keySet() + "]";
   }
 
-  public SolrFieldGenerationModel delete(String modelName) {
+  public SolrLargeLanguageModel delete(String modelName) {
     return availableModels.remove(modelName);
   }
 
-  public void addModel(SolrFieldGenerationModel modeldata) throws FieldGenerationModelException {
+  public void addModel(SolrLargeLanguageModel modeldata) throws LargeLanguageModelException {
     final String name = modeldata.getName();
     if (availableModels.putIfAbsent(modeldata.getName(), modeldata) != null) {
-      throw new FieldGenerationModelException(
+      throw new LargeLanguageModelException(
           "model '" + name + "' already exists. Please use a different name");
     }
   }

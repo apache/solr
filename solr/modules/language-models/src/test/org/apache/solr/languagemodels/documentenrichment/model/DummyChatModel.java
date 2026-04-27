@@ -28,7 +28,7 @@ import dev.langchain4j.model.chat.response.ChatResponse;
  *
  * <p>The builder also exposes {@code unsupported} and {@code ambiguous} setter methods to exercise
  * the reflection-based parameter handling in {@link
- * SolrFieldGenerationModel#getInstance}.
+ * SolrLargeLanguageModel#getInstance}.
  */
 public class DummyChatModel implements ChatModel {
 

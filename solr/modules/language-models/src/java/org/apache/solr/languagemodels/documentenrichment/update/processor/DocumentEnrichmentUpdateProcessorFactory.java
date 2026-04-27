@@ -42,8 +42,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrFieldGenerationModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedFieldGenerationModelStore;
+import org.apache.solr.languagemodels.documentenrichment.model.SolrLargeLanguageModel;
+import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResource;
@@ -165,7 +165,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   @Override
   public void inform(SolrCore core) {
     final SolrResourceLoader solrResourceLoader = core.getResourceLoader();
-    ManagedFieldGenerationModelStore.registerManagedFieldGenerationModelStore(solrResourceLoader, this);
+    ManagedLargeLanguageModelStore.registerManagedLargeLanguageModelStore(solrResourceLoader, this);
     if (promptFile != null) {
       try (InputStream is = solrResourceLoader.openResource(promptFile)) {
         promptText = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
@@ -180,7 +180,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   @Override
   public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
       throws SolrException {
-    if (res instanceof ManagedFieldGenerationModelStore store) {
+    if (res instanceof ManagedLargeLanguageModelStore store) {
       store.loadStoredModels();
     }
   }
@@ -202,15 +202,15 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     ResponseFormat responseFormat = getJsonSchema(outputFieldSchema);
     boolean multiValued = outputFieldSchema.multiValued();
 
-    ManagedFieldGenerationModelStore store = ManagedFieldGenerationModelStore.getManagedModelStore(req.getCore());
-    SolrFieldGenerationModel fieldGenerationModel = store.getModel(modelName);
+    ManagedLargeLanguageModelStore store = ManagedLargeLanguageModelStore.getManagedModelStore(req.getCore());
+    SolrLargeLanguageModel fieldGenerationModel = store.getModel(modelName);
     if (fieldGenerationModel == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "The model configured in the Update Request Processor '"
               + modelName
               + "' can't be found in the store: "
-              + ManagedFieldGenerationModelStore.REST_END_POINT);
+              + ManagedLargeLanguageModelStore.REST_END_POINT);
     }
 
     return new DocumentEnrichmentUpdateProcessor(
