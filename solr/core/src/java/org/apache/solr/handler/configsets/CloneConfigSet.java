@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ConfigSetParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,21 +57,26 @@ public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Cl
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     SolrIdentifierValidator.validateConfigSetName(requestBody.name);
+    final String baseConfigSetName =
+        StrUtils.isNullOrEmpty(requestBody.baseConfigSet)
+            ? CloneConfigsetRequestBody.DEFAULT_CONFIGSET
+            : requestBody.baseConfigSet;
+
     if (configSetService.checkConfigExists(requestBody.name)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + requestBody.name);
     }
 
     // is there a base config that already exists
-    if (!configSetService.checkConfigExists(requestBody.baseConfigSet)) {
+    if (!configSetService.checkConfigExists(baseConfigSetName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Base ConfigSet does not exist: " + requestBody.baseConfigSet);
+          "Base ConfigSet does not exist: " + baseConfigSetName);
     }
 
     final Map<String, Object> configsetCommandMsg = new HashMap<>();
     configsetCommandMsg.put(NAME, requestBody.name);
-    configsetCommandMsg.put(ConfigSetCmds.BASE_CONFIGSET, requestBody.baseConfigSet);
+    configsetCommandMsg.put(ConfigSetCmds.BASE_CONFIGSET, baseConfigSetName);
     if (requestBody.properties != null) {
       for (Map.Entry<String, Object> e : requestBody.properties.entrySet()) {
         configsetCommandMsg.put(
