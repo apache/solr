@@ -18,13 +18,11 @@ package org.apache.solr.languagemodels.model;
 
 import java.util.Map;
 
-/** Base class for Solr-managed wrappers around langchain4j language model instances. */
+/** Base class for Solr-managed wrappers around langchain4j used in {@code language-models} module */
 public abstract class SolrLanguageModel {
 
-  // timeout is type Duration
+  // common parameters
   protected static final String TIMEOUT_PARAM = "timeout";
-
-  // the following is Integer type
   protected static final String MAX_RETRIES_PARAM = "maxRetries";
 
   protected final String name;

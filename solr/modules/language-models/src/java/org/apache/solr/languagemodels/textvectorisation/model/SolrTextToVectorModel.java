@@ -91,10 +91,10 @@ public class SolrTextToVectorModel extends SolrLanguageModel implements Accounta
                 .getMethod(paramName, Integer.class)
                 .invoke(builder, ((Long) params.get(paramName)).intValue());
 
-            /*
-             * For primitive params if there's only one setter available, we call it.
-             * If there's choice we default to the string one
-             */
+              /*
+              * For primitive params if there's only one setter available, we call it.
+              * If there's choice we default to the string one
+              */
             default -> {
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
@@ -139,11 +139,6 @@ public class SolrTextToVectorModel extends SolrLanguageModel implements Accounta
   }
 
   @Override
-  public String getModelClassName() {
-    return textToVector.getClass().getName();
-  }
-
-  @Override
   public String toString() {
     return getClass().getSimpleName() + "(name=" + getName() + ")";
   }
@@ -173,5 +168,10 @@ public class SolrTextToVectorModel extends SolrLanguageModel implements Accounta
     if (this == obj) return true;
     if (!(obj instanceof SolrTextToVectorModel other)) return false;
     return Objects.equals(textToVector, other.textToVector) && Objects.equals(name, other.name);
+  }
+
+  @Override
+  public String getModelClassName() {
+    return textToVector.getClass().getName();
   }
 }

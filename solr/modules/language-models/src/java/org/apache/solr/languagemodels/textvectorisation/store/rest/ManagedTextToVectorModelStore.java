@@ -30,6 +30,7 @@ import org.apache.solr.rest.ManagedResourceStorage;
 @ThreadSafe
 public class ManagedTextToVectorModelStore extends ManagedModelStore<SolrTextToVectorModel> {
 
+  /** the model store rest endpoint */
   public static final String REST_END_POINT = "/schema/text-to-vector-model-store";
 
   public static void registerManagedTextToVectorModelStore(
