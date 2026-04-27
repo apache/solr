@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class AdminHandlersProxyTest extends SolrCloudTestCase {
+public class RemoteRequestProxyTest extends SolrCloudTestCase {
   private CloudSolrClient solrClient;
 
   @BeforeClass
