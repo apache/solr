@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -204,8 +203,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudLegacySolrClient.Builder builder =
-        new CloudLegacySolrClient.Builder(
-            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+        new CloudLegacySolrClient.Builder(List.of(zkServer.getZkAddress()), Optional.empty());
     builder.withDefaultCollection(TEST_COLLECTION);
     return builder.withConnectionTimeout(30000).withSocketTimeout(120000).build();
   }
@@ -306,7 +304,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     cloudClient.commit(collection);
     log.info("Doc {} sent and commit issued", docid);
     assertDocsExistInAllReplicas(notLeaders, collection, docid, docid);
-    assertDocsExistInAllReplicas(Collections.singletonList(leader), collection, docid, docid);
+    assertDocsExistInAllReplicas(List.of(leader), collection, docid, docid);
   }
 
   @Override
@@ -315,7 +313,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
 
-    return sendDocsWithRetry(collectionName, Collections.singletonList(doc), 1, 5, 1);
+    return sendDocsWithRetry(collectionName, List.of(doc), 1, 5, 1);
   }
 
   private void doForceLeader(String collectionName, String shard)
@@ -324,8 +322,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
         CollectionAdminRequest.forceLeaderElection(collectionName, shard);
 
     try (CloudSolrClient cloudClient =
-        new CloudLegacySolrClient.Builder(
-                Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+        new CloudLegacySolrClient.Builder(List.of(zkServer.getZkAddress()), Optional.empty())
             .withConnectionTimeout(3000)
             .withSocketTimeout(60000)
             .build()) {

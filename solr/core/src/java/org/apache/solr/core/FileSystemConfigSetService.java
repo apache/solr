@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * FileSystem ConfigSetService impl.
+ * File system based ConfigSetService implementation.
  *
  * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
@@ -182,6 +182,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     if (overwriteOnExists || !Files.exists(configsetFilePath)) {
+      // Create parent directories if they don't exist (similar to ZK's makePath)
+      Path parent = configsetFilePath.getParent();
+      if (parent != null && !Files.exists(parent)) {
+        Files.createDirectories(parent);
+      }
       Files.write(configsetFilePath, data);
     }
   }

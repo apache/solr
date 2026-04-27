@@ -311,5 +311,3 @@ children.q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allP
 This query is a knn vector search on the children documents.
 Specifically it retrieves the top k=3 children documents, filtered by 'someParent' metadata.
 This query ensures only one child per parent is retrieved.
-
-----

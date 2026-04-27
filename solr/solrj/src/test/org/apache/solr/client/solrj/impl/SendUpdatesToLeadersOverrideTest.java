@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.not;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -210,13 +209,12 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   public void testBuilderImplicitBehavior() throws Exception {
     try (CloudSolrClient client =
         new CloudLegacySolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build()) {
       assertTrue(client.isUpdatesToLeaders());
     }
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+        new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build()) {
       assertTrue(client.isUpdatesToLeaders());
     }
@@ -225,7 +223,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   public void testLegacyClientThatDefaultsToLeaders() throws Exception {
     try (CloudSolrClient client =
         new CloudLegacySolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendUpdatesOnlyToShardLeaders()
             .build()) {
       checkUpdatesDefaultToLeaders(client);
@@ -236,7 +234,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   public void testLegacyClientThatDoesNotDefaultToLeaders() throws Exception {
     try (CloudSolrClient client =
         new CloudLegacySolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendUpdatesToAnyReplica()
             .build()) {
       checkUpdatesWithShardsPrefPull(client);
@@ -246,8 +244,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
   public void testHttp2ClientThatDefaultsToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+        new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendUpdatesOnlyToShardLeaders()
             .build()) {
       checkUpdatesDefaultToLeaders(client);
@@ -257,8 +254,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
   public void testHttp2ClientThatDoesNotDefaultToLeaders() throws Exception {
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+        new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendUpdatesToAnyReplica()
             .build()) {
       checkUpdatesWithShardsPrefPull(client);

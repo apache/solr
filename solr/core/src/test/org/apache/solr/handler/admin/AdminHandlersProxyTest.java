@@ -18,7 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -50,7 +50,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
 
   @Test
   public void proxySystemInfoHandlerAllNodes() throws IOException, SolrServerException {
-    MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
+    MapSolrParams params = new MapSolrParams(Map.of("nodes", "all"));
 
     SystemInfoRequest req = new SystemInfoRequest(params);
     SystemInfoResponse rsp = req.process(solrClient, null);
@@ -64,8 +64,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
 
   @Test(expected = SolrException.class)
   public void proxySystemInfoHandlerNonExistingNode() throws IOException, SolrServerException {
-    MapSolrParams params =
-        new MapSolrParams(Collections.singletonMap("nodes", "example.com:1234_solr"));
+    MapSolrParams params = new MapSolrParams(Map.of("nodes", "example.com:1234_solr"));
     SystemInfoRequest req = new SystemInfoRequest(params);
     SystemInfoResponse rsp = req.process(solrClient, null);
   }
@@ -76,7 +75,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertEquals(2, nodes.size());
     nodes.forEach(
         node -> {
-          MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", node));
+          MapSolrParams params = new MapSolrParams(Map.of("nodes", node));
           SystemInfoRequest req = new SystemInfoRequest(params);
           try {
             SystemInfoResponse rsp = req.process(solrClient, null);

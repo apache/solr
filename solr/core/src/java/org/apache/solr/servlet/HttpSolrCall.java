@@ -38,7 +38,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -765,8 +764,7 @@ public class HttpSolrCall {
     if (collectionParam == null
         && // if collection param already exists, we may need to over-write it
         core != null
-        && collections.equals(
-            Collections.singletonList(core.getCoreDescriptor().getCollectionName()))) {
+        && collections.equals(List.of(core.getCoreDescriptor().getCollectionName()))) {
       return;
     }
     String newCollectionParam = StrUtils.join(collections, ',');

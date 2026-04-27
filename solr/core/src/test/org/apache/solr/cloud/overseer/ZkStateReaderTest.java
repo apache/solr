@@ -25,7 +25,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,7 +162,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 PerReplicaStatesOps.getZkClientPrsSupplier(
                     fixture.zkClient, DocCollection.getCollectionPath("c1"))));
 
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
     writer.writePendingUpdates();
     reader.forceUpdateCollection("c1");
 
@@ -191,7 +190,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
     reader.waitForState(
@@ -211,7 +210,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     boolean found = false;
@@ -253,7 +252,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
@@ -296,7 +295,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
 
     // have to register it here after the updates, otherwise the child node watch will not be
@@ -349,7 +348,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // now delete the collection
     wc = new ZkWriteCommand("c1", null);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
     timeOut.waitFor(
         "Timeout on waiting for c1 to be removed from cluster state",
@@ -358,7 +357,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     reader.unregisterCore("c1");
     // re-add the same collection
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
     // re-register, otherwise the child watch would be missing from collection deletion
     reader.registerCore("c1");
@@ -417,7 +416,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
@@ -440,7 +439,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     reader.forciblyRefreshAllClusterStateSlow();
@@ -504,7 +503,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Instant.now(),
             null);
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
@@ -526,7 +525,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Instant.now(),
             null);
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     reader.forciblyRefreshAllClusterStateSlow();
@@ -654,7 +653,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                         PerReplicaStatesOps.getZkClientPrsSupplier(
                             fixture.zkClient, DocCollection.getCollectionPath("c1")));
                 ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-                writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+                writer.enqueueUpdate(clusterState, List.of(wc), null);
                 clusterState = writer.writePendingUpdates();
                 TimeUnit.MILLISECONDS.sleep(100);
               }
@@ -763,7 +762,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
               PerReplicaStatesOps.getZkClientPrsSupplier(
                   fixture.zkClient, DocCollection.getCollectionPath("c1")));
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+      writer.enqueueUpdate(clusterState, List.of(wc), null);
       clusterState = writer.writePendingUpdates();
       barrier.await(250, TimeUnit.MILLISECONDS); // wait for the watch callback to execute
       fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1" + i, true);
@@ -799,14 +798,14 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         DocCollection.create(
             collectionName,
             Map.of(sliceName, slice),
-            Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
+            Map.of(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
             DocRouter.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath(collectionName)));
     ZkWriteCommand wc = new ZkWriteCommand(collectionName, state);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
 
     TimeOut timeOut = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
@@ -842,7 +841,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     wc =
         new ZkWriteCommand(
             collectionName, SliceMutator.updateReplica(state, slice, replica.getName(), replica));
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
 
     timeOut.waitFor(

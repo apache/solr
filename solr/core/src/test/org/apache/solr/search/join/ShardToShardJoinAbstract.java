@@ -16,8 +16,6 @@
  */
 package org.apache.solr.search.join;
 
-import static java.util.Collections.singletonMap;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.AbstractMap;
@@ -86,7 +84,7 @@ public abstract class ShardToShardJoinAbstract extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
     // TODO await completion

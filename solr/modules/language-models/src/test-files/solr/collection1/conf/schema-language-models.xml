@@ -67,7 +67,6 @@
 
   <!-- output fields for types that would be implicitly supported via class inheritance, but are intentionally disabled -->
   <field name="output_uuid"          type="uuid_type"            indexed="true" stored="true" multiValued="false"/>
-
   <field name="output_nest_path"     type="nest_path_type"       indexed="true" stored="true" multiValued="false"/>
 
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
