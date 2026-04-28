@@ -97,7 +97,7 @@ The project normally doesn't remove functionality in a minor release, but we mad
 
 +NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
 
-=== JWT Authentication Plugin: `blockUnknown` documentation Corrected
+=== JWT Authentication Plugin: `blockUnknown` documentation corrected
 
 The `blockUnknown` configuration parameter of the xref:deployment-guide:jwt-authentication-plugin.adoc[JWT Authentication Plugin] defaults to `false`, meaning requests without a JWT token are passed through unauthenticated.
 Previous versions of the reference guide incorrectly stated the default was `true`.
