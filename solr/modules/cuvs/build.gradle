@@ -22,6 +22,9 @@ description = 'cuVS plugin'
 dependencies {
   implementation(libs.cuvs.lucene) {
     changing = true
+    // Use Solr's Lucene at runtime; do not ship cuvs-lucene's transitive Lucene (different version causes SPI/classloader errors)
+    exclude group: 'org.apache.lucene', module: 'lucene-core'
+    exclude group: 'org.apache.lucene', module: 'lucene-backward-codecs'
   }
   implementation libs.cuvs.java
   implementation libs.opentelemetry.api
