@@ -42,7 +42,9 @@ The simplest possible `security.json` for registering the plugin without configu
 }
 ----
 
-By default (`blockUnknown=false`), requests without a JWT are allowed through, which makes it possible to configure the plugin using unauthenticated REST API calls as described in <<Editing JWT Authentication Plugin Configuration>>. Set `blockUnknown=true` to require a valid JWT for all requests.
+The plugin will by default require a valid JWT token for all traffic.
+
+If the `blockUnknown` property is set to `false` as in the above example, it is possible to start configuring the plugin using unauthenticated REST API calls, which is further described in section <<Editing JWT Authentication Plugin Configuration>>.
 
 == Configuration Parameters
 
@@ -50,7 +52,7 @@ By default (`blockUnknown=false`), requests without a JWT are allowed through, w
 [%header,format=csv,separator=;,cols="25%,50%,25%"]
 |===
 Key                  ; Description                                             ; Default
-blockUnknown         ; Controls whether requests without a JWT are blocked (`true`) or passed through (`false`). Set to `true` to enforce authentication on all requests. Set to `false` when you need to configure the plugin via unauthenticated REST API calls, or when an Authorization Plugin is used for path-level access control. ; `false`
+blockUnknown         ; Set to `false` to if you need to perform configuration through REST API or if you use an Authorization Plugin and only want certain paths protected. By default all requests will require a token  ; `true`
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
 scope                ; Whitespace separated list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
 requireIss           ; Fails requests that lacks an `iss` (issuer) claim                          ; `true`
@@ -167,7 +169,7 @@ Let's look at a more complex configuration, this time with two issuers configure
 Let's comment on this config:
 
 <1> Plugin class
-<2> Block requests without a valid token. This must be set explicitly — the default is `false`
+<2> Make sure to block anyone without a valid token (this is also the default)
 <3> Fetch the user id from another claim than the default `sub`
 <4> Require that the `foo` claim is one of "A" or "B" and that the `dept` claim is "IT"
 <5> Require one of the scopes `solr:read`, `solr:write` or `solr:admin`
