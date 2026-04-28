@@ -37,7 +37,7 @@ The simplest possible `security.json` for registering the plugin without configu
 {
   "authentication": {
     "class":"solr.JWTAuthPlugin",
-    "blockUnknown":"false"
+    "blockUnknown": false
   }
 }
 ----
