@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: "JWT Authentication Plugin: correct documentation of `blockUnknown` default value (`false`, not `true`). See upgrade notes in the reference guide for more"
+title: "JWT Authentication Plugin: correct documentation of `blockUnknown` default value (`false`, not `true`). See upgrade notes in the reference guide for more details."
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Jan Høydahl
