@@ -510,6 +510,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
             .toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
+    testConfig.put("blockUnknown", false);
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
     assertEquals(PASS_THROUGH, resp.getAuthCode());
