@@ -371,7 +371,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
           //console.log(">> authn: "+JSON.stringify(authn));
 
-          $scope.blockUnknown = authn["blockUnknown"] === false ? "false" : "true";
+          var blockUnknown = authn["blockUnknown"];
+          $scope.blockUnknown = (blockUnknown === false || blockUnknown === "false") ? "false" : "true";
           $scope.forwardCredentials = authn["forwardCredentials"] === true ? "true" : "false";
 
           if ("realm" in authn) {
