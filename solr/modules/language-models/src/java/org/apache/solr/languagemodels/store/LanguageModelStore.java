@@ -42,8 +42,7 @@ public class LanguageModelStore<M extends SolrLanguageModel> {
 
   public List<M> getModels() {
     synchronized (availableModels) {
-      final List<M> availableModelsValues =
-          new ArrayList<>(availableModels.values());
+      final List<M> availableModelsValues = new ArrayList<>(availableModels.values());
       return Collections.unmodifiableList(availableModelsValues);
     }
   }

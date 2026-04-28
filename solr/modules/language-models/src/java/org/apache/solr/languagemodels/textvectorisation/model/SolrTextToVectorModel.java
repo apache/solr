@@ -35,9 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link EmbeddingModel} to encode text to
- * vector. It's meant to be used as a managed resource with the {@link
- * ManagedTextToVectorModelStore}
+ * This object wraps a {@link EmbeddingModel} to encode text to vector. It's meant to be used as a
+ * managed resource with the {@link ManagedTextToVectorModelStore}
  */
 public class SolrTextToVectorModel extends SolrLanguageModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -92,9 +91,9 @@ public class SolrTextToVectorModel extends SolrLanguageModel implements Accounta
                 .invoke(builder, ((Long) params.get(paramName)).intValue());
 
               /*
-              * For primitive params if there's only one setter available, we call it.
-              * If there's choice we default to the string one
-              */
+               * For primitive params if there's only one setter available, we call it.
+               * If there's choice we default to the string one
+               */
             default -> {
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
