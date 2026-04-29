@@ -20,7 +20,7 @@ import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.After;
 import org.junit.Test;
 
-public class TestManagedModelStoreInitialization extends TestLanguageModelBase {
+public class TestManagedLanguageModelStoreInitialization extends TestLanguageModelBase {
 
   @After
   public void cleanUp() throws Exception {

@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * via the REST API. Concrete subclasses supply the REST endpoint and the model instantiation logic.
  */
 @ThreadSafe
-public abstract class ManagedModelStore<M extends SolrLanguageModel> extends ManagedResource
+public abstract class ManagedLanguageModelStore<M extends SolrLanguageModel> extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -53,7 +53,7 @@ public abstract class ManagedModelStore<M extends SolrLanguageModel> extends Man
   private final LanguageModelStore<M> store;
   private Object managedData;
 
-  protected ManagedModelStore(
+  protected ManagedLanguageModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
@@ -146,7 +146,7 @@ public abstract class ManagedModelStore<M extends SolrLanguageModel> extends Man
   }
 
   private static List<Object> modelsAsManagedResources(List<? extends SolrLanguageModel> models) {
-    return models.stream().map(ManagedModelStore::toModelMap).collect(Collectors.toList());
+    return models.stream().map(ManagedLanguageModelStore::toModelMap).collect(Collectors.toList());
   }
 
   @Override

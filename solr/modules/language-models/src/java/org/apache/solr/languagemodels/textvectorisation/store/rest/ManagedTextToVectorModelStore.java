@@ -21,14 +21,14 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.store.rest.ManagedModelStore;
+import org.apache.solr.languagemodels.store.rest.ManagedLanguageModelStore;
 import org.apache.solr.languagemodels.textvectorisation.model.SolrTextToVectorModel;
 import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.rest.ManagedResourceStorage;
 
 /** Managed Resource wrapper for the text-to-vector model store, exposed via REST */
 @ThreadSafe
-public class ManagedTextToVectorModelStore extends ManagedModelStore<SolrTextToVectorModel> {
+public class ManagedTextToVectorModelStore extends ManagedLanguageModelStore<SolrTextToVectorModel> {
 
   /** the model store rest endpoint */
   public static final String REST_END_POINT = "/schema/text-to-vector-model-store";
