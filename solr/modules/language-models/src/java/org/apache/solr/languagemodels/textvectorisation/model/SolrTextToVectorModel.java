@@ -16,17 +16,12 @@
  */
 package org.apache.solr.languagemodels.textvectorisation.model;
 
-import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.textvectorisation.store.TextToVectorModelException;
 import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
@@ -34,21 +29,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link dev.langchain4j.model.embedding.EmbeddingModel} to encode text to
- * vector. It's meant to be used as a managed resource with the {@link
- * ManagedTextToVectorModelStore}
+ * This object wraps a {@link TextToVectorModel} to encode text to vector. It's meant to be used as
+ * a managed resource with the {@link ManagedTextToVectorModelStore}.
+ *
+ * <p>Supports two types of model implementations:
+ *
+ * <ul>
+ *   <li>Solr-native {@link TextToVectorModel} implementations for custom integrations
+ *   <li>LangChain4j {@link EmbeddingModel} implementations (wrapped via {@link
+ *       Langchain4jModelAdapter})
+ * </ul>
  */
 public class SolrTextToVectorModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(SolrTextToVectorModel.class);
-  private static final String TIMEOUT_PARAM = "timeout";
-  private static final String MAX_SEGMENTS_PER_BATCH_PARAM = "maxSegmentsPerBatch";
-  private static final String MAX_RETRIES_PARAM = "maxRetries";
 
   private final String name;
+  private final String className;
   private final Map<String, Object> params;
-  private final EmbeddingModel textToVector;
+  private final TextToVectorModel textToVector;
   private final int hashCode;
 
   public static SolrTextToVectorModel getInstance(
@@ -57,89 +57,117 @@ public class SolrTextToVectorModel implements Accountable {
       String name,
       Map<String, Object> params)
       throws TextToVectorModelException {
-    try {
-      /*
-       * The idea here is to build a {@link dev.langchain4j.model.embedding.EmbeddingModel} using inversion
-       * of control.
-       * Each model has its own list of parameters we don't know beforehand, but each {@link dev.langchain4j.model.embedding.EmbeddingModel} class
-       * has its own builder that uses setters with the same name of the parameter in input.
-       * */
-      EmbeddingModel textToVector;
-      Class<?> modelClass = solrResourceLoader.findClass(className, EmbeddingModel.class);
-      var builder = modelClass.getMethod("builder").invoke(null);
-      if (params != null) {
-        /*
-         * This block of code has the responsibility of instantiate a {@link
-         * dev.langchain4j.model.embedding.EmbeddingModel} using the params provided.classes have
-         * params of The specific implementation of {@link
-         * dev.langchain4j.model.embedding.EmbeddingModel} is not known beforehand. So we benefit of
-         * the design choice in langchain4j that each subclass implementing {@link
-         * dev.langchain4j.model.embedding.EmbeddingModel} uses setters with the same name of the
-         * param.
-         */
-        for (String paramName : params.keySet()) {
-          /*
-           * When a param is not primitive, we need to instantiate the object explicitly and then call the
-           * setter method.
-           * N.B. when adding support to new models, pay attention to all the parameters they
-           * support, some of them may require to be handled in here as separate switch cases
-           */
-          switch (paramName) {
-            case TIMEOUT_PARAM -> {
-              Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
-              builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
-            }
-            case MAX_SEGMENTS_PER_BATCH_PARAM, MAX_RETRIES_PARAM -> builder
-                .getClass()
-                .getMethod(paramName, Integer.class)
-                .invoke(builder, ((Long) params.get(paramName)).intValue());
 
-              /*
-               * For primitive params if there's only one setter available, we call it.
-               * If there's choice we default to the string one
-               */
-            default -> {
-              ArrayList<Method> paramNameMatches = new ArrayList<>();
-              for (var method : builder.getClass().getMethods()) {
-                if (paramName.equals(method.getName()) && method.getParameterCount() == 1) {
-                  paramNameMatches.add(method);
-                }
-              }
-              if (paramNameMatches.size() == 1) {
-                paramNameMatches.getFirst().invoke(builder, params.get(paramName));
-              } else {
-                try {
-                  builder
-                      .getClass()
-                      .getMethod(paramName, String.class)
-                      .invoke(builder, params.get(paramName).toString());
-                } catch (NoSuchMethodException e) {
-                  log.error("Parameter {} not supported by model {}", paramName, className);
-                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
-                }
-              }
-            }
-          }
-        }
+    TextToVectorModel textToVector = createModel(solrResourceLoader, className, params);
+    return new SolrTextToVectorModel(name, className, textToVector, params);
+  }
+
+  /**
+   * Create a TextToVectorModel instance from the given class name. First tries to load as a
+   * Solr-native TextToVectorModel, then falls back to LangChain4j EmbeddingModel wrapped in an
+   * adapter.
+   */
+  private static TextToVectorModel createModel(
+      SolrResourceLoader solrResourceLoader, String className, Map<String, Object> params)
+      throws TextToVectorModelException {
+
+    // First, try to load as a Solr-native TextToVectorModel
+    try {
+      Class<?> clazz = solrResourceLoader.findClass(className, Object.class);
+
+      if (TextToVectorModel.class.isAssignableFrom(clazz)) {
+        log.info("Loading Solr-native TextToVectorModel: {}", className);
+        return createSolrNativeModel(solrResourceLoader, className, params);
       }
-      textToVector = (EmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
-      return new SolrTextToVectorModel(name, textToVector, params);
-    } catch (final Exception e) {
+
+      if (EmbeddingModel.class.isAssignableFrom(clazz)) {
+        log.info("Loading LangChain4j EmbeddingModel via adapter: {}", className);
+        return Langchain4jModelAdapter.create(solrResourceLoader, className, params);
+      }
+
+      throw new TextToVectorModelException(
+          "Class "
+              + className
+              + " must implement either "
+              + TextToVectorModel.class.getName()
+              + " or "
+              + EmbeddingModel.class.getName());
+
+    } catch (TextToVectorModelException e) {
+      throw e;
+    } catch (Exception e) {
       throw new TextToVectorModelException("Model loading failed for " + className, e);
     }
   }
 
+  /**
+   * Create a Solr-native TextToVectorModel using either: 1. Builder pattern (if static builder()
+   * method exists) 2. No-arg constructor + init(params)
+   */
+  private static TextToVectorModel createSolrNativeModel(
+      SolrResourceLoader solrResourceLoader, String className, Map<String, Object> params)
+      throws TextToVectorModelException {
+    try {
+      Class<?> modelClass = solrResourceLoader.findClass(className, TextToVectorModel.class);
+
+      TextToVectorModel model;
+
+      // Try builder pattern first
+      try {
+        var builderMethod = modelClass.getMethod("builder");
+        var builder = builderMethod.invoke(null);
+
+        // Apply params to builder using reflection
+        if (params != null) {
+          for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String paramName = entry.getKey();
+            Object paramValue = entry.getValue();
+            try {
+              // Find matching setter method on builder
+              for (var method : builder.getClass().getMethods()) {
+                if (paramName.equals(method.getName()) && method.getParameterCount() == 1) {
+                  Class<?> paramType = method.getParameterTypes()[0];
+                  Object convertedValue = ModelConfigUtils.convertValue(paramValue, paramType);
+                  method.invoke(builder, convertedValue);
+                  break;
+                }
+              }
+            } catch (Exception e) {
+              log.warn("Could not set parameter {} on builder for {}", paramName, className, e);
+            }
+          }
+        }
+
+        model = (TextToVectorModel) builder.getClass().getMethod("build").invoke(builder);
+        log.debug("Created {} using builder pattern", className);
+
+      } catch (NoSuchMethodException e) {
+        // Fall back to no-arg constructor + init()
+        model = (TextToVectorModel) modelClass.getDeclaredConstructor().newInstance();
+        if (params != null) {
+          model.init(params);
+        }
+        log.debug("Created {} using no-arg constructor + init()", className);
+      }
+
+      return model;
+
+    } catch (Exception e) {
+      throw new TextToVectorModelException("Failed to create Solr-native model: " + className, e);
+    }
+  }
+
   public SolrTextToVectorModel(
-      String name, EmbeddingModel textToVector, Map<String, Object> params) {
+      String name, String className, TextToVectorModel textToVector, Map<String, Object> params) {
     this.name = name;
+    this.className = className;
     this.textToVector = textToVector;
     this.params = params;
     this.hashCode = calculateHashCode();
   }
 
   public float[] vectorise(String text) {
-    Embedding vector = textToVector.embed(text).content();
-    return vector.vector();
+    return textToVector.vectorise(text);
   }
 
   @Override
@@ -180,7 +208,7 @@ public class SolrTextToVectorModel implements Accountable {
   }
 
   public String getEmbeddingModelClassName() {
-    return textToVector.getClass().getName();
+    return className;
   }
 
   public Map<String, Object> getParams() {
