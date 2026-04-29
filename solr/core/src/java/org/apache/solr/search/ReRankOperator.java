@@ -17,12 +17,24 @@
 package org.apache.solr.search;
 
 import java.util.Locale;
+import java.util.function.DoubleBinaryOperator;
 import org.apache.solr.common.SolrException;
 
-public enum ReRankOperator {
-  ADD,
-  MULTIPLY,
-  REPLACE;
+public enum ReRankOperator implements DoubleBinaryOperator {
+  ADD((firstPass, secondPass) -> firstPass + secondPass),
+  MULTIPLY((firstPass, secondPass) -> firstPass * secondPass),
+  REPLACE((firstPass, secondPass) -> secondPass);
+
+  private final DoubleBinaryOperator op;
+
+  private ReRankOperator(final DoubleBinaryOperator op) {
+    this.op = op;
+  }
+
+  @Override
+  public double applyAsDouble(final double firstPass, final double secondPass) {
+    return op.applyAsDouble(firstPass, secondPass);
+  }
 
   public static ReRankOperator get(String p) {
     if (p != null) {
