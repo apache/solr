@@ -17,6 +17,11 @@
 
 package org.apache.solr.search;
 
+import java.util.Arrays;
+import org.apache.lucene.search.NamedMatches;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -183,6 +188,18 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
           + "}"
           + commaDelimitedTerms;
     }
+  }
+
+  @Test
+  public void testNamedTermsQuery() throws Exception {
+    Query actual =
+        QParser.getParser("{!terms _name=genre_fiction f=cat_s}fantasy,scifi", req()).getQuery();
+    assertEquals(
+        NamedMatches.wrapQuery(
+            "genre_fiction",
+            new TermInSetQuery(
+                "cat_s", Arrays.asList(new BytesRef("fantasy"), new BytesRef("scifi")))),
+        actual);
   }
 
   @Test

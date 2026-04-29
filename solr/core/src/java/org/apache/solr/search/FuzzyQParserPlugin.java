@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.surround.parser.QueryParser;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.SolrParams;
@@ -82,7 +83,12 @@ public class FuzzyQParserPlugin extends QParserPlugin {
               ? Boolean.parseBoolean(transpositionsRaw)
               : FuzzyQuery.defaultTranspositions;
 
-      return new FuzzyQuery(t, maxEdits, prefixLength, maxExpansions, transpositions);
+      Query mainQuery = new FuzzyQuery(t, maxEdits, prefixLength, maxExpansions, transpositions);
+      String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
+      if (queryName != null && !queryName.isBlank()) {
+        return NamedMatches.wrapQuery(queryName, mainQuery);
+      }
+      return mainQuery;
     }
 
     protected String analyzeIfMultitermTermText(String field, String part) {

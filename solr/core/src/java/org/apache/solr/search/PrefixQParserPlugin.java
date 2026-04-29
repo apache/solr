@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,7 +39,13 @@ public class PrefixQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() {
         SchemaField sf = req.getSchema().getField(localParams.get(QueryParsing.F));
-        return sf.getType().getPrefixQuery(this, sf, localParams.get(QueryParsing.V));
+        Query query = sf.getType().getPrefixQuery(this, sf, localParams.get(QueryParsing.V));
+
+        String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
+        if (queryName != null && !queryName.isBlank()) {
+          return NamedMatches.wrapQuery(queryName, query);
+        }
+        return query;
       }
     };
   }

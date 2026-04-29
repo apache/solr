@@ -17,6 +17,10 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.NamedMatches;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -133,6 +137,13 @@ public class TestTermQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "{!term f=t_title}the");
     params.add("sort", "id asc");
     assertQ(req(params, "indent", "on"), "*[count(//doc)=0]");
+  }
+
+  @Test
+  public void testNamedTermQuery() throws Exception {
+    Query actual = QParser.getParser("{!term _name=title_left f=t_title}left", req()).getQuery();
+    assertEquals(
+        NamedMatches.wrapQuery("title_left", new TermQuery(new Term("t_title", "left"))), actual);
   }
 
   @Test

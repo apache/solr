@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DisMaxParams;
@@ -111,7 +112,12 @@ public class DisMaxQParser extends QParser {
     addBoostQuery(query, solrParams);
     addBoostFunctions(query, solrParams);
 
-    return QueryUtils.build(query, this);
+    Query mainQuery = QueryUtils.build(query, this);
+    String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
+    if (queryName != null && !queryName.isBlank()) {
+      return NamedMatches.wrapQuery(queryName, mainQuery);
+    }
+    return mainQuery;
   }
 
   protected void addBoostFunctions(BooleanQuery.Builder query, SolrParams solrParams)

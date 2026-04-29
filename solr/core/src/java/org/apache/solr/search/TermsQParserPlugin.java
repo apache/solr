@@ -35,6 +35,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.ScorerSupplier;
@@ -161,6 +162,7 @@ public class TermsQParserPlugin extends QParserPlugin {
             sepIsSpace ? qstr.split("\\s+") : qstr.split(Pattern.quote(separator), -1);
         assert splitVals.length > 0;
 
+        final Query mainQuery;
         if (ft.isPointField()) {
           if (localParams.get(METHOD) != null) {
             throw new SolrException(
@@ -170,24 +172,30 @@ public class TermsQParserPlugin extends QParserPlugin {
                     "Method '%s' not supported in TermsQParser when using PointFields",
                     localParams.get(METHOD)));
           }
-          return ((PointField) ft)
-              .getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
-        }
-
-        BytesRef[] bytesRefs = new BytesRef[splitVals.length];
-        BytesRefBuilder term = new BytesRefBuilder();
-        for (int i = 0; i < splitVals.length; i++) {
-          String stringVal = splitVals[i];
-          // logic same as TermQParserPlugin
-          if (ft != null) {
-            ft.readableToIndexed(stringVal, term);
-          } else {
-            term.copyChars(stringVal);
+          mainQuery =
+              ((PointField) ft)
+                  .getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+        } else {
+          BytesRef[] bytesRefs = new BytesRef[splitVals.length];
+          BytesRefBuilder term = new BytesRefBuilder();
+          for (int i = 0; i < splitVals.length; i++) {
+            String stringVal = splitVals[i];
+            // logic same as TermQParserPlugin
+            if (ft != null) {
+              ft.readableToIndexed(stringVal, term);
+            } else {
+              term.copyChars(stringVal);
+            }
+            bytesRefs[i] = term.toBytesRef();
           }
-          bytesRefs[i] = term.toBytesRef();
+          mainQuery = method.makeFilter(fname, bytesRefs);
         }
 
-        return method.makeFilter(fname, bytesRefs);
+        String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
+        if (queryName != null && !queryName.isBlank()) {
+          return NamedMatches.wrapQuery(queryName, mainQuery);
+        }
+        return mainQuery;
       }
     };
   }

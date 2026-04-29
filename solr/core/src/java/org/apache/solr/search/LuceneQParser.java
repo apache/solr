@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -47,8 +48,13 @@ public class LuceneQParser extends QParser {
             getParam(QueryParsing.SPLIT_ON_WHITESPACE),
             SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
     lparser.setAllowSubQueryParsing(true);
+    Query query = lparser.parse(qstr);
 
-    return lparser.parse(qstr);
+    String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
+    if (queryName != null && !queryName.isBlank()) {
+      return NamedMatches.wrapQuery(queryName, query);
+    }
+    return query;
   }
 
   @Override

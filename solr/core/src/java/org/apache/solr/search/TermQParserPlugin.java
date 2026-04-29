@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -54,13 +55,21 @@ public class TermQParserPlugin extends QParserPlugin {
         }
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
         String val = localParams.get(QueryParsing.V);
+
+        Query mainQuery;
         if (ft != null) {
-          return ft.getFieldTermQuery(this, req.getSchema().getField(fname), val);
+          mainQuery = ft.getFieldTermQuery(this, req.getSchema().getField(fname), val);
         } else {
           BytesRefBuilder term = new BytesRefBuilder();
           term.copyChars(val);
-          return new TermQuery(new Term(fname, term.get()));
+          mainQuery = new TermQuery(new Term(fname, term.get()));
         }
+
+        String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
+        if (queryName != null && !queryName.isBlank()) {
+          return NamedMatches.wrapQuery(queryName, mainQuery);
+        }
+        return mainQuery;
       }
     };
   }

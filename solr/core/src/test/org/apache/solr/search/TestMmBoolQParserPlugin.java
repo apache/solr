@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -98,6 +99,53 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
             .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.MUST)
             .build();
     assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testNamedBoolQuery() throws Exception {
+    Query actual =
+        parseQuery(req("q", "{!bool _name=my_bool must=name:foo should=name:bar}"));
+
+    BooleanQuery inner =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term("name", "bar")), BooleanClause.Occur.SHOULD)
+            .setMinimumNumberShouldMatch(0)
+            .build();
+    assertEquals(NamedMatches.wrapQuery("my_bool", inner), actual);
+  }
+
+  @Test
+  public void testNamedBoolQueryWithMinShouldMatch() throws Exception {
+    Query actual =
+        parseQuery(
+            req("q", "{!bool _name=at_least_two should=name:foo should=name:bar should=name:qux mm=2}"));
+
+    BooleanQuery inner =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("name", "bar")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("name", "qux")), BooleanClause.Occur.SHOULD)
+            .setMinimumNumberShouldMatch(2)
+            .build();
+    assertEquals(NamedMatches.wrapQuery("at_least_two", inner), actual);
+  }
+
+  @Test
+  public void testNamedBoolQueryWithExcludeTags() throws Exception {
+    // excludeTags filters one of the $ref clauses; _name wraps what remains
+    Query actual =
+        parseQuery(
+            req(
+                "q", "{!bool _name=my_ref must=$ref excludeTags=t2}",
+                "ref", "{!tag=t1}foo",
+                "ref", "{!tag=t2}bar",
+                "df", "name"));
+    BooleanQuery inner =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.MUST)
+            .build();
+    assertEquals(NamedMatches.wrapQuery("my_ref", inner), actual);
   }
 
   @Test
