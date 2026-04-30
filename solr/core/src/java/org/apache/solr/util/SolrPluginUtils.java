@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
@@ -171,9 +170,7 @@ public class SolrPluginUtils {
       RequestParams requestParams, SolrParams defaults, String paramSets, String type) {
     if (paramSets == null) return defaults;
     List<String> paramSetList =
-        paramSets.indexOf(',') == -1
-            ? singletonList(paramSets)
-            : StrUtils.splitSmart(paramSets, ',');
+        paramSets.indexOf(',') == -1 ? List.of(paramSets) : StrUtils.splitSmart(paramSets, ',');
     for (String name : paramSetList) {
       RequestParams.VersionedParams params = requestParams.getParams(name, type);
       if (params == null) return defaults;

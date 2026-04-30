@@ -70,17 +70,20 @@ fun MainContent(
                     modifier = Modifier.fillMaxWidth()
                         .verticalScroll(scrollState),
                 )
+
                 is MainComponent.Child.Configsets -> ConfigsetsContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth()
                         .verticalScroll(scrollState),
                 )
+
                 is MainComponent.Child.Environment -> EnvironmentContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth()
                         .verticalScroll(scrollState)
                         .padding(16.dp),
                 )
+
                 is MainComponent.Child.Logging -> LoggingContent(
                     component = child.component,
                     modifier = Modifier.fillMaxWidth(),

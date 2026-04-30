@@ -22,7 +22,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -351,7 +350,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     doc.addField("id", String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     AbstractFullDistribZkTestBase.sendDocsWithRetry(
-        cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc), 2, 3, 100);
+        cluster.getSolrClient(), COLLECTION, List.of(doc), 2, 3, 100);
   }
 
   /**

@@ -19,9 +19,9 @@ package org.apache.solr.spelling;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -197,7 +197,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   (int) entry.getValue());
 
               // Check empty token due to spellcheck.q = ""
-              spellOpts.tokens = Collections.singletonList(new Token("", 0, 0));
+              spellOpts.tokens = List.of(new Token("", 0, 0));
               result = checker.getSuggestions(spellOpts);
               assertNotNull(result);
               suggestions = result.get(spellOpts.tokens.iterator().next());

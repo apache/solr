@@ -508,7 +508,7 @@ public class ZkStateReader implements SolrCloseable {
           // What do you know, it exists!
           log.debug("Adding lazily-loaded reference for collection {}", collection);
           lazyCollectionStates.putIfAbsent(collection, tryLazyCollection);
-          constructState(Collections.singleton(collection));
+          constructState(Set.of(collection));
         }
       } else if (ref.isLazilyLoaded()) {
         log.debug("Refreshing lazily-loaded state for collection {}", collection);
@@ -520,7 +520,7 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Forcing refresh of watched collection state for {}", collection);
         DocCollection newState = fetchCollectionState(collection, null);
         if (collectionWatches.updateDocCollection(collection, newState)) {
-          constructState(Collections.singleton(collection));
+          constructState(Set.of(collection));
         }
       } else {
         log.error("Collection {} is not lazy nor watched!", collection);
@@ -545,7 +545,7 @@ public class ZkStateReader implements SolrCloseable {
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (collectionWatches.updateDocCollection(coll, nu)) {
           synchronized (getUpdateLock()) {
-            constructState(Collections.singleton(coll));
+            constructState(Set.of(coll));
           }
         }
         collection = nu;
@@ -1315,7 +1315,7 @@ public class ZkStateReader implements SolrCloseable {
         DocCollection newState = fetchCollectionState(coll, this);
         collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
-          constructState(Collections.singleton(coll));
+          constructState(Set.of(coll));
         }
 
       } catch (KeeperException.SessionExpiredException
@@ -1344,7 +1344,7 @@ public class ZkStateReader implements SolrCloseable {
                 : fetchCollectionState(coll, null);
         collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
-          constructState(Collections.singleton(coll));
+          constructState(Set.of(coll));
         }
         if (log.isDebugEnabled()) {
           log.debug(

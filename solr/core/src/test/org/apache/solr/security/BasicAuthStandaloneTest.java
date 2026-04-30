@@ -22,10 +22,9 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.MapSolrParams;
@@ -38,12 +37,8 @@ import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
@@ -124,7 +119,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
       doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
       try {
-        solrClient.query("collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
+        solrClient.query("collection1", new MapSolrParams(Map.of("q", "foo")));
         fail("Should return a 401 response");
       } catch (Exception e) {
         // Test that the second doPost request to /security/authorization went through

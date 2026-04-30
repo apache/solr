@@ -28,7 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -213,7 +212,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       if (isJsonLines) {
         docs = loadJsonLines(lines);
       } else {
-        docs = Collections.singletonList((Map<String, Object>) json);
+        docs = List.of((Map<String, Object>) json);
       }
     } else {
       throw new SolrException(
