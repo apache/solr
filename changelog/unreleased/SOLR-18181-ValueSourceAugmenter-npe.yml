@@ -1,4 +1,4 @@
-title: Fix NPE in ValueSourceAugmenter when rows exceed prefetch limit with scores requested
+title: Use of function queries in "fl" would fail if rows exceeds 1000 and scores requested. A regression since v9.9.
 type: fixed
 authors:
   - name: Matthew Biscocho
