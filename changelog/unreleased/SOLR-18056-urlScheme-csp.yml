@@ -1,6 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Improved CloudSolrClient's urlScheme detection by using the scheme of provided Solr URLs, or looking at "solr.ssl.enabled" and
-  improved existing url scheme detection in ZkStateReader and HttpShardHandlerFactory by prioritizing solr.ssl.enabled over solr.xml and cluster property
+title: Improved CloudSolrClient's http/https (SSL) detection by using the scheme of provided Solr URLs, or looking at the "solr.ssl.enabled" system property. Likewise improved Solr itself to consider this property as an alternative to the urlScheme cluster property.
 type: changed
 authors:
   - name: Vishnu Priya Chandra Sekar
