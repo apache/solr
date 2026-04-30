@@ -304,6 +304,7 @@ azure-core = { module = "com.azure:azure-core", version.ref = "azure-core" }
 azure-core-http-okhttp = { module = "com.azure:azure-core-http-okhttp", version.ref = "azure-core-http-okhttp" }
 azure-identity = { module = "com.azure:azure-identity", version.ref = "azure-identity" }
 azure-storage-blob = { module = "com.azure:azure-storage-blob", version.ref = "azure-storage" }
+azure-storage-common = { module = "com.azure:azure-storage-common", version.ref = "azure-storage" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }

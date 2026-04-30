@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -46,7 +46,7 @@ import org.testcontainers.utility.DockerImageName;
       QuickPatchThreadsFilter.class,
       AbstractAzureBlobClientTest.OkHttpThreadLeakFilterTest.class,
     })
-public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
+public class AbstractAzureBlobClientTest extends SolrTestCase {
 
   private static final String AZURITE_IMAGE = "mcr.microsoft.com/azure-storage/azurite:3.33.0";
   private static final int BLOB_SERVICE_PORT = 10000;
@@ -56,7 +56,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
   private static String connectionString;
 
   protected String containerName;
-  protected org.apache.solr.client.solrj.cloud.SocketProxy proxy;
+  protected org.apache.solr.util.SocketProxy proxy;
 
   protected AzureBlobStorageClient client;
 
@@ -84,7 +84,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
             + blobServiceUrl
             + "/devstoreaccount1;";
 
-    proxy = new org.apache.solr.client.solrj.cloud.SocketProxy();
+    proxy = new org.apache.solr.util.SocketProxy();
     proxy.open(new java.net.URI(blobServiceUrl));
 
     HttpClient httpClient = new OkHttpAsyncHttpClientBuilder(sharedOkHttpClient).build();
