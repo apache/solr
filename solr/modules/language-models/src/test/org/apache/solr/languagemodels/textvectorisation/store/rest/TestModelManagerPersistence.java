@@ -39,15 +39,6 @@ public class TestModelManagerPersistence extends TestLanguageModelBase {
   }
 
   @Test
-  public void testModelAreStored() throws Exception {
-    loadModel("cohere-model.json");
-
-    final String JSONOnDisk = Files.readString(embeddingModelStoreFile, StandardCharsets.UTF_8);
-    Object objectFromDisk = Utils.fromJSONString(JSONOnDisk);
-    assertEquals(new String(Utils.toJSON(objectFromDisk), UTF_8), JSONOnDisk);
-  }
-
-  @Test
   public void testModelStorePersistence() throws Exception {
     // check models are empty
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");

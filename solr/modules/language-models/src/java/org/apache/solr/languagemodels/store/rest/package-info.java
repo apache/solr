@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Contains model store related classes. */
+/** Contains model store rest related classes. */
 package org.apache.solr.languagemodels.store.rest;
