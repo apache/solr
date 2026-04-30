@@ -72,6 +72,25 @@ Example handler configuration:
 </requestHandler>
 ----
 
+[WARNING]
+====
+*Security Agent Policy Required for Remote Tika Server*
+
+When Solr runs with the security agent in `enforce` mode, outbound network connections are blocked by default unless explicitly permitted. Because Solr connects to an external Tika Server over the network, you must add a policy entry to `agent-security-extra.policy` to permit that connection:
+
+[source,text]
+----
+grant {
+  // extraction module: permit outbound connection to remote Tika Server
+  permission java.net.SocketPermission "tika-server.internal:9998", "connect,resolve";
+};
+----
+
+Replace `tika-server.internal:9998` with the actual hostname and port of your Tika Server. Use a specific `hostname:port`, not a wildcard, to prevent SSRF attacks.
+
+In the default `warn` mode, the connection will succeed but a `SECURITY VIOLATION` entry will appear in the Solr log. See xref:deployment-guide:security-agent.adoc[Security Agent] for details.
+====
+
 ==== Starting Tika Server with Docker
 
 The quickest way to run Tika Server for development is using Docker. The examples below expose Tika on port 9998 on localhost for convenience, matching the handler configuration above.

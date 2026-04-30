@@ -1,0 +1,54 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Solr Security Agent — operator extension policy
+//
+// This file is loaded in addition to the bundled default policy (agent-security.policy).
+// Add entries here to permit additional file paths or network endpoints required by your
+// specific deployment, plugins, or custom components.
+//
+// This file's location can be overridden via:
+//   - Environment variable: SOLR_SECURITY_AGENT_EXTRA_POLICY=/path/to/custom.policy
+//   - System property:      -Dsolr.security.agent.extra.policy=/path/to/custom.policy
+//
+// An absent file is silently skipped — it is not a startup error.
+//
+// Syntax: JDK-style .policy files (same as agent-security.policy).
+// Supported variables: ${solr.home}, ${solr.data.dir}, ${solr.log.dir}, ${solr.install.dir},
+//                      ${java.io.tmpdir}, ${java.home}, ${solr.port}, ${solr.zk.port}
+//
+// For documentation and examples, see the Solr Reference Guide: Security Agent.
+//
+// ---------------------------------------------------------------------------
+// EXAMPLES (uncomment and adapt as needed)
+// ---------------------------------------------------------------------------
+
+// Example: permit a plugin that reads from an NFS mount
+// grant {
+//   permission java.io.FilePermission "/mnt/nfs-data/-", "read";
+// };
+
+// Example: permit a plugin that connects to an internal analytics service
+// grant {
+//   permission java.net.SocketPermission "analytics.internal:443", "connect,resolve";
+// };
+
+// Example: extraction module — remote Tika Server (see NOTICE in the extraction module docs)
+// WARNING: Use a specific hostname:port, not a wildcard, to prevent SSRF attacks.
+// grant {
+//   permission java.net.SocketPermission "tika-server.internal:9998", "connect,resolve";
+// };

@@ -247,6 +247,26 @@
 # This is experimental!
 #SOLR_SECURITY_MANAGER_ENABLED=true
 
+# --- Solr Security Agent ---
+# The Solr security agent replaces the deprecated Java Security Manager with ByteBuddy-based
+# enforcement. The agent JAR is auto-detected at server/lib/ext/solr-agent-sm-*.jar and activated
+# automatically. See the Solr Reference Guide for full documentation.
+
+# Enforcement mode: "warn" (log violations, allow operation — default) or
+#                   "enforce" (log violations, block operation with SecurityException).
+# The startup script converts this env var to -Dsolr.security.agent.mode for the agent.
+#SOLR_SECURITY_AGENT_MODE=warn
+
+# Set to "true" to completely disable the security agent (for troubleshooting only).
+# Without the agent, no security controls are active.
+#SOLR_SECURITY_AGENT_SKIP=false
+
+# Path to the operator extension policy file.
+# Defaults to ${server.dir}/etc/agent-security-extra.policy when unset.
+# Override to support read-only install trees, container images, or config-management tooling.
+# The startup script converts this env var to -Dsolr.security.agent.extra.policy for the agent.
+#SOLR_SECURITY_AGENT_EXTRA_POLICY=/path/to/custom-agent-security-extra.policy
+
 # This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and
 # change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.

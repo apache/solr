@@ -92,6 +92,12 @@ allprojects {
           // Exclude github stuff (templates, workflows).
           exclude ".github"
 
+          // Exclude speckit planning artifacts and Claude Code tooling.
+          exclude "specs/**"
+          exclude ".claude/**"
+          exclude ".specify/**"
+          exclude "CLAUDE.md"
+
           exclude "dev-tools/scripts/cloud.sh"
           exclude "dev-tools/scripts/README.md"
           exclude "dev-tools/scripts/create_line_file_docs.py"

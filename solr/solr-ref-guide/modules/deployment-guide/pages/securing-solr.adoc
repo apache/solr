@@ -1,5 +1,6 @@
 = Securing Solr
 :page-children: authentication-and-authorization-plugins, \
+    security-agent, \
     audit-logging, \
     enabling-ssl, \
     zookeeper-access-control, \
@@ -89,6 +90,13 @@ SOLR_IP_ALLOWLIST="127.0.0.1, [::1], 192.168.0.0/24, [2000:123:4:5::]/64"
 # Explicitly deny access to two problematic hosts.
 SOLR_IP_DENYLIST="192.168.0.3, 192.168.0.4"
 ----
+
+== Security Agent
+
+Solr includes a Java agent that enforces runtime security controls — file access, outbound network connections, `System.exit()`, and process spawning — at the JVM level.
+The agent activates automatically in "warn-only" mode to allow safe observation before enabling blocking enforcement.
+
+See xref:security-agent.adoc[] for details on enforcement modes, policy configuration, and diagnosing violations.
 
 == Securing ZooKeeper Traffic
 

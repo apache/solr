@@ -951,6 +951,21 @@ public class CoreContainer {
     fieldCacheBean.initializeMetrics(
         solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
 
+    // Register security agent violation metrics if the agent is loaded.
+    // Uses reflection to avoid a compile-time dependency on solr:agent-sm (see research.md Decision
+    // 8).
+    try {
+      Class<?> reporter =
+          Class.forName("org.apache.solr.security.agent.ViolationMetricsReporter", false, null);
+      reporter
+          .getMethod("registerWithSolrMetrics", Object.class, String.class)
+          .invoke(null, metricManager, NODE_REGISTRY);
+    } catch (ClassNotFoundException ignored) {
+      // Agent not loaded (e.g. SOLR_SECURITY_AGENT_SKIP=true); metrics registration skipped.
+    } catch (ReflectiveOperationException e) {
+      log.warn("Failed to register security agent metrics", e);
+    }
+
     // setup executor to load cores in parallel
     coreLoadExecutor =
         solrMetricsContext.instrumentedExecutorService(

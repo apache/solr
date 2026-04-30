@@ -61,7 +61,10 @@ public final class SolrPaths {
    * @param pathToAssert path to check
    * @param allowPaths list of paths that should be allowed prefixes for pathToAssert
    * @throws SolrException if path is outside allowed paths
+   * @deprecated Automatic enforcement via the security agent supersedes this check; do not add new
+   *     call sites. Existing call sites are retained as defense-in-depth.
    */
+  @Deprecated
   public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths)
       throws SolrException {
     if (ALL_PATHS.equals(allowPaths)) return; // Catch-all allows all paths (*/_ALL_)

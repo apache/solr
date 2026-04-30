@@ -1,0 +1,6 @@
+title: >
+  SOLR-17767: Introduce a Java agent (solr-agent-sm) that enforces file access, outbound network,
+  System.exit(), and process-spawn controls via ByteBuddy instrumentation.
+type: added
+authors:
+  - name: Jan Høydahl
