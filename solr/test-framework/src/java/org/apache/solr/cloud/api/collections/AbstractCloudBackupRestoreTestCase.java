@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.UUID;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
@@ -48,7 +49,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -77,11 +77,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   public static void createCluster() throws Exception {
     docsSeed = random().nextLong();
     System.setProperty("solr.security.allow.paths", "*");
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    System.clearProperty("solr.security.allow.paths");
   }
 
   /**
@@ -115,7 +110,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     replFactor = TestUtil.nextInt(random(), 1, 2);
     numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
     numPullReplicas = TestUtil.nextInt(random(), 0, 1);
-    int backupReplFactor = replFactor + numPullReplicas + numTlogReplicas;
 
     CollectionAdminRequest.Create create =
         isImplicit
@@ -292,7 +286,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", ((useUUID == true) ? java.util.UUID.randomUUID().toString() : i));
+      doc.addField("id", ((useUUID == true) ? UUID.randomUUID().toString() : i));
       doc.addField("shard_s", "shard" + (1 + random.nextInt(NUM_SHARDS))); // for implicit router
       docs.add(doc);
     }

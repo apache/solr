@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -257,10 +256,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
 
       Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
-      redirectUris = Collections.emptyList();
+      redirectUris = List.of();
       if (redirectUrisObj != null) {
         if (redirectUrisObj instanceof String) {
-          redirectUris = Collections.singletonList((String) redirectUrisObj);
+          redirectUris = List.of((String) redirectUrisObj);
         } else if (redirectUrisObj instanceof List) {
           redirectUris = (List<String>) redirectUrisObj;
         }
@@ -576,13 +575,15 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               for (Map.Entry<String, Pattern> entry : claimsMatchCompiled.entrySet()) {
                 String claim = entry.getKey();
                 if (jwtClaims.hasClaim(claim)) {
-                  if (!entry.getValue().matcher(jwtClaims.getStringClaimValue(claim)).matches()) {
+                  Object claimValue = jwtClaims.getClaimValue(claim);
+                  String claimValueStr = (claimValue != null) ? String.valueOf(claimValue) : "";
+                  if (!entry.getValue().matcher(claimValueStr).matches()) {
                     return new JWTAuthenticationResponse(
                         AuthCode.CLAIM_MISMATCH,
                         "Claim "
                             + claim
                             + "="
-                            + jwtClaims.getStringClaimValue(claim)
+                            + claimValueStr
                             + " does not match required regular expression "
                             + entry.getValue().pattern());
                   }
@@ -601,7 +602,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             }
 
             // Find scopes for user
-            Set<String> scopes = Collections.emptySet();
+            Set<String> scopes = Set.of();
             Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
             if (scopesObj != null) {
               if (scopesObj instanceof String) {
@@ -770,8 +771,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
     jwtConsumer = null;
+    super.close();
   }
 
   @Override

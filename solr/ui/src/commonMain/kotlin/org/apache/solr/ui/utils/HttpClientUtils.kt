@@ -21,7 +21,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
+import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.basic
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.Url
@@ -34,7 +36,7 @@ import org.apache.solr.ui.domain.AuthOption
  * URL.
  */
 fun getDefaultClient(
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     block: HttpClientConfig<*>.() -> Unit = {},
 ) = HttpClient {
     defaultRequest {
@@ -55,18 +57,26 @@ fun getDefaultClient(
 
 fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
     is AuthOption.None -> getDefaultClient(option.url)
+
     is AuthOption.BasicAuthOption -> getHttpClientWithCredentials(
         url = option.url,
         realm = option.realm,
         username = option.username,
         password = option.password,
     )
+
+    is AuthOption.OAuthOption -> getHttpClientWithBearerTokens(
+        url = option.url,
+        realm = option.realm,
+        accessToken = option.accessToken,
+        refreshToken = option.refreshToken,
+    )
 }
 
 fun getHttpClientWithCredentials(
     username: String,
     password: String,
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     realm: String? = null,
 ) = getDefaultClient(url) {
     install(Auth) {
@@ -76,6 +86,26 @@ fun getHttpClientWithCredentials(
             // not protected asset (web-assembly app)
             sendWithoutRequest { true }
             this.realm = realm
+        }
+    }
+}
+
+fun getHttpClientWithBearerTokens(
+    accessToken: String,
+    refreshToken: String? = null,
+    url: Url = Url(DEFAULT_SOLR_URL),
+    realm: String? = null,
+) = getDefaultClient(url) {
+    install(Auth) {
+        bearer {
+            loadTokens {
+                BearerTokens(accessToken, refreshToken)
+            }
+            refreshTokens {
+                TODO("Not implemented yet")
+            }
+            this.realm = realm
+            sendWithoutRequest { true }
         }
     }
 }

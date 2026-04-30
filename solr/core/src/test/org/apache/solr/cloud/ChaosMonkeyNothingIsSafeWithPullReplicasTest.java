@@ -74,7 +74,6 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
   @AfterClass
   public static void afterSuperClass() {
-    System.clearProperty("solr.autoCommit.maxTime");
     clearErrorHook();
     TestInjection.reset();
   }

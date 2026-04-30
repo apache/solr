@@ -36,7 +36,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -70,7 +69,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupClusters() throws Exception {
+  public static void setupClusters() {
 
     final String[] clusterIds = new String[] {IMPLICIT_CLUSTER_KEY, EXPLICIT_CLUSTER_KEY};
 
@@ -122,11 +121,6 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
             doAccept(COLLECTION_NAME, cluster);
           }
         });
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    System.clearProperty(EXPLICIT_ALLOW_LIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
   }
 
   @Test

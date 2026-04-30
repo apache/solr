@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -68,7 +67,6 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
     solrClient.query("collection1", query);
 
     var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
     try (InputStream in = (InputStream) resp.get("stream")) {
@@ -98,7 +96,6 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
     solrClient.query("collection2", query);
 
     var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
 

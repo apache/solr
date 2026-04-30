@@ -35,7 +35,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.solr.util.FileUtils;
@@ -43,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * FileSystem ConfigSetService impl.
+ * File system based ConfigSetService implementation.
  *
  * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
@@ -155,7 +154,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
+    if (ConfigSetService.isFileForbiddenInConfigSets(fileName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file type provided for upload, '"
@@ -183,6 +182,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     if (overwriteOnExists || !Files.exists(configsetFilePath)) {
+      // Create parent directories if they don't exist (similar to ZK's makePath)
+      Path parent = configsetFilePath.getParent();
+      if (parent != null && !Files.exists(parent)) {
+        Files.createDirectories(parent);
+      }
       Files.write(configsetFilePath, data);
     }
   }
@@ -206,7 +210,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     try {
       data = Files.readAllBytes(metadataPath);
     } catch (NoSuchFileException e) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     @SuppressWarnings("unchecked")
     Map<String, Object> metadata = (Map<String, Object>) Utils.fromJSON(data);
@@ -234,7 +238,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {
-              if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(file.getFileName().toString())) {
+              if (ConfigSetService.isFileForbiddenInConfigSets(file.getFileName().toString())) {
                 log.warn(
                     "Not including uploading file to config, as it is a forbidden type: {}",
                     file.getFileName());

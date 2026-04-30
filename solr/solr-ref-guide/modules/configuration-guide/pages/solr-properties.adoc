@@ -32,8 +32,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.api.config.edit.enabled|!disable.config.edit|true|Controls whether configuration editing via API is enabled. When set to `true`, configuration editing is enabled.
 
-|solr.api.v2.enabled|!disable.v2.api|true|Controls whether the V2 API is enabled. When set to `true`, the V2 API is enabled.
-
 |solr.auth.jwt.outbound.http.enabled|solr.auth.jwt.allowOutboundHttp|false|Controls whether JWT authentication for outbound HTTP connections is enabled.
 
 |solr.auth.superuser|solr.authorization.superuser|solr|Specifies the superuser for authorization. This user has all permissions when using SASL authentication.
@@ -45,6 +43,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 |solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
 
 |solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
+
+|solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data when a core is created in SolrCloud mode.
 
 |solr.cloud.wait.for.zk.seconds|waitForZk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
 
@@ -106,6 +106,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.solrj.http.cookies.enabled|!solr.http.disableCookies| false |If Http2SolrClient should support cookies.
 
+|solr.solrj.http.jetty.async_requests.max||1000|Maximum number of outstanding async HTTP requests allowed concurrently in the Jetty-based SolrJ HTTP client. Increase if you observe semaphore exhaustion under heavy distributed query load; decrease to limit resource usage. Related metric: `solr.client.request.async_permits`.
+
 |solr.solrj.http.jetty.customizer|solr.httpclient.builder.factory||A class loaded to customize HttpJettySolrClient upon creation.
 
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
@@ -157,13 +159,13 @@ Many Solr properties follow a standard naming convention. Newer properties typic
 
 System properties can be set in several ways:
 
-1. JVM command line arguments using `-D`: `-Dsolr.api.v2.enabled=true`
+1. JVM command line arguments using `-D`: `-Dsolr.api.config.edit.enabled=true`
 2. In `solr.in.sh` (Unix) or `solr.in.cmd` (Windows) using environment variables
 3. Through environment variables (with appropriate naming conventions)
 
 Environment variables can also be used to set these properties.
 You may find this useful in environments such as Docker.
-Environment variables should be uppercase with dot notations equivalents, e.g. `SOLR_API_V2_ENABLED` for the property `solr.api.v2.enabled`.
+Environment variables should be uppercase with dot notations equivalents, e.g. `SOLR_API_CONFIG_EDIT_ENABLED` for the property `solr.api.config.edit.enabled`.
 
 == See Also
 

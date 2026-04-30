@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrErrorWrappingException;
@@ -71,8 +70,7 @@ public final class RemoteSolrException extends SolrException {
         this.remoteErrorMessageSuffix = remoteErrorMessageSuffix;
       }
 
-      Object metadataObj =
-          Utils.getObjectByPath(remoteError, false, Collections.singletonList("metadata"));
+      Object metadataObj = Utils.getObjectByPath(remoteError, false, List.of("metadata"));
       if (metadataObj instanceof NamedList) {
         setMetadata((NamedList<String>) metadataObj);
       } else if (metadataObj instanceof List) {

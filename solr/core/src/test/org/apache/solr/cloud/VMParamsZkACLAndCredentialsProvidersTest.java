@@ -27,7 +27,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +39,6 @@ import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException.NoAuthException;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -64,11 +62,6 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solrcloud.skip.autorecovery");
   }
 
   @Override
@@ -492,7 +485,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public static class NoCredentialZkCredentialsInjector implements ZkCredentialsInjector {
     @Override
     public List<ZkCredential> getZkCredentials() {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 
@@ -535,7 +528,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     private final List<String> systemPropsValues;
 
     public TestZkCredentialsInjector(Class<?> zkCredentialsInjectorClass) {
-      this(zkCredentialsInjectorClass, Collections.emptyList(), Collections.emptyList());
+      this(zkCredentialsInjectorClass, List.of(), List.of());
     }
 
     public TestZkCredentialsInjector(

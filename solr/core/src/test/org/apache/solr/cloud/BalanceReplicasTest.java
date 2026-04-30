@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -27,14 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.api.model.BalanceReplicasRequestBody;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
@@ -42,6 +33,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -99,8 +92,7 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
     DocCollection collection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### Before balancing: {}", collection);
 
-    postDataAndGetResponse(
-        cluster.getSolrClient(), "/api/cluster/replicas/balance", SimpleOrderedMap.of());
+    postDataAndGetResponse("/api/cluster/replicas/balance", SimpleOrderedMap.of());
 
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);
@@ -146,7 +138,6 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
     log.debug("### Before balancing: {}", collection);
 
     postDataAndGetResponse(
-        cluster.getSolrClient(),
         "/api/cluster/replicas/balance",
         Utils.getReflectWriter(
             new BalanceReplicasRequestBody(new HashSet<>(l.subList(1, 4)), true, null)));
@@ -162,31 +153,24 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
         "A non-balanced node gained replicas during balancing", replicaNodes.contains(l.get(4)));
   }
 
-  public Map<?, ?> postDataAndGetResponse(CloudSolrClient cloudClient, String uri, Object body)
-      throws IOException {
-    HttpEntityEnclosingRequestBase httpRequest = null;
-    HttpEntity entity;
-    String response = null;
-    Map<?, ?> m = null;
+  public Map<?, ?> postDataAndGetResponse(String uri, Object jsonBody) throws IOException {
+    String rspStr = null;
 
     uri = cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + uri;
+    HttpClient httpClient = cluster.getRandomJetty(random()).getSolrClient().getHttpClient();
     try {
-      httpRequest = new HttpPost(uri);
-
-      httpRequest.setEntity(new ByteArrayEntity(Utils.toJSON(body), ContentType.APPLICATION_JSON));
-      httpRequest.setHeader("Accept", "application/json");
-      entity =
-          ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
-      try {
-        response = EntityUtils.toString(entity, UTF_8);
-        m = (Map<?, ?>) Utils.fromJSONString(response);
-      } catch (JSONParser.ParseException e) {
-        log.error("err response: {}", response);
-        throw new AssertionError(e);
-      }
-    } finally {
-      httpRequest.releaseConnection();
+      var rsp =
+          httpClient
+              .POST(uri)
+              .body(new BytesRequestContent("application/json", Utils.toJSON(jsonBody)))
+              .send();
+      rspStr = rsp.getContentAsString();
+      return (Map<?, ?>) Utils.fromJSONString(rspStr);
+    } catch (JSONParser.ParseException e) {
+      log.error("err response: {}", rspStr);
+      throw new AssertionError(e);
+    } catch (Exception e) {
+      throw new IOException(e);
     }
-    return m;
   }
 }

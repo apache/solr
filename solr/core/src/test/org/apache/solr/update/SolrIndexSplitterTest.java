@@ -36,7 +36,7 @@ import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -82,7 +82,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   }
 
   private void doTestSplitByPaths(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
-    LocalSolrQueryRequest request = null;
+    SolrQueryRequestBase request = null;
     try {
       // add two docs
       String id1 = "dorothy";
@@ -169,7 +169,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   }
 
   private void doTestSplitDeletes(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
-    LocalSolrQueryRequest request = null;
+    SolrQueryRequestBase request = null;
     try {
       // add two docs
       String id1 = "dorothy";
@@ -272,7 +272,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
               .create(
                   "split2", Map.of("dataDir", indexDir2.toString(), "configSet", "cloud-minimal"));
 
-      LocalSolrQueryRequest request = null;
+      SolrQueryRequestBase request = null;
       try {
         request = lrf.makeRequest("q", "dummy");
         SolrQueryResponse rsp = new SolrQueryResponse();
@@ -330,7 +330,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   }
 
   private void doTestSplitAlternately(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
-    LocalSolrQueryRequest request = null;
+    SolrQueryRequestBase request = null;
     Directory directory = null;
     try {
       // add an even number of docs
@@ -441,7 +441,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
     DocRouter.Range splitKeyRange = r1.keyHashRange(splitKey);
 
-    LocalSolrQueryRequest request = null;
+    SolrQueryRequestBase request = null;
     Directory directory = null;
     try {
       request = lrf.makeRequest("q", "dummy");
@@ -532,7 +532,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
               .create(
                   "split2", Map.of("dataDir", indexDir2.toString(), "configSet", "cloud-minimal"));
 
-      LocalSolrQueryRequest request = null;
+      SolrQueryRequestBase request = null;
       try {
         request = lrf.makeRequest("q", "dummy");
         SolrQueryResponse rsp = new SolrQueryResponse();

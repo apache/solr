@@ -25,6 +25,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -32,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +49,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -103,7 +104,7 @@ public class HttpSolrClient extends SolrClient {
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
 
-  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
+  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Set.of(429);
 
   static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
@@ -542,8 +543,7 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException {
     method.addHeader("User-Agent", USER_AGENT);
 
-    org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
-        HttpClientUtil.createDefaultRequestConfigBuilder();
+    RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
     requestConfigBuilder.setSocketTimeout(soTimeout);
     requestConfigBuilder.setConnectTimeout(connectionTimeout);
 
@@ -679,7 +679,7 @@ public class HttpSolrClient extends SolrClient {
               .append("\n\n")
               .append("request: ")
               .append(method.getURI());
-          String reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
+          String reason = URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
           throw new RemoteSolrException(baseUrl, httpStatus, reason, null);
         } else {
           throw new RemoteSolrException(baseUrl, httpStatus, error);
@@ -702,7 +702,7 @@ public class HttpSolrClient extends SolrClient {
   }
 
   // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically
-  // true when SolrDispatchFilter uses the sendError mechanism since the expected MIME type of
+  // true when SolrServlet uses the sendError mechanism since the expected MIME type of
   // response is not HTML but HTTP sendError generates an HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
     if (mimeType == null) {

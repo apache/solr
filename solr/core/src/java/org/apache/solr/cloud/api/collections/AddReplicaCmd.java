@@ -25,7 +25,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 
@@ -33,9 +32,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -76,13 +75,13 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
-    addReplica(state, message, results, null);
+    addReplica(adminCmdContext, message, results, null);
   }
 
   List<ZkNodeProps> addReplica(
-      ClusterState clusterState,
+      AdminCmdContext adminCmdContext,
       ZkNodeProps message,
       NamedList<Object> results,
       Runnable onComplete)
@@ -103,7 +102,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       collectionName = extCollectionName;
     }
 
-    DocCollection coll = clusterState.getCollection(collectionName);
+    DocCollection coll = adminCmdContext.getClusterState().getCollection(collectionName);
     if (coll == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Collection: " + collectionName + " does not exist");
@@ -117,7 +116,6 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean skipCreateReplicaInClusterState =
         message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
-    final String asyncId = message.getStr(ASYNC);
 
     String node = message.getStr(CoreAdminParams.NODE);
     String createNodeSetStr = message.getStr(CREATE_NODE_SET);
@@ -152,7 +150,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     List<CreateReplica> createReplicas =
         buildReplicaPositions(
                 ccc.getSolrCloudManager(),
-                clusterState,
+                adminCmdContext.getClusterState(),
                 collectionName,
                 message,
                 numReplicas,
@@ -161,20 +159,24 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
             .map(
                 replicaPosition ->
                     assignReplicaDetails(
-                        ccc.getSolrCloudManager(), clusterState, message, replicaPosition))
+                        ccc.getSolrCloudManager(),
+                        adminCmdContext.getClusterState(),
+                        message,
+                        replicaPosition))
             .collect(Collectors.toList());
 
     ShardHandler shardHandler = ccc.newShardHandler();
     ZkStateReader zkStateReader = ccc.getZkStateReader();
 
     final ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
     for (CreateReplica createReplica : createReplicas) {
       assert createReplica.coreName != null;
       ModifiableSolrParams params =
           getReplicaParams(
               message, collectionName, coll, skipCreateReplicaInClusterState, createReplica);
-      shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
+      shardRequestTracker.sendShardRequest(
+          createReplica.node, createReplica.coreNodeName, params, shardHandler);
     }
 
     Runnable runnable =
@@ -285,7 +287,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getZkStateReader(),
                 ccc.getSolrCloudManager().getTimeSource(),
                 collectionName,
-                Collections.singleton(createReplica.coreName))
+                Set.of(createReplica.coreName))
             .get(createReplica.coreName)
             .getName());
 

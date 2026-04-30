@@ -38,6 +38,7 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.JavaBinResponseWriter;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -104,6 +105,35 @@ public class MessageBodyWriters {
     @Override
     public String getSupportedMediaType() {
       return CONTENT_TYPE_TEXT_UTF8;
+    }
+  }
+
+  @Produces(PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS)
+  public static class PrometheusMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<Object> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      return new PrometheusResponseWriter();
+    }
+
+    @Override
+    public String getSupportedMediaType() {
+      return PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS;
+    }
+  }
+
+  @Produces(PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS)
+  public static class OpenmetricsMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<Object> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      // same writer handles both Prometheus and OpenMetrics
+      return new PrometheusResponseWriter();
+    }
+
+    @Override
+    public String getSupportedMediaType() {
+      return PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS;
     }
   }
 

@@ -17,13 +17,7 @@
 package org.apache.solr.servlet;
 
 import static org.apache.solr.core.NodeConfig.loadNodeConfig;
-import static org.apache.solr.servlet.SolrDispatchFilter.PROPERTIES_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLRHOME_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
-import com.google.common.annotations.VisibleForTesting;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -45,16 +39,13 @@ import javax.naming.NoInitialContextException;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,10 +56,14 @@ import org.slf4j.LoggerFactory;
  * instance of solr.
  */
 public class CoreContainerProvider implements ServletContextListener {
+  public static final String SOLR_PROPERTIES = "solr.properties";
+  public static final String SOLR_SOLR_HOME = "solr.solr.home";
+  public static final String SOLR_INSTALL_DIR = "solr.install.dir";
+  public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
+  public static final String SOLR_LOG_LEVEL = "solr.log.level";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private CoreContainer cores;
-  // TODO: this probably should not live here...
-  private RateLimitManager rateLimitManager;
 
   /**
    * Acquires an instance from the context. Never null.
@@ -96,10 +91,8 @@ public class CoreContainerProvider implements ServletContextListener {
     // could remove ourselves from ctx but why bother
   }
 
-  /**
-   * @see SolrDispatchFilter#getCores()
-   */
-  CoreContainer getCoreContainer() throws UnavailableException {
+  /** The CoreContainer. Never null. */
+  public CoreContainer getCoreContainer() throws UnavailableException {
     checkReady();
     return cores;
   }
@@ -151,7 +144,7 @@ public class CoreContainerProvider implements ServletContextListener {
       // caller
       Properties extraProperties =
           SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(
-              (Properties) servletContext.getAttribute(PROPERTIES_ATTRIBUTE));
+              (Properties) servletContext.getAttribute(SOLR_PROPERTIES));
 
       StartupLoggingUtils.checkLogDir();
       if (log.isInfoEnabled()) {
@@ -187,21 +180,6 @@ public class CoreContainerProvider implements ServletContextListener {
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
 
-      SolrZkClient zkClient = null;
-      ZkController zkController = coresInit.getZkController();
-
-      if (zkController != null) {
-        zkClient = zkController.getZkClient();
-      }
-
-      Builder builder = new Builder(zkClient);
-
-      this.rateLimitManager = builder.build();
-
-      if (zkController != null) {
-        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
-      }
-
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }
@@ -230,8 +208,7 @@ public class CoreContainerProvider implements ServletContextListener {
           getSolrPort());
     }
     if (log.isInfoEnabled()) {
-      log.info(
-          "\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
+      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR));
     }
     if (log.isInfoEnabled()) {
       log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
@@ -316,8 +293,8 @@ public class CoreContainerProvider implements ServletContextListener {
   private static Path computeSolrHome(ServletContext servletContext) {
 
     // start with explicit check of servlet config...
-    String source = "servlet config: " + SOLRHOME_ATTRIBUTE;
-    String home = (String) servletContext.getAttribute(SOLRHOME_ATTRIBUTE);
+    String source = "servlet config: " + SOLR_SOLR_HOME;
+    String home = (String) servletContext.getAttribute(SOLR_SOLR_HOME);
 
     if (null == home) {
       final String lookup = "java:comp/env/solr/home";
@@ -363,14 +340,5 @@ public class CoreContainerProvider implements ServletContextListener {
     final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
-  }
-
-  public RateLimitManager getRateLimitManager() {
-    return rateLimitManager;
-  }
-
-  @VisibleForTesting
-  void setRateLimitManager(RateLimitManager rateLimitManager) {
-    this.rateLimitManager = rateLimitManager;
   }
 }

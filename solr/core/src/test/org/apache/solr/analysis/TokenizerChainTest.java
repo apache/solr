@@ -16,7 +16,7 @@
  */
 package org.apache.solr.analysis;
 
-import java.util.Collections;
+import java.util.HashMap;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
@@ -30,10 +30,10 @@ public class TokenizerChainTest extends SolrTestCaseJ4 {
   public void testNormalization() {
     String fieldName = "f";
     TokenFilterFactory[] tff = new TokenFilterFactory[2];
-    tff[0] = new LowerCaseFilterFactory(Collections.emptyMap());
-    tff[1] = new ASCIIFoldingFilterFactory(Collections.emptyMap());
+    tff[0] = new LowerCaseFilterFactory(new HashMap<>());
+    tff[1] = new ASCIIFoldingFilterFactory(new HashMap<>());
     TokenizerChain tokenizerChain =
-        new TokenizerChain(new MockTokenizerFactory(Collections.emptyMap()), tff);
+        new TokenizerChain(new MockTokenizerFactory(new HashMap<>()), tff);
     assertEquals(new BytesRef("fooba"), tokenizerChain.normalize(fieldName, "FOOB\u00c4"));
     tokenizerChain.close();
   }

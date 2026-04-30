@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.numericrange.NumericRangeQParserPlugin;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -55,7 +56,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public static void afterClassParserCoverageTest() {
 
     if (!doAssertParserCoverage) return;
-    for (String name : QParserPlugin.standardPlugins.keySet()) {
+
+    final var qParsersToTest = new HashSet<>(QParserPlugin.standardPlugins.keySet());
+    qParsersToTest.remove(
+        NumericRangeQParserPlugin.NAME); // Tested in NumericRangeQParserPluginIntTest and
+    // NumericRangeQParserPluginLongTest
+    for (String name : qParsersToTest) {
       assertTrue(
           "testParserCoverage was run w/o any other method explicitly testing qparser: " + name,
           qParsersTested.contains(name));
@@ -727,6 +733,31 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
               + parent_path.replace("/", "\\/")
               + ")");
     }
+
+    // Test parentPath with no subordinate query: {!parent parentPath=/ v=''} returns all root-level
+    // docs. This is a useful trick to query docs at a specific nest path without using _nest_path_
+    // directly.
+    try (SolrQueryRequest req = req()) {
+      Query q =
+          assertQueryEqualsAndReturn(
+              "parent",
+              req,
+              "{!parent parentPath=/ v=''}",
+              "{!parent parentPath=/}"); // omitting v is equivalent to empty v
+      assertEquals("+*:* -FieldExistsQuery [field=_nest_path_]", q.toString());
+
+      q =
+          assertQueryEqualsAndReturn(
+              "parent",
+              req,
+              "{!parent parentPath=/aa/bb v=}",
+              "{!parent parentPath=/aa/bb}"); // omitting v is equivalent to empty v
+      assertEquals("ConstantScore(_nest_path_:/aa/bb)", q.toString());
+    }
+
+    // Test that {!parent} and {!child} without required 'which'/'of' or 'parentPath' throw error
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{!parent}", req()).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{!child}", req()).getQuery());
   }
 
   public void testFilters() throws Exception {
@@ -1015,6 +1046,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "vectorSimilarity($f, vector)",
           "vectorSimilarity(vector, $f)",
           "vectorSimilarity(vector, vector)");
+    }
+  }
+
+  public void testFuncLateVector() throws Exception {
+    try (SolrQueryRequest req =
+        req(
+            "f", "late_vec_4",
+            "v1", "[[1,2,3,4],[4,5,6,7]]")) {
+      assertFuncEquals(
+          req,
+          "lateVector(late_vec_4, $v1)",
+          "lateVector($f, $v1)",
+          "lateVector($f, '[[1,2,3,4],[4,5,6,7]]')",
+          "lateVector(late_vec_4, '[[1.0,2.0,3.0,4.0],[4.0,5.0,6.0,7.0]]')",
+          "lateVector(late_vec_4, ' [[ 1, 2, 3, 4.0] ,[4,5,6,7]] ')");
     }
   }
 

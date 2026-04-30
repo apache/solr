@@ -31,6 +31,14 @@ public class ProducerMetrics {
   private final AttributedLongCounter localError;
   private final AttributedLongCounter submitted;
   private final AttributedLongCounter submitError;
+  private final AttributedLongCounter submittedAdd;
+  private final AttributedLongCounter submittedAddError;
+  private final AttributedLongCounter submittedDeleteById;
+  private final AttributedLongCounter submittedDeleteByIdError;
+  private final AttributedLongCounter submittedDeleteByQuery;
+  private final AttributedLongCounter submittedDeleteByQueryError;
+  private final AttributedLongCounter submittedCommit;
+  private final AttributedLongCounter submittedCommitError;
   private final AttributedLongHistogram documentSize;
   private final AttributedLongCounter documentTooLarge;
 
@@ -39,20 +47,36 @@ public class ProducerMetrics {
 
     var localProcessed =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_local_processed",
+            "solr.core.crossdc.producer.local.processed",
             "The number of local documents processed (success or error)");
     var localSubmitted =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_submitted",
+            "solr.core.crossdc.producer.submitted",
             "The number of documents submitted to the Kafka topic (success or error)");
+    var localSubmittedAdd =
+        solrMetricsContext.longCounter(
+            "solr.core.crossdc.producer.submitted.add",
+            "The number of add requests submitted to the Kafka topic (success or error)");
+    var localSubmittedDbi =
+        solrMetricsContext.longCounter(
+            "solr.core.crossdc.producer.submitted.delete_by_id",
+            "The number of Delete-By-Id requests submitted to the Kafka topic (success or error)");
+    var localSubmittedDbq =
+        solrMetricsContext.longCounter(
+            "solr.core.crossdc.producer.submitted.delete_by_query",
+            "The number of Delete-By-Query requests submitted to the Kafka topic (success or error)");
+    var localSubmittedCommit =
+        solrMetricsContext.longCounter(
+            "solr.core.crossdc.producer.submitted.commit",
+            "The number of standalone Commit requests submitted to the Kafka topic (success or error)");
     var histogramDocSizes =
         solrMetricsContext.longHistogram(
-            "solr_core_crossdc_producer_document_size",
+            "solr.core.crossdc.producer.document_size",
             "Histogram of the processed document sizes processed",
             OtelUnit.BYTES);
     var tooLargeErrors =
         solrMetricsContext.longCounter(
-            "solr_core_crossdc_producer_doc_too_large_errors",
+            "solr.core.crossdc.producer.doc_too_large_errors",
             "The number of documents that were too large to send to the Kafka topic");
 
     this.local =
@@ -67,6 +91,30 @@ public class ProducerMetrics {
     this.submitError =
         new AttributedLongCounter(
             localSubmitted, attributes.toBuilder().put(TYPE_ATTR, "error").build());
+    this.submittedAdd =
+        new AttributedLongCounter(
+            localSubmittedAdd, attributes.toBuilder().put(TYPE_ATTR, "success").build());
+    this.submittedAddError =
+        new AttributedLongCounter(
+            localSubmittedAdd, attributes.toBuilder().put(TYPE_ATTR, "error").build());
+    this.submittedDeleteById =
+        new AttributedLongCounter(
+            localSubmittedDbi, attributes.toBuilder().put(TYPE_ATTR, "success").build());
+    this.submittedDeleteByIdError =
+        new AttributedLongCounter(
+            localSubmittedDbi, attributes.toBuilder().put(TYPE_ATTR, "error").build());
+    this.submittedDeleteByQuery =
+        new AttributedLongCounter(
+            localSubmittedDbq, attributes.toBuilder().put(TYPE_ATTR, "success").build());
+    this.submittedDeleteByQueryError =
+        new AttributedLongCounter(
+            localSubmittedDbq, attributes.toBuilder().put(TYPE_ATTR, "error").build());
+    this.submittedCommit =
+        new AttributedLongCounter(
+            localSubmittedCommit, attributes.toBuilder().put(TYPE_ATTR, "success").build());
+    this.submittedCommitError =
+        new AttributedLongCounter(
+            localSubmittedCommit, attributes.toBuilder().put(TYPE_ATTR, "error").build());
     this.documentSize = new AttributedLongHistogram(histogramDocSizes, attributes);
     this.documentTooLarge = new AttributedLongCounter(tooLargeErrors, attributes);
   }
@@ -92,6 +140,58 @@ public class ProducerMetrics {
    */
   public AttributedLongCounter getSubmitError() {
     return this.submitError;
+  }
+
+  /** Counter representing the number of add requests submitted to the Kafka topic. */
+  public AttributedLongCounter getSubmittedAdd() {
+    return this.submittedAdd;
+  }
+
+  /**
+   * Counter representing the number of add requests that were not submitted to the Kafka topic
+   * because of exception during execution.
+   */
+  public AttributedLongCounter getSubmittedAddError() {
+    return this.submittedAddError;
+  }
+
+  /** Counter representing the number of delete-by-id requests submitted to the Kafka topic. */
+  public AttributedLongCounter getSubmittedDeleteById() {
+    return this.submittedDeleteById;
+  }
+
+  /**
+   * Counter representing the number of delete-by-id requests that were not submitted to the Kafka
+   * topic because of exception during execution.
+   */
+  public AttributedLongCounter getSubmittedDeleteByIdError() {
+    return this.submittedDeleteByIdError;
+  }
+
+  /** Counter representing the number of delete-by-query requests submitted to the Kafka topic. */
+  public AttributedLongCounter getSubmittedDeleteByQuery() {
+    return this.submittedDeleteByQuery;
+  }
+
+  /**
+   * Counter representing the number of delete-by-query requests that were not submitted to the
+   * Kafka topic because of exception during execution.
+   */
+  public AttributedLongCounter getSubmittedDeleteByQueryError() {
+    return this.submittedDeleteByQueryError;
+  }
+
+  /** Counter representing the number of standalone Commit requests submitted to the Kafka topic. */
+  public AttributedLongCounter getSubmittedCommit() {
+    return this.submittedCommit;
+  }
+
+  /**
+   * Counter representing the number of standalone Commit requests that were not submitted to the
+   * Kafka topic because of exception during execution.
+   */
+  public AttributedLongCounter getSubmittedCommitError() {
+    return this.submittedCommitError;
   }
 
   /** Histogram of the processed document size. */

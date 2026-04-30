@@ -127,7 +127,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected final SolrQueryResponse rsp;
   private final AtomicUpdateDocumentMerger docMerger;
 
-  private final UpdateLog ulog;
+  protected final UpdateLog ulog;
   private final VersionInfo vinfo;
   private final boolean versionsStored;
   private boolean returnVersions;

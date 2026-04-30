@@ -17,19 +17,17 @@
 
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.overseer.ZkStateWriter.NO_OP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -387,7 +385,7 @@ public class DistributedClusterStateUpdater {
       // For now trying to diverge as little as possible from existing data structures and code
       // given the need to support both the old way (Overseer) and new way (distributed) of handling
       // cluster state update.
-      final Set<String> liveNodes = Collections.emptySet();
+      final Set<String> liveNodes = Set.of();
 
       // Per Replica States updates are done before all other updates and not subject to the number
       // of attempts of CAS made here, given they have their own CAS strategy and implementation
@@ -412,7 +410,7 @@ public class DistributedClusterStateUpdater {
         // state. Knowing about all collections in the cluster might not be needed.
         ClusterState initialClusterState;
         if (updater.isCollectionCreation()) {
-          initialClusterState = new ClusterState(liveNodes, Collections.emptyMap());
+          initialClusterState = new ClusterState(liveNodes, Map.of());
         } else {
           // Get the state for existing data in ZK (and if no data exists we should fail)
           initialClusterState = fetchStateForCollection();
@@ -547,7 +545,7 @@ public class DistributedClusterStateUpdater {
       } else {
         // Collection update or creation
         DocCollection collection = updatedState.getCollection(updater.getCollectionName());
-        byte[] stateJson = Utils.toJSON(singletonMap(updater.getCollectionName(), collection));
+        byte[] stateJson = Utils.toJSON(Map.of(updater.getCollectionName(), collection));
 
         if (updater.isCollectionCreation()) {
           // The state.json file does not exist yet (more precisely it is assumed not to exist)
@@ -572,26 +570,20 @@ public class DistributedClusterStateUpdater {
      * enough... (we have to deal anyway with failures of conditional updates so trying to use non
      * fresh data is ok, a second attempt will be made)
      */
+    @SuppressWarnings("unchecked")
     private ClusterState fetchStateForCollection() throws KeeperException, InterruptedException {
       String collectionStatePath = DocCollection.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat);
+      Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(data);
 
-      // This factory method can detect a missing configName and supply it by reading it from the
-      // old ZK location.
-      // TODO in Solr 10 remove that factory method
-
-      ClusterState clusterState;
-      clusterState =
-          ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
-              stat.getVersion(),
-              data,
-              Collections.emptySet(),
-              updater.getCollectionName(),
-              zkStateReader.getZkClient(),
-              Instant.ofEpochMilli(stat.getCtime()));
-
-      return clusterState;
+      return ClusterState.createFromCollectionMap(
+          stat.getVersion(),
+          stateMap,
+          Set.of(),
+          Instant.ofEpochMilli(stat.getCtime()),
+          PerReplicaStatesOps.getZkClientPrsSupplier(
+              zkStateReader.getZkClient(), collectionStatePath));
     }
   }
 
@@ -945,10 +937,7 @@ public class DistributedClusterStateUpdater {
             (zkcmd != ZkStateWriter.NO_OP)
                 ? clusterState.copyWith(zkcmd.name, zkcmd.collection)
                 : null;
-        replicaOpsList =
-            (zkcmd.ops != null && zkcmd.ops.get() != null)
-                ? Collections.singletonList(zkcmd.ops)
-                : null;
+        replicaOpsList = (zkcmd.ops != null && zkcmd.ops.get() != null) ? List.of(zkcmd.ops) : null;
       } else {
         computedState = null;
         replicaOpsList = null;

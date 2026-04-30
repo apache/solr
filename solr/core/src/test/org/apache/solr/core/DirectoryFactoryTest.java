@@ -23,7 +23,6 @@ import java.util.Properties;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -48,7 +47,6 @@ public class DirectoryFactoryTest extends SolrTestCase {
     loader = null;
   }
 
-  @After
   @Before
   public void clean() {
     System.clearProperty("solr.data.home");

@@ -7,8 +7,12 @@
 <!-- !!! ⚠️ DO NOT MODIFY THIS FILE, YOUR CHANGES WILL BE LOST ⚠️ !!! -->
 
 
-[9.10.1] - 2026-01-08
+[9.10.1] - 2026-01-20
 ---------------------
+
+### Changed (1 change)
+
+- CloudSolrClient now refreshes collection state asynchronously using a dedicated thread pool, reducing ZooKeeper blocking and improving performance under load. [SOLR-17947](https://issues.apache.org/jira/browse/SOLR-17947) (Mark Miller)
 
 ### Fixed (5 changes)
 

@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.search.Query;
@@ -55,7 +54,7 @@ public class RangeFacetProcessor extends SimpleFacets {
   public NamedList<Object> getFacetRangeCounts() throws IOException, SyntaxError {
     final NamedList<Object> resOuter = new SimpleOrderedMap<>();
 
-    List<RangeFacetRequest> rangeFacetRequests = Collections.emptyList();
+    List<RangeFacetRequest> rangeFacetRequests = List.of();
     try {
       FacetComponent.FacetContext facetContext = FacetComponent.FacetContext.getFacetContext(req);
       rangeFacetRequests = facetContext.getAllRangeFacetRequests();

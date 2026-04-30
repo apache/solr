@@ -25,7 +25,7 @@ Where possible, terms are linked to relevant parts of the Solr Reference Guide f
 
 *Jump to a letter:*
 
-<<SolrGlossary-A,A>> <<SolrGlossary-B,B>> <<SolrGlossary-C,C>> <<SolrGlossary-D,D>> <<SolrGlossary-E,E>> <<SolrGlossary-F,F>> G H <<SolrGlossary-I,I>> J K <<SolrGlossary-L,L>> <<SolrGlossary-M,M>> <<SolrGlossary-N,N>> <<SolrGlossary-O,O>> P <<SolrGlossary-Q,Q>> <<SolrGlossary-R,R>> <<SolrGlossary-S,S>> <<SolrGlossary-T,T>> U V <<SolrGlossary-W,W>> X Y <<SolrGlossary-Z,Z>>
+<<SolrGlossary-A,A>> <<SolrGlossary-B,B>> <<SolrGlossary-C,C>> <<SolrGlossary-D,D>> <<SolrGlossary-E,E>> <<SolrGlossary-F,F>> G H <<SolrGlossary-I,I>> J K <<SolrGlossary-L,L>> <<SolrGlossary-M,M>> <<SolrGlossary-N,N>> <<SolrGlossary-O,O>> P <<SolrGlossary-Q,Q>> <<SolrGlossary-R,R>> <<SolrGlossary-S,S>> <<SolrGlossary-T,T>> <<SolrGlossary-U,U>> V <<SolrGlossary-W,W>> X Y <<SolrGlossary-Z,Z>>
 
 
 [[SolrGlossary-A]]
@@ -44,27 +44,35 @@ These control the inclusion or exclusion of keywords in a query by using operato
 [[SolrGlossary-C]]
 === C
 
-[[cluster]]Cluster::
+[[cluster]]xref:cluster-types.adoc[Cluster]::
 In Solr, a cluster is a set of Solr nodes operating in coordination with each other via <<zookeeper,ZooKeeper>>, and managed as a unit.
 A cluster may contain many collections.
-See also <<solrclouddef,SolrCloud>>.
+See also xref:cluster-types.adoc[] and <<solrclouddef,SolrCloud>>.
 
 [[collection]]Collection::
-In Solr, one or more <<document,Documents>> grouped together in a single logical index using a single configuration and Schema.
+The complete logical set of searchable documents that share a schema and configuration.
 +
-In <<solrclouddef,SolrCloud>> a collection may be divided up into multiple logical shards, which may in turn be distributed across many nodes.
+In <<solrclouddef,SolrCloud>>, a collection may be divided up into multiple logical <<shard,shards>>, which may in turn be distributed across many <<node,nodes>> for scalability and fault tolerance.
+Each collection encompasses all the shards and their <<replica,replicas>>.
 +
-Single-node installations and user-managed clusters use instead the concept of a <<core,Core>>.
-"Collection" is most frequently used in the SolrCloud context, but as it represents a "logical index", the term may be used to refer to individual cores in a user-managed cluster as well.
+Standalone installations and user-managed clusters do not manage collections as first-class entities; instead they work directly with individual <<core,cores>>.
 +
 [[defcommit]]Commit::
 To make document changes permanent in the index.
 In the case of added documents, they would be searchable after a _commit_.
 
 [[core]]Core::
-An individual Solr instance (represents a logical index).
-Multiple cores can run on a single node.
+In Solr's implementation, a core is the physical instance that represents a <<replica,Replica>>.
+When you create a replica, Solr creates a core to represent it.
+Multiple cores can be hosted on a single <<node,Node>>.
+Each core maintains exactly one Lucene <<index,Index>> on disk.
++
+NOTE: Historically the term "core" has mostly been used as a synonym for replica, but the term "core" can be confusing because in everyday English it implies something central and singular. Since there may be many replicas in Solr, and they are distributed across the cluster "Replica" is the preferred term. Core is mostly only used for historical reasons in the code base and other places where renaming things would be disruptive.
++
 See also <<solrclouddef,SolrCloud>>.
+
+[[corpus]]Corpus::
+The set of documents available for indexing, irrespective of whether or not they are currently indexed in Solr.
 
 [[corereload]]Core reload::
 To re-initialize a Solr core after changes to the schema file, `solrconfig.xml` or other configuration files.
@@ -96,6 +104,11 @@ The arrangement of search results into categories based on indexed terms.
 [[field]]Field::
 The content to be indexed/searched along with metadata defining how the content should be processed by Solr.
 
+[[follower]]Follower::
+A <<replica,Replica>> that is not the <<leader,Leader>> for its <<shard,Shard>>.
+Follower replicas receive index updates from the leader replica and serve queries.
+See also <<solrclouddef,SolrCloud>>.
+
 [[SolrGlossary-I]]
 === I
 
@@ -104,6 +117,10 @@ A measure of the general importance of a term.
 It is calculated as the number of total Documents divided by the number of Documents that a particular word occurs in the collection.
 See http://en.wikipedia.org/wiki/Tf-idf and {lucene-javadocs}/core/org/apache/lucene/search/similarities/TFIDFSimilarity.html[the Lucene TFIDFSimilarity javadocs] for more info on TF-IDF based scoring and Lucene scoring in particular.
 See also <<termfrequency,Term frequency>>.
+
+[[index]]Index::
+The physical data structures written to disk by Apache Lucene.
+Each <<core,Core>> (<<replica,Replica>>) maintains exactly one Lucene index on disk, containing the actual inverted indexes, stored fields, and other data structures that enable search.
 
 [[invertedindex]]Inverted index::
 A way of creating a searchable index that lists every word and the documents that contain those words, similar to an index in the back of a book which lists words and the pages on which they can be found.
@@ -114,8 +131,8 @@ Since users search using terms they expect to be in documents, finding the term 
 === L
 
 [[leader]]Leader::
-A single <<replica,Replica>> for each <<shard,Shard>> that takes charge of coordinating index updates (document additions or deletions) to other replicas in the same shard.
-This is a transient responsibility assigned to a node via an election, if the current Shard Leader goes down, a new node will automatically be elected to take its place.
+A single <<replica,Replica>> for each <<shard,Shard>> that serves as the source-of-truth and coordinates index updates (document additions or deletions) to the <<follower,follower>> replicas in the same shard.
+This is a transient responsibility assigned to a replica via an election; if the current leader goes down, another replica will automatically be elected to take its place.
 See also <<solrclouddef,SolrCloud>>.
 
 [[SolrGlossary-M]]
@@ -132,8 +149,8 @@ Metadata is information about a document, such as its title, author, or location
 A search that is entered as a user would normally speak or write, as in, "What is aspirin?"
 
 [[node]]Node::
-A JVM instance running Solr.
-Also known as a Solr server.
+An instance of a running Solr process that services search and indexing requests.
+A node is a JVM instance running Solr on a <<server,Server>>.
 
 [[SolrGlossary-O]]
 === O
@@ -163,7 +180,11 @@ The ability of a search engine to retrieve _all_ of the possible matches to a us
 The appropriateness of a document to the search conducted by the user.
 
 [[replica]]Replica::
-A <<core,Core>> that acts as a physical copy of a <<shard,Shard>> in a <<solrclouddef,SolrCloud>> <<collection,Collection>>.
+The physical manifestation of a logical <<shard,Shard>>.
+A replica is the actual running instance that holds and serves the documents belonging to that shard.
+A shard must have at least one replica to exist physically, and may have multiple replicas for redundancy and fault tolerance.
+All replicas of the same shard contain the same subset of documents.
+See also <<solrclouddef,SolrCloud>>.
 
 [[replication]]xref:deployment-guide:user-managed-index-replication.adoc[Replication]::
 
@@ -179,12 +200,17 @@ Logic and configuration parameters that tell Solr how to handle incoming "reques
 Logic and configuration parameters used by request handlers to process query requests.
 Examples of search components include faceting, highlighting, and "more like this" functionality.
 
+[[server]]Server::
+The hardware or virtual machine that hosts Solr software.
+A server may run one or more Solr <<node,Nodes>>.
+
 [[shard]]Shard::
-In SolrCloud, a logical partition of a single <<collection,Collection>>.
-Every shard consists of at least one physical <<replica,Replica>>, but there may be multiple Replicas distributed across multiple <<node,Nodes>> for fault tolerance.
+A logical slice of a <<collection,Collection>>.
+Each shard represents a partition containing a subset of the collection's documents.
+A shard exists physically as one or more <<replica,Replicas>>, which may be distributed across multiple <<node,Nodes>> for fault tolerance and scalability.
 See also <<solrclouddef,SolrCloud>>.
 
-[[solrclouddef]]xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud]::
+[[solrclouddef]]xref:cluster-types.adoc#solrcloud-clusters[SolrCloud]::
 Umbrella term for a suite of functionality in Solr which allows managing a <<cluster,Cluster>> of Solr <<node,Nodes>> for scalability, fault tolerance, and high availability.
 
 [[schema]]xref:indexing-guide:schema-elements.adoc[Solr Schema (managed-schema.xml or schema.xml)]::
@@ -213,6 +239,12 @@ Synonyms generally are terms which are near to each other in meaning and may sub
 In a search engine implementation, synonyms may be abbreviations as well as words, or terms that are not consistently hyphenated.
 Examples of synonyms in this context would be "Inc." and "Incorporated" or "iPod" and "i-pod".
 
+[[standalone]]Standalone::
+An informal term referring to Solr nodes that do not utilize Apache Zookeeper and thus do not provide the centralized configuration management that is available in <<solrclouddef,SolrCloud>> mode.
+This includes both standalone installations and <<usermanaged,User-Managed>> clusters.
+In source code and documentation, "Standalone" may refer to either <<usermanaged,User-Managed Mode>> or standalone deployments.
+See also xref:cluster-types.adoc[] and <<cluster,Cluster>>.
+
 [[SolrGlossary-T]]
 === T
 
@@ -224,6 +256,16 @@ See also <<idf,Inverse document frequency (IDF)>>.
 [[transactionlog]]Transaction log::
 An append-only log of write operations maintained by each <<replica,Replica>>.
 This log is required with SolrCloud implementations and is created and managed automatically by Solr.
+
+[[SolrGlossary-U]]
+=== U
+
+[[usermanaged]]xref:cluster-types.adoc#user-managed-cluster[User-Managed Cluster]::
+A mode of operating a Solr <<cluster,Cluster>> without the centralized coordination provided by <<zookeeper,ZooKeeper>> in <<solrclouddef,SolrCloud>> mode.
+In user-managed mode, cluster coordination activities must be performed manually or with local scripts.
+This includes shard creation, document routing, leader/follower configuration, and load balancing.
+Also known as <<standalone,Standalone>> mode.
+See also xref:cluster-types.adoc[].
 
 [[SolrGlossary-W]]
 === W
