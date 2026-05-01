@@ -147,7 +147,8 @@ public interface CollectionParams {
     COLSTATUS(true, LockLevel.NONE),
     // this command implements its own locking
     REINDEXCOLLECTION(true, LockLevel.NONE),
-    RENAME(true, LockLevel.COLLECTION);
+    RENAME(true, LockLevel.COLLECTION),
+    UPGRADECOLLECTIONINDEX(true, LockLevel.COLLECTION);
     public final boolean isWrite;
 
     public final String lowerName;

@@ -35,4 +35,10 @@ public class UpgradeCoreIndexResponse extends SolrJerseyResponse {
   @Schema(description = "Status of the core index upgrade operation.")
   @JsonProperty
   public String upgradeStatus;
+
+  @Schema(
+      description =
+          "Whether the index is fully at the current Lucene format. Set when checkOnly=true.")
+  @JsonProperty
+  public Boolean indexUpgraded;
 }

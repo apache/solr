@@ -65,6 +65,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPLACENODE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.UPGRADECOLLECTIONINDEX;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import io.opentelemetry.api.trace.Span;
@@ -189,7 +190,8 @@ public class CollApiCmds {
               Map.entry(ADDREPLICA, new AddReplicaCmd(ccc)),
               Map.entry(MOVEREPLICA, new MoveReplicaCmd(ccc)),
               Map.entry(REINDEXCOLLECTION, new ReindexCollectionCmd(ccc)),
-              Map.entry(RENAME, new RenameCmd(ccc)));
+              Map.entry(RENAME, new RenameCmd(ccc)),
+              Map.entry(UPGRADECOLLECTIONINDEX, new UpgradeCollectionIndexCmd(ccc)));
     }
 
     CollApiCmds.CollectionApiCommand getActionCommand(CollectionParams.CollectionAction action) {

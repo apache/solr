@@ -41,6 +41,8 @@ import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
 import org.apache.solr.client.api.model.UpgradeCoreIndexResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -61,6 +63,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DocumentBuilder;
+import org.apache.solr.update.processor.LogUpdateProcessorFactory;
+import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.RefCounted;
@@ -95,7 +99,9 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   public enum CoreIndexUpgradeStatus {
     UPGRADE_SUCCESSFUL,
     ERROR,
-    NO_UPGRADE_NEEDED
+    NO_UPGRADE_NEEDED,
+    /** Returned by {@code checkOnly=true} when old-format segments are present. */
+    UPGRADE_NEEDED
   }
 
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
@@ -139,11 +145,38 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   private UpgradeCoreIndexResponse performUpgradeImpl(
       SolrCore core, UpgradeCoreIndexRequestBody requestBody, UpgradeCoreIndexResponse response) {
 
+    final boolean cloudMode = Boolean.TRUE.equals(requestBody.cloudMode);
+    final boolean checkOnly = Boolean.TRUE.equals(requestBody.checkOnly);
+    boolean readOnlyWasCleared = false;
+
+    // checkOnly: count old-format segments and return without performing any writes
+    if (checkOnly) {
+      return performCheckOnly(core, response);
+    }
+
     RefCounted<IndexWriter> iwRef = null;
     MergePolicy originalMergePolicy = null;
     int numSegmentsEligibleForUpgrade = 0, numSegmentsUpgraded = 0;
     String coreName = core.getName();
     try {
+      // In cloud mode, the collection-level readOnly property is set in ZooKeeper by the
+      // UPGRADECOLLECTIONINDEX coordinator. DistributedZkUpdateProcessor checks this ZK property
+      // on every request and blocks external writes regardless of core.readOnly. Our stripped-down
+      // chain bypasses DistributedZkUpdateProcessor entirely, so external writes remain blocked.
+      //
+      // The core.readOnly volatile flag is normally NOT set by MODIFYCOLLECTION on running cores
+      // (it is only synced on core reload). However, it may have been set by other operations
+      // (e.g., RestoreCmd). If it is set, we need to temporarily clear it so that
+      // DefaultSolrCoreState.getIndexWriter() does not reject our IndexWriter request.
+      if (cloudMode && core.readOnly) {
+        log.info(
+            "Cloud mode upgrade: temporarily clearing core.readOnly on core [{}] for upgrade."
+                + " External writes remain blocked by the collection-level readOnly in ZooKeeper.",
+            coreName);
+        core.readOnly = false;
+        readOnlyWasCleared = true;
+      }
+
       iwRef = core.getSolrCoreState().getIndexWriter(core);
       IndexWriter iw = iwRef.get();
 
@@ -173,7 +206,9 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         DocValuesIteratorCache dvICache = new DocValuesIteratorCache(searcherRef.get());
 
         UpdateRequestProcessorChain updateProcessorChain =
-            getUpdateProcessorChain(core, requestBody.updateChain);
+            cloudMode
+                ? buildLocalOnlyChain(core)
+                : getUpdateProcessorChain(core, requestBody.updateChain);
 
         for (LeafReaderContext lrc : leafContexts) {
           if (!shouldUpgradeSegment(lrc)) {
@@ -199,10 +234,31 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         searcherRef.decref();
       }
 
+      // Restore original merge policy BEFORE commit so that the commit can trigger
+      // normal merging which will clean up tombstone segments (old segments whose live docs
+      // have all been migrated to new segments).
+      if (originalMergePolicy != null) {
+        iw.getConfig().setMergePolicy(originalMergePolicy);
+        originalMergePolicy = null; // prevent double-restore in finally block
+      }
+
       try {
         doCommit(core);
       } catch (IOException e) {
         throw new CoreAdminAPIBaseException(e);
+      }
+
+      // After commit, run expungeDeletes to remove tombstone segments (old-format segments
+      // whose live documents have all been re-indexed into new-format segments).
+      try {
+        doExpungeDeletes(core);
+      } catch (IOException e) {
+        log.warn(
+            "expungeDeletes failed on core [{}] during index upgrade; tombstone segments may"
+                + " remain until the next merge cycle",
+            coreName,
+            e);
+        // Non-fatal: the upgrade itself succeeded; tombstone cleanup can happen later
       }
 
       boolean indexUpgraded = isIndexUpgraded(core);
@@ -234,7 +290,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       throw new CoreAdminAPIBaseException(ioEx);
 
     } finally {
-      // Restore original merge policy
+      // Restore original merge policy if not already restored
       if (iwRef != null) {
         IndexWriter iw = iwRef.get();
         if (originalMergePolicy != null) {
@@ -242,9 +298,42 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         }
         iwRef.decref();
       }
+      // Restore core readOnly flag if we cleared it
+      if (readOnlyWasCleared) {
+        core.readOnly = true;
+        log.info("Cloud mode upgrade: restored readOnly on core [{}]", coreName);
+      }
     }
 
     return response;
+  }
+
+  /**
+   * Counts old-format segments without performing any writes. Returns immediately with the count
+   * and whether the index is already at the current Lucene format.
+   */
+  private UpgradeCoreIndexResponse performCheckOnly(
+      SolrCore core, UpgradeCoreIndexResponse response) {
+    String coreName = core.getName();
+    RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
+    try {
+      int segmentsNeedingUpgrade = 0;
+      for (LeafReaderContext lrc : searcherRef.get().getIndexReader().leaves()) {
+        if (shouldUpgradeSegment(lrc)) {
+          segmentsNeedingUpgrade++;
+        }
+      }
+      response.core = coreName;
+      response.numSegmentsEligibleForUpgrade = segmentsNeedingUpgrade;
+      response.indexUpgraded = (segmentsNeedingUpgrade == 0);
+      response.upgradeStatus =
+          response.indexUpgraded
+              ? CoreIndexUpgradeStatus.NO_UPGRADE_NEEDED.toString()
+              : CoreIndexUpgradeStatus.UPGRADE_NEEDED.toString();
+      return response;
+    } finally {
+      searcherRef.decref();
+    }
   }
 
   private boolean shouldUpgradeSegment(LeafReaderContext lrc) {
@@ -394,12 +483,47 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     }
   }
 
+  /**
+   * Builds a local-only update processor chain for SolrCloud mode upgrades. This chain consists of
+   * only {@link LogUpdateProcessorFactory} and {@link RunUpdateProcessorFactory}, deliberately
+   * excluding {@link org.apache.solr.update.processor.DistributedUpdateProcessorFactory}. This
+   * ensures:
+   *
+   * <ul>
+   *   <li>No distributed forwarding of upgrade adds to other replicas
+   *   <li>No version reassignment (documents retain their existing {@code _version_} values)
+   *   <li>No readOnly check from {@link
+   *       org.apache.solr.update.processor.DistributedZkUpdateProcessor}
+   * </ul>
+   */
+  private UpdateRequestProcessorChain buildLocalOnlyChain(SolrCore core) {
+    return new UpdateRequestProcessorChain(
+        List.of(new LogUpdateProcessorFactory(), new RunUpdateProcessorFactory()), core);
+  }
+
   private void doCommit(SolrCore core) throws IOException {
     try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, false); // optimize=false
       core.getUpdateHandler().commit(cmd);
     } catch (IOException ioEx) {
       log.warn("Error committing on core [{}] during index upgrade", core.getName(), ioEx);
+      throw ioEx;
+    }
+  }
+
+  /**
+   * Runs expungeDeletes to clean up tombstone segments — old-format segments whose live documents
+   * have all been re-indexed into new-format segments. Without this, {@link #isIndexUpgraded} would
+   * fail because the tombstone segments still report an old {@code minVersion}.
+   */
+  private void doExpungeDeletes(SolrCore core) throws IOException {
+    try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
+      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+      cmd.expungeDeletes = true;
+      core.getUpdateHandler().commit(cmd);
+    } catch (IOException ioEx) {
+      log.warn(
+          "Error during expungeDeletes on core [{}] during index upgrade", core.getName(), ioEx);
       throw ioEx;
     }
   }
@@ -440,6 +564,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
           AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
           currDocCmd.solrDoc = solrDoc;
+          // Preserve the original _version_ on the command so that the tlog entry
+          // is consistent with the indexed document's _version_ field.
+          SolrInputField versionField = solrDoc.getField(CommonParams.VERSION_FIELD);
+          if (versionField != null) {
+            currDocCmd.setVersion(((Number) versionField.getValue()).longValue());
+          }
           processor.processAdd(currDocCmd);
         }
       } finally {
