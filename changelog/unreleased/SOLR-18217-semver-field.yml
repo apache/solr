@@ -23,7 +23,7 @@
 #    Most such changes are too small/minor to bother with a changelog entry.
 
 title: Add a SemVer field type to easily sort and compute range queries for multi-part versions
-type:
+type: added
 authors:
   - name: Houston Putman
     nick: HoustonPutman
