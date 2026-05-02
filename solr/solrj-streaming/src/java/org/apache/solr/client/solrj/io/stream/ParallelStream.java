@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -50,7 +51,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   private transient StreamFactory streamFactory;
 
   public ParallelStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       int workers,
@@ -60,7 +61,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   }
 
   public ParallelStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String expressionString,
       int workers,
@@ -156,7 +157,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
     StreamComparator comp =
@@ -168,7 +169,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       int workers,
@@ -217,7 +218,8 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     // sort
     expression.addParameter(new StreamExpressionNamedParameter(SORT, comp.toExpression(factory)));
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

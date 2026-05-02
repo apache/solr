@@ -40,6 +40,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -80,7 +81,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   private transient boolean doCloseCache;
 
   public TopicStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String checkpointCollection,
       String collection,
       String id,
@@ -98,7 +99,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String checkpointCollection,
       String collection,
       String id,
@@ -188,7 +189,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
         getModifiableSolrParamsWithExclusions(
             namedParams, "zkHost", "solrConnection", ID, "checkpointEvery");
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(
         solrConnection,
@@ -221,7 +222,8 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
     expression.addParameter(new StreamExpressionNamedParameter(ID, id));
     if (initialCheckpoint > -1) {
       expression.addParameter(

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -46,14 +47,18 @@ public class ModelStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrConnection;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
   protected String modelID;
   protected ModelCache modelCache;
   protected Tuple model;
   protected long cacheMillis;
 
-  public ModelStream(String solrConnection, String collectionName, String modelID, long cacheMillis)
+  public ModelStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      String modelID,
+      long cacheMillis)
       throws IOException {
 
     init(solrConnection, collectionName, modelID, cacheMillis);
@@ -96,7 +101,7 @@ public class ModelStream extends TupleStream implements Expressible {
       cacheMillis = Long.parseLong(cacheMillisParam);
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, modelID, cacheMillis);
   }
@@ -113,7 +118,8 @@ public class ModelStream extends TupleStream implements Expressible {
     // collection
     expression.addParameter(collection);
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
     expression.addParameter(new StreamExpressionNamedParameter(ID, modelID));
     expression.addParameter(
         new StreamExpressionNamedParameter("cacheMillis", Long.toString(cacheMillis)));
@@ -121,7 +127,11 @@ public class ModelStream extends TupleStream implements Expressible {
     return expression;
   }
 
-  private void init(String solrConnection, String collectionName, String modelID, long cacheMillis)
+  private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      String modelID,
+      long cacheMillis)
       throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collectionName;

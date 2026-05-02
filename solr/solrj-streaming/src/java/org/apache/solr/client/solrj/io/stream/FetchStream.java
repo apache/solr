@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -53,7 +54,7 @@ public class FetchStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrConnection;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   private TupleStream stream;
   private StreamContext streamContext;
   private Iterator<Tuple> tuples;
@@ -68,7 +69,7 @@ public class FetchStream extends TupleStream implements Expressible {
   private boolean appendKey = true;
 
   public FetchStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String on,
@@ -121,13 +122,13 @@ public class FetchStream extends TupleStream implements Expressible {
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, stream, on, fl, batchSize);
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String on,

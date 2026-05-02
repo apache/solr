@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -57,7 +58,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private Bucket x;
   private Bucket y;
   private Metric metric;
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private Iterator<Tuple> out;
   private List<Tuple> tuples = new ArrayList<Tuple>();
   private int dimensionX;
@@ -68,7 +69,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private transient boolean doCloseCache;
 
   public Facet2DStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       ModifiableSolrParams params,
       Bucket x,
@@ -177,7 +178,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
       }
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, params, x, y, bucketSort, dimensionX, dimensionY, metric);
   }
@@ -191,7 +192,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Bucket x,
@@ -200,6 +201,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
       int dimensionX,
       int dimensionY,
       Metric metric) {
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.params = new ModifiableSolrParams(params);
     this.x = x;
@@ -208,7 +210,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
     this.dimensionY = dimensionY;
     this.metric = metric;
     this.bucketSort = bucketSort;
-    this.solrConnection = solrConnection;
   }
 
   @Override
@@ -276,7 +277,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
     // metric
     expression.addParameter(metric.toExpression(factory));
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

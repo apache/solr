@@ -38,6 +38,7 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -76,6 +77,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   private static final String id = "id";
 
   private static boolean useAlias;
+  private static CloudSolrClient.CloudSolrClientConnection solrClientConnection;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -113,6 +115,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(FILESTREAM_COLLECTION, "conf", 1, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(FILESTREAM_COLLECTION, 1, 1);
+    solrClientConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     final Path dataDir = findUserFilesDataDir();
     populateFileStreamData(dataDir);
   }
@@ -230,8 +234,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       // Test with shards param
 
       List<String> shardUrls =
-          TupleStream.getShards(
-              cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+          TupleStream.getShards(solrClientConnection, COLLECTIONORALIAS, streamContext);
 
       Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);
@@ -295,8 +298,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
     List<String> shardUrls =
-        TupleStream.getShards(
-            cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+        TupleStream.getShards(solrClientConnection, COLLECTIONORALIAS, streamContext);
 
     try {
       StringBuilder buf = new StringBuilder();
@@ -356,8 +358,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
     List<String> shardUrls =
-        TupleStream.getShards(
-            cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+        TupleStream.getShards(solrClientConnection, COLLECTIONORALIAS, streamContext);
 
     try {
       StringBuilder buf = new StringBuilder();
@@ -989,8 +990,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       // Test with shards parameter
       List<String> shardUrls =
-          TupleStream.getShards(
-              cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+          TupleStream.getShards(solrClientConnection, COLLECTIONORALIAS, streamContext);
       expr =
           "stats(myCollection, q=*:*, sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), std(a_i), std(a_f), per(a_i, 50), per(a_f, 50), count(*))";
       Map<String, List<String>> shardsMap = new HashMap<>();
@@ -2167,8 +2167,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
     List<String> shardUrls =
-        TupleStream.getShards(
-            cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+        TupleStream.getShards(solrClientConnection, COLLECTIONORALIAS, streamContext);
 
     try {
       StringBuilder buf = new StringBuilder();
@@ -4010,8 +4009,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       // Test with shards parameter
       List<String> shardUrls =
-          TupleStream.getShards(
-              cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+          TupleStream.getShards(solrClientConnection, COLLECTIONORALIAS, streamContext);
 
       Map<String, List<String>> shardsMap = new HashMap<>();
       shardsMap.put("myCollection", shardUrls);

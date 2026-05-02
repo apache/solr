@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -60,7 +61,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrConnection;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
   protected ModifiableSolrParams params;
   protected Map<String, String> fieldMappings;
@@ -81,7 +82,10 @@ public class DeepRandomStream extends TupleStream implements Expressible {
    * @param params Map&lt;String, String[]&gt; of parameter/value pairs
    * @throws IOException Something went wrong
    */
-  public DeepRandomStream(String solrConnection, String collectionName, SolrParams params)
+  public DeepRandomStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
       throws IOException {
     init(solrConnection, collectionName, params);
   }
@@ -139,7 +143,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, mParams);
   }
@@ -167,7 +171,8 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     // aliases
     if (null != fieldMappings && 0 != fieldMappings.size()) {
@@ -218,7 +223,11 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  void init(String solrConnection, String collectionName, SolrParams params) throws IOException {
+  void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
+      throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);

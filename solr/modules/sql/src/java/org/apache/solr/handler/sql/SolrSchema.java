@@ -86,7 +86,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
   @Override
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
+    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(solrClientConnection);
     ClusterState clusterState = cloudSolrClient.getClusterState();
     Aliases aliases = ZkStateReader.from(cloudSolrClient).getAliases();
 
@@ -102,7 +103,10 @@ class SolrSchema extends AbstractSchema implements Closeable {
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
-      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldInfo();
+      var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
+      return lukeRequest
+          .process(solrClientCache.getCloudSolrClient(solrClientConnection), collection)
+          .getFieldInfo();
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {
@@ -117,7 +121,9 @@ class SolrSchema extends AbstractSchema implements Closeable {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setShowSchema(true); // for empty fields and custom type info ...
       lukeRequest.setNumTerms(0);
-      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection);
+      var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
+      return lukeRequest.process(
+          solrClientCache.getCloudSolrClient(solrClientConnection), collection);
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {

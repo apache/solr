@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -56,7 +57,7 @@ public class KnnStream extends TupleStream implements Expressible {
     "qf", "mintf", "mindf", "maxdf", "minwl", "maxwl", "maxqt", "maxntp", "boost"
   };
 
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private Map<String, String> props;
   private String collection;
   private transient SolrClientCache clientCache;
@@ -64,7 +65,11 @@ public class KnnStream extends TupleStream implements Expressible {
   private Iterator<SolrDocument> documentIterator;
   private String id;
 
-  public KnnStream(String solrConnection, String collection, String id, Map<String, String> props)
+  public KnnStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      String id,
+      Map<String, String> props)
       throws IOException {
     init(solrConnection, collection, id, props);
   }
@@ -95,7 +100,8 @@ public class KnnStream extends TupleStream implements Expressible {
     }
 
     // pull out known named params
-    Map<String, String> params = getMapWithExclusions(namedParams, "solrConnection", "zkHost", "id");
+    Map<String, String> params =
+        getMapWithExclusions(namedParams, "solrConnection", "zkHost", "id");
 
     String id = null;
     if (idExpression != null) {
@@ -108,12 +114,16 @@ public class KnnStream extends TupleStream implements Expressible {
       throw new IOException("qf parameter is expected for KnnStream");
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, id, params);
   }
 
-  private void init(String solrConnection, String collection, String id, Map<String, String> props)
+  private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      String id,
+      Map<String, String> props)
       throws IOException {
     this.solrConnection = solrConnection;
     this.props = props;
@@ -134,7 +144,8 @@ public class KnnStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

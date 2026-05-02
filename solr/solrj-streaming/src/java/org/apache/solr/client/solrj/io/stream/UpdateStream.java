@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -49,7 +50,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   // field name in summary tuple for #docs updated in batch
   public static String BATCH_INDEXED_FIELD_NAME = "batchIndexed";
   private String collection;
-  protected String solrConnection;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   private int updateBatchSize;
 
   /**
@@ -72,7 +73,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     verifyCollectionName(collectionName, expression);
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     int updateBatchSize = extractBatchSize(expression, factory);
     pruneVersionField =
@@ -99,7 +100,10 @@ public class UpdateStream extends TupleStream implements Expressible {
   }
 
   public UpdateStream(
-      String collectionName, TupleStream tupleSource, String solrConnection, int updateBatchSize)
+      String collectionName,
+      TupleStream tupleSource,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      int updateBatchSize)
       throws IOException {
     if (updateBatchSize <= 0) {
       throw new IOException(
@@ -110,7 +114,10 @@ public class UpdateStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String solrConnection, String collectionName, TupleStream tupleSource, int updateBatchSize) {
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      TupleStream tupleSource,
+      int updateBatchSize) {
     this.collection = collectionName;
     this.solrConnection = solrConnection;
     this.updateBatchSize = updateBatchSize;
@@ -187,7 +194,8 @@ public class UpdateStream extends TupleStream implements Expressible {
       throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(collection);
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
     expression.addParameter(
         new StreamExpressionNamedParameter("batchSize", Integer.toString(updateBatchSize)));
 

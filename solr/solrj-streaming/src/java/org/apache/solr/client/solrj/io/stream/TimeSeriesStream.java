@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -66,14 +67,14 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   private Metric[] metrics;
   private List<Tuple> tuples = new ArrayList<>();
   private int index;
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private SolrParams params;
   private String collection;
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
 
   public TimeSeriesStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Metric[] metrics,
@@ -201,9 +202,20 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       params.set("q", "*:*");
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
-    init(solrConnection, collectionName, params, field, metrics, start, end, gap, format, split, limit);
+    init(
+        solrConnection,
+        collectionName,
+        params,
+        field,
+        metrics,
+        start,
+        end,
+        gap,
+        format,
+        split,
+        limit);
   }
 
   public String getCollection() {
@@ -211,7 +223,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       String field,
@@ -272,7 +284,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("field", gap));
     expression.addParameter(new StreamExpressionNamedParameter("format", format));
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

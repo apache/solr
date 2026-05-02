@@ -27,6 +27,7 @@ import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
@@ -114,7 +115,9 @@ public class StreamingSearch {
   @Benchmark
   public Object stream(BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
-    CloudSolrStream stream = new CloudSolrStream(benchState.zkHost, collection, benchState.params);
+    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(benchState.zkHost);
+    CloudSolrStream stream =
+        new CloudSolrStream(solrClientConnection, collection, benchState.params);
     stream.setStreamContext(benchState.streamContext);
     return getTuples(stream);
   }

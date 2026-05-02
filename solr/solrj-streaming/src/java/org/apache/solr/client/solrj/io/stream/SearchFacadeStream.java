@@ -65,7 +65,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
     ModifiableSolrParams mParams =
         getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection", "aliases");
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     if (mParams.get(CommonParams.QT) != null && mParams.get(CommonParams.QT).equals("/export")) {
       CloudSolrStream cloudSolrStream = new CloudSolrStream();

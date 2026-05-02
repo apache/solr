@@ -40,6 +40,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     List<String> expectedQuorum = List.of("zookeeper1:2181", "zookeeper2:2181", "zookeeper3:2181");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertEquals("/solr", parsed.zkChroot());
+    Assert.assertEquals("zookeeper1:2181,zookeeper2:2181,zookeeper3:2181/solr", parsed.toString());
   }
 
   @Test
@@ -51,6 +52,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     List<String> expectedQuorum = List.of("192.0.2.10:2181", "192.0.2.11:2181", "192.0.2.12:2181");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertEquals("/solr", parsed.zkChroot());
+    Assert.assertEquals("192.0.2.10:2181,192.0.2.11:2181,192.0.2.12:2181/solr", parsed.toString());
   }
 
   @Test
@@ -68,6 +70,11 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
             "[2001:db8:85a3::8a2e:370:7336]:2181");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertEquals("/solr", parsed.zkChroot());
+    Assert.assertEquals(
+        "[2001:db8:85a3::8a2e:370:7334]:2181,"
+            + "[2001:db8:85a3::8a2e:370:7335]:2181,"
+            + "[2001:db8:85a3::8a2e:370:7336]:2181/solr",
+        parsed.toString());
   }
 
   @Test
@@ -79,6 +86,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     List<String> expectedQuorum = List.of("zookeeper1:2181", "zookeeper2:2181", "zookeeper3:2181");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertNull(parsed.zkChroot());
+    Assert.assertEquals("zookeeper1:2181,zookeeper2:2181,zookeeper3:2181", parsed.toString());
   }
 
   @Test
@@ -91,6 +99,8 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
         List.of("http://solr1:8983/solr", "http://solr2:8983/solr", "http://solr3:8983/solr");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertNull(parsed.zkChroot());
+    Assert.assertEquals(
+        "http://solr1:8983/solr,http://solr2:8983/solr,http://solr3:8983/solr", parsed.toString());
   }
 
   @Test
@@ -103,6 +113,9 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
         List.of("https://solr1:8983/solr", "https://solr2:8983/solr", "https://solr3:8983/solr");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertNull(parsed.zkChroot());
+    Assert.assertEquals(
+        "https://solr1:8983/solr,https://solr2:8983/solr,https://solr3:8983/solr",
+        parsed.toString());
   }
 
   @Test
@@ -120,6 +133,11 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
             "http://192.0.2.12:8983/solr");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertNull(parsed.zkChroot());
+    Assert.assertEquals(
+        "http://192.0.2.10:8983/solr,"
+            + "http://192.0.2.11:8983/solr,"
+            + "http://192.0.2.12:8983/solr",
+        parsed.toString());
   }
 
   @Test
@@ -137,6 +155,11 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
             "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertNull(parsed.zkChroot());
+    Assert.assertEquals(
+        "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr,"
+            + "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr,"
+            + "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr",
+        parsed.toString());
   }
 
   @Test

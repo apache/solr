@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -55,7 +56,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrConnection;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
   protected Map<String, String> params;
   protected Iterator<Tuple> tupleIterator;
@@ -70,7 +71,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   private transient StreamContext streamContext;
 
   public SignificantTermsStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
       Map<String, String> params,
       String field,
@@ -80,7 +81,15 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       int numTerms)
       throws IOException {
 
-    init(solrConnection, collectionName, params, field, minDocFreq, maxDocFreq, minTermLength, numTerms);
+    init(
+        solrConnection,
+        collectionName,
+        params,
+        field,
+        minDocFreq,
+        maxDocFreq,
+        minTermLength,
+        numTerms);
   }
 
   public SignificantTermsStream(StreamExpression expression, StreamFactory factory)
@@ -89,7 +98,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
 
-    // Validate there are no unknown parameters - solrConnection/zkHost and alias are namedParameter,
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are
+    // namedParameter,
     // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
@@ -151,7 +161,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       params.remove("maxDocFreq");
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(
         solrConnection,
@@ -190,13 +200,14 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     expression.addParameter(
         new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)));
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
       Map<String, String> params,
       String field,
@@ -284,7 +295,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (NamedList<?> fullResp : callShards(getShards(solrConnection, collection, streamContext))) {
+        for (NamedList<?> fullResp :
+            callShards(getShards(solrConnection, collection, streamContext))) {
           Map<?, ?> stResp = (Map<?, ?>) fullResp.get("significantTerms");
 
           @SuppressWarnings({"unchecked"})

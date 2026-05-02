@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -48,7 +49,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 
 public class SearchStream extends TupleStream implements Expressible {
 
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private ModifiableSolrParams params;
   private String collection;
   private Iterator<SolrDocument> documentIterator;
@@ -87,12 +88,16 @@ public class SearchStream extends TupleStream implements Expressible {
         getModifiableSolrParamsWithExclusions(
             namedParams, "zkHost", "solrConnection", "buckets", "bucketSorts", "limit");
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, params);
   }
 
-  void init(String solrConnection, String collection, ModifiableSolrParams params) throws IOException {
+  void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      ModifiableSolrParams params)
+      throws IOException {
     this.solrConnection = solrConnection;
     this.params = params;
 
@@ -127,7 +132,8 @@ public class SearchStream extends TupleStream implements Expressible {
       }
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

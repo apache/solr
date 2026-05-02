@@ -256,7 +256,16 @@ public abstract class CloudSolrClient extends SolrClient {
      * @throws IllegalArgumentException if string is null, empty, or malformed
      */
     public Builder(String connectionString) {
-      CloudSolrClientConnection connection = CloudSolrClientConnection.parse(connectionString);
+      this(CloudSolrClientConnection.parse(connectionString));
+    }
+
+    /**
+     * Creates a client builder from a {@link CloudSolrClientConnection}.
+     *
+     * @param connection instance of {@link CloudSolrClientConnection}, which can be obtained from
+     *     the solr connection string or created via the constructor
+     */
+    public Builder(CloudSolrClientConnection connection) {
       if (connection.isZk()) {
         this.zkHosts = connection.quorumItems();
         this.zkChroot = connection.zkChroot();
@@ -1911,6 +1920,11 @@ public abstract class CloudSolrClient extends SolrClient {
         }
       }
       return new CloudSolrClientConnection(false, quorumItems, null);
+    }
+
+    @Override
+    public String toString() {
+      return String.join(",", quorumItems) + (isZk && zkChroot != null ? zkChroot : "");
     }
   }
 }

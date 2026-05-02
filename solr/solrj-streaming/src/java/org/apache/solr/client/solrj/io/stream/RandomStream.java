@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -56,7 +57,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  */
 public class RandomStream extends TupleStream implements Expressible {
 
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   // TODO: replace all Map<String, String> in stream handlers by ModifiableSolrParams ?
   private Map<String, String> props;
   private String collection;
@@ -71,7 +72,10 @@ public class RandomStream extends TupleStream implements Expressible {
     // Used by the RandomFacade
   }
 
-  public RandomStream(String solrConnection, String collection, Map<String, String> props)
+  public RandomStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      Map<String, String> props)
       throws IOException {
     init(solrConnection, collection, props);
   }
@@ -92,14 +96,19 @@ public class RandomStream extends TupleStream implements Expressible {
 
     // pull out known named params
     Map<String, String> params =
-        getMapWithExclusions(namedParams, "zkHost", "solrConnection", "buckets", "bucketSorts", "limit");
+        getMapWithExclusions(
+            namedParams, "zkHost", "solrConnection", "buckets", "bucketSorts", "limit");
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, params);
   }
 
-  void init(String solrConnection, String collection, Map<String, String> props) throws IOException {
+  void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      Map<String, String> props)
+      throws IOException {
     this.solrConnection = solrConnection;
     this.props = props;
     this.collection = collection;
@@ -137,7 +146,8 @@ public class RandomStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

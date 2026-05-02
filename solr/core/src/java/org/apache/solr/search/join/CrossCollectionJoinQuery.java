@@ -38,6 +38,7 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
@@ -260,7 +261,8 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
         streamContext.setRequestReplicaListTransformerGenerator(rltg);
       }
 
-      TupleStream cloudSolrStream = new CloudSolrStream(streamZkHost, collection, params);
+      var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(streamZkHost);
+      TupleStream cloudSolrStream = new CloudSolrStream(solrClientConnection, collection, params);
       TupleStream uniqueStream = new UniqueStream(cloudSolrStream, new FieldEqualitor(fromField));
       uniqueStream.setStreamContext(streamContext);
       return uniqueStream;

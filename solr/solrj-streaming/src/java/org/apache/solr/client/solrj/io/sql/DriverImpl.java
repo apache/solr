@@ -27,6 +27,7 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Logger;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -68,8 +69,8 @@ public class DriverImpl implements Driver {
     props.setProperty("includeMetadata", "true");
 
     String zkHost = uri.getAuthority() + uri.getPath();
-
-    return new ConnectionImpl(url, zkHost, collection, props);
+    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    return new ConnectionImpl(url, solrClientConnection, collection, props);
   }
 
   public Connection connect(String url) throws SQLException {

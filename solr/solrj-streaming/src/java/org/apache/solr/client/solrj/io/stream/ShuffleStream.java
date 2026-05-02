@@ -53,7 +53,8 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - solrConnection/zkHost and alias are namedParameter,
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are
+    // namedParameter,
     // so we don't  need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
@@ -91,7 +92,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       }
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, mParams);
   }
@@ -117,7 +118,8 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       }
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     // aliases
     if (null != fieldMappings && 0 != fieldMappings.size()) {

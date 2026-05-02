@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -44,7 +45,7 @@ public class SqlStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrConnection;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
   protected SolrParams params;
   protected transient TupleStream tupleStream;
@@ -60,7 +61,11 @@ public class SqlStream extends TupleStream implements Expressible {
    *     SolrParams by calling CloudSolrStream(solrConnection, collectionName, new
    *     ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(Map&lt;String, String&gt;)));
    */
-  public SqlStream(String solrConnection, String collectionName, SolrParams params) throws IOException {
+  public SqlStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
+      throws IOException {
     init(solrConnection, collectionName, params);
   }
 
@@ -86,7 +91,7 @@ public class SqlStream extends TupleStream implements Expressible {
     ModifiableSolrParams mParams =
         getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection", "aliases");
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, mParams);
   }
@@ -115,7 +120,8 @@ public class SqlStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
@@ -151,7 +157,10 @@ public class SqlStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  protected void init(String solrConnection, String collectionName, SolrParams params)
+  protected void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collectionName,
+      SolrParams params)
       throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collectionName;

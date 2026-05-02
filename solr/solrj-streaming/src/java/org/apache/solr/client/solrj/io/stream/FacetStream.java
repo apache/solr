@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -80,7 +81,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private FieldComparator[] bucketSorts;
   private List<Tuple> tuples = new ArrayList<Tuple>();
   private int index;
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private ModifiableSolrParams params;
   private String collection;
   private boolean resortNeeded;
@@ -92,7 +93,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   protected transient StreamContext context;
 
   public FacetStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Bucket[] buckets,
@@ -356,7 +357,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       }
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(
         solrConnection,
@@ -464,7 +465,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Bucket[] buckets,
@@ -585,7 +586,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       expression.addParameter(new StreamExpressionNamedParameter("method", this.method));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -64,7 +65,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   private Metric[] metrics;
   private Tuple tuple;
   private int index;
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private SolrParams params;
   private String collection;
 
@@ -73,7 +74,11 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   private transient StreamContext context;
   protected transient TupleStream parallelizedStream;
 
-  public StatsStream(String solrConnection, String collection, SolrParams params, Metric[] metrics)
+  public StatsStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      SolrParams params,
+      Metric[] metrics)
       throws IOException {
     init(solrConnection, collection, params, metrics);
   }
@@ -119,7 +124,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
       params.set("q", "*:*");
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(solrConnection, collectionName, params, metrics);
   }
@@ -128,7 +133,11 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     return this.collection;
   }
 
-  private void init(String solrConnection, String collection, SolrParams params, Metric[] metrics)
+  private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      SolrParams params,
+      Metric[] metrics)
       throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collection;
@@ -160,7 +169,8 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
       expression.addParameter(metric.toExpression(factory));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }

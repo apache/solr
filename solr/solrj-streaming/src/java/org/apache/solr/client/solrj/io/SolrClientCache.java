@@ -76,36 +76,35 @@ public class SolrClientCache implements Closeable {
     }
   }
 
-  public synchronized CloudSolrClient getCloudSolrClient(String connectionString) {
+  public synchronized CloudSolrClient getCloudSolrClient(
+      CloudSolrClient.CloudSolrClientConnection solrConnection) {
     ensureOpen();
-    Objects.requireNonNull(connectionString, "Connection string cannot be null!");
-    if (solrClients.containsKey(connectionString)) {
-      return (CloudSolrClient) solrClients.get(connectionString);
+    Objects.requireNonNull(solrConnection, "'solrConnection' cannot be null!");
+    String cacheKey = solrConnection.toString();
+    if (solrClients.containsKey(cacheKey)) {
+      return (CloudSolrClient) solrClients.get(cacheKey);
     }
     // Can only use ZK ACLs if there is a default ZK Host, and the given ZK host contains that
     // default.
     // Basically the ZK ACLs are assumed to be only used for the default ZK host,
     // thus we should only provide the ACLs to that Zookeeper instance.
     boolean canUseACLs = false;
-    var cloudClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(connectionString);
-    if (cloudClientConnection.isZk()) {
-      String chroot = cloudClientConnection.zkChroot();
-      String zkHostNoChroot =
-          chroot != null && connectionString.endsWith(chroot)
-              ? connectionString.substring(0, connectionString.length() - chroot.length())
-              : connectionString;
+    if (solrConnection.isZk()) {
+      String zkHostNoChroot = String.join(",", solrConnection.quorumItems());
       canUseACLs =
           Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
     }
 
-    final var client = newCloudSolrClient(connectionString, httpSolrClient, canUseACLs);
-    solrClients.put(connectionString, client);
+    final var client = newCloudSolrClient(solrConnection, httpSolrClient, canUseACLs);
+    solrClients.put(cacheKey, client);
     return client;
   }
 
   protected CloudSolrClient newCloudSolrClient(
-      String connectionString, HttpSolrClientBase httpSolrClient, boolean canUseACLs) {
-    var builder = new CloudSolrClient.Builder(connectionString);
+      CloudSolrClient.CloudSolrClientConnection cloudClientConnection,
+      HttpSolrClientBase httpSolrClient,
+      boolean canUseACLs) {
+    var builder = new CloudSolrClient.Builder(cloudClientConnection);
     builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
     builder = builder.withHttpClientBuilder(newHttpSolrClientBuilder(null, httpSolrClient));

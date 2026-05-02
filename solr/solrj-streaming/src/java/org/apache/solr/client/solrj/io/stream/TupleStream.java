@@ -125,12 +125,18 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   }
 
   public static List<String> getShards(
-      String solrConnection, String collection, StreamContext streamContext) throws IOException {
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      StreamContext streamContext)
+      throws IOException {
     return getShards(solrConnection, collection, streamContext, new ModifiableSolrParams());
   }
 
   static List<Replica> getReplicas(
-      String solrConnection, String collection, StreamContext streamContext, SolrParams requestParams)
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      StreamContext streamContext,
+      SolrParams requestParams)
       throws IOException {
     if (solrConnection == null) {
       throw new IOException(
@@ -203,7 +209,10 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   }
 
   public static List<String> getShards(
-      String solrConnection, String collection, StreamContext streamContext, SolrParams requestParams)
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      StreamContext streamContext,
+      SolrParams requestParams)
       throws IOException {
 
     List<String> shards;
@@ -227,10 +236,11 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     return shards;
   }
 
-  public static String getSolrConnection(
+  public static CloudSolrClient.CloudSolrClientConnection buildSolrConnection(
       StreamFactory streamFactory, StreamExpression streamExpression, String collectionName)
       throws IOException {
-    var solrConnectionExpression = streamFactory.getNamedOperand(streamExpression, "solrConnection");
+    var solrConnectionExpression =
+        streamFactory.getNamedOperand(streamExpression, "solrConnection");
     var zkHostExpression = streamFactory.getNamedOperand(streamExpression, "zkHost");
     String solrConnection = null;
     if (zkHostExpression == null && solrConnectionExpression == null) {
@@ -253,7 +263,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
               streamExpression,
               collectionName));
     }
-    return solrConnection;
+    return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
   }
 
   public static ModifiableSolrParams getModifiableSolrParamsWithExclusions(

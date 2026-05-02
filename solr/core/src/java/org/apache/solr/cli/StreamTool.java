@@ -38,6 +38,7 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -246,11 +247,11 @@ public class StreamTool extends ToolBase {
    */
   private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
     String zkHost = CLIUtils.getZkHost(cli);
-
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     solrClientCache.setBasicAuthCredentials(
         cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
-    solrClientCache.getCloudSolrClient(zkHost);
+    solrClientCache.getCloudSolrClient(solrConnection);
 
     TupleStream stream;
     PushBackStream pushBackStream;

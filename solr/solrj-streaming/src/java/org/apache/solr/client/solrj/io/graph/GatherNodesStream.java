@@ -40,6 +40,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
@@ -68,7 +69,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GatherNodesStream extends TupleStream implements Expressible {
 
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private String collection;
   private StreamContext streamContext;
   private Map<String, String> queryParams;
@@ -97,7 +98,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public GatherNodesStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String traverseFrom,
@@ -285,7 +286,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             "window",
             "lag");
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(
         solrConnection,
@@ -305,7 +306,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String traverseFrom,
@@ -384,7 +385,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
     expression.addParameter(new StreamExpressionNamedParameter("gather", gather));
     if (maxDocFreq > -1) {
       expression.addParameter(

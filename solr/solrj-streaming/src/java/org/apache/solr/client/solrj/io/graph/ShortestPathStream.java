@@ -35,6 +35,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
@@ -70,7 +71,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   private String toField;
   private int joinBatchSize;
   private int maxDepth;
-  private String solrConnection;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private String collection;
   private final Deque<Tuple> shortestPaths = new ArrayDeque<>();
   private boolean found;
@@ -79,7 +80,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   private SolrParams queryParams;
 
   public ShortestPathStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String fromNode,
       String toNode,
@@ -205,7 +206,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
             "threads",
             "partitionSize");
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(
         solrConnection,
@@ -221,7 +222,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String fromNode,
       String toNode,
@@ -264,7 +265,8 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey().toString(), value));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
     expression.addParameter(
         new StreamExpressionNamedParameter("maxDepth", Integer.toString(maxDepth)));
     expression.addParameter(

@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -61,7 +62,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private static final long serialVersionUID = 1;
 
-  protected String solrConnection;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
   protected Map<String, String> params;
   protected Iterator<Tuple> tupleIterator;
@@ -75,7 +76,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   private transient boolean doCloseCache;
 
   public FeaturesSelectionStream(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
       Map<String, String> params,
       String field,
@@ -85,10 +86,20 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       int numTerms)
       throws IOException {
 
-    init(solrConnection, collectionName, params, field, outcome, featureSet, positiveLabel, numTerms);
+    init(
+        solrConnection,
+        collectionName,
+        params,
+        field,
+        outcome,
+        featureSet,
+        positiveLabel,
+        numTerms);
   }
 
-  /** logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
+  /**
+   * logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20")
+   */
   public FeaturesSelectionStream(StreamExpression expression, StreamFactory factory)
       throws IOException {
     // grab all parameters out
@@ -159,7 +170,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       throw new IOException("numTerms param cannot be null for FeaturesSelectionStream");
     }
 
-    String solrConnection = getSolrConnection(factory, expression, collectionName);
+    var solrConnection = buildSolrConnection(factory, expression, collectionName);
 
     init(
         solrConnection,
@@ -196,13 +207,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     expression.addParameter(
         new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
 
   private void init(
-      String solrConnection,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
       Map<String, String> params,
       String field,
