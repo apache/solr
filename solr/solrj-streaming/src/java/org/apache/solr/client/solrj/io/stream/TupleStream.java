@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -266,13 +264,11 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   }
 
   public static ModifiableSolrParams buildSolrParamsExcept(
-      List<StreamExpressionNamedParameter> namedParams, String... excluded) {
+      List<StreamExpressionNamedParameter> namedParams, Set<String> excluded) {
     ModifiableSolrParams mParams = new ModifiableSolrParams();
 
-    Set<String> excludedSet = new HashSet<>(Arrays.asList(excluded));
-
     for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!excludedSet.contains(namedParam.getName())) {
+      if (!excluded.contains(namedParam.getName())) {
         mParams.add(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }

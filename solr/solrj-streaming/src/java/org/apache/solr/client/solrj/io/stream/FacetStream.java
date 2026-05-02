@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -173,16 +174,17 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     ModifiableSolrParams params =
         buildSolrParamsExcept(
             namedParams,
-            "zkHost",
-            "solrConnection",
-            "buckets",
-            "bucketSorts",
-            "bucketSizeLimit",
-            "method",
-            "offset",
-            "rows",
-            "refine",
-            "overfetch");
+            Set.of(
+                "zkHost",
+                "solrConnection",
+                "buckets",
+                "bucketSorts",
+                "bucketSizeLimit",
+                "method",
+                "offset",
+                "rows",
+                "refine",
+                "overfetch"));
 
     if (params.get("q") == null) {
       params.set("q", "*:*");

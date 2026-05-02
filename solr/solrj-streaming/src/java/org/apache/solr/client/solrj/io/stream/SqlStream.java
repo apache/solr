@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -89,7 +90,7 @@ public class SqlStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        buildSolrParamsExcept(namedParams, "zkHost", "solrConnection", "aliases");
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases"));
 
     var solrConnection = buildSolrConnection(factory, expression, collectionName);
 

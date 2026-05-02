@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -118,7 +119,8 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     }
 
     // pull out known named params
-    ModifiableSolrParams params = buildSolrParamsExcept(namedParams, "zkHost", "solrConnection");
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection"));
     if (params.get("q") == null) {
       params.set("q", "*:*");
     }

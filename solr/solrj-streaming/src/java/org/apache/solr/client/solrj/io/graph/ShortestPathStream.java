@@ -197,14 +197,15 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     ModifiableSolrParams params =
         buildSolrParamsExcept(
             namedParams,
-            "solrConnection",
-            "zkHost",
-            "to",
-            "from",
-            "edge",
-            "maxDepth",
-            "threads",
-            "partitionSize");
+            Set.of(
+                "solrConnection",
+                "zkHost",
+                "to",
+                "from",
+                "edge",
+                "maxDepth",
+                "threads",
+                "partitionSize"));
 
     var solrConnection = buildSolrConnection(factory, expression, collectionName);
 

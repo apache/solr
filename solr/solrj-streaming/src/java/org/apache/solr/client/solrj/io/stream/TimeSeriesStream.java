@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -196,7 +197,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
     // pull out known named params
     ModifiableSolrParams params =
-        buildSolrParamsExcept(namedParams, "zkHost", "solrConnection", "start", "end", "gap");
+        buildSolrParamsExcept(
+            namedParams, Set.of("zkHost", "solrConnection", "start", "end", "gap"));
     if (params.get("q") == null) {
       params.set("q", "*:*");
     }

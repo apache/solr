@@ -278,15 +278,16 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     SolrParams params =
         buildSolrParamsExcept(
             namedParams,
-            "zkHost",
-            "solrConnection",
-            "gather",
-            "walk",
-            "scatter",
-            "maxDocFreq",
-            "trackTraversal",
-            "window",
-            "lag");
+            Set.of(
+                "zkHost",
+                "solrConnection",
+                "gather",
+                "walk",
+                "scatter",
+                "maxDocFreq",
+                "trackTraversal",
+                "window",
+                "lag"));
 
     var solrConnection = buildSolrConnection(factory, expression, collectionName);
 

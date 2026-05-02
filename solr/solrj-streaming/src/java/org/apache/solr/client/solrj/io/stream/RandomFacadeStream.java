@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CommonParams.ROWS;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -53,7 +54,7 @@ public class RandomFacadeStream extends TupleStream implements Expressible {
     // pull out known named params
     ModifiableSolrParams params =
         buildSolrParamsExcept(
-            namedParams, "solrConnection", "zkHost", "buckets", "bucketSorts", "limit");
+            namedParams, Set.of("solrConnection", "zkHost", "buckets", "bucketSorts", "limit"));
 
     // Add sensible defaults
 

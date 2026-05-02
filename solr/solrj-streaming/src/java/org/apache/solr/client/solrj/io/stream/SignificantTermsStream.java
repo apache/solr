@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -124,7 +125,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams params = buildSolrParamsExcept(namedParams, "zkHost", "solrConnection");
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection"));
 
     String fieldParam = params.get("field");
     if (fieldParam != null) {

@@ -31,6 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -127,7 +128,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        buildSolrParamsExcept(namedParams, "solrConnection", "zkHost", "aliases");
+        buildSolrParamsExcept(namedParams, Set.of("solrConnection", "zkHost", "aliases"));
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression

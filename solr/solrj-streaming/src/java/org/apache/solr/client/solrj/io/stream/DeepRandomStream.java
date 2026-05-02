@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -122,7 +123,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        buildSolrParamsExcept(namedParams, "zkHost", "solrConnection", "aliases");
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases"));
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression

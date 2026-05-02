@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -94,7 +95,7 @@ public class RandomStream extends TupleStream implements Expressible {
     // pull out known named params
     SolrParams params =
         buildSolrParamsExcept(
-            namedParams, "zkHost", "solrConnection", "buckets", "bucketSorts", "limit");
+            namedParams, Set.of("zkHost", "solrConnection", "buckets", "bucketSorts", "limit"));
 
     var solrConnection = buildSolrConnection(factory, expression, collectionName);
 

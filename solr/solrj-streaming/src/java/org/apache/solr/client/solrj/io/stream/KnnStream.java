@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -101,7 +102,7 @@ public class KnnStream extends TupleStream implements Expressible {
 
     // pull out known named params
     ModifiableSolrParams params =
-        buildSolrParamsExcept(namedParams, "solrConnection", "zkHost", "id");
+        buildSolrParamsExcept(namedParams, Set.of("solrConnection", "zkHost", "id"));
 
     String id = null;
     if (idExpression != null) {

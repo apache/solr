@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -118,7 +119,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams params =
-        buildSolrParamsExcept(namedParams, "x", "y", "dimensions", "zkHost", "solrConnection");
+        buildSolrParamsExcept(
+            namedParams, Set.of("x", "y", "dimensions", "zkHost", "solrConnection"));
 
     if (params.get("q") == null) {
       params.set("q", "*:*");

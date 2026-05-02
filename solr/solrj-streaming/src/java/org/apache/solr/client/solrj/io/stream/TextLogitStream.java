@@ -153,7 +153,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams params = buildSolrParamsExcept(namedParams, "solrConnection", "zkHost");
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, Set.of("solrConnection", "zkHost"));
 
     String name = params.get("name");
     if (name != null) {
