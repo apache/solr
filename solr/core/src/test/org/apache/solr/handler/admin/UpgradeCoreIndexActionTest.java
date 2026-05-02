@@ -87,7 +87,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
               CoreAdminParams.CORE,
               coreName),
           resp);
@@ -132,14 +132,14 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
 
     final Set<String> segmentsBeforeUpgrade = listSegmentNames(core);
 
-    final String requestId = "upgradecoreindex_async_1";
+    final String requestId = "upgradeindex_async_1";
     CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
     try {
       SolrQueryResponse submitResp = new SolrQueryResponse();
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
               CoreAdminParams.CORE,
               coreName,
               CommonAdminParams.ASYNC,
@@ -213,7 +213,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
               CoreAdminParams.CORE,
               coreName),
           resp);
@@ -360,7 +360,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
                   admin.handleRequestBody(
                       req(
                           CoreAdminParams.ACTION,
-                          CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+                          CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
                           CoreAdminParams.CORE,
                           coreName),
                       resp));
@@ -386,7 +386,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+              CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
               CoreAdminParams.CORE,
               coreName),
           resp);
@@ -413,7 +413,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
                   admin.handleRequestBody(
                       req(
                           CoreAdminParams.ACTION,
-                          CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+                          CoreAdminParams.CoreAdminAction.UPGRADEINDEX.toString(),
                           CoreAdminParams.CORE,
                           coreName),
                       resp));
