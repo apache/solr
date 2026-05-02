@@ -444,11 +444,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
           if (Boolean.valueOf(e)) {
-            elevationBuilder.addExcludedIds(Collections.singleton(id));
+            elevationBuilder.addExcludedIds(Set.of(id));
             continue;
           }
         }
-        elevationBuilder.addElevatedIds(Collections.singletonList(id));
+        elevationBuilder.addElevatedIds(List.of(id));
       }
 
       // It is allowed to define multiple times different elevations for the same query. In this

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.singletonMap;
-
 import jakarta.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
@@ -47,9 +45,9 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
         Utils.toJSONString(
             Map.of(
                 "authorization",
-                singletonMap("class", MockAuthorizationPlugin.class.getName()),
+                Map.of("class", MockAuthorizationPlugin.class.getName()),
                 "authentication",
-                singletonMap("class", MockAuthenticationPlugin.class.getName())));
+                Map.of("class", MockAuthenticationPlugin.class.getName())));
 
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))

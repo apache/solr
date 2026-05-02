@@ -295,7 +295,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
               .getZkClient()
               .create(
                   ZkStateReader.CLUSTER_PROPS,
-                  Utils.toJSON(Collections.singletonMap(URL_SCHEME, HTTPS)),
+                  Utils.toJSON(Map.of(URL_SCHEME, HTTPS)),
                   CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props =
@@ -2440,7 +2440,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       int connectionTimeoutMillis,
       int socketTimeoutMillis) {
     RandomizingCloudSolrClientBuilder builder =
-        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+        new RandomizingCloudSolrClientBuilder(List.of(zkHost), Optional.empty());
     if (shardLeadersOnly) {
       builder.sendUpdatesOnlyToShardLeaders();
     } else {

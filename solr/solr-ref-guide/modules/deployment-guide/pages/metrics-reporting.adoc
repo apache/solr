@@ -124,6 +124,17 @@ The `Overseer Registry` is initialized when running in SolrCloud mode and includ
 
 * Size of the Overseer queues (collection work queue and cluster state update queue)
 
+=== HTTP Client Registry
+
+Solr exposes metrics for the internal Jetty-based HTTP client used for distributed (shard) requests:
+
+[cols="2,1,3",options="header"]
+|===
+| Prometheus Metric Name | Type | Description
+| `solr_client_request_async_permits{state="max"}` | gauge | Configured maximum number of outstanding concurrent async HTTP requests (controlled by `solr.solrj.http.jetty.async_requests.max`, default 1000).
+| `solr_client_request_async_permits{state="available"}` | gauge | Number of async request permits currently available (i.e., not in use). When this approaches zero, new distributed requests will block waiting for a permit.
+|===
+
 == Core Level Metrics
 
 === Index Merge Metrics

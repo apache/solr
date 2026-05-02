@@ -145,7 +145,7 @@ public class SolrPackageLoader implements Closeable {
   public void notifyListeners(String pkg) {
     SolrPackage p = packageClassLoaders.get(pkg);
     if (p != null) {
-      List<SolrPackage> l = Collections.singletonList(p);
+      List<SolrPackage> l = List.of(p);
       for (SolrCore core : coreContainer.getCores()) {
         core.getPackageListeners().packagesUpdated(l);
       }

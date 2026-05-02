@@ -27,6 +27,7 @@
 
   <!-- Content Descriptions (cd) -->
   <string name="cd_back_navigation">Back Navigation</string>
+  <string name="cd_clear_field">Clear field</string>
   <string name="cd_solr_logo">Solr Logo</string>
 
   <!-- Descriptions (desc) -->
