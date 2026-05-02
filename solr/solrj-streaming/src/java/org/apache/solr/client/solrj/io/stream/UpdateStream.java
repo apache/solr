@@ -100,9 +100,8 @@ public class UpdateStream extends TupleStream implements Expressible {
   }
 
   public UpdateStream(
-      String collectionName,
+      CloudSolrClient.CloudSolrClientConnection solrConnection, String collectionName,
       TupleStream tupleSource,
-      CloudSolrClient.CloudSolrClientConnection solrConnection,
       int updateBatchSize)
       throws IOException {
     if (updateBatchSize <= 0) {
