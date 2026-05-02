@@ -100,8 +100,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
 
     // Validate there are no unknown parameters - solrConnection/zkHost and alias are
-    // namedParameter,
-    // so we don't need to count it twice
+    // namedParameter, so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
