@@ -85,7 +85,7 @@ public class SearchStream extends TupleStream implements Expressible {
 
     // pull out known named params
     ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(
+        buildSolrParamsExcept(
             namedParams, "zkHost", "solrConnection", "buckets", "bucketSorts", "limit");
 
     var solrConnection = buildSolrConnection(factory, expression, collectionName);

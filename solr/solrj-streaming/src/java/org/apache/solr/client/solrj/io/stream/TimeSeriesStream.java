@@ -196,8 +196,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
     // pull out known named params
     ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(
-            namedParams, "zkHost", "solrConnection", "start", "end", "gap");
+        buildSolrParamsExcept(namedParams, "zkHost", "solrConnection", "start", "end", "gap");
     if (params.get("q") == null) {
       params.set("q", "*:*");
     }

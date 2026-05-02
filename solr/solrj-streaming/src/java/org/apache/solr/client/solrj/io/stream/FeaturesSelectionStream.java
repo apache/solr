@@ -64,7 +64,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
-  protected Map<String, String> params;
+  protected ModifiableSolrParams params;
   protected Iterator<Tuple> tupleIterator;
   protected String field;
   protected String outcome;
@@ -78,7 +78,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   public FeaturesSelectionStream(
       CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      Map<String, String> params,
+      ModifiableSolrParams params,
       String field,
       String outcome,
       String featureSet,
@@ -131,7 +131,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               expression));
     }
 
-    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrConnection");
+    ModifiableSolrParams params = buildSolrParamsExcept(namedParams, "zkHost", "solrConnection");
 
     String fieldParam = params.get("field");
     if (fieldParam != null) {
@@ -195,8 +195,10 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     expression.addParameter(collection);
 
     // parameters
-    for (Map.Entry<String, String> param : params.entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+    for (Map.Entry<String, String[]> param : params) {
+      for (String paramValue : param.getValue()) {
+        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), paramValue));
+      }
     }
 
     expression.addParameter(new StreamExpressionNamedParameter("field", field));
@@ -216,7 +218,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   private void init(
       CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      Map<String, String> params,
+      ModifiableSolrParams params,
       String field,
       String outcome,
       String featureSet,
@@ -389,14 +391,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     private final String baseUrl;
     private final String outcome;
     private final String field;
-    private final Map<String, String> paramsMap;
+    private final ModifiableSolrParams paramsMap;
     private final int positiveLabel;
     private final int numTerms;
     private final SolrClientCache clientCache;
 
     public FeaturesSelectionCall(
         String baseUrl,
-        Map<String, String> paramsMap,
+        ModifiableSolrParams paramsMap,
         String field,
         String outcome,
         int positiveLabel,
@@ -419,7 +421,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       params.add(DISTRIB, "false");
       params.add("fq", "{!igain}");
 
-      for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
+      for (Map.Entry<String, String[]> entry : paramsMap) {
         params.add(entry.getKey(), entry.getValue());
       }
 

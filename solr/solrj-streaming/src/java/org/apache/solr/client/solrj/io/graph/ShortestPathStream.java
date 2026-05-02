@@ -195,7 +195,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(
+        buildSolrParamsExcept(
             namedParams,
             "solrConnection",
             "zkHost",

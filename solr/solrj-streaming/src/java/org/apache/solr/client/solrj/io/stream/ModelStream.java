@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,6 +34,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * The ModelStream retrieves a stored model from a Solr Cloud collection.
@@ -87,7 +87,7 @@ public class ModelStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrConnection");
+    SolrParams params = buildSolrParamsExcept(namedParams, "zkHost", "solrConnection");
 
     String modelID = params.get(ID);
     if (modelID == null) {

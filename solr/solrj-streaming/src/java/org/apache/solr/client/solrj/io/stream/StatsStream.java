@@ -118,8 +118,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     }
 
     // pull out known named params
-    ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection");
+    ModifiableSolrParams params = buildSolrParamsExcept(namedParams, "zkHost", "solrConnection");
     if (params.get("q") == null) {
       params.set("q", "*:*");
     }

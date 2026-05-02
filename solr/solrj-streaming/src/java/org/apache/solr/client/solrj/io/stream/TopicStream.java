@@ -186,8 +186,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     }
 
     ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(
-            namedParams, "zkHost", "solrConnection", ID, "checkpointEvery");
+        buildSolrParamsExcept(namedParams, "zkHost", "solrConnection", ID, "checkpointEvery");
 
     var solrConnection = buildSolrConnection(factory, expression, collectionName);
 

@@ -171,7 +171,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
     // pull out known named params
     ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(
+        buildSolrParamsExcept(
             namedParams,
             "zkHost",
             "solrConnection",

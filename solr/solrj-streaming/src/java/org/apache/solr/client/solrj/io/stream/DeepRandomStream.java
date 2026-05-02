@@ -122,7 +122,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection", "aliases");
+        buildSolrParamsExcept(namedParams, "zkHost", "solrConnection", "aliases");
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression

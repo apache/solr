@@ -127,7 +127,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        getModifiableSolrParamsWithExclusions(namedParams, "solrConnection", "zkHost", "aliases");
+        buildSolrParamsExcept(namedParams, "solrConnection", "zkHost", "aliases");
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression

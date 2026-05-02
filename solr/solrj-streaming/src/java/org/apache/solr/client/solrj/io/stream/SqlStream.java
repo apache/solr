@@ -89,7 +89,7 @@ public class SqlStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection", "aliases");
+        buildSolrParamsExcept(namedParams, "zkHost", "solrConnection", "aliases");
 
     var solrConnection = buildSolrConnection(factory, expression, collectionName);
 

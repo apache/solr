@@ -118,8 +118,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(
-            namedParams, "x", "y", "dimensions", "zkHost", "solrConnection");
+        buildSolrParamsExcept(namedParams, "x", "y", "dimensions", "zkHost", "solrConnection");
 
     if (params.get("q") == null) {
       params.set("q", "*:*");

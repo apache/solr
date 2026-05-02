@@ -22,10 +22,10 @@ import static org.apache.solr.common.params.CommonParams.ROWS;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -45,8 +45,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * @since 7.0.0
@@ -58,7 +58,7 @@ public class KnnStream extends TupleStream implements Expressible {
   };
 
   private CloudSolrClient.CloudSolrClientConnection solrConnection;
-  private Map<String, String> props;
+  private SolrParams props;
   private String collection;
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
@@ -69,7 +69,7 @@ public class KnnStream extends TupleStream implements Expressible {
       CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String id,
-      Map<String, String> props)
+      SolrParams props)
       throws IOException {
     init(solrConnection, collection, id, props);
   }
@@ -100,8 +100,8 @@ public class KnnStream extends TupleStream implements Expressible {
     }
 
     // pull out known named params
-    Map<String, String> params =
-        getMapWithExclusions(namedParams, "solrConnection", "zkHost", "id");
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, "solrConnection", "zkHost", "id");
 
     String id = null;
     if (idExpression != null) {
@@ -123,7 +123,7 @@ public class KnnStream extends TupleStream implements Expressible {
       CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       String id,
-      Map<String, String> props)
+      SolrParams props)
       throws IOException {
     this.solrConnection = solrConnection;
     this.props = props;
@@ -140,8 +140,10 @@ public class KnnStream extends TupleStream implements Expressible {
     expression.addParameter(collection);
 
     // parameters
-    for (Entry<String, String> param : props.entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+    for (Entry<String, String[]> param : props) {
+      for (String paramValue : param.getValue()) {
+        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), paramValue));
+      }
     }
 
     expression.addParameter(
@@ -166,10 +168,14 @@ public class KnnStream extends TupleStream implements Expressible {
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
     if (null != props) {
-      child.setExpression(
-          props.entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
-              .collect(Collectors.joining(",")));
+      String expression =
+          props.stream()
+              .flatMap(
+                  e ->
+                      Arrays.stream(e.getValue())
+                          .map(v -> String.format(Locale.ROOT, "%s=%s", e.getKey(), v)))
+              .collect(Collectors.joining(","));
+      child.setExpression(expression);
     }
     explanation.addChild(child);
 
@@ -196,7 +202,7 @@ public class KnnStream extends TupleStream implements Expressible {
       doCloseCache = false;
     }
 
-    var params = new ModifiableSolrParams(new MapSolrParams(this.props)); // copy
+    var params = new ModifiableSolrParams(props); // copy
 
     StringBuilder builder = new StringBuilder();
 
