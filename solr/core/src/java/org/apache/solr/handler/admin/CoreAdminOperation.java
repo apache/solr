@@ -40,7 +40,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SPLI
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SWAP;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UNLOAD;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UPGRADEINDEX;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
@@ -297,7 +297,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
-  UPGRADECOREINDEX_OP(UPGRADECOREINDEX, new UpgradeCoreIndexOp());
+  UPGRADEINDEX_OP(UPGRADEINDEX, new UpgradeCoreIndexOp());
 
   final CoreAdminParams.CoreAdminAction action;
   final CoreAdminOp fun;
