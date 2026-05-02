@@ -50,15 +50,19 @@ class FileSelectorStateHolder(
         uiState.update { it.copy(fileError = null) }
         scope.launch {
             when (val result = selectFileUseCase(extensions)) {
-                is SelectFileResult.Aborted -> Unit // Ignore
+                is SelectFileResult.Aborted -> Unit
+
+                // Ignore
                 is SelectFileResult.Success -> {
                     uiState.update {
                         it.copy(file = result.file, fileError = null)
                     }
                     events.emit(FileSelectorEvent.FileSelected(result.file))
                 }
+
                 is SelectFileResult.ValidationFailure ->
                     uiState.update { it.copy(fileError = result.error) }
+
                 is SelectFileResult.UnexpectedFailure -> {
                     // TODO Handle general error
                 }

@@ -72,7 +72,7 @@ class CreateConfigsetDialogTest {
 private object SuccessCreateConfigsetUseCase : CreateConfigsetUseCase {
     override suspend fun invoke(
         configsetName: String,
-        baseConfigset: String?
+        baseConfigset: String?,
     ): CreateConfigsetResult = CreateConfigsetResult.Success(Configset(name = configsetName))
 }
 

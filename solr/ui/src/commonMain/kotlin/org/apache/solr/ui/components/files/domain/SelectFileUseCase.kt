@@ -36,7 +36,7 @@ interface SelectFileUseCase {
 sealed interface SelectFileResult {
     data class Success(val file: PickedFile) : SelectFileResult
 
-    data object Aborted: SelectFileResult
+    data object Aborted : SelectFileResult
 
     data class ValidationFailure(val error: Error) : SelectFileResult
 

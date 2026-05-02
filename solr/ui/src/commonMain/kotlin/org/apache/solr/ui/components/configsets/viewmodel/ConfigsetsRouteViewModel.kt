@@ -38,7 +38,7 @@ class ConfigsetsRouteViewModel(
         ?: ConfigsetsTab.Overview
 
     val backStack: SnapshotStateList<ConfigsetsScene> = mutableStateListOf(
-        when(initialTab) {
+        when (initialTab) {
             ConfigsetsTab.Overview -> ConfigsetsScene.Overview
             ConfigsetsTab.Files -> ConfigsetsScene.Files
             ConfigsetsTab.Schema -> ConfigsetsScene.Schema

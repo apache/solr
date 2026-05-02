@@ -75,11 +75,13 @@ class ConfigsetsStateHolder(
             }
         }.onFailure {
             // TODO Notify user about loading issue
-            if (clearOnFailure) uiState.update {
-                it.copy(
-                    configsets = emptyList(),
-                    selectedConfigset = null,
-                )
+            if (clearOnFailure) {
+                uiState.update {
+                    it.copy(
+                        configsets = emptyList(),
+                        selectedConfigset = null,
+                    )
+                }
             }
         }
     }

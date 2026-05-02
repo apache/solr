@@ -23,7 +23,5 @@ import org.apache.solr.ui.domain.Configset
 internal class DefaultLoadConfigsetsUseCase(
     private val repository: ConfigsetsRepository,
 ) : LoadConfigsetsUseCase {
-    override suspend fun invoke(): Result<List<Configset>> {
-        return repository.loadConfigsets()
-    }
+    override suspend fun invoke(): Result<List<Configset>> = repository.loadConfigsets()
 }

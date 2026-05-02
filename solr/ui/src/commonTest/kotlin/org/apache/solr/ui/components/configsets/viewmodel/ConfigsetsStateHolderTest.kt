@@ -87,9 +87,7 @@ class ConfigsetsStateHolderTest {
         )
     }
 
-    private fun getLoadConfigsetsUseCase(configsets: List<String>) =
-        object : LoadConfigsetsUseCase {
-            override suspend fun invoke(): Result<List<Configset>> =
-                Result.success(configsets.map { Configset(name = it) })
-        }
+    private fun getLoadConfigsetsUseCase(configsets: List<String>) = object : LoadConfigsetsUseCase {
+        override suspend fun invoke(): Result<List<Configset>> = Result.success(configsets.map { Configset(name = it) })
+    }
 }

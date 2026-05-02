@@ -55,16 +55,14 @@ private class PreviewConfigsetsComponent(
         override suspend fun invoke(): Result<List<Configset>> = Result.success(configsets)
     }
 
-    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel =
-        ConfigsetsRouteViewModel()
+    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel = ConfigsetsRouteViewModel()
 
     override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(
         loadConfigsetsUseCase = loadConfigsetsUseCase,
         dispatchers = dispatchers,
     )
 
-    override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent =
-        PreviewConfigsetsOverviewComponent(configsets)
+    override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent = PreviewConfigsetsOverviewComponent(configsets)
 }
 
 private class PreviewConfigsetsOverviewComponent(configsets: List<Configset> = emptyList()) : ConfigsetsOverviewComponent {
@@ -88,20 +86,17 @@ private class PreviewConfigsetsOverviewComponent(configsets: List<Configset> = e
         dispatchers = dispatchers,
     )
 
-    override fun createCreateConfigsetViewModel(): CreateConfigsetViewModel =
-        CreateConfigsetViewModel(
-            createConfigsetUseCase = createConfigsetUseCase,
-            loadConfigsetsUseCase = loadConfigsetsUseCase,
-            dispatchers = dispatchers,
-        )
+    override fun createCreateConfigsetViewModel(): CreateConfigsetViewModel = CreateConfigsetViewModel(
+        createConfigsetUseCase = createConfigsetUseCase,
+        loadConfigsetsUseCase = loadConfigsetsUseCase,
+        dispatchers = dispatchers,
+    )
 
-    override fun createImportConfigsetViewModel(): ImportConfigsetViewModel =
-        ImportConfigsetViewModel(
-            importConfigsetUseCase = importConfigsetUseCase,
-            selectFileUseCase = selectFileUseCase,
-            dispatchers = dispatchers,
-        )
+    override fun createImportConfigsetViewModel(): ImportConfigsetViewModel = ImportConfigsetViewModel(
+        importConfigsetUseCase = importConfigsetUseCase,
+        selectFileUseCase = selectFileUseCase,
+        dispatchers = dispatchers,
+    )
 
-    override fun createConfigsetsOverviewViewModel(): ConfigsetsOverviewViewModel =
-        ConfigsetsOverviewViewModel()
+    override fun createConfigsetsOverviewViewModel(): ConfigsetsOverviewViewModel = ConfigsetsOverviewViewModel()
 }

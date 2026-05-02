@@ -25,7 +25,7 @@ import org.apache.solr.ui.utils.AppDispatchers
 class ConfigsetsViewModel(
     loadConfigsetsUseCase: LoadConfigsetsUseCase,
     dispatchers: AppDispatchers,
-): ViewModel() {
+) : ViewModel() {
 
     private val configsetsState = ConfigsetsStateHolder(
         scope = viewModelScope,

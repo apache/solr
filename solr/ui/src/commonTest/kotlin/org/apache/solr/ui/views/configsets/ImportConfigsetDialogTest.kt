@@ -104,13 +104,13 @@ class ImportConfigsetDialogTest {
 private object SuccessImportConfigsetUseCase : ImportConfigsetUseCase {
     override suspend fun invoke(
         configsetName: String,
-        file: PickedFile
+        file: PickedFile,
     ): ImportConfigsetResult = ImportConfigsetResult.Success(Configset(name = configsetName))
 }
 
 private class SuccessSelectFileUseCase(private val file: PickedFile) : SelectFileUseCase {
     override suspend fun invoke(
         extensions: List<String>,
-        maxSize: Int?
+        maxSize: Int?,
     ): SelectFileResult = SelectFileResult.Success(file)
 }

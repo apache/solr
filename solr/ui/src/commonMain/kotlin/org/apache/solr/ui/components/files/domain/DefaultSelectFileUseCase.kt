@@ -28,7 +28,7 @@ internal class DefaultSelectFileUseCase : SelectFileUseCase {
         val pickedFile = pickFile(extensions = extensions)
         // TODO Add additional validation
         return pickedFile?.let {
-            if (maxSize != null && it.bytes.size < maxSize || it.bytes.size < 0) {
+            if (maxSize != null && it.bytes.size > maxSize) {
                 SelectFileResult.ValidationFailure(SelectFileResult.Error.FileTooLarge)
             }
             SelectFileResult.Success(it)

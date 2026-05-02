@@ -27,8 +27,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetEvent
-import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.CreateConfigsetResult
+import org.apache.solr.ui.components.configsets.domain.CreateConfigsetUseCase
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.utils.AppDispatchers
 
@@ -65,8 +65,7 @@ class CreateConfigsetViewModel(
         it.copy(configsetName = configsetName)
     }
 
-    fun changeBaseConfigset(baseConfigset: String) =
-        configsetsState.selectConfigset(baseConfigset)
+    fun changeBaseConfigset(baseConfigset: String) = configsetsState.selectConfigset(baseConfigset)
 
     fun createConfigset() {
         uiState.update { it.copy(isLoading = true) }
@@ -83,8 +82,10 @@ class CreateConfigsetViewModel(
             when (result) {
                 is CreateConfigsetResult.Success ->
                     events.emit(CreateConfigsetEvent.ConfigsetCreated(result.configset))
+
                 is CreateConfigsetResult.ValidationFailure ->
                     uiState.update { it.copy(configsetNameError = result.error) }
+
                 is CreateConfigsetResult.UnexpectedFailure -> TODO()
             }
         }

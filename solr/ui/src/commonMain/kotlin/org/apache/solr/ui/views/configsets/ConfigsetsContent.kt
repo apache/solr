@@ -76,7 +76,7 @@ fun ConfigsetsScene(
                     ConfigsetsOverviewContent(
                         component = component.createConfigsetsOverviewComponent(),
                         configsetsViewModel = sharedConfigsetsViewModel,
-                        modifier = Modifier.fillMaxSize().padding(16.dp)
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
                     )
                 }
             },

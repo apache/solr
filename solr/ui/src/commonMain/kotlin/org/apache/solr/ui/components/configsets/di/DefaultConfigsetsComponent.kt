@@ -18,12 +18,12 @@
 package org.apache.solr.ui.components.configsets.di
 
 import io.ktor.client.HttpClient
-import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
-import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.components.configsets.data.HttpConfigsetsRepository
 import org.apache.solr.ui.components.configsets.domain.DefaultLoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.utils.AppDispatchers
 import org.apache.solr.ui.utils.platformDispatchers
 
@@ -32,7 +32,7 @@ import org.apache.solr.ui.utils.platformDispatchers
  *
  * This implementation is using HTTP for configsets operations.
  *
- * @param  httpClient The pre-configured HTTP client to use for user registration operations.
+ * @param httpClient The pre-configured HTTP client to use for user registration operations.
  */
 class DefaultConfigsetsComponent(
     httpClient: HttpClient,
@@ -47,12 +47,9 @@ class DefaultConfigsetsComponent(
         DefaultLoadConfigsetsUseCase(configsetsRepository)
     }
 
-    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel =
-        ConfigsetsRouteViewModel()
+    override fun createConfigsetsRouteViewModel(): ConfigsetsRouteViewModel = ConfigsetsRouteViewModel()
 
-    override fun createConfigsetsViewModel(): ConfigsetsViewModel =
-        ConfigsetsViewModel(loadConfigsetsUseCase, dispatchers)
+    override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(loadConfigsetsUseCase, dispatchers)
 
-    override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent =
-        DefaultConfigsetsOverviewComponent(configsetsRepository)
+    override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent = DefaultConfigsetsOverviewComponent(configsetsRepository)
 }

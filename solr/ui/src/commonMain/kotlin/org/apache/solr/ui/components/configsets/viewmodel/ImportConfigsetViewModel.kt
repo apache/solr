@@ -68,7 +68,7 @@ class ImportConfigsetViewModel(
         viewModelScope.launch {
             fileSelectorState.events.collect { event ->
                 when (event) {
-                    is FileSelectorEvent.FileSelected -> if(!uiState.value.configsetNameChanged) {
+                    is FileSelectorEvent.FileSelected -> if (!uiState.value.configsetNameChanged) {
                         setFileNameAsConfigset(event.file)
                     }
                 }
@@ -103,7 +103,8 @@ class ImportConfigsetViewModel(
                     it.copy(
                         configsetNameError = when (val error = result.error) {
                             ImportConfigsetResult.Error.InvalidConfigsetName,
-                            ImportConfigsetResult.Error.DuplicateConfigset -> error
+                            ImportConfigsetResult.Error.DuplicateConfigset,
+                            -> error
                         },
                     )
                 }

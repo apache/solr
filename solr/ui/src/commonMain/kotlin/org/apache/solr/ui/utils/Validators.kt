@@ -31,4 +31,4 @@ internal val configsetNameRegex = "[a-zA-Z0-9._-]+".toRegex()
  * Note that this is a maximum length used in the UI only and does not represent the actual allowed
  * length for configset names.
  */
-internal val MAX_CONFIGSET_NAME_LENGTH = 256
+internal const val MAX_CONFIGSET_NAME_LENGTH = 256

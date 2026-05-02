@@ -45,6 +45,7 @@ class HttpConfigsetsRepository(private val httpClient: HttpClient) : ConfigsetsR
                 // Success result will not contain any information,
                 // therefore, create the configset from input
                 Result.success(Configset(name))
+
             else -> Result.failure(Exception("Unknown Error"))
         }
     }
@@ -67,6 +68,7 @@ class HttpConfigsetsRepository(private val httpClient: HttpClient) : ConfigsetsR
                 val data = response.body<ListConfigsets>()
                 Result.success(data.configSets.map { Configset(name = it) })
             }
+
             else -> Result.failure(Exception("Unknown Error"))
             // TODO Add proper error handling
         }

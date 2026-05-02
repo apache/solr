@@ -38,7 +38,7 @@ sealed interface CreateConfigsetEvent {
     /**
      * Event that is omitted when the creation process is aborted.
      */
-    data object ConfigsetCreationAborted: CreateConfigsetEvent
+    data object ConfigsetCreationAborted : CreateConfigsetEvent
 
     /**
      * Event that is omitted when the creation process input form is toggled. It can be either
@@ -47,5 +47,5 @@ sealed interface CreateConfigsetEvent {
      * @property useFileInput Whether the file input form is used (true) or the text field form
      * instead (false).
      */
-    data class ConfigsetCreateToggleInputForm(val useFileInput: Boolean): CreateConfigsetEvent
+    data class ConfigsetCreateToggleInputForm(val useFileInput: Boolean) : CreateConfigsetEvent
 }

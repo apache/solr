@@ -62,8 +62,7 @@ class ConfigsetsOverviewViewModel : ViewModel() {
         TODO()
     }
 
-    private fun SnapshotStateList<ConfigsetsOverviewEntry>.clearDialogs() =
-        removeAll { entry -> entry is ConfigsetsOverviewEntry.ConfigsetsOverviewDialog }
+    private fun SnapshotStateList<ConfigsetsOverviewEntry>.clearDialogs() = removeAll { entry -> entry is ConfigsetsOverviewEntry.ConfigsetsOverviewDialog }
 }
 
 @Serializable

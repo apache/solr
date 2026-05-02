@@ -85,9 +85,9 @@ fun ImportConfigsetDialog(
             )
         }
 
-        val canImportConfigset = fileSelectorModel.file != null
-            && model.configsetName.isNotBlank()
-            && !model.isLoading
+        val canImportConfigset = fileSelectorModel.file != null &&
+            model.configsetName.isNotBlank() &&
+            !model.isLoading
 
         Row(
             modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),

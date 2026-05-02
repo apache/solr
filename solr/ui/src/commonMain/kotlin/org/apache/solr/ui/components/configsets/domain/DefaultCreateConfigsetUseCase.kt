@@ -30,13 +30,13 @@ internal class DefaultCreateConfigsetUseCase(
     ): CreateConfigsetResult {
         if (!configsetName.matches(configsetNameRegex)) {
             return CreateConfigsetResult.ValidationFailure(
-                error = CreateConfigsetResult.Error.ConfigsetNameContainsInvalidCharacters
+                error = CreateConfigsetResult.Error.ConfigsetNameContainsInvalidCharacters,
             )
         }
 
         if (configsetName.length > MAX_CONFIGSET_NAME_LENGTH) {
             return CreateConfigsetResult.ValidationFailure(
-                error = CreateConfigsetResult.Error.ConfigsetNameTooLong
+                error = CreateConfigsetResult.Error.ConfigsetNameTooLong,
             )
         }
 

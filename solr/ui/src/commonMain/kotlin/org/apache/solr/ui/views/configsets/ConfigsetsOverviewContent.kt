@@ -76,10 +76,16 @@ fun ConfigsetsOverviewContent(
     val createConfigsetEventCollector: (CreateConfigsetEvent) -> Unit = { event ->
         when (event) {
             is CreateConfigsetEvent.ConfigsetCreated -> onConfigsetCreated(event.configset)
+
             is CreateConfigsetEvent.ConfigsetCreationAborted -> viewModel.closeDialog()
+
             is CreateConfigsetEvent.ConfigsetCreateToggleInputForm ->
-                if (event.useFileInput) viewModel.openImportConfigsetDialog()
-                else viewModel.openCreateConfigsetDialog()
+                if (event.useFileInput) {
+                    viewModel.openImportConfigsetDialog()
+                } else {
+                    viewModel.openCreateConfigsetDialog()
+                }
+
             else -> Unit
         }
     }
@@ -89,8 +95,9 @@ fun ConfigsetsOverviewContent(
         backStack = viewModel.backStack,
         sceneStrategies = listOf(DialogSceneStrategy(), SinglePaneSceneStrategy()),
         onBack = {
-            if (viewModel.backStack.last() is ConfigsetsOverviewEntry.ConfigsetsOverviewDialog)
+            if (viewModel.backStack.last() is ConfigsetsOverviewEntry.ConfigsetsOverviewDialog) {
                 viewModel.backStack.removeLastOrNull()
+            }
         },
         entryDecorators = listOf(rememberViewModelStoreNavEntryDecorator()),
         entryProvider = entryProvider {
@@ -120,17 +127,17 @@ fun ConfigsetsOverviewContent(
 
                 ImportConfigsetDialog(viewModel = importViewModel)
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun OverviewContent(
     viewModel: ConfigsetsViewModel,
-    selectedConfigset: String? = null,
     onOpenCreateConfigsetDialog: () -> Unit,
     onEditSolrConfig: (String) -> Unit,
     modifier: Modifier = Modifier,
+    selectedConfigset: String? = null,
 ) = Row(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(8.dp),
