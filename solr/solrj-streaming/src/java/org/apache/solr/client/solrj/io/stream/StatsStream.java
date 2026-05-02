@@ -64,7 +64,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   private Metric[] metrics;
   private Tuple tuple;
   private int index;
-  private String solrCloud;
+  private String solrConnection;
   private SolrParams params;
   private String collection;
 
@@ -73,9 +73,9 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   private transient StreamContext context;
   protected transient TupleStream parallelizedStream;
 
-  public StatsStream(String solrCloud, String collection, SolrParams params, Metric[] metrics)
+  public StatsStream(String solrConnection, String collection, SolrParams params, Metric[] metrics)
       throws IOException {
-    init(collection, params, metrics, solrCloud);
+    init(collection, params, metrics, solrConnection);
   }
 
   public StatsStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -114,25 +114,23 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
     // pull out known named params
     ModifiableSolrParams params =
-        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrCloud");
+        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection");
     if (params.get("q") == null) {
       params.set("q", "*:*");
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, params, metrics, solrCloud);
+    init(collectionName, params, metrics, solrConnection);
   }
 
   public String getCollection() {
     return this.collection;
   }
 
-  private void init(String collection, SolrParams params, Metric[] metrics, String solrCloud)
+  private void init(String collection, SolrParams params, Metric[] metrics, String solrConnection)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.metrics = metrics;
     this.params = params;
@@ -162,8 +160,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
       expression.addParameter(metric.toExpression(factory));
     }
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
@@ -224,7 +221,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     // Parallelize the stats stream across multiple collections for an alias using plist if possible
     if (shardsMap == null && params.getBool(TIERED_PARAM, defaultTieredEnabled)) {
       ClusterStateProvider clusterStateProvider =
-          clientCache.getCloudSolrClient(solrCloud).getClusterStateProvider();
+          clientCache.getCloudSolrClient(solrConnection).getClusterStateProvider();
       final List<String> resolved =
           clusterStateProvider != null ? clusterStateProvider.resolveAlias(collection) : null;
       if (resolved != null && resolved.size() > 1) {
@@ -246,7 +243,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
     if (shardsMap == null) {
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
-      var cloudSolrClient = clientCache.getCloudSolrClient(solrCloud);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       try {
         NamedList<?> response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);
@@ -400,7 +397,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
     TupleStream[] streams = new TupleStream[partitions.size()];
     for (int p = 0; p < streams.length; p++) {
-      streams[p] = new StatsStream(solrCloud, partitions.get(p), withoutTieredParam, metrics);
+      streams[p] = new StatsStream(solrConnection, partitions.get(p), withoutTieredParam, metrics);
     }
     return streams;
   }

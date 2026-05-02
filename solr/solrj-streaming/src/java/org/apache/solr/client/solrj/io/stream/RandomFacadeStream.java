@@ -54,7 +54,7 @@ public class RandomFacadeStream extends TupleStream implements Expressible {
 
     // pull out known named params
     Map<String, String> params =
-        getMapWithExclusions(namedParams, "solrCloud", "zkHost", "buckets", "bucketSorts", "limit");
+        getMapWithExclusions(namedParams, "solrConnection", "zkHost", "buckets", "bucketSorts", "limit");
 
     // Add sensible defaults
 
@@ -70,23 +70,22 @@ public class RandomFacadeStream extends TupleStream implements Expressible {
       params.put("rows", "500");
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
     if (params.get(ROWS) != null) {
       int rows = Integer.parseInt(params.get(ROWS));
       if (rows >= 5000) {
         DeepRandomStream deepRandomStream = new DeepRandomStream();
-        deepRandomStream.init(collectionName, solrCloud, toSolrParams(params));
+        deepRandomStream.init(collectionName, solrConnection, toSolrParams(params));
         this.innerStream = deepRandomStream;
       } else {
         RandomStream randomStream = new RandomStream();
-        randomStream.init(solrCloud, collectionName, params);
+        randomStream.init(solrConnection, collectionName, params);
         this.innerStream = randomStream;
       }
     } else {
       RandomStream randomStream = new RandomStream();
-      randomStream.init(solrCloud, collectionName, params);
+      randomStream.init(solrConnection, collectionName, params);
       this.innerStream = randomStream;
     }
   }

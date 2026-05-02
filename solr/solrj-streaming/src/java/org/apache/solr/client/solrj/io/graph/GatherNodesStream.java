@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GatherNodesStream extends TupleStream implements Expressible {
 
-  private String solrCloud;
+  private String solrConnection;
   private String collection;
   private StreamContext streamContext;
   private Map<String, String> queryParams;
@@ -97,7 +97,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public GatherNodesStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       String traverseFrom,
@@ -110,7 +110,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       int maxDocFreq) {
 
     init(
-        solrCloud,
+        solrConnection,
         collection,
         tupleStream,
         traverseFrom,
@@ -276,7 +276,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         getMapWithExclusions(
             namedParams,
             "zkHost",
-            "solrCloud",
+            "solrConnection",
             "gather",
             "walk",
             "scatter",
@@ -285,12 +285,10 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             "window",
             "lag");
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
     init(
-        solrCloud,
+        solrConnection,
         collectionName,
         stream,
         traverseFrom,
@@ -307,7 +305,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       String traverseFrom,
@@ -321,7 +319,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       int window,
       int lag,
       int interval) {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.tupleStream = tupleStream;
     this.traverseFrom = traverseFrom;
@@ -386,7 +384,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
     expression.addParameter(new StreamExpressionNamedParameter("gather", gather));
     if (maxDocFreq > -1) {
       expression.addParameter(
@@ -563,7 +561,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       try {
         stream =
             new UniqueStream(
-                new CloudSolrStream(solrCloud, collection, joinSParams),
+                new CloudSolrStream(solrConnection, collection, joinSParams),
                 new MultipleFieldEqualitor(
                     new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));
         stream.setStreamContext(streamContext);

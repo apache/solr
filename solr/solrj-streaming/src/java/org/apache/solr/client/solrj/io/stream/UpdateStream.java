@@ -49,7 +49,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   // field name in summary tuple for #docs updated in batch
   public static String BATCH_INDEXED_FIELD_NAME = "batchIndexed";
   private String collection;
-  protected String solrCloud;
+  protected String solrConnection;
   private int updateBatchSize;
 
   /**
@@ -72,7 +72,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     verifyCollectionName(collectionName, expression);
 
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
     int updateBatchSize = extractBatchSize(expression, factory);
     pruneVersionField =
@@ -94,25 +94,25 @@ public class UpdateStream extends TupleStream implements Expressible {
     init(
         collectionName,
         factory.constructStream(sourceStreamExpression),
-        solrCloud,
+        solrConnection,
         updateBatchSize);
   }
 
   public UpdateStream(
-      String collectionName, TupleStream tupleSource, String solrCloud, int updateBatchSize)
+      String collectionName, TupleStream tupleSource, String solrConnection, int updateBatchSize)
       throws IOException {
     if (updateBatchSize <= 0) {
       throw new IOException(
           String.format(Locale.ROOT, "batchSize '%d' must be greater than 0.", updateBatchSize));
     }
     pruneVersionField = defaultPruneVersionField();
-    init(collectionName, tupleSource, solrCloud, updateBatchSize);
+    init(collectionName, tupleSource, solrConnection, updateBatchSize);
   }
 
   private void init(
-      String collectionName, TupleStream tupleSource, String solrCloud, int updateBatchSize) {
+      String collectionName, TupleStream tupleSource, String solrConnection, int updateBatchSize) {
     this.collection = collectionName;
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.updateBatchSize = updateBatchSize;
     this.tupleSource = new PushBackStream(tupleSource);
   }
@@ -187,7 +187,7 @@ public class UpdateStream extends TupleStream implements Expressible {
       throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(collection);
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
     expression.addParameter(
         new StreamExpressionNamedParameter("batchSize", Integer.toString(updateBatchSize)));
 
@@ -326,7 +326,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     }
 
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(solrCloud);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       cloudSolrClient.add(collection, documentBatch);
     } catch (SolrServerException | IOException e) {
       // TODO: it would be nice if there was an option to "skipFailedBatches"

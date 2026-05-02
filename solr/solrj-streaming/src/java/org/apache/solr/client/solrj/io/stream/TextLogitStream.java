@@ -61,7 +61,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   protected String collection;
   protected Map<String, String> params;
   protected String field;
@@ -87,7 +87,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   private double lastError = 0;
 
   public TextLogitStream(
-      String solrCloud,
+      String solrConnection,
       String collectionName,
       Map<String, String> params,
       String name,
@@ -102,7 +102,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     init(
         collectionName,
-        solrCloud,
+        solrConnection,
         params,
         name,
         field,
@@ -115,7 +115,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
         iteration);
   }
 
-  /** logit(collection, solrCloud="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
+  /** logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
   public TextLogitStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
@@ -124,9 +124,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
         factory.getExpressionOperandsRepresentingTypes(
             expression, Expressible.class, TupleStream.class);
 
-    // Validate there are no unknown parameters - solrCloud/zkHost and alias are namedParameter, so
-    // we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size() + streamExpressions.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -150,7 +149,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = getMapWithExclusions(namedParams, "solrCloud", "zkHost");
+    Map<String, String> params = getMapWithExclusions(namedParams, "solrConnection", "zkHost");
 
     String name = params.get("name");
     if (name != null) {
@@ -223,13 +222,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
       params.remove("weights");
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    // solrConnection, optional - if not provided then will look into factory list to get
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
     // We've got all the required items
     init(
         collectionName,
-        solrCloud,
+        solrConnection,
         params,
         name,
         feature,
@@ -293,15 +292,14 @@ public class TextLogitStream extends TupleStream implements Expressible {
     expression.addParameter(
         new StreamExpressionNamedParameter("threshold", Double.toString(threshold)));
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
 
   private void init(
       String collectionName,
-      String solrCloud,
+      String solrConnection,
       Map<String, String> params,
       String name,
       String feature,
@@ -313,7 +311,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
       int maxIterations,
       int iteration)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = params;
     this.name = name;
@@ -354,7 +352,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected List<String> getShardUrls() throws IOException {
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(solrCloud);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();

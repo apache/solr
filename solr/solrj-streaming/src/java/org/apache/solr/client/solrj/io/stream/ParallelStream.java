@@ -50,24 +50,24 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   private transient StreamFactory streamFactory;
 
   public ParallelStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       int workers,
       StreamComparator comp)
       throws IOException {
-    init(solrCloud, collection, tupleStream, workers, comp);
+    init(solrConnection, collection, tupleStream, workers, comp);
   }
 
   public ParallelStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       String expressionString,
       int workers,
       StreamComparator comp)
       throws IOException {
     TupleStream tStream = this.streamFactory.constructStream(expressionString);
-    init(solrCloud, collection, tStream, workers, comp);
+    init(solrConnection, collection, tStream, workers, comp);
   }
 
   public void setStreamFactory(StreamFactory streamFactory) {
@@ -83,15 +83,15 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
             expression, Expressible.class, TupleStream.class);
     StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, SORT);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    StreamExpressionNamedParameter solrCloudExpression =
-        factory.getNamedOperand(expression, "solrCloud");
+    StreamExpressionNamedParameter solrConnectionExpression =
+        factory.getNamedOperand(expression, "solrConnection");
 
     // validate expression contains only what we want.
 
     if (expression.getParameters().size()
         != streamExpressions.size()
             + 3
-            + (null != zkHostExpression || null != solrCloudExpression ? 1 : 0)) {
+            + (null != zkHostExpression || null != solrConnectionExpression ? 1 : 0)) {
       throw new IOException(
           String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
@@ -156,26 +156,25 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
-    // We've got all the required items
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
+
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
     StreamComparator comp =
         factory.constructComparator(
             ((StreamExpressionValue) sortExpression.getParameter()).getValue(),
             FieldComparator.class);
     streamFactory = factory;
-    init(solrCloud, collectionName, stream, workersInt, comp);
+    init(solrConnection, collectionName, stream, workersInt, comp);
   }
 
   private void init(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       int workers,
       StreamComparator comp)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.workers = workers;
     this.comp = comp;
@@ -218,8 +217,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     // sort
     expression.addParameter(new StreamExpressionNamedParameter(SORT, comp.toExpression(factory)));
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
@@ -288,7 +286,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     try {
       Object pushStream = ((Expressible) tupleStream).toExpression(streamFactory);
 
-      List<String> shardUrls = getShards(this.solrCloud, this.collection, this.streamContext);
+      List<String> shardUrls = getShards(this.solrConnection, this.collection, this.streamContext);
 
       for (int w = 0; w < workers; w++) {
         ModifiableSolrParams paramsLoc = new ModifiableSolrParams();

@@ -53,9 +53,8 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - solrCloud/zkHost and alias are namedParameter, so
-    // we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are namedParameter,
+    // so we don't  need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -71,7 +70,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrCloud", "aliases");
+        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection", "aliases");
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression
@@ -92,11 +91,9 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       }
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, solrCloud, mParams);
+    init(collectionName, solrConnection, mParams);
   }
 
   @Override
@@ -120,8 +117,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       }
     }
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     // aliases
     if (null != fieldMappings && 0 != fieldMappings.size()) {

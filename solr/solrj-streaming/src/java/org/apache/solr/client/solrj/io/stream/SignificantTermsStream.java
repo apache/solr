@@ -55,7 +55,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   protected String collection;
   protected Map<String, String> params;
   protected Iterator<Tuple> tupleIterator;
@@ -70,7 +70,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   private transient StreamContext streamContext;
 
   public SignificantTermsStream(
-      String solrCloud,
+      String solrConnection,
       String collectionName,
       Map<String, String> params,
       String field,
@@ -80,7 +80,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       int numTerms)
       throws IOException {
 
-    init(collectionName, solrCloud, params, field, minDocFreq, maxDocFreq, minTermLength, numTerms);
+    init(collectionName, solrConnection, params, field, minDocFreq, maxDocFreq, minTermLength, numTerms);
   }
 
   public SignificantTermsStream(StreamExpression expression, StreamFactory factory)
@@ -89,9 +89,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
 
-    // Validate there are no unknown parameters - solrCloud/zkHost and alias are namedParameter, so
-    // we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -115,7 +114,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrCloud");
+    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrConnection");
 
     String fieldParam = params.get("field");
     if (fieldParam != null) {
@@ -152,13 +151,11 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       params.remove("maxDocFreq");
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
     init(
         collectionName,
-        solrCloud,
+        solrConnection,
         params,
         fieldParam,
         minDocFreq,
@@ -193,15 +190,14 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     expression.addParameter(
         new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)));
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
 
   private void init(
       String collectionName,
-      String solrCloud,
+      String solrConnection,
       Map<String, String> params,
       String field,
       float minDocFreq,
@@ -209,7 +205,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       int minTermLength,
       int numTerms)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = params;
     this.field = field;
@@ -288,7 +284,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (NamedList<?> fullResp : callShards(getShards(solrCloud, collection, streamContext))) {
+        for (NamedList<?> fullResp : callShards(getShards(solrConnection, collection, streamContext))) {
           Map<?, ?> stResp = (Map<?, ?>) fullResp.get("significantTerms");
 
           @SuppressWarnings({"unchecked"})

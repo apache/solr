@@ -66,7 +66,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   protected String collection;
   protected ModifiableSolrParams params;
   protected Map<String, String> fieldMappings;
@@ -81,14 +81,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected CloudSolrStream() {}
 
   /**
-   * @param solrCloud Zookeeper or HTTPS(s) ensemble connection string
+   * @param solrConnection Zookeeper or HTTPS(s) ensemble connection string
    * @param collectionName Name of the collection to operate on
    * @param params Map&lt;String, String[]&gt; of parameter/value pairs
    * @throws IOException Something went wrong
    */
-  public CloudSolrStream(String solrCloud, String collectionName, SolrParams params)
+  public CloudSolrStream(String solrConnection, String collectionName, SolrParams params)
       throws IOException {
-    init(collectionName, solrCloud, params);
+    init(collectionName, solrConnection, params);
   }
 
   public CloudSolrStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -106,9 +106,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - solrCloud/zkHost and alias are namedParameter, so
-    // we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -124,7 +123,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        getModifiableSolrParamsWithExclusions(namedParams, "solrCloud", "zkHost", "aliases");
+        getModifiableSolrParamsWithExclusions(namedParams, "solrConnection", "zkHost", "aliases");
 
     // Aliases, optional, if provided then need to split
     if (null != aliasExpression
@@ -145,11 +144,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, solrCloud, mParams);
+    init(collectionName, solrConnection, mParams);
   }
 
   @Override
@@ -177,8 +174,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
     }
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     // aliases
     if (null != fieldMappings && 0 != fieldMappings.size()) {
@@ -229,8 +225,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  void init(String collectionName, String solrCloud, SolrParams params) throws IOException {
-    this.solrCloud = solrCloud;
+  void init(String collectionName, String solrConnection, SolrParams params) throws IOException {
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
 
@@ -372,17 +368,17 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       if (streamContext != null && streamContext.get("shards") != null) {
         // stream of shard url with core
         final List<String> shards =
-            getShards(this.solrCloud, this.collection, this.streamContext, mParams);
+            getShards(this.solrConnection, this.collection, this.streamContext, mParams);
         if (shards.isEmpty())
-          throw new IOException("No shards available from ZooKeeper: " + this.solrCloud);
+          throw new IOException("No shards available from ZooKeeper: " + this.solrConnection);
         streamOfSolrStream = shards.stream().map(s -> new SolrStream(s, mParams));
       } else {
         // stream of replicas to reuse the same SolrHttpClient per baseUrl
         // avoids re-parsing data we already have in the replicas
         final List<Replica> replicas =
-            getReplicas(this.solrCloud, this.collection, this.streamContext, mParams);
+            getReplicas(this.solrConnection, this.collection, this.streamContext, mParams);
         if (replicas.isEmpty())
-          throw new IOException("No replicas available from ZooKeeper: " + this.solrCloud);
+          throw new IOException("No replicas available from ZooKeeper: " + this.solrConnection);
         streamOfSolrStream =
             replicas.stream().map(r -> new SolrStream(r.getBaseUrl(), mParams, r.getCoreName()));
       }

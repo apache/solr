@@ -61,7 +61,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   protected String collection;
   protected Map<String, String> params;
   protected Iterator<Tuple> tupleIterator;
@@ -75,7 +75,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   private transient boolean doCloseCache;
 
   public FeaturesSelectionStream(
-      String solrCloud,
+      String solrConnection,
       String collectionName,
       Map<String, String> params,
       String field,
@@ -85,19 +85,18 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       int numTerms)
       throws IOException {
 
-    init(collectionName, solrCloud, params, field, outcome, featureSet, positiveLabel, numTerms);
+    init(collectionName, solrConnection, params, field, outcome, featureSet, positiveLabel, numTerms);
   }
 
-  /** logit(collection, solrCloud="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
+  /** logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
   public FeaturesSelectionStream(StreamExpression expression, StreamFactory factory)
       throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
 
-    // Validate there are no unknown parameters - solrCloud and alias are namedParameter, so we
-    // don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection and alias are namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -121,7 +120,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               expression));
     }
 
-    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrCloud");
+    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrConnection");
 
     String fieldParam = params.get("field");
     if (fieldParam != null) {
@@ -160,13 +159,11 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       throw new IOException("numTerms param cannot be null for FeaturesSelectionStream");
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
     init(
         collectionName,
-        solrCloud,
+        solrConnection,
         params,
         fieldParam,
         outcomeParam,
@@ -199,15 +196,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     expression.addParameter(
         new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
 
   private void init(
       String collectionName,
-      String solrCloud,
+      String solrConnection,
       Map<String, String> params,
       String field,
       String outcome,
@@ -215,7 +211,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       int positiveLabel,
       int numTopTerms)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = params;
     this.field = field;
@@ -248,7 +244,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private List<String> getShardUrls() throws IOException {
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(solrCloud);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 

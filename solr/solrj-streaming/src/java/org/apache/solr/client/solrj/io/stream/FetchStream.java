@@ -53,7 +53,7 @@ public class FetchStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   private TupleStream stream;
   private StreamContext streamContext;
   private Iterator<Tuple> tuples;
@@ -68,14 +68,14 @@ public class FetchStream extends TupleStream implements Expressible {
   private boolean appendKey = true;
 
   public FetchStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       String on,
       String fieldList,
       int batchSize)
       throws IOException {
-    init(solrCloud, collection, tupleStream, on, fieldList, batchSize);
+    init(solrConnection, collection, tupleStream, on, fieldList, batchSize);
   }
 
   public FetchStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -121,20 +121,20 @@ public class FetchStream extends TupleStream implements Expressible {
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
 
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(solrCloud, collectionName, stream, on, fl, batchSize);
+    init(solrConnection, collectionName, stream, on, fl, batchSize);
   }
 
   private void init(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       String on,
       String fieldList,
       int batchSize)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.stream = tupleStream;
     this.batchSize = batchSize;
@@ -247,7 +247,7 @@ public class FetchStream extends TupleStream implements Expressible {
       params.add("rows", Integer.toString(batchSize));
       params.add(SORT, "_version_ desc");
 
-      CloudSolrStream cloudSolrStream = new CloudSolrStream(solrCloud, collection, params);
+      CloudSolrStream cloudSolrStream = new CloudSolrStream(solrConnection, collection, params);
       StreamContext newContext = new StreamContext();
       newContext.setSolrClientCache(streamContext.getSolrClientCache());
       newContext.setObjectCache(streamContext.getObjectCache());

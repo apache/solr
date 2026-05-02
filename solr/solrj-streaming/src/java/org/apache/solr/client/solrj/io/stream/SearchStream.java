@@ -48,7 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 
 public class SearchStream extends TupleStream implements Expressible {
 
-  private String solrCloud;
+  private String solrConnection;
   private ModifiableSolrParams params;
   private String collection;
   private Iterator<SolrDocument> documentIterator;
@@ -85,17 +85,15 @@ public class SearchStream extends TupleStream implements Expressible {
     // pull out known named params
     ModifiableSolrParams params =
         getModifiableSolrParamsWithExclusions(
-            namedParams, "zkHost", "solrCloud", "buckets", "bucketSorts", "limit");
+            namedParams, "zkHost", "solrConnection", "buckets", "bucketSorts", "limit");
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
-    init(solrCloud, collectionName, params);
+    init(solrConnection, collectionName, params);
   }
 
-  void init(String solrCloud, String collection, ModifiableSolrParams params) throws IOException {
-    this.solrCloud = solrCloud;
+  void init(String solrConnection, String collection, ModifiableSolrParams params) throws IOException {
+    this.solrConnection = solrConnection;
     this.params = params;
 
     if (this.params.get(CommonParams.Q) == null) {
@@ -129,8 +127,7 @@ public class SearchStream extends TupleStream implements Expressible {
       }
     }
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
@@ -178,7 +175,7 @@ public class SearchStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(solrCloud);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       QueryResponse response = request.process(cloudSolrClient, collection);
       SolrDocumentList docs = response.getResults();
       documentIterator = docs.iterator();

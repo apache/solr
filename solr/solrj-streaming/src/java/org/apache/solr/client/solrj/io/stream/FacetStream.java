@@ -80,7 +80,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private FieldComparator[] bucketSorts;
   private List<Tuple> tuples = new ArrayList<Tuple>();
   private int index;
-  private String solrCloud;
+  private String solrConnection;
   private ModifiableSolrParams params;
   private String collection;
   private boolean resortNeeded;
@@ -92,7 +92,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   protected transient StreamContext context;
 
   public FacetStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       SolrParams params,
       Bucket[] buckets,
@@ -117,7 +117,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         null,
         true,
         0,
-        solrCloud);
+        solrConnection);
   }
 
   public FacetStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -173,7 +173,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         getModifiableSolrParamsWithExclusions(
             namedParams,
             "zkHost",
-            "solrCloud",
+            "solrConnection",
             "buckets",
             "bucketSorts",
             "bucketSizeLimit",
@@ -356,10 +356,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       }
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
     init(
         collectionName,
         params,
@@ -373,7 +371,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         methodStr,
         bucketLimitSet,
         overfetchInt,
-        solrCloud);
+        solrConnection);
   }
 
   // see usage in parallelize method
@@ -478,9 +476,9 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       String method,
       boolean serializeBucketSizeLimit,
       int overfetch,
-      String solrCloud)
+      String solrConnection)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.params = new ModifiableSolrParams(params);
     this.buckets = buckets;
     this.metrics = metrics;
@@ -587,8 +585,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       expression.addParameter(new StreamExpressionNamedParameter("method", this.method));
     }
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
@@ -642,7 +639,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     } else {
       doCloseCache = false;
     }
-    var cloudSolrClient = clientCache.getCloudSolrClient(solrCloud);
+    var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
 
     // Parallelize the facet expression across multiple collections for an alias using plist if
     // possible
@@ -1011,7 +1008,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           method,
           serializeBucketSizeLimit,
           overfetch,
-          solrCloud);
+          solrConnection);
       streams[p] = cloned;
     }
     return streams;

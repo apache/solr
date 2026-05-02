@@ -66,14 +66,14 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   private Metric[] metrics;
   private List<Tuple> tuples = new ArrayList<>();
   private int index;
-  private String solrCloud;
+  private String solrConnection;
   private SolrParams params;
   private String collection;
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
 
   public TimeSeriesStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       SolrParams params,
       Metric[] metrics,
@@ -83,7 +83,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       String gap,
       String format)
       throws IOException {
-    init(collection, params, field, metrics, start, end, gap, format, null, null, solrCloud);
+    init(collection, params, field, metrics, start, end, gap, format, null, null, solrConnection);
   }
 
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -196,16 +196,14 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     // pull out known named params
     ModifiableSolrParams params =
         getModifiableSolrParamsWithExclusions(
-            namedParams, "zkHost", "solrCloud", "start", "end", "gap");
+            namedParams, "zkHost", "solrConnection", "start", "end", "gap");
     if (params.get("q") == null) {
       params.set("q", "*:*");
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, params, field, metrics, start, end, gap, format, split, limit, solrCloud);
+    init(collectionName, params, field, metrics, start, end, gap, format, split, limit, solrConnection);
   }
 
   public String getCollection() {
@@ -223,9 +221,9 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       String format,
       String split,
       String limit,
-      String solrCloud)
+      String solrConnection)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.start = start;
     this.gap = gap;
@@ -274,8 +272,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("field", gap));
     expression.addParameter(new StreamExpressionNamedParameter("format", format));
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
@@ -337,7 +334,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(solrCloud);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       NamedList<?> response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
     } catch (Exception e) {

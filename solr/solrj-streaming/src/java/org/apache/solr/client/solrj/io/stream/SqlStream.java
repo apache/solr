@@ -44,24 +44,24 @@ public class SqlStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   protected String collection;
   protected SolrParams params;
   protected transient TupleStream tupleStream;
   protected transient StreamContext streamContext;
 
   /**
-   * @param solrCloud Zookeeper or HTTPS(s) ensemble connection string
+   * @param solrConnection Zookeeper or HTTPS(s) ensemble connection string
    * @param collectionName Name of the collection to operate on
    * @param params Map&lt;String, String&gt; of parameter/value pairs
    * @throws IOException Something went wrong
    *     <p>This form does not allow specifying multiple clauses, say "fq" clauses, use the form
    *     that takes a SolrParams. Transition code can call the preferred method that takes
-   *     SolrParams by calling CloudSolrStream(solrCloud, collectionName, new
+   *     SolrParams by calling CloudSolrStream(solrConnection, collectionName, new
    *     ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(Map&lt;String, String&gt;)));
    */
-  public SqlStream(String solrCloud, String collectionName, SolrParams params) throws IOException {
-    init(collectionName, solrCloud, params);
+  public SqlStream(String solrConnection, String collectionName, SolrParams params) throws IOException {
+    init(collectionName, solrConnection, params);
   }
 
   public SqlStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -84,13 +84,11 @@ public class SqlStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrCloud", "aliases");
+        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection", "aliases");
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, solrCloud, mParams);
+    init(collectionName, solrConnection, mParams);
   }
 
   @Override
@@ -117,8 +115,7 @@ public class SqlStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
@@ -154,9 +151,9 @@ public class SqlStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  protected void init(String collectionName, String solrCloud, SolrParams params)
+  protected void init(String collectionName, String solrConnection, SolrParams params)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
 
@@ -184,7 +181,7 @@ public class SqlStream extends TupleStream implements Expressible {
   protected void constructStream() throws IOException {
     try {
 
-      List<String> shardUrls = getShards(this.solrCloud, this.collection, this.streamContext);
+      List<String> shardUrls = getShards(this.solrConnection, this.collection, this.streamContext);
       Collections.shuffle(shardUrls, new Random());
       String url = shardUrls.get(0);
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);

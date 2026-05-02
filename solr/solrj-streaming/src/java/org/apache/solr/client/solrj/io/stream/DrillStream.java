@@ -48,7 +48,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
   private String q;
 
   public DrillStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       StreamComparator comp,
@@ -56,11 +56,11 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       String flParam,
       String qParam)
       throws IOException {
-    init(solrCloud, collection, tupleStream, comp, sortParam, flParam, qParam);
+    init(solrConnection, collection, tupleStream, comp, sortParam, flParam, qParam);
   }
 
   public DrillStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       String expressionString,
       StreamComparator comp,
@@ -69,7 +69,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       String qParam)
       throws IOException {
     TupleStream tStream = this.streamFactory.constructStream(expressionString);
-    init(solrCloud, collection, tStream, comp, sortParam, flParam, qParam);
+    init(solrConnection, collection, tStream, comp, sortParam, flParam, qParam);
   }
 
   public void setStreamFactory(StreamFactory streamFactory) {
@@ -145,10 +145,8 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       qParam = ((StreamExpressionValue) qExpression.getParameter()).getValue();
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
     StreamFactory localFactory = (StreamFactory) factory.clone();
     localFactory.withDefaultSort(sortParam);
     TupleStream stream = localFactory.constructStream(streamExpressions.get(0));
@@ -157,11 +155,11 @@ public class DrillStream extends CloudSolrStream implements Expressible {
             ((StreamExpressionValue) sortExpression.getParameter()).getValue(),
             FieldComparator.class);
     streamFactory = factory;
-    init(solrCloud, collectionName, stream, comp, sortParam, flParam, qParam);
+    init(solrConnection, collectionName, stream, comp, sortParam, flParam, qParam);
   }
 
   private void init(
-      String solrCloud,
+      String solrConnection,
       String collection,
       TupleStream tupleStream,
       StreamComparator comp,
@@ -169,7 +167,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       String flParam,
       String qParam)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.comp = comp;
     this.tupleStream = tupleStream;
@@ -210,8 +208,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
     // sort
     expression.addParameter(new StreamExpressionNamedParameter(SORT, comp.toExpression(factory)));
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
 
     return expression;
   }
@@ -267,7 +264,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       paramsLoc.set("fl", fl);
       paramsLoc.set("sort", sort);
       paramsLoc.set("q", q);
-      getReplicas(this.solrCloud, this.collection, this.streamContext, paramsLoc)
+      getReplicas(this.solrConnection, this.collection, this.streamContext, paramsLoc)
           .forEach(
               r -> {
                 SolrStream solrStream = new SolrStream(r.getBaseUrl(), paramsLoc, r.getCoreName());

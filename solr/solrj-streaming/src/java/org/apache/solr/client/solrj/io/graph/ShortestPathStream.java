@@ -70,7 +70,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   private String toField;
   private int joinBatchSize;
   private int maxDepth;
-  private String solrCloud;
+  private String solrConnection;
   private String collection;
   private final Deque<Tuple> shortestPaths = new ArrayDeque<>();
   private boolean found;
@@ -79,7 +79,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   private SolrParams queryParams;
 
   public ShortestPathStream(
-      String solrCloud,
+      String solrConnection,
       String collection,
       String fromNode,
       String toNode,
@@ -91,7 +91,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       int maxDepth) {
 
     init(
-        solrCloud,
+        solrConnection,
         collection,
         fromNode,
         toNode,
@@ -196,7 +196,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     ModifiableSolrParams params =
         getModifiableSolrParamsWithExclusions(
             namedParams,
-            "solrCloud",
+            "solrConnection",
             "zkHost",
             "to",
             "from",
@@ -205,12 +205,10 @@ public class ShortestPathStream extends TupleStream implements Expressible {
             "threads",
             "partitionSize");
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
     init(
-        solrCloud,
+        solrConnection,
         collectionName,
         fromNode,
         toNode,
@@ -223,7 +221,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String solrCloud,
+      String solrConnection,
       String collection,
       String fromNode,
       String toNode,
@@ -233,7 +231,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       int joinBatchSize,
       int threads,
       int maxDepth) {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.fromNode = fromNode;
     this.toNode = toNode;
@@ -266,7 +264,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey().toString(), value));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
     expression.addParameter(
         new StreamExpressionNamedParameter("maxDepth", Integer.toString(maxDepth)));
     expression.addParameter(
@@ -478,7 +476,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       try {
         stream =
             new UniqueStream(
-                new CloudSolrStream(solrCloud, collection, joinParams),
+                new CloudSolrStream(solrConnection, collection, joinParams),
                 new MultipleFieldEqualitor(
                     new FieldEqualitor(toField), new FieldEqualitor(fromField)));
         stream.setStreamContext(streamContext);

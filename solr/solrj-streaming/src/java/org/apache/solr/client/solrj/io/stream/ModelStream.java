@@ -46,17 +46,17 @@ public class ModelStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   protected String collection;
   protected String modelID;
   protected ModelCache modelCache;
   protected Tuple model;
   protected long cacheMillis;
 
-  public ModelStream(String solrCloud, String collectionName, String modelID, long cacheMillis)
+  public ModelStream(String solrConnection, String collectionName, String modelID, long cacheMillis)
       throws IOException {
 
-    init(collectionName, solrCloud, modelID, cacheMillis);
+    init(collectionName, solrConnection, modelID, cacheMillis);
   }
 
   public ModelStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -82,7 +82,7 @@ public class ModelStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrCloud");
+    Map<String, String> params = getMapWithExclusions(namedParams, "zkHost", "solrConnection");
 
     String modelID = params.get(ID);
     if (modelID == null) {
@@ -96,11 +96,9 @@ public class ModelStream extends TupleStream implements Expressible {
       cacheMillis = Long.parseLong(cacheMillisParam);
     }
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    // We've got all the required items
-    init(collectionName, solrCloud, modelID, cacheMillis);
+    init(collectionName, solrConnection, modelID, cacheMillis);
   }
 
   @Override
@@ -115,8 +113,7 @@ public class ModelStream extends TupleStream implements Expressible {
     // collection
     expression.addParameter(collection);
 
-    // solrCloud
-    expression.addParameter(new StreamExpressionNamedParameter("solrCloud", solrCloud));
+    expression.addParameter(new StreamExpressionNamedParameter("solrConnection", solrConnection));
     expression.addParameter(new StreamExpressionNamedParameter(ID, modelID));
     expression.addParameter(
         new StreamExpressionNamedParameter("cacheMillis", Long.toString(cacheMillis)));
@@ -124,9 +121,9 @@ public class ModelStream extends TupleStream implements Expressible {
     return expression;
   }
 
-  private void init(String collectionName, String solrCloud, String modelID, long cacheMillis)
+  private void init(String collectionName, String solrConnection, String modelID, long cacheMillis)
       throws IOException {
-    this.solrCloud = solrCloud;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.modelID = modelID;
     this.cacheMillis = cacheMillis;

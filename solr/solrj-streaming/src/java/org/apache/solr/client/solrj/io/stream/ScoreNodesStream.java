@@ -58,7 +58,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String solrCloud;
+  protected String solrConnection;
   private TupleStream stream;
   private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
@@ -96,11 +96,11 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
               streamExpressions.size()));
     }
 
-    // TODO: add the ability to obtain 'solrCloud' from the expression arguments here?
-    solrCloud = factory.getDefaultZkHost();
+    // TODO: add the ability to obtain 'solrConnection' from the expression arguments here?
+    solrConnection = factory.getDefaultZkHost();
 
-    if (null == solrCloud) {
-      throw new IOException("solrCloud not found");
+    if (null == solrConnection) {
+      throw new IOException("solrConnection not found");
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
@@ -221,7 +221,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
       builder.append(nodeId);
     }
 
-    CloudSolrClient client = clientCache.getCloudSolrClient(solrCloud);
+    CloudSolrClient client = clientCache.getCloudSolrClient(solrConnection);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS_FIELD, field);

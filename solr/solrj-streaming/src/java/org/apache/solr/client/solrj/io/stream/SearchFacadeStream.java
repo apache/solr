@@ -63,14 +63,13 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrCloud", "aliases");
+        getModifiableSolrParamsWithExclusions(namedParams, "zkHost", "solrConnection", "aliases");
 
-    // solrCloud, optional - if not provided then will look into factory list to get
-    String solrCloud = getSolrCloud(factory, expression, collectionName);
+    String solrConnection = getSolrConnection(factory, expression, collectionName);
 
     if (mParams.get(CommonParams.QT) != null && mParams.get(CommonParams.QT).equals("/export")) {
       CloudSolrStream cloudSolrStream = new CloudSolrStream();
-      cloudSolrStream.init(collectionName, solrCloud, mParams);
+      cloudSolrStream.init(collectionName, solrConnection, mParams);
       this.innerStream = cloudSolrStream;
     } else {
 
@@ -80,7 +79,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
       }
 
       SearchStream searchStream = new SearchStream();
-      searchStream.init(solrCloud, collectionName, mParams);
+      searchStream.init(solrConnection, collectionName, mParams);
       this.innerStream = searchStream;
     }
   }
