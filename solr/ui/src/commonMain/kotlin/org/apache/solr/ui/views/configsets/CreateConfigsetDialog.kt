@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
@@ -66,7 +67,9 @@ fun CreateConfigsetDialog(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
-                modifier = Modifier.weight(1f).height(64.dp),
+                modifier = Modifier.weight(1f)
+                    .height(64.dp)
+                    .testTag("create_configset_name_field"),
                 value = state.configsetName,
                 onValueChange = viewModel::changeConfigsetName,
                 label = { Text(stringResource(Res.string.label_configset_name)) },
@@ -95,6 +98,7 @@ fun CreateConfigsetDialog(
                     Text(stringResource(Res.string.action_cancel))
                 }
                 SolrButton(
+                    modifier = Modifier.testTag("configset_create_button"),
                     onClick = viewModel::createConfigset,
                     enabled = state.configsetName.isNotBlank(),
                 ) {

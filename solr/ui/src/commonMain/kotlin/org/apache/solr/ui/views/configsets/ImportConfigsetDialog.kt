@@ -29,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewModel
@@ -68,24 +69,25 @@ fun ImportConfigsetDialog(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FileSelector(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).testTag("import_configset_file_field"),
                 file = fileSelectorModel.file,
                 onSelectFile = viewModel::selectFile,
                 onClearSelection = viewModel::clearFile,
                 label = stringResource(Res.string.label_select_configset_file),
                 selectFileText = stringResource(Res.string.label_select_configset_file),
             )
-            val configsetName = model.configsetName.ifBlank {
-                fileSelectorModel.file?.name ?: ""
-            }
             OutlinedTextField(
-                modifier = Modifier.weight(1f),
-                value = configsetName,
+                modifier = Modifier.weight(1f).testTag("import_configset_name_field"),
+                value = model.configsetName,
                 onValueChange = viewModel::changeConfigsetName,
                 label = { Text(stringResource(Res.string.label_configset_name)) },
                 singleLine = true,
             )
         }
+
+        val canImportConfigset = fileSelectorModel.file != null
+            && model.configsetName.isNotBlank()
+            && !model.isLoading
 
         Row(
             modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
@@ -101,8 +103,9 @@ fun ImportConfigsetDialog(
                     Text(stringResource(Res.string.action_cancel))
                 }
                 SolrButton(
+                    modifier = Modifier.testTag("configset_import_button"),
                     onClick = viewModel::importConfigset,
-                    enabled = fileSelectorModel.file != null && !model.isLoading,
+                    enabled = canImportConfigset,
                 ) {
                     Text(stringResource(Res.string.action_import_configset))
                 }
