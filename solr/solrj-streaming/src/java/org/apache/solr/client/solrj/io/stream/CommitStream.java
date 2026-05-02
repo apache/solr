@@ -97,9 +97,9 @@ public class CommitStream extends TupleStream implements Expressible {
     StreamExpression sourceStreamExpression = streamExpressions.get(0);
 
     init(
+        solrConnection,
         collectionName,
         factory.constructStream(sourceStreamExpression),
-        solrConnection,
         batchSize,
         waitFlush,
         waitSearcher,
@@ -119,13 +119,13 @@ public class CommitStream extends TupleStream implements Expressible {
       throw new IOException(
           String.format(Locale.ROOT, "batchSize '%d' cannot be less than 0.", batchSize));
     }
-    init(collectionName, tupleSource, solrConnection, batchSize, waitFlush, waitSearcher, softCommit);
+    init(solrConnection, collectionName, tupleSource, batchSize, waitFlush, waitSearcher, softCommit);
   }
 
   private void init(
+      String solrConnection,
       String collectionName,
       TupleStream tupleSource,
-      String solrConnection,
       int batchSize,
       boolean waitFlush,
       boolean waitSearcher,

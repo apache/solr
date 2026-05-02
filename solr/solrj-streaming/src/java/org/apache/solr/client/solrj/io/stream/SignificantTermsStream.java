@@ -80,7 +80,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       int numTerms)
       throws IOException {
 
-    init(collectionName, solrConnection, params, field, minDocFreq, maxDocFreq, minTermLength, numTerms);
+    init(solrConnection, collectionName, params, field, minDocFreq, maxDocFreq, minTermLength, numTerms);
   }
 
   public SignificantTermsStream(StreamExpression expression, StreamFactory factory)
@@ -154,8 +154,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
     init(
-        collectionName,
         solrConnection,
+        collectionName,
         params,
         fieldParam,
         minDocFreq,
@@ -196,8 +196,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String collectionName,
       String solrConnection,
+      String collectionName,
       Map<String, String> params,
       String field,
       float minDocFreq,

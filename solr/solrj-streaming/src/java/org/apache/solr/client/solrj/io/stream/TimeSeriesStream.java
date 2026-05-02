@@ -83,7 +83,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       String gap,
       String format)
       throws IOException {
-    init(collection, params, field, metrics, start, end, gap, format, null, null, solrConnection);
+    init(solrConnection, collection, params, field, metrics, start, end, gap, format, null, null);
   }
 
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -203,7 +203,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(collectionName, params, field, metrics, start, end, gap, format, split, limit, solrConnection);
+    init(solrConnection, collectionName, params, field, metrics, start, end, gap, format, split, limit);
   }
 
   public String getCollection() {
@@ -211,6 +211,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   }
 
   private void init(
+      String solrConnection,
       String collection,
       SolrParams params,
       String field,
@@ -220,8 +221,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       String gap,
       String format,
       String split,
-      String limit,
-      String solrConnection)
+      String limit)
       throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collection;

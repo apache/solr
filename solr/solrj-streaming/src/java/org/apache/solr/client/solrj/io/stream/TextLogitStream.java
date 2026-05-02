@@ -101,8 +101,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
       throws IOException {
 
     init(
-        collectionName,
         solrConnection,
+        collectionName,
         params,
         name,
         field,
@@ -227,8 +227,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     // We've got all the required items
     init(
-        collectionName,
         solrConnection,
+        collectionName,
         params,
         name,
         feature,
@@ -298,8 +298,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   private void init(
-      String collectionName,
       String solrConnection,
+      String collectionName,
       Map<String, String> params,
       String name,
       String feature,

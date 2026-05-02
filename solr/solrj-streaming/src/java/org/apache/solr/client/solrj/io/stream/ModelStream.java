@@ -56,7 +56,7 @@ public class ModelStream extends TupleStream implements Expressible {
   public ModelStream(String solrConnection, String collectionName, String modelID, long cacheMillis)
       throws IOException {
 
-    init(collectionName, solrConnection, modelID, cacheMillis);
+    init(solrConnection, collectionName, modelID, cacheMillis);
   }
 
   public ModelStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -98,7 +98,7 @@ public class ModelStream extends TupleStream implements Expressible {
 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(collectionName, solrConnection, modelID, cacheMillis);
+    init(solrConnection, collectionName, modelID, cacheMillis);
   }
 
   @Override
@@ -121,7 +121,7 @@ public class ModelStream extends TupleStream implements Expressible {
     return expression;
   }
 
-  private void init(String collectionName, String solrConnection, String modelID, long cacheMillis)
+  private void init(String solrConnection, String collectionName, String modelID, long cacheMillis)
       throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collectionName;

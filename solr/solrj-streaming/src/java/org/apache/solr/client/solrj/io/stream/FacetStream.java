@@ -105,6 +105,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       bucketSizeLimit = Integer.MAX_VALUE;
     }
     init(
+        solrConnection,
         collection,
         params,
         buckets,
@@ -116,8 +117,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         false,
         null,
         true,
-        0,
-        solrConnection);
+        0);
   }
 
   public FacetStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -359,6 +359,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
     init(
+        solrConnection,
         collectionName,
         params,
         buckets,
@@ -370,8 +371,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         refine,
         methodStr,
         bucketLimitSet,
-        overfetchInt,
-        solrConnection);
+        overfetchInt);
   }
 
   // see usage in parallelize method
@@ -464,6 +464,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   }
 
   private void init(
+      String solrConnection,
       String collection,
       SolrParams params,
       Bucket[] buckets,
@@ -475,8 +476,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       boolean refine,
       String method,
       boolean serializeBucketSizeLimit,
-      int overfetch,
-      String solrConnection)
+      int overfetch)
       throws IOException {
     this.solrConnection = solrConnection;
     this.params = new ModifiableSolrParams(params);
@@ -996,6 +996,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     for (int p = 0; p < streams.length; p++) {
       FacetStream cloned = new FacetStream();
       cloned.init(
+          solrConnection,
           partitions.get(p), /* each collection */
           withoutTieredParam, /* removes the tiered param */
           buckets,
@@ -1007,8 +1008,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           refine,
           method,
           serializeBucketSizeLimit,
-          overfetch,
-          solrConnection);
+          overfetch);
       streams[p] = cloned;
     }
     return streams;

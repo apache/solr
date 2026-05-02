@@ -93,7 +93,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(collectionName, solrConnection, mParams);
+    init(solrConnection, collectionName, mParams);
   }
 
   @Override

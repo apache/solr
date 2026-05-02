@@ -92,9 +92,9 @@ public class UpdateStream extends TupleStream implements Expressible {
     }
     StreamExpression sourceStreamExpression = streamExpressions.get(0);
     init(
+        solrConnection,
         collectionName,
         factory.constructStream(sourceStreamExpression),
-        solrConnection,
         updateBatchSize);
   }
 
@@ -106,11 +106,11 @@ public class UpdateStream extends TupleStream implements Expressible {
           String.format(Locale.ROOT, "batchSize '%d' must be greater than 0.", updateBatchSize));
     }
     pruneVersionField = defaultPruneVersionField();
-    init(collectionName, tupleSource, solrConnection, updateBatchSize);
+    init(solrConnection, collectionName, tupleSource, updateBatchSize);
   }
 
   private void init(
-      String collectionName, TupleStream tupleSource, String solrConnection, int updateBatchSize) {
+      String solrConnection, String collectionName, TupleStream tupleSource, int updateBatchSize) {
     this.collection = collectionName;
     this.solrConnection = solrConnection;
     this.updateBatchSize = updateBatchSize;

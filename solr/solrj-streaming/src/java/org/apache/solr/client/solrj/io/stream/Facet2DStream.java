@@ -89,7 +89,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     String bucketSortString = metric.getIdentifier() + " desc";
     this.bucketSort = parseBucketSort(bucketSortString, x, y);
 
-    init(collection, params, x, y, bucketSort, dimensionX, dimensionY, metric, solrConnection);
+    init(solrConnection, collection, params, x, y, bucketSort, dimensionX, dimensionY, metric);
   }
 
   public Facet2DStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -179,7 +179,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(collectionName, params, x, y, bucketSort, dimensionX, dimensionY, metric, solrConnection);
+    init(solrConnection, collectionName, params, x, y, bucketSort, dimensionX, dimensionY, metric);
   }
 
   private FieldComparator parseBucketSort(String bucketSortString, Bucket x, Bucket y)
@@ -191,6 +191,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   private void init(
+      String solrConnection,
       String collection,
       SolrParams params,
       Bucket x,
@@ -198,8 +199,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
       FieldComparator bucketSort,
       int dimensionX,
       int dimensionY,
-      Metric metric,
-      String solrConnection) {
+      Metric metric) {
     this.collection = collection;
     this.params = new ModifiableSolrParams(params);
     this.x = x;

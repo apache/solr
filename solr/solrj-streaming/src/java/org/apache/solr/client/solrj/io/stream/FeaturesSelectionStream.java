@@ -85,7 +85,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       int numTerms)
       throws IOException {
 
-    init(collectionName, solrConnection, params, field, outcome, featureSet, positiveLabel, numTerms);
+    init(solrConnection, collectionName, params, field, outcome, featureSet, positiveLabel, numTerms);
   }
 
   /** logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
@@ -162,8 +162,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
     init(
-        collectionName,
         solrConnection,
+        collectionName,
         params,
         fieldParam,
         outcomeParam,
@@ -202,8 +202,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   }
 
   private void init(
-      String collectionName,
       String solrConnection,
+      String collectionName,
       Map<String, String> params,
       String field,
       String outcome,

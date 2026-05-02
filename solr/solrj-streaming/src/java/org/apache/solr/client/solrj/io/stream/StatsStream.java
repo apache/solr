@@ -75,7 +75,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
   public StatsStream(String solrConnection, String collection, SolrParams params, Metric[] metrics)
       throws IOException {
-    init(collection, params, metrics, solrConnection);
+    init(solrConnection, collection, params, metrics);
   }
 
   public StatsStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -121,14 +121,14 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(collectionName, params, metrics, solrConnection);
+    init(solrConnection, collectionName, params, metrics);
   }
 
   public String getCollection() {
     return this.collection;
   }
 
-  private void init(String collection, SolrParams params, Metric[] metrics, String solrConnection)
+  private void init(String solrConnection, String collection, SolrParams params, Metric[] metrics)
       throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collection;

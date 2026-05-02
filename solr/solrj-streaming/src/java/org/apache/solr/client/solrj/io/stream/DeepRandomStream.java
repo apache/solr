@@ -83,7 +83,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
    */
   public DeepRandomStream(String solrConnection, String collectionName, SolrParams params)
       throws IOException {
-    init(collectionName, solrConnection, params);
+    init(solrConnection, collectionName, params);
   }
 
   public DeepRandomStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -141,7 +141,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(collectionName, solrConnection, mParams);
+    init(solrConnection, collectionName, mParams);
   }
 
   @Override
@@ -218,7 +218,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  void init(String collectionName, String solrConnection, SolrParams params) throws IOException {
+  void init(String solrConnection, String collectionName, SolrParams params) throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);

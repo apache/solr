@@ -76,7 +76,7 @@ public class RandomFacadeStream extends TupleStream implements Expressible {
       int rows = Integer.parseInt(params.get(ROWS));
       if (rows >= 5000) {
         DeepRandomStream deepRandomStream = new DeepRandomStream();
-        deepRandomStream.init(collectionName, solrConnection, toSolrParams(params));
+        deepRandomStream.init(solrConnection, collectionName, toSolrParams(params));
         this.innerStream = deepRandomStream;
       } else {
         RandomStream randomStream = new RandomStream();

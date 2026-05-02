@@ -69,7 +69,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
 
     if (mParams.get(CommonParams.QT) != null && mParams.get(CommonParams.QT).equals("/export")) {
       CloudSolrStream cloudSolrStream = new CloudSolrStream();
-      cloudSolrStream.init(collectionName, solrConnection, mParams);
+      cloudSolrStream.init(solrConnection, collectionName, mParams);
       this.innerStream = cloudSolrStream;
     } else {
 

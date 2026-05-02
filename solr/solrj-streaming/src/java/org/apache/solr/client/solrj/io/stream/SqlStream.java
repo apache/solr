@@ -61,7 +61,7 @@ public class SqlStream extends TupleStream implements Expressible {
    *     ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(Map&lt;String, String&gt;)));
    */
   public SqlStream(String solrConnection, String collectionName, SolrParams params) throws IOException {
-    init(collectionName, solrConnection, params);
+    init(solrConnection, collectionName, params);
   }
 
   public SqlStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -88,7 +88,7 @@ public class SqlStream extends TupleStream implements Expressible {
 
     String solrConnection = getSolrConnection(factory, expression, collectionName);
 
-    init(collectionName, solrConnection, mParams);
+    init(solrConnection, collectionName, mParams);
   }
 
   @Override
@@ -151,7 +151,7 @@ public class SqlStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  protected void init(String collectionName, String solrConnection, SolrParams params)
+  protected void init(String solrConnection, String collectionName, SolrParams params)
       throws IOException {
     this.solrConnection = solrConnection;
     this.collection = collectionName;
