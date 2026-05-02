@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -126,9 +125,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
     protected CloudSolrClient createSolrClient() {
       log.debug("Creating new SolrClient...");
-      return new CloudSolrClient.Builder(
-              Collections.singletonList(zkConnectString), Optional.empty())
-          .build();
+      return new CloudSolrClient.Builder(List.of(zkConnectString), Optional.empty()).build();
     }
 
     @Override

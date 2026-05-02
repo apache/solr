@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.feature;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -82,7 +81,7 @@ public class FieldValueFeature extends Feature {
 
   public void setField(String field) {
     this.field = field;
-    fieldAsSet = Collections.singleton(field);
+    fieldAsSet = Set.of(field);
   }
 
   @Override

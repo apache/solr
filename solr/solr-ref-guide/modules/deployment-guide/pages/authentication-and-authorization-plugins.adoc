@@ -25,7 +25,7 @@ This allows for verifying a user's identity and for restricting access to resour
 
 Solr includes some plugins out of the box, and additional plugins can be developed using the authentication, authorization and audit logging frameworks described below.
 
-All authentication, authorization and audit logging plugins can work with Solr whether it is running as a cluster or a single-node installation.
+All authentication, authorization and audit logging plugins can work with Solr whether it is running as a cluster or standalone installation.
 All related configuration, including users and permission rules, are stored in a file named `security.json`.
 When using SolrCloud, this file must be located at the chroot of the ZooKeeper structure.  If no chroot was given, then it must be at the root.
 When running Solr in standalone mode (without ZooKeeper), this file must be in the `$SOLR_HOME` directory. When manually running Solr from an extracted archive, this will most likely be `server/solr`. If the service installer script is used, its default location will be `/var/solr/data`, which can be changed with options given to the service installer.
@@ -110,9 +110,9 @@ Once `security.json` has been uploaded to ZooKeeper, you should use the appropri
 You can edit it manually, but you must take care to remove any version data so it will be properly updated across all ZooKeeper nodes.
 The version data is found at the end of the `security.json` file, and will appear as the letter "v" followed by a number, such as `{"v":138}`.
 
-=== In a User-Managed Cluster or Single-Node Installation
+=== In a User-Managed Cluster or Standalone Installation
 
-When running Solr in either a user-managed cluster or a single-node installation, you create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
+When running Solr in either a user-managed cluster or standalone installation, you create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
 
 With a user-managed cluster, you will need to place `security.json` on each node of the cluster.
 
@@ -145,7 +145,7 @@ Specify the authentication plugin in `/security.json` as in this example:
 
 All of the content in the `authentication` block of `security.json` will be passed as a map to the plugin during initialization.
 
-An authentication plugin can also be used with a single-node Solr instance by passing in `-DauthenticationPlugin=<plugin class name>` during startup.
+An authentication plugin can also be used with standalone Solr instance by passing in `-DauthenticationPlugin=<plugin class name>` during startup.
 
 Currently available authentication plugins are:
 

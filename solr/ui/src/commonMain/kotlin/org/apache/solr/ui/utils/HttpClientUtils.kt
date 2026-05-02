@@ -57,12 +57,14 @@ fun getDefaultClient(
 
 fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
     is AuthOption.None -> getDefaultClient(option.url)
+
     is AuthOption.BasicAuthOption -> getHttpClientWithCredentials(
         url = option.url,
         realm = option.realm,
         username = option.username,
         password = option.password,
     )
+
     is AuthOption.OAuthOption -> getHttpClientWithBearerTokens(
         url = option.url,
         realm = option.realm,
