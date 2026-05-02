@@ -115,9 +115,8 @@ public class StreamingSearch {
   @Benchmark
   public Object stream(BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
-    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(benchState.zkHost);
-    CloudSolrStream stream =
-        new CloudSolrStream(solrClientConnection, collection, benchState.params);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(benchState.zkHost);
+    CloudSolrStream stream = new CloudSolrStream(solrConnection, collection, benchState.params);
     stream.setStreamContext(benchState.streamContext);
     return getTuples(stream);
   }

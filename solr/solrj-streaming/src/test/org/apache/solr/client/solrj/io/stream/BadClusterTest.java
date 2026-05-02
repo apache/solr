@@ -48,7 +48,7 @@ public class BadClusterTest extends SolrCloudTestCase {
       new StreamFactory().withFunctionName("search", CloudSolrStream.class);
 
   private static String zkHost;
-  private static CloudSolrClient.CloudSolrClientConnection solrClientConnection;
+  private static CloudSolrClient.CloudSolrClientConnection solrConnection;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
@@ -67,7 +67,7 @@ public class BadClusterTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 1, 1);
 
     zkHost = cluster.getZkServer().getZkAddress();
-    solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     streamFactory.withCollectionZkHost(collection, zkHost);
   }
 
@@ -126,7 +126,7 @@ public class BadClusterTest extends SolrCloudTestCase {
 
   private List<Replica> getReplicas() throws IOException {
     return TupleStream.getReplicas(
-        solrClientConnection, collection, null, new MultiMapSolrParams(Map.of()));
+        solrConnection, collection, null, new MultiMapSolrParams(Map.of()));
   }
 
   private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

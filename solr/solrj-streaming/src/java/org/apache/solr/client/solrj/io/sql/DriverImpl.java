@@ -69,8 +69,8 @@ public class DriverImpl implements Driver {
     props.setProperty("includeMetadata", "true");
 
     String zkHost = uri.getAuthority() + uri.getPath();
-    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-    return new ConnectionImpl(url, solrClientConnection, collection, props);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    return new ConnectionImpl(url, solrConnection, collection, props);
   }
 
   public Connection connect(String url) throws SQLException {

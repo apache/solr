@@ -261,8 +261,8 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
         streamContext.setRequestReplicaListTransformerGenerator(rltg);
       }
 
-      var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(streamZkHost);
-      TupleStream cloudSolrStream = new CloudSolrStream(solrClientConnection, collection, params);
+      var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(streamZkHost);
+      TupleStream cloudSolrStream = new CloudSolrStream(solrConnection, collection, params);
       TupleStream uniqueStream = new UniqueStream(cloudSolrStream, new FieldEqualitor(fromField));
       uniqueStream.setStreamContext(streamContext);
       return uniqueStream;

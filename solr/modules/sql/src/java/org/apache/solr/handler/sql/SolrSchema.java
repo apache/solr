@@ -86,8 +86,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
   @Override
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
-    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(solrClientConnection);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
+    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(solrConnection);
     ClusterState clusterState = cloudSolrClient.getClusterState();
     Aliases aliases = ZkStateReader.from(cloudSolrClient).getAliases();
 
@@ -103,9 +103,9 @@ class SolrSchema extends AbstractSchema implements Closeable {
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
-      var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
+      var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
       return lukeRequest
-          .process(solrClientCache.getCloudSolrClient(solrClientConnection), collection)
+          .process(solrClientCache.getCloudSolrClient(solrConnection), collection)
           .getFieldInfo();
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
@@ -121,9 +121,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setShowSchema(true); // for empty fields and custom type info ...
       lukeRequest.setNumTerms(0);
-      var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
-      return lukeRequest.process(
-          solrClientCache.getCloudSolrClient(solrClientConnection), collection);
+      var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(solrConnection), collection);
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {

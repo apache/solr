@@ -157,19 +157,18 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     TupleStream tupleStream;
     String zk = properties.getProperty("zk");
-    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zk);
     try {
       if (metricPairs.isEmpty() && buckets.isEmpty()) {
-        tupleStream =
-            handleSelect(solrClientConnection, collection, q, fields, orders, limit, offset);
+        tupleStream = handleSelect(solrConnection, collection, q, fields, orders, limit, offset);
       } else {
         if (buckets.isEmpty()) {
-          tupleStream = handleStats(solrClientConnection, collection, q, metricPairs, fields);
+          tupleStream = handleStats(solrConnection, collection, q, metricPairs, fields);
         } else {
           if (mapReduce) {
             tupleStream =
                 handleGroupByMapReduce(
-                    solrClientConnection,
+                    solrConnection,
                     collection,
                     properties,
                     fields,
@@ -182,7 +181,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
           } else {
             tupleStream =
                 handleGroupByFacet(
-                    solrClientConnection,
+                    solrConnection,
                     collection,
                     fields,
                     q,

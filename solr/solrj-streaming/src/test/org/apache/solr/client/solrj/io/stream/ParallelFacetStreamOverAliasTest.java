@@ -275,7 +275,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         };
 
     String zkHost = cluster.getZkServer().getZkAddress();
-    var solrClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
 
@@ -284,8 +284,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrParams.add(TIERED_PARAM, "true");
 
     // tiered stats stream
-    StatsStream statsStream =
-        new StatsStream(solrClientConnection, ALIAS_NAME, solrParams, metrics);
+    StatsStream statsStream = new StatsStream(solrConnection, ALIAS_NAME, solrParams, metrics);
     statsStream.setStreamContext(streamContext);
     List<Tuple> tieredTuples = getTuples(statsStream);
     assertEquals(1, tieredTuples.size());
@@ -294,7 +293,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, "*:*");
     solrParams.add(TIERED_PARAM, "false");
-    statsStream = new StatsStream(solrClientConnection, ALIAS_NAME, solrParams, metrics);
+    statsStream = new StatsStream(solrConnection, ALIAS_NAME, solrParams, metrics);
     statsStream.setStreamContext(streamContext);
     // tiered should match non-tiered results
     assertListOfTuplesEquals(tieredTuples, getTuples(statsStream));
