@@ -17,42 +17,41 @@
 
 package org.apache.solr.ui.components.configsets.viewmodel
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
-import androidx.savedstate.serialization.SavedStateConfiguration
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewEntry.ConfigsetsOverviewDialog.CreateConfigsetDialog
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewEntry.ConfigsetsOverviewDialog.ImportConfigsetDialog
 
 class ConfigsetsOverviewViewModel : ViewModel() {
 
-    /**
-     * The dialog that is currently open, if any.
-     */
-    val uiState: StateFlow<ConfigsetsOverviewUiState>
-        field = MutableStateFlow(ConfigsetsOverviewUiState())
+    val backStack: SnapshotStateList<ConfigsetsOverviewEntry> =
+        mutableStateListOf(ConfigsetsOverviewEntry.Main)
 
     /**
      * Initiates the creation of a new configset.
      */
-    fun openCreateConfigsetDialog() = uiState.update {
-        it.copy(configsetDialog = ConfigsetDialog.CreateConfigsetDialog)
+    fun openCreateConfigsetDialog() = backStack.apply {
+        clearDialogs()
+        add(CreateConfigsetDialog)
     }
 
     /**
      * Initiates the import of a configset.
      */
-    fun openImportConfigsetDialog() = uiState.update {
-        it.copy(configsetDialog = ConfigsetDialog.ImportConfigsetDialog)
+    fun openImportConfigsetDialog() = backStack.apply {
+        clearDialogs()
+        add(ImportConfigsetDialog)
     }
 
     /**
      * Closes any opened dialog.
      */
-    fun closeDialog() = uiState.update { it.copy(configsetDialog = null) }
+    fun closeDialog() {
+        backStack.clearDialogs()
+    }
 
     /**
      * Edit solrconfig.xml for the configset with the given [name].
@@ -62,34 +61,24 @@ class ConfigsetsOverviewViewModel : ViewModel() {
     fun editSolrConfig(name: String) {
         TODO()
     }
+
+    private fun SnapshotStateList<ConfigsetsOverviewEntry>.clearDialogs() =
+        removeAll { entry -> entry is ConfigsetsOverviewEntry.ConfigsetsOverviewDialog }
 }
 
-data class ConfigsetsOverviewUiState(
-    val configsetDialog: ConfigsetDialog? = null,
-)
-
 @Serializable
-sealed interface ConfigsetDialog : NavKey {
+sealed interface ConfigsetsOverviewEntry : NavKey {
 
     @Serializable
-    data object None: ConfigsetDialog
-
-    // TODO Consider adding configsets and current configset selection as values to this class
-    @Serializable
-    data object CreateConfigsetDialog : ConfigsetDialog
+    data object Main : ConfigsetsOverviewEntry
 
     @Serializable
-    data object ImportConfigsetDialog : ConfigsetDialog
+    sealed interface ConfigsetsOverviewDialog : ConfigsetsOverviewEntry {
 
-    companion object {
-        val config = SavedStateConfiguration {
-            serializersModule = SerializersModule {
-                polymorphic(NavKey::class) {
-                    subclass(None::class, None.serializer())
-                    subclass(CreateConfigsetDialog::class, CreateConfigsetDialog.serializer())
-                    subclass(ImportConfigsetDialog::class, ImportConfigsetDialog.serializer())
-                }
-            }
-        }
+        @Serializable
+        data object CreateConfigsetDialog : ConfigsetsOverviewDialog
+
+        @Serializable
+        data object ImportConfigsetDialog : ConfigsetsOverviewDialog
     }
 }

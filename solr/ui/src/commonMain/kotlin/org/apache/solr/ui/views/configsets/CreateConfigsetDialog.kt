@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
-import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_cancel
 import org.apache.solr.ui.generated.resources.action_create_configset
