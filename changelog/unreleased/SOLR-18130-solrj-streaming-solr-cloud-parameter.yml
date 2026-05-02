@@ -1,4 +1,4 @@
-title: Parameter 'zkHost' renamed to 'solrCloud' in solrj-streaming. Parameter 'zkHost' is still supported.
+title: Add new 'solrConnection' parameter to solrj-streaming supporting both ZooKeeper and HTTP(S) connection types
 type: changed
 authors:
   - name: vyatkin.v
