@@ -48,7 +48,8 @@ public class SolrClientCache implements Closeable {
 
   protected String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
-  private final Map<String, SolrClient> solrClients = new HashMap<>();
+  private final Map<String, SolrClient> httpSolrClients = new HashMap<>();
+  private final Map<String, CloudSolrClient> cloudSolClients = new HashMap<>();
   private final HttpSolrClientBase httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
@@ -90,8 +91,8 @@ public class SolrClientCache implements Closeable {
     ensureOpen();
     Objects.requireNonNull(solrConnection, "'solrConnection' cannot be null!");
     String cacheKey = solrConnection.toString();
-    if (solrClients.containsKey(cacheKey)) {
-      return (CloudSolrClient) solrClients.get(cacheKey);
+    if (cloudSolClients.containsKey(cacheKey)) {
+      return cloudSolClients.get(cacheKey);
     }
     // Can only use ZK ACLs if there is a default ZK Host, and the given ZK host contains that
     // default.
@@ -105,7 +106,7 @@ public class SolrClientCache implements Closeable {
     }
 
     final var client = newCloudSolrClient(solrConnection, httpSolrClient, canUseACLs);
-    solrClients.put(cacheKey, client);
+    cloudSolClients.put(cacheKey, client);
     return client;
   }
 
@@ -138,11 +139,11 @@ public class SolrClientCache implements Closeable {
   public synchronized SolrClient getHttpSolrClient(String baseUrl) {
     ensureOpen();
     Objects.requireNonNull(baseUrl, "Url cannot be null!");
-    if (solrClients.containsKey(baseUrl)) {
-      return solrClients.get(baseUrl);
+    if (httpSolrClients.containsKey(baseUrl)) {
+      return httpSolrClients.get(baseUrl);
     }
     final var client = newHttpSolrClientBuilder(baseUrl, httpSolrClient).build();
-    solrClients.put(baseUrl, client);
+    httpSolrClients.put(baseUrl, client);
     return client;
   }
 
@@ -169,10 +170,14 @@ public class SolrClientCache implements Closeable {
   @Override
   public synchronized void close() {
     if (isClosed.compareAndSet(false, true)) {
-      for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
+      for (Map.Entry<String, SolrClient> entry : httpSolrClients.entrySet()) {
         IOUtils.closeQuietly(entry.getValue());
       }
-      solrClients.clear();
+      httpSolrClients.clear();
+      for (Map.Entry<String, CloudSolrClient> entry : cloudSolClients.entrySet()) {
+        IOUtils.closeQuietly(entry.getValue());
+      }
+      cloudSolClients.clear();
     }
   }
 
