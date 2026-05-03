@@ -420,9 +420,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", solrConnection="
+                  + ", solrConnection=\""
                   + getSolrConnection().toString()
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+                  + "\", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -436,9 +436,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias_a_i, a_s=name\", solrConnection="
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias_a_i, a_s=name\", solrConnection=\""
                   + getSolrConnection().toString()
-                  + ")");
+                  + "\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -453,9 +453,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", solrConnection="
+                  + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", solrConnection=\""
                   + getSolrConnection().toString()
-                  + ", sort=\"a_f asc, a_i asc\")");
+                  + "\", sort=\"a_f asc, a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -468,9 +468,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       expression =
           StreamExpressionParser.parse(
               "search(collection1, fq=\"a_s:hello0\", fq=\"a_s:hello1\", q=\"id:(*)\", "
-                  + "solrConnection="
+                  + "solrConnection=\""
                   + getSolrConnection().toString()
-                  + ", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+                  + "\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -480,9 +480,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       expression =
           StreamExpressionParser.parse(
               "search(collection1, fq=\"a_s:(hello0 OR hello1)\", q=\"id:(*)\", "
-                  + "solrConnection="
+                  + "solrConnection=\""
                   + getSolrConnection().toString()
-                  + ", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+                  + "\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);

@@ -114,8 +114,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   protected CloudSolrClient.CloudSolrClientConnection getSolrConnection() {
-    //return random().nextBoolean() ? getHttpSolrConnection() : getZookeeperSolrConnection();
-    return getHttpSolrConnection();
+    return random().nextBoolean() ? getHttpSolrConnection() : getZookeeperSolrConnection();
   }
 
   /**
