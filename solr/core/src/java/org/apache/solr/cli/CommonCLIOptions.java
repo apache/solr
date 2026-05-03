@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 
 public final class CommonCLIOptions {
@@ -34,22 +33,9 @@ public final class CommonCLIOptions {
       Option.builder("z")
           .longOpt("zk-host")
           .hasArg()
-          .deprecated(
-              DeprecatedAttributes.builder().setDescription("Use solr-connection instead").get())
           .argName("HOST")
           .desc(
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + DefaultValues.ZK_HOST
-                  + '.')
-          .get();
-
-  public static final Option SOLR_CONNECTION_OPTION =
-      Option.builder("q")
-          .longOpt("solr-connection")
-          .hasArg()
-          .argName("HOST")
-          .desc(
-              "ZooKeeper or HTTP(S) connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + DefaultValues.ZK_HOST
                   + '.')
           .get();
