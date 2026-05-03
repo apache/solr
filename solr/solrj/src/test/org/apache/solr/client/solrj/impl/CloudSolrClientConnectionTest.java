@@ -36,7 +36,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     CloudSolrClient.CloudSolrClientConnection parsed =
         CloudSolrClient.CloudSolrClientConnection.parse(
             "zookeeper1:2181,zookeeper2:2181,zookeeper3:2181/solr");
-    Assert.assertTrue(parsed.isZk());
+    Assert.assertTrue(parsed.isZookeeper());
     List<String> expectedQuorum = List.of("zookeeper1:2181", "zookeeper2:2181", "zookeeper3:2181");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertEquals("/solr", parsed.zkChroot());
@@ -48,7 +48,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     CloudSolrClient.CloudSolrClientConnection parsed =
         CloudSolrClient.CloudSolrClientConnection.parse(
             "192.0.2.10:2181,192.0.2.11:2181,192.0.2.12:2181/solr");
-    Assert.assertTrue(parsed.isZk());
+    Assert.assertTrue(parsed.isZookeeper());
     List<String> expectedQuorum = List.of("192.0.2.10:2181", "192.0.2.11:2181", "192.0.2.12:2181");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertEquals("/solr", parsed.zkChroot());
@@ -62,7 +62,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
             "[2001:db8:85a3::8a2e:370:7334]:2181,"
                 + "[2001:db8:85a3::8a2e:370:7335]:2181,"
                 + "[2001:db8:85a3::8a2e:370:7336]:2181/solr");
-    Assert.assertTrue(parsed.isZk());
+    Assert.assertTrue(parsed.isZookeeper());
     List<String> expectedQuorum =
         List.of(
             "[2001:db8:85a3::8a2e:370:7334]:2181",
@@ -82,7 +82,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     CloudSolrClient.CloudSolrClientConnection parsed =
         CloudSolrClient.CloudSolrClientConnection.parse(
             "zookeeper1:2181,zookeeper2:2181,zookeeper3:2181");
-    Assert.assertTrue(parsed.isZk());
+    Assert.assertTrue(parsed.isZookeeper());
     List<String> expectedQuorum = List.of("zookeeper1:2181", "zookeeper2:2181", "zookeeper3:2181");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
     Assert.assertNull(parsed.zkChroot());
@@ -94,7 +94,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     CloudSolrClient.CloudSolrClientConnection parsed =
         CloudSolrClient.CloudSolrClientConnection.parse(
             "http://solr1:8983/solr,http://solr2:8983/solr,http://solr3:8983/solr");
-    Assert.assertFalse(parsed.isZk());
+    Assert.assertFalse(parsed.isZookeeper());
     List<String> expectedQuorum =
         List.of("http://solr1:8983/solr", "http://solr2:8983/solr", "http://solr3:8983/solr");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
@@ -108,7 +108,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
     CloudSolrClient.CloudSolrClientConnection parsed =
         CloudSolrClient.CloudSolrClientConnection.parse(
             "https://solr1:8983/solr,https://solr2:8983/solr,https://solr3:8983/solr");
-    Assert.assertFalse(parsed.isZk());
+    Assert.assertFalse(parsed.isZookeeper());
     List<String> expectedQuorum =
         List.of("https://solr1:8983/solr", "https://solr2:8983/solr", "https://solr3:8983/solr");
     Assert.assertTrue(collectionEqual(expectedQuorum, parsed.quorumItems()));
@@ -125,7 +125,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
             "http://192.0.2.10:8983/solr,"
                 + "http://192.0.2.11:8983/solr,"
                 + "http://192.0.2.12:8983/solr");
-    Assert.assertFalse(parsed.isZk());
+    Assert.assertFalse(parsed.isZookeeper());
     List<String> expectedQuorum =
         List.of(
             "http://192.0.2.10:8983/solr",
@@ -147,7 +147,7 @@ public class CloudSolrClientConnectionTest extends SolrTestCase {
             "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr,"
                 + "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr,"
                 + "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr");
-    Assert.assertFalse(parsed.isZk());
+    Assert.assertFalse(parsed.isZookeeper());
     List<String> expectedQuorum =
         List.of(
             "http://[2001:db8:85a3::8a2e:370:7334]:8983/solr",

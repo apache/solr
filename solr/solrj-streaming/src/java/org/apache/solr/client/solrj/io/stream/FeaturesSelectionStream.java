@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
@@ -49,10 +48,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -64,7 +65,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
-  protected ModifiableSolrParams params;
+  protected SolrParams params;
   protected Iterator<Tuple> tupleIterator;
   protected String field;
   protected String outcome;
@@ -196,11 +197,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     expression.addParameter(collection);
 
     // parameters
-    for (Map.Entry<String, String[]> param : params) {
-      for (String paramValue : param.getValue()) {
-        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), paramValue));
-      }
-    }
+    expression.addParameters(params);
 
     expression.addParameter(new StreamExpressionNamedParameter("field", field));
     expression.addParameter(new StreamExpressionNamedParameter("outcome", outcome));
@@ -392,14 +389,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     private final String baseUrl;
     private final String outcome;
     private final String field;
-    private final ModifiableSolrParams paramsMap;
+    private final SolrParams params;
     private final int positiveLabel;
     private final int numTerms;
     private final SolrClientCache clientCache;
 
     public FeaturesSelectionCall(
         String baseUrl,
-        ModifiableSolrParams paramsMap,
+        SolrParams params,
         String field,
         String outcome,
         int positiveLabel,
@@ -408,7 +405,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       this.baseUrl = baseUrl;
       this.outcome = outcome;
       this.field = field;
-      this.paramsMap = paramsMap;
+      this.params = params;
       this.positiveLabel = positiveLabel;
       this.numTerms = numTerms;
       this.clientCache = clientCache;
@@ -416,22 +413,20 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
     @Override
     public NamedList<?> call() throws Exception {
-      ModifiableSolrParams params = new ModifiableSolrParams();
+      SolrQuery queryParams = new SolrQuery();
       SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
-      params.add(DISTRIB, "false");
-      params.add("fq", "{!igain}");
+      queryParams.setDistrib(false);
+      queryParams.setFilterQueries("{!igain}");
 
-      for (Map.Entry<String, String[]> entry : paramsMap) {
-        params.add(entry.getKey(), entry.getValue());
-      }
+      queryParams.add(params);
 
-      params.add("outcome", outcome);
-      params.add("positiveLabel", Integer.toString(positiveLabel));
-      params.add("field", field);
-      params.add("numTerms", String.valueOf(numTerms));
+      queryParams.add("outcome", outcome);
+      queryParams.add("positiveLabel", Integer.toString(positiveLabel));
+      queryParams.add("field", field);
+      queryParams.add("numTerms", String.valueOf(numTerms));
 
-      QueryRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(queryParams);
       QueryResponse response = request.process(solrClient);
       NamedList<?> res = response.getResponse();
       return res;

@@ -267,11 +267,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
 
     // parameters
-    for (Map.Entry<String, String[]> param : params) {
-      for (String paramValue : param.getValue()) {
-        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), paramValue));
-      }
-    }
+    expression.addParameters(params);
 
     expression.addParameter(new StreamExpressionNamedParameter("field", field));
     expression.addParameter(new StreamExpressionNamedParameter("name", name));

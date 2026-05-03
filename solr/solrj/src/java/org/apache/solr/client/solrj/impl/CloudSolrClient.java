@@ -266,7 +266,7 @@ public abstract class CloudSolrClient extends SolrClient {
      *     the solr connection string or created via the constructor
      */
     public Builder(CloudSolrClientConnection connection) {
-      if (connection.isZk()) {
+      if (connection.isZookeeper()) {
         this.zkHosts = connection.quorumItems();
         this.zkChroot = connection.zkChroot();
       } else {
@@ -1876,7 +1876,8 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   /** Universal connection string parser logic. */
-  public record CloudSolrClientConnection(boolean isZk, List<String> quorumItems, String zkChroot) {
+  public record CloudSolrClientConnection(
+      boolean isZookeeper, List<String> quorumItems, String zkChroot) {
 
     public CloudSolrClientConnection {
       if (quorumItems == null || quorumItems.isEmpty()) {
@@ -1924,7 +1925,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     @Override
     public String toString() {
-      return String.join(",", quorumItems) + (isZk && zkChroot != null ? zkChroot : "");
+      return String.join(",", quorumItems) + (isZookeeper && zkChroot != null ? zkChroot : "");
     }
   }
 }

@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,6 +44,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -188,11 +188,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     expression.addParameter(collection);
 
     // parameters
-    for (Map.Entry<String, String[]> param : params) {
-      for (String paramValue : param.getValue()) {
-        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), paramValue));
-      }
-    }
+    expression.addParameters(params);
+
     expression.addParameter(new StreamExpressionNamedParameter("field", field));
     expression.addParameter(
         new StreamExpressionNamedParameter("minDocFreq", Float.toString(minDocFreq)));
@@ -406,11 +403,11 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
     @Override
     public NamedList<?> call() throws Exception {
-      ModifiableSolrParams queryRequestParams = new ModifiableSolrParams();
+      SolrQuery queryRequestParams = new SolrQuery();
       SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
-      queryRequestParams.add(DISTRIB, "false");
-      queryRequestParams.add("fq", "{!significantTerms}");
+      queryRequestParams.setDistrib(false);
+      queryRequestParams.setFilterQueries("{!significantTerms}");
 
       queryRequestParams.add(params);
 
@@ -420,13 +417,13 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       queryRequestParams.add("field", field);
       queryRequestParams.add("numTerms", String.valueOf(numTerms * 5));
       if (isLocal) {
-        queryRequestParams.add("distrib", "false");
+        // TODO: 'distrib' is never true. 'isLocal' doesn't matter. It is correctly?
+        queryRequestParams.setDistrib(false);
       }
 
       QueryRequest request = new QueryRequest(queryRequestParams, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
-      NamedList<?> res = response.getResponse();
-      return res;
+      return response.getResponse();
     }
   }
 }

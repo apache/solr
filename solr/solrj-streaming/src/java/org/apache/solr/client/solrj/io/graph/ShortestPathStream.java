@@ -263,7 +263,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       // that this same replacement needs to take place.
       value = value.replace("\"", "\\\"");
 
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey().toString(), value));
+      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
 
     expression.addParameter(

@@ -76,6 +76,15 @@ public class SolrClientCache implements Closeable {
     }
   }
 
+  /**
+   * @deprecated use {@link #getCloudSolrClient(CloudSolrClient.CloudSolrClientConnection)}
+   */
+  @Deprecated
+  public CloudSolrClient getCloudSolrClient(String solrConnectionString) {
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionString);
+    return getCloudSolrClient(solrConnection);
+  }
+
   public synchronized CloudSolrClient getCloudSolrClient(
       CloudSolrClient.CloudSolrClientConnection solrConnection) {
     ensureOpen();
@@ -89,7 +98,7 @@ public class SolrClientCache implements Closeable {
     // Basically the ZK ACLs are assumed to be only used for the default ZK host,
     // thus we should only provide the ACLs to that Zookeeper instance.
     boolean canUseACLs = false;
-    if (solrConnection.isZk()) {
+    if (solrConnection.isZookeeper()) {
       String zkHostNoChroot = String.join(",", solrConnection.quorumItems());
       canUseACLs =
           Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);

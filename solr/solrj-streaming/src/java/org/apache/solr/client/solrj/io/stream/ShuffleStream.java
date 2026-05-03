@@ -108,7 +108,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     // collection
     expression.addParameter(collection);
 
-    for (Map.Entry<String, String[]> param : params.getMap().entrySet()) {
+    for (Map.Entry<String, String[]> param : params) {
       for (String val : param.getValue()) {
         // SOLR-8409: Escaping the " is a special case.
         // Do note that in any other BASE streams with parameters where a " might come into play

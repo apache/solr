@@ -69,7 +69,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
   protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
-  protected ModifiableSolrParams params;
+  protected SolrParams params;
   protected Map<String, String> fieldMappings;
   protected StreamComparator comp;
   private boolean trace;
@@ -111,8 +111,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     // Validate there are no unknown parameters - solrConnection/zkHost and alias are
-    // namedParameter,
-    // so we don't need to count it twice
+    // namedParameter, so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -169,7 +168,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       expression.addParameter(collection);
     }
 
-    for (Entry<String, String[]> param : params.getMap().entrySet()) {
+    for (Entry<String, String[]> param : params) {
       for (String val : param.getValue()) {
         // SOLR-8409: Escaping the " is a special case.
         // Do note that in any other BASE streams with parameters where a " might come into play

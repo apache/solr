@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -55,7 +54,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
 
   private String collection;
-  private ModifiableSolrParams params;
+  private SolrParams params;
   private Bucket x;
   private Bucket y;
   private Metric metric;
@@ -248,11 +247,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     }
 
     // parameters for q,fl etc
-    for (Entry<String, String[]> param : params.getMap().entrySet()) {
-      for (String val : param.getValue()) {
-        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), val));
-      }
-    }
+    expression.addParameters(params);
 
     // bucket x
     {

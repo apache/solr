@@ -18,7 +18,9 @@ package org.apache.solr.client.solrj.io.stream.expr;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import org.apache.solr.common.params.SolrParams;
 
 /** Expression containing a function and set of parameters */
 public class StreamExpression implements StreamExpressionParameter {
@@ -74,6 +76,14 @@ public class StreamExpression implements StreamExpressionParameter {
     }
 
     this.parameters = parameters;
+  }
+
+  public void addParameters(SolrParams parameters) {
+    for (Map.Entry<String, String[]> parameter : parameters) {
+      for (String value : parameter.getValue()) {
+        addParameter(new StreamExpressionNamedParameter(parameter.getKey(), value));
+      }
+    }
   }
 
   public StreamExpression withParameters(List<StreamExpressionParameter> parameters) {
