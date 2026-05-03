@@ -248,6 +248,11 @@ public class StreamTool extends ToolBase {
   private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
     String zkHost = CLIUtils.getZkHost(cli);
     var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    if (!solrConnection.isZookeeper()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", solrConnection));
+    }
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     solrClientCache.setBasicAuthCredentials(
         cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));

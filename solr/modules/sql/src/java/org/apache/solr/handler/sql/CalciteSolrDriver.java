@@ -18,6 +18,7 @@ package org.apache.solr.handler.sql;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Properties;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
@@ -26,6 +27,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.Holder;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.handler.sql.functions.ArrayContainsAll;
 import org.apache.solr.handler.sql.functions.ArrayContainsAny;
@@ -87,7 +89,15 @@ public class CalciteSolrDriver extends Driver {
     if (schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(schemaName);
+    if (!solrConnection.isZookeeper()) {
+      // TODO: add support for 'solrConnection' for both connection string types:
+      // TODO: zookeeper and HTTP(s)
+      throw new SQLException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", schemaName));
+    }
+    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache, solrConnection);
     rootSchema.add(schemaName, solrSchema);
 
     registerUDFs();

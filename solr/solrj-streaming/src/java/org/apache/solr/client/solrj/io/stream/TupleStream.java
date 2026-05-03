@@ -236,22 +236,29 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   public static CloudSolrClient.CloudSolrClientConnection buildSolrConnection(
       StreamFactory streamFactory, StreamExpression streamExpression, String collectionName)
       throws IOException {
+
     var solrConnectionExpression =
         streamFactory.getNamedOperand(streamExpression, "solrConnection");
     var zkHostExpression = streamFactory.getNamedOperand(streamExpression, "zkHost");
+
     String solrConnection = null;
+    boolean zkExpected = false;
+
     if (zkHostExpression == null && solrConnectionExpression == null) {
       solrConnection = streamFactory.getCollectionZkHost(collectionName);
       if (solrConnection == null) {
         solrConnection = streamFactory.getDefaultZkHost();
       }
+      zkExpected = true;
     } else if (solrConnectionExpression != null
         && solrConnectionExpression.getParameter() instanceof StreamExpressionValue exprValue) {
       solrConnection = exprValue.getValue();
     } else if (zkHostExpression != null
         && zkHostExpression.getParameter() instanceof StreamExpressionValue exprValue) {
       solrConnection = exprValue.getValue();
+      zkExpected = true;
     }
+
     if (solrConnection == null) {
       throw new IOException(
           String.format(
@@ -260,7 +267,19 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
               streamExpression,
               collectionName));
     }
-    return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
+
+    var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
+
+    if (zkExpected && !connection.isZookeeper()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Expected ZooKeeper connection string, but got: '%s'. "
+                  + "Use 'solrConnection' for pass HTTP(s) quorum",
+              solrConnection));
+    }
+
+    return connection;
   }
 
   public static ModifiableSolrParams buildSolrParamsExcept(

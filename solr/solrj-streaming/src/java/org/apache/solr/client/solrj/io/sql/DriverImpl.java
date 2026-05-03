@@ -25,6 +25,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -70,6 +71,13 @@ public class DriverImpl implements Driver {
 
     String zkHost = uri.getAuthority() + uri.getPath();
     var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    if (!solrConnection.isZookeeper()) {
+      // TODO: add support for 'solrConnection' for both connection string types:
+      // TODO: zookeeper and HTTP(s)
+      throw new SQLException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+    }
     return new ConnectionImpl(url, solrConnection, collection, props);
   }
 
