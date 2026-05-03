@@ -15,15 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.domain
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.serialization.Serializable
+data class PickedFile(
+    val name: String,
+    val bytes: ByteArray,
+    val extension: String? = null,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
 
-interface TabNavigationComponent<T : Any, C : Any> {
+        other as PickedFile
 
-    val tabSlot: Value<ChildSlot<T, C>>
+        if (name != other.name) return false
+        if (!bytes.contentEquals(other.bytes)) return false
+        if (extension != other.extension) return false
 
-    fun onNavigate(tab: T)
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + bytes.contentHashCode()
+        result = 31 * result + (extension?.hashCode() ?: 0)
+        return result
+    }
 }
