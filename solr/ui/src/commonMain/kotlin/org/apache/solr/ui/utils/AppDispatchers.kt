@@ -15,15 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.utils
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.CoroutineDispatcher
 
-interface TabNavigationComponent<T : Any, C : Any> {
+/**
+ * App dispatchers used for coroutines.
+ */
+interface AppDispatchers {
 
-    val tabSlot: Value<ChildSlot<T, C>>
-
-    fun onNavigate(tab: T)
+    /**
+     * Coroutine dispatcher used for IO operations.
+     */
+    val io: CoroutineDispatcher
 }
+
+/**
+ * Factory function to provide platform-specific dispatchers.
+ */
+expect fun platformDispatchers(): AppDispatchers

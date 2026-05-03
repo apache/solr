@@ -17,35 +17,41 @@
 
 package org.apache.solr.ui.components.cluster.integration
 
+import com.arkivanov.decompose.router.slot.ChildSlot
+import com.arkivanov.decompose.router.slot.SlotNavigation
+import com.arkivanov.decompose.router.slot.activate
+import com.arkivanov.decompose.router.slot.childSlot
+import com.arkivanov.decompose.value.Value
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.cluster.ClusterComponent.Child
 import org.apache.solr.ui.components.cluster.ClusterComponent.ClusterTab
 import org.apache.solr.ui.components.navigation.TabNavigationComponent
-import org.apache.solr.ui.components.navigation.integration.DefaultTabNavigationComponent
 import org.apache.solr.ui.utils.AppComponentContext
 
 class DefaultClusterComponent(
     componentContext: AppComponentContext,
-    tabNavigation: TabNavigationComponent<ClusterTab, Child>,
 ) : ClusterComponent,
     AppComponentContext by componentContext,
-    TabNavigationComponent<ClusterTab, Child> by tabNavigation {
+    TabNavigationComponent<ClusterTab, Child> {
 
-    constructor(
-        componentContext: AppComponentContext,
-    ) : this(
-        componentContext = componentContext,
-        tabNavigation = DefaultTabNavigationComponent<ClusterTab, Child>(
-            componentContext = componentContext,
-            initialTab = ClusterTab.Zookeeper,
-            tabSerializer = ClusterTab.serializer(),
-            childFactory = { configuration, childContext ->
-                when (configuration.tab) {
-                    ClusterTab.Zookeeper -> Child.Zookeeper
-                    ClusterTab.Nodes -> Child.Nodes
-                    ClusterTab.Cores -> Child.Cores
-                }
-            },
-        ),
+    private val navigation = SlotNavigation<ClusterTab>()
+
+    override val tabSlot: Value<ChildSlot<ClusterTab, Child>> = childSlot(
+        source = navigation,
+        serializer = ClusterTab.serializer(),
+        handleBackButton = true,
+        childFactory = { configuration, childContext ->
+            when (configuration) {
+                ClusterTab.Zookeeper -> Child.Zookeeper
+                ClusterTab.Nodes -> Child.Nodes
+                ClusterTab.Cores -> Child.Cores
+            }
+        },
     )
+
+    init {
+        navigation.activate(configuration = ClusterTab.Zookeeper)
+    }
+
+    override fun onNavigate(tab: ClusterTab) = navigation.activate(configuration = tab)
 }

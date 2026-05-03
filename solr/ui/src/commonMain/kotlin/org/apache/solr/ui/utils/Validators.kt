@@ -15,15 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.utils
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.serialization.Serializable
+/**
+ * Regex that configset names must match in order to be valid.
+ *
+ * Note that this regex is only used in the UI and does not represent the actual allowed
+ * name regex for configsets, as this has not yet been defined.
+ */
+internal val configsetNameRegex = "[a-zA-Z0-9._-]+".toRegex()
 
-interface TabNavigationComponent<T : Any, C : Any> {
-
-    val tabSlot: Value<ChildSlot<T, C>>
-
-    fun onNavigate(tab: T)
-}
+/**
+ * The maximum length a configset name may have.
+ *
+ * Note that this is a maximum length used in the UI only and does not represent the actual allowed
+ * length for configset names.
+ */
+internal const val MAX_CONFIGSET_NAME_LENGTH = 256

@@ -15,15 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.views.files
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.serialization.Serializable
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import org.apache.solr.ui.generated.resources.Res
+import org.apache.solr.ui.generated.resources.draft
+import org.apache.solr.ui.generated.resources.folder_zip
+import org.jetbrains.compose.resources.painterResource
 
-interface TabNavigationComponent<T : Any, C : Any> {
-
-    val tabSlot: Value<ChildSlot<T, C>>
-
-    fun onNavigate(tab: T)
-}
+@Composable
+fun FileTypeIcon(
+    fileType: String,
+    modifier: Modifier = Modifier,
+) = Icon(
+    modifier = modifier,
+    painter = painterResource(
+        when (fileType) {
+            "zip", "rar", "gz", "7z" -> Res.drawable.folder_zip
+            else -> Res.drawable.draft
+        },
+    ),
+    contentDescription = null,
+)

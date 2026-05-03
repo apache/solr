@@ -15,15 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.components.files.domain
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.serialization.Serializable
+import org.apache.solr.ui.utils.pickFile
 
-interface TabNavigationComponent<T : Any, C : Any> {
-
-    val tabSlot: Value<ChildSlot<T, C>>
-
-    fun onNavigate(tab: T)
+internal class DefaultSelectFileUseCase : SelectFileUseCase {
+    override suspend fun invoke(
+        extensions: List<String>,
+        maxSize: Int?,
+    ): SelectFileResult {
+        // Launch in main scope as it is tightly coupled with user-interaction
+        val pickedFile = pickFile(extensions = extensions)
+        // TODO Add additional validation
+        return pickedFile?.let {
+            if (maxSize != null && it.bytes.size > maxSize) {
+                SelectFileResult.ValidationFailure(SelectFileResult.Error.FileTooLarge)
+            }
+            SelectFileResult.Success(it)
+        } ?: SelectFileResult.Aborted
+    }
 }

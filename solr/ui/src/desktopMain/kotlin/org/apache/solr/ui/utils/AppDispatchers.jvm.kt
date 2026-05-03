@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.utils
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.Dispatchers
 
-interface TabNavigationComponent<T : Any, C : Any> {
-
-    val tabSlot: Value<ChildSlot<T, C>>
-
-    fun onNavigate(tab: T)
+actual fun platformDispatchers(): AppDispatchers = object : AppDispatchers {
+    override val io = Dispatchers.IO
 }
