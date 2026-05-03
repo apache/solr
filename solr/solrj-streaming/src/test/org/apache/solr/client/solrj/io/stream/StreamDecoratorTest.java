@@ -1344,7 +1344,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -1416,16 +1416,16 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
-      assertEquals(4, countDistI, 0.0);
+      assertEquals(3, countDistI, 0.0);
       assertEquals(1, countDistS, 0.0);
 
       tuple = tuples.get(1);
@@ -1492,7 +1492,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -1565,16 +1565,16 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
-      assertEquals(4, countDistI, 0.0);
+      assertEquals(3, countDistI, 0.0);
       assertEquals(1, countDistS, 0.0);
 
       tuple = tuples.get(1);
@@ -2024,7 +2024,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -2101,13 +2101,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
 
@@ -2166,7 +2166,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -2244,13 +2244,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
 
