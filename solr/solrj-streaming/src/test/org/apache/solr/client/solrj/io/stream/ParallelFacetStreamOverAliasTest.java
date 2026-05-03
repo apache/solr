@@ -307,7 +307,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory =
-        new SolrDefaultStreamFactory().withDefaultZkHost(cluster.getZkServer().getZkAddress());
+        new SolrDefaultStreamFactory().withDefaultSolrConnection(getSolrConnection());
 
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);

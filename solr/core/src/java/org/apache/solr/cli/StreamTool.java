@@ -272,7 +272,7 @@ public class StreamTool extends ToolBase {
     // logic about where to read data from.
     streamFactory.withFunctionName("cat", LocalCatStream.class);
 
-    streamFactory.withDefaultZkHost(zkHost);
+    streamFactory.withDefaultSolrConnection(solrConnection);
 
     Lang.register(streamFactory);
 

@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -125,9 +126,11 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionSolrConnection("collection1", solrConnection)
             .withFunctionName("shortestPath", ShortestPathStream.class);
 
     stream =
@@ -417,9 +420,11 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionSolrConnection("collection1", solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("nodes", GatherNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -743,10 +748,12 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withDefaultZkHost(cluster.getZkServer().getZkAddress())
+            .withCollectionSolrConnection("collection1", solrConnection)
+            .withDefaultSolrConnection(solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("scoreNodes", ScoreNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -906,10 +913,12 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withDefaultZkHost(cluster.getZkServer().getZkAddress())
+            .withCollectionSolrConnection("collection1", solrConnection)
+            .withDefaultSolrConnection(solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("scoreNodes", ScoreNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -973,9 +982,11 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
+    var solrConnection =
+        CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionSolrConnection("collection1", solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("count", CountMetric.class)

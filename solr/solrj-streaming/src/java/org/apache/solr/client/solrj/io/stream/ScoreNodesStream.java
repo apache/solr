@@ -96,7 +96,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
               streamExpressions.size()));
     }
 
-    solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(factory.getDefaultZkHost());
+    solrConnection = factory.getDefaultSolrConnection();
 
     if (null == solrConnection) {
       throw new IOException("solrConnection not found");

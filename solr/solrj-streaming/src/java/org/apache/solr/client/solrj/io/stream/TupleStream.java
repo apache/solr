@@ -241,22 +241,27 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
         streamFactory.getNamedOperand(streamExpression, "solrConnection");
     var zkHostExpression = streamFactory.getNamedOperand(streamExpression, "zkHost");
 
-    String solrConnection = null;
-    boolean zkExpected = false;
+    CloudSolrClient.CloudSolrClientConnection solrConnection = null;
 
     if (zkHostExpression == null && solrConnectionExpression == null) {
-      solrConnection = streamFactory.getCollectionZkHost(collectionName);
+      solrConnection = streamFactory.getCollectionSolrConnection(collectionName);
       if (solrConnection == null) {
-        solrConnection = streamFactory.getDefaultZkHost();
+        solrConnection = streamFactory.getDefaultSolrConnection();
       }
-      zkExpected = true;
     } else if (solrConnectionExpression != null
         && solrConnectionExpression.getParameter() instanceof StreamExpressionValue exprValue) {
-      solrConnection = exprValue.getValue();
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
     } else if (zkHostExpression != null
         && zkHostExpression.getParameter() instanceof StreamExpressionValue exprValue) {
-      solrConnection = exprValue.getValue();
-      zkExpected = true;
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
+      if (!solrConnection.isZookeeper()) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Expected ZooKeeper connection string, but got: '%s'. "
+                    + "Use 'solrConnection' for pass HTTP(s) quorum",
+                solrConnection));
+      }
     }
 
     if (solrConnection == null) {
@@ -268,18 +273,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
               collectionName));
     }
 
-    var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
-
-    if (zkExpected && !connection.isZookeeper()) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "Expected ZooKeeper connection string, but got: '%s'. "
-                  + "Use 'solrConnection' for pass HTTP(s) quorum",
-              solrConnection));
-    }
-
-    return connection;
+    return solrConnection;
   }
 
   public static ModifiableSolrParams buildSolrParamsExcept(

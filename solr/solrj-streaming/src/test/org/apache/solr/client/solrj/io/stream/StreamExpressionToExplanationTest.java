@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
@@ -38,10 +39,11 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
   public StreamExpressionToExplanationTest() {
     super();
 
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse("testhost:1234");
     factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", "testhost:1234")
-            .withCollectionZkHost("collection2", "testhost:1234")
+            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionSolrConnection("collection2", solrConnection)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("merge", MergeStream.class)

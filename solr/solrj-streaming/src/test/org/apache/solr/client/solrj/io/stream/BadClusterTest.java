@@ -68,7 +68,7 @@ public class BadClusterTest extends SolrCloudTestCase {
 
     zkHost = cluster.getZkServer().getZkAddress();
     solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-    streamFactory.withCollectionZkHost(collection, zkHost);
+    streamFactory.withCollectionSolrConnection(collection, solrConnection);
   }
 
   // test order is important because the cluster progressively gets worse, but it is only created

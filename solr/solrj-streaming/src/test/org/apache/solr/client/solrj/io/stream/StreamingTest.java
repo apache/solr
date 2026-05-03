@@ -126,7 +126,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     zkHost = cluster.getZkServer().getZkAddress();
     solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-    streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+    streamFactory.withCollectionSolrConnection(COLLECTIONORALIAS, solrConnection);
 
     // Set up multi-replica collection
     if (useAlias) {
@@ -141,7 +141,7 @@ public class StreamingTest extends SolrCloudTestCase {
       CollectionAdminRequest.createAlias(MULTI_REPLICA_COLLECTIONORALIAS, collection)
           .process(cluster.getSolrClient());
     }
-    streamFactory.withCollectionZkHost(MULTI_REPLICA_COLLECTIONORALIAS, zkHost);
+    streamFactory.withCollectionSolrConnection(MULTI_REPLICA_COLLECTIONORALIAS, solrConnection);
   }
 
   private static final String id = "id";
@@ -308,7 +308,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "8", "a_ss", "hello1", "a_i", "13", "a_f", "4")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+    streamFactory.withCollectionSolrConnection(COLLECTIONORALIAS, solrConnection);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();

@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -111,8 +112,9 @@ public class StreamHandler extends RequestHandlerBase
     if (coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
-      streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
-      streamFactory.withDefaultZkHost(defaultZkhost);
+      var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);
+      streamFactory.withCollectionSolrConnection(defaultCollection, solrConnection);
+      streamFactory.withDefaultSolrConnection(solrConnection);
       modelCache =
           coreContainer
               .getObjectCache()
