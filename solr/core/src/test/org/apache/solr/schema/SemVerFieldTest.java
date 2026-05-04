@@ -167,4 +167,36 @@ public class SemVerFieldTest extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.='3']",
         "//result/doc[3]/str[@name='id'][.='1']");
   }
+
+  @Test
+  public void testMultiValued() {
+    clearIndex();
+    assertU(adoc("id", "1", "versions", "1.0.0", "versions", "2.0.0", "versions", "3.0.0"));
+    assertU(adoc("id", "2", "versions", "1.5.0", "versions", "2.5.0"));
+    assertU(adoc("id", "3", "versions", "4.0.0"));
+    assertU(commit());
+
+    assertQ(
+        "Exact match on one of the values",
+        req("q", "versions:2.0.0"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='1']");
+
+    assertQ(
+        "Range query matches docs with any value in range",
+        req("q", "versions:[2.0.0 TO 3.0.0]"),
+        "//*[@numFound='2']");
+
+    assertQ(
+        "All docs have at least one version >= 1.0.0",
+        req("q", "versions:[1.0.0 TO *]"),
+        "//*[@numFound='3']");
+
+    assertQ(
+        "Stored multiValued values returned as array",
+        req("q", "id:1", "fl", "versions"),
+        "//result/doc[1]/arr[@name='versions']/str[1][.='1']",
+        "//result/doc[1]/arr[@name='versions']/str[2][.='2']",
+        "//result/doc[1]/arr[@name='versions']/str[3][.='3']");
+  }
 }

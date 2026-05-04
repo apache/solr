@@ -24,6 +24,7 @@
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="version" type="semver" indexed="true" stored="true" multiValued="false"/>
   <field name="version_last" type="semver_last" indexed="true" stored="true" multiValued="false"/>
+  <field name="versions" type="semver" indexed="true" stored="true" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 </schema>
