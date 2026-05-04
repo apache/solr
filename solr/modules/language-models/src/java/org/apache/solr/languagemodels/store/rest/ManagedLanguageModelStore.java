@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * via the REST API. Concrete subclasses supply the REST endpoint and the model instantiation logic.
  */
 @ThreadSafe
-public abstract class ManagedLanguageModelStore<M extends SolrLanguageModel> extends ManagedResource
+public abstract class ManagedLanguageModelStore<ModelT extends SolrLanguageModel> extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -50,7 +50,7 @@ public abstract class ManagedLanguageModelStore<M extends SolrLanguageModel> ext
   protected static final String NAME_KEY = "name";
   protected static final String PARAMS_KEY = "params";
 
-  private final LanguageModelStore<M> store;
+  private final LanguageModelStore<ModelT> store;
   private Object managedData;
 
   protected ManagedLanguageModelStore(
@@ -67,7 +67,7 @@ public abstract class ManagedLanguageModelStore<M extends SolrLanguageModel> ext
    * @param modelMap a map containing {@code "class"}, {@code "name"}, and {@code "params"} keys
    * @return the instantiated model
    */
-  protected abstract M fromModelMap(SolrResourceLoader loader, Map<String, Object> modelMap);
+  protected abstract ModelT fromModelMap(SolrResourceLoader loader, Map<String, Object> modelMap);
 
   private static LinkedHashMap<String, Object> toModelMap(SolrLanguageModel model) {
     final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(3, 1.0f);
@@ -103,7 +103,7 @@ public abstract class ManagedLanguageModelStore<M extends SolrLanguageModel> ext
     }
   }
 
-  public void addModel(M model) throws SolrException {
+  public void addModel(ModelT model) throws SolrException {
     try {
       if (log.isInfoEnabled()) {
         log.info("adding model {}", model.getName());
@@ -141,7 +141,7 @@ public abstract class ManagedLanguageModelStore<M extends SolrLanguageModel> ext
     response.add(MODELS_JSON_FIELD, modelsAsManagedResources(store.getModels()));
   }
 
-  public M getModel(String modelName) {
+  public ModelT getModel(String modelName) {
     return store.getModel(modelName);
   }
 

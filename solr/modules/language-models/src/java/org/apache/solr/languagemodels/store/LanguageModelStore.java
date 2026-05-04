@@ -24,15 +24,15 @@ import java.util.Map;
 import org.apache.solr.languagemodels.model.SolrLanguageModel;
 
 /** Generic store to manage CRUD operations on models that extend {@link SolrLanguageModel} */
-public class LanguageModelStore<M extends SolrLanguageModel> {
+public class LanguageModelStore<ModelT extends SolrLanguageModel> {
 
-  private final Map<String, M> availableModels;
+  private final Map<String, ModelT> availableModels;
 
   public LanguageModelStore() {
     availableModels = Collections.synchronizedMap(new LinkedHashMap<>());
   }
 
-  public M getModel(String name) {
+  public ModelT getModel(String name) {
     return availableModels.get(name);
   }
 
@@ -40,9 +40,9 @@ public class LanguageModelStore<M extends SolrLanguageModel> {
     availableModels.clear();
   }
 
-  public List<M> getModels() {
+  public List<ModelT> getModels() {
     synchronized (availableModels) {
-      final List<M> availableModelsValues = new ArrayList<>(availableModels.values());
+      final List<ModelT> availableModelsValues = new ArrayList<>(availableModels.values());
       return Collections.unmodifiableList(availableModelsValues);
     }
   }
@@ -52,11 +52,11 @@ public class LanguageModelStore<M extends SolrLanguageModel> {
     return "LanguageModelStore [availableModels=" + availableModels.keySet() + "]";
   }
 
-  public M delete(String modelName) {
+  public ModelT delete(String modelName) {
     return availableModels.remove(modelName);
   }
 
-  public void addModel(M modelData) throws LanguageModelException {
+  public void addModel(ModelT modelData) throws LanguageModelException {
     final String name = modelData.getName();
     if (availableModels.putIfAbsent(name, modelData) != null) {
       throw new LanguageModelException(
