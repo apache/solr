@@ -34,31 +34,40 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
   private final SolrParams query;
 
   public QueryRequest() {
-    super(METHOD.GET, null, SolrRequestType.QUERY);
+    super(METHOD.GET, "/select", SolrRequestType.QUERY);
     query = SolrParams.of();
   }
 
   public QueryRequest(SolrParams q) {
-    super(METHOD.GET, null, SolrRequestType.QUERY);
-    query = Objects.requireNonNull(q);
+    super(METHOD.GET, pathFromParams(Objects.requireNonNull(q)), SolrRequestType.QUERY);
+    query = paramsWithoutQt(q);
   }
 
   public QueryRequest(SolrParams q, METHOD method) {
-    super(method, null, SolrRequestType.QUERY);
+    super(method, pathFromParams(Objects.requireNonNull(q)), SolrRequestType.QUERY);
+    query = paramsWithoutQt(q);
+  }
+
+  public QueryRequest(String path, SolrParams q) {
+    super(METHOD.GET, Objects.requireNonNull(path), SolrRequestType.QUERY);
     query = Objects.requireNonNull(q);
   }
 
-  /** Use the params 'QT' parameter if it exists */
-  @Override
-  public String getPath() {
-    String qt = query.get(CommonParams.QT);
-    if (qt == null) {
-      qt = super.getPath();
-    }
-    if (qt != null && qt.startsWith("/")) {
-      return qt;
-    }
-    return "/select";
+  public QueryRequest(String path, SolrParams q, METHOD method) {
+    super(method, Objects.requireNonNull(path), SolrRequestType.QUERY);
+    query = Objects.requireNonNull(q);
+  }
+
+  private static String pathFromParams(SolrParams q) {
+    String qt = q.get(CommonParams.QT);
+    return (qt != null && qt.startsWith("/")) ? qt : "/select";
+  }
+
+  private static SolrParams paramsWithoutQt(SolrParams q) {
+    if (q.get(CommonParams.QT) == null) return q;
+    ModifiableSolrParams params = new ModifiableSolrParams(q);
+    params.remove(CommonParams.QT);
+    return params;
   }
 
   // ---------------------------------------------------------------------------------
@@ -71,13 +80,6 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
 
   @Override
   public SolrParams getParams() {
-    // Remove qt parameter from the final parameters sent to server
-    String qt = query.get(CommonParams.QT);
-    if (qt != null) {
-      ModifiableSolrParams params = new ModifiableSolrParams(query);
-      params.remove(CommonParams.QT);
-      return params;
-    }
     return query;
   }
 }

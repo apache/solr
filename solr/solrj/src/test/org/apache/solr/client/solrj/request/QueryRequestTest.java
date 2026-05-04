@@ -18,62 +18,61 @@ package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.junit.Test;
 
-/**
- * Test that verifies SOLR-17715: qt parameter should not be sent to Solr server
- */
-public class QueryRequestQtTest extends SolrTestCase {
+public class QueryRequestTest extends SolrTestCase {
 
   @Test
-  public void testQtParameterRemovedFromRequest() {
+  public void testQtWithSlashBecomesPath() {
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("/custom");
-    
+
     QueryRequest request = new QueryRequest(query);
-    
-    // The path should be extracted from qt
+
     assertEquals("/custom", request.getPath());
-    
-    // But qt should not be in the final parameters
-    SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", 
-               params.get(CommonParams.QT));
-    assertEquals("*:*", params.get(CommonParams.Q));
+    assertNull("qt must not be sent to server", request.getParams().get("qt"));
+    assertEquals("*:*", request.getParams().get("q"));
   }
-  
+
   @Test
-  public void testQtParameterWithoutSlashUsesSelect() {
+  public void testQtWithoutSlashDefaultsToSelect() {
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("custom"); // no leading slash
-    
+
     QueryRequest request = new QueryRequest(query);
-    
-    // Should default to /select when qt doesn't start with /
+
     assertEquals("/select", request.getPath());
-    
-    // qt should still be removed from parameters
-    SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", 
-               params.get(CommonParams.QT));
+    assertNull("qt must not be sent to server", request.getParams().get("qt"));
   }
-  
+
   @Test
-  public void testNoQtParameter() {
+  public void testNoQtDefaultsToSelect() {
     SolrQuery query = new SolrQuery("*:*");
-    // Don't set any request handler
-    
+
     QueryRequest request = new QueryRequest(query);
-    
-    // Should default to /select
+
     assertEquals("/select", request.getPath());
-    
-    // Should not have qt parameter
-    SolrParams params = request.getParams();
-    assertNull("qt parameter should not be present", 
-               params.get(CommonParams.QT));
-    assertEquals("*:*", params.get(CommonParams.Q));
+    assertNull(request.getParams().get("qt"));
+  }
+
+  @Test
+  public void testExplicitPath() {
+    SolrQuery query = new SolrQuery("*:*");
+    QueryRequest request = new QueryRequest("/custom", query);
+
+    assertEquals("/custom", request.getPath());
+    assertNull("qt must not be present", request.getParams().get("qt"));
+    assertEquals("*:*", request.getParams().get("q"));
+  }
+
+  @Test
+  public void testExplicitPathWithMethod() {
+    SolrQuery query = new SolrQuery("*:*");
+    QueryRequest request = new QueryRequest("/spell", query, SolrRequest.METHOD.POST);
+
+    assertEquals("/spell", request.getPath());
+    assertEquals(SolrRequest.METHOD.POST, request.getMethod());
+    assertNull(request.getParams().get("qt"));
   }
 }
