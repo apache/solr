@@ -380,7 +380,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       ConsumerRecord<String, MirroredSolrRequest<?>> lastRecord = null;
 
       for (TopicPartition partition : records.partitions()) {
-        log.trace("Checking partition {}", partition.partition());
+        if (log.isTraceEnabled()) {
+          log.trace("Checking partition {}", partition.partition());
+        }
         List<ConsumerRecord<String, MirroredSolrRequest<?>>> partitionRecords =
             records.records(partition);
 

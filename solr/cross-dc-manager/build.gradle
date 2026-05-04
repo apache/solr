@@ -37,6 +37,7 @@ dependencies {
   implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.jakarta.servlet.api
   implementation libs.slf4j.api
+  runtimeOnly libs.google.guava
   runtimeOnly libs.google.protobuf.javautils
   runtimeOnly libs.commonscodec.commonscodec
 
