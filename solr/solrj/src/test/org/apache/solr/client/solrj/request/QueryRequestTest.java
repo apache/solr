@@ -31,23 +31,25 @@ public class QueryRequestTest extends SolrTestCase {
     QueryRequest request = new QueryRequest(query);
 
     assertEquals("/custom", request.getPath());
-    assertNull("qt must not be sent to server", request.getParams().get("qt"));
+    assertNull("qt parameter should be removed from request params",
+        request.getParams().get("qt"));
     assertEquals("*:*", request.getParams().get("q"));
   }
 
   @Test
   public void testQtWithoutSlashDefaultsToSelect() {
     SolrQuery query = new SolrQuery("*:*");
-    query.setRequestHandler("custom"); // no leading slash
+    query.setRequestHandler("custom");
 
     QueryRequest request = new QueryRequest(query);
 
     assertEquals("/select", request.getPath());
-    assertNull("qt must not be sent to server", request.getParams().get("qt"));
+    assertNull("qt parameter shouldn't be sent to server",
+        request.getParams().get("qt"));
   }
 
   @Test
-  public void testNoQtDefaultsToSelect() {
+  public void testDefaultPathToSelect() {
     SolrQuery query = new SolrQuery("*:*");
 
     QueryRequest request = new QueryRequest(query);
@@ -62,7 +64,8 @@ public class QueryRequestTest extends SolrTestCase {
     QueryRequest request = new QueryRequest("/custom", query);
 
     assertEquals("/custom", request.getPath());
-    assertNull("qt must not be present", request.getParams().get("qt"));
+    assertNull("qt parameter must not be present",
+        request.getParams().get("qt"));
     assertEquals("*:*", request.getParams().get("q"));
   }
 
