@@ -17,6 +17,8 @@
 package org.apache.solr.languagemodels.store.rest;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +29,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.model.SolrLanguageModel;
 import org.apache.solr.languagemodels.store.LanguageModelException;
-import org.apache.solr.languagemodels.store.LanguageModelStore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -50,14 +51,14 @@ public abstract class ManagedLanguageModelStore<ModelT extends SolrLanguageModel
   protected static final String NAME_KEY = "name";
   protected static final String PARAMS_KEY = "params";
 
-  private final LanguageModelStore<ModelT> store;
+  private final LanguageModelStore store;
   private Object managedData;
 
   protected ManagedLanguageModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
-    store = new LanguageModelStore<>();
+    store = new LanguageModelStore();
   }
 
   /**
@@ -152,5 +153,48 @@ public abstract class ManagedLanguageModelStore<ModelT extends SolrLanguageModel
   @Override
   public String toString() {
     return getClass().getSimpleName() + " [store=" + store + "]";
+  }
+
+
+  // Inner Data Structure to deal with Store persistence
+  private class LanguageModelStore {
+
+    private final Map<String, ModelT> availableModels;
+
+    public LanguageModelStore() {
+      availableModels = Collections.synchronizedMap(new LinkedHashMap<>());
+    }
+
+    public ModelT getModel(String name) {
+      return availableModels.get(name);
+    }
+
+    public void clear() {
+      availableModels.clear();
+    }
+
+    public List<ModelT> getModels() {
+      synchronized (availableModels) {
+        final List<ModelT> availableModelsValues = new ArrayList<>(availableModels.values());
+        return Collections.unmodifiableList(availableModelsValues);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "LanguageModelStore [availableModels=" + availableModels.keySet() + "]";
+    }
+
+    public ModelT delete(String modelName) {
+      return availableModels.remove(modelName);
+    }
+
+    public void addModel(ModelT modelData) throws LanguageModelException {
+      final String name = modelData.getName();
+      if (availableModels.putIfAbsent(name, modelData) != null) {
+        throw new LanguageModelException(
+            "model '" + name + "' already exists. Please use a different name");
+      }
+    }
   }
 }
