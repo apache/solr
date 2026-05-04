@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.junit.Test;
 
@@ -31,8 +30,7 @@ public class QueryRequestTest extends SolrTestCase {
     QueryRequest request = new QueryRequest(query);
 
     assertEquals("/custom", request.getPath());
-    assertNull("qt parameter should be removed from request params",
-        request.getParams().get("qt"));
+    assertNull("qt parameter should be removed from request params", request.getParams().get("qt"));
     assertEquals("*:*", request.getParams().get("q"));
   }
 
@@ -44,8 +42,7 @@ public class QueryRequestTest extends SolrTestCase {
     QueryRequest request = new QueryRequest(query);
 
     assertEquals("/select", request.getPath());
-    assertNull("qt parameter shouldn't be sent to server",
-        request.getParams().get("qt"));
+    assertNull("qt parameter shouldn't be sent to server", request.getParams().get("qt"));
   }
 
   @Test
@@ -64,8 +61,7 @@ public class QueryRequestTest extends SolrTestCase {
     QueryRequest request = new QueryRequest("/custom", query);
 
     assertEquals("/custom", request.getPath());
-    assertNull("qt parameter must not be present",
-        request.getParams().get("qt"));
+    assertNull("qt parameter must not be present", request.getParams().get("qt"));
     assertEquals("*:*", request.getParams().get("q"));
   }
 
