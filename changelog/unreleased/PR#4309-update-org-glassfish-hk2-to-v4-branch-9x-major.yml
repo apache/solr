@@ -1,0 +1,7 @@
+title: Update org.glassfish.hk2*:* to v4 (branch_9x) (major)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4309
+  url: https://github.com/apache/solr/pull/4309
