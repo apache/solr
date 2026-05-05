@@ -175,20 +175,19 @@ public class ExecutorUtil {
     }
   }
 
-  /**
-   * Executor logging details which include pool name when executor fails to terminate.
-   */
+  /** Executor logging details which include pool name when executor fails to terminate. */
   public static String describeExecutorForLogging(ExecutorService pool) {
     if (pool == null) return "";
     if (pool instanceof ThreadPoolExecutor poolExecutor) {
       ThreadFactory threadFactory = poolExecutor.getThreadFactory();
-      String poolName = threadFactory instanceof SolrNamedThreadFactory
-          solrNamedThreadFactory ? solrNamedThreadFactory.getPoolName() : "";
+      String poolName =
+          threadFactory instanceof SolrNamedThreadFactory solrNamedThreadFactory
+              ? solrNamedThreadFactory.getPoolName()
+              : "";
       return "[" + "poolName=" + poolName + "]" + poolExecutor;
     }
     return "";
   }
-
 
   /**
    * Await the termination of an {@link ExecutorService} until all threads are complete, or until we
@@ -338,9 +337,7 @@ public class ExecutorUtil {
       this.enableSubmitterStackTrace = true;
     }
 
-    /**
-     * When the thread factory is a {@link SolrNamedThreadFactory}, prefixes the pool name.
-     */
+    /** When the thread factory is a {@link SolrNamedThreadFactory}, prefixes the pool name. */
     @Override
     public String toString() {
       ThreadFactory threadFactory = getThreadFactory();

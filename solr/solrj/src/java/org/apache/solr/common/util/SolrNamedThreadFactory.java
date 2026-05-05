@@ -33,9 +33,7 @@ public class SolrNamedThreadFactory implements ThreadFactory {
     poolName = namePrefix;
   }
 
-  /**
-   * Returns the name prefix passed to the constructor as a pool name.
-   */
+  /** Returns the name prefix passed to the constructor as a pool name. */
   public String getPoolName() {
     return poolName;
   }
