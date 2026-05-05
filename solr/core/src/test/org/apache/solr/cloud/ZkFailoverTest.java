@@ -58,8 +58,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     // This attempt will fail since it will time out after 1 second
     System.setProperty("solr.cloud.wait.for.zk.seconds", "1");
     restartSolrAndZk();
-    waitForState(
-        "Timeout waiting for 0 live nodes", coll, (liveNodes, c) -> liveNodes.isEmpty());
+    waitForState("Timeout waiting for 0 live nodes", coll, (liveNodes, c) -> liveNodes.isEmpty());
 
     // This attempt will succeed since there will be enough time to connect
     System.setProperty("solr.cloud.wait.for.zk.seconds", "20");
@@ -101,5 +100,4 @@ public class ZkFailoverTest extends SolrCloudTestCase {
       thread.join();
     }
   }
-
 }
