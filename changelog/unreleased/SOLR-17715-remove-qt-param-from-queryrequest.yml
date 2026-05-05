@@ -8,5 +8,5 @@ authors:
 links:
   - name: SOLR-17715
     url: https://issues.apache.org/jira/browse/SOLR-17715
-  - name: PR#3441
+  - name: PR#4397
     url: https://github.com/apache/solr/pull/4397
