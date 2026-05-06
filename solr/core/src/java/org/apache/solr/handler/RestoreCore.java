@@ -66,6 +66,16 @@ public class RestoreCore implements Callable<Boolean> {
   private static final int DEFAULT_MAX_PARALLEL_DOWNLOADS =
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleldownloads", 1);
 
+  private static final ExecutorService RESTORE_EXECUTOR =
+      new ExecutorUtil.MDCAwareThreadPoolExecutor(
+          0,
+          Math.max(1, DEFAULT_MAX_PARALLEL_DOWNLOADS),
+          60L,
+          TimeUnit.SECONDS,
+          new SynchronousQueue<>(),
+          new SolrNamedThreadFactory("RestoreCoreExecutor"),
+          new ThreadPoolExecutor.CallerRunsPolicy());
+
   private final SolrCore core;
   private RestoreRepository repository;
 
@@ -130,20 +140,7 @@ public class RestoreCore implements Callable<Boolean> {
       final Directory finalIndexDir = indexDir;
       final Directory finalRestoreIndexDir = restoreIndexDir;
 
-      // Only use an executor for parallel downloads when parallelism > 1
-      // When set to 1, run synchronously to avoid thread-local state issues with CallerRunsPolicy
-      int maxParallelDownloads = DEFAULT_MAX_PARALLEL_DOWNLOADS;
-      ExecutorService executor =
-          maxParallelDownloads > 1
-              ? new ExecutorUtil.MDCAwareThreadPoolExecutor(
-                  0,
-                  maxParallelDownloads,
-                  60L,
-                  TimeUnit.SECONDS,
-                  new SynchronousQueue<>(),
-                  new SolrNamedThreadFactory("RestoreCore"),
-                  new ThreadPoolExecutor.CallerRunsPolicy())
-              : null;
+      ExecutorService executor = RESTORE_EXECUTOR;
 
       List<Future<?>> downloadFutures = new ArrayList<>();
 
@@ -188,72 +185,46 @@ public class RestoreCore implements Callable<Boolean> {
                 }
               };
 
-          if (executor != null) {
-            downloadFutures.add(executor.submit(downloadTask));
-          } else {
-            // Run synchronously when parallelism is 1
-            try {
-              downloadTask.run();
-            } catch (RuntimeException e) {
-              if (e.getCause() instanceof IOException) {
-                throw new IOException(e.getMessage(), e.getCause());
-              }
-              throw e;
+          downloadFutures.add(executor.submit(downloadTask));
+        }
+
+        // Wait for ALL futures to ensure all files are processed
+        Throwable firstError = null;
+        for (Future<?> future : downloadFutures) {
+          try {
+            future.get();
+          } catch (ExecutionException e) {
+            if (firstError == null) {
+              firstError = e.getCause();
+            }
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            if (firstError == null) {
+              firstError = e;
             }
           }
         }
 
-        // Wait for all downloads to complete and collect any errors (only if using executor)
-        if (executor != null) {
-          // We need to wait for ALL futures to ensure all files are processed
-          Throwable firstError = null;
-          for (Future<?> future : downloadFutures) {
-            try {
-              future.get();
-            } catch (ExecutionException e) {
-              if (firstError == null) {
-                firstError = e.getCause();
-              }
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              if (firstError == null) {
-                firstError = e;
-              }
-            }
-          }
-
-          // Now throw the first error we encountered, if any
-          if (firstError != null) {
-            if (firstError instanceof Error) {
-              // Rethrow Errors (like OutOfMemoryError) - don't try to recover
-              throw (Error) firstError;
-            } else if (firstError instanceof IOException) {
-              throw (IOException) firstError;
-            } else if (firstError instanceof RuntimeException) {
-              throw (RuntimeException) firstError;
-            } else if (firstError instanceof InterruptedException) {
-              throw new SolrException(
-                  SolrException.ErrorCode.UNKNOWN, "Restore interrupted", firstError);
-            } else {
-              throw new SolrException(
-                  SolrException.ErrorCode.UNKNOWN,
-                  "Error during parallel restore download",
-                  firstError);
-            }
+        if (firstError != null) {
+          if (firstError instanceof Error) {
+            // Rethrow Errors (like OutOfMemoryError) - don't try to recover
+            throw (Error) firstError;
+          } else if (firstError instanceof IOException) {
+            throw (IOException) firstError;
+          } else if (firstError instanceof RuntimeException) {
+            throw (RuntimeException) firstError;
+          } else if (firstError instanceof InterruptedException) {
+            throw new SolrException(
+                SolrException.ErrorCode.UNKNOWN, "Restore interrupted", firstError);
+          } else {
+            throw new SolrException(
+                SolrException.ErrorCode.UNKNOWN,
+                "Error during parallel restore download",
+                firstError);
           }
         }
       } finally {
-        if (executor != null) {
-          executor.shutdown();
-          try {
-            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-              executor.shutdownNow();
-            }
-          } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-          }
-        }
+        // RESTORE_EXECUTOR is a shared static pool; do not shut it down here
       }
       log.debug("Switching directories");
       core.modifyIndexProps(restoreIndexName);

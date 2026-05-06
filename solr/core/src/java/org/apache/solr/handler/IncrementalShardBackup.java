@@ -74,6 +74,16 @@ public class IncrementalShardBackup {
   private static final int DEFAULT_MAX_PARALLEL_UPLOADS =
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleluploads", 1);
 
+  private static final ExecutorService BACKUP_EXECUTOR =
+      new ExecutorUtil.MDCAwareThreadPoolExecutor(
+          0,
+          Math.max(1, DEFAULT_MAX_PARALLEL_UPLOADS),
+          60L,
+          TimeUnit.SECONDS,
+          new SynchronousQueue<>(),
+          new SolrNamedThreadFactory("IncrementalBackupExecutor"),
+          new ThreadPoolExecutor.CallerRunsPolicy());
+
   private SolrCore solrCore;
 
   private BackupFilePaths incBackupFiles;
@@ -213,20 +223,7 @@ public class IncrementalShardBackup {
     URI indexDir = incBackupFiles.getIndexDir();
     BackupStats backupStats = new BackupStats();
 
-    // Only use an executor for parallel uploads when parallelism > 1
-    // When set to 1, run synchronously to avoid thread-local state issues with CallerRunsPolicy
-    int maxParallelUploads = DEFAULT_MAX_PARALLEL_UPLOADS;
-    ExecutorService executor =
-        maxParallelUploads > 1
-            ? new ExecutorUtil.MDCAwareThreadPoolExecutor(
-                0,
-                maxParallelUploads,
-                60L,
-                TimeUnit.SECONDS,
-                new SynchronousQueue<>(),
-                new SolrNamedThreadFactory("IncrementalBackup"),
-                new ThreadPoolExecutor.CallerRunsPolicy())
-            : null;
+    ExecutorService executor = BACKUP_EXECUTOR;
 
     List<Future<?>> uploadFutures = new ArrayList<>();
 
@@ -268,69 +265,43 @@ public class IncrementalShardBackup {
               }
             };
 
-        if (executor != null) {
-          uploadFutures.add(executor.submit(uploadTask));
-        } else {
-          // Run synchronously when parallelism is 1
-          try {
-            uploadTask.run();
-          } catch (RuntimeException e) {
-            if (e.getCause() instanceof IOException) {
-              throw new IOException(e.getMessage(), e.getCause());
-            }
-            throw e;
+        uploadFutures.add(executor.submit(uploadTask));
+      }
+
+      // Wait for ALL futures before throwing - currentBackupPoint must reflect every
+      // successfully uploaded file before it is written, even when an error occurs.
+      Throwable firstError = null;
+      for (Future<?> future : uploadFutures) {
+        try {
+          future.get();
+        } catch (ExecutionException e) {
+          if (firstError == null) {
+            firstError = e.getCause();
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          if (firstError == null) {
+            firstError = e;
           }
         }
       }
 
-      // Wait for all uploads to complete and collect any errors (only if using executor)
-      if (executor != null) {
-        // We need to wait for ALL futures before throwing, otherwise we might exit
-        // before all successfully uploaded files are added to currentBackupPoint
-        Throwable firstError = null;
-        for (Future<?> future : uploadFutures) {
-          try {
-            future.get();
-          } catch (ExecutionException e) {
-            if (firstError == null) {
-              firstError = e.getCause();
-            }
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            if (firstError == null) {
-              firstError = e;
-            }
-          }
-        }
-
-        // Now throw the first error we encountered, if any
-        if (firstError != null) {
-          if (firstError instanceof Error) {
-            // Rethrow Errors (like OutOfMemoryError) - don't try to recover
-            throw (Error) firstError;
-          } else if (firstError instanceof IOException) {
-            throw (IOException) firstError;
-          } else if (firstError instanceof RuntimeException) {
-            throw (RuntimeException) firstError;
-          } else if (firstError instanceof InterruptedException) {
-            throw new IOException("Backup interrupted", firstError);
-          } else {
-            throw new IOException("Error during parallel backup upload", firstError);
-          }
+      if (firstError != null) {
+        if (firstError instanceof Error) {
+          // Rethrow Errors (like OutOfMemoryError) - don't try to recover
+          throw (Error) firstError;
+        } else if (firstError instanceof IOException) {
+          throw (IOException) firstError;
+        } else if (firstError instanceof RuntimeException) {
+          throw (RuntimeException) firstError;
+        } else if (firstError instanceof InterruptedException) {
+          throw new IOException("Backup interrupted", firstError);
+        } else {
+          throw new IOException("Error during parallel backup upload", firstError);
         }
       }
     } finally {
-      if (executor != null) {
-        executor.shutdown();
-        try {
-          if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-            executor.shutdownNow();
-          }
-        } catch (InterruptedException e) {
-          executor.shutdownNow();
-          Thread.currentThread().interrupt();
-        }
-      }
+      // BACKUP_EXECUTOR is a shared static pool; do not shut it down here
     }
 
     currentBackupPoint.store(backupRepo, incBackupFiles.getShardBackupMetadataDir(), shardBackupId);
