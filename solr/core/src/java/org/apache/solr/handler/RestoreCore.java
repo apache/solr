@@ -33,9 +33,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -67,14 +64,10 @@ public class RestoreCore implements Callable<Boolean> {
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleldownloads", 1);
 
   private static final ExecutorService RESTORE_EXECUTOR =
-      new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
+      ExecutorUtil.newMDCAwareCachedThreadPool(
           Math.max(1, DEFAULT_MAX_PARALLEL_DOWNLOADS),
-          60L,
-          TimeUnit.SECONDS,
-          new SynchronousQueue<>(),
-          new SolrNamedThreadFactory("RestoreCoreExecutor"),
-          new ThreadPoolExecutor.CallerRunsPolicy());
+          Integer.MAX_VALUE,
+          new SolrNamedThreadFactory("RestoreCoreExecutor"));
 
   private final SolrCore core;
   private RestoreRepository repository;

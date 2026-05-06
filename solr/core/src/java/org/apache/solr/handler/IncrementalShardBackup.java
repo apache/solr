@@ -31,9 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.util.Precision;
@@ -75,14 +72,10 @@ public class IncrementalShardBackup {
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleluploads", 1);
 
   private static final ExecutorService BACKUP_EXECUTOR =
-      new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
+      ExecutorUtil.newMDCAwareCachedThreadPool(
           Math.max(1, DEFAULT_MAX_PARALLEL_UPLOADS),
-          60L,
-          TimeUnit.SECONDS,
-          new SynchronousQueue<>(),
-          new SolrNamedThreadFactory("IncrementalBackupExecutor"),
-          new ThreadPoolExecutor.CallerRunsPolicy());
+          Integer.MAX_VALUE,
+          new SolrNamedThreadFactory("IncrementalBackupExecutor"));
 
   private SolrCore solrCore;
 
