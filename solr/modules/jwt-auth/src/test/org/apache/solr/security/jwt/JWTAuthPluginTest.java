@@ -485,6 +485,15 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void noHeaderDefaultBlocksUnknown() {
+    // blockUnknown defaults to true — omitting it must block requests without a JWT
+    testConfig.remove("blockUnknown");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
+    assertEquals(NO_AUTZ_HEADER, resp.getAuthCode());
+  }
+
+  @Test
   public void noHeaderNotBlockUnknown() {
     testConfig.put("blockUnknown", false);
     plugin.init(testConfig);
@@ -511,6 +520,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
             .toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
+    testConfig.put("blockUnknown", false);
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
     assertEquals(PASS_THROUGH, resp.getAuthCode());

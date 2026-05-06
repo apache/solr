@@ -97,6 +97,12 @@ The project normally doesn't remove functionality in a minor release, but we mad
 
 +NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
 
+=== JWT Authentication
+
+The `blockUnknown` setting in the JWT Authentication plugin now defaults to `true`, meaning requests without a valid JWT token are blocked by default.
+In Solr 9.10 and earlier, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
+Users upgrading from 9.10 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
+
 == Solr 9.10
 
 === SolrJ
