@@ -36,14 +36,15 @@ The simplest possible `security.json` for registering the plugin without configu
 ----
 {
   "authentication": {
-    "class":"solr.JWTAuthPlugin"
+    "class":"solr.JWTAuthPlugin",
+    "blockUnknown":"false"
   }
 }
 ----
 
-By default, `blockUnknown` is `true`, so all requests without a valid JWT token will be blocked.
+The plugin will by default require a valid JWT token for all traffic.
 
-If you need to configure the plugin using unauthenticated REST API calls, set `blockUnknown` to `false` as further described in section <<Editing JWT Authentication Plugin Configuration>>.
+If the `blockUnknown` property is set to `false` as in the above example, it is possible to start configuring the plugin using unauthenticated REST API calls, which is further described in section <<Editing JWT Authentication Plugin Configuration>>.
 
 == Configuration Parameters
 
@@ -166,7 +167,7 @@ Let's look at a more complex configuration, this time with two issuers configure
 Let's comment on this config:
 
 <1> Plugin class
-<2> Block anyone without a valid token (this is also the default)
+<2> Make sure to block anyone without a valid token (this is also the default)
 <3> Fetch the user id from another claim than the default `sub`
 <4> Require that the `foo` claim is one of "A" or "B" and that the `dept` claim is "IT"
 <5> Require one of the scopes `solr:read`, `solr:write` or `solr:admin`
