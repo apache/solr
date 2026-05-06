@@ -25,6 +25,12 @@ public enum ReRankOperator implements DoubleBinaryOperator {
   MULTIPLY((firstPass, secondPass) -> firstPass * secondPass),
   REPLACE((firstPass, secondPass) -> secondPass);
 
+  /**
+   * The operators we use <em>are</em> immutable, even if we can't annotate them as such, and
+   * errorprone's "TIP" of using abstract methods would make this enum declaration 5 times longer --
+   * so no thanks.
+   */
+  @SuppressWarnings("ImmutableEnumChecker")
   private final DoubleBinaryOperator op;
 
   private ReRankOperator(final DoubleBinaryOperator op) {
