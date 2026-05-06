@@ -97,13 +97,6 @@ The project normally doesn't remove functionality in a minor release, but we mad
 
 +NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
 
-=== JWT Authentication Plugin: `blockUnknown` documentation corrected
-
-The `blockUnknown` configuration parameter of the xref:deployment-guide:jwt-authentication-plugin.adoc[JWT Authentication Plugin] defaults to `false`, meaning requests without a JWT token are passed through unauthenticated.
-Previous versions of the reference guide incorrectly stated the default was `true`.
-
-* Users who relied on the (incorrectly documented) default of `true` should explicitly add `"blockUnknown": true` to their `authentication` block in `security.json` to preserve the intended behaviour.
-
 == Solr 9.10
 
 === SolrJ
@@ -396,7 +389,7 @@ to switch back if needed.
 * Upgrade to Zookeeper 3.7, allowing for TLS protected ZK communication.
 * All request handlers support security permissions. Users may have to adapt their `security.json`.
 * Ability to disable admin UI through a system property.
-* The property `blockUnknown` in the `BasicAuthPlugin` [.line-through]#and the `JWTAuthPlugin`# now defaults to `true` instead of `false`. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set `blockUnknown:false` in `security.json`.
+* The property `blockUnknown` in the `BasicAuthPlugin` and the `JWTAuthPlugin` now defaults to `true` instead of `false`. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set `blockUnknown:false` in `security.json`.
 * Solr now runs with the Java security manager enabled by default. Hadoop users may need to disable this.
 * Solr now binds to localhost network interface by default for better out of the box security.
 Administrators that need Solr exposed more broadly can change the `SOLR_JETTY_HOST` property in their Solr include (`solr.in.sh`/`solr.in.cmd`) file.
