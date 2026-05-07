@@ -89,8 +89,8 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     }
 
     // Static backup/restore thread pools - stateless, no core references, threads expire on idle
-    if (threadName.startsWith("IncrementalBackupExecutor-")
-        || threadName.startsWith("RestoreCoreExecutor-")) {
+    if (threadName.startsWith("BackupUploadExecutor-")
+        || threadName.startsWith("RestoreDownloadExecutor-")) {
       return true;
     }
 

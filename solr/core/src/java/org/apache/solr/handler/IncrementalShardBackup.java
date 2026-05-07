@@ -68,14 +68,14 @@ public class IncrementalShardBackup {
    * property {@code solr.backup.maxparalleluploads} or environment variable {@code
    * SOLR_BACKUP_MAXPARALLELUPLOADS}.
    */
-  private static final int DEFAULT_MAX_PARALLEL_UPLOADS =
+  private static final int MAX_PARALLEL_UPLOADS =
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleluploads", 1);
 
-  private static final ExecutorService BACKUP_EXECUTOR =
+  private static final ExecutorService BACKUP_UPLOAD_EXECUTOR =
       ExecutorUtil.newMDCAwareCachedThreadPool(
-          Math.max(1, DEFAULT_MAX_PARALLEL_UPLOADS),
+          MAX_PARALLEL_UPLOADS,
           Integer.MAX_VALUE,
-          new SolrNamedThreadFactory("IncrementalBackupExecutor"));
+          new SolrNamedThreadFactory("BackupUploadExecutor"));
 
   private SolrCore solrCore;
 
@@ -216,85 +216,79 @@ public class IncrementalShardBackup {
     URI indexDir = incBackupFiles.getIndexDir();
     BackupStats backupStats = new BackupStats();
 
-    ExecutorService executor = BACKUP_EXECUTOR;
-
     List<Future<?>> uploadFutures = new ArrayList<>();
 
-    try {
-      for (String fileName : indexFiles) {
-        // Capture variable for lambda
-        final String fileNameFinal = fileName;
+    for (String fileName : indexFiles) {
+      // Capture variable for lambda
+      final String fileNameFinal = fileName;
 
-        Runnable uploadTask =
-            () -> {
-              try {
-                // Calculate checksum and check if file already exists in previous backup
-                Optional<ShardBackupMetadata.BackedFile> opBackedFile =
-                    oldBackupPoint.getFile(fileNameFinal);
-                Checksum originalFileCS = backupRepo.checksum(dir, fileNameFinal);
+      Runnable uploadTask =
+          () -> {
+            try {
+              // Calculate checksum and check if file already exists in previous backup
+              Optional<ShardBackupMetadata.BackedFile> opBackedFile =
+                  oldBackupPoint.getFile(fileNameFinal);
+              Checksum originalFileCS = backupRepo.checksum(dir, fileNameFinal);
 
-                if (opBackedFile.isPresent()) {
-                  ShardBackupMetadata.BackedFile backedFile = opBackedFile.get();
-                  Checksum existedFileCS = backedFile.fileChecksum;
-                  if (existedFileCS.equals(originalFileCS)) {
-                    synchronized (currentBackupPoint) {
-                      currentBackupPoint.addBackedFile(opBackedFile.get());
-                    }
-                    backupStats.skippedUploadingFile(existedFileCS);
-                    return;
+              if (opBackedFile.isPresent()) {
+                ShardBackupMetadata.BackedFile backedFile = opBackedFile.get();
+                Checksum existedFileCS = backedFile.fileChecksum;
+                if (existedFileCS.equals(originalFileCS)) {
+                  synchronized (currentBackupPoint) {
+                    currentBackupPoint.addBackedFile(opBackedFile.get());
                   }
+                  backupStats.skippedUploadingFile(existedFileCS);
+                  return;
                 }
-
-                // File doesn't exist or has changed - upload it
-                String backedFileName = UUID.randomUUID().toString();
-                backupRepo.copyIndexFileFrom(dir, fileNameFinal, indexDir, backedFileName);
-
-                synchronized (currentBackupPoint) {
-                  currentBackupPoint.addBackedFile(backedFileName, fileNameFinal, originalFileCS);
-                }
-                backupStats.uploadedFile(originalFileCS);
-              } catch (IOException e) {
-                throw new RuntimeException("Failed to process file: " + fileNameFinal, e);
               }
-            };
 
-        uploadFutures.add(executor.submit(uploadTask));
-      }
+              // File doesn't exist or has changed - upload it
+              String backedFileName = UUID.randomUUID().toString();
+              backupRepo.copyIndexFileFrom(dir, fileNameFinal, indexDir, backedFileName);
 
-      // Wait for ALL futures before throwing - currentBackupPoint must reflect every
-      // successfully uploaded file before it is written, even when an error occurs.
-      Throwable firstError = null;
-      for (Future<?> future : uploadFutures) {
-        try {
-          future.get();
-        } catch (ExecutionException e) {
-          if (firstError == null) {
-            firstError = e.getCause();
-          }
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          if (firstError == null) {
-            firstError = e;
-          }
+              synchronized (currentBackupPoint) {
+                currentBackupPoint.addBackedFile(backedFileName, fileNameFinal, originalFileCS);
+              }
+              backupStats.uploadedFile(originalFileCS);
+            } catch (IOException e) {
+              throw new RuntimeException("Failed to process file: " + fileNameFinal, e);
+            }
+          };
+
+      uploadFutures.add(BACKUP_UPLOAD_EXECUTOR.submit(uploadTask));
+    }
+
+    // Wait for ALL futures before throwing - currentBackupPoint must reflect every
+    // successfully uploaded file before it is written, even when an error occurs.
+    Throwable firstError = null;
+    for (Future<?> future : uploadFutures) {
+      try {
+        future.get();
+      } catch (ExecutionException e) {
+        if (firstError == null) {
+          firstError = e.getCause();
+          // Cancel remaining queued tasks - no point uploading more if one already failed
+          uploadFutures.forEach(f -> f.cancel(true));
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        if (firstError == null) {
+          firstError = e;
+          uploadFutures.forEach(f -> f.cancel(true));
         }
       }
+    }
 
-      if (firstError != null) {
-        if (firstError instanceof Error) {
-          // Rethrow Errors (like OutOfMemoryError) - don't try to recover
-          throw (Error) firstError;
-        } else if (firstError instanceof IOException) {
-          throw (IOException) firstError;
-        } else if (firstError instanceof RuntimeException) {
-          throw (RuntimeException) firstError;
-        } else if (firstError instanceof InterruptedException) {
-          throw new IOException("Backup interrupted", firstError);
-        } else {
-          throw new IOException("Error during parallel backup upload", firstError);
-        }
+    if (firstError != null) {
+      switch (firstError) {
+        case Error err -> throw err;
+        case IOException ioe -> throw ioe;
+        case RuntimeException re -> throw re;
+        case InterruptedException ie -> throw new SolrException(
+            SolrException.ErrorCode.UNKNOWN, "Backup interrupted", ie);
+        default -> throw new SolrException(
+            SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", firstError);
       }
-    } finally {
-      // BACKUP_EXECUTOR is a shared static pool; do not shut it down here
     }
 
     currentBackupPoint.store(backupRepo, incBackupFiles.getShardBackupMetadataDir(), shardBackupId);

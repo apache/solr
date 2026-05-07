@@ -410,8 +410,6 @@ The parallelism is controlled via system properties or environment variables:
 +
 Maximum number of index files to upload in parallel during backup operations.
 Can also be set via the `SOLR_BACKUP_MAXPARALLELUPLOADS` environment variable.
-Increasing this value can significantly improve backup throughput when using cloud storage (S3, GCS), but too high a value will increase IOPS and bandwidth pressure on your cluster.
-Start small and increase based on observed throughput and available resources.
 
 `solr.backup.maxparalleldownloads`::
 +
@@ -422,10 +420,11 @@ Start small and increase based on observed throughput and available resources.
 +
 Maximum number of index files to download in parallel during restore operations.
 Can also be set via the `SOLR_BACKUP_MAXPARALLELDOWNLOADS` environment variable.
-Increasing this value can significantly improve restore throughput when using cloud storage (S3, GCS), but too high a value will increase IOPS and bandwidth pressure on your cluster.
-Start small and increase based on observed throughput and available resources.
 
-TIP: Both settings share a single global thread pool per property, so the configured limit applies across all concurrent backup or restore operations on the node.
+TIP: These are two independent thread pools — one for backup uploads and one for restore downloads.
+Increasing either value can significantly improve throughput when using cloud storage (S3, GCS), but too high a value will increase IOPS and bandwidth pressure on your cluster.
+Start small and increase based on observed throughput and available resources.
+The configured limit applies across all concurrent backup or restore operations on the node.
 
 === Checksum Verification
 
