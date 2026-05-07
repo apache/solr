@@ -465,7 +465,11 @@ public class SolrBenchState {
         client.requestWithBaseUrl(nodes.get(0), updateRequest, collection);
         meterCount += batch.size();
         batch.clear();
-        log(meterCount + " docs at " + (long) (meterCount / ((System.nanoTime() - meterStartNanos) / 1e9)) + " doc/s");
+        log(
+            meterCount
+                + " docs at "
+                + (long) (meterCount / ((System.nanoTime() - meterStartNanos) / 1e9))
+                + " doc/s");
       }
     }
     if (!batch.isEmpty()) {
@@ -475,7 +479,11 @@ public class SolrBenchState {
       meterCount += batch.size();
       batch = null;
     }
-    log(meterCount + " docs at " + (long) (meterCount / ((System.nanoTime() - meterStartNanos) / 1e9)) + " doc/s");
+    log(
+        meterCount
+            + " docs at "
+            + (long) (meterCount / ((System.nanoTime() - meterStartNanos) / 1e9))
+            + " doc/s");
   }
 
   /**

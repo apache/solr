@@ -117,8 +117,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
     // Set response data in the response node
     if (setResult) {
-      String responsePath =
-          dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
+      String responsePath = dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
 
       try {
         zookeeper.setData(responsePath, event.getBytes());

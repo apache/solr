@@ -111,7 +111,6 @@ import org.slf4j.LoggerFactory;
  *       timing stats for the {@code /overseer/collection-queue-work} Zookeeper queue; no longer
  *       populated.
  * </ul>
- *
  */
 public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
