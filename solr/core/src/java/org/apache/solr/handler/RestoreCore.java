@@ -178,38 +178,23 @@ public class RestoreCore implements Callable<Boolean> {
         downloadFutures.add(RESTORE_DOWNLOAD_EXECUTOR.submit(downloadTask));
       }
 
-      // Wait for ALL futures to ensure all files are processed
-      Throwable firstError = null;
-      for (Future<?> future : downloadFutures) {
-        try {
+      try {
+        for (Future<?> future : downloadFutures) {
           future.get();
-        } catch (ExecutionException e) {
-          if (firstError == null) {
-            firstError = e.getCause();
-            // Cancel remaining queued tasks - no point downloading more if one already failed
-            downloadFutures.forEach(f -> f.cancel(true));
-          }
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          if (firstError == null) {
-            firstError = e;
-            downloadFutures.forEach(f -> f.cancel(true));
-          }
         }
-      }
-
-      if (firstError != null) {
-        switch (firstError) {
+      } catch (ExecutionException e) {
+        downloadFutures.forEach(f -> f.cancel(true));
+        Throwable cause = e.getCause();
+        switch (cause) {
           case Error err -> throw err;
           case IOException ioe -> throw ioe;
           case RuntimeException re -> throw re;
-          case InterruptedException ie -> throw new SolrException(
-              SolrException.ErrorCode.UNKNOWN, "Restore interrupted", ie);
           default -> throw new SolrException(
-              SolrException.ErrorCode.UNKNOWN,
-              "Error during parallel restore download",
-              firstError);
+              SolrException.ErrorCode.UNKNOWN, "Error during parallel restore download", cause);
         }
+      } catch (InterruptedException e) {
+        downloadFutures.forEach(f -> f.cancel(true));
+        throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Restore interrupted", e);
       }
       log.debug("Switching directories");
       core.modifyIndexProps(restoreIndexName);

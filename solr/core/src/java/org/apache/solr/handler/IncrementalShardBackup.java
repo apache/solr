@@ -258,37 +258,23 @@ public class IncrementalShardBackup {
       uploadFutures.add(BACKUP_UPLOAD_EXECUTOR.submit(uploadTask));
     }
 
-    // Wait for ALL futures before throwing - currentBackupPoint must reflect every
-    // successfully uploaded file before it is written, even when an error occurs.
-    Throwable firstError = null;
-    for (Future<?> future : uploadFutures) {
-      try {
+    try {
+      for (Future<?> future : uploadFutures) {
         future.get();
-      } catch (ExecutionException e) {
-        if (firstError == null) {
-          firstError = e.getCause();
-          // Cancel remaining queued tasks - no point uploading more if one already failed
-          uploadFutures.forEach(f -> f.cancel(true));
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        if (firstError == null) {
-          firstError = e;
-          uploadFutures.forEach(f -> f.cancel(true));
-        }
       }
-    }
-
-    if (firstError != null) {
-      switch (firstError) {
+    } catch (ExecutionException e) {
+      uploadFutures.forEach(f -> f.cancel(true));
+      Throwable cause = e.getCause();
+      switch (cause) {
         case Error err -> throw err;
         case IOException ioe -> throw ioe;
         case RuntimeException re -> throw re;
-        case InterruptedException ie -> throw new SolrException(
-            SolrException.ErrorCode.UNKNOWN, "Backup interrupted", ie);
         default -> throw new SolrException(
-            SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", firstError);
+            SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", cause);
       }
+    } catch (InterruptedException e) {
+      uploadFutures.forEach(f -> f.cancel(true));
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Backup interrupted", e);
     }
 
     currentBackupPoint.store(backupRepo, incBackupFiles.getShardBackupMetadataDir(), shardBackupId);
