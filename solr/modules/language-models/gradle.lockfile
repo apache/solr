@@ -49,6 +49,7 @@ dev.langchain4j:langchain4j-http-client:1.9.1=jarValidation,runtimeClasspath,run
 dev.langchain4j:langchain4j-hugging-face:1.9.1-beta17=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
 dev.langchain4j:langchain4j-mistral-ai:1.9.1=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
 dev.langchain4j:langchain4j-open-ai:1.9.1=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
+io.dropwizard.metrics:metrics-core:3.2.5=jarValidation,testRuntimeClasspath
 io.github.eisop:dataflow-errorprone:3.41.0-eisop1=annotationProcessor,errorprone,testAnnotationProcessor
 io.github.java-diff-utils:java-diff-utils:4.12=annotationProcessor,errorprone,testAnnotationProcessor
 io.netty:netty-buffer:4.2.12.Final=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
