@@ -52,7 +52,7 @@ If the `blockUnknown` property is set to `false` as in the above example, it is 
 [%header,format=csv,separator=;,cols="25%,50%,25%"]
 |===
 Key                  ; Description                                             ; Default
-blockUnknown         ; Set to `false` to if you need to perform configuration through REST API or if you use an Authorization Plugin and only want certain paths protected. By default all requests will require a token  ; `true`
+blockUnknown         ; Set to `false` if you need to perform configuration through REST API or if you use an Authorization Plugin and only want certain paths protected. By default all requests will require a token  ; `true`
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
 scope                ; Whitespace separated list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
 requireIss           ; Fails requests that lacks an `iss` (issuer) claim                          ; `true`
