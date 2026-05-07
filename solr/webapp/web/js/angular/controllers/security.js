@@ -242,7 +242,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.hideAll();
 
     $scope.tls = false;
-    $scope.blockUnknown = "false"; // default setting
+    $scope.blockUnknown = "true"; // default setting
     $scope.realmName = "solr";
     $scope.forwardCredentials = "false";
     $scope.multiAuthWithBasic = false;
@@ -371,7 +371,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
           //console.log(">> authn: "+JSON.stringify(authn));
 
-          $scope.blockUnknown = authn["blockUnknown"] === true ? "true" : "false";
+          var blockUnknown = authn["blockUnknown"];
+          $scope.blockUnknown = (blockUnknown === false || blockUnknown === "false") ? "false" : "true";
           $scope.forwardCredentials = authn["forwardCredentials"] === true ? "true" : "false";
 
           if ("realm" in authn) {
