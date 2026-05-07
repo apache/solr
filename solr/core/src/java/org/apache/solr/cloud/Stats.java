@@ -105,10 +105,6 @@ public class Stats {
     this.queueLength = queueLength;
   }
 
-  public void clear() {
-    stats.clear();
-  }
-
   public static class Stat {
     public final AtomicInteger success;
     public final AtomicInteger errors;

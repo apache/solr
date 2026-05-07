@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +27,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This command returns stats about the Overseer, the cluster state updater and collection API
@@ -105,15 +102,9 @@ import org.slf4j.LoggerFactory;
  *             {@link ZkNodeProps}) and the other with key {@code response} with the corresponding
  *             response properties (a {@link org.apache.solr.client.solrj.SolrResponse}).
  *       </ul>
- *   <li><b>{@code overseer_queue}:</b> always an empty map. Previously contained per-operation
- *       timing stats for the {@code /overseer/queue} Zookeeper queue; no longer populated.
- *   <li><b>{@code collection_queue}:</b> always an empty map. Previously contained per-operation
- *       timing stats for the {@code /overseer/collection-queue-work} Zookeeper queue; no longer
- *       populated.
  * </ul>
  */
 public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
 
   public OverseerStatusCmd(CollectionCommandContext ccc) {
@@ -143,8 +134,6 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
 
     NamedList<Object> overseerStats = new NamedList<>();
     NamedList<Object> collectionStats = new NamedList<>();
-    NamedList<Object> stateUpdateQueueStats = new NamedList<>();
-    NamedList<Object> collectionQueueStats = new NamedList<>();
     Stats stats = ccc.getOverseerStats();
     for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
       String key = entry.getKey();
@@ -166,12 +155,7 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
           }
           lst.add("recent_failures", failures);
         }
-      } else if (key.startsWith("/overseer/queue_")) {
-        stateUpdateQueueStats.add(key.substring(16), lst);
-      } else if (key.startsWith("/overseer/collection-queue-work_")) {
-        collectionQueueStats.add(key.substring(32), lst);
       } else {
-        // overseer stats
         overseerStats.add(key, lst);
         int successes = stats.getSuccessCount(entry.getKey());
         int errors = stats.getErrorCount(entry.getKey());
@@ -182,7 +166,5 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
 
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);
-    results.add("overseer_queue", stateUpdateQueueStats);
-    results.add("collection_queue", collectionQueueStats);
   }
 }
