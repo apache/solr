@@ -53,5 +53,6 @@ allprojects {prj ->
     exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
     // be conservative on what's added here.  Affects all Java project compilation and runtime.
     exclude group: 'net.jcip', module: 'jcip-annotations' // use com.github.stephenc.jcip instead
+    exclude group: 'io.dropwizard.metrics', module: 'metrics-core' // unused transitive from Curator; no code references it
   }
 }
