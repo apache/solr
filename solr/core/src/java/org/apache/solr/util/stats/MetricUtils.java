@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util.stats;
 
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
@@ -97,25 +95,6 @@ public class MetricUtils {
         "com.sun.management.UnixOperatingSystemMXBean",
         "com.ibm.lang.management.OperatingSystemMXBean"
       };
-
-  /**
-   * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
-   *
-   * @param lst The NamedList to add the metrics data to
-   * @param timer The Timer to extract the metrics from
-   */
-  public static void addMetrics(NamedList<Object> lst, Timer timer) {
-    Snapshot snapshot = timer.getSnapshot();
-    lst.add("avgRequestsPerSecond", timer.getMeanRate());
-    lst.add("5minRateRequestsPerSecond", timer.getFiveMinuteRate());
-    lst.add("15minRateRequestsPerSecond", timer.getFifteenMinuteRate());
-    lst.add("avgTimePerRequest", nsToMs(snapshot.getMean()));
-    lst.add("medianRequestTime", nsToMs(snapshot.getMedian()));
-    lst.add("75thPcRequestTime", nsToMs(snapshot.get75thPercentile()));
-    lst.add("95thPcRequestTime", nsToMs(snapshot.get95thPercentile()));
-    lst.add("99thPcRequestTime", nsToMs(snapshot.get99thPercentile()));
-    lst.add("999thPcRequestTime", nsToMs(snapshot.get999thPercentile()));
-  }
 
   /**
    * Converts a double representing nanoseconds to a double representing milliseconds.

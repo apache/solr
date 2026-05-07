@@ -53,7 +53,6 @@ dependencies {
   implementation(libs.apache.curator.test) {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
     exclude group: 'com.google.guava', module: 'guava'
-    exclude group: 'io.dropwizard.metrics', module: 'metrics-core'
   }
 
   implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
@@ -64,8 +63,6 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
-  implementation libs.dropwizard.metrics.core
-  implementation libs.dropwizard.metrics.jetty12.ee10
   implementation libs.commonscli.commonscli
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
