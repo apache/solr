@@ -52,8 +52,10 @@ Users upgrading from 10.0 who relied on the pass-through behavior must explicitl
 === Security
 
 PKI Authentication v1 support has been removed.
-The system properties `solr.pki.sendVersion` and `solr.pki.acceptVersions` are no longer recognized.
-Users upgrading should verify that these properties are not set, before starting the upgrade.
+Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node communication.
+
+Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
+The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
 
 == Solr 10.0
 
