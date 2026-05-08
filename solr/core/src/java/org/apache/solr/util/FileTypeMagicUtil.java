@@ -303,9 +303,7 @@ public class FileTypeMagicUtil {
     return b.length >= 4 && (b[0] & 0xFF) == 0x7F && b[1] == 'E' && b[2] == 'L' && b[3] == 'F';
   }
 
-  /**
-   * Detects Java serialized object streams.
-   */
+  /** Detects Java serialized object streams. */
   private static boolean isJavaSerialized(byte[] b) {
     return b.length >= 4
         && (b[0] & 0xFF) == 0xAC
