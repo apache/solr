@@ -48,7 +48,7 @@ public class NodeSystemResponse extends SolrJerseyResponse {
   @JsonProperty public JVM jvm;
   @JsonProperty public Security security;
   @JsonProperty public GPU gpu;
-  @JsonProperty public Map<String, String> system;
+  @JsonProperty public Map<String, Object> system;
 
   /** /node/system/security */
   public static class Security {
