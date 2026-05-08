@@ -1,8 +1,0 @@
-title: using  object-mapper from SolrJacksonMapper for V2Api
-type: fixed
-authors:
-  - name: Renato Haeberli
-
-links:
-  - name: PR#4370
-    url: https://github.com/apache/solr/pull/4370
