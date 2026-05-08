@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Contains model store related classes. */
-package org.apache.solr.languagemodels.store;
+/** Contains the whole module for Language Models. */
+package org.apache.solr.languagemodels;

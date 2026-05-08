@@ -27,8 +27,8 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.model.SolrLanguageModel;
 import org.apache.solr.languagemodels.LanguageModelException;
+import org.apache.solr.languagemodels.model.SolrLanguageModel;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -41,8 +41,8 @@ import org.slf4j.LoggerFactory;
  * via the REST API. Concrete subclasses supply the REST endpoint and the model instantiation logic.
  */
 @ThreadSafe
-public abstract class ManagedLanguageModelStore<ModelT extends SolrLanguageModel> extends ManagedResource
-    implements ManagedResource.ChildResourceSupport {
+public abstract class ManagedLanguageModelStore<ModelT extends SolrLanguageModel>
+    extends ManagedResource implements ManagedResource.ChildResourceSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String MODELS_JSON_FIELD = "models";
@@ -154,7 +154,6 @@ public abstract class ManagedLanguageModelStore<ModelT extends SolrLanguageModel
   public String toString() {
     return getClass().getSimpleName() + " [store=" + store + "]";
   }
-
 
   // Inner Data Structure to deal with Store persistence
   private class LanguageModelStore {

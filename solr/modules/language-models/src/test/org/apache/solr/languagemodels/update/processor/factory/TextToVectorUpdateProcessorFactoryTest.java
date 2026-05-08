@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.update.processor;
+package org.apache.solr.languagemodels.update.processor.factory;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -23,7 +23,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.apache.solr.languagemodels.model.SolrTextToVectorModel;
 import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
-import org.apache.solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.After;

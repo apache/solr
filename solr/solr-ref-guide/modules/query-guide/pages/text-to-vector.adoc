@@ -85,7 +85,7 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 [source,xml]
 ----
 <updateRequestProcessorChain name="textToVector">
-  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -301,7 +301,7 @@ To vectorise textual fields of your documents at indexing time you need to confi
 [source,xml]
 ----
 <updateRequestProcessorChain name="textToVector">
-  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -355,7 +355,7 @@ This can be done in Solr defining two update request processors chains: one that
   <processor class="solr.processorN">
    ...
   </processor>
-<processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+<processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -394,7 +394,7 @@ You still define two chains, but this time the 'vectorisation' one only includes
 ----
 <updateRequestProcessorChain name="vectorisation">
   <processor class="solr.DistributedUpdateProcessorFactory"/>
-  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>

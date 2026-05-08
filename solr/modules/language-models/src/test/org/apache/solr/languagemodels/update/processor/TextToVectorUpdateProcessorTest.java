@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.update.processor;
+package org.apache.solr.languagemodels.update.processor;
 
 import java.io.IOException;
 import java.util.Map;

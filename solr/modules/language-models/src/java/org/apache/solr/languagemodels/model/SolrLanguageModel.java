@@ -19,7 +19,8 @@ package org.apache.solr.languagemodels.model;
 import java.util.Map;
 
 /**
- * Abstract base class for Solr-managed wrappers around langchain4j used in {@code language-models} module
+ * Abstract base class for Solr-managed wrappers around langchain4j used in {@code language-models}
+ * module
  */
 public abstract class SolrLanguageModel {
 

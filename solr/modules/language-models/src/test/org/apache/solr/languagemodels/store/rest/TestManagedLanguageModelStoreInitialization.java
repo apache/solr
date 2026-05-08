@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.store.rest;
+package org.apache.solr.languagemodels.store.rest;
 
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.junit.After;
 import org.junit.Test;
 

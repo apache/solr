@@ -1,0 +1,9 @@
+title: Refactor of the language-model module to accomodate new "Document Enrichment with LLMs" feature avoiding code duplication.
+type: changed
+authors:
+  - name: Nicolò Rinaldi
+  - name: Anna Ruggero
+  - name: Alessandro benedetti
+links:
+- name: PR#4375
+  url: https://github.com/apache/solr/pull/4375
