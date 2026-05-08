@@ -17,6 +17,7 @@
 
 package org.apache.solr.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -30,9 +31,23 @@ import org.apache.solr.common.SolrException;
 
 public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
   public void testGuessMimeType() throws IOException {
-    assertResourceMimeType("application/x-java-applet", "/magic/HelloWorldJavaClass.class.bin");
-    assertResourceMimeType("application/zip", "/runtimecode/containerplugin.v.1.jar.bin");
-    assertResourceMimeType("application/x-tar", "/magic/hello.tar.bin");
+    // Tests the InputStream code path for each format using inline magic bytes, avoiding binary
+    // blobs in the repository. Text files are still tested via classpath resources.
+    byte[] javaClass = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE, 0, 0, 0, 52};
+    assertStreamMimeType("application/x-java-applet", javaClass);
+
+    byte[] jar = {'P', 'K', 0x03, 0x04, 0, 0, 0, 0};
+    assertStreamMimeType("application/zip", jar);
+
+    byte[] tar = new byte[512];
+    tar[257] = 'u';
+    tar[258] = 's';
+    tar[259] = 't';
+    tar[260] = 'a';
+    tar[261] = 'r';
+    assertStreamMimeType("application/x-tar", tar);
+
+    // Shell scripts are plain text — safe to keep as a classpath resource.
     assertResourceMimeType("text/x-shellscript", "/magic/shell.sh.txt");
   }
 
@@ -121,7 +136,10 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
   }
 
   public void testIsFileForbiddenInConfigset() throws IOException {
-    assertResourceForbiddenInConfigset("/magic/HelloWorldJavaClass.class.bin");
+    byte[] javaClass = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE, 0, 0, 0, 52};
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(new ByteArrayInputStream(javaClass)));
+
+    // Text files are safe to keep as classpath resources.
     assertResourceForbiddenInConfigset("/magic/shell.sh.txt");
     assertResourceAllowedInConfigset("/magic/plain.txt");
   }
@@ -191,6 +209,11 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     assertEquals(
         "text/x-shellscript",
         FileTypeMagicUtil.INSTANCE.guessMimeType(content.getBytes(StandardCharsets.US_ASCII)));
+  }
+
+  private void assertStreamMimeType(String mimeType, byte[] bytes) throws IOException {
+    assertEquals(
+        mimeType, FileTypeMagicUtil.INSTANCE.guessMimeType(new ByteArrayInputStream(bytes)));
   }
 
   private void assertResourceMimeType(String mimeType, String resourcePath) throws IOException {
