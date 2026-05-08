@@ -49,6 +49,12 @@ The `blockUnknown` setting in the JWT Authentication plugin now defaults to `tru
 In Solr 10.0, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
 Users upgrading from 10.0 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
 
+=== Security
+
+PKI Authentication v1 support has been removed.
+The system properties `solr.pki.sendVersion` and `solr.pki.acceptVersions` are no longer recognized.
+Users upgrading should verify that these properties are not set, before starting the upgrade.
+
 == Solr 10.0
 
 === Solr Jetty parameters
@@ -342,7 +348,7 @@ If you require the ability to roll back, back up your indexes before upgrading.
 
 Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
 Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
-Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.  
+Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
 However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
 
 === Docker

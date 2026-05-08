@@ -211,8 +211,8 @@ They may do this through the so-called `HttpClientBuilder` mechanism, or they ma
 The `PKIAuthenticationPlugin` provides a built-in authentication mechanism where each Solr node is a super user and is fully trusted by other Solr nodes through the use of Public Key Infrastructure (PKI).
 Each Authentication plugin may choose to delegate all or some inter-node traffic to the PKI plugin.
 
-There are currently two versions of the PKI Authentication protocol available in Solr. For each outgoing request `PKIAuthenticationPlugin` adds a special header which carries the request timestamp and user principal.
-When a node receives a request with this special header, it will verify to message using the corresponding source node's public key.
+For each outgoing request `PKIAuthenticationPlugin` adds a `SolrAuthV2` header which contains: the source node name, user principal, request timestamp, and a base64-encoded RSA signature.
+When a node receives a request with this header, it will verify the message using the corresponding source node's public key.
 Message validation is only attempted for incoming traffic from other Solr nodes registered in ZooKeeper.
 If the request passes PKI validation and the timestamp is less than 5 seconds old, then the request will be trusted.
 
@@ -220,14 +220,6 @@ If the request passes PKI validation and the timestamp is less than 5 seconds ol
 ====
 Note: Because the PKI Authentication Plugin relies on relatively short timestamp expiration to validate requests, the clocks on separate nodes in the cluster must be synchronized.
 ====
-
-Version 2 of the protocol is the default version. In this version, the `SolrAuthV2` header contains: the source node name, user principal, request timestamp, and a base64-encoded RSA signature. All nodes will attempt to validate this header first.
-
-To support rolling restarts from older versions, Solr can be configured to accept and validate PKI authentication using protocol v1. This is enabled by setting the system properties `solr.pki.sendVersion=v1` and `solr.pki.acceptVersions=v1,v2`. When enabled, requests will contain a `SolrAuth` header which will contain the user principal and timestamp encrypted using the sender's private key.
-
-If the `SolrAuthV2` header is present but fails validation, then Solr will not fall back to checking `SolrAuth`. The legacy authentication headers will only be consulted when the newest headers are not present.
-
-Unknown values for `solr.pki.acceptVersion` will emit a warning log message but will not cause errors to more smoothly support future protocol revisions.
 
 The timeout is configurable through a system property called `pkiauth.ttl`.
 For example, if you wish to increase the time-to-live to 10 seconds (10,000 milliseconds), start each node with a property `'-Dpkiauth.ttl=10000'`.
