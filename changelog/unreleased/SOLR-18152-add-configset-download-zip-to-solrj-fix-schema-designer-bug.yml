@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Fixed a bug in the analyze sample documents feature of Schema Designer that prevented the designer from working.
+title: Schema Designer sample-doc analysis now works correctly when analyze sample documents.
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
