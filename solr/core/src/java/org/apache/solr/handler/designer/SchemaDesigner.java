@@ -1232,6 +1232,28 @@ public class SchemaDesigner extends JerseyResource
     }
   }
 
+  /**
+   * Merges sample-document indexing errors into a response so the endpoint can return them to the
+   * UI instead of throwing. Sample docs are indexed into a temp collection to drive field-type
+   * inference; when that indexing fails, callers continue to build a normal response and use this
+   * method to attach the error details.
+   *
+   * <p>Two error sources are accepted (either or both may be present):
+   *
+   * <ul>
+   *   <li>{@code solrExc} — a top-level exception (e.g. the whole indexing call failed). May be
+   *       {@code null}.
+   *   <li>{@code errorsDuringIndexing} — per-document failures. Keys are the failing document's
+   *       unique-id field VALUE (typed as {@code Object} because the schema's id field type is
+   *       unknown — typically {@code String}, but could be e.g. {@code Long}); values are the root
+   *       cause for that doc. May be {@code null} or empty.
+   * </ul>
+   *
+   * <p>If both are absent, the response is left untouched. Otherwise, populates {@code updateError}
+   * (message), {@code updateErrorCode} (HTTP-style code; defaults to 400), and {@code errorDetails}
+   * (the per-doc map). The {@code updateError} parameter, when non-null, overrides {@code
+   * solrExc.getMessage()} as the user-facing message.
+   */
   protected void addErrorToResponse(
       String collection,
       SolrException solrExc,
@@ -1259,6 +1281,10 @@ public class SchemaDesigner extends JerseyResource
     }
   }
 
+  /**
+   * Overload that writes into the typed {@link SchemaDesignerResponse}. See {@link
+   * #addErrorToResponse(String, SolrException, Map, Map, String)} for full semantics.
+   */
   protected void addErrorToResponse(
       String collection,
       SolrException solrExc,
@@ -1292,7 +1318,12 @@ public class SchemaDesigner extends JerseyResource
     }
   }
 
-  /** Overload for {@link SchemaDesignerPublishResponse} error fields. */
+  /**
+   * Overload that writes into the typed {@link SchemaDesignerPublishResponse}. See {@link
+   * #addErrorToResponse(String, SolrException, Map, Map, String)} for full semantics. Note this
+   * variant has no {@code updateError} override parameter — publish callers always derive the
+   * message from {@code solrExc} or the default.
+   */
   protected void addErrorToResponse(
       String collection,
       SolrException solrExc,
