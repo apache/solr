@@ -29,7 +29,7 @@ import java.util.Map;
  * <p>All nullable fields are omitted from JSON output when null.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SchemaDesignerResponse extends SolrJerseyResponse {
+public class SchemaDesignerResponse extends SchemaDesignerSettingsResponse {
 
   // --- core schema identification ---
 
@@ -76,29 +76,6 @@ public class SchemaDesignerResponse extends SolrJerseyResponse {
   /** Total number of sample documents, or -1 when no docs were passed to the endpoint. */
   @JsonProperty("numDocs")
   public Integer numDocs;
-
-  // --- designer settings ---
-
-  @JsonProperty("languages")
-  public List<String> languages;
-
-  @JsonProperty("enableFieldGuessing")
-  public Boolean enableFieldGuessing;
-
-  @JsonProperty("enableDynamicFields")
-  public Boolean enableDynamicFields;
-
-  @JsonProperty("enableNestedDocs")
-  public Boolean enableNestedDocs;
-
-  @JsonProperty("disabled")
-  public Boolean disabled;
-
-  @JsonProperty("publishedVersion")
-  public Integer publishedVersion;
-
-  @JsonProperty("copyFrom")
-  public String copyFrom;
 
   // --- error fields (set when sample-doc indexing fails) ---
 

@@ -56,6 +56,7 @@ import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerPublishResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSchemaDiffResponse;
+import org.apache.solr.client.api.model.SchemaDesignerSettingsResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -1346,44 +1347,8 @@ public class SchemaDesigner extends JerseyResource
     return (Map<String, Object>) json;
   }
 
-  void addSettingsToResponse(SchemaDesignerSettings settings, final Map<String, Object> response) {
-    response.put(LANGUAGES_PARAM, settings.getLanguages());
-    response.put(ENABLE_FIELD_GUESSING_PARAM, settings.fieldGuessingEnabled());
-    response.put(ENABLE_DYNAMIC_FIELDS_PARAM, settings.dynamicFieldsEnabled());
-    response.put(ENABLE_NESTED_DOCS_PARAM, settings.nestedDocsEnabled());
-    response.put(DISABLED, settings.isDisabled());
-    Optional<Integer> publishedVersion = settings.getPublishedVersion();
-    publishedVersion.ifPresent(version -> response.put(PUBLISHED_VERSION, version));
-    String copyFrom = settings.getCopyFrom();
-    if (copyFrom != null) {
-      response.put(COPY_FROM_PARAM, copyFrom);
-    }
-  }
-
   void addSettingsToResponse(
-      SchemaDesignerSettings settings, final SchemaDesignerInfoResponse response) {
-    response.languages = settings.getLanguages();
-    response.enableFieldGuessing = settings.fieldGuessingEnabled();
-    response.enableDynamicFields = settings.dynamicFieldsEnabled();
-    response.enableNestedDocs = settings.nestedDocsEnabled();
-    response.disabled = settings.isDisabled();
-    settings.getPublishedVersion().ifPresent(v -> response.publishedVersion = v);
-    response.copyFrom = settings.getCopyFrom();
-  }
-
-  void addSettingsToResponse(
-      SchemaDesignerSettings settings, final SchemaDesignerSchemaDiffResponse response) {
-    response.languages = settings.getLanguages();
-    response.enableFieldGuessing = settings.fieldGuessingEnabled();
-    response.enableDynamicFields = settings.dynamicFieldsEnabled();
-    response.enableNestedDocs = settings.nestedDocsEnabled();
-    response.disabled = settings.isDisabled();
-    settings.getPublishedVersion().ifPresent(v -> response.publishedVersion = v);
-    response.copyFrom = settings.getCopyFrom();
-  }
-
-  void addSettingsToResponse(
-      SchemaDesignerSettings settings, final SchemaDesignerResponse response) {
+      SchemaDesignerSettings settings, final SchemaDesignerSettingsResponse response) {
     response.languages = settings.getLanguages();
     response.enableFieldGuessing = settings.fieldGuessingEnabled();
     response.enableDynamicFields = settings.dynamicFieldsEnabled();

@@ -18,12 +18,11 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 import java.util.Map;
 
 /** Response body for the Schema Designer get-schema-diff endpoint. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SchemaDesignerSchemaDiffResponse extends SolrJerseyResponse {
+public class SchemaDesignerSchemaDiffResponse extends SchemaDesignerSettingsResponse {
 
   /** The list of field-level differences between the designed schema and the source. */
   @JsonProperty("diff")
@@ -32,27 +31,4 @@ public class SchemaDesignerSchemaDiffResponse extends SolrJerseyResponse {
   /** The configSet used as the diff source (either the published configSet or copyFrom). */
   @JsonProperty("diff-source")
   public String diffSource;
-
-  // --- designer settings (reflected from the mutable configSet) ---
-
-  @JsonProperty("languages")
-  public List<String> languages;
-
-  @JsonProperty("enableFieldGuessing")
-  public Boolean enableFieldGuessing;
-
-  @JsonProperty("enableDynamicFields")
-  public Boolean enableDynamicFields;
-
-  @JsonProperty("enableNestedDocs")
-  public Boolean enableNestedDocs;
-
-  @JsonProperty("disabled")
-  public Boolean disabled;
-
-  @JsonProperty("publishedVersion")
-  public Integer publishedVersion;
-
-  @JsonProperty("copyFrom")
-  public String copyFrom;
 }

@@ -20,25 +20,28 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
-/** Response body for the Schema Designer get-info endpoint. */
+/** Base response for Schema Designer endpoints that surface the designer settings. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SchemaDesignerInfoResponse extends SchemaDesignerSettingsResponse {
+public abstract class SchemaDesignerSettingsResponse extends SolrJerseyResponse {
 
-  @JsonProperty("configSet")
-  public String configSet;
+  @JsonProperty("languages")
+  public List<String> languages;
 
-  /** Whether the configSet has a published (live) version. */
-  @JsonProperty("published")
-  public Boolean published;
+  @JsonProperty("enableFieldGuessing")
+  public Boolean enableFieldGuessing;
 
-  @JsonProperty("schemaVersion")
-  public Integer schemaVersion;
+  @JsonProperty("enableDynamicFields")
+  public Boolean enableDynamicFields;
 
-  /** Collections currently using this configSet. */
-  @JsonProperty("collections")
-  public List<String> collections;
+  @JsonProperty("enableNestedDocs")
+  public Boolean enableNestedDocs;
 
-  /** Number of sample documents stored for this configSet, if available. */
-  @JsonProperty("numDocs")
-  public Integer numDocs;
+  @JsonProperty("disabled")
+  public Boolean disabled;
+
+  @JsonProperty("publishedVersion")
+  public Integer publishedVersion;
+
+  @JsonProperty("copyFrom")
+  public String copyFrom;
 }
