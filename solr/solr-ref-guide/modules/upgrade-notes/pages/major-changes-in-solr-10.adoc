@@ -156,13 +156,29 @@ A new experimental Admin UI is available alongside the existing Admin UI (SOLR-1
 It can be accessed at the URL path `/solr/ui/`.
 This UI is still in active development and provided as a preview; the existing Admin UI remains the default.
 
-=== Vector Search Enhancements
+=== Vector Search
+
+==== Enhancements
 
 * The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
 
 * Scalar and binary quantized dense vectors are now supported for `DenseVectorField` (SOLR-17780, SOLR-17812). Quantization reduces memory consumption and can improve search performance at some cost to accuracy. See the reference guide for configuration details.
 
 * GPU-accelerated approximate nearest neighbor search is now available via the cuVS-Lucene pluggable codec (SOLR-17892). This allows NVIDIA GPU hardware to be used for vector search workloads.
+
+* Early termination strategy for KNN queries is now supported (SOLR-17814). `PatienceKnnVectorQuery` is a version of knn vector query that exits early the graph when HNSW queue saturates over a saturationThreshold for more than patience times.
+
+* Lexically accelerated vector search is now supported (SOLR-17813). `SeededKnnVectorQuery` is a version of knn vector query that introduces a “seed” query, allowing the search to start from a predefined subset of documents and guide the vector similarity computation.
+
+* The `filteredSearchThreshold` parameter is now available to regulate ACORN-based filtering in vector search (SOLR-17815). This approach addresses the performance limitations typically associated with pre-filtering and post-filtering strategies by modifying both the construction and search phases of the HNSW graph.
+
+* Fixed incorrect behavior of `TextToVectorUpdateProcessor` during partial updates (SOLR-17843).
+
+==== Renaming of HNSW Parameters
+Attention:
+
+* The `llm` module has been renamed to `language-models`.
+* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
 
 === Deprecation Code Removals
 
@@ -299,11 +315,9 @@ Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHie
 </fieldType>
 ----
 
-=== Renaming in Vector Search
-Attention:
+=== Learning To Rank (LTR)
 
-* The `llm` module has been renamed to `language-models`.
-* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
+A new feature vector cache was added that is used not only for feature logging but also for the reranking phase (SOLR-16667).
 
 == Solr 10.1
 
@@ -342,7 +356,7 @@ If you require the ability to roll back, back up your indexes before upgrading.
 
 Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
 Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
-Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.  
+Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
 However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
 
 === Docker
@@ -361,3 +375,7 @@ Current permit utilization can be monitored via the `solr_client_request_async_p
 
 The `langid` module's `LangDetectLanguageIdentifierUpdateProcessor` now uses `io.github.azagniotov:language-detection` instead of the abandoned `com.cybozu.labs:langdetect` (last released in 2012).
 The new library supports a broader set of languages and uses a different statistical model, so detection results may differ from previous versions — particularly for short texts, texts that mix Latin characters with other scripts, or documents containing CJK characters alongside Latin-script content.
+
+=== Query Changes
+
+* Combined Query Feature is now available, enabling the execution of multiple queries of multiple kinds across multiple shards (SOLR-17319). Introduced `CombinedQuerySearchHandler` for hybrid search, using reciprocal rank fusion (RRF) by default and supporting custom ranking algorithms via plugins.
