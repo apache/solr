@@ -28,7 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.model.SolrLanguageModel;
-import org.apache.solr.languagemodels.store.LanguageModelException;
+import org.apache.solr.languagemodels.LanguageModelException;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;

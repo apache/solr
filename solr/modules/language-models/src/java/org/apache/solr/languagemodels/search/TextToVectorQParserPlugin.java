@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.search;
+package org.apache.solr.languagemodels.search;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,8 +26,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.textvectorisation.model.SolrTextToVectorModel;
-import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.model.SolrTextToVectorModel;
+import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;

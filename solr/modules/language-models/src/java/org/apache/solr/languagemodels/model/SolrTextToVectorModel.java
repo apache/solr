@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.model;
+package org.apache.solr.languagemodels.model;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -28,9 +28,8 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.model.SolrLanguageModel;
-import org.apache.solr.languagemodels.store.LanguageModelException;
-import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.LanguageModelException;
+import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

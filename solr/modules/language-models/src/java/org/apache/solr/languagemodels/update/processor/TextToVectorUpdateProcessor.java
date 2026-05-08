@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.languagemodels.textvectorisation.update.processor;
+package org.apache.solr.languagemodels.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.languagemodels.textvectorisation.model.SolrTextToVectorModel;
+import org.apache.solr.languagemodels.model.SolrTextToVectorModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;

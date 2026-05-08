@@ -16,12 +16,8 @@
  */
 package org.apache.solr.languagemodels.textvectorisation.store.rest;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
+import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

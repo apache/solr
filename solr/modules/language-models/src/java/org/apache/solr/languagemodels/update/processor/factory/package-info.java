@@ -14,17 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.store;
 
-public class LanguageModelException extends RuntimeException {
-
-  private static final long serialVersionUID = 1L;
-
-  public LanguageModelException(String message) {
-    super(message);
-  }
-
-  public LanguageModelException(String message, Exception cause) {
-    super(message, cause);
-  }
-}
+/** Contains update request processor factories. */
+package org.apache.solr.languagemodels.update.processor.factory;

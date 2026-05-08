@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.textvectorisation.store.rest;
+package org.apache.solr.languagemodels.store.rest;
 
 import java.util.Map;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.store.rest.ManagedLanguageModelStore;
-import org.apache.solr.languagemodels.textvectorisation.model.SolrTextToVectorModel;
+import org.apache.solr.languagemodels.model.SolrTextToVectorModel;
 import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.rest.ManagedResourceStorage;
 

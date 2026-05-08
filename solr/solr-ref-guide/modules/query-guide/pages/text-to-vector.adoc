@@ -97,7 +97,7 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 +
 [source,xml]
 ----
-<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.search.TextToVectorQParserPlugin"/>
 ----
 
 [NOTE]
@@ -434,9 +434,10 @@ Faceting or querying on the boolean 'vectorised' field can also give you a quick
 
 === Running a Text-to-Vector Query
 Before running a Text-to-Vector query, ensure that the `knn_text_to_vector` query parser is declared in `solrconfig.xml`:
+
 [source,xml]
 ----
-<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.search.TextToVectorQParserPlugin"/>
 ----
 
 To run a query that vectorises your query text, using a model you previously uploaded is simple:

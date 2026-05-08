@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** APIs and classes for implementing text to vector QueryParsers. */
-package org.apache.solr.languagemodels.textvectorisation.search;
+/** APIs and classes for implementing language models QueryParsers. */
+package org.apache.solr.languagemodels.search;

@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
