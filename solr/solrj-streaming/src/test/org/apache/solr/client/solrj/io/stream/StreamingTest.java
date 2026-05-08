@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
@@ -1662,7 +1663,9 @@ public class StreamingTest extends SolrCloudTestCase {
         new MeanMetric("a_i"),
         new MeanMetric("a_f"),
         new CountMetric(),
-        new MissingMetric("b_f")
+        new MissingMetric("b_f"),
+        new CountDistinctMetric("a_i"),
+        new CountDistinctMetric("a_s")
       };
 
       RollupStream rollupStream = new RollupStream(stream, buckets, metrics);
@@ -1685,6 +1688,8 @@ public class StreamingTest extends SolrCloudTestCase {
       Double avgf = tuple.getDouble("avg(a_f)");
       Double count = tuple.getDouble("count(*)");
       Double missingBf = tuple.getDouble("missing(b_f)");
+      Double countDistI = tuple.getDouble("countDist(a_i)");
+      Double countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello0", bucket);
       assertEquals(17, sumi, 0.001);
@@ -1697,6 +1702,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(4.5, avgf, 0.001);
       assertEquals(4, count, 0.001);
       assertEquals(2, missingBf, 0.001);
+      assertEquals(4, countDistI, 0.001);
+      assertEquals(1, countDistS, 0.001);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1710,6 +1717,8 @@ public class StreamingTest extends SolrCloudTestCase {
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
       missingBf = tuple.getDouble("missing(b_f)");
+      countDistI = tuple.getDouble("countDist(a_i)");
+      countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello3", bucket);
       assertEquals(38, sumi, 0.001);
@@ -1722,6 +1731,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(6.5, avgf, 0.001);
       assertEquals(4, count, 0.001);
       assertEquals(3, missingBf, 0.001);
+      assertEquals(4, countDistI, 0.001);
+      assertEquals(1, countDistS, 0.001);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1735,6 +1746,8 @@ public class StreamingTest extends SolrCloudTestCase {
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
       missingBf = tuple.getDouble("missing(b_f)");
+      countDistI = tuple.getDouble("countDist(a_i)");
+      countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
@@ -1747,6 +1760,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(5.5, avgf, 0.01);
       assertEquals(2, count, 0.01);
       assertEquals(0, missingBf, 0.01);
+      assertEquals(2, countDistI, 0.01);
+      assertEquals(1, countDistS, 0.01);
 
       // Test will null metrics
       rollupStream = new RollupStream(stream, buckets, metrics);
@@ -1785,7 +1800,9 @@ public class StreamingTest extends SolrCloudTestCase {
         new MeanMetric("a_i"),
         new MeanMetric("a_f"),
         new CountMetric(),
-        new MissingMetric("b_f")
+        new MissingMetric("b_f"),
+        new CountDistinctMetric("a_i"),
+        new CountDistinctMetric("a_s")
       };
 
       rollupStream = new RollupStream(stream, buckets1, metrics1);
@@ -1806,6 +1823,8 @@ public class StreamingTest extends SolrCloudTestCase {
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
       missingBf = tuple.getDouble("missing(b_f)");
+      countDistI = tuple.getDouble("countDist(a_i)");
+      countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals(14, sumi, 0.01);
       assertEquals(10, sumf, 0.01);
@@ -1817,6 +1836,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(10, avgf, 0.01);
       assertEquals(1, count, 0.01);
       assertEquals(1, missingBf, 0.01);
+      assertEquals(1, countDistI, 0.01);
+      assertEquals(0, countDistS, 0.01);
     } finally {
       solrClientCache.close();
     }
