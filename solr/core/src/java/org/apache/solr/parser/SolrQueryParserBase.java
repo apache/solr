@@ -20,7 +20,6 @@ import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SA
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -187,7 +186,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     private final List<String> externalVals;
 
     public RawQuery(SchemaField sfield, String externalVal) {
-      this(sfield, Collections.singletonList(externalVal));
+      this(sfield, List.of(externalVal));
     }
 
     public RawQuery(SchemaField sfield, List<String> externalVals) {

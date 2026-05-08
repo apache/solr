@@ -274,6 +274,10 @@ public class SearchHandler extends RequestHandlerBase
     DebugComponent dbgCmp = null;
     for (String c : list) {
       SearchComponent comp = core.getSearchComponent(c);
+      if (comp == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unknown search component: " + c);
+      }
       if (comp instanceof DebugComponent && makeDebugLast == true) {
         dbgCmp = (DebugComponent) comp;
       } else {

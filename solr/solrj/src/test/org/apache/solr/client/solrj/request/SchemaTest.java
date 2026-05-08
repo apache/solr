@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.is;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -520,14 +519,14 @@ public class SchemaTest extends RestTestBase {
     charFilterAttributes.put("class", "solr.PatternReplaceCharFilterFactory");
     charFilterAttributes.put("replacement", "$1$1");
     charFilterAttributes.put("pattern", "([a-zA-Z])\\\\1+");
-    analyzerDefinition.setCharFilters(Collections.singletonList(charFilterAttributes));
+    analyzerDefinition.setCharFilters(List.of(charFilterAttributes));
     Map<String, Object> tokenizerAttributes = new LinkedHashMap<>();
     tokenizerAttributes.put("class", "solr.WhitespaceTokenizerFactory");
     analyzerDefinition.setTokenizer(tokenizerAttributes);
     Map<String, Object> filterAttributes = new LinkedHashMap<>();
     filterAttributes.put("class", "solr.WordDelimiterGraphFilterFactory");
     filterAttributes.put("preserveOriginal", "0");
-    analyzerDefinition.setFilters(Collections.singletonList(filterAttributes));
+    analyzerDefinition.setFilters(List.of(filterAttributes));
     fieldTypeDefinition.setAnalyzer(analyzerDefinition);
 
     SchemaRequest.AddFieldType addFieldTypeRequest =
@@ -587,7 +586,7 @@ public class SchemaTest extends RestTestBase {
     charFilterAttributes.put("class", "solr.PatternReplaceCharFilterFactory");
     charFilterAttributes.put("replacement", "$1$1");
     charFilterAttributes.put("pattern", "([a-zA-Z])\\\\1+");
-    analyzerDefinition.setCharFilters(Collections.singletonList(charFilterAttributes));
+    analyzerDefinition.setCharFilters(List.of(charFilterAttributes));
     Map<String, Object> tokenizerAttributes = new LinkedHashMap<>();
     tokenizerAttributes.put("class", "solr.WhitespaceTokenizerFactory");
     analyzerDefinition.setTokenizer(tokenizerAttributes);

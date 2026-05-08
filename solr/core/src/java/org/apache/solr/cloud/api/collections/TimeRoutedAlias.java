@@ -36,7 +36,6 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -673,7 +672,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       String mostRecentTime = mostRecentCol.substring(getAliasName().length() + sepLen);
       Instant parsed = DATE_TIME_FORMATTER.parse(mostRecentTime, Instant::from);
       String nextCol = calcNextCollection(parsed);
-      return Collections.singletonList(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
+      return List.of(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
     } else {
       return List.of();
     }

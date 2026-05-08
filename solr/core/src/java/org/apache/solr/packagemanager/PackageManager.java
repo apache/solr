@@ -30,7 +30,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -160,7 +159,7 @@ public class PackageManager implements Closeable {
         new V2Request.Builder(PackageUtils.PACKAGE_PATH)
             .forceV2(true)
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Collections.singletonMap("delete", del))
+            .withPayload(Map.of("delete", del))
             .build();
 
     try {
@@ -438,12 +437,11 @@ public class PackageManager implements Closeable {
             PackageUtils.getCollectionParamsPath(collection),
             getMapper()
                 .writeValueAsString(
-                    Collections.singletonMap(
+                    Map.of(
                         packageParamsExist ? "update" : "set",
-                        Collections.singletonMap(
+                        Map.of(
                             "packages",
-                            Collections.singletonMap(
-                                packageInstance.name, collectionParameterOverrides)))));
+                            Map.of(packageInstance.name, collectionParameterOverrides)))));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }

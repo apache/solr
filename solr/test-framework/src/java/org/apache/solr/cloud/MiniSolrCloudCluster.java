@@ -699,8 +699,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
         collectionName,
         k -> {
           CloudSolrClient solrClient =
-              new CloudLegacySolrClient.Builder(
-                      Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+              new CloudLegacySolrClient.Builder(List.of(zkServer.getZkAddress()), Optional.empty())
                   .withDefaultCollection(collectionName)
                   .withSocketTimeout(90000)
                   .withConnectionTimeout(15000)
@@ -721,7 +720,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
   @Override // SolrBackend
   public CloudSolrClient newSolrClient(String collection) {
     return new CloudLegacySolrClient.Builder(
-            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+            List.of(getZkServer().getZkAddress()), Optional.empty())
         .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withDefaultCollection(collection)

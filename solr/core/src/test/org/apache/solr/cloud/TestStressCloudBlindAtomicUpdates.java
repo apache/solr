@@ -21,7 +21,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -428,8 +427,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       log.info("worker={}, docId={}, delta={}", workerId, docId, delta);
 
       SolrClient client = getRandClient(rand);
-      SolrInputDocument doc =
-          doc(f("id", "" + docId), f(updateField, Collections.singletonMap("inc", delta)));
+      SolrInputDocument doc = doc(f("id", "" + docId), f(updateField, Map.of("inc", delta)));
       UpdateResponse rsp = update(doc).process(client);
       assertEquals(doc + " => " + rsp, 0, rsp.getStatus());
 

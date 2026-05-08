@@ -1,0 +1,7 @@
+title: Update dropwizard.metrics to v4.2.33
+type: dependency_update
+authors:
+- name: Jan Høydahl
+links:
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

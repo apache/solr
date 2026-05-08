@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -483,7 +482,7 @@ public class AtomicUpdateDocumentMerger {
       return ((Collection<?>) fieldVal)
           .stream().map(SolrInputDocument.class::cast).collect(Collectors.toList());
     } else {
-      return Collections.singletonList((SolrInputDocument) fieldVal);
+      return List.of((SolrInputDocument) fieldVal);
     }
   }
 

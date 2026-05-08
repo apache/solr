@@ -21,7 +21,7 @@ If you are worried about data loss, and of course you _should_ be, you need a wa
 
 Solr provides two approaches to backing up and restoring Solr cores or collections, depending on how you are running Solr.
 If you run a SolrCloud cluster, you will use the Collections API.
-If you run a user-managed cluster or a single-node installation, you will use the replication handler.
+If you run a user-managed cluster or a standalone installation, you will use the replication handler.
 
 [NOTE]
 ====
@@ -49,7 +49,7 @@ More information is available in the section xref:collection-management.adoc#lis
 * `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.
 More information is available in the section xref:collection-management.adoc#deletebackup[Delete Backups].
 
-== User-Managed Clusters and Single-Node Installations
+== User-Managed Clusters and Standalone Installations
 
 Backups and restoration uses Solr's replication handler.
 Out of the box, Solr includes implicit support for replication so this API can be used.

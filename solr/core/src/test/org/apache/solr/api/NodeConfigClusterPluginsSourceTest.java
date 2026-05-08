@@ -17,7 +17,6 @@
 
 package org.apache.solr.api;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -118,10 +117,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
   public void testClusterPluginsEditApi() throws Exception {
     PluginMeta meta = SingletonNoConfig.pluginMeta();
     V2Request req =
-        new V2Request.Builder("/cluster/plugin")
-            .POST()
-            .withPayload(Collections.singletonMap("add", meta))
-            .build();
+        new V2Request.Builder("/cluster/plugin").POST().withPayload(Map.of("add", meta)).build();
     try {
       req.process(cluster.getSolrClient());
       fail("Expected a 404 response code because the Edit Apis are not registered");

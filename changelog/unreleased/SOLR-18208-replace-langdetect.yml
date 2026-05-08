@@ -1,0 +1,8 @@
+title: Replace abandoned com.cybozu.labs:langdetect with maintained io.github.azagniotov:language-detection in the langid module
+type: dependency_update
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18208
+    url: https://issues.apache.org/jira/browse/SOLR-18208
