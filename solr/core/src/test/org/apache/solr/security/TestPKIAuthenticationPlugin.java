@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -185,18 +186,11 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testLegacyV1HeaderRejected() throws Exception {
     // A request with only the legacy SolrAuth (v1) header and no SolrAuthV2 header should be
-    // rejected, since PKI v1 support has been removed.
+    // rejected, since PKI v1 support has been removed. Verify that the plugin never even consults
+    // the SolrAuth header — the rejection must be due to the absence of SolrAuthV2, not due to
+    // the v1 token being malformed.
     HttpServletRequest legacyReq = mock(HttpServletRequest.class);
-    when(legacyReq.getHeader(any(String.class)))
-        .then(
-            invocation -> {
-              String headerName = invocation.getArgument(0);
-              // Return a non-null value for the old v1 header, null for v2
-              if ("SolrAuth".equals(headerName)) {
-                return "some-legacy-v1-value";
-              }
-              return null;
-            });
+    when(legacyReq.getHeader(PKIAuthenticationPlugin.HEADER_V2)).thenReturn(null);
     when(legacyReq.getRequestURI()).thenReturn("/collection1/select");
 
     HttpServletResponse response = mock(HttpServletResponse.class);
@@ -204,6 +198,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
         "Should have rejected request with only a legacy v1 SolrAuth header",
         mock.authenticate(legacyReq, response, filterChain));
 
+    verify(legacyReq, never()).getHeader("SolrAuth");
     verify(response)
         .setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), PKIAuthenticationPlugin.HEADER_V2);
     verify(response).sendError(ArgumentMatchers.eq(401), anyString());
