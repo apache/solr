@@ -214,7 +214,7 @@ Each Authentication plugin may choose to delegate all or some inter-node traffic
 For each outgoing request `PKIAuthenticationPlugin` adds a `SolrAuthV2` header which contains: the source node name, user principal, request timestamp, and a base64-encoded RSA signature.
 When a node receives a request with this header, it will verify the message using the corresponding source node's public key.
 Message validation is only attempted for incoming traffic from other Solr nodes registered in ZooKeeper.
-If the request passes PKI validation and the timestamp is less than 5 seconds old, then the request will be trusted.
+If the request passes PKI validation and the timestamp is within the configured `pkiauth.ttl` time-to-live window, then the request will be trusted.
 
 [NOTE]
 ====
