@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
@@ -1350,7 +1351,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -1370,7 +1371,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
             .withFunctionName("min", MinMetric.class)
             .withFunctionName("max", MaxMetric.class)
             .withFunctionName("avg", MeanMetric.class)
-            .withFunctionName("count", CountMetric.class);
+            .withFunctionName("count", CountMetric.class)
+            .withFunctionName("countDist", CountDistinctMetric.class);
 
     StreamExpression expression;
     TupleStream stream;
@@ -1395,6 +1397,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "avg(a_i),"
                   + "avg(a_f),"
                   + "count(*),"
+                  + "countDist(a_i),"
+                  + "countDist(a_s)"
                   + ")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(streamContext);
@@ -1415,17 +1419,21 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double avgi = tuple.getDouble("avg(a_i)");
       Double avgf = tuple.getDouble("avg(a_f)");
       Double count = tuple.getDouble("count(*)");
+      Double countDistI = tuple.getDouble("countDist(a_i)");
+      Double countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
+      assertEquals(3, countDistI, 0.0);
+      assertEquals(1, countDistS, 0.0);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1438,6 +1446,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
+      countDistI = tuple.getDouble("countDist(a_i)");
+      countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello3", bucket);
       assertEquals(38.0D, sumi, 0.0);
@@ -1449,6 +1459,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(9.5D, avgi, 0.0);
       assertEquals(6.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
+      assertEquals(4, countDistI, 0.0);
+      assertEquals(1, countDistS, 0.0);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1461,6 +1473,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
+      countDistI = tuple.getDouble("countDist(a_i)");
+      countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello4", bucket);
       assertEquals(15, sumi.longValue());
@@ -1472,6 +1486,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(7.5D, avgi, 0.0);
       assertEquals(5.5D, avgf, 0.0);
       assertEquals(2, count, 0.0);
+      assertEquals(2, countDistI, 0.0);
+      assertEquals(1, countDistS, 0.0);
 
     } finally {
       solrClientCache.close();
@@ -1483,7 +1499,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -1504,6 +1520,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
             .withFunctionName("max", MaxMetric.class)
             .withFunctionName("avg", MeanMetric.class)
             .withFunctionName("count", CountMetric.class)
+            .withFunctionName("countDist", CountDistinctMetric.class)
             .withFunctionName("sort", SortStream.class);
 
     StreamExpression expression;
@@ -1529,6 +1546,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "avg(a_i),"
                   + "avg(a_f),"
                   + "count(*),"
+                  + "countDist(a_i),"
+                  + "countDist(a_s)"
                   + "), by=\"avg(a_f) asc\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(streamContext);
@@ -1549,17 +1568,21 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double avgi = tuple.getDouble("avg(a_i)");
       Double avgf = tuple.getDouble("avg(a_f)");
       Double count = tuple.getDouble("count(*)");
+      Double countDistI = tuple.getDouble("countDist(a_i)");
+      Double countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
+      assertEquals(3, countDistI, 0.0);
+      assertEquals(1, countDistS, 0.0);
 
       tuple = tuples.get(1);
       bucket = tuple.getString("a_s");
@@ -1572,6 +1595,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
+      countDistI = tuple.getDouble("countDist(a_i)");
+      countDistS = tuple.getDouble("countDist(a_s)");
 
       System.out.println("################:bucket" + bucket);
 
@@ -1585,6 +1610,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(7.5D, avgi, 0.0);
       assertEquals(5.5D, avgf, 0.0);
       assertEquals(2, count, 0.0);
+      assertEquals(2, countDistI, 0.0);
+      assertEquals(1, countDistS, 0.0);
 
       tuple = tuples.get(2);
       bucket = tuple.getString("a_s");
@@ -1597,6 +1624,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
       count = tuple.getDouble("count(*)");
+      countDistI = tuple.getDouble("countDist(a_i)");
+      countDistS = tuple.getDouble("countDist(a_s)");
 
       assertEquals("hello3", bucket);
       assertEquals(38.0D, sumi, 0.0);
@@ -1608,6 +1637,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertEquals(9.5D, avgi, 0.0);
       assertEquals(6.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
+      assertEquals(4, countDistI, 0.0);
+      assertEquals(1, countDistS, 0.0);
 
     } finally {
       solrClientCache.close();
@@ -2000,7 +2031,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -2077,13 +2108,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
 
@@ -2142,7 +2173,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "2", "a_s", "hello0", "a_i", "0", "a_f", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
@@ -2220,13 +2251,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       Double count = tuple.getDouble("count(*)");
 
       assertEquals("hello0", bucket);
-      assertEquals(17.0D, sumi, 0.0);
+      assertEquals(15.0D, sumi, 0.0);
       assertEquals(18.0D, sumf, 0.0);
       assertEquals(0.0D, mini, 0.0);
       assertEquals(1.0D, minf, 0.0);
       assertEquals(14.0D, maxi, 0.0);
       assertEquals(10.0D, maxf, 0.0);
-      assertEquals(4.25D, avgi, 0.0);
+      assertEquals(3.75D, avgi, 0.0);
       assertEquals(4.5D, avgf, 0.0);
       assertEquals(4, count, 0.0);
 
