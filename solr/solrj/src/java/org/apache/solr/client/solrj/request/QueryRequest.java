@@ -16,9 +16,11 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
@@ -28,31 +30,42 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
 
   private SolrParams query;
 
+  @Deprecated
   public QueryRequest() {
-    super(METHOD.GET, null);
+    super(METHOD.GET, "/select");
+    query = SolrParams.of();
   }
 
   public QueryRequest(SolrParams q) {
-    super(METHOD.GET, null);
-    query = q;
+    super(METHOD.GET, pathFromParams(Objects.requireNonNull(q)));
+    query = paramsWithoutQt(q);
   }
 
   public QueryRequest(SolrParams q, METHOD method) {
-    super(method, null);
-    query = q;
+    super(method, pathFromParams(Objects.requireNonNull(q)));
+    query = paramsWithoutQt(q);
   }
 
-  /** Use the params 'QT' parameter if it exists */
-  @Override
-  public String getPath() {
-    String qt = query == null ? null : query.get(CommonParams.QT);
-    if (qt == null) {
-      qt = super.getPath();
-    }
-    if (qt != null && qt.startsWith("/")) {
-      return qt;
-    }
-    return "/select";
+  public QueryRequest(String path, SolrParams q) {
+    super(METHOD.GET, Objects.requireNonNull(path));
+    query = Objects.requireNonNull(q);
+  }
+
+  public QueryRequest(String path, SolrParams q, METHOD method) {
+    super(method, Objects.requireNonNull(path));
+    query = Objects.requireNonNull(q);
+  }
+
+  private static String pathFromParams(SolrParams q) {
+    String qt = q.get(CommonParams.QT);
+    return (qt != null && qt.startsWith("/")) ? qt : "/select";
+  }
+
+  private static SolrParams paramsWithoutQt(SolrParams q) {
+    if (q.get(CommonParams.QT) == null) return q;
+    ModifiableSolrParams params = new ModifiableSolrParams(q);
+    params.remove(CommonParams.QT);
+    return params;
   }
 
   // ---------------------------------------------------------------------------------
