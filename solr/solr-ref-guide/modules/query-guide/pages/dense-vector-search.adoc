@@ -192,7 +192,7 @@ Any integer.
 If `useVectorValuesAsStored="true"` is enabled, the field must remain `stored="true"` and must be single-valued.
 
 When `useVectorValuesAsStored="true"` is enabled, Solr reconstructs the returned vector from Lucene's vector index at fetch time.
-This is typically a good fit when you need stored-field compatibility for workflows such as `/get`, reindexing, or atomic updates, but do not routinely return the vector field in latency-sensitive traffic.
+This is typically a good fit when you do not routinely return the vector field in latency-sensitive traffic, but still want to reduce duplicate stored vector bytes for standard query-time fetches.
 If your application commonly uses `fl=*` or otherwise returns the vector field on high-volume request paths, benchmark carefully before enabling this option.
 
 Here's how a `DenseVectorField` should be indexed when single valued:

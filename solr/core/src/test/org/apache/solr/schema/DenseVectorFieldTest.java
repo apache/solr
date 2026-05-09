@@ -735,31 +735,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void denseVectorField_useVectorValuesAsStored_shouldReturnVectorsInRealTimeGet()
-      throws Exception {
-    try {
-      initCore("solrconfig_codec.xml", "schema-densevector-derived-stored.xml");
-      assertU(
-          adoc(
-              sdoc(
-                  "id",
-                  "0",
-                  "vector",
-                  Arrays.asList(1.1, 2.2, 3.3, 4.4),
-                  "vector_byte_encoding",
-                  Arrays.asList(5, 6, 7, 8))));
-      assertU(commit());
-
-      assertJQ(
-          req("qt", "/get", "id", "0", "fl", "id,vector,vector_byte_encoding"),
-          "/doc/vector==[1.1,2.2,3.3,4.4]",
-          "/doc/vector_byte_encoding==[5,6,7,8]");
-    } finally {
-      deleteCore();
-    }
-  }
-
-  @Test
   public void denseVectorField_useVectorValuesAsStored_shouldPreserveVectorsAfterAtomicUpdate()
       throws Exception {
     assumeTrue(
