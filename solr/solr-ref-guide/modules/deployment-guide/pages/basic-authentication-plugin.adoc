@@ -61,7 +61,7 @@ There are several options defined in this example:
 <5> The parameter `"forwardCredentials":false` means we let Solr's PKI authentication handle distributed request instead of forwarding the Basic Auth header.
 
 Save your settings to a file called `security.json` locally.
-If you are using Solr in single-node installation, you should put this file in `$SOLR_HOME`.
+If you are using Solr in standalone installation, you should put this file in `$SOLR_HOME`.
 
 If `blockUnknown` is not defined in the `security.json` file, it will default to `true`.
 This has the effect of requiring authentication for HTTP access to Solr.

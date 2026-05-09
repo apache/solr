@@ -1,0 +1,9 @@
+title: Update org.openapi.generator to v7.20.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4097
+  url: https://github.com/apache/solr/pull/4097
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

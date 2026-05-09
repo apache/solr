@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -288,6 +289,9 @@ public class DistribFileStore implements FileStore {
         public Date getTimeStamp() {
           try {
             return new Date(Files.getLastModifiedTime(realPath()).toMillis());
+          } catch (NoSuchFileException e) {
+            // File was deleted concurrently between listing and reading its attributes.
+            return null;
           } catch (IOException e) {
             throw new SolrException(
                 SERVER_ERROR, "Failed to retrieve the last modified time for: " + realPath(), e);
@@ -303,6 +307,9 @@ public class DistribFileStore implements FileStore {
         public long size() {
           try {
             return Files.size(realPath());
+          } catch (NoSuchFileException e) {
+            // File was deleted concurrently between listing and reading its attributes.
+            return -1;
           } catch (IOException e) {
             throw new SolrException(
                 SERVER_ERROR, "Failed to retrieve the file size for: " + realPath(), e);

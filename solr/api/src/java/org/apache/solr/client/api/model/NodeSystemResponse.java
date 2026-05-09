@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +28,22 @@ import java.util.Set;
 public class NodeSystemResponse extends SolrJerseyResponse {
 
   @JsonProperty public NodeSystemInfo nodeInfo;
+
+  // TODO The typing here is kindof wonky - can I tighten 'Object' here to be NodeSystemResponse or
+  // will Jackson choke on that?
+  // Or rather, change 'Object' to 'NodeSystemInfo', if Jackson can read it from the remote
+  // 'NodeSystemResponse'?
+  public Map<String, Object> remoteNodeData;
+
+  @JsonAnyGetter
+  public Map<String, Object> remoteNodeData() {
+    return remoteNodeData;
+  }
+
+  @JsonAnySetter
+  public void setRemoteNodeResponse(String field, Object value) {
+    remoteNodeData.put(field, value);
+  }
 
   /** wrapper around the node info */
   public static class NodeSystemInfo {
@@ -52,7 +70,7 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public JVM jvm;
     @JsonProperty public Security security;
     @JsonProperty public GPU gpu;
-    @JsonProperty public Map<String, String> system;
+    @JsonProperty public Map<String, Object> system;
   }
 
   /** /node/system/security */

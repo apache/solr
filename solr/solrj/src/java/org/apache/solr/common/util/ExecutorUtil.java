@@ -162,8 +162,9 @@ public class ExecutorUtil {
         pool.shutdownNow();
         // Wait again for forced threads to stop.
         if (!pool.awaitTermination(timeout, unit)) {
-          log.error("Threads from pool {} did not forcefully stop.", pool);
-          throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.");
+          String executorDetails = describeExecutorForLogging(pool);
+          log.error("Threads from pool did not forcefully stop. {}", executorDetails);
+          throw new RuntimeException("Timeout waiting for pool to shutdown. " + executorDetails);
         }
       }
     } catch (InterruptedException ie) {
@@ -172,6 +173,20 @@ public class ExecutorUtil {
       // Preserve interrupt status
       Thread.currentThread().interrupt();
     }
+  }
+
+  /** Executor logging details which include pool name when executor fails to terminate. */
+  public static String describeExecutorForLogging(ExecutorService pool) {
+    if (pool == null) return "";
+    if (pool instanceof ThreadPoolExecutor poolExecutor) {
+      ThreadFactory threadFactory = poolExecutor.getThreadFactory();
+      String poolName =
+          threadFactory instanceof SolrNamedThreadFactory solrNamedThreadFactory
+              ? solrNamedThreadFactory.getPoolName()
+              : "";
+      return "[" + "poolName=" + poolName + "]" + poolExecutor;
+    }
+    return "";
   }
 
   /**
@@ -320,6 +335,18 @@ public class ExecutorUtil {
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
       this.enableSubmitterStackTrace = true;
+    }
+
+    /** When the thread factory is a {@link SolrNamedThreadFactory}, prefixes the pool name. */
+    @Override
+    public String toString() {
+      ThreadFactory threadFactory = getThreadFactory();
+      String base = super.toString();
+      if (threadFactory instanceof SolrNamedThreadFactory solrNamedThreadFactory) {
+        String poolName = solrNamedThreadFactory.getPoolName();
+        return "[" + "poolName=" + poolName + "] " + base;
+      }
+      return base;
     }
 
     @Override

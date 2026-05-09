@@ -41,7 +41,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -179,7 +178,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       Object dest = map.get("dest");
       List<String> destFields = null;
       if (dest instanceof String) {
-        destFields = Collections.singletonList((String) dest);
+        destFields = List.of((String) dest);
       } else if (dest instanceof List) {
         destFields = (List<String>) dest;
       } else if (dest instanceof Collection) {

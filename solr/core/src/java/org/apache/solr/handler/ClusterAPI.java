@@ -32,7 +32,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -181,7 +180,7 @@ public class ClusterAPI {
             .getSolrCloudManager()
             .getDistribStateManager()
             .listData(ZkStateReader.NODE_ROLES + "/" + roleStr + "/" + modeStr);
-    rsp.add("node-roles", Map.of(roleStr, Collections.singletonMap(modeStr, nodes)));
+    rsp.add("node-roles", Map.of(roleStr, Map.of(modeStr, nodes)));
   }
 
   public static List<String> getNodesByRole(

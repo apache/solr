@@ -136,6 +136,8 @@ grant {
   // Needed by JWT integration tests & S3 clients
   permission java.lang.RuntimePermission "setFactory";
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.default";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.max_f2m_field_size";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_cons_depth";
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
