@@ -1223,7 +1223,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     commit();
 
     float inplace_updatable_float = 1F;
-    buildRandomIndex(inplace_updatable_float, Collections.singletonList(1));
+    buildRandomIndex(inplace_updatable_float, List.of(1));
 
     float newinplace_updatable_float = 100F;
     List<UpdateRequest> updates = new ArrayList<>();
@@ -1631,7 +1631,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     commit();
 
     float inplace_updatable_float = 1F;
-    buildRandomIndex(inplace_updatable_float, Collections.singletonList(1));
+    buildRandomIndex(inplace_updatable_float, List.of(1));
 
     List<UpdateRequest> updates = new ArrayList<>();
     updates.add(

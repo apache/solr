@@ -204,7 +204,16 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
                 + " fires synchronously on the IO thread before onComplete can release().");
       }
 
-      int permitsAfterFailures = testClient.asyncTrackerAvailablePermits();
+      // Poll briefly: apiFutures complete on the executor thread, but completeListener fires on
+      // Jetty's IO thread after response listeners, so allOf().get() can race ahead of release().
+      int permitsAfterFailures;
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+      do {
+        permitsAfterFailures = testClient.asyncTrackerAvailablePermits();
+        if (permitsAfterFailures == MAX_PERMITS) break;
+        //noinspection BusyWait
+        Thread.sleep(10);
+      } while (System.nanoTime() < deadline);
       log.info("Permits after retries: {}/{}", permitsAfterFailures, MAX_PERMITS);
       assertEquals(
           "All permits should be restored after retries complete",

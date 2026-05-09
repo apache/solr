@@ -35,6 +35,7 @@ dependencies {
   implementation libs.opentelemetry.sdk.metrics
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
+  implementation libs.google.guava
   implementation libs.jakarta.servlet.api
   implementation libs.slf4j.api
   runtimeOnly libs.google.protobuf.javautils

@@ -460,35 +460,47 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     final ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      SolrZkClient client = new SolrZkClient.Builder().withUrl(server.getZkAddress()).build();
-      ZkController.createClusterZkNodes(client);
-      testUrlSchemeWithClusterProperties(client);
-      testUrlSchemeDefault(client);
-      testUrlSchemeWithSystemProperties(client);
-      client.close();
+      try (SolrZkClient client =
+          new SolrZkClient.Builder().withUrl(server.getZkAddress()).build()) {
+        ZkController.createClusterZkNodes(client);
+
+        testUrlSchemeWithSystemProperties(client);
+
+        assumeFalse(
+            "Skip schema default and cluster property checks when SSL is enabled", isSSLMode());
+        testUrlSchemeWithClusterProperties(client);
+        testUrlSchemeDefault(client);
+      }
     } finally {
       server.shutdown();
     }
   }
 
+  /**
+   * Used by {@link #testZkClusterStateProviderUrlScheme}. Only valid if {@link #isSSLMode} is false
+   */
   private void testUrlSchemeDefault(SolrZkClient client) throws Exception {
+    assertFalse("These checks are not supported in SSL mode", isSSLMode());
     try (var zkStateReader = new ZkStateReader(client);
         var clusterStateProvider = new ZkClientClusterStateProvider(zkStateReader)) {
       assertEquals("http", clusterStateProvider.getUrlScheme());
     }
   }
 
+  /** Used by {@link #testZkClusterStateProviderUrlScheme} */
   private void testUrlSchemeWithSystemProperties(SolrZkClient client) throws Exception {
-    System.setProperty(SOLR_SSL_ENABLED, "true");
     try (var zkStateReader = new ZkStateReader(client);
         var clusterStateProvider = new ZkClientClusterStateProvider(zkStateReader)) {
-      assertEquals("https", clusterStateProvider.getUrlScheme());
-    } finally {
-      System.clearProperty(SOLR_SSL_ENABLED);
+      String expectedUrlScheme = isSSLMode() ? "https" : "http";
+      assertEquals(expectedUrlScheme, clusterStateProvider.getUrlScheme());
     }
   }
 
+  /**
+   * Used by {@link #testZkClusterStateProviderUrlScheme}. Only valid if {@link #isSSLMode} is false
+   */
   private void testUrlSchemeWithClusterProperties(SolrZkClient client) throws Exception {
+    assertFalse("These checks are not supported in SSL mode", isSSLMode());
     ClusterProperties cp = new ClusterProperties(client);
     cp.setClusterProperty("urlScheme", "ftp");
     try (var zkStateReader = new ZkStateReader(client);

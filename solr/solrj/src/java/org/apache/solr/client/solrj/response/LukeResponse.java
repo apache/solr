@@ -20,10 +20,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * This is an incomplete representation of the data returned from Luke
@@ -113,11 +116,12 @@ public class LukeResponse extends SolrResponseBase {
     String name;
     String type;
     String schema;
-    int docs;
+    long docs;
     int distinct;
     EnumSet<FieldFlag> flags;
     boolean cacheableFaceting;
     NamedList<Integer> topTerms;
+    Map<String, Object> extras = new TreeMap<>();
 
     public FieldInfo(String n) {
       name = n;
@@ -128,19 +132,20 @@ public class LukeResponse extends SolrResponseBase {
       for (Map.Entry<String, Object> entry : nl) {
         if ("type".equals(entry.getKey())) {
           type = (String) entry.getValue();
-        }
-        if ("flags".equals(entry.getKey())) {
+        } else if ("flags".equals(entry.getKey())) {
           flags = parseFlags((String) entry.getValue());
         } else if ("schema".equals(entry.getKey())) {
           schema = (String) entry.getValue();
         } else if ("docs".equals(entry.getKey())) {
-          docs = (Integer) entry.getValue();
+          docs = ((Number) entry.getValue()).longValue();
         } else if ("distinct".equals(entry.getKey())) {
           distinct = (Integer) entry.getValue();
         } else if ("cacheableFaceting".equals(entry.getKey())) {
           cacheableFaceting = (Boolean) entry.getValue();
         } else if ("topTerms".equals(entry.getKey())) {
           topTerms = (NamedList<Integer>) entry.getValue();
+        } else {
+          extras.put(entry.getKey(), entry.getValue());
         }
       }
     }
@@ -173,7 +178,7 @@ public class LukeResponse extends SolrResponseBase {
       return distinct;
     }
 
-    public int getDocs() {
+    public long getDocs() {
       return docs;
     }
 
@@ -192,12 +197,17 @@ public class LukeResponse extends SolrResponseBase {
     public NamedList<Integer> getTopTerms() {
       return topTerms;
     }
+
+    public Map<String, Object> getExtras() {
+      return extras;
+    }
   }
 
   private NamedList<Object> indexInfo;
   private Map<String, FieldInfo> fieldInfo;
   private Map<String, FieldInfo> dynamicFieldInfo;
   private Map<String, FieldTypeInfo> fieldTypeInfo;
+  private Map<String, LukeResponse> shardResponses;
 
   @Override
   @SuppressWarnings("unchecked")
@@ -246,6 +256,18 @@ public class LukeResponse extends SolrResponseBase {
         }
       }
     }
+
+    // Parse shards section (present in distributed responses)
+    SimpleOrderedMap<NamedList<Object>> shardsNL =
+        (SimpleOrderedMap<NamedList<Object>>) res.get("shards");
+    if (shardsNL != null) {
+      shardResponses = new LinkedHashMap<>();
+      for (Map.Entry<String, NamedList<Object>> entry : shardsNL) {
+        LukeResponse shardRsp = new LukeResponse();
+        shardRsp.setResponse(entry.getValue());
+        shardResponses.put(entry.getKey(), shardRsp);
+      }
+    }
   }
 
   // ----------------------------------------------------------------
@@ -256,14 +278,23 @@ public class LukeResponse extends SolrResponseBase {
     return (String) indexInfo.get("directory");
   }
 
-  public Integer getNumDocs() {
+  private Long getLong(String key) {
     if (indexInfo == null) return null;
-    return (Integer) indexInfo.get("numDocs");
+    Number n = (Number) indexInfo.get(key);
+    return n != null ? n.longValue() : null;
+  }
+
+  public Long getNumDocs() {
+    return getLong("numDocs");
   }
 
   public Integer getMaxDoc() {
     if (indexInfo == null) return null;
     return (Integer) indexInfo.get("maxDoc");
+  }
+
+  public Long getDeletedDocs() {
+    return getLong("deletedDocs");
   }
 
   public Integer getNumTerms() {
@@ -297,6 +328,10 @@ public class LukeResponse extends SolrResponseBase {
 
   public FieldInfo getDynamicFieldInfo(String f) {
     return dynamicFieldInfo.get(f);
+  }
+
+  public Map<String, LukeResponse> getShardResponses() {
+    return shardResponses;
   }
 
   // ----------------------------------------------------------------

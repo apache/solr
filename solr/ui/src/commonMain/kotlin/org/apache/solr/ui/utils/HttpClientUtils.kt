@@ -26,7 +26,9 @@ import io.ktor.client.plugins.auth.providers.basic
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.http.ContentType
 import io.ktor.http.Url
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.apache.solr.ui.domain.AuthOption
@@ -36,11 +38,12 @@ import org.apache.solr.ui.domain.AuthOption
  * URL.
  */
 fun getDefaultClient(
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     block: HttpClientConfig<*>.() -> Unit = {},
 ) = HttpClient {
     defaultRequest {
         url(url.toString())
+        contentType(ContentType.Application.Json)
     }
 
     install(ContentNegotiation) {
@@ -57,12 +60,14 @@ fun getDefaultClient(
 
 fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
     is AuthOption.None -> getDefaultClient(option.url)
+
     is AuthOption.BasicAuthOption -> getHttpClientWithCredentials(
         url = option.url,
         realm = option.realm,
         username = option.username,
         password = option.password,
     )
+
     is AuthOption.OAuthOption -> getHttpClientWithBearerTokens(
         url = option.url,
         realm = option.realm,
@@ -74,7 +79,7 @@ fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
 fun getHttpClientWithCredentials(
     username: String,
     password: String,
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     realm: String? = null,
 ) = getDefaultClient(url) {
     install(Auth) {
@@ -91,7 +96,7 @@ fun getHttpClientWithCredentials(
 fun getHttpClientWithBearerTokens(
     accessToken: String,
     refreshToken: String? = null,
-    url: Url = Url("http://127.0.0.1:8983/"),
+    url: Url = Url(DEFAULT_SOLR_URL),
     realm: String? = null,
 ) = getDefaultClient(url) {
     install(Auth) {
