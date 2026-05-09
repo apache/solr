@@ -51,6 +51,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.CrossDcConf;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
@@ -96,7 +97,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final ThreadPoolExecutor executor;
 
   private final ExecutorService offsetCheckExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(r -> new Thread(r, "offset-check-thread"));
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("offset-check-thread"));
   private final PartitionManager partitionManager;
 
   private final BlockingQueue<Runnable> queue = new BlockingQueue<>(10);
