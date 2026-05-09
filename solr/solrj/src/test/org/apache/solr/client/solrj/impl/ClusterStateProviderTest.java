@@ -472,6 +472,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
   }
 
   private void testUrlSchemeDefault(SolrZkClient client) throws Exception {
+    assumeFalse("Skip the test when ssl is enabled", isSSLMode());
     try (var zkStateReader = new ZkStateReader(client);
         var clusterStateProvider = new ZkClientClusterStateProvider(zkStateReader)) {
       assertEquals("http", clusterStateProvider.getUrlScheme());
@@ -479,16 +480,15 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
   }
 
   private void testUrlSchemeWithSystemProperties(SolrZkClient client) throws Exception {
-    System.setProperty(SOLR_SSL_ENABLED, "true");
     try (var zkStateReader = new ZkStateReader(client);
         var clusterStateProvider = new ZkClientClusterStateProvider(zkStateReader)) {
-      assertEquals("https", clusterStateProvider.getUrlScheme());
-    } finally {
-      System.clearProperty(SOLR_SSL_ENABLED);
+      String expectedUrlScheme = isSSLMode() ? "https" : "http";
+      assertEquals(expectedUrlScheme, clusterStateProvider.getUrlScheme());
     }
   }
 
   private void testUrlSchemeWithClusterProperties(SolrZkClient client) throws Exception {
+    assumeFalse("Skip the test when ssl is enabled", isSSLMode());
     ClusterProperties cp = new ClusterProperties(client);
     cp.setClusterProperty("urlScheme", "ftp");
     try (var zkStateReader = new ZkStateReader(client);
