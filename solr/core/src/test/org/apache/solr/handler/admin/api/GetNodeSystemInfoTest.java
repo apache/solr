@@ -55,8 +55,6 @@ public class GetNodeSystemInfoTest extends SolrTestCaseJ4 {
     assertEquals("std", infoRsp.nodeInfo.mode);
     assertEquals(Version.LATEST.toString(), infoRsp.nodeInfo.lucene.luceneSpecVersion);
   }
-  
-
 
   @Test
   public void testGetSpecificNodeInfo() throws Exception {
