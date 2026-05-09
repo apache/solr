@@ -103,8 +103,7 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testNamedBoolQuery() throws Exception {
-    Query actual =
-        parseQuery(req("q", "{!bool _name=my_bool must=name:foo should=name:bar}"));
+    Query actual = parseQuery(req("q", "{!bool _name=my_bool must=name:foo should=name:bar}"));
 
     BooleanQuery inner =
         new BooleanQuery.Builder()
@@ -119,7 +118,9 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
   public void testNamedBoolQueryWithMinShouldMatch() throws Exception {
     Query actual =
         parseQuery(
-            req("q", "{!bool _name=at_least_two should=name:foo should=name:bar should=name:qux mm=2}"));
+            req(
+                "q",
+                "{!bool _name=at_least_two should=name:foo should=name:bar should=name:qux mm=2}"));
 
     BooleanQuery inner =
         new BooleanQuery.Builder()

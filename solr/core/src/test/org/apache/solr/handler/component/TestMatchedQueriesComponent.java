@@ -30,8 +30,10 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
 
     // 4 fantasy books (ids 1–4), 2 of which are also childrens (ids 2–3)
     assertU(adoc("id", "1", "cat_s", "fantasy", "author_s1", "Lev Grossman"));
-    assertU(adoc("id", "2", "cat_s", "fantasy", "cat_s", "childrens", "author_s1", "Robert Jordan"));
-    assertU(adoc("id", "3", "cat_s", "fantasy", "cat_s", "childrens", "author_s1", "Robert Jordan"));
+    assertU(
+        adoc("id", "2", "cat_s", "fantasy", "cat_s", "childrens", "author_s1", "Robert Jordan"));
+    assertU(
+        adoc("id", "3", "cat_s", "fantasy", "cat_s", "childrens", "author_s1", "Robert Jordan"));
     assertU(adoc("id", "4", "cat_s", "fantasy", "author_s1", "N.K. Jemisin"));
     assertU(commit());
     // 3 scifi books (ids 5–7), in a separate segment
@@ -85,15 +87,16 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   }
 
   /**
-   * Boolean OR of two named term queries: fantasy docs carry "fantasy_cat",
-   * scifi docs carry "scifi_cat", no doc carries both.
+   * Boolean OR of two named term queries: fantasy docs carry "fantasy_cat", scifi docs carry
+   * "scifi_cat", no doc carries both.
    */
   @Test
   public void testTwoNamedQueriesOr() throws Exception {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "({!term _name=fantasy_cat f=cat_s}fantasy) OR ({!term _name=scifi_cat f=cat_s}scifi)",
+            "q",
+                "({!term _name=fantasy_cat f=cat_s}fantasy) OR ({!term _name=scifi_cat f=cat_s}scifi)",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -126,7 +129,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "({!term _name=fantasy_cat f=cat_s}fantasy) OR ({!term _name=childrens_cat f=cat_s}childrens)",
+            "q",
+                "({!term _name=fantasy_cat f=cat_s}fantasy) OR ({!term _name=childrens_cat f=cat_s}childrens)",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -159,18 +163,19 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   }
 
   /**
-   * Outer {@code {!bool _name=...}} plus inner named {@code {!term _name=...}} SHOULD clauses:
-   * the outer name appears on every hit; inner names appear only on the docs whose specific
-   * clause fired.  All three names are independent entries in the summary.
+   * Outer {@code {!bool _name=...}} plus inner named {@code {!term _name=...}} SHOULD clauses: the
+   * outer name appears on every hit; inner names appear only on the docs whose specific clause
+   * fired. All three names are independent entries in the summary.
    */
   @Test
   public void testBoolOuterAndInnerNamesComposed() throws Exception {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!bool _name=all_books"
-                + "  should='{!term _name=fantasy_cat f=cat_s}fantasy'"
-                + "  should='{!term _name=scifi_cat  f=cat_s}scifi'}",
+            "q",
+                "{!bool _name=all_books"
+                    + "  should='{!term _name=fantasy_cat f=cat_s}fantasy'"
+                    + "  should='{!term _name=scifi_cat  f=cat_s}scifi'}",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -189,17 +194,18 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   }
 
   /**
-   * {@code {!bool}} with multiple named SHOULD clauses: each doc is tagged only with the
-   * clause(s) it actually matched — same semantics as an explicit OR but exercising the
-   * BoolQParserPlugin / FiltersQParser code path.
+   * {@code {!bool}} with multiple named SHOULD clauses: each doc is tagged only with the clause(s)
+   * it actually matched — same semantics as an explicit OR but exercising the BoolQParserPlugin /
+   * FiltersQParser code path.
    */
   @Test
   public void testBoolMultipleShouldNamedTerms() throws Exception {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!bool should='{!term _name=fantasy_cat f=cat_s}fantasy'"
-                + "     should='{!term _name=scifi_cat f=cat_s}scifi'}",
+            "q",
+                "{!bool should='{!term _name=fantasy_cat f=cat_s}fantasy'"
+                    + "     should='{!term _name=scifi_cat f=cat_s}scifi'}",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -213,10 +219,10 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   }
 
   /**
-   * {@code {!bool}} with an unnamed MUST clause and a named SHOULD clause: the MUST clause
-   * drives which docs are returned; the named SHOULD clause fires only for the subset that
-   * also matches it.  Docs that satisfy the MUST but not the SHOULD must be absent from
-   * {@code matched_queries_per_hit} and must not inflate the summary count.
+   * {@code {!bool}} with an unnamed MUST clause and a named SHOULD clause: the MUST clause drives
+   * which docs are returned; the named SHOULD clause fires only for the subset that also matches
+   * it. Docs that satisfy the MUST but not the SHOULD must be absent from {@code
+   * matched_queries_per_hit} and must not inflate the summary count.
    */
   @Test
   public void testBoolMustWithNamedShould() throws Exception {
@@ -224,8 +230,9 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!bool must='{!term f=cat_s}fantasy'"
-                + "     should='{!term _name=childrens_cat f=cat_s}childrens'}",
+            "q",
+                "{!bool must='{!term f=cat_s}fantasy'"
+                    + "     should='{!term _name=childrens_cat f=cat_s}childrens'}",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -242,7 +249,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   }
 
   /**
-   * {@code {!prefix}} with {@code _name}: all fantasy docs (cat_s starting with "fanta") are tagged.
+   * {@code {!prefix}} with {@code _name}: all fantasy docs (cat_s starting with "fanta") are
+   * tagged.
    */
   @Test
   public void testPrefixNamedQuery() throws Exception {

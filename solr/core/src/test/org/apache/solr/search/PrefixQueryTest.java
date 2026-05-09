@@ -128,7 +128,8 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testNamedPrefixQueryDifferentField() throws Exception {
     Query inner = QParser.getParser("{!prefix f=author_s1}Robert", req()).getQuery();
-    Query named = QParser.getParser("{!prefix _name=robert_author f=author_s1}Robert", req()).getQuery();
+    Query named =
+        QParser.getParser("{!prefix _name=robert_author f=author_s1}Robert", req()).getQuery();
     assertEquals(NamedMatches.wrapQuery("robert_author", inner), named);
   }
 

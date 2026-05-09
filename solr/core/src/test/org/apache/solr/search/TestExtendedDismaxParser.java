@@ -3395,8 +3395,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     // cat_s is a string field — no multi-term analysis, term is used verbatim
     Query actual = QParser.getParser("{!fuzzy _name=cat_fuzzy f=cat_s}fantasy", req()).getQuery();
     assertEquals(
-        NamedMatches.wrapQuery("cat_fuzzy", new FuzzyQuery(new Term("cat_s", "fantasy"))),
-        actual);
+        NamedMatches.wrapQuery("cat_fuzzy", new FuzzyQuery(new Term("cat_s", "fantasy"))), actual);
   }
 
   @Test
