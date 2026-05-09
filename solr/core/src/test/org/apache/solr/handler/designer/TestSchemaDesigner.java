@@ -36,10 +36,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
 import org.apache.solr.client.api.model.SchemaDesignerCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSchemaDiffResponse;
+import org.apache.solr.client.api.model.SchemaDesignerUpdateRequestBody;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -54,6 +56,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.TestSampleDocumentsLoader;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -62,7 +65,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.JSONUtil;
 
 public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesignerConstants {
 
@@ -447,12 +449,10 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     // editing suggestions for fields and adding/removing fields / field types as needed
 
     // add a new field
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
-    stream.setContentType(JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(stream));
-
     // POST /schema-designer/add
-    response = schemaDesigner.addSchemaObject(configSet, schemaVersion);
+    response =
+        schemaDesigner.addSchemaObject(
+            configSet, schemaVersion, loadAddBody("schema-designer/add-new-field.json"));
     assertNotNull(response.field);
     schemaVersion = response.schemaVersion;
     assertNotNull(response.fields);
@@ -460,22 +460,18 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     // update an existing field
     // switch a single-valued field to a multivalued field, which triggers a full rebuild of the
     // "temp" collection
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-author-field.json"));
-    stream.setContentType(JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(stream));
-
     // PUT /schema-designer/update
-    response = schemaDesigner.updateSchemaObject(configSet, schemaVersion);
+    response =
+        schemaDesigner.updateSchemaObject(
+            configSet, schemaVersion, loadUpdateBody("schema-designer/update-author-field.json"));
     assertNotNull(response.field);
     schemaVersion = response.schemaVersion;
 
     // add a new type
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
-    stream.setContentType(JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(stream));
-
     // POST /schema-designer/add
-    response = schemaDesigner.addSchemaObject(configSet, schemaVersion);
+    response =
+        schemaDesigner.addSchemaObject(
+            configSet, schemaVersion, loadAddBody("schema-designer/add-new-type.json"));
     final String expectedTypeName = "test_txt";
     assertEquals(expectedTypeName, response.fieldType);
     schemaVersion = response.schemaVersion;
@@ -488,12 +484,10 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
         "New field type '" + expectedTypeName + "' not found in add type response!",
         expected.isPresent());
 
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-type.json"));
-    stream.setContentType(JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(stream));
-
     // POST /schema-designer/update
-    response = schemaDesigner.updateSchemaObject(configSet, schemaVersion);
+    response =
+        schemaDesigner.updateSchemaObject(
+            configSet, schemaVersion, loadUpdateBody("schema-designer/update-type.json"));
     schemaVersion = response.schemaVersion;
 
     // query to see how the schema decisions impact retrieval / ranking
@@ -552,13 +546,10 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     int schemaVersion = response.schemaVersion;
 
     // add our test field that we'll test various updates to
-    ContentStreamBase.FileStream stream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
-    stream.setContentType(JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(stream));
-
     // POST /schema-designer/add
-    response = schemaDesigner.addSchemaObject(configSet, schemaVersion);
+    response =
+        schemaDesigner.addSchemaObject(
+            configSet, schemaVersion, loadAddBody("schema-designer/add-new-field.json"));
     assertNotNull(response.field);
 
     final String fieldName = "keywords";
@@ -669,29 +660,25 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     mapParams.put("termVectors", Boolean.FALSE);
     schemaVersion = response.schemaVersion;
 
-    ContentStreamBase.StringStream stringStream =
-        new ContentStreamBase.StringStream(JSONUtil.toJSON(mapParams), JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(stringStream));
-
-    response = schemaDesigner.updateSchemaObject(configSet, schemaVersion);
+    SchemaDesignerUpdateRequestBody idFieldUpdate =
+        SolrJacksonMapper.getObjectMapper()
+            .convertValue(mapParams, SchemaDesignerUpdateRequestBody.class);
+    response = schemaDesigner.updateSchemaObject(configSet, schemaVersion, idFieldUpdate);
 
     // Add a new field
     schemaVersion = response.schemaVersion;
-    ContentStreamBase.FileStream fileStream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
-    fileStream.setContentType(JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(fileStream));
     // POST /schema-designer/add
-    response = schemaDesigner.addSchemaObject(configSet, schemaVersion);
+    response =
+        schemaDesigner.addSchemaObject(
+            configSet, schemaVersion, loadAddBody("schema-designer/add-new-field.json"));
     assertNotNull(response.field);
 
     // Add a new field type
     schemaVersion = response.schemaVersion;
-    fileStream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
-    fileStream.setContentType(JSON_MIME);
-    when(mockReq.getContentStreams()).thenReturn(List.of(fileStream));
     // POST /schema-designer/add
-    response = schemaDesigner.addSchemaObject(configSet, schemaVersion);
+    response =
+        schemaDesigner.addSchemaObject(
+            configSet, schemaVersion, loadAddBody("schema-designer/add-new-type.json"));
     assertNotNull(response.fieldType);
 
     // Let's do a diff now
@@ -792,17 +779,20 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
 
     // null schemaVersion must be rejected
     SolrException nullEx =
-        expectThrows(SolrException.class, () -> schemaDesigner.addSchemaObject(configSet, null));
+        expectThrows(
+            SolrException.class, () -> schemaDesigner.addSchemaObject(configSet, null, null));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, nullEx.code());
 
     // negative schemaVersion must be rejected (was previously bypassing validation)
     SolrException negEx =
-        expectThrows(SolrException.class, () -> schemaDesigner.addSchemaObject(configSet, -1));
+        expectThrows(
+            SolrException.class, () -> schemaDesigner.addSchemaObject(configSet, -1, null));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, negEx.code());
 
     // same contract must hold for updateSchemaObject
     SolrException updateNegEx =
-        expectThrows(SolrException.class, () -> schemaDesigner.updateSchemaObject(configSet, -1));
+        expectThrows(
+            SolrException.class, () -> schemaDesigner.updateSchemaObject(configSet, -1, null));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, updateNegEx.code());
   }
 
@@ -836,5 +826,15 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     actual.put(ENABLE_NESTED_DOCS_PARAM, response.enableNestedDocs);
     actual.put(COPY_FROM_PARAM, response.copyFrom);
     assertDesignerSettings(expected, actual);
+  }
+
+  private SchemaDesignerAddRequestBody loadAddBody(String fixturePath) throws IOException {
+    return SolrJacksonMapper.getObjectMapper()
+        .readValue(getFile(fixturePath).toFile(), SchemaDesignerAddRequestBody.class);
+  }
+
+  private SchemaDesignerUpdateRequestBody loadUpdateBody(String fixturePath) throws IOException {
+    return SolrJacksonMapper.getObjectMapper()
+        .readValue(getFile(fixturePath).toFile(), SchemaDesignerUpdateRequestBody.class);
   }
 }

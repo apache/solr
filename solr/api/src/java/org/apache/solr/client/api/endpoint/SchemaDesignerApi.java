@@ -33,12 +33,14 @@ import jakarta.ws.rs.QueryParam;
 import java.io.InputStream;
 import java.util.List;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
 import org.apache.solr.client.api.model.SchemaDesignerCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerPublishResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSchemaDiffResponse;
+import org.apache.solr.client.api.model.SchemaDesignerUpdateRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /** V2 API definitions for the Solr Schema Designer. */
@@ -120,7 +122,9 @@ public interface SchemaDesignerApi {
       summary = "Add a new field, field type, or dynamic field to the schema being designed.",
       tags = {"schema-designer"})
   SchemaDesignerResponse addSchemaObject(
-      @PathParam("configSet") String configSet, @QueryParam("schemaVersion") Integer schemaVersion)
+      @PathParam("configSet") String configSet,
+      @QueryParam("schemaVersion") Integer schemaVersion,
+      SchemaDesignerAddRequestBody requestBody)
       throws Exception;
 
   @PUT
@@ -129,7 +133,9 @@ public interface SchemaDesignerApi {
       summary = "Update an existing field or field type in the schema being designed.",
       tags = {"schema-designer"})
   SchemaDesignerResponse updateSchemaObject(
-      @PathParam("configSet") String configSet, @QueryParam("schemaVersion") Integer schemaVersion)
+      @PathParam("configSet") String configSet,
+      @QueryParam("schemaVersion") Integer schemaVersion,
+      SchemaDesignerUpdateRequestBody requestBody)
       throws Exception;
 
   @PUT
@@ -149,10 +155,22 @@ public interface SchemaDesignerApi {
       @QueryParam("disableDesigner") @DefaultValue("false") Boolean disableDesigner)
       throws Exception;
 
+  /**
+   * Analyzes sample documents to suggest a schema.
+   *
+   * <p>Sample documents are read from the HTTP request body (not declared as a parameter on this
+   * interface — see {@code SchemaDesigner#loadSampleDocuments}) and dispatched to a parser based on
+   * the {@code Content-Type} header.
+   */
   @POST
   @Path("/{configSet}/analyze")
   @Operation(
       summary = "Analyze sample documents and suggest a schema.",
+      description =
+          "Sample documents are supplied in the request body. The Content-Type header selects the"
+              + " parser: application/json, text/xml or application/xml, text/csv or"
+              + " application/csv, or text/plain or application/octet-stream (treated as JSON"
+              + " lines). Capped at 5MB and 1000 documents.",
       tags = {"schema-designer"})
   SchemaDesignerResponse analyze(
       @PathParam("configSet") String configSet,

@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.SchemaDesignerApi;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
 import org.apache.solr.client.api.model.SchemaDesignerCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
@@ -57,6 +58,7 @@ import org.apache.solr.client.api.model.SchemaDesignerPublishResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSchemaDiffResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSettingsResponse;
+import org.apache.solr.client.api.model.SchemaDesignerUpdateRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -399,17 +401,44 @@ public class SchemaDesigner extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerResponse addSchemaObject(String configSet, Integer schemaVersion)
+  public SchemaDesignerResponse addSchemaObject(
+      String configSet, Integer schemaVersion, SchemaDesignerAddRequestBody requestBody)
       throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
     requireSchemaVersion(schemaVersion);
     final String mutableId = checkMutable(configSet, schemaVersion);
 
-    Map<String, Object> addJson = readJsonFromRequest();
+    String action;
+    Map<String, Object> attrs;
+    if (requestBody == null) {
+      action = null;
+      attrs = null;
+    } else if (requestBody.addField != null) {
+      action = "add-field";
+      attrs = requestBody.addField;
+    } else if (requestBody.addDynamicField != null) {
+      action = "add-dynamic-field";
+      attrs = requestBody.addDynamicField;
+    } else if (requestBody.addCopyField != null) {
+      action = "add-copy-field";
+      attrs = requestBody.addCopyField;
+    } else if (requestBody.addFieldType != null) {
+      action = "add-field-type";
+      attrs = requestBody.addFieldType;
+    } else {
+      action = null;
+      attrs = null;
+    }
+    if (action == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Request body must contain exactly one of: add-field, add-dynamic-field, add-copy-field, add-field-type");
+    }
+
+    Map<String, Object> addJson = Map.of(action, attrs);
     log.info("Adding new schema object from JSON: {}", addJson);
 
     String objectName = configSetHelper.addSchemaObject(configSet, addJson);
-    String action = addJson.keySet().iterator().next();
 
     ManagedIndexSchema schema = loadLatestSchema(mutableId);
     SchemaDesignerResponse response =
@@ -421,21 +450,22 @@ public class SchemaDesigner extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerResponse updateSchemaObject(String configSet, Integer schemaVersion)
+  public SchemaDesignerResponse updateSchemaObject(
+      String configSet, Integer schemaVersion, SchemaDesignerUpdateRequestBody requestBody)
       throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
     requireSchemaVersion(schemaVersion);
     final String mutableId = checkMutable(configSet, schemaVersion);
 
-    // Updated field definition is in the request body as JSON
-    Map<String, Object> updateField = readJsonFromRequest();
-    String name = (String) updateField.get("name");
-    if (StrUtils.isNullOrEmpty(name)) {
+    if (requestBody == null || StrUtils.isNullOrEmpty(requestBody.name)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Invalid update request! JSON payload is missing the required name property: "
-              + updateField);
+              + requestBody);
     }
+    String name = requestBody.name;
+    Map<String, Object> updateField = new HashMap<>(requestBody.getAdditionalProperties());
+    updateField.put("name", name);
     log.info(
         "Updating schema object: configSet={}, mutableId={}, name={}, JSON={}",
         configSet,
