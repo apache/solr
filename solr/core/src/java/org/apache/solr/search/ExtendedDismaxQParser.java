@@ -1723,7 +1723,7 @@ public class ExtendedDismaxQParser extends QParser {
       solrParams = SolrParams.wrapDefaults(localParams, params);
       schema = req.getSchema();
       // req.getSearcher() here causes searcher refcount imbalance
-      minShouldMatch = DisMaxQParser.parseMinShouldMatch(schema, solrParams);
+      minShouldMatch = SolrPluginUtils.parseMinShouldMatch(schema, solrParams);
       userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
       try {
         // req.getSearcher() here causes searcher refcount imbalance
