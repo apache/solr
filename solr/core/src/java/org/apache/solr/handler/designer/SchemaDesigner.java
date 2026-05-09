@@ -228,9 +228,14 @@ public class SchemaDesigner extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerResponse updateFileContents(String configSet, String file) throws Exception {
+  public SchemaDesignerResponse updateFileContents(
+      String configSet, String file, InputStream fileContents) throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
     requireNotEmpty("file", file);
+    if (fileContents == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Request body with file contents is required!");
+    }
 
     String mutableId = getMutableId(configSet);
     String zkPath = getConfigSetZkPath(mutableId, file);
@@ -241,7 +246,7 @@ public class SchemaDesigner extends JerseyResource
     }
 
     byte[] data;
-    try (InputStream in = extractSingleContentStream(true).getStream()) {
+    try (InputStream in = fileContents) {
       data = in.readAllBytes();
     }
     Exception updateFileError = null;

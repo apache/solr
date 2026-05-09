@@ -23,6 +23,7 @@ import static org.apache.solr.handler.designer.SchemaDesigner.getMutableId;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -352,17 +353,19 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     String solrconfigXml = new String(solrconfigBytes, StandardCharsets.UTF_8);
 
     // Update solrconfig.xml
-    when(mockReq.getContentStreams())
-        .thenReturn(List.of(new ContentStreamBase.StringStream(solrconfigXml, "application/xml")));
-    response = schemaDesigner.updateFileContents(configSet, file);
+    response =
+        schemaDesigner.updateFileContents(
+            configSet,
+            file,
+            new ByteArrayInputStream(solrconfigXml.getBytes(StandardCharsets.UTF_8)));
     schemaVersion = response.schemaVersion;
 
-    // update solrconfig.xml with some invalid XML mess
-    when(mockReq.getContentStreams())
-        .thenReturn(List.of(new ContentStreamBase.StringStream("<config/>", "application/xml")));
-
     // this should fail b/c the updated solrconfig.xml is invalid
-    response = schemaDesigner.updateFileContents(configSet, file);
+    response =
+        schemaDesigner.updateFileContents(
+            configSet,
+            file,
+            new ByteArrayInputStream("<config/>".getBytes(StandardCharsets.UTF_8)));
     assertNotNull(response.updateFileError);
 
     // remove dynamic fields and change the language to "en" only

@@ -16,7 +16,12 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -25,6 +30,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import java.io.InputStream;
 import java.util.List;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.model.SchemaDesignerCollectionsResponse;
@@ -68,7 +74,18 @@ public interface SchemaDesignerApi {
       summary = "Update the contents of a file in a configSet being designed.",
       tags = {"schema-designer"})
   SchemaDesignerResponse updateFileContents(
-      @PathParam("configSet") String configSet, @QueryParam("file") String file) throws Exception;
+      @PathParam("configSet") String configSet,
+      @QueryParam("file") String file,
+      @RequestBody(
+              required = true,
+              extensions = {
+                @Extension(
+                    properties = {
+                      @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                    })
+              })
+          InputStream fileContents)
+      throws Exception;
 
   @GET
   @Path("/{configSet}/sample")
