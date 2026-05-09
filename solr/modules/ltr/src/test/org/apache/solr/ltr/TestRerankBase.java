@@ -104,10 +104,6 @@ public class TestRerankBase extends RestTestBase {
     }
   }
 
-  protected static void unchooseDefaultFeatureFormat() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT);
-  }
-
   protected static void setuptest(boolean bulkIndex) throws Exception {
     chooseDefaultFeatureFormat();
     setuptest("solrconfig-ltr.xml", "schema.xml");
@@ -183,33 +179,23 @@ public class TestRerankBase extends RestTestBase {
     setupTestInit(solrconfig, schema, false);
     System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(tmpSolrHome, solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome, solrconfig, schema);
   }
 
   public static void setupPersistentTest(String solrconfig, String schema) throws Exception {
 
     setupTestInit(solrconfig, schema, true);
 
-    createJettyAndHarness(tmpSolrHome, solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome, solrconfig, schema);
   }
 
   protected static void aftertest() throws Exception {
-    if (null != restTestHarness) {
-      restTestHarness.close();
-      restTestHarness = null;
-    }
+    restTestHarness = null;
     solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-    System.clearProperty("managed.schema.mutable");
-    // System.clearProperty("solr.index.updatelog.enabled");
-    unchooseDefaultFeatureFormat();
-  }
-
-  public static void makeRestTestHarnessNull() {
-    restTestHarness = null;
   }
 
   /** produces a model encoded in json * */

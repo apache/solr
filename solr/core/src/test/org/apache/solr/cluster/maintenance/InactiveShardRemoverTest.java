@@ -21,7 +21,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -168,11 +167,11 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
   private static void addPlugin(final InactiveShardRemoverConfig config)
       throws SolrServerException, IOException {
     PluginMeta plugin = pluginMeta(config);
-    pluginRequest(Collections.singletonMap("add", plugin));
+    pluginRequest(Map.of("add", plugin));
   }
 
   private static void removePlugin() throws SolrServerException, IOException {
-    pluginRequest(Collections.singletonMap("remove", InactiveShardRemover.PLUGIN_NAME));
+    pluginRequest(Map.of("remove", InactiveShardRemover.PLUGIN_NAME));
   }
 
   private static void pluginRequest(Map<String, Object> payload)

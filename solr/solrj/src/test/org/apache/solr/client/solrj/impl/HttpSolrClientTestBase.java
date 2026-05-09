@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
 import java.io.IOException;
@@ -26,10 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -40,7 +41,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -53,8 +53,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
 import org.apache.solr.util.ServletFixtures.SlowServlet;
@@ -68,7 +71,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
-  protected static final String DEFAULT_COLLECTION = DEFAULT_TEST_CORENAME;
+  protected static final String DEFAULT_COLLECTION = DEFAULT_TEST_COLLECTION_NAME;
   protected static final String SLOW_SERVLET_PATH = "/slow";
   protected static final String SLOW_SERVLET_REGEX = SLOW_SERVLET_PATH + "/*";
   protected static final String DEBUG_SERVLET_PATH = "/debug";
@@ -77,7 +80,6 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
   protected static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
   protected static final String SLOW_STREAM_SERVLET_PATH = "/slowStream";
   protected static final String SLOW_STREAM_SERVLET_REGEX = SLOW_STREAM_SERVLET_PATH + "/*";
-  protected static final String COLLECTION_1 = "collection1";
   // example chars that must be URI encoded - non-ASCII and curly quote
   protected static final String MUST_ENCODE = "\u1234\u007B";
 
@@ -91,13 +93,15 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty("solr.security.auth.basicauth.credentials");
-    System.clearProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP);
     DebugServlet.clear();
     super.tearDown();
   }
@@ -233,7 +237,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
 
   public void testGetById(HttpSolrClient client) throws Exception {
     DebugServlet.clear();
-    Collection<String> ids = Collections.singletonList("a");
+    Collection<String> ids = List.of("a");
     try {
       client.getById("a");
     } catch (RemoteSolrException ignored) {
@@ -463,7 +467,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     assertThat(stream, instanceOf(InputStream.class));
     InputStream is = (InputStream) stream;
     assertNotNull(is.readAllBytes()); // throws IOException if closed
-    org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
+    IOUtils.closeQuietly((InputStream) stream);
   }
 
   protected void testSetCredentialsExplicitly(HttpSolrClient client) {
@@ -573,9 +577,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       client.commit(DEFAULT_COLLECTION);
       QueryResponse qr =
           client.query(
-              DEFAULT_COLLECTION,
-              new MapSolrParams(Collections.singletonMap("q", "*:*")),
-              SolrRequest.METHOD.POST);
+              DEFAULT_COLLECTION, new MapSolrParams(Map.of("q", "*:*")), SolrRequest.METHOD.POST);
       assertEquals(0, qr.getResults().getNumFound());
 
       for (int i = 0; i < limit; i++) {
@@ -591,9 +593,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       // check that the correct number of documents were added
       qr =
           client.query(
-              DEFAULT_COLLECTION,
-              new MapSolrParams(Collections.singletonMap("q", "*:*")),
-              SolrRequest.METHOD.POST);
+              DEFAULT_COLLECTION, new MapSolrParams(Map.of("q", "*:*")), SolrRequest.METHOD.POST);
       assertEquals(limit, qr.getResults().getNumFound());
 
       // clean up
@@ -616,8 +616,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
                 + i
                 + "</str></doc></result></response>");
-        QueryRequest query =
-            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        QueryRequest query = new QueryRequest(new MapSolrParams(Map.of("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
         futures.add(client.requestAsync(query));
       }
@@ -645,7 +644,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 
     try (HttpSolrClient client = b.build()) {
-      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      QueryRequest query = new QueryRequest(new MapSolrParams(Map.of("id", "1")));
       CompletableFuture<NamedList<Object>> future = client.requestAsync(query, DEFAULT_COLLECTION);
       ExecutionException ee = null;
       try {
@@ -658,5 +657,23 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       assertTrue(ee.getCause() instanceof RemoteSolrException);
       assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
+  }
+
+  // formerly SolrExceptionTest.testSolrException
+  public void testConnectionToNonExistentServer() throws Exception {
+    // test a connection to a solr server that probably doesn't exist
+    // this is a very simple test and most of the test should be considered verified
+    // if the compiler won't let you by without the try/catch
+
+    // test a connection to a solr server that probably doesn't exist
+    // set a 1ms timeout to let the connection fail faster
+    boolean gotExpectedError = false;
+    try (var client = builder("http://" + DEAD_HOST_1 + "/solr/", 1, 1000).build()) {
+      SolrQuery query = new SolrQuery("test123");
+      client.query(query);
+    } catch (SolrServerException sse) {
+      gotExpectedError = true;
+    }
+    assertTrue(gotExpectedError);
   }
 }

@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,7 +63,6 @@ import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
@@ -259,14 +257,12 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
           @Override
           protected Map<String, JsonSchemaValidator> getValidators() {
-            return currentApi[0] == null
-                ? Collections.emptyMap()
-                : currentApi[0].getCommandSchema();
+            return currentApi[0] == null ? Map.of() : currentApi[0].getCommandSchema();
           }
 
           @Override
           public Iterable<ContentStream> getContentStreams() {
-            return Collections.singletonList(
+            return List.of(
                 new ContentStreamBase() {
                   @Override
                   public InputStream getStream() {
@@ -304,11 +300,11 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     }
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, SolrParams.of()) {
+    SolrQueryRequestBase req =
+        new SolrQueryRequestBase(null, SolrParams.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            return Collections.emptyList();
+            return List.of();
           }
         };
 

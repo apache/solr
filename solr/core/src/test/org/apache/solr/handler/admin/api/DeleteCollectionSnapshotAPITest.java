@@ -16,48 +16,64 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
-import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
-public class DeleteCollectionSnapshotAPITest extends SolrTestCaseJ4 {
+public class DeleteCollectionSnapshotAPITest extends MockV2APITest {
+
+  private DeleteCollectionSnapshot api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new DeleteCollectionSnapshot(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
 
   @Test
-  public void testConstructsValidOverseerMessage() {
-    final ZkNodeProps messageOne =
-        DeleteCollectionSnapshot.createRemoteMessage("myCollName", false, "mySnapshotName", null);
-    final Map<String, Object> rawMessageOne = messageOne.getProperties();
-    assertEquals(4, rawMessageOne.size());
-    assertThat(
-        rawMessageOne.keySet(),
-        containsInAnyOrder(
-            QUEUE_OPERATION, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
-    assertEquals("deletesnapshot", rawMessageOne.get(QUEUE_OPERATION));
-    assertEquals("myCollName", rawMessageOne.get(COLLECTION_PROP));
-    assertEquals("mySnapshotName", rawMessageOne.get(CoreAdminParams.COMMIT_NAME));
-    assertEquals(false, rawMessageOne.get(FOLLOW_ALIASES));
+  public void testConstructsValidOverseerMessage() throws Exception {
+    when(mockClusterState.hasCollection("myCollName")).thenReturn(true);
+    when(mockSolrZkClient.exists(anyString())).thenReturn(false);
 
-    final ZkNodeProps messageTwo =
-        DeleteCollectionSnapshot.createRemoteMessage(
-            "myCollName", true, "mySnapshotName", "myAsyncId");
-    final Map<String, Object> rawMessageTwo = messageTwo.getProperties();
-    assertEquals(5, rawMessageTwo.size());
-    assertThat(
-        rawMessageTwo.keySet(),
-        containsInAnyOrder(
-            QUEUE_OPERATION, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES, ASYNC));
-    assertEquals("deletesnapshot", rawMessageTwo.get(QUEUE_OPERATION));
-    assertEquals("myCollName", rawMessageTwo.get(COLLECTION_PROP));
-    assertEquals("mySnapshotName", rawMessageTwo.get(CoreAdminParams.COMMIT_NAME));
-    assertEquals(true, rawMessageTwo.get(FOLLOW_ALIASES));
-    assertEquals("myAsyncId", rawMessageTwo.get(ASYNC));
+    api.deleteCollectionSnapshot("myCollName", "mySnapshotName", false, null);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESNAPSHOT,
+        message -> {
+          assertEquals(3, message.size());
+          assertThat(
+              message.keySet(),
+              containsInAnyOrder(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
+          assertEquals("myCollName", message.get(COLLECTION_PROP));
+          assertEquals("mySnapshotName", message.get(CoreAdminParams.COMMIT_NAME));
+          assertEquals(false, message.get(FOLLOW_ALIASES));
+        });
+
+    Mockito.clearInvocations(mockCommandRunner);
+    api.deleteCollectionSnapshot("myCollName", "mySnapshotName", true, "testId");
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESNAPSHOT,
+        "testId",
+        message -> {
+          assertEquals(3, message.size());
+          assertThat(
+              message.keySet(),
+              containsInAnyOrder(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
+          assertEquals("myCollName", message.get(COLLECTION_PROP));
+          assertEquals("mySnapshotName", message.get(CoreAdminParams.COMMIT_NAME));
+          assertEquals(true, message.get(FOLLOW_ALIASES));
+        });
   }
 }

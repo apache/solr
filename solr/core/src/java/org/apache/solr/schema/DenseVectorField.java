@@ -41,6 +41,7 @@ import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
@@ -316,11 +317,6 @@ public class DenseVectorField extends FloatPointField {
   @Override
   public void checkSchemaField(final SchemaField field) throws SolrException {
     super.checkSchemaField(field);
-    if (field.multiValued()) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName() + " fields can not be multiValued: " + field.getName());
-    }
 
     if (field.hasDocValues()) {
       throw new SolrException(
@@ -511,10 +507,9 @@ public class DenseVectorField extends FloatPointField {
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
     // Create KnnSearchStrategy if filteredSearchThreshold is provided
-    org.apache.lucene.search.knn.KnnSearchStrategy searchStrategy = null;
+    KnnSearchStrategy searchStrategy = null;
     if (filteredSearchThreshold != null) {
-      searchStrategy =
-          new org.apache.lucene.search.knn.KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+      searchStrategy = new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
     }
 
     Query baseQuery;

@@ -16,25 +16,21 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.DeleteNodeApi;
 import org.apache.solr.client.api.model.DeleteNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
-import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -57,20 +53,15 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse deleteNode(String nodeName, DeleteNodeRequestBody requestBody)
-      throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    final ZkNodeProps remoteMessage = createRemoteMessage(nodeName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETENODE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+  public SubResponseAccumulatingJerseyResponse deleteNode(
+      String nodeName, DeleteNodeRequestBody requestBody) throws Exception {
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.DELETENODE,
+        new ZkNodeProps(Map.of(NODE, nodeName)),
+        requestBody != null ? requestBody.async : null);
     disableResponseCaching();
     return response;
   }
@@ -81,19 +72,5 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
     final var requestBody = new DeleteNodeRequestBody();
     requestBody.async = params.get(ASYNC);
     return apiInstance.deleteNode(requiredParams.get(NODE), requestBody);
-  }
-
-  public static ZkNodeProps createRemoteMessage(
-      String nodeName, DeleteNodeRequestBody requestBody) {
-    Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(NODE, nodeName);
-    if (requestBody != null) {
-      if (requestBody.async != null) {
-        remoteMessage.put(ASYNC, requestBody.async);
-      }
-    }
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETENODE.toLower());
-
-    return new ZkNodeProps(remoteMessage);
   }
 }

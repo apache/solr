@@ -17,7 +17,7 @@
 package org.apache.solr.search.similarities;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.lucene.document.Field.Store;
@@ -44,7 +44,7 @@ public class TestSweetSpotSimilarityFactory extends BaseSimilarityTestCase {
     String value = IntStream.range(0, length).mapToObj(i -> "a").collect(Collectors.joining(" "));
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(sim));
-    w.addDocument(Collections.singleton(newTextField("foo", value, Store.NO)));
+    w.addDocument(Set.of(newTextField("foo", value, Store.NO)));
     DirectoryReader reader = DirectoryReader.open(w);
     w.close();
     IndexSearcher searcher = new IndexSearcher(reader);

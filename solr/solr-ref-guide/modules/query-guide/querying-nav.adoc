@@ -33,6 +33,7 @@
 ** xref:join-query-parser.adoc[]
 ** xref:spatial-search.adoc[]
 ** xref:dense-vector-search.adoc[]
+*** xref:text-to-vector.adoc[]
 ** xref:other-parsers.adoc[]
 ** xref:sql-query.adoc[]
 *** xref:jdbc-dbvisualizer.adoc[]

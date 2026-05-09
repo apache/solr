@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +39,7 @@ public class ParallelHttpShardHandlerTest extends SolrTestCaseJ4 {
     @Override
     public List<Runnable> shutdownNow() {
       shutdown = true;
-      return Collections.emptyList();
+      return List.of();
     }
 
     @Override
@@ -87,8 +86,7 @@ public class ParallelHttpShardHandlerTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     QueryRequest queryRequest = new QueryRequest(params);
     LBSolrClient.Endpoint endpoint = new LBSolrClient.Endpoint("http://ignored:8983/solr");
-    LBSolrClient.Req lbReq =
-        new LBSolrClient.Req(queryRequest, Collections.singletonList(endpoint));
+    LBSolrClient.Req lbReq = new LBSolrClient.Req(queryRequest, List.of(endpoint));
 
     handler.makeShardRequest(
         shardRequest, "shardA", params, lbReq, simpleResponse, shardResponse, System.nanoTime());

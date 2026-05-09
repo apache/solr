@@ -25,10 +25,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
@@ -36,7 +37,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
@@ -224,8 +224,7 @@ public class BackupManager {
       is.readBytes(arr, 0, (int) is.length());
       // set a default created date, we don't aim at reading actual zookeeper state. The restored
       // collection will have a new creation date when persisted in zookeeper.
-      ClusterState c_state =
-          ClusterState.createFromJson(-1, arr, Collections.emptySet(), Instant.EPOCH, null);
+      ClusterState c_state = ClusterState.createFromJson(-1, arr, Set.of(), Instant.EPOCH, null);
       return c_state.getCollection(collectionName);
     }
   }
@@ -241,8 +240,7 @@ public class BackupManager {
       throws IOException {
     URI dest = repository.resolve(getZkStateDir(), COLLECTION_PROPS_FILE);
     try (OutputStream collectionStateOs = repository.createOutput(dest)) {
-      collectionStateOs.write(
-          Utils.toJSON(Collections.singletonMap(collectionName, collectionState)));
+      collectionStateOs.write(Utils.toJSON(Map.of(collectionName, collectionState)));
     }
   }
 
@@ -344,7 +342,7 @@ public class BackupManager {
       // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
       // always separates file paths with '/'
       if (!filePath.endsWith("/")) {
-        if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+        if (ConfigSetService.isFileForbiddenInConfigSets(filePath)) {
           log.warn(
               "Not including zookeeper file in backup, as it is a forbidden type: {}", filePath);
         } else {
@@ -385,7 +383,7 @@ public class BackupManager {
       switch (t) {
         case FILE:
           {
-            if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+            if (ConfigSetService.isFileForbiddenInConfigSets(filePath)) {
               log.warn(
                   "Not including zookeeper file in restore, as it is a forbidden type: {}", file);
             } else {

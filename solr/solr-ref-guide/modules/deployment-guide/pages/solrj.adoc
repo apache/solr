@@ -127,6 +127,7 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.
 - {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateJdkSolrClient.html[`ConcurrentUpdateJdkSolrClient`] - similar to `ConcurrentUpdateJettySolrClient` but delegates to `HttpJdkSolrClient` and has no dependencies.
 
 === Common Configuration Options
 

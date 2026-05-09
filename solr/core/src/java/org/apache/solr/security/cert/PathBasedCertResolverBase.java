@@ -24,7 +24,6 @@ import static org.apache.solr.security.cert.CertUtil.SUBJECT_DN_PREFIX;
 import java.lang.invoke.MethodHandles;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -64,14 +63,12 @@ public abstract class PathBasedCertResolverBase {
       Map<String, Object> config, String defaultPath) {
     String path = ((String) config.getOrDefault(PARAM_PATH, defaultPath)).toLowerCase(Locale.ROOT);
     String name = ((String) config.getOrDefault(PARAM_NAME, path)).toLowerCase(Locale.ROOT);
-    Map<String, Object> filter =
-        (Map<String, Object>) config.getOrDefault(PARAM_FILTER, Collections.emptyMap());
+    Map<String, Object> filter = (Map<String, Object>) config.getOrDefault(PARAM_FILTER, Map.of());
     String checkType =
         (String)
             filter.getOrDefault(
                 PARAM_FILTER_CHECK_TYPE, CertResolverPattern.CheckType.WILDCARD.toString());
-    List<String> values =
-        (List<String>) filter.getOrDefault(PARAM_FILTER_VALUES, Collections.emptyList());
+    List<String> values = (List<String>) filter.getOrDefault(PARAM_FILTER_VALUES, List.of());
     Set<String> lowerCaseValues =
         values.stream().map(value -> value.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
     return new CertResolverPattern(name, path, checkType, lowerCaseValues);

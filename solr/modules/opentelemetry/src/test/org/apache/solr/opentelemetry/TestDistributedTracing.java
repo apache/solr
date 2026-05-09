@@ -17,8 +17,6 @@
 
 package org.apache.solr.opentelemetry;
 
-import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
-
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
@@ -43,6 +41,7 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -136,7 +135,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     MetricsRequest request = new MetricsRequest();
-    request.setResponseParser(new InputStreamResponseParser(PROMETHEUS_METRICS_WT));
+    request.setResponseParser(new InputStreamResponseParser(MetricUtils.PROMETHEUS_METRICS_WT));
     NamedList<Object> rsp = cloudClient.request(request);
     ((InputStream) rsp.get("stream")).close();
     var finishedSpans = getAndClearSpans();
@@ -228,7 +227,15 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
     //
-    // 7..8 (2 times) name=post:/{core}/get
+    // 7..8 (2 times) name=post:/{core}/get (FingerPrinting to get versions from non-leaders)
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
+    //
+    // 9..10 (2 times) name=post:/{core}/get (PeerSync request to non-leaders)
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
+    //
+    // 11..12 (2 times) name=post:/{core}/get (FingerPrinting to get versions from leaders PeerSync)
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
 
@@ -238,7 +245,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals("create:/admin/collections", s0.getName());
 
     Map<String, Integer> ops = new HashMap<>();
-    assertEquals(7, finishedSpans.size());
+    assertEquals(11, finishedSpans.size());
     var parentTraceId = getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
       if (isRootSpan(span)) {
@@ -251,7 +258,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
     var expectedOps =
-        Map.of("CreateCollectionCmd", 1, "post:/admin/cores", 4, "post:/{core}/get", 2);
+        Map.of("CreateCollectionCmd", 1, "post:/admin/cores", 4, "post:/{core}/get", 6);
     assertEquals(expectedOps, ops);
   }
 

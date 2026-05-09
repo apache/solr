@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,17 +41,6 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.setProperty("otel.k3", "prop-k3");
     System.setProperty("host", "my.solr.host");
     instance = new OtelTracerConfigurator(currentEnv);
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    System.clearProperty("otelnothere");
-    System.clearProperty("otel.k1");
-    System.clearProperty("otel.k3");
-    System.clearProperty("host");
-    System.clearProperty("otel.resource.attributes");
   }
 
   @Test

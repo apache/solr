@@ -290,4 +290,143 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     QueryResponse rsp = query("qt", "/forcedDistribTest", "q", "*:*", "rows", "0");
     // ForcedDistribSearchHandler would trigger a failure if this didn't work
   }
+
+  /**
+   * Reproduces duplicate documents in combined query results when using collapse. Two different
+   * sub-queries may select different group heads for the same collapse field value, and
+   * simpleCombine() merges by Lucene doc ID — not by collapse field value — so both survive.
+   *
+   * <p>Data setup (mod3_idv is the collapse field, values cycle 1,2,0,1,2,0,...):
+   *
+   * <pre>
+   *   id=1  mod3_idv=1  text="alpha bravo"     title="alpha bravo"
+   *   id=2  mod3_idv=2  text="alpha charlie"    title="alpha charlie"
+   *   id=3  mod3_idv=0  text="bravo delta"      title="bravo delta"
+   *   id=4  mod3_idv=1  text="charlie delta"    title="charlie delta"
+   *   id=5  mod3_idv=2  text="alpha delta"      title="alpha delta"
+   *   id=6  mod3_idv=0  text="bravo charlie"    title="bravo charlie"
+   * </pre>
+   *
+   * <p>Query 1: "alpha bravo" → matches docs 1,2,3,5,6 with varying scores. After collapse on
+   * mod3_idv, picks one group head per value (0,1,2).
+   *
+   * <p>Query 2: "charlie delta" → matches docs 2,3,4,5,6 with varying scores. After collapse on
+   * mod3_idv, picks one group head per value (0,1,2).
+   *
+   * <p>Because the queries score differently, they may pick DIFFERENT group heads for the same
+   * mod3_idv value. After simpleCombine() merges by doc ID, both heads appear → duplicates on the
+   * collapse field.
+   */
+  @Test
+  public void testCollapseWithCombinedQueryProducesDuplicates() throws Exception {
+    del("*:*");
+
+    // Index 6 docs where mod3_idv groups docs: {3,6}→0, {1,4}→1, {2,5}→2
+    // All docs indexed to the same shard (first client) to ensure co-location,
+    // which is a requirement for collapse in SolrCloud.
+    List<SolrInputDocument> docs = new ArrayList<>();
+    String[][] data = {
+      {"1", "alpha bravo", "alpha bravo"},
+      {"2", "alpha charlie", "alpha charlie"},
+      {"3", "bravo delta", "bravo delta"},
+      {"4", "charlie delta", "charlie delta"},
+      {"5", "alpha delta", "alpha delta"},
+      {"6", "bravo charlie", "bravo charlie"},
+    };
+    for (String[] row : data) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", row[0]);
+      doc.addField("text", row[1]);
+      doc.addField("title", row[2]);
+      int idVal = Integer.parseInt(row[0]);
+      doc.addField("mod3_idv", idVal % 3);
+      doc.addField("mod3_sdv", String.valueOf(idVal % 3));
+      docs.add(doc);
+    }
+    // Index all docs to the first shard (co-location for collapse).
+    // indexDoc(client, doc) also indexes to controlClient automatically.
+    for (SolrInputDocument doc : docs) {
+      indexDoc(clients.getFirst(), doc);
+    }
+    commit();
+
+    // Two queries that score docs differently, both collapsed on mod3_idv.
+    // Query 1 "alpha bravo" favours doc 1 (mod3_idv=1) and doc 3 (mod3_idv=0).
+    // Query 2 "charlie delta" favours doc 4 (mod3_idv=1) and doc 3 or 6 (mod3_idv=0).
+    // After collapse, each query returns 3 docs (one per mod3_idv value 0,1,2).
+    // But the group heads for mod3_idv=1 differ: query1 picks id=1, query2 picks id=4.
+    // simpleCombine() merges by doc ID, so both id=1 and id=4 survive → duplicate on mod3_idv=1.
+    // q1 -> 1,2,5,3,6    q2 -> 2,4,6,3,5
+    // q1 -> 1,2,2,0,0    q2 -> 2,1,0,0,2
+    // q1 -> 1 for sure, 2,3  => 4 for sure, 3 and 2
+    String jsonQuery =
+        """
+        {
+         "queries": {
+             "q1": {
+                 "lucene": {
+                     "query": "text:alpha OR text:bravo"
+                 }
+             },
+             "q2": {
+                 "lucene": {
+                     "query": "text:charlie OR text:delta"
+                 }
+             }
+         },
+         "limit": 10,
+         "fields": [
+             "id",
+             "score",
+             "mod3_idv"
+         ],
+         "params": {
+             "combiner": true,
+             "combiner.query": [
+                 "q1",
+                 "q2"
+             ],
+             "fq": [
+                 "{!collapse field=mod3_idv sort='mod3_sdv asc, id desc'}"
+             ],
+             "facet": true,
+             "facet.field": "id",
+             "hl": true,
+             "hl.fl": "title",
+             "hl.q": "alpha delta",
+             "expand": true,
+             "expand.q": "text:alpha OR text:bravo OR text:charlie OR text:delta"
+         }
+     }""";
+
+    handle.put("expanded", UNORDERED);
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+
+    // Collect mod3_idv values from the result to check for duplicates
+    List<Integer> collapseValues = new ArrayList<>();
+    for (int i = 0; i < rsp.getResults().size(); i++) {
+      Object val = rsp.getResults().get(i).getFieldValue("mod3_idv");
+      collapseValues.add(((Number) val).intValue());
+    }
+
+    // Without the fix: more than 3 results because different group heads survive for the same
+    // mod3_idv value. With the fix: exactly 3 results (one per mod3_idv value 0, 1, 2).
+    long uniqueCollapseValues = collapseValues.stream().distinct().count();
+    assertEquals(
+        "Expected no duplicate collapse field values in combined results, "
+            + "but got collapseValues="
+            + collapseValues,
+        uniqueCollapseValues,
+        collapseValues.size());
+    assertEquals("Expected exactly 3 groups (mod3_idv values 0, 1, 2)", 3, collapseValues.size());
+    assertEquals("id", rsp.getFacetFields().getFirst().getName());
+    assertEquals(
+        "[4 (1), 5 (1), 6 (1), 1 (0), 2 (0), 3 (0)]",
+        rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(3, rsp.getHighlighting().size());
+    assertEquals("charlie <em>delta</em>", rsp.getHighlighting().get("4").get("title").getFirst());
+    assertEquals(
+        "<em>alpha</em> <em>delta</em>", rsp.getHighlighting().get("5").get("title").getFirst());
+    assertEquals(3, rsp.getExpandedResults().size());
+  }
 }

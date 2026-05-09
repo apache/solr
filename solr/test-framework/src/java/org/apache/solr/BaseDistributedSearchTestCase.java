@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -439,7 +440,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * Override this method to insert extra filters into the JettySolrRunners that are created using
    * createJetty()
    */
-  public SortedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
+  public SequencedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
     return null;
   }
 

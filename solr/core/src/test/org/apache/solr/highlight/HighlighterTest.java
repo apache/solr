@@ -18,7 +18,6 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1388,8 +1387,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     Query query =
         new SpanPayloadCheckQuery(
             new SpanTermQuery(new Term(FIELD_NAME, "word")),
-            Collections.singletonList(
-                new BytesRef(new byte[] {0, 0, 0, 7}))); // bytes for integer 7
+            List.of(new BytesRef(new byte[] {0, 0, 0, 7}))); // bytes for integer 7
 
     // invoke highlight component... the hard way
     final SearchComponent hlComp = h.getCore().getSearchComponent("highlight");
@@ -1397,7 +1395,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         req("hl", "true", "hl.fl", FIELD_NAME, HighlightParams.USE_PHRASE_HIGHLIGHTER, "true");
     try {
       SolrQueryResponse resp = new SolrQueryResponse();
-      ResponseBuilder rb = new ResponseBuilder(req, resp, Collections.singletonList(hlComp));
+      ResponseBuilder rb = new ResponseBuilder(req, resp, List.of(hlComp));
       rb.setHighlightQuery(query);
       rb.setResults(req.getSearcher().getDocListAndSet(query, null, 0, 1));
       // highlight:

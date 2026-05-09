@@ -372,8 +372,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient.printLayoutToStream(System.out);
     }
 
-    System.clearProperty("solr.zookeeper.client.timeout");
-
     if (null != server) {
       server.shutdown();
     }
@@ -1013,7 +1011,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
       updateShardHandlers.add(updateShardHandler);
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
       Overseer overseer =
           new Overseer(
@@ -1726,7 +1724,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     updateShardHandlers.add(updateShardHandler);
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-    httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+    httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
     // Set system property to ensure tests use Overseer mode
