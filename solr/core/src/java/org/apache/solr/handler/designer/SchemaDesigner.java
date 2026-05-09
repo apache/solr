@@ -1215,20 +1215,26 @@ public class SchemaDesigner extends JerseyResource
     return response;
   }
 
-  /** Sets the named schema-object field on {@code response} based on the action type. */
+  /**
+   * Sets the response's name field for the schema object that was just added, based on the action
+   * key from the Schema API request body. The four valid actions are pre-validated by {@link
+   * SchemaDesignerConfigSetHelper#addSchemaObject}, so reaching {@code default} indicates a
+   * programmer error (e.g. a new action added upstream without a corresponding case here).
+   */
   private static void setSchemaObjectField(
       SchemaDesignerResponse response, String action, Object value) {
-    // Handles both bare camelCase names used internally ('field', 'fieldType') and the
-    // kebab-case prefixed names that come directly from Schema API request JSON
-    // ('add-field', 'add-field-type', 'add-dynamic-field').
     switch (action) {
-      case "field", "add-field" -> response.field = value;
-      case "type", "add-type" -> response.type = value;
-      case "dynamicField", "add-dynamic-field" -> response.dynamicField = value;
-      case "fieldType", "add-field-type" -> response.fieldType = value;
-      default -> {
-        /* unknown action type — silently ignore */
+      case "add-field" -> response.field = value;
+      case "add-dynamic-field" -> response.dynamicField = value;
+      case "add-field-type" -> response.fieldType = value;
+      case "add-copy-field" -> {
+        // Copy fields have no single "name" to surface on the response — the JS UI only checks
+        // for an error and refreshes; nothing to set.
       }
+      default -> throw new IllegalStateException(
+          "Unhandled schema-designer action '"
+              + action
+              + "'; addSchemaObject should have rejected this upstream.");
     }
   }
 
