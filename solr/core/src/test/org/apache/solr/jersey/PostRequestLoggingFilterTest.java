@@ -21,6 +21,7 @@ import static org.apache.solr.jersey.MessageBodyReaders.CachingDelegatingMessage
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -32,6 +33,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -123,6 +125,18 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
                 entityStream);
 
     assertEquals("test", result.name);
+  }
+
+  @Test
+  public void testCachingJsonMessageBodyReaderDelegateReusingObjectMapper() {
+    final var delegate =
+        (JacksonJsonProvider) new MessageBodyReaders.CachingJsonMessageBodyReader().getDelegate();
+    final var delegate2 =
+        (JacksonJsonProvider) new MessageBodyReaders.CachingJsonMessageBodyReader().getDelegate();
+
+    ObjectMapper mapper1 = delegate2.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
+    ObjectMapper mapper2 = delegate.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
+    assertSame(mapper1, mapper2);
   }
 
   @Test
