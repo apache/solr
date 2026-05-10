@@ -68,9 +68,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implements the UPGRADECOREINDEX CoreAdmin action, which upgrades an existing core's index
- * in-place by reindexing documents from segments belonging to older Lucene versions, so that they
- * get written into latest version segments.
+ * Implements the UPGRADEINDEX CoreAdmin action, which upgrades an existing core's index in-place by
+ * reindexing documents from segments belonging to older Lucene versions, so that they get written
+ * into latest version segments.
  *
  * <p>The upgrade process:
  *
@@ -153,7 +153,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         if (indexContainsChildDocs(searcherRef.get())) {
           throw new SolrException(
               BAD_REQUEST,
-              "UPGRADECOREINDEX does not support indexes containing child/nested documents. "
+              "UPGRADEINDEX does not support indexes containing child/nested documents. "
                   + " Consider reindexing your data "
                   + "from the original source.");
         }
