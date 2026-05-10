@@ -16,25 +16,21 @@
  */
 package org.apache.solr.client.solrj.io.sql;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.util.Locale;
 import java.util.Properties;
 import java.util.logging.Logger;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * Get a Connection with an url and properties.
  *
  * <p>jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
+ *
+ * <p>jdbc:solr:http://solrHost:port?collection=collection&amp;aggregationMode=map_reduce
  */
 public class DriverImpl implements Driver {
 
@@ -51,34 +47,12 @@ public class DriverImpl implements Driver {
     if (!acceptsURL(url)) {
       return null;
     }
-
-    URI uri = processUrl(url);
-
-    loadParams(uri, props);
-
-    if (!props.containsKey("collection")) {
-      throw new SQLException(
-          "The connection url has no connection properties. At a minimum the collection must be specified.");
-    }
-    String collection = (String) props.remove("collection");
-
-    if (!props.containsKey("aggregationMode")) {
-      props.setProperty("aggregationMode", "facet");
-    }
-
-    // JDBC requires metadata like field names from the SQLHandler. Force this property to be true.
-    props.setProperty("includeMetadata", "true");
-
-    String zkHost = uri.getAuthority() + uri.getPath();
-    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-    if (!solrConnection.isZookeeper()) {
-      // TODO: add support for 'solrConnection' for both connection string types:
-      // TODO: zookeeper and HTTP(s)
-      throw new SQLException(
-          String.format(
-              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
-    }
-    return new ConnectionImpl(url, solrConnection, collection, props);
+    var jdbcConnMetadata = SolrJdbcUrlParser.parse(url, props);
+    return new ConnectionImpl(
+        jdbcConnMetadata.originalUrl(),
+        jdbcConnMetadata.solrConnection(),
+        jdbcConnMetadata.collection(),
+        jdbcConnMetadata.properties());
   }
 
   public Connection connect(String url) throws SQLException {
@@ -114,33 +88,5 @@ public class DriverImpl implements Driver {
   @Override
   public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
     return null;
-  }
-
-  protected URI processUrl(String url) throws SQLException {
-    URI uri;
-    try {
-      uri = new URI(url.replaceFirst("jdbc:", ""));
-    } catch (URISyntaxException e) {
-      throw new SQLException(e);
-    }
-
-    if (uri.getAuthority() == null) {
-      throw new SQLException("The zkHost must not be null");
-    }
-
-    return uri;
-  }
-
-  /** Decode the uri query parameters and put them onto {@code props}. */
-  private void loadParams(URI uri, Properties props) {
-    String query = uri.getRawQuery();
-    if (query != null) {
-      for (String param : query.split("&")) {
-        String[] pair = param.split("=", 2);
-        String key = URLDecoder.decode(pair[0], StandardCharsets.UTF_8);
-        String value = pair.length > 1 ? URLDecoder.decode(pair[1], StandardCharsets.UTF_8) : "";
-        props.put(key, value);
-      }
-    }
   }
 }
