@@ -402,7 +402,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     this.zkHost = zkHostBuilder.toString(); // Save for later use
 
     if (log.isInfoEnabled()) {
-      log.info("Reserved ports for {} nodes: {}", numServers, java.util.Arrays.toString(ports));
+      log.info("Reserved ports for {} nodes: {}", numServers, Arrays.toString(ports));
       log.info("ZK connection string: {}", this.zkHost);
     }
 
