@@ -27,8 +27,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * Manual regression test that downloads small binary sample files from Apache Tika's test corpus
@@ -96,9 +98,7 @@ public class FileTypeMagicUtilTikaCorpusTest extends SolrTestCaseJ4 {
     Files.writeString(
         generatedDir.resolve("generated.sh"), "#!/bin/sh\necho hello\n", StandardCharsets.US_ASCII);
     ByteArrayOutputStream buf = new ByteArrayOutputStream();
-    try (ObjectOutputStream oos = new ObjectOutputStream(buf)) {
-      oos.writeObject(new ArrayList<>());
-    }
+    writeSerializedObject(buf);
     Files.write(generatedDir.resolve("generated.ser"), buf.toByteArray());
 
     // MIME type → file to test. Remote files reference a URL (downloaded to downloadDir);
@@ -154,12 +154,27 @@ public class FileTypeMagicUtilTikaCorpusTest extends SolrTestCaseJ4 {
   private static void record(
       String expected, String detected, String label, List<String> failures) {
     if (expected.equals(detected)) {
-      System.out.printf("  PASS  %-50s  %s%n", label, detected);
+      System.out.printf(Locale.ROOT, "  PASS  %-50s  %s%n", label, detected);
     } else {
       String msg =
-          String.format("  FAIL  %-50s  expected=%-45s  got=%s", label, expected, detected);
+          String.format(
+              Locale.ROOT, "  FAIL  %-50s  expected=%-45s  got=%s", label, expected, detected);
       System.out.println(msg);
       failures.add(msg);
+    }
+  }
+
+  /**
+   * Writes a Java serialized object stream to {@code out}. Isolated into its own method so the
+   * {@code @SuppressForbidden} annotation is scoped narrowly to the serialization code.
+   */
+  @SuppressForbidden(
+      reason =
+          "ObjectOutputStream is used here to PRODUCE (not consume) a serialized-object byte stream"
+              + " for magic-byte detection testing. No untrusted data is deserialized.")
+  private static void writeSerializedObject(ByteArrayOutputStream out) throws Exception {
+    try (ObjectOutputStream oos = new ObjectOutputStream(out)) {
+      oos.writeObject(new ArrayList<>());
     }
   }
 
@@ -201,7 +216,7 @@ public class FileTypeMagicUtilTikaCorpusTest extends SolrTestCaseJ4 {
     for (int i = 148; i < 156; i++) tar[i] = ' ';
     int checksum = 0;
     for (int i = 0; i < 512; i++) checksum += (tar[i] & 0xFF);
-    byte[] cs = String.format("%06o\0 ", checksum).getBytes(StandardCharsets.US_ASCII);
+    byte[] cs = String.format(Locale.ROOT, "%06o\0 ", checksum).getBytes(StandardCharsets.US_ASCII);
     System.arraycopy(cs, 0, tar, 148, 8);
 
     Files.write(dest, tar);
