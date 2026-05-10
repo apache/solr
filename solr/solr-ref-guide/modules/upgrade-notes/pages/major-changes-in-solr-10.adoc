@@ -49,6 +49,14 @@ The `blockUnknown` setting in the JWT Authentication plugin now defaults to `tru
 In Solr 10.0, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
 Users upgrading from 10.0 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
 
+=== Security
+
+PKI Authentication v1 support has been removed.
+Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node communication.
+
+Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
+The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
+
 == Solr 10.0
 
 === Solr Jetty parameters
