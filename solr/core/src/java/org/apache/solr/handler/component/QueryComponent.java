@@ -133,7 +133,6 @@ import org.slf4j.LoggerFactory;
  */
 public class QueryComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "query";
-  private static final String FIELD_EXISTS_QUERY_REQUIRES_PREFIX = "FieldExistsQuery requires";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -436,9 +435,6 @@ public class QueryComponent extends SearchComponent {
         }
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-      } catch (IllegalStateException e) {
-        maybeThrowBadRequestForFieldExistsQueryFailure(e);
-        throw e;
       }
       return;
     }
@@ -1839,9 +1835,6 @@ public class QueryComponent extends SearchComponent {
       result = searcher.search(cmd);
     } catch (FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    } catch (IllegalStateException e) {
-      maybeThrowBadRequestForFieldExistsQueryFailure(e);
-      throw e;
     }
     rb.setResult(result);
 
@@ -1891,15 +1884,5 @@ public class QueryComponent extends SearchComponent {
     }
 
     return localQueryID;
-  }
-
-  private static void maybeThrowBadRequestForFieldExistsQueryFailure(IllegalStateException e) {
-    for (Throwable cause = e; cause != null; cause = cause.getCause()) {
-      if (cause instanceof IllegalStateException
-          && cause.getMessage() != null
-          && cause.getMessage().startsWith(FIELD_EXISTS_QUERY_REQUIRES_PREFIX)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, cause.getMessage(), e);
-      }
-    }
   }
 }
