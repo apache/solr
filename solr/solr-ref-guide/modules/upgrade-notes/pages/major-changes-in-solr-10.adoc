@@ -36,6 +36,25 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.1
 
+=== Universal connection string support
+
+Introduced a universal Solr connection string for SolrCloud connections.
+
+Connections can now be configured via HTTP(S) without exposing ZooKeeper details, while the legacy ZooKeeper-based connection method remains fully supported.
+
+Examples:
+`solrConnection=http://solr1:8983/solr,http://solr2:8983/solr`
+`solrConnection=zoo1:2181,zoo2:2181,zoo3:2181/solr`
+
+The universal connection string is now supported in the following components and entry points:
+
+* Added `CloudSolrClient.Builder(String)` constructor in SolrJ for configuring SolrCloud clients using either HTTP(S)-based or ZooKeeper-based connection strings.
+* Added `solrConnection` parameter to all streaming functions in the SolrJ Streaming module. The existing `zkHost` parameter remains supported.
+* Added `withDefaultSolrConnection` and `withCollectionSolrConnection` methods to `StreamFactory` in the SolrJ Streaming module.
+* Solr SQL JDBC driver now supports both HTTP-based (`jdbc:solr:http://solr1.example.com:8983/solr?collection=COLLECTION_NAME`) and ZooKeeper-based (`jdbc:solr://zoo.example.com:2181/solr?collection=COLLECTION_NAME`) JDBC URLs.
+* Added `--solr-connection` option to the CLI tools.
+* Added `solrConnection` parameter to the Join Query Parser.
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
@@ -336,7 +355,7 @@ If you require the ability to roll back, back up your indexes before upgrading.
 
 Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
 Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
-Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.  
+Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
 However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
 
 === Docker

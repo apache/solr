@@ -110,7 +110,7 @@ List of options:
                                     defaults to: http://localhost:8983.
  -u,--credentials <credentials>     Credentials in the format username:password. Example: --credentials solr:SolrRocks
  -v,--verbose                       Enable verbose command output.
- -q,--solr-connection <HOST>        Zookeeper or HTTP(S) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh;
+ -sc,--solr-connection <HOST>       Zookeeper or HTTP(S) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh;
                                     otherwise, defaults to localhost:9983.
  -z,--zk-host <HOST>                Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;
                                     otherwise, defaults to localhost:9983.
