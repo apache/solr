@@ -1,4 +1,4 @@
-title: Move Google cloud dependencies to resolving google-cloud-bom. Bump to 0.261.0 and grpc-bom to 1.80.0
+title: Resolve Google cloud dependencies using google-cloud-bom. Bump it to 0.261.0 and grpc-bom to 1.80.0
 type: dependency_update
 authors:
 - name: solrbot
