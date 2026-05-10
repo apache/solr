@@ -59,6 +59,10 @@ public class FileTypeMagicUtil {
   // TAR ustar magic is at offset 257-261; 512 bytes (one full TAR block) covers all formats.
   private static final int HEADER_BYTES = 512;
 
+  // ZIP End-of-Central-Directory (EOCD) record is 22 bytes; comment field is at most 65535 bytes.
+  private static final int EOCD_SIZE = 22;
+  private static final int EOCD_MAX_SCAN = EOCD_SIZE + 65535;
+
   FileTypeMagicUtil() {}
 
   /**
@@ -105,18 +109,65 @@ public class FileTypeMagicUtil {
   }
 
   /**
-   * Guess the mime type of file based on its magic number.
+   * Guess the mime type of file based on its magic number. In addition to the standard header scan,
+   * this method performs a tail scan for polyglot ZIP files (e.g. a JPEG that also contains a valid
+   * ZIP End-of-Central-Directory record appended at the end).
    *
    * @param file file to check
    * @return string with content-type or "application/octet-stream" if unknown
    */
   public String guessMimeType(Path file) {
-    try (InputStream in = Files.newInputStream(file)) {
-      return guessMimeType(in);
+    try {
+      String headerResult;
+      try (InputStream in = Files.newInputStream(file)) {
+        headerResult = guessMimeType(in);
+      }
+      // If the header already identified a ZIP, skip the redundant tail scan.
+      if (!"application/zip".equals(headerResult) && hasZipEocdTail(file)) {
+        return "application/zip";
+      }
+      return headerResult;
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Failed to guess mime type for file " + file, e);
     }
+  }
+
+  /**
+   * Scans the tail of a file for a ZIP End-of-Central-Directory (EOCD) record. This detects
+   * polyglot files (e.g. JPEG+ZIP) where the ZIP content is appended after another format's data.
+   */
+  private static boolean hasZipEocdTail(Path file) throws IOException {
+    long fileSize = Files.size(file);
+    if (fileSize < EOCD_SIZE) return false;
+    long readStart = Math.max(0, fileSize - EOCD_MAX_SCAN);
+    int readLen = (int) (fileSize - readStart);
+    byte[] tail = new byte[readLen];
+    try (InputStream in = Files.newInputStream(file)) {
+      in.skipNBytes(readStart);
+      int n = 0, r;
+      while (n < readLen && (r = in.read(tail, n, readLen - n)) != -1) n += r;
+    }
+    return hasZipEocd(tail);
+  }
+
+  /**
+   * Scans backward through {@code b} for a ZIP End-of-Central-Directory signature ({@code
+   * PK\x05\x06}). The scan is bounded to the last {@link #EOCD_MAX_SCAN} bytes to match the ZIP
+   * specification's maximum comment length.
+   *
+   * <p>When {@code b} contains the complete file content, this detects polyglot ZIPs regardless of
+   * what format occupies offset 0 (e.g. JPEG, PDF). When {@code b} contains only a leading chunk,
+   * polyglot ZIPs whose EOCD falls outside that chunk will not be detected.
+   */
+  static boolean hasZipEocd(byte[] b) {
+    int start = Math.max(0, b.length - EOCD_MAX_SCAN);
+    for (int i = b.length - EOCD_SIZE; i >= start; i--) {
+      if (b[i] == 'P' && b[i + 1] == 'K' && b[i + 2] == 0x05 && b[i + 3] == 0x06) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -142,7 +193,12 @@ public class FileTypeMagicUtil {
   /**
    * Guess the mime type of file bytes based on its magic number.
    *
-   * @param bytes the first bytes at start of the file
+   * <p>When {@code bytes} contains the complete file content, polyglot ZIPs (e.g. JPEG+ZIP) are
+   * also detected via a tail scan for the ZIP End-of-Central-Directory record. Callers that supply
+   * only a leading chunk of a file will not benefit from polyglot detection; prefer {@link
+   * #guessMimeType(Path)} when the full file is available on disk.
+   *
+   * @param bytes the file bytes (ideally the complete file content)
    * @return string with content-type or "application/octet-stream" if unknown
    */
   public String guessMimeType(byte[] bytes) {
@@ -158,26 +214,21 @@ public class FileTypeMagicUtil {
     if (isElf(bytes)) return "application/x-executable";
     if (isJavaSerialized(bytes)) return "application/x-java-serialized-object";
     if (isMachO(bytes)) return "application/x-mach-binary";
+    if (hasZipEocd(bytes)) return "application/zip";
     return "application/octet-stream";
   }
 
   /**
-   * Determine forbidden file type based on magic bytes matching of the file itself. The default
-   * forbidden types are listed in {@link #DEFAULT_FORBIDDEN_MIME_TYPES} and can be overridden via
-   * the system property {@code solr.configset.upload.mimetypes.forbidden}.
+   * Determine forbidden file type based on magic bytes matching of the file itself. Includes tail
+   * scanning for polyglot ZIP files. The default forbidden types are listed in {@link
+   * #DEFAULT_FORBIDDEN_MIME_TYPES} and can be overridden via the system property {@code
+   * solr.configset.upload.mimetypes.forbidden}.
    *
    * @param file file to check
    * @return true if file is among the forbidden mime-types
    */
   public static boolean isFileForbiddenInConfigset(Path file) {
-    try (InputStream fileStream = Files.newInputStream(file)) {
-      return isFileForbiddenInConfigset(fileStream);
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          String.format(Locale.ROOT, "Error reading file %s", file),
-          e);
-    }
+    return forbiddenTypes.contains(FileTypeMagicUtil.INSTANCE.guessMimeType(file));
   }
 
   /**
@@ -288,7 +339,10 @@ public class FileTypeMagicUtil {
         && b[5] == 0x00;
   }
 
-  /** Detects shebang-based scripts by the {@code #!} marker at the start of the file. */
+  /**
+   * Detects shebang-based scripts by the {@code #!} marker at the start of the file. This covers
+   * Unix shell scripts, Python, Ruby, Perl, and similar interpreted languages.
+   */
   private static boolean isShellScript(byte[] b) {
     return b.length >= 2 && b[0] == '#' && b[1] == '!';
   }

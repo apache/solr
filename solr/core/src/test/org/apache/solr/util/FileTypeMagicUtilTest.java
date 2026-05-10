@@ -144,12 +144,33 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
     assertResourceAllowedInConfigset("/magic/plain.txt");
   }
 
-  public void testPolyglotZipNotDetected() {
-    // A JPEG+ZIP polyglot starts with JPEG magic — our offset-0 check does not detect the
-    // appended ZIP. This is a known limitation: the file would be treated as its outer format
-    // by Solr's configset processing and never extracted as a ZIP by Solr itself.
+  public void testPolyglotZipNotDetectedFromHeaderOnly() {
+    // When only a leading chunk of bytes is available (no EOCD in the window), a JPEG+ZIP polyglot
+    // is not detected — the JPEG magic at offset 0 wins and the result is octet-stream.
+    // This is an accepted limitation for callers that supply only a file header excerpt.
     byte[] jpegMagic = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
     assertEquals("application/octet-stream", FileTypeMagicUtil.INSTANCE.guessMimeType(jpegMagic));
+    assertFalse(FileTypeMagicUtil.isFileForbiddenInConfigset(jpegMagic));
+  }
+
+  public void testPolyglotZipDetectedByTailScan() throws IOException {
+    // Build a JPEG+ZIP polyglot: JPEG magic at offset 0, minimal ZIP EOCD appended at the tail.
+    // ZIP readers locate the archive by scanning backwards for the EOCD signature (PK\x05\x06),
+    // regardless of what appears at offset 0, making such files genuine ZIP archives.
+    byte[] jpegMagic = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 0x10};
+    // Minimal valid EOCD: PK\x05\x06 + 18 zero bytes (no entries, no comment).
+    byte[] eocd = {'P', 'K', 0x05, 0x06, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    byte[] polyglot = concat(jpegMagic, eocd);
+
+    // Complete byte[] contains the EOCD — polyglot is detected and blocked in both paths.
+    assertEquals("application/zip", FileTypeMagicUtil.INSTANCE.guessMimeType(polyglot));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(polyglot));
+
+    // File-based path also detects it (reads complete file content).
+    Path tmp = createTempDir("polyglot").resolve("polyglot.jpg");
+    Files.write(tmp, polyglot);
+    assertEquals("application/zip", FileTypeMagicUtil.INSTANCE.guessMimeType(tmp));
+    assertTrue(FileTypeMagicUtil.isFileForbiddenInConfigset(tmp));
   }
 
   public void testGuessMimeTypeTarBytes() {
@@ -235,5 +256,12 @@ public class FileTypeMagicUtilTest extends SolrTestCaseJ4 {
       assertNotNull("Test resource not found: " + resourcePath, stream);
       assertFalse(FileTypeMagicUtil.isFileForbiddenInConfigset(stream));
     }
+  }
+
+  private static byte[] concat(byte[] a, byte[] b) {
+    byte[] result = new byte[a.length + b.length];
+    System.arraycopy(a, 0, result, 0, a.length);
+    System.arraycopy(b, 0, result, a.length, b.length);
+    return result;
   }
 }
