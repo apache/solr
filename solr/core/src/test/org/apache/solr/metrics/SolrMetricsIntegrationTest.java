@@ -25,13 +25,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -39,6 +35,7 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestHarness;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -127,7 +124,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient solrClient = j.newClient()) {
-      HttpClient httpClient = ((HttpSolrClient) solrClient).getHttpClient();
+      assertNotNull(solrClient);
+      HttpClient httpClient = j.getSolrClient().getHttpClient();
       var initialChildrenFetched =
           SolrMetricTestUtils.getCounterDatapoint(
                   reader, "solr_zk_cumulative_children_fetched", baseLabels)
@@ -141,10 +139,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
               .getValue();
 
       // Send GET request to trigger some metrics
-      HttpClientUtil.executeGET(
-          httpClient,
-          j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
-          Utils.JSONCONSUMER);
+      httpClient.GET(j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes");
 
       var childrenFetched =
           SolrMetricTestUtils.getCounterDatapoint(

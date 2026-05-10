@@ -26,14 +26,14 @@ runs:
         java-package: jdk
 
     - name: Cache gradle-wrapper.jar
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: gradle/wrapper/gradle-wrapper.jar
         key: gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.jar.sha256') }}
 
     # This includes "smart" caching of gradle dependencies.
     - name: Set up Gradle
-      uses: gradle/actions/setup-gradle@v4
+      uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
       with:
         # increase expiry time for the temp. develocity token.
         # https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#increasing-the-expiry-time-for-develocity-access-tokens

@@ -29,6 +29,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.util.stats.MetricUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,8 +54,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.METRIC_NAME_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.METRIC_NAME_PARAM,
             expectedRequestsMetricName),
         resp);
     var metrics = resp.getValues().get("metrics");
@@ -80,8 +81,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.METRIC_NAME_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.METRIC_NAME_PARAM,
             expectedRequestsMetricName + "," + expectedSearcherMetricName),
         resp);
 
@@ -105,8 +106,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.METRIC_NAME_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.METRIC_NAME_PARAM,
             nonexistentMetricName),
         resp);
     var metrics = (MetricSnapshots) resp.getValues().get("metrics");
@@ -126,8 +127,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.CATEGORY_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.CATEGORY_PARAM,
             "QUERY"),
         resp);
     var metrics = (MetricSnapshots) resp.getValues().get("metrics");
@@ -137,7 +138,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
           ms.getDataPoints()
               .forEach(
                   (dp) -> {
-                    assertEquals("QUERY", dp.getLabels().get(MetricsHandler.CATEGORY_PARAM));
+                    assertEquals("QUERY", dp.getLabels().get(MetricUtils.CATEGORY_PARAM));
                   });
         });
 
@@ -156,8 +157,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.CATEGORY_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.CATEGORY_PARAM,
             "QUERY" + "," + "SEARCHER"),
         resp);
 
@@ -168,10 +169,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
               .forEach(
                   (dp) -> {
                     assertTrue(
-                        dp.getLabels().get(MetricsHandler.CATEGORY_PARAM).equals("QUERY")
-                            || dp.getLabels()
-                                .get(MetricsHandler.CATEGORY_PARAM)
-                                .equals("SEARCHER"));
+                        dp.getLabels().get(MetricUtils.CATEGORY_PARAM).equals("QUERY")
+                            || dp.getLabels().get(MetricUtils.CATEGORY_PARAM).equals("SEARCHER"));
                   });
         });
 
@@ -188,8 +187,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.CORE_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.CORE_PARAM,
             "nonexistent_core_name"),
         resp);
 
@@ -210,10 +209,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.CORE_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.CORE_PARAM,
             "collection1",
-            MetricsHandler.CATEGORY_PARAM,
+            MetricUtils.CATEGORY_PARAM,
             "SEARCHER"),
         resp);
 
@@ -224,8 +223,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
               .forEach(
                   (dp) -> {
                     assertTrue(
-                        dp.getLabels().get(MetricsHandler.CATEGORY_PARAM).equals("SEARCHER")
-                            && dp.getLabels().get(MetricsHandler.CORE_PARAM).equals("collection1"));
+                        dp.getLabels().get(MetricUtils.CATEGORY_PARAM).equals("SEARCHER")
+                            && dp.getLabels().get(MetricUtils.CORE_PARAM).equals("collection1"));
                   });
         });
 
@@ -245,10 +244,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             CommonParams.METRICS_PATH,
             CommonParams.WT,
-            MetricsHandler.PROMETHEUS_METRICS_WT,
-            MetricsHandler.CATEGORY_PARAM,
+            MetricUtils.PROMETHEUS_METRICS_WT,
+            MetricUtils.CATEGORY_PARAM,
             "CORE",
-            MetricsHandler.METRIC_NAME_PARAM,
+            MetricUtils.METRIC_NAME_PARAM,
             expectedMetricName),
         resp);
 
@@ -256,7 +255,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, metrics.size());
     var actualDatapoint = metrics.get(0).getDataPoints().getFirst();
     assertEquals(expectedMetricName, metrics.get(0).getMetadata().getPrometheusName());
-    assertEquals("CORE", actualDatapoint.getLabels().get(MetricsHandler.CATEGORY_PARAM));
+    assertEquals("CORE", actualDatapoint.getLabels().get(MetricUtils.CATEGORY_PARAM));
     handler.close();
   }
 

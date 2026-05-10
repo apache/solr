@@ -64,14 +64,16 @@
 - Migrated system properties solr.allowPaths and solr.allowUrls to modern equivalents. #17864 [SOLR-17864](https://issues.apache.org/jira/browse/SOLR-17864) (Eric Pugh)
 - Rename vector search parameters and language model modules [SOLR-17927](https://issues.apache.org/jira/browse/SOLR-17927) (Ishan Chattopadhyaya) (Alessandro Benedetti) (Ilaria Petreti) (Chaitali Rajhans)
 
-### Fixed (6 changes)
+### Fixed (8 changes)
 
 - Restore actual infoStream logging when infoStream in solrconfig.xml is set to true. [SOLR-11373](https://issues.apache.org/jira/browse/SOLR-11373) (Eric Pugh)
 - ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. [SOLR-17294](https://issues.apache.org/jira/browse/SOLR-17294) (Mark Miller) (Jason Gerlowski)
 - Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962. Additionally achieves simplification of CLI tests [SOLR-17772](https://issues.apache.org/jira/browse/SOLR-17772) [SOLR-7962](https://issues.apache.org/jira/browse/SOLR-7962) (Rahul Goswami)
 - Fix TextToVectorUpdateProcessor for Partial Updates [SOLR-17843](https://issues.apache.org/jira/browse/SOLR-17843) (Ilaria Petreti) ([Alessandro Benedetti](https://home.apache.org/phonebook.html?uid=abenedetti))
 - Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES [SOLR-17940](https://issues.apache.org/jira/browse/SOLR-17940) (hossman)
+- Add the Jackson BOM import to solrj [SOLR-18003](https://issues.apache.org/jira/browse/SOLR-18003) ([Mark Prins](https://github.com/mprins) @mprins)
 - Admin UI "Nodes" view now works with the new Prometheus formatted metrics endpoint [SOLR-18004](https://issues.apache.org/jira/browse/SOLR-18004) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (David Smiley)
+- Stale EndpointIterator state causes unexpected order when there are zombie servers in LBSolrClient [SOLR-18086](https://issues.apache.org/jira/browse/SOLR-18086) (Chris Hostetter) (Anshum Gupta)
 
 ### Removed (54 changes)
 
@@ -249,6 +251,10 @@
 - The base docker image has been upgraded from Ubuntu 22 (Jammy) to Ubuntu 24 (Noble). [SOLR-17445](https://issues.apache.org/jira/browse/SOLR-17445) (Jan Høydahl)
 - Upgrade to Lucene 10.3.1 [SOLR-17631](https://issues.apache.org/jira/browse/SOLR-17631) [SOLR-17917](https://issues.apache.org/jira/browse/SOLR-17917) (Ishan Chattopadhyaya) (noble) (Jason Gerlowski) (Eric Pugh) (janhoy) (Christine Poerschke) (hossman)
 - Upgrade Apache Lucene to 10.3.2 [SOLR-17997](https://issues.apache.org/jira/browse/SOLR-17997) (Anshum Gupta)
+
+### Security (1 change)
+
+- Ensure File Store API "getFrom" param rejects values not in liveNodes [SOLR-18014](https://issues.apache.org/jira/browse/SOLR-18014) (Jason Gerlowski) (monkeontheroof)
 
 ### Other (39 changes)
 

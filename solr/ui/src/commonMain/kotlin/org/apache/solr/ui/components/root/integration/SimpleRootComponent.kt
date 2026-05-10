@@ -113,6 +113,7 @@ class SimpleRootComponent(
         componentContext: AppComponentContext,
     ): RootComponent.Child = when (configuration) {
         is Configuration.Start -> Start(startComponent(componentContext, ::startOutput))
+
         is Configuration.Main -> Main(mainComponent(componentContext, configuration.authOption, ::mainOutput))
 
         is Configuration.Authentication -> Authentication(
@@ -120,7 +121,8 @@ class SimpleRootComponent(
                 componentContext,
                 configuration.url,
                 configuration.methods,
-            ) { output -> authenticationOutput(output) },
+                ::authenticationOutput,
+            ),
         )
     }
 

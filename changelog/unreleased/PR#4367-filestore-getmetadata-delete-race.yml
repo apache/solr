@@ -1,0 +1,7 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Filestore metadata API no longer returns HTTP 500 when a file is deleted concurrently with a metadata read; the response now matches the not-found case (null entry).
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links: 
+  - https://github.com/apache/solr/pull/4367

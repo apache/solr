@@ -21,9 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -126,7 +124,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       implements HttpClientBuilderPlugin {
     public static String expectedUsername;
     public static String expectedPassword;
-    private HttpRequestInterceptor interceptor;
 
     @Override
     public void init(Map<String, Object> pluginConfig) {}
@@ -151,11 +148,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         response.sendError(401, "Unauthorized request");
         return false;
       }
-    }
-
-    @Override
-    public void close() {
-      HttpClientUtil.removeRequestInterceptor(interceptor);
     }
   }
 }

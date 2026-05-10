@@ -83,6 +83,76 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertResponseFoundNumDocs(queryResponse, expectedResults);
   }
 
+  /**
+   * Test json query behaviour in case of multiple query to be executed using Combined Query.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testSimpleJsonQueryWithQueriesParams() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    final int expectedResults = 2;
+    final Map<String, Object> queriesMap = new HashMap<>();
+    queriesMap.put(
+        "query1",
+        Map.of(
+            "lucene",
+            Map.of(
+                "query", "apache",
+                "df", "manu")));
+    queriesMap.put(
+        "query2",
+        Map.of(
+            "edismax",
+            Map.of(
+                "query", "solr",
+                "df", "name")));
+    final JsonQueryRequest query =
+        new JsonQueryRequest()
+            .setQueries(queriesMap)
+            .withFilter("inStock:true")
+            .withParam("fl", "name")
+            .withParam("combiner", "true")
+            .withParam("combiner.query", List.of("query1", "query2"));
+    query.setPath("/rrf");
+    QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
+    assertResponseFoundNumDocs(queryResponse, expectedResults);
+  }
+
+  /**
+   * Test json query behaviour in case of multiple query to be executed using Additional Queries.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testAdditionalJsonQueries() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    final int expectedResults = 12;
+    // tag::solrj-json-query-with-queries[]
+    final Map<String, Object> queriesMap = new HashMap<>();
+    queriesMap.put(
+        "electronic",
+        Map.of(
+            "field",
+            Map.of(
+                "query", "electronics",
+                "f", "cat")));
+    queriesMap.put(
+        "manufacturers",
+        List.of(
+            "manu: apple",
+            Map.of(
+                "field",
+                Map.of(
+                    "query", "belkin",
+                    "f", "manu"))));
+    final JsonQueryRequest query =
+        new JsonQueryRequest().setQueries(queriesMap).setQuery(Map.of("param", "electronic"));
+    QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
+    // end::solrj-json-query-with-queries[]
+    assertEquals(expectedResults, queryResponse.getResults().getNumFound());
+  }
+
   @Test
   public void testJsonQueryWithJsonQueryParamOverrides() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();

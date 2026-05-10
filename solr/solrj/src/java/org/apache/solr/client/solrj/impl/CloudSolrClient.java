@@ -105,7 +105,7 @@ public abstract class CloudSolrClient extends SolrClient {
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   private final boolean parallelUpdates;
-  private ExecutorService threadPool =
+  private final ExecutorService threadPool =
       ExecutorUtil.newMDCAwareCachedThreadPool(
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
@@ -239,6 +239,30 @@ public abstract class CloudSolrClient extends SolrClient {
     /** for an expert use-case */
     public Builder(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
+    }
+
+    /**
+     * Creates a client builder based on a connection string of 2 possible formats:
+     *
+     * <ul>
+     *   <li>ZooKeeper connection string (optionally with chroot), e.g. {@code
+     *       zk1:2181,zk2:2181,zk3:2181/solr}
+     *   <li>Comma-separated list of Solr node base URLs (HTTP or HTTPS), e.g. {@code
+     *       http://solr1:8983/solr,http://solr2:8983/solr}
+     * </ul>
+     *
+     * @param connectionString a string specifying either ZooKeeper connection string or HTTP(S)
+     *     Solr URLs
+     * @throws IllegalArgumentException if string is null, empty, or malformed
+     */
+    public Builder(String connectionString) {
+      CloudSolrClientConnection connection = CloudSolrClientConnection.parse(connectionString);
+      if (connection.isZk()) {
+        this.zkHosts = connection.quorumItems();
+        this.zkChroot = connection.zkChroot();
+      } else {
+        this.solrUrls = connection.quorumItems();
+      }
     }
 
     /** Whether to use the default ZK ACLs when building a ZK Client. */
@@ -642,9 +666,8 @@ public abstract class CloudSolrClient extends SolrClient {
   public void close() {
     closed = true;
     collectionRefreshes.clear();
-    if (this.threadPool != null && !ExecutorUtil.isShutdown(this.threadPool)) {
+    if (!ExecutorUtil.isShutdown(this.threadPool)) {
       ExecutorUtil.shutdownAndAwaitTermination(this.threadPool);
-      this.threadPool = null;
     }
   }
 
@@ -730,8 +753,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as
     // long as they are routed aliases
-    List<String> aliasedCollections =
-        new ArrayList<>(resolveAliases(Collections.singletonList(collection)));
+    List<String> aliasedCollections = new ArrayList<>(resolveAliases(List.of(collection)));
     if (aliasedCollections.size() == 1 || getClusterStateProvider().isRoutedAlias(collection)) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
     } else {
@@ -772,6 +794,9 @@ public abstract class CloudSolrClient extends SolrClient {
             "directUpdatesToLeadersOnly==true but could not find leader(s)");
       } else {
         // we could not find a leader or routes yet - use unoptimized general path
+        log.warn(
+            "No routing info found for update to collection '{}', broadcasting to all shards.",
+            collection);
         return null;
       }
     }
@@ -1124,7 +1149,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     List<String> inputCollections =
-        collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
+        collection == null ? List.of() : StrUtils.splitSmart(collection, ",", true);
     return requestWithRetryOnStaleState(
         request,
         0,
@@ -1452,7 +1477,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final ClusterStateProvider provider = getClusterStateProvider();
-    final String urlScheme = provider.getClusterProperty(ClusterState.URL_SCHEME, "http");
+    final String urlScheme = provider.getUrlScheme();
     final Set<String> liveNodes = provider.getLiveNodes();
 
     final List<LBSolrClient.Endpoint> requestEndpoints =
@@ -1578,7 +1603,7 @@ public abstract class CloudSolrClient extends SolrClient {
    */
   private Set<String> resolveAliases(List<String> inputCollections) {
     if (inputCollections.isEmpty()) {
-      return Collections.emptySet();
+      return Set.of();
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
@@ -1658,41 +1683,34 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   private CompletableFuture<DocCollection> triggerCollectionRefresh(String collection) {
-    if (closed) {
-      ExpiringCachedDocCollection cacheEntry = collectionStateCache.peek(collection);
-      DocCollection cached = cacheEntry == null ? null : cacheEntry.cached;
-      return CompletableFuture.completedFuture(cached);
-    }
-    return collectionRefreshes.computeIfAbsent(
+    return collectionRefreshes.compute(
         collection,
-        key -> {
-          ExecutorService executor = threadPool;
-          CompletableFuture<DocCollection> future;
-          if (executor == null || ExecutorUtil.isShutdown(executor)) {
-            future = new CompletableFuture<>();
-            try {
-              future.complete(loadDocCollection(key));
-            } catch (Throwable t) {
-              future.completeExceptionally(t);
-            }
-          } else {
-            future =
-                CompletableFuture.supplyAsync(
-                    () -> {
-                      stateRefreshSemaphore.acquireUninterruptibly();
-                      try {
-                        return loadDocCollection(key);
-                      } finally {
-                        stateRefreshSemaphore.release();
-                      }
-                    },
-                    executor);
+        (key, existingFuture) -> {
+          // A refresh is still in progress; return it.
+          if (existingFuture != null && !existingFuture.isDone()) {
+            return existingFuture;
           }
-          future.whenCompleteAsync(
-              (result, error) -> {
-                collectionRefreshes.remove(key, future);
-              });
-          return future;
+          // No refresh is in-progress, so trigger it.
+
+          if (ExecutorUtil.isShutdown(threadPool)) {
+            assert closed; // see close() for the sequence
+            ExpiringCachedDocCollection cacheEntry = collectionStateCache.peek(key);
+            DocCollection cached = cacheEntry == null ? null : cacheEntry.cached;
+            return CompletableFuture.completedFuture(cached);
+          } else {
+            return CompletableFuture.supplyAsync(
+                () -> {
+                  stateRefreshSemaphore.acquireUninterruptibly();
+                  try {
+                    return loadDocCollection(key);
+                  } finally {
+                    stateRefreshSemaphore.release();
+                    // Remove the entry in case of many collections
+                    collectionRefreshes.remove(key);
+                  }
+                },
+                threadPool);
+          }
         });
   }
 
@@ -1809,6 +1827,10 @@ public abstract class CloudSolrClient extends SolrClient {
     return results;
   }
 
+  /**
+   * Determines whether an UpdateRequest contains sufficient routing information to identify shard
+   * leaders for direct updates when directUpdatesToLeadersOnly is enabled.
+   */
   private static boolean hasInfoToFindLeaders(UpdateRequest updateRequest, String idField) {
     final Map<SolrInputDocument, Map<String, Object>> documents = updateRequest.getDocumentsMap();
     final Map<String, Map<String, Object>> deleteById = updateRequest.getDeleteByIdMap();
@@ -1831,6 +1853,64 @@ public abstract class CloudSolrClient extends SolrClient {
       }
     }
 
+    if (deleteById != null) {
+      for (final Map.Entry<String, Map<String, Object>> entry : deleteById.entrySet()) {
+        final Map<String, Object> params = entry.getValue();
+        if (params == null || params.get(ShardParams._ROUTE_) == null) {
+          // deleteById entry lacks explicit route parameter, can't find leader for it
+          return false;
+        }
+      }
+    }
+
     return true;
+  }
+
+  /** Universal connection string parser logic. */
+  public record CloudSolrClientConnection(boolean isZk, List<String> quorumItems, String zkChroot) {
+
+    public CloudSolrClientConnection {
+      if (quorumItems == null || quorumItems.isEmpty()) {
+        throw new IllegalArgumentException("No valid hosts/urls found");
+      }
+    }
+
+    public static CloudSolrClientConnection parse(String connectionString) {
+      if (connectionString == null || connectionString.trim().isEmpty()) {
+        throw new IllegalArgumentException("Connection string must not be null or empty");
+      }
+      connectionString = connectionString.trim();
+      if (connectionString.contains("://")) {
+        return parseHttpQuorum(connectionString);
+      }
+      return parseZkQuorum(connectionString);
+    }
+
+    private static CloudSolrClientConnection parseZkQuorum(String connectionString) {
+      String zkChroot = null;
+      String zkHosts = connectionString;
+      int slashIndex = connectionString.indexOf('/');
+      if (slashIndex != -1) {
+        zkHosts = connectionString.substring(0, slashIndex);
+        zkChroot = connectionString.substring(slashIndex);
+      }
+      List<String> quorumItems = StrUtils.split(zkHosts, ',');
+      for (String host : quorumItems) {
+        if (host == null || host.isBlank()) {
+          throw new IllegalArgumentException("Empty host in Zookeeper connection string");
+        }
+      }
+      return new CloudSolrClientConnection(true, quorumItems, zkChroot);
+    }
+
+    private static CloudSolrClientConnection parseHttpQuorum(String connectionString) {
+      List<String> quorumItems = StrUtils.split(connectionString, ',');
+      for (String url : quorumItems) {
+        if (url == null || url.isBlank()) {
+          throw new IllegalArgumentException("Empty URL in HTTP(S) connection string");
+        }
+      }
+      return new CloudSolrClientConnection(false, quorumItems, null);
+    }
   }
 }

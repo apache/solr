@@ -49,7 +49,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
@@ -77,9 +77,8 @@ public class SolrXmlConfig {
    * wrapping the original Properties, with the 'zkHost' value set based on the value of the
    * corresponding System property (if set)
    *
-   * <p>In theory we only need this logic once, ideally in SolrDispatchFilter, but we put it here to
-   * re-use redundantly because of how much surface area our API has for various tests to poke at
-   * us.
+   * <p>In theory we only need this logic once, ideally in SolrServlet, but we put it here to re-use
+   * redundantly because of how much surface area our API has for various tests to poke at us.
    */
   public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
     if (null != props && StrUtils.isNotNullOrEmpty(props.getProperty(ZK_HOST))) {
@@ -104,8 +103,8 @@ public class SolrXmlConfig {
     // *directly* check the system
     // property if it's not specified.
     //
-    // (checking the sys prop here is really just for tests that by-pass SolrDispatchFilter. In
-    // non-test situations, SolrDispatchFilter will check the system property if needed in order to
+    // (checking the sys prop here is really just for tests that by-pass SolrServlet. In
+    // non-test situations, SolrServlet will check the system property if needed in order to
     // try and load solr.xml from ZK, and should have put the sys prop value in the node properties
     // for us)
     final String defaultZkHost =
@@ -165,10 +164,6 @@ public class SolrXmlConfig {
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
     configBuilder.setClusterPlugins(getClusterPlugins(loader, root));
-    // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
-    // <hiddenSysProps> is not provided under <solr>.
-    // Remove this line in 10.0
-    configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
     configBuilder.setCachesConfig(getCachesConfig(loader, root.get("caches")));
     configBuilder.setDefaultZkHost(defaultZkHost);
@@ -184,12 +179,12 @@ public class SolrXmlConfig {
             "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
       }
       log.info("solr.xml not found in SOLR_HOME, using built-in default");
-      String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      String solrInstallDir = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
       if (solrInstallDir == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Could not find default solr.xml file due to missing "
-                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+                + CoreContainerProvider.SOLR_INSTALL_DIR);
       }
       configFile = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("solr.xml");
     }
@@ -398,14 +393,14 @@ public class SolrXmlConfig {
 
   private static List<String> separateStrings(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptyList();
+      return List.of();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptySet();
+      return Set.of();
     }
     // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
     String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
@@ -745,26 +740,6 @@ public class SolrXmlConfig {
       }
     }
     return o;
-  }
-
-  /**
-   * Deprecated as of 9.3, will be removed in 10.0
-   *
-   * @param metrics configNode for the metrics
-   * @return a comma-separated list of hidden Sys Props
-   */
-  @Deprecated(forRemoval = true, since = "9.3")
-  private static String getHiddenSysProps(ConfigNode metrics) {
-    ConfigNode p = metrics.get("hiddenSysProps");
-    if (!p.exists()) return null;
-    Set<String> props = new HashSet<>();
-    p.forEachChild(
-        it -> {
-          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt()))
-            props.add(Pattern.quote(it.txt()));
-          return Boolean.TRUE;
-        });
-    return String.join(",", props);
   }
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {

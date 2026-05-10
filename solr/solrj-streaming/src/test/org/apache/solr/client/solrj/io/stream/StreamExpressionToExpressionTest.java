@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
@@ -55,6 +56,7 @@ public class StreamExpressionToExpressionTest extends SolrTestCase {
             .withFunctionName("intersect", IntersectStream.class)
             .withFunctionName("complement", ComplementStream.class)
             .withFunctionName("count", CountMetric.class)
+            .withFunctionName("countDist", CountDistinctMetric.class)
             .withFunctionName("sum", SumMetric.class)
             .withFunctionName("min", MinMetric.class)
             .withFunctionName("max", MaxMetric.class)
@@ -624,6 +626,19 @@ public class StreamExpressionToExpressionTest extends SolrTestCase {
     expressionString = metric.toExpression(factory).toString();
 
     assertEquals("count(*)", expressionString);
+  }
+
+  @Test
+  public void testCountDistinctMetric() throws Exception {
+
+    Metric metric;
+    String expressionString;
+
+    // Basic test
+    metric = new CountDistinctMetric(StreamExpressionParser.parse("countDist(foo)"), factory);
+    expressionString = metric.toExpression(factory).toString();
+
+    assertEquals("countDist(foo)", expressionString);
   }
 
   @Test

@@ -1,0 +1,9 @@
+title: Update netty.tcnative to v2.0.75.Final
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3075
+  url: https://github.com/apache/solr/pull/3075
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

@@ -80,8 +80,6 @@ public class ZkContainer {
 
   private SolrMetricProducer metricProducer;
 
-  private List<AutoCloseable> toClose;
-
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
@@ -232,84 +230,75 @@ public class ZkContainer {
               @Override
               public void initializeMetrics(
                   SolrMetricsContext parentContext, Attributes attributes) {
-                final List<AutoCloseable> observables = new ArrayList<>();
                 ctx = parentContext.getChildContext(this);
 
                 var metricsListener = zkController.getZkClient().getMetrics();
 
-                observables.add(
-                    ctx.observableLongCounter(
-                        "solr_zk_ops",
-                        "Total number of ZooKeeper operations",
-                        measurement -> {
-                          measurement.record(
-                              metricsListener.getReads(),
-                              attributes.toBuilder().put(OPERATION_ATTR, "read").build());
-                          measurement.record(
-                              metricsListener.getDeletes(),
-                              attributes.toBuilder().put(OPERATION_ATTR, "delete").build());
-                          measurement.record(
-                              metricsListener.getWrites(),
-                              attributes.toBuilder().put(OPERATION_ATTR, "write").build());
-                          measurement.record(
-                              metricsListener.getMultiOps(),
-                              attributes.toBuilder().put(OPERATION_ATTR, "multi").build());
-                          measurement.record(
-                              metricsListener.getExistsChecks(),
-                              attributes.toBuilder().put(OPERATION_ATTR, "exists").build());
-                        }));
+                ctx.observableLongCounter(
+                    "solr_zk_ops",
+                    "Total number of ZooKeeper operations",
+                    measurement -> {
+                      measurement.record(
+                          metricsListener.getReads(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "read").build());
+                      measurement.record(
+                          metricsListener.getDeletes(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "delete").build());
+                      measurement.record(
+                          metricsListener.getWrites(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "write").build());
+                      measurement.record(
+                          metricsListener.getMultiOps(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "multi").build());
+                      measurement.record(
+                          metricsListener.getExistsChecks(),
+                          attributes.toBuilder().put(OPERATION_ATTR, "exists").build());
+                    });
 
-                observables.add(
-                    ctx.observableLongCounter(
-                        "solr_zk_read",
-                        "Total bytes read from ZooKeeper",
-                        measurement -> {
-                          measurement.record(metricsListener.getBytesRead(), attributes);
-                        },
-                        OtelUnit.BYTES));
+                ctx.observableLongCounter(
+                    "solr_zk_read",
+                    "Total bytes read from ZooKeeper",
+                    measurement -> {
+                      measurement.record(metricsListener.getBytesRead(), attributes);
+                    },
+                    OtelUnit.BYTES);
 
-                observables.add(
-                    ctx.observableLongCounter(
-                        "solr_zk_watches_fired",
-                        "Total number of ZooKeeper watches fired",
-                        measurement -> {
-                          measurement.record(metricsListener.getWatchesFired(), attributes);
-                        }));
+                ctx.observableLongCounter(
+                    "solr_zk_watches_fired",
+                    "Total number of ZooKeeper watches fired",
+                    measurement -> {
+                      measurement.record(metricsListener.getWatchesFired(), attributes);
+                    });
 
-                observables.add(
-                    ctx.observableLongCounter(
-                        "solr_zk_written",
-                        "Total bytes written to ZooKeeper",
-                        measurement -> {
-                          measurement.record(metricsListener.getBytesWritten(), attributes);
-                        },
-                        OtelUnit.BYTES));
+                ctx.observableLongCounter(
+                    "solr_zk_written",
+                    "Total bytes written to ZooKeeper",
+                    measurement -> {
+                      measurement.record(metricsListener.getBytesWritten(), attributes);
+                    },
+                    OtelUnit.BYTES);
 
-                observables.add(
-                    ctx.observableLongCounter(
-                        "solr_zk_cumulative_multi_ops_total",
-                        "Total cumulative multi-operations count",
-                        measurement -> {
-                          measurement.record(metricsListener.getCumulativeMultiOps(), attributes);
-                        }));
+                ctx.observableLongCounter(
+                    "solr_zk_cumulative_multi_ops_total",
+                    "Total cumulative multi-operations count",
+                    measurement -> {
+                      measurement.record(metricsListener.getCumulativeMultiOps(), attributes);
+                    });
 
-                observables.add(
-                    ctx.observableLongCounter(
-                        "solr_zk_child_fetches",
-                        "Total number of ZooKeeper child node fetches",
-                        measurement -> {
-                          measurement.record(metricsListener.getChildFetches(), attributes);
-                        }));
+                ctx.observableLongCounter(
+                    "solr_zk_child_fetches",
+                    "Total number of ZooKeeper child node fetches",
+                    measurement -> {
+                      measurement.record(metricsListener.getChildFetches(), attributes);
+                    });
 
-                observables.add(
-                    ctx.observableLongCounter(
-                        "solr_zk_cumulative_children_fetched",
-                        "Total cumulative children fetched count",
-                        measurement -> {
-                          measurement.record(
-                              metricsListener.getCumulativeChildrenFetched(), attributes);
-                        }));
-                toClose = Collections.unmodifiableList(observables);
+                ctx.observableLongCounter(
+                    "solr_zk_cumulative_children_fetched",
+                    "Total cumulative children fetched count",
+                    measurement -> {
+                      measurement.record(
+                          metricsListener.getCumulativeChildrenFetched(), attributes);
+                    });
               }
 
               @Override
@@ -427,7 +416,7 @@ public class ZkContainer {
           }
         }
       }
-      IOUtils.closeQuietly(toClose);
+      IOUtils.closeQuietly(metricProducer);
     }
   }
 

@@ -295,7 +295,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
               .getZkClient()
               .create(
                   ZkStateReader.CLUSTER_PROPS,
-                  Utils.toJSON(Collections.singletonMap(URL_SCHEME, HTTPS)),
+                  Utils.toJSON(Map.of(URL_SCHEME, HTTPS)),
                   CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props =
@@ -2440,7 +2440,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       int connectionTimeoutMillis,
       int socketTimeoutMillis) {
     RandomizingCloudSolrClientBuilder builder =
-        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+        new RandomizingCloudSolrClientBuilder(List.of(zkHost), Optional.empty());
     if (shardLeadersOnly) {
       builder.sendUpdatesOnlyToShardLeaders();
     } else {
@@ -3107,17 +3107,13 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected void setupRestTestHarnesses() {
     for (final JettySolrRunner jetty : jettys) {
-      RestTestHarness harness =
-          new RestTestHarness(
-              () -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME);
-      restTestHarnesses.add(harness);
+      restTestHarnesses.add(jetty.getRestClient(DEFAULT_TEST_COLLECTION_NAME));
     }
   }
 
   protected void closeRestTestHarnesses() throws IOException {
-    for (RestTestHarness h : restTestHarnesses) {
-      h.close();
-    }
+    // note: prior to Solr 10.1, there was actual closing to do.
+    restTestHarnesses.clear();
   }
 
   protected RestTestHarness randomRestTestHarness() {

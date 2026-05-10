@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * @since solr 1.3
@@ -161,7 +162,7 @@ public class SolrInputField implements Iterable<Object>, Serializable {
     } else if (value instanceof Collection) {
       return ((Collection<Object>) value).iterator();
     }
-    return Collections.singleton(value).iterator();
+    return Set.of(value).iterator();
   }
 
   @Override

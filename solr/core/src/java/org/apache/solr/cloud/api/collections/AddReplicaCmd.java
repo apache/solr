@@ -32,9 +32,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -175,7 +175,8 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       ModifiableSolrParams params =
           getReplicaParams(
               message, collectionName, coll, skipCreateReplicaInClusterState, createReplica);
-      shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
+      shardRequestTracker.sendShardRequest(
+          createReplica.node, createReplica.coreNodeName, params, shardHandler);
     }
 
     Runnable runnable =
@@ -286,7 +287,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getZkStateReader(),
                 ccc.getSolrCloudManager().getTimeSource(),
                 collectionName,
-                Collections.singleton(createReplica.coreName))
+                Set.of(createReplica.coreName))
             .get(createReplica.coreName)
             .getName());
 

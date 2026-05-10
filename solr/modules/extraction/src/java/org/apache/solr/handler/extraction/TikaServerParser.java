@@ -28,6 +28,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
+import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -139,8 +140,7 @@ public class TikaServerParser {
     }
 
     @Override
-    public void startElement(
-        String uri, String localName, String qName, org.xml.sax.Attributes attributes)
+    public void startElement(String uri, String localName, String qName, Attributes attributes)
         throws SAXException {
       String ln = localName != null && !localName.isEmpty() ? localName : qName;
       if ("head".equalsIgnoreCase(ln)) {
