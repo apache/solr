@@ -38,7 +38,6 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -135,7 +134,7 @@ public class StreamTool extends ToolBase {
         .addOption(DELIMITER_OPTION)
         .addOption(ARRAY_DELIMITER_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions());
+        .addOptionGroup(getConnectionOptions(true));
   }
 
   @Override
@@ -246,14 +245,8 @@ public class StreamTool extends ToolBase {
    *     locally.
    */
   private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
-    String zkHost = CLIUtils.getZkHost(cli);
-    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-    if (!solrConnection.isZookeeper()) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", solrConnection));
-    }
-    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
+    var solrConnection = CLIUtils.getSolrConnection(cli);
+    echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
     solrClientCache.setBasicAuthCredentials(
         cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     solrClientCache.getCloudSolrClient(solrConnection);

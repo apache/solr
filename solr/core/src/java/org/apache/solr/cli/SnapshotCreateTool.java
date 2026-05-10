@@ -59,7 +59,7 @@ public class SnapshotCreateTool extends ToolBase {
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(SNAPSHOT_NAME_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions());
+        .addOptionGroup(getConnectionOptions(true));
   }
 
   @Override

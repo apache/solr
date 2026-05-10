@@ -75,11 +75,18 @@ public abstract class ToolBase implements Tool {
    *
    * @return OptionGroup validates that only one option is supplied by the caller.
    */
-  public OptionGroup getConnectionOptions() {
+  public OptionGroup getConnectionOptions(boolean supportsSolrConnection) {
     OptionGroup optionGroup = new OptionGroup();
     optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
     optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    if (supportsSolrConnection) {
+      optionGroup.addOption(CommonCLIOptions.SOLR_CONNECTION_OPTION);
+    }
     return optionGroup;
+  }
+
+  public OptionGroup getConnectionOptions() {
+    return getConnectionOptions(false);
   }
 
   @Override

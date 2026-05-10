@@ -49,7 +49,8 @@ public class SolrClientCache implements Closeable {
   protected String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
   private final Map<String, SolrClient> httpSolrClients = new HashMap<>();
-  private final Map<CloudSolrClient.CloudSolrClientConnection, CloudSolrClient> cloudSolClients = new HashMap<>();
+  private final Map<CloudSolrClient.CloudSolrClientConnection, CloudSolrClient> cloudSolClients =
+      new HashMap<>();
   private final HttpSolrClientBase httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
@@ -168,7 +169,7 @@ public class SolrClientCache implements Closeable {
   @Override
   public synchronized void close() {
     if (isClosed.compareAndSet(false, true)) {
-      for (SolrClient solrClient: httpSolrClients.values()) {
+      for (SolrClient solrClient : httpSolrClients.values()) {
         IOUtils.closeQuietly(solrClient);
       }
       httpSolrClients.clear();

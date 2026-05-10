@@ -235,8 +235,8 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--name",
           "fakeCollection",
           "--verbose",
-          "--zk-host",
-          cluster.getZkClient().getZkServerAddress(),
+          "--solr-connection",
+          getSolrConnection().toString(),
           expression
         };
     assertEquals(1, CLITestHelper.runTool(args, StreamTool.class));
@@ -252,8 +252,10 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--execution",
           "local",
           "-v",
-          "-z",
-          cluster.getZkClient().getZkServerAddress(),
+          "-sc",
+          getSolrConnection().toString(),
+          "--credentials",
+          SecurityJson.USER_PASS,
           expression
         };
     assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
@@ -275,8 +277,10 @@ public class StreamToolTest extends SolrCloudTestCase {
       "--execution",
       "local",
       "--verbose",
-      "-zk-host",
-      cluster.getZkClient().getZkServerAddress(),
+      "--solr-connection",
+      getSolrConnection().toString(),
+      "--credentials",
+      SecurityJson.USER_PASS,
       expressionFile.toString()
     };
 
@@ -289,8 +293,10 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--execution",
           "local",
           "--verbose",
-          "--zk-host",
-          cluster.getZkClient().getZkServerAddress(),
+          "--solr-connection",
+          getSolrConnection().toString(),
+          "--credentials",
+          SecurityJson.USER_PASS,
           expression
         };
 
@@ -339,8 +345,8 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--name",
           collectionName,
           "--verbose",
-          "--zk-host",
-          cluster.getZkClient().getZkServerAddress(),
+          "--solr-connection",
+          getSolrConnection().toString(),
           "--credentials",
           SecurityJson.USER_PASS,
           expression

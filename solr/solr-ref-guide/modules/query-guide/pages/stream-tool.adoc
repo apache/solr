@@ -18,7 +18,7 @@
 
 The Stream tool allows you to run a xref:streaming-expressions.adoc[] in Solr and see the results from the command line.
 It is very similar to the xref:stream-screen.adoc[], but is part of the `bin/solr` CLI.
-Being a CLI, you can pipe content into it similar to other Unix style tools, as well as run actually RUN many kinds of expressions locally as well. 
+Being a CLI, you can pipe content into it similar to other Unix style tools, as well as run actually RUN many kinds of expressions locally as well.
 
 NOTE: The Stream Tool is classified as "experimental".
 It may change in backwards-incompatible ways as it evolves to cover additional functionality.
@@ -30,7 +30,7 @@ To run it, open a terminal and enter:
 $ bin/solr stream -c techproducts --header --fields price,name --delimiter=\| 'search(techproducts,q="iPod",fl="name,price")'
 ----
 
-This will run the provided streaming expression on the `techproducts` collection on your local Solr and produce:  
+This will run the provided streaming expression on the `techproducts` collection on your local Solr and produce:
 
 [,console]
 ----
@@ -110,8 +110,11 @@ List of options:
                                     defaults to: http://localhost:8983.
  -u,--credentials <credentials>     Credentials in the format username:password. Example: --credentials solr:SolrRocks
  -v,--verbose                       Enable verbose command output.
+ -q,--solr-connection <HOST>        Zookeeper or HTTP(S) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh;
+                                    otherwise, defaults to localhost:9983.
  -z,--zk-host <HOST>                Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;
                                     otherwise, defaults to localhost:9983.
+                                    Deprecated: use --solr-connection option
 ----
 
 == Examples Using bin/solr stream
@@ -121,7 +124,7 @@ This section presents several examples.
 
 === Executing Expression Locally
 
-Streaming Expressions by default are executed in the Solr cluster.  
+Streaming Expressions by default are executed in the Solr cluster.
 However there are use cases where you want to interact with data in your local environment, or even run a streaming expression independent of Solr.
 
 The Stream Tool allows you to specify `--execution local` to process the expression in the Solr CLI's JVM.

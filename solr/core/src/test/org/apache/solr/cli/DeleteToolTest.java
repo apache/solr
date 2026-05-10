@@ -66,6 +66,35 @@ public class DeleteToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testDeleteCollectionWithBasicAuthAndConnectionString() throws Exception {
+    String[] connStrings = {
+      getZookeeperSolrConnection().toString(), getHttpSolrConnection().toString()
+    };
+    for (String connectionString : connStrings) {
+      withBasicAuth(
+              CollectionAdminRequest.createCollection(
+                  "testDeleteCollectionWithBasicAuth", "conf", 1, 1))
+          .processAndWait(cluster.getSolrClient(), 10);
+      waitForState(
+          "Expected collection to be created with 1 shard and 1 replicas",
+          "testDeleteCollectionWithBasicAuth",
+          clusterShape(1, 1));
+
+      String[] args = {
+        "delete",
+        "-c",
+        "testDeleteCollectionWithBasicAuth",
+        "-sc",
+        connectionString,
+        "--credentials",
+        SecurityJson.USER_PASS,
+        "--verbose"
+      };
+      assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
+    }
+  }
+
+  @Test
   public void testFailsToDeleteProtectedCollection() throws Exception {
 
     withBasicAuth(

@@ -203,7 +203,13 @@ public class CreateTool extends ToolBase {
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     String zkHost = CLIUtils.getZkHost(cli);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
+    var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    if (!zkSolrConnection.isZookeeper()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+    }
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(zkSolrConnection, builder)) {
       createCollection(cloudSolrClient, cli);
     }
   }
