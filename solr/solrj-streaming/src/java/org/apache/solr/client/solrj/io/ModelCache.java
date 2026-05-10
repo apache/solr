@@ -35,9 +35,12 @@ public class ModelCache {
   private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private SolrClientCache solrClientCache;
 
-  public ModelCache(int size, String defaultZkHost, SolrClientCache solrClientCache) {
+  public ModelCache(
+      int size,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      SolrClientCache solrClientCache) {
     this.models = new LRU(size);
-    this.solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkHost);
+    this.solrConnection = solrConnection;
     this.solrClientCache = solrClientCache;
   }
 

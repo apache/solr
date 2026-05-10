@@ -49,7 +49,7 @@ public class SolrClientCache implements Closeable {
   protected String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
   private final Map<String, SolrClient> httpSolrClients = new HashMap<>();
-  private final Map<String, CloudSolrClient> cloudSolClients = new HashMap<>();
+  private final Map<CloudSolrClient.CloudSolrClientConnection, CloudSolrClient> cloudSolClients = new HashMap<>();
   private final HttpSolrClientBase httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
@@ -89,10 +89,8 @@ public class SolrClientCache implements Closeable {
   public synchronized CloudSolrClient getCloudSolrClient(
       CloudSolrClient.CloudSolrClientConnection solrConnection) {
     ensureOpen();
-    Objects.requireNonNull(solrConnection, "'solrConnection' cannot be null!");
-    String cacheKey = solrConnection.toString();
-    if (cloudSolClients.containsKey(cacheKey)) {
-      return cloudSolClients.get(cacheKey);
+    if (cloudSolClients.containsKey(solrConnection)) {
+      return cloudSolClients.get(solrConnection);
     }
     // Can only use ZK ACLs if there is a default ZK Host, and the given ZK host contains that
     // default.
@@ -106,7 +104,7 @@ public class SolrClientCache implements Closeable {
     }
 
     final var client = newCloudSolrClient(solrConnection, httpSolrClient, canUseACLs);
-    cloudSolClients.put(cacheKey, client);
+    cloudSolClients.put(solrConnection, client);
     return client;
   }
 
@@ -170,12 +168,12 @@ public class SolrClientCache implements Closeable {
   @Override
   public synchronized void close() {
     if (isClosed.compareAndSet(false, true)) {
-      for (Map.Entry<String, SolrClient> entry : httpSolrClients.entrySet()) {
-        IOUtils.closeQuietly(entry.getValue());
+      for (SolrClient solrClient: httpSolrClients.values()) {
+        IOUtils.closeQuietly(solrClient);
       }
       httpSolrClients.clear();
-      for (Map.Entry<String, CloudSolrClient> entry : cloudSolClients.entrySet()) {
-        IOUtils.closeQuietly(entry.getValue());
+      for (CloudSolrClient solrClient : cloudSolClients.values()) {
+        IOUtils.closeQuietly(solrClient);
       }
       cloudSolClients.clear();
     }

@@ -317,7 +317,7 @@ If neither `solrConnection`, `zkHost` nor `solrUrl` are specified, the local Zoo
 The connection string to be used to connect to ZooKeeper.
 `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified.
 If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used.
-This parameter are deprecated. Use `solrConnection` instead.
+This parameter is deprecated. Use `solrConnection` instead.
 
 `solrUrl`::
 +

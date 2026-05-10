@@ -121,7 +121,7 @@ public class StreamHandler extends RequestHandlerBase
               .computeIfAbsent(
                   cacheKey + "modelCache",
                   ModelCache.class,
-                  k -> new ModelCache(250, defaultZkhost, solrClientCache));
+                  k -> new ModelCache(250, solrConnection, solrClientCache));
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 

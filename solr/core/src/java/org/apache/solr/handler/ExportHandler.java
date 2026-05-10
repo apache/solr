@@ -108,7 +108,7 @@ public class ExportHandler extends SearchHandler {
       var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);
       streamFactory.withCollectionSolrConnection(defaultCollection, solrConnection);
       streamFactory.withDefaultSolrConnection(solrConnection);
-      modelCache = new ModelCache(250, defaultZkhost, solrClientCache);
+      modelCache = new ModelCache(250, solrConnection, solrClientCache);
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
     StreamHandler.addExpressiblePlugins(streamFactory, core);
