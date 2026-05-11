@@ -70,7 +70,7 @@ public class ZkContainer {
   // just use ZooKeeperServerEmbedded
   // directly!  Why?  Can we use ZooKeeperServerEmbedded in one node directly instead?
   private SolrZkServer zkServer;
-  private ZooKeeperServerEmbedded zkServerEmbedded;
+  private volatile ZooKeeperServerEmbedded zkServerEmbedded;
 
   private ExecutorService coreZkRegister =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
