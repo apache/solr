@@ -157,8 +157,18 @@ public class ZkContainer {
             myId = (i + 1);
           }
           final var hostComponents = host.split(":");
+          if (hostComponents.length < 2) {
+            throw new IllegalStateException(
+                "Invalid zkHost entry (expected 'host:port'): '" + host + "'");
+          }
           final var zkServer = hostComponents[0];
-          final var zkClientPort = Integer.valueOf(hostComponents[1]);
+          final int zkClientPort;
+          try {
+            zkClientPort = Integer.parseInt(hostComponents[1]);
+          } catch (NumberFormatException e) {
+            throw new IllegalStateException(
+                "Invalid port in zkHost entry '" + host + "': " + hostComponents[1], e);
+          }
           final var zkQuorumPort = zkClientPort + 1;
           final var zkLeaderPort = zkClientPort + 2;
           final String configEntry =
