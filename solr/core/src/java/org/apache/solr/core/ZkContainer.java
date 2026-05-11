@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
@@ -411,6 +412,24 @@ public class ZkContainer {
             try {
               zkServerEmbedded.close();
               log.info("Closed embedded ZooKeeper server in quorum mode");
+              // ZooKeeperServerEmbedded.close() is asynchronous: ZK's QuorumCnxManager
+              // WorkerSender/WorkerReceiver threads may still be running. Wait up to 5s.
+              long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+              while (System.nanoTime() < deadline) {
+                boolean quorumThreadsRunning =
+                    Thread.getAllStackTraces().keySet().stream()
+                        .anyMatch(
+                            t ->
+                                t.getName().startsWith("WorkerSender")
+                                    || t.getName().startsWith("WorkerReceiver"));
+                if (!quorumThreadsRunning) break;
+                try {
+                  Thread.sleep(100);
+                } catch (InterruptedException ie) {
+                  Thread.currentThread().interrupt();
+                  break;
+                }
+              }
             } catch (Exception e) {
               log.error("Error closing embedded ZooKeeper server", e);
             }

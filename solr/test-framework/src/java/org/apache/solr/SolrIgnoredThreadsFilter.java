@@ -88,7 +88,9 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    // ZooKeeper quorum threads that persist after embedded ZK shutdown
+    // ZK's QuorumCnxManager spawns WorkerSender/WorkerReceiver threads that may briefly
+    // outlive ZooKeeperServerEmbedded.close() (which is asynchronous). ZkContainer.close()
+    // waits up to 5s for them, but suppress any stragglers here as a safety net.
     if (threadName.startsWith("WorkerSender") || threadName.startsWith("WorkerReceiver")) {
       return true;
     }
