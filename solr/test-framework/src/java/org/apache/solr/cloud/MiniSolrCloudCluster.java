@@ -524,6 +524,8 @@ public class MiniSolrCloudCluster implements SolrBackend {
         attempts++;
         ServerSocket solrSocket = null;
         ServerSocket zkSocket = null;
+        ServerSocket zkQuorumSocket = null;
+        ServerSocket zkLeaderSocket = null;
 
         try {
           // Try to get a random available port for Solr
@@ -531,18 +533,22 @@ public class MiniSolrCloudCluster implements SolrBackend {
           int solrPort = solrSocket.getLocalPort();
           int zkPort = solrPort + 1000;
 
-          // Check if ZK port would exceed the valid port range (0-65535)
-          if (zkPort > 65535) {
+          // Check if ZK ports would exceed the valid port range (0-65535)
+          if (zkPort + 2 > 65535) {
             solrSocket.close();
             continue; // Skip this port and try again
           }
 
-          // Verify the corresponding ZK port is also available
+          // Verify the ZK client port and quorum/election ports (+1/+2) are all available
           zkSocket = new ServerSocket(zkPort);
+          zkQuorumSocket = new ServerSocket(zkPort + 1);
+          zkLeaderSocket = new ServerSocket(zkPort + 2);
 
-          // Both ports are available - keep the sockets and record the port
+          // All ports are available - keep the sockets and record the Solr port
           solrSockets.add(solrSocket);
           zkSockets.add(zkSocket);
+          zkSockets.add(zkQuorumSocket);
+          zkSockets.add(zkLeaderSocket);
           ports[pairsFound] = solrPort;
           pairsFound++;
 
@@ -552,17 +558,14 @@ public class MiniSolrCloudCluster implements SolrBackend {
           }
 
         } catch (IOException | IllegalArgumentException e) {
-          // ZK port was not available or invalid, close sockets and try again
-          if (solrSocket != null) {
-            try {
-              solrSocket.close();
-            } catch (IOException ignored) {
-            }
-          }
-          if (zkSocket != null) {
-            try {
-              zkSocket.close();
-            } catch (IOException ignored) {
+          // A port was not available or invalid, close sockets and try again
+          for (ServerSocket s :
+              new ServerSocket[] {solrSocket, zkSocket, zkQuorumSocket, zkLeaderSocket}) {
+            if (s != null) {
+              try {
+                s.close();
+              } catch (IOException ignored) {
+              }
             }
           }
         }
