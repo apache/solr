@@ -608,7 +608,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
   }
 
   private CloudSolrClient buildSolrClientForQuorum(String zkHost) {
-    return new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+    return new CloudLegacySolrClient.Builder(List.of(zkHost), Optional.empty())
         .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .build();
