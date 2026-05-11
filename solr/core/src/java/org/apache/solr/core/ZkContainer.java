@@ -421,7 +421,6 @@ public class ZkContainer {
           if (zkServerEmbedded != null) {
             try {
               zkServerEmbedded.close();
-              log.info("Closed embedded ZooKeeper server in quorum mode");
               // ZooKeeperServerEmbedded.close() is asynchronous: ZK's QuorumCnxManager
               // WorkerSender/WorkerReceiver threads may still be running. Wait up to 5s.
               long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
@@ -440,6 +439,7 @@ public class ZkContainer {
                   break;
                 }
               }
+              log.info("Closed embedded ZooKeeper server in quorum mode");
             } catch (Exception e) {
               log.error("Error closing embedded ZooKeeper server", e);
             }
