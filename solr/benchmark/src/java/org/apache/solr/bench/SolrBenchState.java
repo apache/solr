@@ -411,8 +411,7 @@ public class SolrBenchState {
           if (count == docCount) {
             scheduledExecutor.shutdown();
           } else {
-            double rate = count / ((System.nanoTime() - meterStartNanos) / 1e9);
-            log(count + " docs at " + rate + " doc/s");
+            logIndexingRate(count, meterStartNanos);
           }
         },
         10,
@@ -465,11 +464,7 @@ public class SolrBenchState {
         client.requestWithBaseUrl(nodes.get(0), updateRequest, collection);
         meterCount += batch.size();
         batch.clear();
-        log(
-            meterCount
-                + " docs at "
-                + (long) (meterCount / ((System.nanoTime() - meterStartNanos) / 1e9))
-                + " doc/s");
+        logIndexingRate(meterCount, meterStartNanos);
       }
     }
     if (!batch.isEmpty()) {
@@ -479,11 +474,7 @@ public class SolrBenchState {
       meterCount += batch.size();
       batch = null;
     }
-    log(
-        meterCount
-            + " docs at "
-            + (long) (meterCount / ((System.nanoTime() - meterStartNanos) / 1e9))
-            + " doc/s");
+    logIndexingRate(meterCount, meterStartNanos);
   }
 
   /**
@@ -597,5 +588,11 @@ public class SolrBenchState {
             + name
             + " CWD="
             + Path.of("").toAbsolutePath());
+  }
+
+  private static void logIndexingRate(long docCount, long startNanos) {
+    long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+    long rate = elapsedMs > 0 ? docCount * 1000L / elapsedMs : 0;
+    log(docCount + " docs at " + rate + " doc/s");
   }
 }

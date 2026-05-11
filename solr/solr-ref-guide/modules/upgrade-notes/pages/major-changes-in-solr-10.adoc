@@ -323,6 +323,10 @@ Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format n
 The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`.
 Update your dashboards to use `solr_core_indexsearcher_warmup_time` instead.
 
+==== Overseer Status Metrics Removed
+
+The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist.
+
 === Lucene Codec Change
 
 Solr 10.1 upgrades the underlying Lucene library from 10.3 to 10.4, which introduces a new index codec (`Lucene104`).
@@ -336,7 +340,7 @@ If you require the ability to roll back, back up your indexes before upgrading.
 
 Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
 Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
-Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.  
+Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
 However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
 
 === Docker
