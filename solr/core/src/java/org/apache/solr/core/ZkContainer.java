@@ -111,8 +111,14 @@ public class ZkContainer {
     if (runAsQuorum) {
       // ZooKeeperServerEmbedded being used under the covers.
       // The zookeeper_quorum node role is sufficient — no extra sysprop needed.
-      // Figure out where to put zoo-data
-      final var zkHomeDir = solrHome.resolve("zoo_home");
+      // Figure out where to put zoo-data. For the default port (8983) keep the legacy name
+      // "zoo_home" for backward compatibility. For any other port, append the ZK client port
+      // so that multiple nodes on the same machine (sharing the same solrHome) each get their
+      // own isolated ZK data directory (e.g. zoo_home-21000/, zoo_home-31000/, …).
+      final int zkPort = config.getSolrHostPort() + 1000;
+      final int solrPort = config.getSolrHostPort();
+      final var zkHomeDirName = solrPort == 8983 ? "zoo_home" : "zoo_home-" + zkPort;
+      final var zkHomeDir = solrHome.resolve(zkHomeDirName);
       final var zkDataDir = zkHomeDir.resolve("data");
 
       // Populate a zoo.cfg
@@ -125,8 +131,6 @@ public class ZkContainer {
               + "4lw.commands.whitelist=mntr,conf,ruok\n"
               + "admin.enableServer=false\n"
               + "clientPort=@@ZK_CLIENT_PORT@@\n";
-
-      final int zkPort = config.getSolrHostPort() + 1000;
       String zooCfgContents =
           zooCfgTemplate
               .replace("@@DATA_DIR@@", zkDataDir.toString())

@@ -593,12 +593,12 @@ NOTE: On a single machine, each node needs distinct ports. Because each ZK insta
 [source,bash]
 ----
 export LH="localhost"
-ZK="-z $LH:21000,$LH:31000,$LH:41000"
-ROLES="-Dsolr.node.roles=data:on,overseer:allowed,zookeeper_quorum:on"
+ZK_HOST="$LH:21000,$LH:31000,$LH:41000"
+ROLES="data:on,overseer:allowed,zookeeper_quorum:on"
 
-bin/solr start -p 20000 $ZK $ROLES
-bin/solr start -p 30000 $ZK $ROLES
-bin/solr start -p 40000 $ZK $ROLES
+bin/solr start -p 20000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES"
+bin/solr start -p 30000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES"
+bin/solr start -p 40000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES"
 ----
 
 === Known Limitations
