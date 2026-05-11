@@ -18,22 +18,23 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * This SolrClient delegates to a backing client with a specified collection.  Simple attempts to
- * refer to another collection will fail.  DISCLAIMER: this isn't a security mechanism.
+ * This SolrClient delegates to a backing client with a specified collection. Simple attempts to
+ * refer to another collection will fail. DISCLAIMER: this isn't a security mechanism.
  */
 public class CollectionScopedSolrClient extends SolrClient {
 
   private final SolrClient delegate;
 
   public CollectionScopedSolrClient(SolrClient delegate, String defaultCollection) {
-    this.delegate = delegate;
-    this.defaultCollection = defaultCollection;
+    this.delegate = Objects.requireNonNull(delegate);
+    this.defaultCollection = Objects.requireNonNull(defaultCollection);
   }
 
   @Override
@@ -46,6 +47,11 @@ public class CollectionScopedSolrClient extends SolrClient {
           "Restricted to default collection " + defaultCollection + " but was given " + collection);
     }
     return delegate.request(request, collection);
+  }
+
+  @Override
+  public String toString() {
+    return delegate + "/" + defaultCollection;
   }
 
   @Override
