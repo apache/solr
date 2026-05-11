@@ -220,8 +220,9 @@ public class SolrZkServer {
   }
 
   public void stop() {
-
-    zkThread.interrupt();
+    if (zkThread != null) {
+      zkThread.interrupt();
+    }
   }
 
   static void ensureZkMaxCnxnsConfigured() {
