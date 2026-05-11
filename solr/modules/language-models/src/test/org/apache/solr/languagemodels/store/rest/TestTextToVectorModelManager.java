@@ -27,7 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestModelManager extends TestLanguageModelBase {
+public class TestTextToVectorModelManager extends TestLanguageModelBase {
 
   @BeforeClass
   public static void init() throws Exception {
@@ -127,7 +127,7 @@ public class TestModelManager extends TestLanguageModelBase {
 
   @Test
   public void loadModel_cohere_shouldLoadModelConfig() throws Exception {
-    loadModel("cohere-model.json");
+    loadTextToVectorModel("cohere-model.json");
 
     final String modelName = "cohere-1";
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
@@ -151,7 +151,7 @@ public class TestModelManager extends TestLanguageModelBase {
 
   @Test
   public void loadModel_openAi_shouldLoadModelConfig() throws Exception {
-    loadModel("openai-model.json");
+    loadTextToVectorModel("openai-model.json");
 
     final String modelName = "openai-1";
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
@@ -173,7 +173,7 @@ public class TestModelManager extends TestLanguageModelBase {
 
   @Test
   public void loadModel_mistralAi_shouldLoadModelConfig() throws Exception {
-    loadModel("mistralai-model.json");
+    loadTextToVectorModel("mistralai-model.json");
 
     final String modelName = "mistralai-1";
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
@@ -196,7 +196,7 @@ public class TestModelManager extends TestLanguageModelBase {
 
   @Test
   public void loadModel_huggingface_shouldLoadModelConfig() throws Exception {
-    loadModel("huggingface-model.json");
+    loadTextToVectorModel("huggingface-model.json");
 
     final String modelName = "huggingface-1";
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
@@ -212,12 +212,12 @@ public class TestModelManager extends TestLanguageModelBase {
 
   @Test
   public void loadModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
-    loadModel("dummy-model-unsupported.json", "400");
+    loadTextToVectorModel("dummy-model-unsupported.json", "400");
   }
 
   @Test
   public void loadModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
-    loadModel("dummy-model-ambiguous.json");
+    loadTextToVectorModel("dummy-model-ambiguous.json");
 
     final String modelName = "dummy-1";
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");

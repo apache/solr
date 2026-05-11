@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.model;
+package org.apache.solr.languagemodels.model;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
@@ -22,9 +22,9 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 
 /**
  * A {@link ChatModel} that always throws a {@link RuntimeException}. Used to verify that {@link
- * org.apache.solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessor}
- * handles chat-model failures gracefully (logs the error and continues indexing without the
- * enriched field).
+ * org.apache.solr.languagemodels.update.processor.DocumentEnrichmentUpdateProcessor} handles
+ * chat-model failures gracefully (logs the error and continues indexing without the enriched
+ * field).
  */
 public class ExceptionThrowingChatModel implements ChatModel {
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.store.rest;
+package org.apache.solr.languagemodels.store.rest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -56,34 +56,49 @@ public class TestLargeLanguageModelManagerPersistence extends TestLanguageModelB
     loadLargeLanguageModel("openai-model.json");
 
     final String modelName = "openai-1";
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='gpt-5.4-nano'");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     // check persistence after reload
     restTestHarness.reload();
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='gpt-5.4-nano'");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     // check persistence after restart
     restartJetty();
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='gpt-5.4-nano'");
 
     // delete model and verify persistence of the empty state
     restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + modelName);

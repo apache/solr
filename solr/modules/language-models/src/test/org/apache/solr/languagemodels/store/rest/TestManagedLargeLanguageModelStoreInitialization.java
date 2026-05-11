@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.store.rest;
+package org.apache.solr.languagemodels.store.rest;
 
 import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.After;
 import org.junit.Test;
 
-public class TestManagedManagedLargeLanguageModelStoreInitialization extends TestLanguageModelBase {
+public class TestManagedLargeLanguageModelStoreInitialization extends TestLanguageModelBase {
 
   @After
   public void cleanUp() throws Exception {
@@ -28,8 +28,9 @@ public class TestManagedManagedLargeLanguageModelStoreInitialization extends Tes
   }
 
   @Test
-  public void managedLargeLanguageModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
-      throws Exception {
+  public void
+      managedLargeLanguageModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
+          throws Exception {
     setupTest("solrconfig-document-enrichment.xml", "schema-language-models.xml", false, false);
 
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/responseHeader/status==0");
@@ -37,7 +38,8 @@ public class TestManagedManagedLargeLanguageModelStoreInitialization extends Tes
   }
 
   @Test
-  public void managedLargeLanguageModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
+  public void managedLargeLanguageModelStore_whenNoComponents_shouldNotBeInitialized()
+      throws Exception {
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(

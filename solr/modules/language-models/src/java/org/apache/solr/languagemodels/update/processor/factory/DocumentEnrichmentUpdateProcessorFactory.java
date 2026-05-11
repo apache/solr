@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.languagemodels.documentenrichment.update.processor;
+package org.apache.solr.languagemodels.update.processor.factory;
 
 import dev.langchain4j.model.chat.request.ResponseFormat;
 import dev.langchain4j.model.chat.request.ResponseFormatType;
@@ -42,8 +42,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrLargeLanguageModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.model.SolrLargeLanguageModel;
+import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.update.processor.DocumentEnrichmentUpdateProcessor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResource;
@@ -67,7 +68,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * Generate the content of {@code outputField} based on other fields specified as {@code inputField}s.
+ * Generate the content of {@code outputField} based on other fields specified as {@code
+ * inputField}s.
  *
  * <p>The following validation rules are applied:
  *
@@ -202,7 +204,8 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     ResponseFormat responseFormat = getJsonSchema(outputFieldSchema);
     boolean multiValued = outputFieldSchema.multiValued();
 
-    ManagedLargeLanguageModelStore store = ManagedLargeLanguageModelStore.getManagedModelStore(req.getCore());
+    ManagedLargeLanguageModelStore store =
+        ManagedLargeLanguageModelStore.getManagedModelStore(req.getCore());
     SolrLargeLanguageModel fieldGenerationModel = store.getModel(modelName);
     if (fieldGenerationModel == null) {
       throw new SolrException(
@@ -214,7 +217,14 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     }
 
     return new DocumentEnrichmentUpdateProcessor(
-        inputFields, outputField, promptText, fieldGenerationModel, multiValued, responseFormat, req, next);
+        inputFields,
+        outputField,
+        promptText,
+        fieldGenerationModel,
+        multiValued,
+        responseFormat,
+        req,
+        next);
   }
 
   /**
@@ -232,7 +242,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
         schemaField.multiValued()
             ? JsonArraySchema.builder().items(valueElement).build()
             : valueElement;
-    //estrai costanti output e value
+    // estrai costanti output e value
     return ResponseFormat.builder()
         .type(ResponseFormatType.JSON)
         .jsonSchema(
@@ -248,18 +258,19 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   }
 
   private static JsonSchemaElement toJsonSchemaElement(FieldType fieldType) {
-    SolrException unsupportedFieldTypeException = new SolrException(
-        SolrException.ErrorCode.SERVER_ERROR,
-        "field type is not supported by Document Enrichment: "
-            + fieldType.getClass().getSimpleName());
+    SolrException unsupportedFieldTypeException =
+        new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "field type is not supported by Document Enrichment: "
+                + fieldType.getClass().getSimpleName());
 
     return switch (fieldType) {
-      // first check unsupported types and throw SolrException
+        // first check unsupported types and throw SolrException
       case DenseVectorField f -> throw unsupportedFieldTypeException;
       case UUIDField f -> throw unsupportedFieldTypeException;
       case NestPathField f -> throw unsupportedFieldTypeException;
 
-      // build JsonSchemaElement for supported types
+        // build JsonSchemaElement for supported types
       case StrField f -> new JsonStringSchema();
       case TextField f -> new JsonStringSchema();
       case DatePointField f -> new JsonStringSchema();
@@ -272,7 +283,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
 
       case BoolField f -> new JsonBooleanSchema();
 
-      // fall-back to SolrException
+        // fall-back to SolrException
       default -> throw unsupportedFieldTypeException;
     };
   }

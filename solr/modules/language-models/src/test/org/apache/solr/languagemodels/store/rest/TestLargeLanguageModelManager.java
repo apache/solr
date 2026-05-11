@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.store.rest;
+package org.apache.solr.languagemodels.store.rest;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory;
+import org.apache.solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;
@@ -49,7 +49,9 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
 
     final String resourceId = "/schema/mstore1";
     registry.registerManagedResource(
-        resourceId, ManagedLargeLanguageModelStore.class, new DocumentEnrichmentUpdateProcessorFactory());
+        resourceId,
+        ManagedLargeLanguageModelStore.class,
+        new DocumentEnrichmentUpdateProcessorFactory());
 
     final NamedList<String> initArgs = new NamedList<>();
 
@@ -101,7 +103,8 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
             + "logRequests:true,"
             + "logResponses:false"
             + "}}]";
-    assertJPut(ManagedLargeLanguageModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+    assertJPut(
+        ManagedLargeLanguageModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
 
     final String qryResult = JQ(ManagedLargeLanguageModelStore.REST_END_POINT);
     assertTrue(
@@ -123,15 +126,21 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
     loadLargeLanguageModel("openai-model.json");
 
     final String modelName = "openai-1";
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gpt-5.4-nano'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='gpt-5.4-nano'");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + modelName);
@@ -142,17 +151,21 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
     loadLargeLanguageModel("mistralai-model.json");
 
     final String modelName = "mistralai-1";
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.mistral.ai/v1'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/apiKey=='apiKey-mistralAI'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='mistral-small-latest'");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + modelName);
@@ -163,17 +176,21 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
     loadLargeLanguageModel("anthropic-model.json");
 
     final String modelName = "anthropic-1";
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.anthropic.com/v1'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-anthropic'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/apiKey=='apiKey-anthropic'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='claude-3-5-haiku-latest'");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + modelName);
@@ -184,14 +201,17 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
     loadLargeLanguageModel("ollama-model.json");
 
     final String modelName = "ollama-1";
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedLargeLanguageModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='http://localhost:11434'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/modelName=='llama3.2'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/modelName=='llama3.2'");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + modelName);
   }
@@ -201,13 +221,18 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
     loadLargeLanguageModel("gemini-model.json");
 
     final String modelName = "gemini-1";
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-gemini'");
     assertJQ(
-        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/modelName=='gemini-2.0-flash'");
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/apiKey=='apiKey-gemini'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='gemini-2.0-flash'");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
     assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
     restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + modelName);
@@ -218,7 +243,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
     loadLargeLanguageModel(
         "dummy-model-unsupported.json",
         "400",
-        "/error/msg=='Model loading failed for org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel'");
+        "/error/msg=='org.apache.solr.languagemodels.LanguageModelException: Model loading failed for org.apache.solr.languagemodels.model.DummyChatModel'");
   }
 
   @Test
@@ -226,16 +251,19 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
     loadLargeLanguageModel(
         "not-a-chat-model.json",
         "400",
-        "/error/msg=='Model loading failed for com.example.NonExistentChatModel'");
+        "/error/msg=='org.apache.solr.languagemodels.LanguageModelException: Model loading failed for com.example.NonExistentChatModel'");
   }
 
   @Test
-  public void loadFieldGenerationModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
+  public void loadFieldGenerationModel_dummyAmbiguousParam_shouldDefaultToString()
+      throws Exception {
     loadLargeLanguageModel("dummy-model-ambiguous.json");
 
     final String modelName = "dummy-1";
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/ambiguousTypeParam==10");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedLargeLanguageModelStore.REST_END_POINT, "/models/[0]/params/ambiguousTypeParam==10");
 
     restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + modelName);
   }

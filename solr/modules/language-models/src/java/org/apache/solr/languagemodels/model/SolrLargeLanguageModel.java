@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.model;
+package org.apache.solr.languagemodels.model;
 
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
@@ -30,26 +30,24 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.languagemodels.documentenrichment.store.LargeLanguageModelException;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.LanguageModelException;
+import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to some content given a prompt and a
- * {@link ResponseFormat}. It's meant to be used as a managed resource with the {@link ManagedLargeLanguageModelStore}
+ * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to some content given a prompt
+ * and a {@link ResponseFormat}. It's meant to be used as a managed resource with the {@link
+ * ManagedLargeLanguageModelStore}
  */
-public class SolrLargeLanguageModel implements Accountable {
+public class SolrLargeLanguageModel extends SolrLanguageModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(SolrLargeLanguageModel.class);
-  private static final String TIMEOUT_PARAM = "timeout";
-  private static final String MAX_RETRIES_PARAM = "maxRetries";
+
   private static final String THINKING_BUDGET_TOKENS = "thinkingBudgetTokens";
   private static final String RANDOM_SEED = "randomSeed";
 
-  private final String name;
-  private final Map<String, Object> params;
   private final ChatModel chatModel;
   private final int hashCode;
 
@@ -58,7 +56,7 @@ public class SolrLargeLanguageModel implements Accountable {
       String className,
       String name,
       Map<String, Object> params)
-      throws LargeLanguageModelException {
+      throws LanguageModelException {
     try {
       /*
        * The idea here is to build a {@link dev.langchain4j.model.chat.ChatModel} using inversion
@@ -126,29 +124,28 @@ public class SolrLargeLanguageModel implements Accountable {
         }
       }
 
-      // Always enforce strict schema adherence where supported. For Anthropic and Google it's enabled by default
-      if (!"dev.langchain4j.model.anthropic.AnthropicChatModel".equals(className) &&
-          !"dev.langchain4j.model.googleai.GoogleAiGeminiChatModel".equals(className)) {
+      // Always enforce strict schema adherence where supported. For Anthropic and Google it's
+      // enabled by default
+      if (!"dev.langchain4j.model.anthropic.AnthropicChatModel".equals(className)
+          && !"dev.langchain4j.model.googleai.GoogleAiGeminiChatModel".equals(className)) {
         try {
-          builder
-              .getClass()
-              .getMethod("strictJsonSchema", Boolean.class)
-              .invoke(builder, true);
+          builder.getClass().getMethod("strictJsonSchema", Boolean.class).invoke(builder, true);
         } catch (NoSuchMethodException ignored) {
-          log.debug("Model {} does not have strictJsonSchema param, structured output is not enforced", className);
+          log.debug(
+              "Model {} does not have strictJsonSchema param, structured output is not enforced",
+              className);
         }
       }
       chatModel = (ChatModel) builder.getClass().getMethod("build").invoke(builder);
       return new SolrLargeLanguageModel(name, chatModel, params);
     } catch (final Exception e) {
-      throw new LargeLanguageModelException("Model loading failed for " + className, e);
+      throw new LanguageModelException("Model loading failed for " + className, e);
     }
   }
 
   public SolrLargeLanguageModel(String name, ChatModel chatModel, Map<String, Object> params) {
-    this.name = name;
+    super(name, params);
     this.chatModel = chatModel;
-    this.params = params;
     this.hashCode = calculateHashCode();
   }
 
@@ -202,15 +199,8 @@ public class SolrLargeLanguageModel implements Accountable {
     return Objects.equals(chatModel, other.chatModel) && Objects.equals(name, other.name);
   }
 
-  public String getName() {
-    return name;
-  }
-
-  public String getChatModelClassName() {
+  @Override
+  public String getModelClassName() {
     return chatModel.getClass().getName();
-  }
-
-  public Map<String, Object> getParams() {
-    return params;
   }
 }

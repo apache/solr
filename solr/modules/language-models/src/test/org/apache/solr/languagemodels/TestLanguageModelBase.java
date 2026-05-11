@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
 import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
@@ -41,7 +41,8 @@ public class TestLanguageModelBase extends RestTestBase {
 
   public static final String TEXT_TO_VECTOR_MODEL_FILE_NAME =
       "_schema_text-to-vector-model-store.json";
-  public static final String LARGE_LANGUAGE_MODEL_FILE_NAME = "_schema_large-language-model-store.json";
+  public static final String LARGE_LANGUAGE_MODEL_FILE_NAME =
+      "_schema_large-language-model-store.json";
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
@@ -83,7 +84,9 @@ public class TestLanguageModelBase extends RestTestBase {
     if (Files.exists(largeLanguageModelStore)) {
 
       if (log.isInfoEnabled()) {
-        log.info("remove large language model store config file in {}", largeLanguageModelStore.toAbsolutePath());
+        log.info(
+            "remove large language model store config file in {}",
+            largeLanguageModelStore.toAbsolutePath());
       }
 
       Files.delete(largeLanguageModelStore);
@@ -101,7 +104,7 @@ public class TestLanguageModelBase extends RestTestBase {
     }
   }
 
-  public static void loadModel(String fileName, String status) throws Exception {
+  public static void loadTextToVectorModel(String fileName, String status) throws Exception {
     final URL url =
         TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
@@ -112,7 +115,7 @@ public class TestLanguageModelBase extends RestTestBase {
         "/responseHeader/status==" + status);
   }
 
-  public static void loadModel(String fileName) throws Exception {
+  public static void loadTextToVectorModel(String fileName) throws Exception {
     final URL url =
         TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
@@ -122,23 +125,30 @@ public class TestLanguageModelBase extends RestTestBase {
   }
 
   public static void loadLargeLanguageModel(String fileName, String status) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/chatModelExamples/" + fileName);
+    final URL url =
+        TestLanguageModelBase.class.getResource("/largeLanguageModelExamples/" + fileName);
     final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
-    assertJPut(ManagedLargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==" + status);
+    assertJPut(
+        ManagedLargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==" + status);
   }
 
   public static void loadLargeLanguageModel(String fileName, String status, String message)
       throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/chatModelExamples/" + fileName);
+    final URL url =
+        TestLanguageModelBase.class.getResource("/largeLanguageModelExamples/" + fileName);
     final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-        ManagedLargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==" + status, message);
+        ManagedLargeLanguageModelStore.REST_END_POINT,
+        model,
+        "/responseHeader/status==" + status,
+        message);
   }
 
   public static void loadLargeLanguageModel(String fileName) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/chatModelExamples/" + fileName);
+    final URL url =
+        TestLanguageModelBase.class.getResource("/largeLanguageModelExamples/" + fileName);
     final String model = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(ManagedLargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==0");

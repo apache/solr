@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.model;
+package org.apache.solr.languagemodels.model;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -27,8 +27,7 @@ import dev.langchain4j.model.chat.response.ChatResponse;
  * the input, allowing tests to assert exact enriched-field values without real API calls.
  *
  * <p>The builder also exposes {@code unsupported} and {@code ambiguous} setter methods to exercise
- * the reflection-based parameter handling in {@link
- * SolrLargeLanguageModel#getInstance}.
+ * the reflection-based parameter handling in {@link SolrLargeLanguageModel#getInstance}.
  */
 public class DummyChatModel implements ChatModel {
 

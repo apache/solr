@@ -50,7 +50,7 @@
  </requestHandler>
 
  <updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
@@ -60,7 +60,7 @@
  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="documentEnrichmentArrInputField">
-    <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
       <arr name="inputField">
         <str>string_field</str>
         <str>body_field</str>
@@ -73,7 +73,7 @@
   </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="failingDocumentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
@@ -84,7 +84,7 @@
 
  <updateRequestProcessorChain name="documentEnrichmentForPartialUpdates">
   <processor class="solr.DistributedUpdateProcessorFactory"/>
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>
@@ -94,7 +94,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultiField">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="inputField">body_field</str>
    <str name="outputField">enriched_field</str>
@@ -105,7 +105,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedString">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field_multi</str>
    <str name="prompt">Extract tags from: {string_field}</str>
@@ -115,7 +115,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="failingDocumentEnrichmentMultiField">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="inputField">body_field</str>
    <str name="outputField">enriched_field</str>
@@ -126,7 +126,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentSingleLong">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_long</str>
    <str name="prompt">Extract a number from: {string_field}</str>
@@ -136,7 +136,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentSingleInt">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_int</str>
    <str name="prompt">Extract a number from: {string_field}</str>
@@ -146,7 +146,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentSingleFloat">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_float</str>
    <str name="prompt">Extract a number from: {string_field}</str>
@@ -156,7 +156,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentSingleDouble">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_double</str>
    <str name="prompt">Extract a number from: {string_field}</str>
@@ -166,7 +166,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentSingleBoolean">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_boolean</str>
    <str name="prompt">Is this true or false: {string_field}</str>
@@ -176,7 +176,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentSingleDate">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_date</str>
    <str name="prompt">Extract a date from: {string_field}</str>
@@ -186,7 +186,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedLong">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_long_multi</str>
    <str name="prompt">Extract numbers from: {string_field}</str>
@@ -196,7 +196,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedInt">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_int_multi</str>
    <str name="prompt">Extract numbers from: {string_field}</str>
@@ -206,7 +206,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedFloat">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_float_multi</str>
    <str name="prompt">Extract numbers from: {string_field}</str>
@@ -216,7 +216,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedDouble">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_double_multi</str>
    <str name="prompt">Extract numbers from: {string_field}</str>
@@ -226,7 +226,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedBoolean">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_boolean_multi</str>
    <str name="prompt">Extract boolean values from: {string_field}</str>
@@ -236,7 +236,7 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="documentEnrichmentMultivaluedDate">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">output_date_multi</str>
    <str name="prompt">Extract dates from: {string_field}</str>
@@ -246,7 +246,7 @@
  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="documentEnrichmentMultivaluedInput">
-    <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+    <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
       <str name="inputField">tags_field</str>
       <str name="outputField">enriched_field</str>
       <str name="prompt">Classify these tags: {tags_field}</str>

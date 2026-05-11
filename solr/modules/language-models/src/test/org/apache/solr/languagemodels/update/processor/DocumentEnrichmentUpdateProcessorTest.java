@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.update.processor;
+package org.apache.solr.languagemodels.update.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,8 +28,8 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.model.DummyChatModel;
+import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,7 +64,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
 
   private void loadDummyLargeLanguageModel(String modelId, String response) throws Exception {
     Map<String, Object> model = new LinkedHashMap<>();
-    model.put("class", "org.apache.solr.languagemodels.documentenrichment.model.DummyChatModel");
+    model.put("class", "org.apache.solr.languagemodels.model.DummyChatModel");
     model.put("name", modelId);
     model.put("params", Map.of("response", response));
     assertJPut(
@@ -549,7 +549,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
           "/response/docs/[1]/id=='98'",
           "/response/docs/[1]/" + typedCase.field() + "==" + typedCase.expectedValue());
 
-      restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
+      restTestHarness.delete(
+          ManagedLargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }
@@ -631,7 +632,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
       }
       assertJQ("/query" + query.toQueryString(), assertions.toArray(new String[0]));
 
-      restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
+      restTestHarness.delete(
+          ManagedLargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }
@@ -706,7 +708,8 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   }
 
   @Test
-  public void processAdd_intOutputField_decimalResponse_shouldLogAndIndexWithNoEnrichedField() throws Exception {
+  public void processAdd_intOutputField_decimalResponse_shouldLogAndIndexWithNoEnrichedField()
+      throws Exception {
     loadDummyLargeLanguageModel("dummy-int", "{\"value\": 3.7}");
 
     addWithChain(sdoc("id", "99", "string_field", "some content"), "documentEnrichmentSingleInt");

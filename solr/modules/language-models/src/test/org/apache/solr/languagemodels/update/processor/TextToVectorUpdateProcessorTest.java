@@ -51,7 +51,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @Test
   public void processAdd_inputField_shouldVectoriseInputField() throws Exception {
-    loadModel("dummy-model.json"); // preparation
+    loadTextToVectorModel("dummy-model.json"); // preparation
 
     addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
     addWithChain(
@@ -102,7 +102,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @Test
   public void processAdd_emptyInputField_shouldLogAndIndexWithNoVector() throws Exception {
-    loadModel("dummy-model.json"); // preparation
+    loadTextToVectorModel("dummy-model.json"); // preparation
     addWithChain(sdoc("id", "99", "_text_", ""), "textToVector");
     addWithChain(sdoc("id", "98", "_text_", "Vegeta is the saiyan prince."), "textToVector");
     assertU(commit());
@@ -122,7 +122,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @Test
   public void processAdd_nullInputField_shouldLogAndIndexWithNoVector() throws Exception {
-    loadModel("dummy-model.json"); // preparation
+    loadTextToVectorModel("dummy-model.json"); // preparation
     addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
     assertU(adoc("id", "98"));
     assertU(commit());
@@ -142,7 +142,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @Test
   public void processAdd_failingVectorisation_shouldLogAndIndexWithNoVector() throws Exception {
-    loadModel("exception-throwing-model.json"); // preparation
+    loadTextToVectorModel("exception-throwing-model.json"); // preparation
     addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "failingTextToVector");
     addWithChain(
         sdoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."),
@@ -170,7 +170,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
     // (i.e., the UpdateRequestProcessor is placed before the TextToVector processor),
     // the system correctly retrieves the stored value of the input field (string_field)
     // and generates the vector for the document.
-    loadModel("dummy-model.json");
+    loadTextToVectorModel("dummy-model.json");
     assertU(adoc("id", "99", "string_field", "Vegeta is the saiyan prince."));
     assertU(adoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."));
     assertU(commit());
@@ -201,7 +201,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
     // is
     // modified using an atomic update, the vector is recomputed and replaces the previous one. It
     // ensures that the system does not append or merge vector values.
-    loadModel("dummy-model.json");
+    loadTextToVectorModel("dummy-model.json");
     addWithChain(
         sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."),
         "textToVectorStoredInputField");

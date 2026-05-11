@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.languagemodels.documentenrichment.update.processor;
+package org.apache.solr.languagemodels.update.processor.factory;
 
+import dev.langchain4j.model.chat.request.ResponseFormatType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,11 +25,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.documentenrichment.model.SolrLargeLanguageModel;
-import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.model.SolrLargeLanguageModel;
+import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import dev.langchain4j.model.chat.request.ResponseFormatType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -329,10 +329,10 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
   }
 
   /* getJsonSchema tests for unsupported field types from the Solr documentation:
-  * - BinaryField: not supported
-  * - UUIDField, NestPathField, DenseVectorField: explicitly removed support for these fields since the Java classes
-  *   extend some supported field types
-  *  */
+   * - BinaryField: not supported
+   * - UUIDField, NestPathField, DenseVectorField: explicitly removed support for these fields since the Java classes
+   *   extend some supported field types
+   *  */
 
   @Test
   public void getJsonSchema_unsupportedFieldTypes_shouldThrowUnsupportedFieldTypeException() {

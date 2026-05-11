@@ -50,7 +50,7 @@
  </requestHandler>
 
  <updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">enriched_field</str>
    <str name="prompt">Summarize this content: {string_field}</str>

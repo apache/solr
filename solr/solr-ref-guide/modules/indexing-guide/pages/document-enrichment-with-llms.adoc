@@ -81,7 +81,7 @@ Multiple `inputField` are supported and can be defined by using one of the follo
 [source,xml]
 ----
 <updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">title</str>
    <str name="inputField">body</str>
    <str name="outputField">summary</str>
@@ -141,7 +141,7 @@ These parameters can be defined in one of the following ways:
 [source,xml]
 ----
 <updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
    <str name="prompt">Summarize this content: {string_field}</str>
@@ -151,13 +151,13 @@ These parameters can be defined in one of the following ways:
  </updateRequestProcessorChain>
 ----
 
-* Update processor definition with the parameter `promptFile` parameter: in this case, the file `prompt.txt` must be
-uploaded to Solr inside the config folder of the collection (e.g., similarly to `solrconfig.xml`, `synonyms.txt`, etc.)
+* Update processor definition with the `promptFile` parameter: in this case, the file `prompt.txt` must be uploaded to
+Solr inside the config folder of the collection (e.g., similarly to `solrconfig.xml`, `synonyms.txt`, etc.)
 +
 [source,xml]
 ----
 <updateRequestProcessorChain name="documentEnrichment">
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
    <str name="promptFile">prompt.txt</str>
@@ -371,20 +371,20 @@ To upload the model in a `/path/myModel.json` file, please run:
 
 [source,bash]
 ----
-curl -XPUT 'http://localhost:8983/solr/YOUR_COLLECTION/schema/field-generation-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+curl -XPUT 'http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
 ----
 
 To delete the `currentModel` model:
 
 [source,bash]
 ----
-curl -XDELETE 'http://localhost:8983/solr/YOUR_COLLECTION/schema/field-generation-model-store/currentModel'
+curl -XDELETE 'http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store/currentModel'
 ----
 
 To view all models:
 
 [source,text]
-http://localhost:8983/solr/YOUR_COLLECTION/schema/field-generation-model-store
+http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store
 
 
 .Example: /path/myOpenAIModel.json
@@ -438,7 +438,7 @@ excluding the `DocumentEnrichmentUpdateProcessor` (let's call it 'no-enrichment'
   <processor class="solr.processorN">
    ...
   </processor>
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
    <str name="prompt">Summarize this content: {string_field}</str>
@@ -482,7 +482,7 @@ You still define two chains, but this time the 'enrichment' one only includes th
 ----
 <updateRequestProcessorChain name="enrichment">
   <processor class="solr.DistributedUpdateProcessorFactory"/>
-  <processor class="solr.languagemodels.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
    <str name="prompt">Summarize this content: {string_field}</str>
