@@ -182,6 +182,28 @@ Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
     # Default behavior
     python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
 
+### changelogRelease.py
+
+Handles changelog git operations for each release candidate and the final
+post-vote forward-porting to other branches. Integrated into the Release Wizard
+but can also be run standalone. See `dev-docs/changelog.adoc` section 5.4 for details.
+
+    usage: changelogRelease.py [-h] {prepare,forward-port} ...
+
+`prepare` — run before building each RC (handles both RC1 and RC2+).
+By default leaves changes uncommitted for review; add `--commit` to commit automatically:
+
+    python3 dev-tools/scripts/changelogRelease.py prepare \
+        --version 10.1.0 --release-branch branch_10_1 [--commit] [--dry-run]
+
+`forward-port` — run once after a successful vote to set the release date and
+cherry-pick changelog commits to the stable branch and main.
+By default does not push; add `--push` to push all branches when satisfied:
+
+    python3 dev-tools/scripts/changelogRelease.py forward-port \
+        --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x \
+        [--push] [--release-date YYYY-MM-DD] [--git-remote REMOTE] [--dry-run]
+
 ### validateChangelogs.py
 
 Validates changelog folder structure and feature distribution across development branches (main, stable, release). See dev-docs for more.
