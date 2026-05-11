@@ -585,21 +585,21 @@ Port scheme used by each node:
 
 === Starting a 3-Node Embedded ZK Ensemble
 
-The ZK connection string must list all nodes, and every node must use `zookeeper_quorum:on`.
-Run each command in a separate terminal (or on separate machines, replacing `localhost` with actual hostnames):
+The ZK connection string must list all nodes' ZK client ports (`solr_port + 1000`), and every node must use `zookeeper_quorum:on`.
+All three nodes must be started before the quorum can elect a leader and become operational.
+
+NOTE: On a single machine, each node needs distinct ports. Because each ZK instance also binds to `zk_client_port+1` (quorum peer) and `zk_client_port+2` (leader election), Solr ports must be spaced *at least 1001 apart* to avoid collisions.
 
 [source,bash]
 ----
 export LH="localhost"
-ZK="-z $LH:9983,$LH:9984,$LH:9985"
+ZK="-z $LH:21000,$LH:31000,$LH:41000"
 ROLES="-Dsolr.node.roles=data:on,overseer:allowed,zookeeper_quorum:on"
 
-bin/solr start -p 8983 $ZK $ROLES
-bin/solr start -p 8984 $ZK $ROLES
-bin/solr start -p 8985 $ZK $ROLES
+bin/solr start -p 20000 $ZK $ROLES
+bin/solr start -p 30000 $ZK $ROLES
+bin/solr start -p 40000 $ZK $ROLES
 ----
-
-All three nodes must be started before the quorum can elect a leader and become operational.
 
 === Known Limitations
 
