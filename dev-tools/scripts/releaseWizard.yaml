@@ -772,7 +772,7 @@ groups:
 
       Can be run standalone:
 
-        python3 dev-tools/scripts/changelogRelease.py prepare \
+        python3 dev-tools/scripts/logchange.py prepare \
           --version {{ release_version }} \
           --release-branch {{ release_branch }}
     depends: dependency_updates_changes
@@ -782,7 +782,7 @@ groups:
       confirm_each_command: false
       commands:
       - !Command
-        cmd: python3 -u dev-tools/scripts/changelogRelease.py prepare --version {{ release_version }} --release-branch {{ release_branch }} --gradle-cmd {{ gradle_cmd }} --commit
+        cmd: python3 -u dev-tools/scripts/logchange.py prepare --version {{ release_version }} --release-branch {{ release_branch }} --gradle-cmd {{ gradle_cmd }} --commit
         comment: Move unreleased entries to version folder, regenerate CHANGELOG.md, and commit
         logfile: changelog-update-rc.log
         tee: true
@@ -1129,7 +1129,7 @@ groups:
 
       Can be run standalone:
 
-        python3 dev-tools/scripts/changelogRelease.py forward-port \
+        python3 dev-tools/scripts/logchange.py forward-port \
           --version {{ release_version }} \
           --release-branch {{ release_branch }} \
           --stable-branch {{ stable_branch }}
@@ -1139,7 +1139,7 @@ groups:
       confirm_each_command: false
       commands:
       - !Command
-        cmd: python3 -u dev-tools/scripts/changelogRelease.py forward-port --version {{ release_version }} --release-branch {{ release_branch }} --stable-branch {{ stable_branch }} --gradle-cmd {{ gradle_cmd }} --push
+        cmd: python3 -u dev-tools/scripts/logchange.py forward-port --version {{ release_version }} --release-branch {{ release_branch }} --stable-branch {{ stable_branch }} --gradle-cmd {{ gradle_cmd }} --push
         comment: Set release date, regenerate CHANGELOG.md, cherry-pick and push to all branches
         logfile: forward-port-changelog.log
         tee: true

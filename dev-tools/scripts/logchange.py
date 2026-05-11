@@ -50,17 +50,17 @@ forward-port
 Usage examples
 --------------
 RC1 / RC2 - review changes before committing:
-  python3 dev-tools/scripts/changelogRelease.py prepare --version 10.1.0 --release-branch branch_10_1
+  python3 dev-tools/scripts/logchange.py prepare --version 10.1.0 --release-branch branch_10_1
   # inspect changelog/v10.1.0/ and CHANGELOG.md, then:
-  python3 dev-tools/scripts/changelogRelease.py prepare --version 10.1.0 --release-branch branch_10_1 --commit
+  python3 dev-tools/scripts/logchange.py prepare --version 10.1.0 --release-branch branch_10_1 --commit
 
 Post-vote - cherry-pick then push when ready:
-  python3 dev-tools/scripts/changelogRelease.py forward-port --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x
+  python3 dev-tools/scripts/logchange.py forward-port --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x
   # inspect the cherry-picks, then:
-  python3 dev-tools/scripts/changelogRelease.py forward-port --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x --push
+  python3 dev-tools/scripts/logchange.py forward-port --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x --push
 
 Dry-run (prints every action, touches nothing):
-  python3 dev-tools/scripts/changelogRelease.py prepare --version 10.1.0 --release-branch branch_10_1 --dry-run
+  python3 dev-tools/scripts/logchange.py prepare --version 10.1.0 --release-branch branch_10_1 --dry-run
 """
 
 import argparse
