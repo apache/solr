@@ -407,7 +407,8 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
 
     // Set system properties for embedded ZK quorum mode
-    System.setProperty("solr.zookeeper.server.enabled", "true");
+    // Note: solr.zookeeper.server.enabled is NOT needed here — the zookeeper_quorum node role alone
+    // is sufficient to trigger embedded ZK startup in quorum mode.
     System.setProperty("solr.security.manager.enabled", "false");
     System.setProperty("solr.node.roles", "data:on,overseer:allowed,zookeeper_quorum:on");
     System.setProperty("solr.test.sys.prop1", "propone");
