@@ -465,7 +465,23 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
 
     log.info("All {} nodes started, waiting for quorum formation...", numServers);
-    Thread.sleep(10000); // Wait for ZK quorum to fully form
+    TimeOut zkTimeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!zkTimeout.hasTimedOut()) {
+      try (SolrZkClient zkProbe =
+          new SolrZkClient.Builder()
+              .withUrl(this.zkHost)
+              .withTimeout(3000, TimeUnit.MILLISECONDS)
+              .build()) {
+        if (zkProbe.isConnected()) {
+          break;
+        }
+      } catch (Exception ignored) {
+      }
+      Thread.sleep(500);
+    }
+    if (zkTimeout.hasTimedOut()) {
+      throw new TimeoutException("ZK quorum did not form within 30 seconds on " + this.zkHost);
+    }
 
     // Initialize ZK paths and security (if provided)
     try (SolrZkClient zkClient =
