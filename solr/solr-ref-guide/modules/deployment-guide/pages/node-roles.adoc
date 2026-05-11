@@ -137,6 +137,10 @@ curl http://localhost:8983/api/cluster/node-roles/supported
       "modes":["disallowed",
         "allowed",
         "preferred"]
+    },
+    "zookeeper_quorum":{
+      "modes":["off",
+        "on"]
     }
   }
 }
