@@ -20,10 +20,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
 import io.opentelemetry.api.common.Attributes;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -177,10 +176,11 @@ public class ZkContainer {
 
       try {
         Files.createDirectories(zkHomeDir);
-        Files.writeString(zkHomeDir.resolve("zoo.cfg"), zooCfgContents);
         Files.createDirectories(zkDataDir);
         Files.writeString(zkDataDir.resolve("myid"), String.valueOf(myId));
-        startZooKeeperServerEmbedded(zkPort, zkHomeDir.toString());
+        Properties zkProps = new Properties();
+        zkProps.load(new StringReader(zooCfgContents));
+        startZooKeeperServerEmbedded(zkPort, zkHomeDir, zkProps);
       } catch (Exception e) {
         throw new ZooKeeperException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -333,15 +333,10 @@ public class ZkContainer {
     }
   }
 
-  private void startZooKeeperServerEmbedded(int port, String zkHomeDir) throws Exception {
-    Properties p = new Properties();
-    try (FileReader fr = new FileReader(zkHomeDir + "/zoo.cfg", StandardCharsets.UTF_8)) {
-      p.load(fr);
-    }
-    p.setProperty("clientPort", String.valueOf(port));
-
+  private void startZooKeeperServerEmbedded(int port, Path zkHomeDir, Properties p)
+      throws Exception {
     zkServerEmbedded =
-        ZooKeeperServerEmbedded.builder().baseDir(Path.of(zkHomeDir)).configuration(p).build();
+        ZooKeeperServerEmbedded.builder().baseDir(zkHomeDir).configuration(p).build();
     zkServerEmbedded.start();
     log.info("Started embedded ZooKeeper server in quorum mode on port {}", port);
   }
