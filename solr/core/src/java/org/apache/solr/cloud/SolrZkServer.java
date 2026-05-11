@@ -266,7 +266,10 @@ class SolrZkServerProps extends QuorumPeerConfig {
   // server.1=localhost:2223:2224
   public static void injectServers(Properties props, String zkHost) {
 
-    // if clientPort not already set, use zkRun
+    // TODO: This block is dead code — it searches for ':' in an empty string literal instead of
+    // the original `zkRun` variable (which was removed in a prior refactor). The condition
+    // `portIdx > 0` can never be true. In practice clientPort is always set before this method
+    // is called (see SolrZkServer constructor), so this block has no effect. Should be cleaned up.
     if (props.getProperty("clientPort") == null) {
       // int portIdx = zkRun.lastIndexOf(':');
       int portIdx = "".lastIndexOf(':');
