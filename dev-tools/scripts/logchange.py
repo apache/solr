@@ -279,11 +279,15 @@ def cmd_forward_port(args, git_root):
         git(["commit", "-m", msg], cwd=git_root, dry_run=dry_run)
 
     # Step 4: find commits on release_branch not yet on stable_branch that
-    #         touch changelog/ or CHANGELOG.md
+    #         touch changelog/ or CHANGELOG.md.  --cherry-pick with the
+    #         symmetric-difference range (three dots) omits commits whose patch
+    #         is already present on the target, making forward-port idempotent
+    #         when re-run after an initial no-push review run.
     print(f"\n[4] Finding changelog commits on {release_branch} not yet on {stable_branch}")
     result = subprocess.run(
         ["git", "log", "--oneline", "--reverse",
-         f"{stable_branch}..{release_branch}",
+         "--cherry-pick", "--right-only",
+         f"{stable_branch}...{release_branch}",
          "--", "changelog/", "CHANGELOG.md"],
         cwd=git_root, capture_output=True, text=True, check=True,
     )
