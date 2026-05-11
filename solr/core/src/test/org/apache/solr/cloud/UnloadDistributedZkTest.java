@@ -30,7 +30,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -247,21 +247,21 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     Random random = random();
     if (random.nextBoolean()) {
-      try (SolrClient collectionClient =
-          getHttpSolrClient(leader.getBaseUrl(), leader.getCoreName())) {
-        // lets try and use the solrj client to index and retrieve a couple
-        // documents
-        SolrInputDocument doc1 =
-            getDoc(id, 6, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
-        SolrInputDocument doc2 =
-            getDoc(id, 7, i1, -600, tlong, 600, t1, "humpty dumpy3 sat on a walls");
-        SolrInputDocument doc3 =
-            getDoc(id, 8, i1, -600, tlong, 600, t1, "humpty dumpy2 sat on a walled");
-        collectionClient.add(doc1);
-        collectionClient.add(doc2);
-        collectionClient.add(doc3);
-        collectionClient.commit();
-      }
+      SolrClient collectionClient =
+          new CollectionScopedSolrClient(getReplicaNodeClient(leader), leader.getCoreName());
+
+      // lets try and use the solrj client to index and retrieve a couple
+      // documents
+      SolrInputDocument doc1 =
+          getDoc(id, 6, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall");
+      SolrInputDocument doc2 =
+          getDoc(id, 7, i1, -600, tlong, 600, t1, "humpty dumpy3 sat on a walls");
+      SolrInputDocument doc3 =
+          getDoc(id, 8, i1, -600, tlong, 600, t1, "humpty dumpy2 sat on a walled");
+      collectionClient.add(doc1);
+      collectionClient.add(doc2);
+      collectionClient.add(doc3);
+      collectionClient.commit();
     }
 
     assertTrue(

@@ -44,7 +44,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -695,10 +695,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     // try add commitWithin
     long before = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-    for (SolrClient client : clients) {
+    for (var client : clients) {
       assertEquals(
-          "unexpected pre-commitWithin document count on node: "
-              + ((HttpApacheSolrClient) client).getBaseURL(),
+          "unexpected pre-commitWithin document count on node: " + client.getBaseURL(),
           before,
           client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
@@ -1040,7 +1039,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
-    try (final SolrClient httpSolrClient = (HttpApacheSolrClient) jetty.newClient(15000, 60000)) {
+    try (final var httpSolrClient = jetty.newClient(15000, 60000)) {
       ThreadPoolExecutor executor = null;
       try {
         executor =
@@ -1149,7 +1148,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
-      final String baseUrl = ((HttpApacheSolrClient) clients.get(clientIndex)).getBaseURL();
+      final String baseUrl = clients.get(clientIndex).getBaseURL();
 
       try (SolrClient aClient = createNewSolrClient("", baseUrl)) {
         res.setResponse(aClient.request(request));
@@ -1259,7 +1258,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testNumberOfCommitsWithCommitAfterAdd() throws SolrServerException, IOException {
     log.info("### STARTING testNumberOfCommitsWithCommitAfterAdd");
-    long startCommits = getNumCommits((HttpApacheSolrClient) clients.get(0));
+    long startCommits = getNumCommits(clients.getFirst());
 
     NamedList<Object> result =
         clients
@@ -1270,18 +1269,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
                     .setCommitWithin(900000)
                     .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
 
-    long endCommits = getNumCommits((HttpApacheSolrClient) clients.get(0));
+    long endCommits = getNumCommits(clients.getFirst());
     assertEquals(startCommits + 1L, endCommits);
   }
 
-  private Long getNumCommits(HttpApacheSolrClient sourceClient)
-      throws SolrServerException, IOException {
-    String collection = sourceClient.getDefaultCollection();
-    try (SolrClient client =
-        new HttpApacheSolrClient.Builder(sourceClient.getBaseURL())
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
-            .build()) {
+  private Long getNumCommits(HttpSolrClient client) throws SolrServerException, IOException {
+    String collection = client.getDefaultCollection();
+    {
       var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
 
       NamedList<Object> resp = client.request(req);
@@ -1380,11 +1374,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             .getLeader("shard1");
 
     // now test that unloading a core gets us a new leader
-    try (SolrClient unloadClient =
-        new HttpApacheSolrClient.Builder(jettys.get(0).getBaseUrl().toString())
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrClient unloadClient = jettys.getFirst().newClient(15000, 60000)) {
       Unload unloadCmd = new Unload(true);
       unloadCmd.setCoreName(leader.getCoreName());
 
@@ -1432,8 +1422,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testSearchByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testSearchByCollectionName");
-    SolrClient client = clients.get(0);
-    final String baseUrl = ((HttpApacheSolrClient) client).getBaseURL();
+    final String baseUrl = clients.getFirst().getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1446,8 +1435,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testUpdateByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testUpdateByCollectionName");
-    SolrClient client = clients.get(0);
-    final String baseUrl = ((HttpApacheSolrClient) client).getBaseURL();
+    final String baseUrl = clients.getFirst().getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1677,27 +1665,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
 
     SolrClient client = getHttpSolrClient(baseUrl, collection);
-
-    return client;
-  }
-
-  /**
-   * @param collection the name of a collection or core to set as the "default" on the created
-   *     client.
-   * @param baseUrl the "base" URL of a Solr node. Should <em>not</em> contain a collection or core
-   *     name.
-   * @param connectionTimeoutMillis the HTTP connection timeout in milliseconds
-   * @param socketTimeoutMillis the HTTP socket-read timeout in milliseconds
-   */
-  protected SolrClient createNewSolrClient(
-      String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
-
-    SolrClient client =
-        new HttpApacheSolrClient.Builder(baseUrl)
-            .withDefaultCollection(collection)
-            .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
-            .build();
 
     return client;
   }

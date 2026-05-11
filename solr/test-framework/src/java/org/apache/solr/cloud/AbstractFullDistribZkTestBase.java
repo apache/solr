@@ -57,8 +57,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -160,7 +160,8 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected volatile CloudSolrClient controlClientCloud; // cloud version of the control client
   protected volatile CloudSolrClient cloudClient;
-  protected final List<SolrClient> coreClients = Collections.synchronizedList(new ArrayList<>());
+  protected final List<HttpSolrClient> coreClients =
+      Collections.synchronizedList(new ArrayList<>());
 
   protected final List<CloudJettyRunner> cloudJettys =
       Collections.synchronizedList(new ArrayList<>());
@@ -209,7 +210,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   }
 
   public static class CloudSolrServerClient {
-    SolrClient solrClient;
+    HttpSolrClient solrClient;
     String nodeName;
     int port;
 
@@ -388,7 +389,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     }
 
     controlClient =
-        new HttpApacheSolrClient.Builder(controlJetty.getBaseUrl().toString())
+        HttpSolrClient.builder(controlJetty.getBaseUrl().toString())
             .withDefaultCollection("control_collection")
             .build();
     if (sliceCount <= 0) {
@@ -442,7 +443,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
-    List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
+    List<HttpSolrClient> clients = Collections.synchronizedList(new ArrayList<>());
     List<CollectionAdminRequest<CollectionAdminResponse>> createReplicaRequests =
         Collections.synchronizedList(new ArrayList<>());
     List<CollectionAdminRequest<CollectionAdminResponse>> createPullReplicaRequests =
@@ -526,7 +527,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
                           .setType(Replica.Type.TLOG));
 
                   coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
-                  SolrClient client = createNewSolrClient(j.getLocalPort());
+                  var client = createNewSolrClient(j.getLocalPort());
                   clients.add(client);
 
                 } catch (Exception e) {
@@ -565,8 +566,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
                           .setNode(j.getNodeName())
                           .setType(Replica.Type.NRT));
                   coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
-                  SolrClient client = createNewSolrClient(j.getLocalPort());
-                  clients.add(client);
+                  clients.add(createNewSolrClient(j.getLocalPort()));
                 } catch (Exception e) {
                   log.error("error creating jetty", e);
                   throw new RuntimeException(e);
@@ -601,8 +601,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
                         .setNode(j.getNodeName())
                         .setType(Replica.Type.PULL));
                 coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
-                SolrClient client = createNewSolrClient(j.getLocalPort());
-                clients.add(client);
+                clients.add(createNewSolrClient(j.getLocalPort()));
               } catch (Exception e) {
                 log.error("error creating jetty", e);
                 throw new RuntimeException(e);
@@ -932,13 +931,13 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     return relativizedCurDir.resolve(solrHomeRelativeToRoot).toAbsolutePath();
   }
 
-  protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrClient> clients)
+  protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<HttpSolrClient> clients)
       throws Exception {
     updateMappingsFromZk(jettys, clients, false);
   }
 
   protected void updateMappingsFromZk(
-      List<JettySolrRunner> jettys, List<SolrClient> clients, boolean allowOverSharding)
+      List<JettySolrRunner> jettys, List<HttpSolrClient> clients, boolean allowOverSharding)
       throws Exception {
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
@@ -949,13 +948,13 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     DocCollection coll = clusterState.getCollection(DEFAULT_COLLECTION);
 
     List<CloudSolrServerClient> theClients = new ArrayList<>();
-    for (SolrClient client : clients) {
+    for (var client : clients) {
       // find info for this client in zk
       nextClient:
       // we find out state by simply matching ports...
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
-          int port = new URI(((HttpApacheSolrClient) client).getBaseURL()).getPort();
+          int port = new URI(client.getBaseURL()).getPort();
 
           if (replica.getBaseUrl().contains(":" + port)) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
@@ -2037,8 +2036,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       for (Map.Entry<String, Slice> slice : slices.entrySet()) {
         Map<String, Replica> theShards = slice.getValue().getReplicasMap();
         for (Map.Entry<String, Replica> shard : theShards.entrySet()) {
-          String shardName =
-              new URI(((HttpApacheSolrClient) client.solrClient).getBaseURL()).getPort() + "_solr_";
+          String shardName = new URI(client.solrClient.getBaseURL()).getPort() + "_solr_";
           if (verbose && shard.getKey().endsWith(shardName)) {
             System.err.println("shard:" + slice.getKey());
             System.err.println(shard.getValue());
@@ -2456,16 +2454,16 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   }
 
   @Override
-  protected SolrClient createNewSolrClient(int port) {
+  protected HttpSolrClient createNewSolrClient(int port) {
     return createNewSolrClient(DEFAULT_COLLECTION, port);
   }
 
-  protected SolrClient createNewSolrClient(String coreName, int port) {
+  protected HttpSolrClient createNewSolrClient(String coreName, int port) {
     String baseUrl = buildUrl(port);
-    return new HttpApacheSolrClient.Builder(baseUrl)
+    return HttpSolrClient.builder(baseUrl)
         .withDefaultCollection(coreName)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+        .withIdleTimeout(60000, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -2992,7 +2990,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected long getIndexVersion(Replica replica) throws IOException {
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(replica.getBaseUrl())
+        HttpSolrClient.builder(replica.getBaseUrl())
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -3042,7 +3040,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(replica.getBaseUrl())
+        HttpSolrClient.builder(replica.getBaseUrl())
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();

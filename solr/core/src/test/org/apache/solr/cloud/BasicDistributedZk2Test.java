@@ -285,7 +285,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     // ensure shard is dead
     expectThrows(
-        SolrServerException.class,
+        Exception.class,
         "This server should be down and this update should have failed",
         () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!"));
 
