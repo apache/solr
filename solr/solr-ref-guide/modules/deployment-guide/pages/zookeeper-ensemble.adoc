@@ -546,6 +546,68 @@ set SOLR_OPTS=%SOLR_OPTS% -Djute.maxbuffer=0x200000
 ====
 ======
 
+[[embedded-zookeeper-ensemble]]
+== Embedded ZooKeeper Ensemble (Experimental)
+
+WARNING: This feature is *experimental / alpha* and is not suitable for production use.
+The configuration interface may change without notice in future Solr releases.
+
+Normally, Solr's embedded ZooKeeper runs in "standalone" mode and cannot tolerate node failures.
+Starting in Solr 10.1, it is possible to run Solr nodes where each node's embedded ZooKeeper participates in a multi-node quorum (ensemble).
+This allows a self-contained SolrCloud cluster without a separate ZooKeeper deployment — useful for development, testing, or small low-stakes clusters.
+
+=== How It Works
+
+Each Solr node that has the `zookeeper_quorum` xref:node-roles.adoc[node role] set to `on` will start an embedded `ZooKeeperServerEmbedded` instance on startup.
+Solr identifies which host in the ZK connection string it corresponds to (by matching host+port) and assigns it a ZooKeeper `myid`.
+
+Port scheme used by each node:
+
+|===
+|Port |Formula |Example (Solr on 8983)
+
+|Solr HTTP
+|`solr_port`
+|8983
+
+|ZK client
+|`solr_port + 1000`
+|9983
+
+|ZK quorum peer
+|`zk_client_port + 1`
+|9984
+
+|ZK leader election
+|`zk_client_port + 2`
+|9985
+|===
+
+=== Starting a 3-Node Embedded ZK Ensemble
+
+The ZK connection string must list all nodes, and every node must use `zookeeper_quorum:on`.
+Run each command in a separate terminal (or on separate machines, replacing `localhost` with actual hostnames):
+
+[source,bash]
+----
+export LH="localhost"
+ZK="-z $LH:9983,$LH:9984,$LH:9985"
+ROLES="-Dsolr.node.roles=data:on,overseer:allowed,zookeeper_quorum:on"
+
+bin/solr start -p 8983 $ZK $ROLES
+bin/solr start -p 8984 $ZK $ROLES
+bin/solr start -p 8985 $ZK $ROLES
+----
+
+All three nodes must be started before the quorum can elect a leader and become operational.
+
+=== Known Limitations
+
+* Does not support ZooKeeper's dynamic-ensemble reconfiguration — all nodes must be listed in the static ZK connection string at startup.
+* Quorum loss and recovery (majority of nodes down simultaneously) is not yet fully reliable.
+* The hostname in the ZK connection string must exactly match Solr's configured host (`solr.host` / `-Dhost`). Using `localhost` on some nodes and `127.0.0.1` on others will not work.
+* Runs best with the Java security manager disabled (`solr.security.manager.enabled=false`).
+
 == Securing the ZooKeeper Connection
 
 You may also want to secure the communication between ZooKeeper and Solr.

@@ -36,6 +36,12 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.1
 
+=== Embedded ZooKeeper Ensemble (Experimental)
+
+A new `zookeeper_quorum` xref:deployment-guide:node-roles.adoc[node role] has been added (experimental/alpha).
+When enabled, each participating Solr node starts an embedded ZooKeeper that joins a multi-node quorum, allowing a self-contained SolrCloud cluster without a separate ZooKeeper deployment.
+See xref:deployment-guide:zookeeper-ensemble.adoc#embedded-zookeeper-ensemble[Embedded ZooKeeper Ensemble] for details.
+
 For SSL (https), it's no longer necessary to set the "urlScheme" cluster property since the `SOLR_SSL_ENABLED` env var (or `solr.ssl.enabled` sys-prop) suffices.
 These are now honored by CloudSolrClient, as well as scheme detection from the connection string / hosts.
 The "urlScheme" cluster property and httpShardHandlerFactory configuration is likely to be deprecated; feedback welcome.
