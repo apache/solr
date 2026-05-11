@@ -224,7 +224,7 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
    * <p>This test creates its own private cluster to avoid interfering with other tests. <b>Hard to
    * make this test pass</b>
    */
-  @AwaitsFix(bugUrl = "https://example.com/foo")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18094")
   @Test
   public void testQuorumLossAndRecovery() throws Exception {
     final String collectionName = "quorum_loss";
