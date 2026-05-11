@@ -18,49 +18,7 @@
 """
 Changelog release helper for Apache Solr release managers.
 
-Handles the changelog git operations for each release candidate and the final forward-porting of
-changelog entries to other branches after a successful vote.
-
-Subcommands
------------
-prepare
-    Prepare the changelog for a release candidate.  Handles both RC1 (first time, version folder
-    does not yet exist) and RC2+ (version folder already exists, only new unreleased entries are added).
-
-    RC1 path  - runs ``gradlew logchangeRelease --releaseDate none`` which moves every file from
-                ``changelog/unreleased/`` to the new ``changelog/v<version>/`` folder without writing
-                a release date.
-    RC2+ path - copies only the files present in ``changelog/unreleased/`` but *not* yet in
-                ``changelog/v<version>/`` to the version folder, then deletes them from unreleased.
-                Uses plain file operations so that logchangeRelease (which hard-fails when the version
-                folder already exists) is never invoked again.
-
-    In both cases ``gradlew logchangeGenerate`` is run afterwards to refresh ``CHANGELOG.md`` and the
-    empty ``[unreleased]`` block is stripped.  By default the result is left uncommitted so the RM can
-    review it first.  Pass ``--commit`` to stage and commit automatically.
-
-forward-port
-    Run after a successful vote.  Writes the actual release date to
-    ``changelog/v<version>/release-date.txt``, regenerates ``CHANGELOG.md`` (now with the correct
-    date), commits the result to ``--release-branch``, then cherry-picks *all* changelog-touching
-    commits that are on ``--release-branch`` but not yet on ``--stable-branch`` to both
-    ``--stable-branch`` and ``main``.  By default nothing is pushed; pass ``--push`` to push all three
-    branches once you are satisfied.
-
-Usage examples
---------------
-RC1 / RC2 - review changes before committing:
-  python3 dev-tools/scripts/logchange.py prepare --version 10.1.0 --release-branch branch_10_1
-  # inspect changelog/v10.1.0/ and CHANGELOG.md, then:
-  python3 dev-tools/scripts/logchange.py prepare --version 10.1.0 --release-branch branch_10_1 --commit
-
-Post-vote - cherry-pick then push when ready:
-  python3 dev-tools/scripts/logchange.py forward-port --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x
-  # inspect the cherry-picks, then:
-  python3 dev-tools/scripts/logchange.py forward-port --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x --push
-
-Dry-run (prints every action, touches nothing):
-  python3 dev-tools/scripts/logchange.py prepare --version 10.1.0 --release-branch branch_10_1 --dry-run
+Normally invoked by the Release Wizard; see dev-docs/changelog.adoc for details.
 """
 
 import argparse
@@ -386,6 +344,7 @@ def build_parser():
     fmt = lambda prog: argparse.RawDescriptionHelpFormatter(prog, width=120)
     parser = argparse.ArgumentParser(
         description=__doc__,
+        epilog="For options on each subcommand run: logchange.py <subcommand> --help",
         formatter_class=fmt,
     )
     sub = parser.add_subparsers(dest="subcommand", required=True)
@@ -405,6 +364,10 @@ def build_parser():
     # prepare
     p = sub.add_parser("prepare", parents=[common],
                        help="Prepare changelog for an RC (RC1 or RC2+)",
+                       description="Prepare the changelog for a release candidate.\n"
+                                   "RC1: runs 'gradlew logchangeRelease' to move all unreleased entries to the version folder.\n"
+                                   "RC2+: copies only new unreleased entries into the existing version folder.\n"
+                                   "In both cases CHANGELOG.md is regenerated. By default changes are left uncommitted for review.",
                        formatter_class=fmt)
     p.add_argument("--commit", action="store_true",
                    help="Stage and commit the result (default: leave uncommitted for review)")
@@ -413,6 +376,10 @@ def build_parser():
     # forward-port
     fp = sub.add_parser("forward-port", parents=[common],
                         help="Set release date and forward-port changelog post-vote",
+                        description="Run once after a successful vote.\n"
+                                    "Writes the release date to the version folder and regenerates CHANGELOG.md.\n"
+                                    "Then cherry-picks all changelog commits from the release branch to the stable branch and main.\n"
+                                    "By default nothing is pushed; review first and pass --push when satisfied.",
                         formatter_class=fmt)
     fp.add_argument("--stable-branch", required=True,
                     help="Stable branch, e.g. branch_10x")

@@ -233,47 +233,9 @@ Example report output (Json or Markdown):
 
 === 5.4 Release candidate changelog script
 
-`dev-tools/scripts/logchange.py` handles changelog git operations for
-each RC and the final post-vote forward-porting.  It is integrated into the
-Release Wizard but can also be run standalone.
-
-`prepare` — run before building each RC:
-
-[source,bash]
-----
-# Inspect the result first (no commit)
-python3 dev-tools/scripts/logchange.py prepare \
-    --version 10.1.0 --release-branch branch_10_1
-# Then commit when satisfied
-python3 dev-tools/scripts/logchange.py prepare \
-    --version 10.1.0 --release-branch branch_10_1 --commit
-----
-
-Automatically detects RC1 vs RC2+: on RC1 it calls `logchangeRelease
---releaseDate none`; on RC2+ it copies only the new `changelog/unreleased/`
-files into the existing version folder.  Either way it regenerates
-`CHANGELOG.md` without a release date.  By default the result is left
-uncommitted for review; pass `--commit` to stage and commit automatically.
-Cherry-picking to stable and `main` is deferred to post-vote.
-
-`forward-port` — run once after a successful vote:
-
-[source,bash]
-----
-# Cherry-pick to stable and main, then review before pushing
-python3 dev-tools/scripts/logchange.py forward-port \
-    --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x
-# Push when satisfied
-python3 dev-tools/scripts/logchange.py forward-port \
-    --version 10.1.0 --release-branch branch_10_1 --stable-branch branch_10x --push
-----
-
-Writes the release date to the version folder, regenerates `CHANGELOG.md` with
-that date, commits to the release branch, and cherry-picks all pending changelog
-commits to the stable branch and `main`.  By default nothing is pushed; pass
-`--push` when satisfied.  Use `--release-date YYYY-MM-DD` to override the date
-(default: today) and `--git-remote` to override the remote (default: `origin`).
-Both subcommands accept `--dry-run` to preview all actions without modifying anything.
+`dev-tools/scripts/logchange.py` handles changelog git operations for each RC
+and the final post-vote forward-porting.  It is integrated into the Release
+Wizard but can also be run standalone.  Run with `--help` for usage.
 
 == 6. Further Reading
 
