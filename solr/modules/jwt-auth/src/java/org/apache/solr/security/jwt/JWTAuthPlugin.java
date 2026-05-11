@@ -171,7 +171,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     }
 
     blockUnknown =
-        Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
+        Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, true)));
     requireIssuer =
         Boolean.parseBoolean(
             String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_ISSUER, "true")));

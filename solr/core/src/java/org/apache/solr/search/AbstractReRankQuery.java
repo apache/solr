@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -57,6 +58,26 @@ public abstract class AbstractReRankQuery extends RankQuery {
     this.mainQuery = mainQuery;
     this.reRankDocs = reRankDocs;
     this.reRankQueryRescorer = reRankQueryRescorer;
+  }
+
+  @VisibleForTesting
+  int getReRankDocs() {
+    return reRankDocs;
+  }
+
+  @VisibleForTesting
+  Rescorer getRescorer() {
+    return reRankQueryRescorer;
+  }
+
+  @VisibleForTesting
+  ReRankOperator getReRankOperator() {
+    return reRankOperator;
+  }
+
+  @VisibleForTesting
+  ReRankScaler getReRankScaler() {
+    return reRankScaler;
   }
 
   @Override

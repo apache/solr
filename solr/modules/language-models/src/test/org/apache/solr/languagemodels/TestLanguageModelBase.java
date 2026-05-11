@@ -27,7 +27,7 @@ import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.languagemodels.documentenrichment.store.rest.ManagedLargeLanguageModelStore;
-import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +39,13 @@ public class TestLanguageModelBase extends RestTestBase {
   protected static Path tmpSolrHome;
   protected static Path tmpConfDir;
 
-  public static final String EMBEDDING_MODEL_FILE_NAME = "_schema_text-to-vector-model-store.json";
+  public static final String TEXT_TO_VECTOR_MODEL_FILE_NAME =
+      "_schema_text-to-vector-model-store.json";
   public static final String LARGE_LANGUAGE_MODEL_FILE_NAME = "_schema_large-language-model-store.json";
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
-  protected static Path embeddingModelStoreFile = null;
+  protected static Path textToVectorModelStoreFile = null;
   protected static Path largeLanguageModelStoreFile = null;
 
   protected static String IDField = "id";
@@ -64,25 +65,27 @@ public class TestLanguageModelBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
-    final Path embeddingModelStore = tmpConfDir.resolve(EMBEDDING_MODEL_FILE_NAME);
     final Path largeLanguageModelStore = tmpConfDir.resolve(LARGE_LANGUAGE_MODEL_FILE_NAME);
+    final Path textToVectorStore = tmpConfDir.resolve(TEXT_TO_VECTOR_MODEL_FILE_NAME);
 
     if (isPersistent) {
-      embeddingModelStoreFile = embeddingModelStore;
       largeLanguageModelStoreFile = largeLanguageModelStore;
+      textToVectorModelStoreFile = textToVectorStore;
     }
 
-    if (Files.exists(embeddingModelStore)) {
+    if (Files.exists(textToVectorStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove embedding model store config file in {}", embeddingModelStore.toAbsolutePath());
+        log.info("remove model store config file in {}", textToVectorStore.toAbsolutePath());
       }
-      Files.delete(embeddingModelStore);
+      Files.delete(textToVectorStore);
     }
 
     if (Files.exists(largeLanguageModelStore)) {
+
       if (log.isInfoEnabled()) {
         log.info("remove large language model store config file in {}", largeLanguageModelStore.toAbsolutePath());
       }
+
       Files.delete(largeLanguageModelStore);
     }
 
@@ -99,7 +102,8 @@ public class TestLanguageModelBase extends RestTestBase {
   }
 
   public static void loadModel(String fileName, String status) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/modelExamples/" + fileName);
+    final URL url =
+        TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
@@ -109,7 +113,8 @@ public class TestLanguageModelBase extends RestTestBase {
   }
 
   public static void loadModel(String fileName) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/modelExamples/" + fileName);
+    final URL url =
+        TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(

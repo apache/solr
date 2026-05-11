@@ -15,6 +15,9 @@
 [versions]
 adobe-testing-s3mock = "3.12.0"
 amazon-awssdk = "2.42.34"
+androidx-adaptive = "1.3.0-alpha07"
+androidx-lifecycle = "2.10.0"
+androidx-navigation3 = "1.1.0"
 # @keep Antora version used in ref-guide
 antora = "3.1.12"
 # @keep Most recent commit as of 2025-08-03, this repo does not have tags
@@ -48,6 +51,7 @@ apiguardian = "1.1.2"
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
+azagniotov-langdetect = "12.5.2"
 # @keep bats-assert (node) version used in packaging
 bats-assert = "2.0.0"
 # @keep bats-core (node) version used in packaging
@@ -74,7 +78,6 @@ compose = "1.10.3"
 cutterslade-analyze = "1.10.0"
 cuvs-java = "25.10.0"
 cuvs-lucene = "25.10.0"
-cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.4.0"
 diffplug-spotless = "8.3.0"
 # @keep Use for dockerfile JRE version
@@ -236,6 +239,12 @@ amazon-awssdk-retries-spi = { module = "software.amazon.awssdk:retries-spi", ver
 amazon-awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "amazon-awssdk" }
 amazon-awssdk-sdkcore = { module = "software.amazon.awssdk:sdk-core", version.ref = "amazon-awssdk" }
 amazon-awssdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "amazon-awssdk" }
+androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewModelNav3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
+androidx-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "androidx-adaptive" }
+androidx-material3-adaptive-nav3 = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation3", version.ref = "androidx-adaptive" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "androidx-navigation3" }
 apache-calcite-avatica-core = { module = "org.apache.calcite.avatica:avatica-core", version.ref = "apache-calcite-avatica" }
 apache-calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "apache-calcite" }
 apache-calcite-linq4j = { module = "org.apache.calcite:calcite-linq4j", version.ref = "apache-calcite" }
@@ -295,6 +304,7 @@ apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", versio
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
 # @keep transitive dependency for version alignment
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
+azagniotov-langdetect = { module = "io.github.azagniotov:language-detection", version.ref = "azagniotov-langdetect" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
@@ -319,7 +329,6 @@ compose-uiTest = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "c
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
 cuvs-java = { module = "com.nvidia.cuvs:cuvs-java", version.ref = "cuvs-java" }
 cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cuvs-lucene" }
-cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
