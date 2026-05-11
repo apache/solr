@@ -154,8 +154,8 @@ public class ZkContainer {
           final var hostComponents = host.split(":");
           final var zkServer = hostComponents[0];
           final var zkClientPort = Integer.valueOf(hostComponents[1]);
-          final var zkQuorumPort = zkClientPort - 4000;
-          final var zkLeaderPort = zkClientPort - 3000;
+          final var zkQuorumPort = zkClientPort + 1;
+          final var zkLeaderPort = zkClientPort + 2;
           final String configEntry =
               "server." + (i + 1) + "=" + zkServer + ":" + zkQuorumPort + ":" + zkLeaderPort + "\n";
           zooCfgContents = zooCfgContents + configEntry;
