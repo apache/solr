@@ -139,6 +139,10 @@ public class ZkContainer {
                 .replace("@@ZK_CLIENT_PORT@@", String.valueOf(zkPort));
         final String[] zkHosts = config.getZkHost().split(",");
         int myId = -1;
+        // TODO: myId detection uses exact string matching between config.getHost() and the host
+        // portion of zkHost entries. This fails when zkHost uses "localhost" but Solr is
+        // configured with "127.0.0.1" (or vice versa). Consider resolving hostnames/IPs before
+        // matching, or matching by port alone (which is unique per node in a single-machine setup).
         final String targetConnStringSection = config.getHost() + ":" + zkPort;
         if (log.isInfoEnabled()) {
           log.info(

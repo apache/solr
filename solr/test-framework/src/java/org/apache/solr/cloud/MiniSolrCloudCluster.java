@@ -690,6 +690,10 @@ public class MiniSolrCloudCluster implements SolrBackend {
    * @throws InterruptedException if interrupted while waiting
    * @throws TimeoutException if the expected count is not reached within the timeout
    */
+  // TODO: This method counts locally running Jetty processes rather than querying ZooKeeper
+  // live_nodes. In embedded-quorum mode this is approximately correct (ZK and Solr share a
+  // process), but ZK state can lag behind Jetty state. Consider implementing using
+  // getZkStateReader().waitForLiveNodes(...) for a more correct implementation.
   public void waitForLiveNodes(int expectedCount, int timeoutSeconds)
       throws InterruptedException, TimeoutException {
     TimeOut timeout = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
