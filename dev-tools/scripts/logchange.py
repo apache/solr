@@ -123,6 +123,20 @@ def strip_unreleased_block(changelog_path: Path, dry_run=False):
         changelog_path.write_text(cleaned, encoding="utf-8")
 
 
+def ensure_unreleased_gitkeep(git_root, dry_run=False):
+    """Ensure changelog/unreleased/.gitkeep exists and is staged.
+
+    After a release the unreleased/ folder may be absent or untracked.
+    Committing a .gitkeep guarantees contributors always find the folder.
+    """
+    gitkeep = git_root / "changelog" / "unreleased" / ".gitkeep"
+    if not gitkeep.exists():
+        print(f"  Creating {gitkeep.relative_to(git_root)}")
+        if not dry_run:
+            gitkeep.parent.mkdir(parents=True, exist_ok=True)
+            gitkeep.touch()
+
+
 def run_logchange_generate(gradle_cmd, git_root, dry_run=False):
     run([gradle_cmd, "logchangeGenerate"], cwd=git_root, dry_run=dry_run)
     strip_unreleased_block(git_root / "CHANGELOG.md", dry_run=dry_run)
@@ -202,13 +216,14 @@ def cmd_prepare(args, git_root):
 
     if do_commit:
         print(f"\n[4] Staging changelog/ and CHANGELOG.md")
+        ensure_unreleased_gitkeep(git_root, dry_run=dry_run)
         git(["add", "changelog", "CHANGELOG.md"], cwd=git_root, dry_run=dry_run)
 
         if not dry_run and not has_staged_changes(git_root):
             print("\nNothing staged — changelog is already up to date.")
             return
 
-        msg = f"Changelog prepare for v{version} (no release date, RC prep)"
+        msg = f"Changelog prepare for v{version}"
         print(f"\n[5] Committing: {msg!r}")
         git(["commit", "-m", msg], cwd=git_root, dry_run=dry_run)
 
@@ -322,6 +337,13 @@ def cmd_forward_port(args, git_root):
                     print("  Or abort with:                  git cherry-pick --abort",
                           file=sys.stderr)
                     sys.exit(1)
+
+            # Ensure unreleased/ folder exists for contributors after cherry-picks
+            ensure_unreleased_gitkeep(git_root, dry_run=dry_run)
+            git(["add", "changelog/unreleased/.gitkeep"], cwd=git_root, dry_run=dry_run)
+            if not dry_run and has_staged_changes(git_root):
+                git(["commit", "-m", f"Ensure changelog/unreleased/ folder exists on {target}"],
+                    cwd=git_root, dry_run=dry_run)
 
     # Step 6: push (optional)
     if do_push:
