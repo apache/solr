@@ -465,6 +465,9 @@ public abstract class HttpSolrClient extends SolrClient {
      */
     @SuppressWarnings("unchecked")
     public B withHttpClient(C httpSolrClient) {
+      if (this.baseSolrUrl == null) {
+        this.baseSolrUrl = httpSolrClient.getBaseURL();
+      }
       if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = httpSolrClient.basicAuthAuthorizationStr;
       }
