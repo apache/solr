@@ -1237,7 +1237,7 @@ groups:
       If the check fails, please re-run the task, until it succeeds.
   - !Todo
     id: forward_port_changelog
-    title: Set release date and forward-port changelog to all branches
+    title: Forward-port changelog to stable and main branches
     description: |
       Now that the vote has passed, this step:
 
