@@ -173,8 +173,6 @@ dependencies {
 
   compileOnly libs.stephenc.jcip.annotations
 
-  implementation libs.j256.simplemagic
-
   // -- Test Dependencies
 
   testRuntimeOnly libs.slf4j.jcloverslf4j
