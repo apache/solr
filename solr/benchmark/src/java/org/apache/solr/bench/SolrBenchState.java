@@ -591,8 +591,8 @@ public class SolrBenchState {
   }
 
   private static void logIndexingRate(long docCount, long startNanos) {
-    long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
-    long rate = elapsedMs > 0 ? docCount * 1000L / elapsedMs : 0;
+    long elapsedSec = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos);
+    long rate = elapsedSec > 0 ? docCount / elapsedSec : 0;
     log(docCount + " docs at " + rate + " doc/s");
   }
 }
