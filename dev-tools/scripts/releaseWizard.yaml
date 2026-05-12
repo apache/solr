@@ -782,7 +782,7 @@ groups:
       confirm_each_command: false
       commands:
       - !Command
-        cmd: python3 -u dev-tools/scripts/logchange.py prepare --version {{ release_version }} --release-branch {{ release_branch }} --gradle-cmd {{ gradle_cmd }} --commit
+        cmd: python3 -u dev-tools/scripts/logchange.py prepare --version {{ release_version }}  --release-branch {{ release_branch }} --gradle-cmd {{ gradle_cmd }} --commit
         comment: Move unreleased entries to version folder, regenerate CHANGELOG.md, and commit
         logfile: changelog-update-rc.log
         tee: true
@@ -1113,37 +1113,6 @@ groups:
   description: Once the vote has passed, the release may be published to the ASF Distribution Directory and to Maven Central.
   todos:
   - !Todo
-    id: forward_port_changelog
-    title: Set release date and forward-port changelog to all branches
-    description: |
-      Now that the vote has passed, this step:
-
-      1. Writes today's date to `changelog/v{{ release_version }}/release-date.txt`
-      2. Regenerates `CHANGELOG.md` — now with the correct release date in the
-         version heading (e.g. `## [{{ release_version }}] - YYYY-MM-DD`)
-      3. Commits that to `{{ release_branch }}`
-      4. Cherry-picks **all** changelog-touching commits that are on
-         `{{ release_branch }}` but not yet on `{{ stable_branch }}` to both
-         `{{ stable_branch }}` and `main`
-      5. Pushes `{{ release_branch }}`, `{{ stable_branch }}`, and `main`
-
-      Can be run standalone:
-
-        python3 dev-tools/scripts/logchange.py forward-port \
-          --version {{ release_version }} \
-          --release-branch {{ release_branch }} \
-          --stable-branch {{ stable_branch }}
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Set release date and cherry-pick changelog to stable and main
-      confirm_each_command: false
-      commands:
-      - !Command
-        cmd: python3 -u dev-tools/scripts/logchange.py forward-port --version {{ release_version }} --release-branch {{ release_branch }} --stable-branch {{ stable_branch }} --gradle-cmd {{ gradle_cmd }} --push
-        comment: Set release date, regenerate CHANGELOG.md, cherry-pick and push to all branches
-        logfile: forward-port-changelog.log
-        tee: true
-  - !Todo
     id: tag_release
     title: Tag the release
     description: Tag the release from the same revision from which the passing release candidate's was built
@@ -1306,6 +1275,32 @@ groups:
       to validate Maven repo.
 
       If the check fails, please re-run the task, until it succeeds.
+  - !Todo
+    id: forward_port_changelog
+    title: Set release date and forward-port changelog to all branches
+    description: |
+      Now that the vote has passed, this step:
+
+      1. Writes release date {{ release_date_iso }} to `changelog/v{{ release_version }}/release-date.txt`
+      2. Regenerates `CHANGELOG.md` — now with the correct release date in the
+         version heading (e.g. `## [{{ release_version }}] - {{ release_date_iso }}`)
+      3. Commits that to `{{ release_branch }}`
+      4. Cherry-picks **all** changelog-touching commits that are on
+         `{{ release_branch }}` but not yet on `{{ stable_branch }}` to both
+         `{{ stable_branch }}` and `main`
+      5. Pushes `{{ release_branch }}`, `{{ stable_branch }}`, and `main`
+
+      Can be run standalone, see `dev-tools/scripts/logchange.py --help` for details:
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Set release date and cherry-pick changelog to stable and main
+      confirm_each_command: false
+      commands:
+        - !Command
+          cmd: python3 -u dev-tools/scripts/logchange.py forward-port --version {{ release_version }}  --release-date {{ release_date_iso }} --release-branch {{ release_branch }}  --stable-branch {{ stable_branch }} --gradle-cmd {{ gradle_cmd }} --push
+          comment: Set release date, regenerate CHANGELOG.md, cherry-pick and push to all branches
+          logfile: forward-port-changelog.log
+          tee: true
 
 - !TodoGroup
   id: website

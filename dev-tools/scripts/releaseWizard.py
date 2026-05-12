@@ -100,6 +100,7 @@ def expand_jinja(text, vars=None):
         'release_version': state.release_version,
         'release_version_underscore': state.release_version.replace('.', '_'),
         'release_date': state.get_release_date(),
+        'release_date_iso': state.get_release_date_iso(),
         'ivy2_folder': os.path.expanduser("~/.ivy2/"),
         'config_path': state.config_path,
         'rc_number': state.rc_number,
@@ -1256,7 +1257,7 @@ def configure_pgp(gpg_todo):
         print("Your key has %s signatures, of which %s are by committers (@apache.org address)" % (sigs, apache_sigs))
         if apache_sigs < 1:
             print(textwrap.dedent("""\
-                Your key is not signed by any other committer. 
+                Your key is not signed by any other committer.
                 Please review https://infra.apache.org/openpgp.html#apache-wot
                 and make sure to get your key signed until next time.
                 You may want to run 'gpg --refresh-keys' to refresh your keychain."""))
