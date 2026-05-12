@@ -18,7 +18,11 @@
 #
 
 """
-Validates changelog YAML files in changelog/unreleased/ folder.
+Validates changelog YAML files.
+
+Usage:
+  validate-changelog-yaml.py <file1> [<file2> ...]   Validate one or more files
+  validate-changelog-yaml.py <folder>                Validate all .yml/.yaml files in folder
 
 Checks:
 - File is valid YAML
@@ -35,11 +39,12 @@ Checks:
 """
 
 import sys
+from pathlib import Path
 import yaml
 
 
 def validate_changelog_yaml(file_path):
-    """Validate a changelog YAML file."""
+    """Validate a changelog YAML file. Returns True if valid."""
     valid_types = ['added', 'changed', 'fixed', 'deprecated', 'removed', 'dependency_update', 'security', 'other']
     valid_keys = ['title', 'type', 'issues', 'links', 'important_notes', 'modules', 'authors']
     deprecated_keys = ['merge_requests', 'configurations']
@@ -87,16 +92,9 @@ def validate_changelog_yaml(file_path):
         if 'authors' not in data or not data['authors']:
             print(f"::error file={file_path}::Missing or empty 'authors' field")
             return False
-
-        if not isinstance(data['authors'], list):
-            print(f"::error file={file_path}::Field 'authors' must be a list")
+        if not isinstance(data['authors'], list) or len(data['authors']) == 0:
+            print(f"::error file={file_path}::Field 'authors' must be a non-empty list")
             return False
-
-        if len(data['authors']) == 0:
-            print(f"::error file={file_path}::Field 'authors' must contain at least one author")
-            return False
-
-        # Validate each author
         for i, author in enumerate(data['authors']):
             if not isinstance(author, dict):
                 print(f"::error file={file_path}::Author {i} must be a mapping (key-value pairs)")
@@ -163,11 +161,36 @@ def validate_changelog_yaml(file_path):
         return False
 
 
+def collect_files(args):
+    """Expand a mix of file paths and folder paths into a list of YAML files."""
+    files = []
+    for arg in args:
+        p = Path(arg)
+        if p.is_dir():
+            found = sorted(p.glob("*.yml")) + sorted(p.glob("*.yaml"))
+            if not found:
+                print(f"Warning: no .yml/.yaml files found in {p}", file=sys.stderr)
+            files.extend(found)
+        elif p.is_file():
+            files.append(p)
+        else:
+            print(f"::error::Not a file or directory: {arg}")
+            sys.exit(1)
+    return files
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: validate-changelog-yaml.py <yaml-file>")
+        print("Usage: validate-changelog-yaml.py <file1> [<file2> ...] | <folder>")
         sys.exit(1)
 
-    file_path = sys.argv[1]
-    if not validate_changelog_yaml(file_path):
-        sys.exit(1)
+    files = collect_files(sys.argv[1:])
+    if not files:
+        sys.exit(0)
+
+    failed = False
+    for f in files:
+        if not validate_changelog_yaml(f):
+            failed = True
+
+    sys.exit(1 if failed else 0)
