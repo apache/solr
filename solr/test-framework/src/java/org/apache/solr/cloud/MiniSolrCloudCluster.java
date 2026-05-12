@@ -159,6 +159,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
   private final JettyConfig jettyConfig;
   private final String solrXml;
   private final boolean trackJettyMetrics;
+  private final boolean shutdownTimeoutIsError;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
   private final Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
@@ -241,7 +242,8 @@ public class MiniSolrCloudCluster implements SolrBackend {
         zkTestServer,
         securityJson,
         false,
-        formatZkServer);
+        formatZkServer,
+        true);
   }
 
   /**
@@ -256,6 +258,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
    * @param zkTestServer ZkTestServer to use. If null, one will be created
    * @param securityJson A string representation of security.json file (optional).
    * @param trackJettyMetrics supply jetties with metrics registry
+   * @param shutdownTimeoutIsError whether timeout during shutdown is an error (default true)
    * @throws Exception if there was an error starting the cluster
    */
   MiniSolrCloudCluster(
@@ -266,7 +269,8 @@ public class MiniSolrCloudCluster implements SolrBackend {
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
       boolean trackJettyMetrics,
-      boolean formatZkServer)
+      boolean formatZkServer,
+      boolean shutdownTimeoutIsError)
       throws Exception {
 
     Objects.requireNonNull(securityJson);
@@ -274,6 +278,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
     this.solrXml = solrXml == null ? DEFAULT_CLOUD_SOLR_XML : solrXml;
     this.trackJettyMetrics = trackJettyMetrics;
+    this.shutdownTimeoutIsError = shutdownTimeoutIsError;
 
     log.info("Starting cluster of {} servers in {}", numServers, baseDir);
 
@@ -660,11 +665,26 @@ public class MiniSolrCloudCluster implements SolrBackend {
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
-      jettys.clear();
+
       final ExecutorService executorCloser =
           ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-closer"));
-      Collection<Future<JettySolrRunner>> futures = executorCloser.invokeAll(shutdowns);
+
+      // Use a 60 second timeout to prevent indefinite hangs during shutdown, especially when cores
+      // are in a bad state (e.g., after tragic events). This is 2x Jetty's internal timeout.
+      List<Future<JettySolrRunner>> futures;
+      try {
+        futures = executorCloser.invokeAll(shutdowns, 60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while shutting down jettys", e);
+        Thread.currentThread().interrupt();
+        executorCloser.shutdownNow();
+        throw e;
+      }
+
       ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
+
+      jettys.clear();
+
       Exception shutdownError =
           checkForExceptions("Error shutting down MiniSolrCloudCluster", futures);
       if (shutdownError != null) {
@@ -751,9 +771,16 @@ public class MiniSolrCloudCluster implements SolrBackend {
       try {
         future.get();
       } catch (ExecutionException e) {
-        log.error(message, e);
-        parsed.addSuppressed(e.getCause());
-        ok = false;
+        // Check if this is a TimeoutException from Jetty's internal shutdown timeout
+        if (e.getCause() instanceof TimeoutException && !shutdownTimeoutIsError) {
+          log.warn(
+              "Jetty shutdown task timed out (likely from Jetty Server.doStop()), but configured to not treat as error",
+              e);
+        } else {
+          log.error(message, e);
+          parsed.addSuppressed(e.getCause());
+          ok = false;
+        }
       } catch (InterruptedException e) {
         log.error(message, e);
         Thread.interrupted();
@@ -1009,6 +1036,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
         EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     private boolean formatZkServer = true;
     private boolean disableTraceIdGeneration = false;
+    private boolean shutdownTimeoutIsError = true;
 
     /**
      * Create a builder
@@ -1128,6 +1156,18 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
 
     /**
+     * Configure whether a timeout during shutdown is treated as an error
+     *
+     * @param shutdownTimeoutIsError if true, timeout causes test failure; if false, timeout is
+     *     logged but not treated as error (default true)
+     * @return the instance of {@linkplain Builder}
+     */
+    public Builder withShutdownTimeoutIsError(boolean shutdownTimeoutIsError) {
+      this.shutdownTimeoutIsError = shutdownTimeoutIsError;
+      return this;
+    }
+
+    /**
      * Configure and run the {@link MiniSolrCloudCluster}
      *
      * @throws Exception if an error occurs on startup
@@ -1159,7 +1199,8 @@ public class MiniSolrCloudCluster implements SolrBackend {
               null,
               securityJson,
               trackJettyMetrics,
-              formatZkServer);
+              formatZkServer,
+              shutdownTimeoutIsError);
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
       }
