@@ -142,6 +142,12 @@ public class IssuerAwareJWSKeySelector implements JWSKeySelector<SecurityContext
           fetcher.refresh();
           allJwks.addAll(fetcher.getKeys());
         }
+      } catch (SSLHandshakeException e) {
+        throw new KeySourceException(
+            "Failed to connect with "
+                + keysSource
+                + ", do you have the correct SSL certificate configured?",
+            e);
       } catch (IOException | ParseException e) {
         throw new KeySourceException("Failed to refresh JWKs from " + keysSource + ": " + e, e);
       }

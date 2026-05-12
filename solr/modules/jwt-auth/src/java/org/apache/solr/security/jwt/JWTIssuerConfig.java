@@ -90,6 +90,9 @@ public class JWTIssuerConfig {
       EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled", false);
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
       "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.outbound.http.enabled=true to allow HTTP for test purposes.";
+  static final int JWKS_CONNECT_TIMEOUT_MS = 5_000;
+  static final int JWKS_READ_TIMEOUT_MS = 10_000;
+
   private static final String DEFAULT_AUTHORIZATION_FLOW =
       "implicit"; // 'implicit' to be deprecated
   private static final Set<String> VALID_AUTHORIZATION_FLOWS =
@@ -479,6 +482,8 @@ public class JWTIssuerConfig {
             || loopback.getHostName().equals(url.getHost());
     return resourceUrl -> {
       URLConnection conn = resourceUrl.openConnection();
+      conn.setConnectTimeout(JWKS_CONNECT_TIMEOUT_MS);
+      conn.setReadTimeout(JWKS_READ_TIMEOUT_MS);
       if (conn instanceof HttpsURLConnection httpsConn) {
         httpsConn.setSSLSocketFactory(ssf);
         if (disableHostnameVerification) {
@@ -569,7 +574,7 @@ public class JWTIssuerConfig {
       try {
         jwksUrl = URI.create(url).toURL();
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
-      } catch (MalformedURLException e) {
+      } catch (MalformedURLException | IllegalArgumentException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
