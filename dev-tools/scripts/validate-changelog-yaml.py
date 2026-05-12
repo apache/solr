@@ -159,7 +159,7 @@ def validate_changelog_yaml(file_path):
                       f"Please remove the comment block at the top of the file.")
                 return False
 
-        print(f"✓ {file_path}")
+        print(f"✓ {file_path} is valid")
         print(f"  Title: {data['title']}")
         print(f"  Type: {data['type']}")
         print(f"  Authors: {', '.join(a['name'] for a in data['authors'])}")
