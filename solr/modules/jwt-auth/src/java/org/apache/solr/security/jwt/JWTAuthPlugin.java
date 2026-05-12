@@ -609,7 +609,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, e);
           } catch (BadJWTException e) {
             String msg = e.getMessage();
-            if (msg != null && (msg.startsWith("Expired JWT") || msg.contains("expir"))) {
+            if (msg != null && msg.startsWith("Expired JWT")) {
               return new JWTAuthenticationResponse(
                   AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. " + msg);
             }
