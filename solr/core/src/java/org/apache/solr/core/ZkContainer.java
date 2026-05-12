@@ -206,18 +206,10 @@ public class ZkContainer {
                     });
 
                 ctx.observableLongCounter(
-                    "solr.zk.child.fetches",
-                    "Total number of ZooKeeper child node fetches",
+                    "solr.zk.get_children.ops",
+                    "Total number of ZooKeeper getChildren calls",
                     measurement -> {
                       measurement.record(metricsListener.getChildFetches(), attributes);
-                    });
-
-                ctx.observableLongCounter(
-                    "solr.zk.cumulative.children_fetched",
-                    "Total cumulative children fetched count",
-                    measurement -> {
-                      measurement.record(
-                          metricsListener.getCumulativeChildrenFetched(), attributes);
                     });
               }
 
