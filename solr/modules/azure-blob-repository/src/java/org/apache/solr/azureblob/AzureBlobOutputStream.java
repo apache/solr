@@ -16,10 +16,10 @@
  */
 package org.apache.solr.azureblob;
 
+import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.specialized.BlockBlobClient;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
@@ -43,10 +43,9 @@ public class AzureBlobOutputStream extends OutputStream {
 
   private final BlobClient blobClient;
   private final String blobPath;
-  private volatile boolean closed;
+  private boolean closed;
   private final ByteBuffer buffer;
   private BlockUpload blockUpload;
-  private boolean committed;
 
   public AzureBlobOutputStream(BlobClient blobClient, String blobPath) {
     this.blobClient = blobClient;
@@ -54,7 +53,6 @@ public class AzureBlobOutputStream extends OutputStream {
     this.closed = false;
     this.buffer = ByteBuffer.allocate(BLOCK_SIZE);
     this.blockUpload = null;
-    this.committed = false;
 
     if (log.isDebugEnabled()) {
       log.debug("Created BlobOutputStream for blobPath '{}'", blobPath);
@@ -106,7 +104,7 @@ public class AzureBlobOutputStream extends OutputStream {
   }
 
   private void uploadBlock() throws IOException {
-    int size = buffer.position() - buffer.arrayOffset();
+    int size = buffer.position();
 
     if (size == 0) {
       return;
@@ -117,22 +115,18 @@ public class AzureBlobOutputStream extends OutputStream {
         log.debug("New block upload for blobPath '{}'", blobPath);
       }
 
-      blockUpload = newBlockUpload();
+      blockUpload = new BlockUpload();
     }
 
-    try (ByteArrayInputStream inputStream =
-        new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), size)) {
-      blockUpload.uploadBlock(inputStream, size);
-    } catch (BlobStorageException e) {
-      if (blockUpload != null) {
-        blockUpload.abort();
-        if (log.isDebugEnabled()) {
-          log.debug("Block upload aborted for blobPath '{}'.", blobPath);
-        }
+    BinaryData data = BinaryData.fromByteBuffer(ByteBuffer.wrap(buffer.array(), 0, size));
+    try {
+      blockUpload.uploadBlock(data);
+    } catch (IOException | RuntimeException e) {
+      blockUpload.markFailed();
+      if (log.isDebugEnabled()) {
+        log.debug("Block upload marked as failed for blobPath '{}'.", blobPath);
       }
-
-      throw new IOException(
-          "Failed to upload block", AzureBlobStorageClient.handleBlobException(e));
+      throw e;
     }
 
     buffer.clear();
@@ -144,14 +138,8 @@ public class AzureBlobOutputStream extends OutputStream {
       throw new IOException("Stream closed");
     }
 
-    if (buffer.position() - buffer.arrayOffset() > 0) {
+    if (buffer.position() > 0) {
       uploadBlock();
-    }
-
-    if (blockUpload != null) {
-      blockUpload.complete();
-      blockUpload = null;
-      committed = true;
     }
   }
 
@@ -161,67 +149,46 @@ public class AzureBlobOutputStream extends OutputStream {
       return;
     }
 
-    if (blockUpload != null && blockUpload.aborted) {
-      blockUpload = null;
-      closed = true;
-      return;
-    }
+    try {
+      if (blockUpload != null && blockUpload.failed) {
+        blockUpload = null;
+        return;
+      }
 
-    if (!committed) {
+      // Stage any remaining buffered bytes as the final block.
       uploadBlock();
+
       if (blockUpload != null) {
         blockUpload.complete();
         blockUpload = null;
-        committed = true;
       } else {
         try {
-          blobClient.upload(new ByteArrayInputStream(new byte[0]), 0, true);
+          blobClient.upload(BinaryData.fromBytes(new byte[0]), true);
         } catch (BlobStorageException e) {
           throw new IOException(
               "Failed to create empty blob", AzureBlobStorageClient.handleBlobException(e));
         }
       }
-    } else {
-      if (blockUpload != null) {
-        blockUpload.complete();
-        blockUpload = null;
-      }
-    }
-
-    closed = true;
-  }
-
-  private BlockUpload newBlockUpload() throws IOException {
-    try {
-      return new BlockUpload();
-    } catch (BlobStorageException e) {
-      throw new IOException(
-          "Failed to create block upload", AzureBlobStorageClient.handleBlobException(e));
+    } finally {
+      closed = true;
     }
   }
 
   private class BlockUpload {
     private final List<String> blockIds;
-    private boolean aborted = false;
+    private boolean failed = false;
 
-    public BlockUpload() {
+    BlockUpload() {
       this.blockIds = new ArrayList<>();
       if (log.isDebugEnabled()) {
         log.debug("Initiated block upload for blobPath '{}'", blobPath);
       }
-
-      try {
-        BlockBlobClient blockBlobClient = blobClient.getBlockBlobClient();
-        blockBlobClient.deleteIfExists();
-      } catch (BlobStorageException e) {
-        // ignore; subsequent stage/commit will surface real issues
-      }
     }
 
-    void uploadBlock(ByteArrayInputStream inputStream, long blockSize) {
-      if (aborted) {
+    void uploadBlock(BinaryData data) throws IOException {
+      if (failed) {
         throw new IllegalStateException(
-            "Can't upload new blocks on a BlockUpload that was aborted");
+            "Can't upload new blocks on a BlockUpload that previously failed");
       }
 
       String blockId =
@@ -234,16 +201,17 @@ public class AzureBlobOutputStream extends OutputStream {
 
       try {
         BlockBlobClient blockBlobClient = blobClient.getBlockBlobClient();
-        blockBlobClient.stageBlock(blockId, inputStream, blockSize);
+        blockBlobClient.stageBlock(blockId, data);
         blockIds.add(blockId);
       } catch (BlobStorageException e) {
-        throw new RuntimeException("Failed to upload block", e);
+        throw new IOException(
+            "Failed to upload block", AzureBlobStorageClient.handleBlobException(e));
       }
     }
 
-    void complete() {
-      if (aborted) {
-        throw new IllegalStateException("Can't complete a BlockUpload that was aborted");
+    void complete() throws IOException {
+      if (failed) {
+        throw new IllegalStateException("Can't complete a BlockUpload that previously failed");
       }
 
       if (log.isDebugEnabled()) {
@@ -254,16 +222,17 @@ public class AzureBlobOutputStream extends OutputStream {
         BlockBlobClient blockBlobClient = blobClient.getBlockBlobClient();
         blockBlobClient.commitBlockList(blockIds);
       } catch (BlobStorageException e) {
-        throw new RuntimeException("Failed to commit block list", e);
+        throw new IOException(
+            "Failed to commit block list", AzureBlobStorageClient.handleBlobException(e));
       }
     }
 
-    public void abort() {
+    void markFailed() {
       if (log.isWarnEnabled()) {
-        log.warn("Aborting block upload for blobPath '{}'", blobPath);
+        log.warn("Marking block upload as failed for blobPath '{}'", blobPath);
       }
 
-      aborted = true;
+      failed = true;
     }
   }
 }

@@ -19,182 +19,193 @@ package org.apache.solr.azureblob;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.nio.ByteBuffer;
+import java.util.Locale;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexInput;
 
-class AzureBlobIndexInput extends IndexInput {
+/**
+ * {@link BufferedIndexInput} implementation that reads from a single blob in Azure Blob Storage,
+ * lazily opening per-instance HTTP range streams via {@link AzureBlobStorageClient}.
+ */
+class AzureBlobIndexInput extends BufferedIndexInput {
 
-  private static final int MIN_PAGE_SIZE = 4 * 1024;
-  private static final int DEFAULT_PAGE_SIZE = 512 * 1024;
-  private static final int MAX_CACHED_PAGES = 128;
+  static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
+  static final int LOCAL_BUFFER_SIZE = 16 * 1024;
 
-  private final String path;
   private final AzureBlobStorageClient client;
-  private final long length;
-  private final int pageSize;
-  private final LruPageCache cache;
+  private final String path;
 
-  private long position = 0L;
+  private final long absoluteOffset;
+  private final long length;
+
+  private InputStream inputStream;
+  private long streamAbsolutePos = -1L;
   private boolean closed = false;
 
-  AzureBlobIndexInput(String path, AzureBlobStorageClient client, long length) {
-    this(path, client, length, DEFAULT_PAGE_SIZE, MAX_CACHED_PAGES);
+  AzureBlobIndexInput(AzureBlobStorageClient client, String path, long length) {
+    this(client, path, 0L, length, "AzureBlobIndexInput(" + path + ")", DEFAULT_BUFFER_SIZE);
   }
 
-  AzureBlobIndexInput(
-      String path, AzureBlobStorageClient client, long length, int pageSize, int maxCachedPages) {
-    super(path);
-    this.path = path;
+  private AzureBlobIndexInput(
+      AzureBlobStorageClient client,
+      String path,
+      long absoluteOffset,
+      long length,
+      String resourceDescription,
+      int bufferSize) {
+    super(resourceDescription, bufferSize);
     this.client = client;
+    this.path = path;
+    this.absoluteOffset = absoluteOffset;
     this.length = length;
-    this.pageSize = Math.max(MIN_PAGE_SIZE, pageSize);
-    this.cache = new LruPageCache(maxCachedPages);
+  }
+
+  @Override
+  protected void readInternal(ByteBuffer dst) throws IOException {
+    if (closed) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+
+    int expectedLength = dst.remaining();
+    if (expectedLength == 0) {
+      return;
+    }
+
+    long targetAbsolutePos = absoluteOffset + getFilePointer();
+    ensureStreamAt(targetAbsolutePos);
+
+    byte[] localBuffer = null;
+    try {
+      while (dst.hasRemaining()) {
+        int read;
+        if (dst.hasArray()) {
+          read = inputStream.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
+        } else {
+          if (localBuffer == null) {
+            localBuffer = new byte[LOCAL_BUFFER_SIZE];
+          }
+          read = inputStream.read(localBuffer, 0, Math.min(dst.remaining(), localBuffer.length));
+        }
+
+        if (read <= 0) {
+          break;
+        }
+
+        if (dst.hasArray()) {
+          dst.position(dst.position() + read);
+        } else {
+          dst.put(localBuffer, 0, read);
+        }
+        streamAbsolutePos += read;
+      }
+
+      if (dst.remaining() > 0) {
+        throw new EOFException(
+            String.format(
+                Locale.ROOT,
+                "read past EOF: expected %d bytes at pos %d but only got %d (length=%d): %s",
+                expectedLength,
+                targetAbsolutePos,
+                expectedLength - dst.remaining(),
+                length,
+                this));
+      }
+    } catch (IOException | RuntimeException e) {
+      closeStream();
+      throw e;
+    }
+  }
+
+  @Override
+  protected void seekInternal(long pos) throws IOException {
+    if (closed) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+    if (pos < 0 || pos > length) {
+      throw new EOFException("read past EOF: pos=" + pos + " vs length=" + length + ": " + this);
+    }
+
+    closeStream();
+  }
+
+  private void ensureStreamAt(long targetAbsolutePos) throws IOException {
+    if (inputStream != null && streamAbsolutePos == targetAbsolutePos) {
+      return;
+    }
+
+    closeStream();
+
+    long remaining = (absoluteOffset + length) - targetAbsolutePos;
+    if (remaining <= 0) {
+      throw new EOFException(
+          "read past EOF: pos=" + targetAbsolutePos + " vs end=" + (absoluteOffset + length));
+    }
+
+    try {
+      inputStream = client.pullRangeStream(path, targetAbsolutePos, remaining);
+    } catch (AzureBlobException e) {
+      throw new IOException(
+          "Failed to open range stream for " + path + " at offset " + targetAbsolutePos, e);
+    }
+    streamAbsolutePos = targetAbsolutePos;
+  }
+
+  private void closeStream() {
+    if (inputStream != null) {
+      try {
+        inputStream.close();
+      } catch (IOException ignored) {
+        // best-effort
+      }
+      inputStream = null;
+      streamAbsolutePos = -1L;
+    }
+  }
+
+  @Override
+  public final long length() {
+    return length;
+  }
+
+  @Override
+  public AzureBlobIndexInput clone() {
+    AzureBlobIndexInput clone = (AzureBlobIndexInput) super.clone();
+    clone.inputStream = null;
+    clone.streamAbsolutePos = -1L;
+    return clone;
+  }
+
+  @Override
+  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+    if (closed) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+
+    if (offset < 0 || length < 0 || length > this.length - offset) {
+      throw new IllegalArgumentException(
+          String.format(
+              Locale.ROOT,
+              "slice() %s out of bounds: offset=%d,length=%d,fileLength=%d: %s",
+              sliceDescription,
+              offset,
+              length,
+              this.length,
+              this));
+    }
+    return new AzureBlobIndexInput(
+        client,
+        path,
+        this.absoluteOffset + offset,
+        length,
+        getFullSliceDescription(sliceDescription),
+        getBufferSize());
   }
 
   @Override
   public void close() throws IOException {
     closed = true;
-    cache.clear();
-  }
-
-  @Override
-  public long getFilePointer() {
-    return position;
-  }
-
-  @Override
-  public void seek(long pos) throws IOException {
-    ensureOpen();
-    if (pos < 0 || pos > length) {
-      throw new IOException("Seek position out of bounds: " + pos);
-    }
-
-    position = pos;
-  }
-
-  @Override
-  public long length() {
-    return length;
-  }
-
-  @Override
-  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
-    ensureOpen();
-    if (offset < 0 || length < 0 || offset + length > this.length) {
-      throw new IOException("Slice out of bounds: offset=" + offset + ", length=" + length);
-    }
-
-    AzureBlobIndexInput slice =
-        new AzureBlobIndexInput(
-            getFullSliceDescription(sliceDescription), client, length, pageSize, MAX_CACHED_PAGES);
-
-    slice.position = 0L;
-
-    // Wrap client in a view that remaps range requests by adding base offset
-    slice.clientViewBaseOffset = this.clientViewBaseOffset + offset;
-    return slice;
-  }
-
-  @Override
-  public byte readByte() throws IOException {
-    ensureOpen();
-    if (position >= length) {
-      throw new EOFException("End of stream reached");
-    }
-
-    byte[] page = getPage(pageIndex(position));
-    int inPageOffset = (int) (position % pageSize);
-    byte value = page[inPageOffset];
-    position += 1L;
-    return value;
-  }
-
-  @Override
-  public void readBytes(byte[] b, int offset, int len) throws IOException {
-    ensureOpen();
-    if (len < 0) {
-      throw new IOException("Length must be non-negative");
-    }
-
-    if (position + len > length) {
-      throw new EOFException("End of stream reached");
-    }
-
-    int remaining = len;
-    while (remaining > 0) {
-      long pageIdx = pageIndex(position);
-      byte[] page = getPage(pageIdx);
-      int inPageOffset = (int) (position % pageSize);
-      int toCopy = Math.min(remaining, pageSize - inPageOffset);
-      System.arraycopy(page, inPageOffset, b, offset + (len - remaining), toCopy);
-      position += toCopy;
-      remaining -= toCopy;
-    }
-  }
-
-  // Internal state for slices: base offset to add to all range requests
-  private long clientViewBaseOffset = 0L;
-
-  private byte[] getPage(long pageIdx) throws IOException {
-    byte[] page = cache.get(pageIdx);
-    if (page != null) {
-      return page;
-    }
-
-    long absoluteOffset = clientViewBaseOffset + pageIdx * (long) pageSize;
-    int bytesToRead = (int) Math.min(pageSize, length - pageIdx * (long) pageSize);
-    if (bytesToRead <= 0) {
-      throw new EOFException("End of stream reached");
-    }
-
-    page = new byte[bytesToRead];
-    try (InputStream in = client.pullRangeStream(path, absoluteOffset, bytesToRead)) {
-      int readTotal = 0;
-      while (readTotal < bytesToRead) {
-        int read = in.read(page, readTotal, bytesToRead - readTotal);
-        if (read == -1) break;
-        readTotal += read;
-      }
-
-      if (readTotal < bytesToRead) {
-        throw new EOFException(
-            "End of stream reached: expected " + bytesToRead + " bytes, got " + readTotal);
-      }
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to fetch range page", e);
-    }
-
-    cache.put(pageIdx, page);
-    return page;
-  }
-
-  private long pageIndex(long pos) {
-    return pos / pageSize;
-  }
-
-  private void ensureOpen() throws IOException {
-    if (closed) {
-      throw new IOException("IndexInput is closed");
-    }
-  }
-
-  private static final class LruPageCache extends LinkedHashMap<Long, byte[]> {
-    private final int maxEntries;
-
-    LruPageCache(int maxEntries) {
-      super(16, 0.75f, true);
-      this.maxEntries = maxEntries;
-    }
-
-    @Override
-    protected boolean removeEldestEntry(Map.Entry<Long, byte[]> eldest) {
-      return size() > maxEntries;
-    }
-
-    @Override
-    public void clear() {
-      super.clear();
-    }
+    closeStream();
   }
 }

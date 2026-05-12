@@ -114,7 +114,19 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     try (OutputStream output = client.pushStream(path)) {
       output.write(content.getBytes(StandardCharsets.UTF_8));
       output.flush();
-      assertTrue("File should exist after flush", client.pathExists(path));
+      // OutputStream.flush() must not finalize the stream. The block is staged but the block list
+      // is committed only by close(), so the blob is not yet visible.
+      assertFalse(
+          "File should not be visible after flush(); commit happens on close()",
+          client.pathExists(path));
+    }
+
+    assertTrue("File should exist after close", client.pathExists(path));
+    try (InputStream input = client.pullStream(path)) {
+      byte[] buffer = new byte[1024];
+      int bytesRead = input.read(buffer);
+      String readContent = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
+      assertEquals("Content written before flush should be preserved", content, readContent);
     }
   }
 

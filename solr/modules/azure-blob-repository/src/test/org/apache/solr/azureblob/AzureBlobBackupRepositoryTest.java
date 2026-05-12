@@ -24,10 +24,13 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.Before;
@@ -126,9 +129,31 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
 
     assertTrue("File should exist before deletion", repository.exists(fileUri));
 
-    repository.delete(fileUri, java.util.Arrays.asList("delete-test.txt"));
+    repository.delete(fileUri, Arrays.asList("delete-test.txt"));
 
     assertFalse("File should not exist after deletion", repository.exists(fileUri));
+  }
+
+  @Test
+  public void testDeleteFilesInDirectory() throws IOException {
+    URI dirUri = getBaseUri().resolve("delete-files-dir/");
+    repository.createDirectory(dirUri);
+
+    URI fileAUri = dirUri.resolve("a.txt");
+    URI fileBUri = dirUri.resolve("b.txt");
+    try (OutputStream output = repository.createOutput(fileAUri)) {
+      output.write("alpha".getBytes(StandardCharsets.UTF_8));
+    }
+    try (OutputStream output = repository.createOutput(fileBUri)) {
+      output.write("beta".getBytes(StandardCharsets.UTF_8));
+    }
+    assertTrue("File a should exist before deletion", repository.exists(fileAUri));
+    assertTrue("File b should exist before deletion", repository.exists(fileBUri));
+
+    repository.delete(dirUri, Arrays.asList("a.txt", "b.txt"));
+
+    assertFalse("File a should not exist after deletion", repository.exists(fileAUri));
+    assertFalse("File b should not exist after deletion", repository.exists(fileBUri));
   }
 
   @Test
@@ -191,15 +216,16 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
 
     try {
       Directory sourceDir = new org.apache.lucene.store.MMapDirectory(tempDir);
-      URI destUri = getBaseUri().resolve("copied-file.txt");
+      URI destDirUri = getBaseUri().resolve("copy-from-dir");
 
-      repository.copyFileFrom(sourceDir, "source-file.txt", destUri);
+      repository.copyFileFrom(sourceDir, "source-file.txt", destDirUri);
 
+      URI destUri = repository.resolve(destDirUri, "source-file.txt");
       assertTrue("Copied file should exist", repository.exists(destUri));
 
       // Verify content
       try (IndexInput input =
-          repository.openInput(getBaseUri(), "copied-file.txt", IOContext.DEFAULT)) {
+          repository.openInput(destDirUri, "source-file.txt", IOContext.DEFAULT)) {
         byte[] buffer = new byte[1024];
         input.readBytes(buffer, 0, (int) input.length());
         String readContent = new String(buffer, 0, (int) input.length(), StandardCharsets.UTF_8);
@@ -255,6 +281,56 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
       input.readBytes(buffer, 0, buffer.length);
       String readContent = new String(buffer, StandardCharsets.UTF_8);
       assertEquals("Content should match", content, readContent);
+    }
+  }
+
+  @Test
+  public void testRetrieveChecksumViaRepository() throws IOException {
+    Path tempDir = Files.createTempDirectory("blob-checksum-test");
+    String fileName = "checksum-test.bin";
+    long expectedChecksum;
+    long expectedLength;
+    try (Directory localDir = new org.apache.lucene.store.MMapDirectory(tempDir)) {
+      try (IndexOutput out = localDir.createOutput(fileName, IOContext.DEFAULT)) {
+        CodecUtil.writeIndexHeader(out, "azure-blob-test", 1, new byte[16], "suffix");
+        for (int i = 0; i < 10000; i++) {
+          out.writeInt(i);
+        }
+        CodecUtil.writeFooter(out);
+      }
+
+      try (IndexInput in = localDir.openInput(fileName, IOContext.READONCE)) {
+        expectedChecksum = CodecUtil.retrieveChecksum(in);
+        expectedLength = in.length();
+      }
+
+      URI dirUri = getBaseUri().resolve("checksum-restore-dir");
+      repository.copyFileFrom(localDir, fileName, dirUri);
+
+      try (IndexInput in = repository.openInput(dirUri, fileName, IOContext.READONCE)) {
+        assertEquals("Length should match original", expectedLength, in.length());
+        long checksumFromRepo = CodecUtil.retrieveChecksum(in);
+        assertEquals(
+            "Checksum read via repository should match local checksum",
+            expectedChecksum,
+            checksumFromRepo);
+
+        // After retrieveChecksum, the input is positioned near EOF. Seek back to 0 (the pattern
+        // used by checksumEntireFile / readIndexHeader) and verify we can read from the start.
+        in.seek(0);
+        assertEquals("Position should be 0 after backward seek", 0, in.getFilePointer());
+
+        byte[] magicBytes = new byte[4];
+        in.readBytes(magicBytes, 0, magicBytes.length);
+        int magic =
+            ((magicBytes[0] & 0xFF) << 24)
+                | ((magicBytes[1] & 0xFF) << 16)
+                | ((magicBytes[2] & 0xFF) << 8)
+                | (magicBytes[3] & 0xFF);
+        assertEquals("First int should be the Lucene codec magic", CodecUtil.CODEC_MAGIC, magic);
+      }
+    } finally {
+      PathUtils.deleteDirectory(tempDir);
     }
   }
 

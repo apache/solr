@@ -186,10 +186,16 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       throw new IOException("Failed to check path type for " + basePath, e);
     }
 
-    final String baseForPaths = basePath;
+    final String prefix;
+    if (basePath.isEmpty() || basePath.endsWith("/")) {
+      prefix = basePath;
+    } else {
+      prefix = basePath + "/";
+    }
+
     Set<String> fullPaths =
         files.stream()
-            .map(file -> (baseForPaths.isEmpty() ? file : baseForPaths + "/" + file))
+            .map(file -> prefix + file.replaceFirst("^/+", ""))
             .collect(Collectors.toSet());
 
     if (log.isDebugEnabled()) {
@@ -271,7 +277,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
     }
 
     try {
-      return new AzureBlobIndexInput(blobPath, client, client.length(blobPath));
+      return new AzureBlobIndexInput(client, blobPath, client.length(blobPath));
     } catch (AzureBlobException e) {
       throw new IOException("Failed to open input stream for " + blobPath, e);
     }
@@ -299,12 +305,16 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       Directory sourceDir, String sourceFileName, URI dest, String destFileName)
       throws IOException {
     Objects.requireNonNull(sourceDir, "cannot copy with a null sourceDir");
-    Objects.requireNonNull(sourceFileName, "cannot copy with a null sourceFileName");
     Objects.requireNonNull(dest, "cannot copy with a null dest");
+    if (StrUtils.isNullOrEmpty(sourceFileName)) {
+      throw new IllegalArgumentException("must have a valid source file name to copy");
+    }
+    if (StrUtils.isNullOrEmpty(destFileName)) {
+      throw new IllegalArgumentException("must have a valid destination file name to copy");
+    }
 
-    String destPath = getBlobPath(dest);
-
-    String blobPath = destPath.endsWith("/") ? destPath + destFileName : destPath;
+    URI filePath = resolve(dest, destFileName);
+    String blobPath = getBlobPath(filePath);
 
     if (log.isDebugEnabled()) {
       log.debug("Copy index file from '{}' to '{}'", sourceFileName, blobPath);

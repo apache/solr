@@ -50,6 +50,14 @@ Add to `solr.xml`:
 <str name="azure.blob.connection.string">DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net</str>
 ```
 
+### Account Name + Account Key
+
+```xml
+<str name="azure.blob.endpoint">https://YOUR_ACCOUNT.blob.core.windows.net</str>
+<str name="azure.blob.account.name">YOUR_ACCOUNT</str>
+<str name="azure.blob.account.key">YOUR_ACCOUNT_KEY</str>
+```
+
 ### SAS Token (Production)
 
 Generate a SAS token with permissions: Read, Write, Delete, List, Add, Create (`sp=rwdlac`) and resource types: Service, Container, Object (`srt=sco`).
@@ -79,6 +87,12 @@ For Service Principal, add:
 
 Or set environment variables: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`.
 
+## Known Limitations
+
+Azure Identity authentication (Service Principal, Managed Identity, `DefaultAzureCredential`) does not work when Solr is started with the Java `SecurityManager` enabled. The Azure Identity SDK relies on `doPrivileged` patterns that fail under Solr's default security policy; see the [upstream issue](https://github.com/Azure/azure-sdk-for-java/issues/37464) for details. Note that the `SecurityManager` is deprecated for removal in modern JDKs, but Solr still enables it by default via `SOLR_SECURITY_MANAGER_ENABLED=true`.
+
+Workaround: set `SOLR_SECURITY_MANAGER_ENABLED=false` (in `solr.in.sh` / `solr.in.cmd`, or as an environment variable) before starting Solr. The Connection String, Account Key, and SAS Token authentication methods are unaffected and work with the `SecurityManager` enabled.
+
 ## Usage
 
 ```bash
@@ -90,6 +104,9 @@ curl "http://localhost:8983/solr/admin/collections?action=RESTORE&name=my-backup
 
 # List backups
 curl "http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=my-backup&repository=azure_blob&location=/"
+
+# Delete a specific backup
+curl "http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=my-backup&backupId=0&repository=azure_blob&location=/"
 ```
 
 ## Troubleshooting

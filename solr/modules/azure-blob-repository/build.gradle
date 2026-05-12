@@ -32,8 +32,13 @@ dependencies {
 
   implementation libs.apache.lucene.core
 
+  implementation platform(libs.azure.sdk.bom)
+
   // Azure Storage SDK dependencies
   implementation(libs.azure.storage.blob) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation(libs.azure.storage.blob.batch) {
     exclude group: 'com.azure', module: 'azure-core-http-netty'
   }
   implementation(libs.azure.identity) {
@@ -42,7 +47,6 @@ dependencies {
   implementation(libs.azure.core) {
     exclude group: 'com.azure', module: 'azure-core-http-netty'
   }
-  implementation libs.azure.core.http.okhttp
   implementation(libs.azure.storage.common) {
     exclude group: 'com.azure', module: 'azure-core-http-netty'
   }
@@ -50,6 +54,7 @@ dependencies {
   implementation libs.google.guava
   implementation libs.slf4j.api
 
+  runtimeOnly libs.azure.core.http.okhttp
   runtimeOnly libs.fasterxml.woodstox.core
   runtimeOnly libs.codehaus.woodstox.stax2api
 
@@ -57,9 +62,10 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
   
-  // OkHttp for test client management
   testImplementation libs.azure.core.http.okhttp
-  
+  testImplementation libs.squareup.okhttp3.okhttp
+  testImplementation libs.projectreactor.core
+
   // Testcontainers for Azurite integration testing
   testImplementation libs.testcontainers
 

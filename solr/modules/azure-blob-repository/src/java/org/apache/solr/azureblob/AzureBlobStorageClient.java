@@ -16,26 +16,44 @@
  */
 package org.apache.solr.azureblob;
 
-import com.azure.core.credential.TokenCredential;
+import com.azure.core.http.HttpRequest;
+import com.azure.core.http.HttpResponse;
+import com.azure.core.util.Context;
+import com.azure.identity.ClientSecretCredentialBuilder;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.batch.BlobBatchClient;
+import com.azure.storage.blob.batch.BlobBatchClientBuilder;
+import com.azure.storage.blob.batch.BlobBatchStorageException;
 import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlobProperties;
+import com.azure.storage.blob.models.BlobRange;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.ListBlobsOptions;
+import com.azure.storage.blob.options.BlobParallelUploadOptions;
+import com.azure.storage.blob.specialized.BlobInputStream;
+import com.azure.storage.common.StorageSharedKeyCredential;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ResumableInputStream;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
@@ -53,12 +71,13 @@ public class AzureBlobStorageClient {
   private static final int HTTP_NOT_FOUND = 404;
   private static final int HTTP_CONFLICT = 409;
   private static final int SKIP_BUFFER_SIZE = 8192;
-  private static final int DELETE_BATCH_SIZE = 1000;
-
-  private static final com.azure.core.http.HttpClient SHARED_HTTP_CLIENT =
-      new com.azure.core.http.okhttp.OkHttpAsyncHttpClientBuilder().build();
+  // Azure Blob Storage caps batch operations at 256 sub-requests per HTTP request:
+  // https://learn.microsoft.com/rest/api/storageservices/blob-batch
+  // Package-private so tests can reference the boundary directly.
+  static final int DELETE_BATCH_SIZE = 256;
 
   private final BlobContainerClient containerClient;
+  private final BlobBatchClient batchClient;
 
   AzureBlobStorageClient(
       String containerName,
@@ -83,9 +102,9 @@ public class AzureBlobStorageClient {
         containerName);
   }
 
-  @VisibleForTesting
   AzureBlobStorageClient(BlobServiceClient blobServiceClient, String containerName) {
     this.containerClient = blobServiceClient.getBlobContainerClient(containerName);
+    this.batchClient = new BlobBatchClientBuilder(blobServiceClient).buildClient();
     try {
       containerClient.create();
     } catch (BlobStorageException e) {
@@ -106,20 +125,31 @@ public class AzureBlobStorageClient {
       String clientSecret) {
 
     BlobServiceClientBuilder builder = new BlobServiceClientBuilder();
-    builder.httpClient(SHARED_HTTP_CLIENT);
 
     if (StrUtils.isNotNullOrEmpty(connectionString)) {
       builder.connectionString(connectionString);
     } else if (StrUtils.isNotNullOrEmpty(endpoint)) {
       builder.endpoint(endpoint);
       if (StrUtils.isNotNullOrEmpty(accountName) && StrUtils.isNotNullOrEmpty(accountKey)) {
-        builder.credential(
-            new com.azure.storage.common.StorageSharedKeyCredential(accountName, accountKey));
+        builder.credential(new StorageSharedKeyCredential(accountName, accountKey));
       } else if (StrUtils.isNotNullOrEmpty(sasToken)) {
         builder.sasToken(sasToken);
+      } else if (StrUtils.isNotNullOrEmpty(tenantId)
+          && StrUtils.isNotNullOrEmpty(clientId)
+          && StrUtils.isNotNullOrEmpty(clientSecret)) {
+        builder.credential(
+            new ClientSecretCredentialBuilder()
+                .tenantId(tenantId)
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .build());
       } else {
-        TokenCredential credential = new DefaultAzureCredentialBuilder().tenantId(tenantId).build();
-        builder.credential(credential);
+        DefaultAzureCredentialBuilder dac = new DefaultAzureCredentialBuilder();
+        if (StrUtils.isNotNullOrEmpty(tenantId)) {
+          dac.tenantId(tenantId);
+        }
+
+        builder.credential(dac.build());
       }
     } else {
       throw new IllegalArgumentException("Either connectionString or endpoint must be provided");
@@ -139,22 +169,36 @@ public class AzureBlobStorageClient {
 
       try {
         BlobClient blobClient = containerClient.getBlobClient(sanitizedDirPath);
-        blobClient.upload(new ByteArrayInputStream(new byte[0]), 0, true);
-        java.util.Map<String, String> metadata = new java.util.HashMap<>();
+        Map<String, String> metadata = new HashMap<>();
         metadata.put("hdi_isfolder", "true");
-        blobClient.setMetadata(metadata);
+        BlobParallelUploadOptions options =
+            new BlobParallelUploadOptions(new ByteArrayInputStream(new byte[0]))
+                .setMetadata(metadata);
+        blobClient.uploadWithResponse(options, null, Context.NONE);
       } catch (BlobStorageException e) {
         throw handleBlobException(e);
       }
     }
   }
 
+  /**
+   * Strict delete: throws {@link AzureBlobNotFoundException} if any path was missing. Use {@link
+   * #deleteDirectory(String)} for lenient semantics. Not atomic — present paths may still be
+   * deleted server-side when this throws.
+   */
   void delete(Collection<String> paths) throws AzureBlobException {
     Set<String> entries = new HashSet<>();
     for (String path : paths) {
       entries.add(sanitizedFilePath(path));
     }
-    deleteBlobs(entries);
+
+    Collection<String> deletedPaths = deleteBlobs(entries);
+
+    if (entries.size() != deletedPaths.size()) {
+      Set<String> missing = new HashSet<>(entries);
+      missing.removeAll(deletedPaths);
+      throw new AzureBlobNotFoundException("Blobs not found: " + missing);
+    }
   }
 
   void deleteDirectory(String path) throws AzureBlobException {
@@ -218,11 +262,12 @@ public class AzureBlobStorageClient {
 
       BlobClient markerClient = containerClient.getBlobClient(dirPrefix);
       if (markerClient.exists()) {
-        long size = markerClient.getProperties().getBlobSize();
-        if (size == 0) {
+        BlobProperties props = markerClient.getProperties();
+        if (props.getBlobSize() == 0) {
           return true;
         }
-        java.util.Map<String, String> md = markerClient.getProperties().getMetadata();
+
+        Map<String, String> md = props.getMetadata();
         return md != null && md.containsKey("hdi_isfolder");
       }
 
@@ -247,28 +292,27 @@ public class AzureBlobStorageClient {
 
     try {
       BlobClient blobClient = containerClient.getBlobClient(blobPath);
-      final long contentLength = blobClient.getProperties().getBlobSize();
+      BlobInputStream blobInputStream = blobClient.openInputStream();
 
-      if (contentLength == 0) {
-        return new ByteArrayInputStream(new byte[0]);
+      try {
+        final long contentLength = blobInputStream.getProperties().getBlobSize();
+        InputStream initial = new IdempotentCloseInputStream(blobInputStream);
+        return new ResumableInputStream(
+            initial,
+            bytesRead -> {
+              if (bytesRead >= contentLength) {
+                return null;
+              }
+              try {
+                return pullRangeStream(path, bytesRead, contentLength - bytesRead);
+              } catch (AzureBlobException e) {
+                throw new RuntimeException(e);
+              }
+            });
+      } catch (RuntimeException | Error t) {
+        blobInputStream.close();
+        throw t;
       }
-
-      InputStream initial = new IdempotentCloseInputStream(blobClient.openInputStream());
-
-      return new ResumableInputStream(
-          initial,
-          bytesRead -> {
-            if (contentLength > 0 && bytesRead >= contentLength) {
-              return null;
-            }
-            try {
-              long remaining =
-                  contentLength > 0 ? Math.max(0, contentLength - bytesRead) : Long.MAX_VALUE;
-              return pullRangeStream(path, bytesRead, remaining);
-            } catch (AzureBlobException e) {
-              throw new RuntimeException(e);
-            }
-          });
     } catch (BlobStorageException e) {
       throw handleBlobException(e);
     }
@@ -278,8 +322,7 @@ public class AzureBlobStorageClient {
     final String blobPath = sanitizedFilePath(path);
     try {
       BlobClient blobClient = containerClient.getBlobClient(blobPath);
-      com.azure.storage.blob.models.BlobRange range =
-          new com.azure.storage.blob.models.BlobRange(offset, length);
+      BlobRange range = new BlobRange(offset, length);
       return new IdempotentCloseInputStream(blobClient.openInputStream(range, null));
     } catch (BlobStorageException e) {
       throw handleBlobException(e);
@@ -295,45 +338,45 @@ public class AzureBlobStorageClient {
     }
 
     @Override
-    public int read() throws java.io.IOException {
+    public int read() throws IOException {
       if (closed) {
-        throw new java.io.IOException("Stream is already closed");
+        throw new IOException("Stream is already closed");
       }
       try {
         return super.read();
       } catch (RuntimeException re) {
         if (isAlreadyClosed(re)) {
-          throw new java.io.IOException("Stream is already closed", re);
+          throw new IOException("Stream is already closed", re);
         }
         throw re;
       }
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws java.io.IOException {
+    public int read(byte[] b, int off, int len) throws IOException {
       if (closed) {
-        throw new java.io.IOException("Stream is already closed");
+        throw new IOException("Stream is already closed");
       }
       try {
         return super.read(b, off, len);
       } catch (RuntimeException re) {
         if (isAlreadyClosed(re)) {
-          throw new java.io.IOException("Stream is already closed", re);
+          throw new IOException("Stream is already closed", re);
         }
         throw re;
       }
     }
 
     @Override
-    public void close() throws java.io.IOException {
+    public void close() throws IOException {
       if (closed) {
         return;
       }
       try {
         super.close();
-      } catch (java.io.IOException e) {
+      } catch (IOException e) {
         String msg = e.getMessage();
-        if (msg == null || !msg.toLowerCase(java.util.Locale.ROOT).contains("already closed")) {
+        if (msg == null || !msg.toLowerCase(Locale.ROOT).contains("already closed")) {
           throw e;
         }
         // swallow "already closed" to make close idempotent
@@ -343,9 +386,9 @@ public class AzureBlobStorageClient {
     }
 
     @Override
-    public long skip(long n) throws java.io.IOException {
+    public long skip(long n) throws IOException {
       if (closed) {
-        throw new java.io.IOException("Stream is already closed");
+        throw new IOException("Stream is already closed");
       }
       if (n <= 0) {
         return 0L;
@@ -363,13 +406,13 @@ public class AzureBlobStorageClient {
         }
         return n - remaining;
       } catch (RuntimeException re) {
-        throw new java.io.IOException(re);
+        throw new IOException(re);
       }
     }
 
     private static boolean isAlreadyClosed(Throwable t) {
       String msg = t.getMessage();
-      return msg != null && msg.toLowerCase(java.util.Locale.ROOT).contains("already closed");
+      return msg != null && msg.toLowerCase(Locale.ROOT).contains("already closed");
     }
   }
 
@@ -404,36 +447,82 @@ public class AzureBlobStorageClient {
     }
   }
 
-  private Collection<String> deleteBlobs(Collection<String> paths) throws AzureBlobException {
-    try {
-      return deleteBlobs(paths, DELETE_BATCH_SIZE);
-    } catch (BlobStorageException e) {
-      throw handleBlobException(e);
+  private Collection<String> deleteBlobs(Collection<String> entries) throws AzureBlobException {
+    if (entries.isEmpty()) {
+      return Set.of();
     }
-  }
 
-  @VisibleForTesting
-  Collection<String> deleteBlobs(Collection<String> entries, int batchSize)
-      throws AzureBlobException {
     Set<String> deletedPaths = new HashSet<>();
+    List<String> all = new ArrayList<>(entries);
 
-    for (String path : entries) {
+    for (int start = 0; start < all.size(); start += DELETE_BATCH_SIZE) {
+      List<String> chunk = all.subList(start, Math.min(start + DELETE_BATCH_SIZE, all.size()));
+
+      // The batch API addresses sub-requests by full blob URL, not container-relative path; keep
+      // an inverse map so we can identify which chunk entries 404'd from sub-exception URLs.
+      List<String> blobUrls = new ArrayList<>(chunk.size());
+      Map<String, String> urlToPath = CollectionUtil.newHashMap(chunk.size());
+      for (String path : chunk) {
+        String url = containerClient.getBlobClient(path).getBlobUrl();
+        blobUrls.add(url);
+        urlToPath.put(url, path);
+      }
+
       try {
-        BlobClient blobClient = containerClient.getBlobClient(path);
-        boolean existed = blobClient.deleteIfExists();
-        if (existed) {
-          deletedPaths.add(path);
+        batchClient.deleteBlobs(blobUrls, null).forEach(r -> {});
+        deletedPaths.addAll(chunk);
+      } catch (BlobBatchStorageException e) {
+        Set<String> notFound = new HashSet<>();
+        int subExceptionCount = 0;
+        for (BlobStorageException sub : e.getBatchExceptions()) {
+          subExceptionCount++;
+          if (sub.getStatusCode() != HTTP_NOT_FOUND) {
+            throw new AzureBlobException(
+                String.format(
+                    Locale.ROOT,
+                    "Batch delete failed (HTTP %d on %s)",
+                    sub.getStatusCode(),
+                    subRequestUrl(sub)),
+                e);
+          }
+          String path = urlToPath.get(subRequestUrl(sub));
+          if (path != null) {
+            notFound.add(path);
+          } else if (log.isWarnEnabled()) {
+            log.warn(
+                "Could not map batch sub-response URL {} back to a chunk path", subRequestUrl(sub));
+          }
+        }
+
+        // URL attribution missed a sub-exception (canonical-form drift): fall back to
+        // "whole chunk not deleted" so the strict check in delete() still fires.
+        if (notFound.size() != subExceptionCount) {
+          notFound.addAll(chunk);
+        }
+
+        if (log.isDebugEnabled()) {
+          log.debug("Batch delete tolerated {} not-found sub-responses", notFound.size());
+        }
+
+        for (String path : chunk) {
+          if (!notFound.contains(path)) {
+            deletedPaths.add(path);
+          }
         }
       } catch (BlobStorageException e) {
-        if (e.getStatusCode() == HTTP_NOT_FOUND) {
-          continue;
-        }
-
-        throw new AzureBlobException("Could not delete blob with path: " + path, e);
+        throw handleBlobException(e);
       }
     }
 
     return deletedPaths;
+  }
+
+  /** Extracts the request URL from a batch sub-exception; returns {@code "<unknown>"} on null. */
+  private static String subRequestUrl(BlobStorageException sub) {
+    HttpResponse response = sub.getResponse();
+    HttpRequest request = response == null ? null : response.getRequest();
+    URL url = request == null ? null : request.getUrl();
+    return url == null ? "<unknown>" : url.toString();
   }
 
   private Set<String> listAll(String path) throws AzureBlobException {

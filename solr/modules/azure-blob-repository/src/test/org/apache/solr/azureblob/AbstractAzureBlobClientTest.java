@@ -48,7 +48,7 @@ import org.testcontainers.utility.DockerImageName;
     })
 public class AbstractAzureBlobClientTest extends SolrTestCase {
 
-  private static final String AZURITE_IMAGE = "mcr.microsoft.com/azure-storage/azurite:3.33.0";
+  private static final String AZURITE_IMAGE = "mcr.microsoft.com/azure-storage/azurite:3.35.0";
   private static final int BLOB_SERVICE_PORT = 10000;
 
   private static GenericContainer<?> azuriteContainer;
@@ -66,7 +66,8 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
     try {
       azuriteContainer =
           new GenericContainer<>(DockerImageName.parse(AZURITE_IMAGE))
-              .withExposedPorts(BLOB_SERVICE_PORT);
+              .withExposedPorts(BLOB_SERVICE_PORT)
+              .withCommand("azurite-blob", "--blobHost", "0.0.0.0", "--skipApiVersionCheck");
       azuriteContainer.start();
       sharedOkHttpClient = new OkHttpClient.Builder().build();
     } catch (Throwable t) {

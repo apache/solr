@@ -20,6 +20,7 @@ import org.junit.Test;
 
 public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
 
+  /** {@code pathExists()} returns false before push, true after. */
   @Test
   public void testPathExists() throws Exception {
     String path = "path-exists-test-" + java.util.UUID.randomUUID() + ".txt";
@@ -31,6 +32,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertTrue("Path should exist after creation", client.pathExists(path));
   }
 
+  /** {@code pathExists()} reports a freshly-created directory marker as present. */
   @Test
   public void testDirectoryExists() throws Exception {
     String dirPath = "test-directory-" + java.util.UUID.randomUUID() + "/";
@@ -42,6 +44,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertTrue("Directory should exist after creation", client.pathExists(dirPath));
   }
 
+  /** {@code isDirectory()} distinguishes directory markers from regular blobs. */
   @Test
   public void testIsDirectory() throws Exception {
     String dirPath = "is-directory-test/";
@@ -54,6 +57,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertFalse("Should not be a directory", client.isDirectory(filePath));
   }
 
+  /** {@code length()} returns the exact byte count of the uploaded content. */
   @Test
   public void testFileLength() throws Exception {
     String path = "file-length-test.txt";
@@ -64,6 +68,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertEquals("File length should match", content.length(), client.length(path));
   }
 
+  /** {@code length()} on a directory throws — directory markers have no meaningful size. */
   @Test
   public void testDirectoryLength() throws Exception {
     String dirPath = "directory-length-test/";
@@ -73,6 +78,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     expectThrows(AzureBlobException.class, () -> client.length(dirPath));
   }
 
+  /** {@code listDir()} returns immediate children only — both files and sub-directory markers. */
   @Test
   public void testListDirectory() throws Exception {
     String dirPath = "list-directory-test/";
@@ -107,6 +113,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     }
   }
 
+  /** Recursive walk via {@code listDir()} reaches files nested under multiple sub-directories. */
   @Test
   public void testListAll() throws Exception {
     String dirPath = "list-all-test/";
@@ -145,6 +152,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     }
   }
 
+  /** Happy path: {@code delete()} of a single existing file removes it. */
   @Test
   public void testDeleteFile() throws Exception {
     String path = "delete-file-test.txt";
@@ -157,6 +165,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertFalse("File should not exist after deletion", client.pathExists(path));
   }
 
+  /** {@code deleteDirectory()} recursively removes a directory and its contents. */
   @Test
   public void testDeleteDirectory() throws Exception {
     String dirPath = "delete-directory-test/";
@@ -174,15 +183,21 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertFalse("File should not exist after deletion", client.pathExists(filePath));
   }
 
+  /** Strict {@code delete()}: a single missing path raises {@link AzureBlobNotFoundException}. */
   @Test
   public void testDeleteNonExistentFile() throws Exception {
     String path = "non-existent-file.txt";
 
     assertFalse("File should not exist", client.pathExists(path));
 
-    client.delete(java.util.Set.of(path));
+    AzureBlobNotFoundException thrown =
+        expectThrows(AzureBlobNotFoundException.class, () -> client.delete(java.util.Set.of(path)));
+    assertTrue(
+        "Exception message should reference the missing path: " + thrown.getMessage(),
+        thrown.getMessage().contains(path));
   }
 
+  /** Lenient {@code deleteDirectory()}: a missing directory is a silent no-op (no exception). */
   @Test
   public void testDeleteNonExistentDirectory() throws Exception {
     String dirPath = "non-existent-directory/";
@@ -192,6 +207,9 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     client.deleteDirectory(dirPath);
   }
 
+  /**
+   * Deeply-nested directories + files are all observable via {@code pathExists()} after creation.
+   */
   @Test
   public void testNestedDirectories() throws Exception {
     String rootDir = "nested-test/";
@@ -218,6 +236,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertTrue("Deep file should exist", client.pathExists(deepDir + "deep-file.txt"));
   }
 
+  /** {@code sanitizedPath()} strips leading slashes from a variety of input shapes. */
   @Test
   public void testPathSanitization() throws Exception {
     String[] testPaths = {
@@ -238,6 +257,9 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     }
   }
 
+  /**
+   * {@code sanitizedFilePath()} accepts valid file paths and rejects trailing-slash / blank input.
+   */
   @Test
   public void testFilePathSanitization() throws Exception {
     String[] validFilePaths = {
@@ -258,6 +280,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     }
   }
 
+  /** {@code sanitizedDirPath()} always appends a trailing slash to dir-shaped input. */
   @Test
   public void testDirectoryPathSanitization() throws Exception {
     String[] testDirPaths = {
