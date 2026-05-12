@@ -83,7 +83,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </ul>
  *
  * <pre class="prettyprint" >
- * &lt;processor class=&quot;solr.llm.documentenrichment.update.processor.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
+ * &lt;processor class=&quot;solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;inputField&quot;&gt;title_field&lt;/str&gt;
  *   &lt;str name=&quot;inputField&quot;&gt;body_field&lt;/str&gt;
  *   &lt;str name=&quot;outputField&quot;&gt;enriched_field&lt;/str&gt;
