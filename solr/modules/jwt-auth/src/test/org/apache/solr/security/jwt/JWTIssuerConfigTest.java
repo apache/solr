@@ -22,6 +22,7 @@ import static org.apache.solr.security.jwt.JWTAuthPluginTest.testJwk;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.util.Resource;
+import com.nimbusds.jose.util.ResourceRetriever;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -258,7 +259,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     AtomicInteger fetchCount = new AtomicInteger();
     JWKSet referenceSet = JWTIssuerConfig.parseJwkSet(testJwk);
     String jwkSetJson = referenceSet.toString();
-    com.nimbusds.jose.util.ResourceRetriever countingRetriever =
+    ResourceRetriever countingRetriever =
         url -> {
           fetchCount.incrementAndGet();
           return new Resource(jwkSetJson, "application/json");
@@ -278,7 +279,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     AtomicInteger fetchCount = new AtomicInteger();
     JWKSet referenceSet = JWTIssuerConfig.parseJwkSet(testJwk);
     String jwkSetJson = referenceSet.toString();
-    com.nimbusds.jose.util.ResourceRetriever countingRetriever =
+    ResourceRetriever countingRetriever =
         url -> {
           fetchCount.incrementAndGet();
           return new Resource(jwkSetJson, "application/json");
