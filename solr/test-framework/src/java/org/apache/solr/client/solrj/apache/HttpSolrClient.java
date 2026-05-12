@@ -99,7 +99,7 @@ import org.slf4j.MDC;
  * @deprecated Please use {@link HttpJettySolrClient} or {@link HttpJdkSolrClient}
  */
 @Deprecated(since = "9.0")
-public class HttpApacheSolrClient extends SolrClient {
+public class HttpSolrClient extends SolrClient {
 
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
@@ -109,7 +109,7 @@ public class HttpApacheSolrClient extends SolrClient {
   static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
-  static final Class<HttpApacheSolrClient> cacheKey = HttpApacheSolrClient.class;
+  static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
 
   /** The URL of the Solr server. */
   protected volatile String baseUrl;
@@ -150,7 +150,7 @@ public class HttpApacheSolrClient extends SolrClient {
   private final int connectionTimeout;
   private final int soTimeout;
 
-  protected HttpApacheSolrClient(Builder builder) {
+  protected HttpSolrClient(Builder builder) {
     this.baseUrl = builder.baseSolrUrl;
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
@@ -773,7 +773,7 @@ public class HttpApacheSolrClient extends SolrClient {
   }
 
   /**
-   * Constructs {@link HttpApacheSolrClient} instances from provided configuration.
+   * Constructs {@link HttpSolrClient} instances from provided configuration.
    *
    * @deprecated Please use {@link HttpJettySolrClient}
    */
@@ -793,7 +793,7 @@ public class HttpApacheSolrClient extends SolrClient {
      * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new HttpApacheSolrClient.Builder()
+     *   SolrClient client = new HttpSolrClient.Builder()
      *       .withBaseSolrUrl("http://my-solr-server:8983/solr")
      *       .withDefaultCollection("core1")
      *       .build();
@@ -811,7 +811,7 @@ public class HttpApacheSolrClient extends SolrClient {
      * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new HttpApacheSolrClient.Builder("http://my-solr-server:8983/solr")
+     *   SolrClient client = new HttpSolrClient.Builder("http://my-solr-server:8983/solr")
      *       .withDefaultCollection("core1")
      *       .build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
@@ -855,14 +855,14 @@ public class HttpApacheSolrClient extends SolrClient {
       return this;
     }
 
-    /** Create a {@link HttpApacheSolrClient} based on provided configuration. */
-    public HttpApacheSolrClient build() {
+    /** Create a {@link HttpSolrClient} based on provided configuration. */
+    public HttpSolrClient build() {
       if (baseSolrUrl == null) {
         throw new IllegalArgumentException(
             "Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
 
-      return new HttpApacheSolrClient(this);
+      return new HttpSolrClient(this);
     }
 
     @Override

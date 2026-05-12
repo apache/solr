@@ -44,7 +44,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
@@ -751,11 +751,11 @@ public class JettySolrRunner implements SolrBackend {
   }
 
   public SolrClient newClient() {
-    return new HttpApacheSolrClient.Builder(getBaseUrl().toString()).build();
+    return new HttpSolrClient.Builder(getBaseUrl().toString()).build();
   }
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new HttpApacheSolrClient.Builder(getBaseUrl().toString())
+    return new HttpSolrClient.Builder(getBaseUrl().toString())
         .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
         .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
