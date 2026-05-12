@@ -24,9 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -77,22 +76,21 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .isSuccess());
 
-    solrClient = cluster.newSolrClient(COLL);
+    solrClient = cluster.getSolrClient(COLL);
 
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
       clients.add(
-          new HttpApacheSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .build());
+          new CollectionScopedSolrClient(
+              cluster.getReplicaJetty(replica).getSolrClient(), replica.getCoreName()));
     }
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    IOUtils.close(clients);
+    // lifecycle internally managed; we simply GC here
     clients.clear();
-    IOUtils.close(solrClient);
+    solrClient = null;
 
     RVAL_PRE = null;
   }

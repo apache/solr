@@ -20,10 +20,8 @@ import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -43,6 +41,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// nocommit fails
 @Nightly // this test is currently too slow for non-nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   public static final String TEST_COLLECTION = "forceleader_lower_terms_collection";
@@ -193,19 +192,11 @@ public class ForceLeaderTest extends HttpPartitionTest {
     }
   }
 
-  /**
-   * For this test, we need a cloudClient that is not randomized since we need to NEVER send the
-   * updates only to the leader. The way the RandomizingCloudSolrClientBuilder works, you can't
-   * avoid its internal decision-making process to sometimes send updates only to leaders. We
-   * override the definition of this class in AbstractFullDistribZkTestBase to make sure we always
-   * use DEFAULT_COLLECTION defined in ForceLeaderTest.
-   */
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudLegacySolrClient.Builder builder =
-        new CloudLegacySolrClient.Builder(List.of(zkServer.getZkAddress()), Optional.empty());
-    builder.withDefaultCollection(TEST_COLLECTION);
-    return builder.withConnectionTimeout(30000).withSocketTimeout(120000).build();
+    boolean shardLeadersOnly = false; // this test requires we use any replica
+    return createNewCloudSolrClient(
+        zkServer.getZkHost(), TEST_COLLECTION, shardLeadersOnly, 30_000, 120_000);
   }
 
   private void putNonLeadersIntoLowerTerm(
@@ -321,11 +312,8 @@ public class ForceLeaderTest extends HttpPartitionTest {
     CollectionAdminRequest.ForceLeader forceLeader =
         CollectionAdminRequest.forceLeaderElection(collectionName, shard);
 
-    try (CloudSolrClient cloudClient =
-        new CloudLegacySolrClient.Builder(List.of(zkServer.getZkAddress()), Optional.empty())
-            .withConnectionTimeout(3000)
-            .withSocketTimeout(60000)
-            .build()) {
+    try (var cloudClient =
+        createNewCloudSolrClient(zkServer.getZkHost(), null, true, 3_000, 60_000)) {
       cloudClient.request(forceLeader);
     }
   }

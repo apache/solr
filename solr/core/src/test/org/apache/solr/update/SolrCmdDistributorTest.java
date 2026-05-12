@@ -918,10 +918,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           }
           ZkNodeProps nodeProps =
               new ZkNodeProps(
-                  ZkStateReader.BASE_URL_PROP,
-                  c.getBaseURL(),
-                  ZkStateReader.CORE_NAME_PROP,
-                  "");
+                  ZkStateReader.BASE_URL_PROP, c.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
           StdNode node = new StdNode(new ZkCoreNodeProps(nodeProps));
           nodes.add(node);
         }

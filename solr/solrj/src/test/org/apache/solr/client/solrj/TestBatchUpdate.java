@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
@@ -60,7 +60,8 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(solrTestRule.getBaseUrl())
+        new HttpJettySolrClient.Builder()
+            .withHttpClient(solrTestRule.getJetty().getSolrClient())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new XMLRequestWriter())
             .build()) {
@@ -72,7 +73,8 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(solrTestRule.getBaseUrl())
+        new HttpJettySolrClient.Builder()
+            .withHttpClient(solrTestRule.getJetty().getSolrClient())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
@@ -84,7 +86,8 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithBinaryBean() throws Exception {
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(solrTestRule.getBaseUrl())
+        new HttpJettySolrClient.Builder()
+            .withHttpClient(solrTestRule.getJetty().getSolrClient())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {

@@ -81,6 +81,7 @@ public class SocketProxy {
     this.usesSSL = useSSL;
     serverSocket = createServerSocket(useSSL);
     serverSocket.setReuseAddress(true);
+    serverSocket.setSoTimeout(1000);
     if (receiveBufferSize > 0) {
       serverSocket.setReceiveBufferSize(receiveBufferSize);
     }
@@ -188,6 +189,7 @@ public class SocketProxy {
       }
       serverSocket = createServerSocket(usesSSL);
       serverSocket.setReuseAddress(true);
+      serverSocket.setSoTimeout(1000);
       if (receiveBufferSize > 0) {
         serverSocket.setReceiveBufferSize(receiveBufferSize);
       }

@@ -372,7 +372,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // assert both replicas have same effect
-    for (HttpSolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNull("This doc was supposed to have been deleted, but was: " + doc, doc);
     }
@@ -960,7 +961,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // assert both replicas have same effect
-    for (HttpSolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       if (log.isInfoEnabled()) {
         log.info("Testing client: {}", client.getBaseURL());
       }
@@ -969,15 +971,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           0,
           "inplace_updatable_float",
           (newinplace_updatable_float + (float) (updates.size() - 1)),
-          "inplace_updatable_float didn't match for replica at client: "
-              + client.getBaseURL());
+          "inplace_updatable_float didn't match for replica at client: " + client.getBaseURL());
       assertReplicaValue(
           client,
           0,
           "title_s",
           "title0_new",
-          "Title didn't match for replica at client: "
-              + client.getBaseURL());
+          "Title didn't match for replica at client: " + client.getBaseURL());
       assertEquals(version0 + updates.size(), getReplicaValue(client, 0, "_version_"));
     }
 
@@ -1065,7 +1065,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // assert both replicas have same effect
-    for (HttpSolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNull("This doc was supposed to have been deleted, but was: " + doc, doc);
     }
@@ -1205,11 +1206,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     log.info("Doc in both replica 0: {}", doc0);
     log.info("Doc in both replica 1: {}", doc1);
     // assert both replicas have same effect
-    for (HttpSolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNotNull("Client: " + client.getBaseURL(), doc);
-      assertEquals(
-          "Client: " + client.getBaseURL(), 5, doc.getFieldValue(field));
+      assertEquals("Client: " + client.getBaseURL(), 5, doc.getFieldValue(field));
     }
 
     log.info("reorderedDBQsResurrectionTest: This test passed fine...");
@@ -1688,8 +1689,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     for (HttpSolrClient client : clients) {
       if (log.isInfoEnabled()) {
         log.info(
-            "Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}",
-            client.getBaseURL());
+            "Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}", client.getBaseURL());
         log.info(
             "Version at {} is: {}",
             client.getBaseURL(),

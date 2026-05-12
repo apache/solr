@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
@@ -144,8 +144,8 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
   private SolrClient createSuggestSolrClient() {
     final ResponseParser randomParser =
         random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
-    return new HttpApacheSolrClient.Builder()
-        .withBaseSolrUrl(solrTestRule.getBaseUrl())
+    return new HttpJettySolrClient.Builder()
+        .withHttpClient(solrTestRule.getJetty().getSolrClient())
         .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withResponseParser(randomParser)
         .build();

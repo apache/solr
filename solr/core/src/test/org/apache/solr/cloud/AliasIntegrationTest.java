@@ -938,7 +938,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     } else {
       // new CloudSolrClient (random shardLeadersOnly)
 
-      RandomizingCloudSolrClientBuilder builder = new RandomizingCloudSolrClientBuilder(cluster);
+      var builder = new RandomizingCloudSolrClientBuilder(cluster);
       boolean useDefaultCollection = random().nextBoolean();
       try (CloudSolrClient solrClient =
           useDefaultCollection

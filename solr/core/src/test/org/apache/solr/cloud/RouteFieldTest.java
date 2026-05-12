@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -174,11 +173,13 @@ public class RouteFieldTest extends SolrCloudTestCase {
 
   private SolrDocumentList getDocsMatching(String coreUrl, QueryRequest request)
       throws IOException, SolrServerException {
-    final var baseUrl = URLUtil.extractBaseUrl(coreUrl);
     final var coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
-    try (SolrClient solrClient =
-        new HttpApacheSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
-      return (SolrDocumentList) solrClient.request(request).get("response");
-    }
+    SolrClient solrClient =
+        cluster.getJettySolrRunners().stream()
+            .filter(j -> coreUrl.startsWith(j.getBaseUrl().toString()))
+            .findFirst()
+            .orElseThrow()
+            .getSolrClient();
+    return request.process(solrClient, coreName).getResults();
   }
 }

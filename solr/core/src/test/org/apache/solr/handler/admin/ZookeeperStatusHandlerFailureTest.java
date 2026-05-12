@@ -18,15 +18,10 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -42,22 +37,15 @@ public class ZookeeperStatusHandlerFailureTest extends SolrCloudTestCase {
     cluster.getZkServer().shutdown();
   }
 
-  /*
-   Test the monitoring endpoint, when no Zookeeper is answering. There should still be a response
-  */
+  /**
+   * Test the monitoring endpoint, when no Zookeeper is answering. There should still be a response
+   */
   @Test
-  public void monitorZookeeperAfterZkShutdown()
-      throws IOException,
-          SolrServerException,
-          InterruptedException,
-          ExecutionException,
-          TimeoutException {
-    URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    var solr = new HttpApacheSolrClient.Builder(baseUrl.toString()).build();
+  public void monitorZookeeperAfterZkShutdown() throws IOException, SolrServerException {
     GenericSolrRequest mntrReq =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status");
     mntrReq.setResponseParser(new JsonMapResponseParser());
-    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
+    NamedList<Object> nl = cluster.getJettySolrRunner(0).getSolrClient().request(mntrReq);
 
     assertEquals("zkStatus", nl.getName(1));
     @SuppressWarnings({"unchecked"})
@@ -71,6 +59,5 @@ public class ZookeeperStatusHandlerFailureTest extends SolrCloudTestCase {
     @SuppressWarnings({"unchecked"})
     Map<String, Object> details = (Map<String, Object>) detailsList.get(0);
     assertEquals(false, details.get("ok"));
-    solr.close();
   }
 }

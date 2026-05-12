@@ -42,9 +42,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrBackend;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
@@ -579,6 +577,10 @@ public class JettySolrRunner implements SolrBackend {
       IOUtils.closeQuietly(jettySolrClient);
       jettySolrClient = null;
 
+      if (enableProxy) {
+        proxy.close();
+      }
+
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
@@ -620,10 +622,6 @@ public class JettySolrRunner implements SolrBackend {
       } while (!server.isStopped());
 
     } finally {
-      if (enableProxy) {
-        proxy.close();
-      }
-
       if (prevContext != null) {
         MDC.setContextMap(prevContext);
       } else {
@@ -750,14 +748,15 @@ public class JettySolrRunner implements SolrBackend {
     }
   }
 
-  public SolrClient newClient() {
-    return new HttpApacheSolrClient.Builder(getBaseUrl().toString()).build();
+  @Deprecated
+  public HttpJettySolrClient newClient() {
+    return new HttpJettySolrClient.Builder(getBaseUrl().toString()).build();
   }
 
-  public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new HttpApacheSolrClient.Builder(getBaseUrl().toString())
+  public HttpJettySolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
+    return new HttpJettySolrClient.Builder(getBaseUrl().toString())
         .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
+        .withIdleTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -811,7 +810,7 @@ public class JettySolrRunner implements SolrBackend {
   // ---- SolrBackend implementation ----
 
   @Override
-  public SolrClient newSolrClient(String collection) {
+  public HttpJettySolrClient newSolrClient(String collection) {
     return new HttpJettySolrClient.Builder(getBaseUrl().toString())
         .withDefaultCollection(collection)
         .build();

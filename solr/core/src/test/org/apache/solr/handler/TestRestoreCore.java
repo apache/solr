@@ -23,13 +23,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -59,15 +57,6 @@ public class TestRestoreCore extends SolrTestCaseJ4 {
     return jetty;
   }
 
-  private static SolrClient createNewSolrClient(int port) {
-
-    final String baseUrl = buildUrl(port);
-    return new HttpApacheSolrClient.Builder(baseUrl)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
-        .build();
-  }
-
   @Override
   @Before
   public void setUp() throws Exception {
@@ -79,7 +68,7 @@ public class TestRestoreCore extends SolrTestCaseJ4 {
     leader.copyConfigFile(CONF_DIR.resolve(configFile).toString(), "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = leaderJetty.getSolrClient();
     docsSeed = random().nextLong();
   }
 

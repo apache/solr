@@ -1150,7 +1150,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     if (client == null) {
       final String baseUrl = clients.get(clientIndex).getBaseURL();
 
-      try (SolrClient aClient = createNewSolrClient("", baseUrl)) {
+      try (SolrClient aClient = createNewSolrClient(baseUrl, null)) {
         res.setResponse(aClient.request(request));
       }
     } else {
@@ -1313,7 +1313,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
               .setNode(jettys.get(0).getNodeName())
               .process(cloudClient);
       for (String coreName : resp.getCollectionCoresStatus().keySet()) {
-        collectionClients.add(createNewSolrClient(coreName, jettys.get(0).getBaseUrl().toString()));
+        collectionClients.add(createNewSolrClient(jettys.get(0).getBaseUrl().toString(), coreName));
       }
     }
 
@@ -1426,7 +1426,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
-    try (SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl)) {
+    try (SolrClient client1 = createNewSolrClient(baseUrl, oneInstanceCollection)) {
       SolrQuery query = new SolrQuery("*:*");
       long oneDocs = client1.query(query).getResults().getNumFound();
       assertEquals(3, oneDocs);
@@ -1440,7 +1440,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
     // test hitting an update url
-    try (SolrClient client1 = createNewSolrClient(oneInstanceCollection, baseUrl)) {
+    try (SolrClient client1 = createNewSolrClient(baseUrl, oneInstanceCollection)) {
       client1.commit();
     }
   }
@@ -1454,7 +1454,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(0, response.getStatus());
     List<SolrClient> collectionClients = new ArrayList<>();
     for (String coreName : response.getCollectionCoresStatus().keySet()) {
-      collectionClients.add(createNewSolrClient(coreName, jettys.get(0).getBaseUrl().toString()));
+      collectionClients.add(createNewSolrClient(jettys.get(0).getBaseUrl().toString(), coreName));
     }
 
     SolrClient client1 = collectionClients.get(0);
@@ -1528,7 +1528,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     pending.add(completionService.submit(call));
 
-    collectionClients.add(createNewSolrClient(collection + num, baseUrl));
+    collectionClients.add(createNewSolrClient(baseUrl, collection + num));
   }
 
   private void testMultipleCollections() throws Exception {
@@ -1650,7 +1650,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             return null;
           };
 
-      collectionClients.add(createNewSolrClient(collection, runner.getBaseUrl().toString()));
+      collectionClients.add(createNewSolrClient(runner.getBaseUrl().toString(), collection));
       pending.add(completionService.submit(call));
       while (pending != null && pending.size() > 0) {
 
@@ -1659,14 +1659,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         pending.remove(future);
       }
     }
-  }
-
-  @Override
-  protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-
-    SolrClient client = getHttpSolrClient(baseUrl, collection);
-
-    return client;
   }
 
   @Override

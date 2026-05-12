@@ -31,12 +31,11 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
-import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -468,21 +467,17 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   public static Map<String, Integer> getShardToDocCountMap(
       CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
     Map<String, Integer> shardToDocCount = new TreeMap<>();
+    var jettySolrClient = ((CloudJettySolrClient) client).getHttpClient();
     for (Slice slice : docCollection.getActiveSlices()) {
-      String shardName = slice.getName();
-      try (var leaderClient =
-          new HttpApacheSolrClient.Builder(slice.getLeader().getBaseUrl())
-              .withDefaultCollection(slice.getLeader().getCoreName())
-              .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
-              .build()) {
-        long docsInShard =
-            leaderClient
-                .query(new SolrQuery("*:*").setParam("distrib", "false"))
-                .getResults()
-                .getNumFound();
-        shardToDocCount.put(shardName, (int) docsInShard);
-      }
+      long docsInShard =
+          new QueryRequest("/select", params("q", "*:*", "distrib", "false"))
+              .processWithBaseUrl(
+                  jettySolrClient, slice.getLeader().getBaseUrl(), slice.getLeader().getCoreName())
+              .getResults()
+              .getNumFound();
+      shardToDocCount.put(slice.getName(), (int) docsInShard);
     }
+
     return shardToDocCount;
   }
 }

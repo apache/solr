@@ -143,7 +143,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
-    return getCloudSolrClient(
+    return createNewCloudSolrClient(
         zkServer.getZkAddress(), defaultCollection, random().nextBoolean(), 30000, socketTimeout);
   }
 

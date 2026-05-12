@@ -27,7 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,9 +47,9 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpApacheSolrClient.Builder(solrTestRule.getBaseUrl())
+    return new HttpJettySolrClient.Builder()
+        .withHttpClient(solrTestRule.getJetty().getSolrClient())
         .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(cborRequestWriter())
         .withResponseParser(cborResponseParser())
         .build();

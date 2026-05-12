@@ -29,7 +29,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -107,44 +107,42 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     Collection<Replica> replicas = b1x1.getSlice("shard1").getReplicas();
     assertEquals(1, replicas.size());
     String baseUrl = replicas.iterator().next().getBaseUrl();
-    if (!baseUrl.endsWith("/")) baseUrl += "/";
-    try (SolrClient client =
-        new HttpApacheSolrClient.Builder(baseUrl)
-            .withDefaultCollection("a1x2")
-            .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
-            .build()) {
+    SolrClient client =
+        jettys.stream()
+            .filter(j -> baseUrl.equals(j.getBaseUrl().toString()))
+            .findFirst()
+            .orElseThrow()
+            .getSolrClient();
 
-      long expectedTotalRequests = 0;
-      Set<String> uniqueCoreNames = new LinkedHashSet<>();
+    long expectedTotalRequests = 0;
+    Set<String> uniqueCoreNames = new LinkedHashSet<>();
 
-      log.info("Making requests to {} a1x2", baseUrl);
-      while (uniqueCoreNames.size() < cores.size() && expectedTotalRequests < 1000L) {
-        expectedTotalRequests++;
-        client.query(new SolrQuery("*:*"));
+    log.info("Making requests to {} a1x2", baseUrl);
+    while (uniqueCoreNames.size() < cores.size() && expectedTotalRequests < 1000L) {
+      expectedTotalRequests++;
+      client.query("a1x2", new SolrQuery("*:*"));
 
-        double actualTotalRequests = 0;
-        for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
-          final double coreCount = getSelectRequestCount(entry.getValue());
-          actualTotalRequests += coreCount;
-          if (0 < coreCount) {
-            uniqueCoreNames.add(entry.getKey());
-          }
+      double actualTotalRequests = 0;
+      for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
+        final double coreCount = getSelectRequestCount(entry.getValue());
+        actualTotalRequests += coreCount;
+        if (0 < coreCount) {
+          uniqueCoreNames.add(entry.getKey());
         }
-        assertEquals(
-            "Sanity Check: Num Queries So Far Doesn't Match Total????",
-            expectedTotalRequests,
-            (long) actualTotalRequests);
       }
-      log.info("Total requests: {}", expectedTotalRequests);
       assertEquals(
-          "either request randomization code is broken of this test seed is really unlucky, "
-              + "Gave up waiting for requests to hit every core at least once after "
-              + expectedTotalRequests
-              + " requests",
-          uniqueCoreNames.size(),
-          cores.size());
+          "Sanity Check: Num Queries So Far Doesn't Match Total????",
+          expectedTotalRequests,
+          (long) actualTotalRequests);
     }
+    log.info("Total requests: {}", expectedTotalRequests);
+    assertEquals(
+        "either request randomization code is broken of this test seed is really unlucky, "
+            + "Gave up waiting for requests to hit every core at least once after "
+            + expectedTotalRequests
+            + " requests",
+        uniqueCoreNames.size(),
+        cores.size());
   }
 
   /** Asserts that requests against a collection are only served by a 'active' local replica */
@@ -221,10 +219,10 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     String baseUrl = notLeader.getBaseUrl();
     log.info("Firing queries against path={} and collection=football", baseUrl);
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(baseUrl)
+        new HttpJettySolrClient.Builder(baseUrl)
             .withDefaultCollection("football")
             .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(5000, TimeUnit.MILLISECONDS)
             .build()) {
 
       SolrCore leaderCore = null;
