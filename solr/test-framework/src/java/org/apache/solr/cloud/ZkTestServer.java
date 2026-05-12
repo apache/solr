@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
+import static org.apache.solr.core.ZkContainer.ZK_WHITELIST_PROPERTY;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ZkContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -57,6 +58,12 @@ import org.apache.zookeeper.test.ClientBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Single-node embedded ZooKeeper for tests. Unlike production's {@link
+ * org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded}, this wires up {@code
+ * ZooKeeperServer} directly so it can install a {@code ZKDatabase} that counts watch registrations
+ * — letting tests detect watch leaks via configurable per-path limits.
+ */
 public class ZkTestServer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -483,7 +490,7 @@ public class ZkTestServer {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER");
-    SolrZkServer.ensureZkMaxCnxnsConfigured();
+    ZkContainer.ensureZkMaxCnxnsConfigured();
     ensureStatCommandWhitelisted();
 
     AtomicReference<Throwable> zooError = new AtomicReference<>();
