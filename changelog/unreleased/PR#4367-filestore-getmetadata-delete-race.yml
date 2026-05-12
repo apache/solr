@@ -4,5 +4,5 @@ type: fixed # added, changed, fixed, deprecated, removed, dependency_update, sec
 authors:
   - name: Eric Pugh
 links: 
-- name: PR#4367
-  url: https://github.com/apache/solr/pull/4367
+  - name: PR#4367
+    url: https://github.com/apache/solr/pull/4367
