@@ -1375,7 +1375,7 @@ def main():
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
-                            epilogue_text="® 2022 The Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
+                            epilogue_text="(C) The Apache Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
                             clear_screen=False)
 
     todo_menu = ConsoleMenu(title=get_releasing_text,
