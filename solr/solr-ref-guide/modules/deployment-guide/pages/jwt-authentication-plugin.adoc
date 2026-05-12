@@ -37,7 +37,7 @@ The simplest possible `security.json` for registering the plugin without configu
 {
   "authentication": {
     "class":"solr.JWTAuthPlugin",
-    "blockUnknown":"false"
+    "blockUnknown": false
   }
 }
 ----
@@ -82,7 +82,7 @@ clientId             ; Client identifier for use with OpenID Connect. Required t
 jwksUrl              ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
 jwk                  ; As an alternative to `jwksUrl` you may provide a static JSON object containing the public key(s) of the issuer. The format is either JWK or JWK Set, see https://tools.ietf.org/html/rfc7517#appendix-A[RFC7517] for examples. ;
 iss                  ; Unique issuer id as configured on the IdP. Incoming tokens must have a matching `iss` claim. Also used to resolve issuer when multiple issuers configured.      ; Auto configured if `wellKnownUrl` is provided
-aud                  ; Validates that the `aud` (audience) claim equals this string      ; If not set, audience validation is skipped entirely
+aud                  ; Validates that the `aud` (audience) claim equals this string. When set on any issuer, all tokens must include a matching `aud` claim.      ; If no issuer configures `aud`, audience validation is skipped for all tokens
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
 tokenEndpoint; The URL for the Id Provider's token endpoint ; Auto configured if `wellKnownUrl` is provided
 authorizationFlow; Specifies the OAuth 2.0 flow to be used. Supported flows are 'implicit' and 'code_pkce' (for authorization code with 'Proof Key for Code Exchange'). Note: 'implicit' is deprecated and it is highly recommended to use 'code_pkce' instead. ; implicit
@@ -103,6 +103,7 @@ Below is an example of the former:
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
+    "blockUnknown": true,
     "jwksUrl": "https://my.key.server/jwk.json"
   }
 }
@@ -116,6 +117,7 @@ This example shows configuration using https://openid.net/specs/openid-connect-d
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
+    "blockUnknown": true,
     "wellKnownUrl": "https://idp.example.com/.well-known/openid-configuration",
     "clientId": "xyz",
     "redirectUris": "https://my.solr.server:8983/solr/"
