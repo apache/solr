@@ -45,8 +45,7 @@ import yaml
 
 def validate_changelog_yaml(file_path):
     """Validate a changelog YAML file. Returns True if valid."""
-    valid_types = ['added', 'changed', 'fixed', 'deprecated', 'removed',
-                   'dependency_update', 'security', 'other']
+    valid_types = ['added', 'changed', 'fixed', 'deprecated', 'removed', 'dependency_update', 'security', 'other']
     valid_keys = ['title', 'type', 'issues', 'links', 'important_notes', 'modules', 'authors']
     deprecated_keys = ['merge_requests', 'configurations']
     not_allowed_text = ['DELETE ALL COMMENTS UP HERE', 'Most such changes are too small']
@@ -64,15 +63,13 @@ def validate_changelog_yaml(file_path):
         # Check for invalid top-level keys
         for key in data.keys():
             if key not in valid_keys and key not in deprecated_keys:
-                print(f"::error file={file_path}::Invalid top-level key '{key}'. "
-                      f"Valid keys are: {', '.join(valid_keys)}")
+                print(f"::error file={file_path}::Invalid top-level key '{key}'. Valid keys are: {', '.join(valid_keys)}")
                 return False
 
         # Check for deprecated keys
         for deprecated_key in deprecated_keys:
             if deprecated_key in data:
-                print(f"::error file={file_path}::Our project does not use the "
-                      f"'{deprecated_key}' yaml key, please remove")
+                print(f"::error file={file_path}::Our project does not use the '{deprecated_key}' yaml key, please remove")
                 return False
 
         # Validate 'title' field
@@ -90,8 +87,7 @@ def validate_changelog_yaml(file_path):
             return False
 
         if data['type'] not in valid_types:
-            print(f"::error file={file_path}::Invalid 'type': '{data['type']}'. "
-                  f"Must be one of: {', '.join(valid_types)}")
+            print(f"::error file={file_path}::Invalid 'type': '{data['type']}'. Must be one of: {', '.join(valid_types)}")
             return False
 
         # Validate 'authors' field
@@ -155,10 +151,10 @@ def validate_changelog_yaml(file_path):
         # Validate that comments are removed
         for not_allowed in not_allowed_text:
             if not_allowed in raw_content:
-                print(f"::error file={file_path}::File still contains commented template text. "
-                      f"Please remove the comment block at the top of the file.")
+                print(f"::error file={file_path}::File still contains commented template text. Please remove the comment block at the top of the file.")
                 return False
 
+        # All validations passed
         print(f"✓ {file_path} is valid")
         print(f"  Title: {data['title']}")
         print(f"  Type: {data['type']}")
