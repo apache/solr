@@ -126,14 +126,15 @@ public class ZkContainer {
 
       // Populate a zoo.cfg
       final String zooCfgTemplate =
-          ""
-              + "tickTime=2000\n"
-              + "initLimit=10\n"
-              + "syncLimit=5\n"
-              + "dataDir=@@DATA_DIR@@\n"
-              + "4lw.commands.whitelist=mntr,conf,ruok\n"
-              + "admin.enableServer=false\n"
-              + "clientPort=@@ZK_CLIENT_PORT@@\n";
+          """
+              tickTime=2000
+              initLimit=10
+              syncLimit=5
+              dataDir=@@DATA_DIR@@
+              4lw.commands.whitelist=mntr,conf,ruok
+              admin.enableServer=false
+              clientPort=@@ZK_CLIENT_PORT@@
+              """;
       String zooCfgContents =
           zooCfgTemplate
               .replace("@@DATA_DIR@@", zkDataDir.toString())
