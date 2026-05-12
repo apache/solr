@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -14,6 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 """
 Validates changelog YAML files.
@@ -27,12 +29,12 @@ Checks:
 - All top-level keys are valid (title, type, issues, links, important_notes, modules, authors)
 - Deprecated keys (merge_requests, configurations) are not used
 - Contains required 'title' field (non-empty string)
-- Contains required 'type' field (one of: added, changed, fixed, deprecated, removed,
-  dependency_update, security, other)
+- Contains required 'type' field (one of: added, changed, fixed, deprecated, removed, dependency_update, security, other)
 - Contains required 'authors' field with at least one author
 - Each author has a 'name' field (non-empty string)
 - Contains either 'links' or 'issues' field (or both)
-- If 'issues' is present, it must be an integer not exceeding 17000
+- If 'issues' is present, it must be a list of integers not exceeding 17000
+- If 'links' is present, each entry must be a mapping with 'name' and 'url' fields (not a plain string)
 - Comment block is removed
 """
 
@@ -54,37 +56,45 @@ def validate_changelog_yaml(file_path):
             raw_content = f.read()
             data = yaml.safe_load(raw_content)
 
+        # Check if file contains a mapping (dictionary)
         if not isinstance(data, dict):
             print(f"::error file={file_path}::File must contain YAML mapping (key-value pairs)")
             return False
 
+        # Check for invalid top-level keys
         for key in data.keys():
             if key not in valid_keys and key not in deprecated_keys:
                 print(f"::error file={file_path}::Invalid top-level key '{key}'. "
                       f"Valid keys are: {', '.join(valid_keys)}")
                 return False
 
+        # Check for deprecated keys
         for deprecated_key in deprecated_keys:
             if deprecated_key in data:
                 print(f"::error file={file_path}::Our project does not use the "
                       f"'{deprecated_key}' yaml key, please remove")
                 return False
 
+        # Validate 'title' field
         if 'title' not in data or not data['title']:
             print(f"::error file={file_path}::Missing or empty 'title' field")
             return False
+
         if not isinstance(data['title'], str) or not data['title'].strip():
             print(f"::error file={file_path}::Field 'title' must be a non-empty string")
             return False
 
+        # Validate 'type' field
         if 'type' not in data or not data['type']:
             print(f"::error file={file_path}::Missing or empty 'type' field")
             return False
+
         if data['type'] not in valid_types:
             print(f"::error file={file_path}::Invalid 'type': '{data['type']}'. "
                   f"Must be one of: {', '.join(valid_types)}")
             return False
 
+        # Validate 'authors' field
         if 'authors' not in data or not data['authors']:
             print(f"::error file={file_path}::Missing or empty 'authors' field")
             return False
@@ -102,20 +112,47 @@ def validate_changelog_yaml(file_path):
                 print(f"::error file={file_path}::Author {i} 'name' must be a non-empty string")
                 return False
 
+        # Validate that either 'links' or 'issues' exists (or both)
         if 'links' not in data and 'issues' not in data:
             print(f"::error file={file_path}::Must contain either 'links' or 'issues' key (or both)")
             return False
 
+        # Validate 'issues' field if present
         if 'issues' in data:
-            if not isinstance(data['issues'], int):
-                print(f"::error file={file_path}::Field 'issues' must be an integer")
+            if not isinstance(data['issues'], list):
+                print(f"::error file={file_path}::Field 'issues' must be a list of integers")
                 return False
-            if data['issues'] > 17000:
-                print(f"::error file={file_path}::Field 'issues' value {data['issues']} points to "
-                      f"a non-existing github PR. Did you intend to reference a JIRA issue? "
-                      f"If so, please use 'links'.")
-                return False
+            for i, issue in enumerate(data['issues']):
+                if not isinstance(issue, int):
+                    print(f"::error file={file_path}::Field 'issues' entry {i} must be an integer")
+                    return False
+                if issue > 17000:
+                    print(f"::error file={file_path}::Field 'issues' value {issue} points to a non-existing github PR. Did you intend to reference a JIRA issue, please use 'links'.")
+                    return False
 
+        # Validate 'links' field if present
+        if 'links' in data:
+            if not isinstance(data['links'], list):
+                print(f"::error file={file_path}::Field 'links' must be a list")
+                return False
+            for i, link in enumerate(data['links']):
+                if not isinstance(link, dict):
+                    print(f"::error file={file_path}::Link {i} must be a mapping with 'name' and 'url' fields, not a plain string")
+                    return False
+                if 'name' not in link or not link['name']:
+                    print(f"::error file={file_path}::Link {i} missing or empty 'name' field")
+                    return False
+                if not isinstance(link['name'], str) or not link['name'].strip():
+                    print(f"::error file={file_path}::Link {i} 'name' must be a non-empty string")
+                    return False
+                if 'url' not in link or not link['url']:
+                    print(f"::error file={file_path}::Link {i} missing or empty 'url' field")
+                    return False
+                if not isinstance(link['url'], str) or not link['url'].strip():
+                    print(f"::error file={file_path}::Link {i} 'url' must be a non-empty string")
+                    return False
+
+        # Validate that comments are removed
         for not_allowed in not_allowed_text:
             if not_allowed in raw_content:
                 print(f"::error file={file_path}::File still contains commented template text. "
