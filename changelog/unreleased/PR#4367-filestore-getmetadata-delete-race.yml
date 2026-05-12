@@ -3,6 +3,6 @@ title: Filestore metadata API no longer returns HTTP 500 when a file is deleted 
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
-links: 
+links:
   - name: PR#4367
     url: https://github.com/apache/solr/pull/4367
