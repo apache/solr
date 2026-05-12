@@ -182,6 +182,15 @@ Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
     # Default behavior
     python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
 
+### validate-changelog-yaml.py
+
+Validates one or more changelog YAML files, or all YAML files in a folder.
+Used by the GitHub Actions workflow to validate entries on pull requests,
+and called automatically by `logchange.py prepare` as a pre-flight check.
+
+    python3 dev-tools/scripts/validate-changelog-yaml.py changelog/unreleased/my-fix.yml
+    python3 dev-tools/scripts/validate-changelog-yaml.py changelog/unreleased/
+
 ### logchange.py
 
 Handles changelog git operations during a release. Normally invoked by the

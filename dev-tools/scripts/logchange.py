@@ -123,6 +123,39 @@ def strip_unreleased_block(changelog_path: Path, dry_run=False):
         changelog_path.write_text(cleaned, encoding="utf-8")
 
 
+def validate_unreleased_yamls(git_root, dry_run=False):
+    """Run validate-changelog-yaml.py over changelog/unreleased/.
+
+    Passes the folder path to the validator, which handles file discovery itself.
+    Locates the validator relative to this script so it works regardless of cwd.
+    If the validator cannot be found, logs a warning and returns True (proceed).
+    Returns True if all files are valid (or nothing to validate), False otherwise.
+    """
+    unreleased_dir = git_root / "changelog" / "unreleased"
+    if not unreleased_dir.exists():
+        return True
+
+    validator = Path(__file__).parent / "validate-changelog-yaml.py"
+    if not validator.exists():
+        print(f"  Warning: validator not found at {validator} — skipping YAML validation")
+        return True
+
+    print(f"\n[0] Validating changelog/unreleased/ with {validator.name}")
+    if dry_run:
+        print(f"  (dry-run) would run: {validator.name} {unreleased_dir}")
+        return True
+
+    result = subprocess.run(
+        [sys.executable, str(validator), str(unreleased_dir)],
+        cwd=git_root,
+    )
+    if result.returncode != 0:
+        print("\nError: changelog YAML validation failed — please fix the issues and run again.",
+              file=sys.stderr)
+        return False
+    return True
+
+
 def ensure_unreleased_gitkeep(git_root, dry_run=False):
     """Ensure changelog/unreleased/.gitkeep exists and is staged.
 
@@ -171,6 +204,10 @@ def cmd_prepare(args, git_root):
 
     print(f"[1] Checking out {release_branch}")
     git(["checkout", release_branch], cwd=git_root, dry_run=dry_run)
+
+    if not args.skip_validation:
+        if not validate_unreleased_yamls(git_root, dry_run=dry_run):
+            sys.exit(1)
 
     # RC1 vs RC2+ detection is done on the filesystem after checkout.
     # In dry-run mode the checkout is skipped, so warn the user the detection
@@ -397,6 +434,8 @@ def build_parser():
                        formatter_class=fmt)
     p.add_argument("--commit", action="store_true",
                    help="Stage and commit the result (default: leave uncommitted for review)")
+    p.add_argument("--skip-validation", action="store_true",
+                   help="Skip pre-flight YAML validation of changelog/unreleased/ files")
     p.set_defaults(func=cmd_prepare)
 
     # forward-port
