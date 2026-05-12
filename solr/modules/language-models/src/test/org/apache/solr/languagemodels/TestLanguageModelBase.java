@@ -87,7 +87,7 @@ public class TestLanguageModelBase extends RestTestBase {
     }
   }
 
-  public static void loadModel(String fileName, String status) throws Exception {
+  public static void loadTextToVectorModel(String fileName, String status) throws Exception {
     final URL url =
         TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
@@ -98,7 +98,7 @@ public class TestLanguageModelBase extends RestTestBase {
         "/responseHeader/status==" + status);
   }
 
-  public static void loadModel(String fileName) throws Exception {
+  public static void loadTextToVectorModel(String fileName) throws Exception {
     final URL url =
         TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);

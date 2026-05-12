@@ -44,7 +44,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * <p>The parameters supported are:
  *
  * <pre class="prettyprint" >
- * &lt;processor class=&quot;solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory&quot;&gt;
+ * &lt;processor class=&quot;solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;inputField&quot;&gt;textualField&lt;/str&gt;
  *   &lt;str name=&quot;outputField&quot;&gt;vectorField&lt;/str&gt;
  *   &lt;str name=&quot;model&quot;&gt;textToVectorModel&lt;/str&gt;

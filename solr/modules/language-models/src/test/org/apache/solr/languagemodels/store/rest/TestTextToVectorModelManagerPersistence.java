@@ -21,7 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestModelManagerPersistence extends TestLanguageModelBase {
+public class TestTextToVectorModelManagerPersistence extends TestLanguageModelBase {
 
   @Before
   public void init() throws Exception {
@@ -39,7 +39,7 @@ public class TestModelManagerPersistence extends TestLanguageModelBase {
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");
 
     // load models and features from files
-    loadModel("cohere-model.json");
+    loadTextToVectorModel("cohere-model.json");
 
     final String modelName = "cohere-1";
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
