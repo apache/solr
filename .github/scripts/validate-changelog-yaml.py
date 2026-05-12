@@ -29,7 +29,8 @@ Checks:
 - Contains required 'authors' field with at least one author
 - Each author has a 'name' field (non-empty string)
 - Contains either 'links' or 'issues' field (or both)
-- If 'issues' is present, it must be an integer not exceeding 17000
+- If 'issues' is present, it must be a list of integers not exceeding 17000
+- If 'links' is present, each entry must be a mapping with 'name' and 'url' fields (not a plain string)
 - Comment block is removed
 """
 
@@ -116,12 +117,38 @@ def validate_changelog_yaml(file_path):
 
         # Validate 'issues' field if present
         if 'issues' in data:
-            if not isinstance(data['issues'], int):
-                print(f"::error file={file_path}::Field 'issues' must be an integer")
+            if not isinstance(data['issues'], list):
+                print(f"::error file={file_path}::Field 'issues' must be a list of integers")
                 return False
-            if data['issues'] > 17000:
-                print(f"::error file={file_path}::Field 'issues' value {data['issues']} points to a non-existing github PR. Did you intend to reference a JIRA issue, please use 'links'.")
+            for i, issue in enumerate(data['issues']):
+                if not isinstance(issue, int):
+                    print(f"::error file={file_path}::Field 'issues' entry {i} must be an integer")
+                    return False
+                if issue > 17000:
+                    print(f"::error file={file_path}::Field 'issues' value {issue} points to a non-existing github PR. Did you intend to reference a JIRA issue, please use 'links'.")
+                    return False
+
+        # Validate 'links' field if present
+        if 'links' in data:
+            if not isinstance(data['links'], list):
+                print(f"::error file={file_path}::Field 'links' must be a list")
                 return False
+            for i, link in enumerate(data['links']):
+                if not isinstance(link, dict):
+                    print(f"::error file={file_path}::Link {i} must be a mapping with 'name' and 'url' fields, not a plain string")
+                    return False
+                if 'name' not in link or not link['name']:
+                    print(f"::error file={file_path}::Link {i} missing or empty 'name' field")
+                    return False
+                if not isinstance(link['name'], str) or not link['name'].strip():
+                    print(f"::error file={file_path}::Link {i} 'name' must be a non-empty string")
+                    return False
+                if 'url' not in link or not link['url']:
+                    print(f"::error file={file_path}::Link {i} missing or empty 'url' field")
+                    return False
+                if not isinstance(link['url'], str) or not link['url'].strip():
+                    print(f"::error file={file_path}::Link {i} 'url' must be a non-empty string")
+                    return False
 
         # Validate that comments are removed
         for not_allowed in not_allowed_text:
