@@ -792,10 +792,40 @@ Note:
 
 * Only stored fields and fields with docValues enabled can be preserved during upgrade.
 Fields that are neither stored nor docValues-backed will lose their data, unless they are `copyField` targets. 
-* Not supported in SolrCloud mode. In order to achieve the same purpose in SolrCloud mode (aka upgrade index for compatibility with next Solr version), configure the `LatestVersionMergePolicyFactory` for the collection and reindex all documents through a client utility.
+* Not supported in SolrCloud mode; see <<Upgrading an Index in SolrCloud Mode>> below for the equivalent procedure.
 * Indexes containing child/nested documents are not supported.
 
 It is recommended to test on a copy and have a backup before running on production data.
+
+=== Upgrading an Index in SolrCloud Mode
+
+Currently, a corresponding Collections API `UPGRADEINDEX` action for SolrCloud is not available.
+However, the equivalent goal -- making the index compatible with the next Solr major version -- can be achieved by reindexing all documents while `LatestVersionMergePolicyFactory` is the active merge policy on the collection.
+
+The procedure below avoids reprocessing documents that have already been reindexed, including across restarts:
+
+. *Prepare a configset that uses `LatestVersionMergePolicyFactory`.*
+Copy the collection's current xref:config-sets.adoc[configset] so the original is not modified, and edit `solrconfig.xml` in the copy to set the xref:index-segments-merging.adoc#mergepolicyfactory[`<mergePolicyFactory>`] to `org.apache.solr.index.LatestVersionMergePolicyFactory`.
+. *Point the collection at the new configset.*
+Use the xref:deployment-guide:collection-management.adoc#modifycollection[MODIFYCOLLECTION] Collections API action to set the `collection.configName` property to the name of the new configset.
+. *Reload the collection* with the xref:deployment-guide:collection-management.adoc#reload[RELOAD] Collections API action so the new merge policy takes effect.
+. *Record the current highest `\_version_` value in the index.*
+Query the collection sorting by `\_version_` descending and note the top value, for example:
++
+[source,bash]
+----
+http://localhost:8983/solr/_collection_/select?q=*:*&sort=_version_+desc&rows=1&fl=_version_
+----
+. *Reindex only the documents at or below that version.*
+Have your client reindex all docs where `\_version_ \<= <highest_version>` (substituting the recorded value).
++
+Reusing the same `<highest_version>` value across restarts ensures continuity: documents that have already been reindexed -- as well as any newly indexed documents -- will have a `\_version_` greater than the recorded value and will fall outside the range, so no work is duplicated.
+. *Issue a commit once reindexing is complete* to clear any older version segments:
++
+[source,bash]
+----
+http://localhost:8983/solr/_collection_/update?commit=true
+----
 
 === UPGRADEINDEX Parameters
 
