@@ -772,7 +772,7 @@ groups:
       commands:
       - !Command
         cmd: python3 -u dev-tools/scripts/logchange.py prepare --version {{ release_version }}  --release-branch {{ release_branch }} --gradle-cmd {{ gradle_cmd }} --rc-number {{ rc_number }} --commit
-        comment: Move unreleased entries to version folder, regenerate CHANGELOG.md, and commit
+        comment: Move unreleased entries to version folder and commit; then regenerate CHANGELOG.md and commit (two commits total)
         logfile: changelog-update-rc.log
         tee: true
       - !Command
@@ -1244,14 +1244,15 @@ groups:
       Now that the vote has passed, this step:
 
       1. Writes release date {{ release_date_iso }} to `changelog/v{{ release_version }}/release-date.txt`
+         and commits that to `{{ release_branch }}` (commit A)
       2. Regenerates `CHANGELOG.md` — now with the correct release date in the
-         version heading (e.g. `## [{{ release_version }}] - {{ release_date_iso }}`)
-      3. Commits that to `{{ release_branch }}`
-      4. Cherry-picks **all** changelog-touching commits that are on
+         version heading (e.g. `## [{{ release_version }}] - {{ release_date_iso }}`) —
+         and commits `CHANGELOG.md` + `version-summary.md` to `{{ release_branch }}` (commit B)
+      3. Cherry-picks **all** changelog-touching commits that are on
          `{{ release_branch }}` but not yet on `{{ stable_branch }}` to
-         `{{ stable_branch }}`, `main`{% if is_lts_release %}, and `{{ latest_lts_stable_branch }}`{% endif %}
-
-      5. Pushes `{{ release_branch }}`, `{{ stable_branch }}`, `main`{% if is_lts_release %}, and `{{ latest_lts_stable_branch }}`{% endif %}
+         `{{ stable_branch }}`, `main`{% if is_lts_release %}, and `{{ latest_lts_stable_branch }}`{% endif %};
+         regenerates `CHANGELOG.md` fresh on each target branch
+      4. Pushes `{{ release_branch }}`, `{{ stable_branch }}`, `main`{% if is_lts_release %}, and `{{ latest_lts_stable_branch }}`{% endif %}
 
       Can be run standalone, see `dev-tools/scripts/logchange.py --help` for details:
     commands: !Commands

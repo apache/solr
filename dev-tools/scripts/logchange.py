@@ -69,12 +69,12 @@ def short_sha(git_root):
     return r.stdout.strip()
 
 
-def has_staged_changes(git_root):
-    """Return True if there are staged changes in the index."""
-    r = subprocess.run(
-        ["git", "diff", "--cached", "--name-only"],
-        cwd=git_root, capture_output=True, text=True,
-    )
+def has_staged_changes(git_root, paths=None):
+    """Return True if there are staged changes in the index, optionally scoped to paths."""
+    cmd = ["git", "diff", "--cached", "--name-only"]
+    if paths:
+        cmd += ["--"] + list(paths)
+    r = subprocess.run(cmd, cwd=git_root, capture_output=True, text=True)
     return bool(r.stdout.strip())
 
 
@@ -259,7 +259,7 @@ def cmd_prepare(args, git_root):
         # Unstage version-summary.md — it is stale until logchangeGenerate runs
         git(["restore", "--staged", version_summary], cwd=git_root, dry_run=dry_run, check=False)
 
-        if not dry_run and not has_staged_changes(git_root):
+        if not dry_run and not has_staged_changes(git_root, ["changelog/"]):
             print("\nNothing staged — changelog entries are already up to date.")
         else:
             msg_a = f"Changelog entries for {version_label}"
@@ -273,7 +273,7 @@ def cmd_prepare(args, git_root):
         print(f"\n[6] Staging CHANGELOG.md and version-summary.md (commit B)")
         git(["add", "CHANGELOG.md", version_summary], cwd=git_root, dry_run=dry_run)
 
-        if not dry_run and not has_staged_changes(git_root):
+        if not dry_run and not has_staged_changes(git_root, ["CHANGELOG.md", version_summary]):
             print("  Nothing staged — CHANGELOG.md already up to date.")
         else:
             msg_b = f"Regenerate CHANGELOG.md for {version_label}"
@@ -342,7 +342,7 @@ def cmd_forward_port(args, git_root):
     print(f"\n[2] Committing release-date.txt to {release_branch} (commit A)")
     git(["add", f"changelog/v{version}/release-date.txt"], cwd=git_root, dry_run=dry_run)
 
-    if not dry_run and not has_staged_changes(git_root):
+    if not dry_run and not has_staged_changes(git_root, [f"changelog/v{version}/release-date.txt"]):
         print("  Nothing staged — release-date.txt was already up to date.")
     else:
         msg_a = f"Set release date {release_date_str} for v{version}"
@@ -356,7 +356,7 @@ def cmd_forward_port(args, git_root):
     print(f"\n[3b] Staging CHANGELOG.md and version-summary.md to {release_branch} (commit B)")
     git(["add", "CHANGELOG.md", version_summary], cwd=git_root, dry_run=dry_run)
 
-    if not dry_run and not has_staged_changes(git_root):
+    if not dry_run and not has_staged_changes(git_root, ["CHANGELOG.md", version_summary]):
         print("  Nothing staged — CHANGELOG.md already up to date.")
     else:
         msg_b = f"Regenerate CHANGELOG.md for v{version}"
@@ -422,15 +422,37 @@ def cmd_forward_port(args, git_root):
         # Ensure unreleased/ folder exists for contributors after cherry-picks
         ensure_unreleased_gitkeep(git_root, dry_run=dry_run)
         git(["add", "changelog/unreleased/.gitkeep"], cwd=git_root, dry_run=dry_run)
-        if not dry_run and has_staged_changes(git_root):
+        if not dry_run and has_staged_changes(git_root, ["changelog/unreleased/.gitkeep"]):
             git(["commit", "-m", f"Ensure changelog/unreleased/ folder exists on {target}"],
                 cwd=git_root, dry_run=dry_run)
+
+        # Remove any v{version} YAML files that still linger in unreleased/ on this
+        # target branch.  Cherry-pick uses -X ours, so a "we modified / they deleted"
+        # conflict silently keeps the local copy; this explicit pass fixes that.
+        version_dir = git_root / f"changelog/v{version}"
+        stale = (
+            [
+                git_root / "changelog/unreleased" / f.name
+                for f in version_dir.glob("*.yml")
+                if (git_root / "changelog/unreleased" / f.name).exists()
+            ]
+            if not dry_run
+            else []
+        )
+        if stale:
+            rel = [str(p.relative_to(git_root)) for p in stale]
+            print(f"\n  Removing {len(stale)} stale unreleased file(s) from {target}: "
+                  f"{', '.join(p.name for p in stale)}")
+            git(["rm", "--force"] + rel, cwd=git_root, dry_run=dry_run)
+            if not dry_run and has_staged_changes(git_root, ["changelog/unreleased/"]):
+                git(["commit", "-m", f"Remove v{version} entries from unreleased/ on {target}"],
+                    cwd=git_root, dry_run=dry_run)
 
         # Regenerate CHANGELOG.md and version-summary.md fresh on this branch.
         print(f"\n  Regenerating CHANGELOG.md on {target}")
         run_logchange_generate(args.gradle_cmd, git_root, dry_run=dry_run)
         git(["add", "CHANGELOG.md", version_summary], cwd=git_root, dry_run=dry_run)
-        if not dry_run and has_staged_changes(git_root):
+        if not dry_run and has_staged_changes(git_root, ["CHANGELOG.md", version_summary]):
             git(["commit", "-m", f"Regenerate CHANGELOG.md with v{version} entries on {target}"],
                 cwd=git_root, dry_run=dry_run)
 
