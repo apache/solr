@@ -26,8 +26,8 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
-import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +110,7 @@ public class TestLanguageModelBase extends RestTestBase {
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         multipleModels,
         "/responseHeader/status==" + status);
   }
@@ -121,7 +121,7 @@ public class TestLanguageModelBase extends RestTestBase {
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-        ManagedTextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+        TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
   public static void loadLargeLanguageModel(String fileName, String status) throws Exception {

@@ -20,7 +20,7 @@ import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.After;
 import org.junit.Test;
 
-public class TestManagedLanguageModelStoreInitialization extends TestLanguageModelBase {
+public class TestTextToVectorModelStoreInitialization extends TestLanguageModelBase {
 
   @After
   public void cleanUp() throws Exception {
@@ -36,8 +36,8 @@ public class TestManagedLanguageModelStoreInitialization extends TestLanguageMod
         false,
         false);
 
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test
@@ -49,8 +49,8 @@ public class TestManagedLanguageModelStoreInitialization extends TestLanguageMod
         false,
         false);
 
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test
@@ -58,10 +58,10 @@ public class TestManagedLanguageModelStoreInitialization extends TestLanguageMod
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/responseHeader/status==400",
         "/error/msg=='No REST managed resource registered for path "
-            + ManagedTextToVectorModelStore.REST_END_POINT
+            + TextToVectorModelStore.REST_END_POINT
             + "'");
   }
 }
