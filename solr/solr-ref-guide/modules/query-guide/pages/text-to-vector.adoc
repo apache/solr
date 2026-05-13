@@ -85,7 +85,7 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 [source,xml]
 ----
 <updateRequestProcessorChain name="textToVector">
-  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -97,7 +97,7 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 +
 [source,xml]
 ----
-<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.search.TextToVectorQParserPlugin"/>
 ----
 
 [NOTE]
@@ -301,7 +301,7 @@ To vectorise textual fields of your documents at indexing time you need to confi
 [source,xml]
 ----
 <updateRequestProcessorChain name="textToVector">
-  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -355,7 +355,7 @@ This can be done in Solr defining two update request processors chains: one that
   <processor class="solr.processorN">
    ...
   </processor>
-<processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+<processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -394,7 +394,7 @@ You still define two chains, but this time the 'vectorisation' one only includes
 ----
 <updateRequestProcessorChain name="vectorisation">
   <processor class="solr.DistributedUpdateProcessorFactory"/>
-  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -434,9 +434,10 @@ Faceting or querying on the boolean 'vectorised' field can also give you a quick
 
 === Running a Text-to-Vector Query
 Before running a Text-to-Vector query, ensure that the `knn_text_to_vector` query parser is declared in `solrconfig.xml`:
+
 [source,xml]
 ----
-<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.search.TextToVectorQParserPlugin"/>
 ----
 
 To run a query that vectorises your query text, using a model you previously uploaded is simple:
