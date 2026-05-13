@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
-import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -44,9 +44,9 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @After
   public void afterEachTest() throws Exception {
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/dummy-1");
     restTestHarness.delete(
-        ManagedTextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); // clean
+        TextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); // clean
   }
 
   @Test
@@ -69,7 +69,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[1]/id=='98'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
   }
 
   private SolrQuery getSolrQuery() {
@@ -117,7 +117,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[1]/id=='98'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
   }
 
   @Test
@@ -137,7 +137,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[1]/id=='98'",
         "!/response/docs/[1]/vector=="); // no vector field for the document 98
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
   }
 
   @Test
@@ -160,7 +160,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "!/response/docs/[1]/vector=="); // no vector field for the document 98
 
     restTestHarness.delete(
-        ManagedTextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); // clean up
+        TextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); // clean up
   }
 
   @Test
@@ -192,7 +192,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[1]/id=='99'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/dummy-1");
   }
 
   @Test
@@ -228,7 +228,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[1]/id=='98'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/dummy-1");
   }
 
   void addWithChain(SolrInputDocument document, String updateChain)
