@@ -29,7 +29,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.apache.solr.languagemodels.model.DummyChatModel;
-import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.store.rest.LargeLanguageModelStore;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -52,7 +52,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
   @After
   public void afterEachTest() throws Exception {
     if (loadedModelId != null) {
-      restTestHarness.delete(ManagedLargeLanguageModelStore.REST_END_POINT + "/" + loadedModelId);
+      restTestHarness.delete(LargeLanguageModelStore.REST_END_POINT + "/" + loadedModelId);
       loadedModelId = null;
     }
   }
@@ -68,7 +68,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
     model.put("name", modelId);
     model.put("params", Map.of("response", response));
     assertJPut(
-        ManagedLargeLanguageModelStore.REST_END_POINT,
+        LargeLanguageModelStore.REST_END_POINT,
         Utils.toJSONString(model),
         "/responseHeader/status==0");
     loadedModelId = modelId;
@@ -549,8 +549,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
           "/response/docs/[1]/id=='98'",
           "/response/docs/[1]/" + typedCase.field() + "==" + typedCase.expectedValue());
 
-      restTestHarness.delete(
-          ManagedLargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
+      restTestHarness.delete(LargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }
@@ -632,8 +631,7 @@ public class DocumentEnrichmentUpdateProcessorTest extends TestLanguageModelBase
       }
       assertJQ("/query" + query.toQueryString(), assertions.toArray(new String[0]));
 
-      restTestHarness.delete(
-          ManagedLargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
+      restTestHarness.delete(LargeLanguageModelStore.REST_END_POINT + "/" + typedCase.modelId());
       loadedModelId = null;
     }
   }

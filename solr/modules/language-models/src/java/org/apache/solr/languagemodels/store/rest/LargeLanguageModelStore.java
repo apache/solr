@@ -27,8 +27,7 @@ import org.apache.solr.rest.ManagedResourceStorage;
 
 /** Managed Resource wrapper for the large language model store, exposed via REST */
 @ThreadSafe
-public class ManagedLargeLanguageModelStore
-    extends ManagedLanguageModelStore<SolrLargeLanguageModel> {
+public class LargeLanguageModelStore extends ManagedLanguageModelStore<SolrLargeLanguageModel> {
   /** the model store rest endpoint */
   public static final String REST_END_POINT = "/schema/large-language-model-store";
 
@@ -37,12 +36,11 @@ public class ManagedLargeLanguageModelStore
     solrResourceLoader
         .getManagedResourceRegistry()
         .registerManagedResource(
-            REST_END_POINT, ManagedLargeLanguageModelStore.class, managedResourceObserver);
+            REST_END_POINT, LargeLanguageModelStore.class, managedResourceObserver);
   }
 
-  public static ManagedLargeLanguageModelStore getManagedModelStore(SolrCore core) {
-    return (ManagedLargeLanguageModelStore)
-        core.getRestManager().getManagedResource(REST_END_POINT);
+  public static LargeLanguageModelStore getManagedModelStore(SolrCore core) {
+    return (LargeLanguageModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
   @Override
@@ -56,7 +54,7 @@ public class ManagedLargeLanguageModelStore
         (Map<String, Object>) modelMap.get(PARAMS_KEY));
   }
 
-  public ManagedLargeLanguageModelStore(
+  public LargeLanguageModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);

@@ -104,8 +104,7 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
     assertIsDenseVectorField(outputFieldSchema);
 
-    TextToVectorModelStore modelStore =
-        TextToVectorModelStore.getManagedModelStore(req.getCore());
+    TextToVectorModelStore modelStore = TextToVectorModelStore.getManagedModelStore(req.getCore());
     SolrTextToVectorModel textToVector = modelStore.getModel(modelName);
     if (textToVector == null) {
       throw new SolrException(

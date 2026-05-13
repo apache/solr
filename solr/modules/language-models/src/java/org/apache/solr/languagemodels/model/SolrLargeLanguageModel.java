@@ -31,14 +31,14 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.LanguageModelException;
-import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.store.rest.LargeLanguageModelStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This object wraps a {@link dev.langchain4j.model.chat.ChatModel} to some content given a prompt
  * and a {@link ResponseFormat}. It's meant to be used as a managed resource with the {@link
- * ManagedLargeLanguageModelStore}
+ * LargeLanguageModelStore}
  */
 public class SolrLargeLanguageModel extends SolrLanguageModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

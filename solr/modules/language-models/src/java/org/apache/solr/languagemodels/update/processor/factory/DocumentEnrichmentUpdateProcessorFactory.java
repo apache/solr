@@ -43,7 +43,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.model.SolrLargeLanguageModel;
-import org.apache.solr.languagemodels.store.rest.ManagedLargeLanguageModelStore;
+import org.apache.solr.languagemodels.store.rest.LargeLanguageModelStore;
 import org.apache.solr.languagemodels.update.processor.DocumentEnrichmentUpdateProcessor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -167,7 +167,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   @Override
   public void inform(SolrCore core) {
     final SolrResourceLoader solrResourceLoader = core.getResourceLoader();
-    ManagedLargeLanguageModelStore.registerManagedLargeLanguageModelStore(solrResourceLoader, this);
+    LargeLanguageModelStore.registerManagedLargeLanguageModelStore(solrResourceLoader, this);
     if (promptFile != null) {
       try (InputStream is = solrResourceLoader.openResource(promptFile)) {
         promptText = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
@@ -182,7 +182,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
   @Override
   public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
       throws SolrException {
-    if (res instanceof ManagedLargeLanguageModelStore store) {
+    if (res instanceof LargeLanguageModelStore store) {
       store.loadStoredModels();
     }
   }
@@ -204,8 +204,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
     ResponseFormat responseFormat = getJsonSchema(outputFieldSchema);
     boolean multiValued = outputFieldSchema.multiValued();
 
-    ManagedLargeLanguageModelStore store =
-        ManagedLargeLanguageModelStore.getManagedModelStore(req.getCore());
+    LargeLanguageModelStore store = LargeLanguageModelStore.getManagedModelStore(req.getCore());
     SolrLargeLanguageModel fieldGenerationModel = store.getModel(modelName);
     if (fieldGenerationModel == null) {
       throw new SolrException(
@@ -213,7 +212,7 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
           "The model configured in the Update Request Processor '"
               + modelName
               + "' can't be found in the store: "
-              + ManagedLargeLanguageModelStore.REST_END_POINT);
+              + LargeLanguageModelStore.REST_END_POINT);
     }
 
     return new DocumentEnrichmentUpdateProcessor(

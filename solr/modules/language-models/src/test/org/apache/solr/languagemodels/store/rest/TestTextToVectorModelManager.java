@@ -107,8 +107,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
             + "logRequests:true,"
             + "logResponses:false"
             + "}}]";
-    assertJPut(
-        TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+    assertJPut(TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
     final String qryResult = JQ(TextToVectorModelStore.REST_END_POINT);
 
     assertTrue(
@@ -134,14 +133,12 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
-    assertJQ(
-        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/inputType=='search_document'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -158,8 +155,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(
-        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='text-embedding-3-small'");
@@ -181,11 +177,9 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.mistral.ai/v1'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/apiKey=='apiKey-mistralAI'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/modelName=='mistral-embed'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/modelName=='mistral-embed'");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
