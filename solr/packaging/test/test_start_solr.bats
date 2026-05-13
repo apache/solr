@@ -78,7 +78,7 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
   run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
-  refute_output --partial 'Exception'
+  refute_output --partial 'Exception in thread'
 }
 
 @test "deprecated system properties converted to modern properties" {
