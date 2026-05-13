@@ -192,11 +192,14 @@ def cmd_prepare(args, git_root):
     version = args.version
     release_branch = args.release_branch
     gradle_cmd = args.gradle_cmd
+    rc_suffix = f" RC{args.rc_number}" if args.rc_number > 1 else ""
+    version_label = f"v{version}{rc_suffix}"
 
     version_dir = git_root / "changelog" / f"v{version}"
     unreleased_dir = git_root / "changelog" / "unreleased"
+    version_summary = f"changelog/v{version}/version-summary.md"
 
-    print(f"\n=== Changelog prepare for v{version} on {release_branch} ===")
+    print(f"\n=== Changelog prepare for {version_label} on {release_branch} ===")
     if dry_run:
         print("    (dry-run — no changes will be made)\n")
     else:
@@ -248,26 +251,41 @@ def cmd_prepare(args, git_root):
                         shutil.copy2(src, dst)
                         src.unlink()
 
-    print(f"\n[3] Running logchangeGenerate and stripping [unreleased] block")
-    run_logchange_generate(gradle_cmd, git_root, dry_run=dry_run)
-
     if do_commit:
-        print(f"\n[4] Staging changelog/ and CHANGELOG.md")
+        # Commit A: changelog/ YAML files only (version-summary.md is stale until generate runs)
+        print(f"\n[3] Staging changelog/ entries for {version_label} (commit A)")
         ensure_unreleased_gitkeep(git_root, dry_run=dry_run)
-        git(["add", "changelog", "CHANGELOG.md"], cwd=git_root, dry_run=dry_run)
+        git(["add", "changelog"], cwd=git_root, dry_run=dry_run)
+        # Unstage version-summary.md — it is stale until logchangeGenerate runs
+        git(["restore", "--staged", version_summary], cwd=git_root, dry_run=dry_run, check=False)
 
         if not dry_run and not has_staged_changes(git_root):
-            print("\nNothing staged — changelog is already up to date.")
-            return
+            print("\nNothing staged — changelog entries are already up to date.")
+        else:
+            msg_a = f"Changelog entries for {version_label}"
+            print(f"\n[4] Committing: {msg_a!r}")
+            git(["commit", "-m", msg_a], cwd=git_root, dry_run=dry_run)
 
-        msg = f"Changelog prepare for v{version}"
-        print(f"\n[5] Committing: {msg!r}")
-        git(["commit", "-m", msg], cwd=git_root, dry_run=dry_run)
+        # Commit B: regenerate, then stage CHANGELOG.md + version-summary.md
+        print(f"\n[5] Running logchangeGenerate and stripping [unreleased] block")
+        run_logchange_generate(gradle_cmd, git_root, dry_run=dry_run)
+
+        print(f"\n[6] Staging CHANGELOG.md and version-summary.md (commit B)")
+        git(["add", "CHANGELOG.md", version_summary], cwd=git_root, dry_run=dry_run)
+
+        if not dry_run and not has_staged_changes(git_root):
+            print("  Nothing staged — CHANGELOG.md already up to date.")
+        else:
+            msg_b = f"Regenerate CHANGELOG.md for {version_label}"
+            print(f"\n[7] Committing: {msg_b!r}")
+            git(["commit", "-m", msg_b], cwd=git_root, dry_run=dry_run)
 
         if not dry_run:
-            print(f"\nDone. Commit {short_sha(git_root)} on {release_branch}.")
+            print(f"\nDone. Last commit {short_sha(git_root)} on {release_branch}.")
             print(f"Push with:  git push {args.git_remote} {release_branch}")
     else:
+        print(f"\n[3] Running logchangeGenerate and stripping [unreleased] block")
+        run_logchange_generate(gradle_cmd, git_root, dry_run=dry_run)
         print(f"\nReview the changes above, then run with --commit to stage and commit.")
         if not dry_run:
             print(f"  git diff changelog/ CHANGELOG.md")
@@ -286,6 +304,7 @@ def cmd_forward_port(args, git_root):
     version = args.version
     release_branch = args.release_branch
     stable_branch = args.stable_branch
+    latest_lts_stable_branch = args.latest_lts_stable_branch
     release_date_str = args.release_date or date.today().isoformat()
 
     version_dir = git_root / "changelog" / f"v{version}"
@@ -295,6 +314,8 @@ def cmd_forward_port(args, git_root):
     print(f"    release_branch : {release_branch}")
     print(f"    stable_branch  : {stable_branch}")
     print(f"    also targets   : main")
+    if latest_lts_stable_branch:
+        print(f"    lts also targets: {latest_lts_stable_branch}")
     if dry_run:
         print("    (dry-run — no changes will be made)")
     elif not do_push:
@@ -315,83 +336,117 @@ def cmd_forward_port(args, git_root):
     if not dry_run:
         date_file.write_text(release_date_str + "\n", encoding="utf-8")
 
-    # Step 2: regenerate CHANGELOG.md (now with the release date)
-    print(f"\n[2] Running logchangeGenerate (with release date {release_date_str})")
-    run_logchange_generate(args.gradle_cmd, git_root, dry_run=dry_run)
+    version_summary = f"changelog/v{version}/version-summary.md"
 
-    # Step 3: stage and commit
-    print(f"\n[3] Staging and committing to {release_branch}")
-    git(["add", "changelog", "CHANGELOG.md"], cwd=git_root, dry_run=dry_run)
+    # Step 2: commit A — release-date.txt only (before generate)
+    print(f"\n[2] Committing release-date.txt to {release_branch} (commit A)")
+    git(["add", f"changelog/v{version}/release-date.txt"], cwd=git_root, dry_run=dry_run)
 
     if not dry_run and not has_staged_changes(git_root):
-        print("  Nothing staged — release-date.txt and CHANGELOG.md were already up to date.")
+        print("  Nothing staged — release-date.txt was already up to date.")
     else:
-        msg = f"Set release date {release_date_str} and regenerate CHANGELOG.md for v{version}"
-        print(f"  Committing: {msg!r}")
-        git(["commit", "-m", msg], cwd=git_root, dry_run=dry_run)
+        msg_a = f"Set release date {release_date_str} for v{version}"
+        print(f"  Committing: {msg_a!r}")
+        git(["commit", "-m", msg_a], cwd=git_root, dry_run=dry_run)
 
-    # Step 4: find commits on release_branch not yet on stable_branch that
-    #         touch changelog/ or CHANGELOG.md.  --cherry-pick with the
-    #         symmetric-difference range (three dots) omits commits whose patch
-    #         is already present on the target, making forward-port idempotent
-    #         when re-run after an initial no-push review run.
-    print(f"\n[4] Finding changelog commits on {release_branch} not yet on {stable_branch}")
-    result = subprocess.run(
-        ["git", "log", "--oneline", "--reverse",
-         "--cherry-pick", "--right-only",
-         f"{stable_branch}...{release_branch}",
-         "--", "changelog/", "CHANGELOG.md"],
-        cwd=git_root, capture_output=True, text=True, check=True,
-    )
-    commits = [line.split()[0] for line in result.stdout.strip().splitlines() if line]
+    # Step 3: commit B — regenerate, then stage CHANGELOG.md + version-summary.md
+    print(f"\n[3] Running logchangeGenerate (with release date {release_date_str})")
+    run_logchange_generate(args.gradle_cmd, git_root, dry_run=dry_run)
 
-    if not commits:
-        print(f"  No changelog commits to forward-port — {stable_branch} is already up to date.")
+    print(f"\n[3b] Staging CHANGELOG.md and version-summary.md to {release_branch} (commit B)")
+    git(["add", "CHANGELOG.md", version_summary], cwd=git_root, dry_run=dry_run)
+
+    if not dry_run and not has_staged_changes(git_root):
+        print("  Nothing staged — CHANGELOG.md already up to date.")
     else:
-        print(f"  Found {len(commits)} commit(s) to cherry-pick: {', '.join(commits)}")
+        msg_b = f"Regenerate CHANGELOG.md for v{version}"
+        print(f"  Committing: {msg_b!r}")
+        git(["commit", "-m", msg_b], cwd=git_root, dry_run=dry_run)
 
-        for target in [stable_branch, "main"]:
-            print(f"\n[5] Cherry-picking {len(commits)} commit(s) to {target}")
-            git(["checkout", target], cwd=git_root, dry_run=dry_run)
-            for sha in commits:
-                # Commits that touch changelog/unreleased/ are deletions of files
-                # that exist under different names on stable/main — use -X ours so
-                # git keeps the target branch's own unreleased entries rather than
-                # trying to delete them.  Commits that only add to the version
-                # folder or update CHANGELOG.md are clean additions; cherry-pick
-                # them plainly so real conflicts are not silently discarded.
-                if commit_touches_unreleased(sha, git_root):
-                    cp_args = ["cherry-pick", "-X", "ours", "-X", "no-renames", sha]
-                else:
-                    cp_args = ["cherry-pick", sha]
-                try:
-                    git(cp_args, cwd=git_root, dry_run=dry_run)
-                except subprocess.CalledProcessError:
-                    print(f"\nError: cherry-pick of {sha} failed on {target}.",
-                          file=sys.stderr)
-                    print("  Resolve the conflict, then run: git cherry-pick --continue",
-                          file=sys.stderr)
-                    print("  Or abort with:                  git cherry-pick --abort",
-                          file=sys.stderr)
-                    sys.exit(1)
+    # Steps 4+5: for each target branch, find commits on release_branch not yet on
+    #            that target, cherry-pick them, then regenerate CHANGELOG.md fresh.
+    #            CHANGELOG.md is never cherry-picked — it is always regenerated so
+    #            each branch gets a correct full-history version (avoids cross-major
+    #            conflicts).  version-summary.md is also excluded from cherry-picks
+    #            for the same reason; it is regenerated alongside CHANGELOG.md.
+    #            --cherry-pick with the symmetric-difference range (three dots) omits
+    #            commits whose patch is already present on the target, making
+    #            forward-port idempotent when re-run after an initial no-push run.
+    targets = [stable_branch, "main"]
+    if latest_lts_stable_branch:
+        targets.append(latest_lts_stable_branch)
 
-            # Ensure unreleased/ folder exists for contributors after cherry-picks
-            ensure_unreleased_gitkeep(git_root, dry_run=dry_run)
-            git(["add", "changelog/unreleased/.gitkeep"], cwd=git_root, dry_run=dry_run)
-            if not dry_run and has_staged_changes(git_root):
-                git(["commit", "-m", f"Ensure changelog/unreleased/ folder exists on {target}"],
-                    cwd=git_root, dry_run=dry_run)
+    for target in targets:
+        print(f"\n[4] Finding changelog/ commits on {release_branch} not yet on {target}")
+        if dry_run:
+            print(f"  (dry-run) would run: git log --cherry-pick --right-only {target}...{release_branch} -- changelog/ :(exclude)changelog/*/version-summary.md")
+            commits = []
+        else:
+            result = subprocess.run(
+                ["git", "log", "--oneline", "--reverse",
+                 "--cherry-pick", "--right-only",
+                 f"{target}...{release_branch}",
+                 "--", "changelog/", ":(exclude)changelog/*/version-summary.md"],
+                cwd=git_root, capture_output=True, text=True, check=True,
+            )
+            commits = [line.split()[0] for line in result.stdout.strip().splitlines() if line]
+
+        if not commits:
+            print(f"  No changelog commits to forward-port — {target} is already up to date.")
+        else:
+            print(f"  Found {len(commits)} commit(s) to cherry-pick: {', '.join(commits)}")
+
+        print(f"\n[5] Cherry-picking {len(commits)} commit(s) to {target}")
+        git(["checkout", target], cwd=git_root, dry_run=dry_run)
+        for sha in commits:
+            # Commits that touch changelog/unreleased/ are deletions of files
+            # that exist under different names on stable/main — use -X ours so
+            # git keeps the target branch's own unreleased entries rather than
+            # trying to delete them.  Commits that only add to the version
+            # folder are clean additions and cherry-pick without strategy options.
+            if commit_touches_unreleased(sha, git_root):
+                cp_args = ["cherry-pick", "-X", "ours", "-X", "no-renames", sha]
+            else:
+                cp_args = ["cherry-pick", sha]
+            try:
+                git(cp_args, cwd=git_root, dry_run=dry_run)
+            except subprocess.CalledProcessError:
+                print(f"\nError: cherry-pick of {sha} failed on {target}.",
+                      file=sys.stderr)
+                print("  Resolve the conflict, then run: git cherry-pick --continue",
+                      file=sys.stderr)
+                print("  Or abort with:                  git cherry-pick --abort",
+                      file=sys.stderr)
+                sys.exit(1)
+
+        # Ensure unreleased/ folder exists for contributors after cherry-picks
+        ensure_unreleased_gitkeep(git_root, dry_run=dry_run)
+        git(["add", "changelog/unreleased/.gitkeep"], cwd=git_root, dry_run=dry_run)
+        if not dry_run and has_staged_changes(git_root):
+            git(["commit", "-m", f"Ensure changelog/unreleased/ folder exists on {target}"],
+                cwd=git_root, dry_run=dry_run)
+
+        # Regenerate CHANGELOG.md and version-summary.md fresh on this branch.
+        print(f"\n  Regenerating CHANGELOG.md on {target}")
+        run_logchange_generate(args.gradle_cmd, git_root, dry_run=dry_run)
+        git(["add", "CHANGELOG.md", version_summary], cwd=git_root, dry_run=dry_run)
+        if not dry_run and has_staged_changes(git_root):
+            git(["commit", "-m", f"Regenerate CHANGELOG.md with v{version} entries on {target}"],
+                cwd=git_root, dry_run=dry_run)
 
     # Step 6: push (optional)
     if do_push:
         remote = args.git_remote
-        print(f"\n[6] Pushing {release_branch}, {stable_branch}, main to {remote}")
-        for branch in [release_branch, stable_branch, "main"]:
+        branches_to_push = [release_branch, stable_branch, "main"]
+        if latest_lts_stable_branch:
+            branches_to_push.append(latest_lts_stable_branch)
+        print(f"\n[6] Pushing {', '.join(branches_to_push)} to {remote}")
+        for branch in branches_to_push:
             git_push(branch, remote, cwd=git_root, dry_run=dry_run)
     else:
         print(f"\nCherry-picks done. Review, then re-run with --push to push all branches.")
         if not dry_run:
-            print(f"  git log --oneline {stable_branch} -- changelog/ CHANGELOG.md")
+            print(f"  git log --oneline {stable_branch} -- changelog/")
 
     if dry_run:
         print("\nDry-run complete — no changes made.")
@@ -434,6 +489,8 @@ def build_parser():
                        formatter_class=fmt)
     p.add_argument("--commit", action="store_true",
                    help="Stage and commit the result (default: leave uncommitted for review)")
+    p.add_argument("--rc-number", type=int, default=1,
+                   help="RC number (default: 1). RC2+ appends ' RC<n>' to commit messages.")
     p.add_argument("--skip-validation", action="store_true",
                    help="Skip pre-flight YAML validation of changelog/unreleased/ files")
     p.set_defaults(func=cmd_prepare)
@@ -448,6 +505,8 @@ def build_parser():
                         formatter_class=fmt)
     fp.add_argument("--stable-branch", required=True,
                     help="Stable branch, e.g. branch_10x")
+    fp.add_argument("--latest-lts-stable-branch",
+                    help="Also forward-port to this LTS stable branch, e.g. branch_9x (LTS releases only)")
     fp.add_argument("--release-date",
                     help="Release date YYYY-MM-DD (default: today)")
     fp.add_argument("--push", action="store_true",

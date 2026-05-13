@@ -149,6 +149,8 @@ def expand_jinja(text, vars=None):
         'latest_lts_version_major': state.latest_lts_version_major,
         'latest_lts_version_minor': state.latest_lts_version_minor,
         'latest_lts_version_bugfix': state.latest_lts_version_bugfix,
+        'latest_lts_stable_branch': state.get_lts_stable_branch_name(),
+        'is_lts_release': state.is_lts_release(),
         'main_version': state.get_main_version(),
         'mirrored_versions': state.get_mirrored_versions(),
         'mirrored_versions_to_delete': state.get_mirrored_versions_to_delete(),
@@ -642,6 +644,12 @@ class ReleaseState:
         else:
             v = Version.parse(self.latest_version)
         return "branch_%sx" % v.major
+
+    def get_lts_stable_branch_name(self):
+        return "branch_%sx" % self.latest_lts_version_major
+
+    def is_lts_release(self):
+        return self.release_version_major == self.latest_lts_version_major
 
     def get_next_version(self):
         if self.release_type == 'major':
