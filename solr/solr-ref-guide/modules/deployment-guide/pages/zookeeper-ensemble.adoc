@@ -589,6 +589,7 @@ The ZK connection string must list all nodes' ZK client ports (`solr_port + 1000
 All three nodes must be started before the quorum can elect a leader and become operational.
 
 NOTE: On a single machine, each node needs distinct ports. Because each ZK instance also binds to `zk_client_port+1` (quorum peer) and `zk_client_port+2` (leader election), Solr ports must be spaced *at least 1001 apart* to avoid collisions.
+When nodes share the same working directory, also set `solr.zookeeper.server.datadir` to a distinct path per node to avoid ZooKeeper data directory conflicts.
 
 [source,bash]
 ----
@@ -596,9 +597,9 @@ export LH="localhost"
 ZK_HOST="$LH:21000,$LH:31000,$LH:41000"
 ROLES="data:on,overseer:allowed,zookeeper_quorum:on"
 
-bin/solr start -p 20000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES"
-bin/solr start -p 30000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES"
-bin/solr start -p 40000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES"
+bin/solr start -p 20000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_1
+bin/solr start -p 30000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_2
+bin/solr start -p 40000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_3
 ----
 
 === Known Limitations
