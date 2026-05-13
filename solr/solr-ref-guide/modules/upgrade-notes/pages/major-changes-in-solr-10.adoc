@@ -61,6 +61,11 @@ Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node
 Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
 The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
 
+=== SolrJ
+
+HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
+Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
+
 == Solr 10.0
 
 === Solr Jetty parameters
