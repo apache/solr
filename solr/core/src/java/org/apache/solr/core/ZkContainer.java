@@ -113,17 +113,13 @@ public class ZkContainer {
     // zkServerEnabled is only used for legacy standalone embedded ZK (bin/solr -c without ZK_HOST).
     if (runAsQuorum) {
       // ZooKeeperServerEmbedded being used under the covers.
-      // The zookeeper_quorum node role is sufficient — no extra sysprop needed.
-      // The data directory defaults to zoo_home under solrHome but can be overridden via
-      // solr.zookeeper.server.datadir (or ZK_SERVER_DATA_DIR env var). When running multiple
-      // quorum nodes on the same machine sharing a solrHome, set this property to a distinct
-      // path per node to avoid directory collisions.
+      // When running multiple quorum nodes on the same machine sharing a solrHome,
+      // override the default data and config directories with unique ones
       final int zkPort = config.getSolrHostPort() + 1000;
-      final var zkHomeDir =
-          Path.of(
-              EnvUtils.getProperty(
-                  "solr.zookeeper.server.datadir", solrHome.resolve("zoo_home").toString()));
-      final var zkDataDir = zkHomeDir.resolve("data");
+      final var zkDataDir =
+          solrHome.resolve(EnvUtils.getProperty("solr.zookeeper.server.datadir", "zoo_data"));
+      final var zkConfDir =
+          solrHome.resolve(EnvUtils.getProperty("solr.zookeeper.server.confdir", ""));
 
       // Populate a zoo.cfg
       final String zooCfgTemplate =
@@ -184,12 +180,11 @@ public class ZkContainer {
       }
 
       try {
-        Files.createDirectories(zkHomeDir);
         Files.createDirectories(zkDataDir);
         Files.writeString(zkDataDir.resolve("myid"), String.valueOf(myId));
         Properties zkProps = new Properties();
         zkProps.load(new StringReader(zooCfgContents));
-        startZooKeeperServerEmbedded(zkPort, zkHomeDir, zkProps);
+        startZooKeeperServerEmbedded(zkPort, zkConfDir, zkProps);
       } catch (Exception e) {
         throw new ZooKeeperException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -199,11 +194,10 @@ public class ZkContainer {
     } else if (zkServerEnabled) {
       try {
         final Path zkDataHome =
-            Path.of(
-                EnvUtils.getProperty(
-                    "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString()));
+            solrHome.resolve(EnvUtils.getProperty("solr.zookeeper.server.datadir", "zoo_data"));
         final Path zkConfHome =
-            Path.of(EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString()));
+            solrHome.resolve(
+                EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString()));
 
         Path zooCfgPath = zkConfHome.resolve("zoo.cfg");
         if (!Files.exists(zooCfgPath)) {
