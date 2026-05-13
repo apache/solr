@@ -9,7 +9,6 @@
   "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": [
-      "install-tool java 21.0.11+10.0.LTS",
       "./gradlew resolveAndLockAll --write-locks",
       "./gradlew kotlinUpgradeYarnLock",
       "./gradlew updateLicenses"
