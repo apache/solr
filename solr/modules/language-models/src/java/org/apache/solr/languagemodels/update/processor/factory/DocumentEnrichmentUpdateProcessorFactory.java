@@ -241,7 +241,6 @@ public class DocumentEnrichmentUpdateProcessorFactory extends UpdateRequestProce
         schemaField.multiValued()
             ? JsonArraySchema.builder().items(valueElement).build()
             : valueElement;
-    // estrai costanti output e value
     return ResponseFormat.builder()
         .type(ResponseFormatType.JSON)
         .jsonSchema(
