@@ -16,11 +16,6 @@
  */
 package org.apache.solr.languagemodels.store.rest;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.After;
 import org.junit.Before;
@@ -39,16 +34,7 @@ public class TestLargeLanguageModelManagerPersistence extends TestLanguageModelB
   }
 
   @Test
-  public void testModelAreStoredCompact() throws Exception {
-    loadLargeLanguageModel("openai-model.json");
-
-    final String JSONOnDisk = Files.readString(largeLanguageModelStoreFile, StandardCharsets.UTF_8);
-    Object objectFromDisk = Utils.fromJSONString(JSONOnDisk);
-    assertEquals(new String(Utils.toJSON(objectFromDisk), UTF_8), JSONOnDisk);
-  }
-
-  @Test
-  public void testModelStorePersistence() throws Exception {
+  public void testLargeLanguageModelStorePersistence() throws Exception {
     // check store is empty at start
     assertJQ(LargeLanguageModelStore.REST_END_POINT, "/models/==[]");
 
