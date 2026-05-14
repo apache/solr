@@ -44,7 +44,6 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - SOLR-18063 - NPE when resubmitting to DLQ [SOLR-18063](https://issues.apache.org/jira/browse/SOLR-18063) (Andrzej Bialecki @ab)
 - ShardRequestTracker now indexes Admin API results by node and replica rather than just node. This fixes situations where multiple sub-requests are sent to a single node. [SOLR-18081](https://issues.apache.org/jira/browse/SOLR-18081) (Houston Putman @HoustonPutman)
 - Fix operational issues with readOnly collections, such as restarting SolrNodes and replicating from the leader. [SOLR-18083](https://issues.apache.org/jira/browse/SOLR-18083) (Houston Putman @HoustonPutman)
-- Fix NPE that can come during size estimator due to null value in solr fields [SOLR-18239](https://issues.apache.org/jira/browse/SOLR-18239) (Jalaz Kumar)
 
 ### Removed (5 changes)
 
