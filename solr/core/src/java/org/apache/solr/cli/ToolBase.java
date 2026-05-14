@@ -19,16 +19,14 @@ package org.apache.solr.cli;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.concurrent.Callable;
-import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.util.StartupLoggingUtils;
+import picocli.CommandLine;
 
 public abstract class ToolBase implements Tool, Callable<Integer> {
-  @picocli.CommandLine.Mixin HelpMixin helpMixin;
-
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = {"-v", "--verbose"},
       description = "Enable verbose mode.")
   private boolean verbose = false;
@@ -89,7 +87,7 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
   }
 
   @Override
-  public int runTool(CommandLine cli) throws Exception {
+  public int runTool(org.apache.commons.cli.CommandLine cli) throws Exception {
     verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
     raiseLogLevelUnlessVerbose();
 
@@ -119,7 +117,7 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
   }
 
   @Deprecated
-  public abstract void runImpl(CommandLine cli) throws Exception;
+  public abstract void runImpl(org.apache.commons.cli.CommandLine cli) throws Exception;
 
   /**
    * Called by picocli to execute the tool's logic. Each tool must implement this method to support
