@@ -32,8 +32,8 @@ import org.apache.solr.opentelemetry.OtlpExporterFactory;
 
 public class OtelMetrics implements ConsumerMetrics {
 
-  public static final String REGISTRY = "crossdc.consumer.registry";
-  public static final String NAME_PREFIX = "crossdc.consumer.";
+  public static final String REGISTRY = "solr.crossdc.consumer.registry";
+  public static final String NAME_PREFIX = "solr.crossdc.consumer.";
   public static final String ATTR_TYPE = "type";
   public static final String ATTR_SUBTYPE = "subtype";
   public static final String ATTR_RESULT = "result";

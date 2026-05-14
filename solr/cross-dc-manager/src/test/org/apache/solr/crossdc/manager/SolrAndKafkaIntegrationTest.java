@@ -407,7 +407,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
       String content =
           IOUtils.toString(
               (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
-      assertTrue(content, content.contains("crossdc_consumer_output_total"));
+      assertTrue(content, content.contains("solr_crossdc_consumer_output_total"));
 
       // test the healtcheck endpoint
       req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/health");
