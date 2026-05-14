@@ -28,7 +28,6 @@ import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrPluginUtils;
@@ -46,20 +45,6 @@ public class DisMaxQParser extends QParser {
    * use it as our defaultField, and map aliases from it to any field in our schema.
    */
   private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
-
-  /**
-   * Applies the appropriate default rules for the "mm" param based on the effective value of the
-   * "q.op" param
-   *
-   * @see QueryParsing#OP
-   * @see DisMaxParams#MM
-   */
-  public static String parseMinShouldMatch(final IndexSchema schema, final SolrParams params) {
-    org.apache.solr.parser.QueryParser.Operator op =
-        QueryParsing.parseOP(params.get(QueryParsing.OP));
-
-    return params.get(DisMaxParams.MM, op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
-  }
 
   /**
    * Uses {@link SolrPluginUtils#parseFieldBoosts(String)} with the 'qf' parameter. Falls back to
@@ -250,7 +235,7 @@ public class DisMaxQParser extends QParser {
       String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser up, SolrParams solrParams)
       throws SyntaxError {
 
-    String minShouldMatch = parseMinShouldMatch(req.getSchema(), solrParams);
+    String minShouldMatch = SolrPluginUtils.parseMinShouldMatch(req.getSchema(), solrParams);
     Query dis = up.parse(userQuery);
     Query query = dis;
 

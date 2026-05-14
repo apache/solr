@@ -51,6 +51,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -606,6 +607,19 @@ public class SolrPluginUtils {
     if (0 < msm) {
       q.setMinimumNumberShouldMatch(msm);
     }
+  }
+
+  /**
+   * Applies the appropriate default rules for the "mm" param based on the effective value of the
+   * "q.op" param
+   *
+   * @see QueryParsing#OP
+   * @see DisMaxParams#MM
+   */
+  public static String parseMinShouldMatch(final IndexSchema schema, final SolrParams params) {
+    QueryParser.Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
+
+    return params.get(DisMaxParams.MM, op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
   }
 
   public static void setMinShouldMatch(BooleanQuery.Builder q, String spec) {

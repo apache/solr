@@ -22,10 +22,12 @@ import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.FiltersQParser;
+import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * Create a boolean query from sub queries. Sub queries can be marked as {@code must}, {@code
@@ -46,10 +48,12 @@ public class BoolQParserPlugin extends QParserPlugin {
       }
 
       @Override
-      protected BooleanQuery.Builder createBuilder() {
-        BooleanQuery.Builder builder = super.createBuilder();
-        builder.setMinimumNumberShouldMatch(localParams.getInt("mm", 0));
-        return builder;
+      protected BooleanQuery parseImpl() throws SyntaxError {
+        BooleanQuery query = super.parseImpl();
+        SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
+        String minShouldMatch = SolrPluginUtils.parseMinShouldMatch(req.getSchema(), solrParams);
+        boolean mmAutoRelax = params.getBool(DisMaxParams.MM_AUTORELAX, false);
+        return SolrPluginUtils.setMinShouldMatch(query, minShouldMatch, mmAutoRelax);
       }
 
       @Override
