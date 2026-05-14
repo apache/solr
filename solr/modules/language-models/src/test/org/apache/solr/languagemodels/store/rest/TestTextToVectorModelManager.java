@@ -107,8 +107,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
             + "logRequests:true,"
             + "logResponses:false"
             + "}}]";
-    assertJPut(
-        TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+    assertJPut(TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
     final String qryResult = JQ(TextToVectorModelStore.REST_END_POINT);
 
     assertTrue(
@@ -126,7 +125,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_cohere_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_cohere_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("cohere-model.json");
 
     final String modelName = "cohere-1";
@@ -134,14 +133,12 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
-    assertJQ(
-        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/inputType=='search_document'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -150,7 +147,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_openAi_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_openAi_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("openai-model.json");
 
     final String modelName = "openai-1";
@@ -158,8 +155,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(
-        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='text-embedding-3-small'");
@@ -172,7 +168,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_mistralAi_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_mistralAi_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("mistralai-model.json");
 
     final String modelName = "mistralai-1";
@@ -181,11 +177,9 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.mistral.ai/v1'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/apiKey=='apiKey-mistralAI'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/modelName=='mistral-embed'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/modelName=='mistral-embed'");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -195,7 +189,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_huggingface_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_huggingface_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("huggingface-model.json");
 
     final String modelName = "huggingface-1";
@@ -211,12 +205,12 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
+  public void loadTextToVectorModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
     loadTextToVectorModel("dummy-model-unsupported.json", "400");
   }
 
   @Test
-  public void loadModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
+  public void loadTextToVectorModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
     loadTextToVectorModel("dummy-model-ambiguous.json");
 
     final String modelName = "dummy-1";

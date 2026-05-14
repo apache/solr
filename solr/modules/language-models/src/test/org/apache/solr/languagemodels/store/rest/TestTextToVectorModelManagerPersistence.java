@@ -34,7 +34,7 @@ public class TestTextToVectorModelManagerPersistence extends TestLanguageModelBa
   }
 
   @Test
-  public void testModelStorePersistence() throws Exception {
+  public void testTextToVectorModelStorePersistence() throws Exception {
     // check models are empty
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/==[]");
 
@@ -46,14 +46,12 @@ public class TestTextToVectorModelManagerPersistence extends TestLanguageModelBa
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
-    assertJQ(
-        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/inputType=='search_document'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -64,14 +62,12 @@ public class TestTextToVectorModelManagerPersistence extends TestLanguageModelBa
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
-    assertJQ(
-        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/inputType=='search_document'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -82,14 +78,12 @@ public class TestTextToVectorModelManagerPersistence extends TestLanguageModelBa
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
-    assertJQ(
-        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
         TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        TextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/inputType=='search_document'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");

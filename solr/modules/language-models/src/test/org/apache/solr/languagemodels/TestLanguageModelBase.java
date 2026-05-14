@@ -62,17 +62,17 @@ public class TestLanguageModelBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
-    final Path textToVectorStore = tmpConfDir.resolve(TEXT_TO_VECTOR_MODEL_FILE_NAME);
+    final Path textToVectorModelStore = tmpConfDir.resolve(TEXT_TO_VECTOR_MODEL_FILE_NAME);
 
     if (isPersistent) {
-      textToVectorModelStoreFile = textToVectorStore;
+      textToVectorModelStoreFile = textToVectorModelStore;
     }
 
-    if (Files.exists(textToVectorStore)) {
+    if (Files.exists(textToVectorModelStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", textToVectorStore.toAbsolutePath());
+        log.info("remove model store config file in {}", textToVectorModelStore.toAbsolutePath());
       }
-      Files.delete(textToVectorStore);
+      Files.delete(textToVectorModelStore);
     }
 
     System.setProperty("managed.schema.mutable", "true");
@@ -93,9 +93,7 @@ public class TestLanguageModelBase extends RestTestBase {
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-        TextToVectorModelStore.REST_END_POINT,
-        multipleModels,
-        "/responseHeader/status==" + status);
+        TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==" + status);
   }
 
   public static void loadTextToVectorModel(String fileName) throws Exception {
@@ -103,8 +101,7 @@ public class TestLanguageModelBase extends RestTestBase {
         TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
-    assertJPut(
-        TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+    assertJPut(TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
   protected static void prepareIndex() throws Exception {

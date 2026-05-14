@@ -28,8 +28,9 @@ public class TestTextToVectorModelStoreInitialization extends TestLanguageModelB
   }
 
   @Test
-  public void managedModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
-      throws Exception {
+  public void
+      textToVectorModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
+          throws Exception {
     setupTest(
         "solrconfig-language-models-update-request-processor-only.xml",
         "schema-language-models.xml",
@@ -41,7 +42,7 @@ public class TestTextToVectorModelStoreInitialization extends TestLanguageModelB
   }
 
   @Test
-  public void managedModelStore_whenQueryParserComponentConfigured_shouldBeInitialized()
+  public void textToVectorModelStore_whenQueryParserComponentConfigured_shouldBeInitialized()
       throws Exception {
     setupTest(
         "solrconfig-language-models-query-parser-only.xml",
@@ -54,7 +55,8 @@ public class TestTextToVectorModelStoreInitialization extends TestLanguageModelB
   }
 
   @Test
-  public void managedModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
+  public void textToVectorModelStore_whenNoComponents_shouldNotBeInitialized()
+      throws Exception {
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(

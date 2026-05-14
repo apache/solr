@@ -27,8 +27,7 @@ import org.apache.solr.rest.ManagedResourceStorage;
 
 /** Managed Resource wrapper for the text-to-vector model store, exposed via REST */
 @ThreadSafe
-public class TextToVectorModelStore
-    extends ManagedLanguageModelStore<SolrTextToVectorModel> {
+public class TextToVectorModelStore extends ManagedLanguageModelStore<SolrTextToVectorModel> {
 
   /** the model store rest endpoint */
   public static final String REST_END_POINT = "/schema/text-to-vector-model-store";
