@@ -52,14 +52,20 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
             .process(cluster.getSolrClient())
             .getStatus());
-    cluster.waitForActiveCollection(COLLECTION, 10, TimeUnit.SECONDS, 2, NUM_SHARDS * NUM_REPLICAS);
+    waitForState(
+        "Timeout waiting for collection to be active after creation",
+        COLLECTION,
+        clusterShape(NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS));
   }
 
   @Before
   public void waitForActiveState() throws Exception {
     CollectionAdminRequest.modifyCollection(COLLECTION, Map.of("readOnly", false))
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 10, TimeUnit.SECONDS, 2, NUM_SHARDS * NUM_REPLICAS);
+    waitForState(
+        "Timeout waiting for active collection",
+        COLLECTION,
+        clusterShape(NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS));
   }
 
   @Test

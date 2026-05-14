@@ -113,7 +113,7 @@ The logchange gradle plugin offers some tasks, here are the two most important:
 
 The `logchangeRelease` and `logchangeGenerate` tasks are used by ReleaseWizard. The `logchangeArchive` task can be ran once for every major release or when the number of versioned changelog folders grow too large.
 
-These are integrated in the Release Wizard.
+These are integrated in the Release Wizard via `dev-tools/scripts/logchange.py`, which also handles RC2+ scenarios — see section 5.4.
 
 === 5.2 Migration tool
 
@@ -230,6 +230,12 @@ Example report output (Json or Markdown):
   }
 }
 ----
+
+=== 5.4 Release candidate changelog script
+
+`dev-tools/scripts/logchange.py` handles changelog git operations for each RC
+and the final post-vote forward-porting.  It is integrated into the Release
+Wizard but can also be run standalone.  Run with `--help` for usage.
 
 == 6. Further Reading
 

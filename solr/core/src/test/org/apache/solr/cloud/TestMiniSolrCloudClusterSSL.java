@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -71,7 +70,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  private static final String SOLR_SSL_ENABLED = "solr.ssl.enabled";
   public static final int NUM_SERVERS = 3;
   public static final String CONF_NAME = MethodHandles.lookup().lookupClass().getName();
 
@@ -86,14 +85,14 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
         "NOTE: This Test ignores the randomized SSL & clientAuth settings selected by base class");
     HttpClientUtil.resetHttpClientBuilder(); // also resets SocketFactoryRegistryProvider
     HttpJettySolrClient.resetSslContextFactory();
-    System.clearProperty(ZkStateReader.URL_SCHEME);
+    System.clearProperty(SOLR_SSL_ENABLED);
   }
 
   @After
   public void after() {
     HttpClientUtil.resetHttpClientBuilder(); // also resets SocketFactoryRegistryProvider
     HttpJettySolrClient.resetSslContextFactory();
-    System.clearProperty(ZkStateReader.URL_SCHEME);
+    System.clearProperty(SOLR_SSL_ENABLED);
     SSLContext.setDefault(DEFAULT_SSL_CONTEXT);
   }
 
@@ -102,7 +101,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider()); // must be reset
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig()); // must be reset
-    System.setProperty(ZkStateReader.URL_SCHEME, "http");
+    System.setProperty(SOLR_SSL_ENABLED, "false");
     checkClusterWithNodeReplacement(sslConfig);
   }
 
@@ -114,7 +113,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
-    System.setProperty(ZkStateReader.URL_SCHEME, "http");
+    System.setProperty(SOLR_SSL_ENABLED, "false");
     checkClusterWithNodeReplacement(sslConfig);
   }
 
@@ -123,7 +122,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
-    System.setProperty(ZkStateReader.URL_SCHEME, "https");
+    System.setProperty(SOLR_SSL_ENABLED, "true");
     checkClusterWithNodeReplacement(sslConfig);
   }
 
@@ -135,7 +134,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
-    System.setProperty(ZkStateReader.URL_SCHEME, "https");
+    System.setProperty(SOLR_SSL_ENABLED, "true");
     checkClusterWithNodeReplacement(sslConfig);
   }
 
@@ -144,7 +143,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
-    System.setProperty(ZkStateReader.URL_SCHEME, "https");
+    System.setProperty(SOLR_SSL_ENABLED, "true");
     checkClusterWithNodeReplacement(sslConfig);
   }
 
@@ -193,7 +192,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
-    System.setProperty(ZkStateReader.URL_SCHEME, "https");
+    System.setProperty(SOLR_SSL_ENABLED, "true");
     final JettyConfig config =
         JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
     final MiniSolrCloudCluster cluster =
