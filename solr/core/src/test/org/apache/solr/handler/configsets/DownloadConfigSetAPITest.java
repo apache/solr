@@ -89,6 +89,29 @@ public class DownloadConfigSetAPITest extends SolrTestCase {
     try (final Response response = api.downloadConfigSet("myconfig")) {
       assertEquals(200, response.getStatus());
       assertEquals("application/zip", response.getMediaType().toString());
+      assertEquals(
+          "attachment; filename=\"myconfig_configset.zip\"",
+          response.getHeaderString("Content-Disposition"));
     }
+  }
+
+  @Test
+  public void testDesignerPrefixStrippedFromFilename() throws Exception {
+    createConfigSet("._designer_myschema", "solrconfig.xml", "<config/>");
+
+    final var api = new DownloadConfigSet(mockCoreContainer, null, null);
+    try (final Response response = api.downloadConfigSet("._designer_myschema")) {
+      assertEquals(200, response.getStatus());
+      assertEquals(
+          "attachment; filename=\"myschema_configset.zip\"",
+          response.getHeaderString("Content-Disposition"));
+    }
+  }
+
+  @Test
+  public void testDeriveDisplayName() {
+    assertEquals("myschema", DownloadConfigSet.deriveDisplayName("._designer_myschema"));
+    assertEquals("plain", DownloadConfigSet.deriveDisplayName("plain"));
+    assertEquals("", DownloadConfigSet.deriveDisplayName("._designer_"));
   }
 }
