@@ -67,18 +67,18 @@ public class TestLanguageModelBase extends RestTestBase {
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
     final Path largeLanguageModelStore = tmpConfDir.resolve(LARGE_LANGUAGE_MODEL_FILE_NAME);
-    final Path textToVectorStore = tmpConfDir.resolve(TEXT_TO_VECTOR_MODEL_FILE_NAME);
+    final Path textToVectorModelStore = tmpConfDir.resolve(TEXT_TO_VECTOR_MODEL_FILE_NAME);
 
     if (isPersistent) {
+      textToVectorModelStoreFile = textToVectorModelStore;
       largeLanguageModelStoreFile = largeLanguageModelStore;
-      textToVectorModelStoreFile = textToVectorStore;
     }
 
-    if (Files.exists(textToVectorStore)) {
+    if (Files.exists(textToVectorModelStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", textToVectorStore.toAbsolutePath());
+        log.info("remove model store config file in {}", textToVectorModelStore.toAbsolutePath());
       }
-      Files.delete(textToVectorStore);
+      Files.delete(textToVectorModelStore);
     }
 
     if (Files.exists(largeLanguageModelStore)) {

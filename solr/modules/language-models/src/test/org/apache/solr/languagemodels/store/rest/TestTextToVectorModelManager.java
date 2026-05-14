@@ -125,7 +125,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_cohere_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_cohere_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("cohere-model.json");
 
     final String modelName = "cohere-1";
@@ -147,7 +147,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_openAi_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_openAi_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("openai-model.json");
 
     final String modelName = "openai-1";
@@ -168,7 +168,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_mistralAi_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_mistralAi_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("mistralai-model.json");
 
     final String modelName = "mistralai-1";
@@ -189,7 +189,7 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_huggingface_shouldLoadModelConfig() throws Exception {
+  public void loadTextToVectorModel_huggingface_shouldLoadModelConfig() throws Exception {
     loadTextToVectorModel("huggingface-model.json");
 
     final String modelName = "huggingface-1";
@@ -205,12 +205,12 @@ public class TestTextToVectorModelManager extends TestLanguageModelBase {
   }
 
   @Test
-  public void loadModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
+  public void loadTextToVectorModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
     loadTextToVectorModel("dummy-model-unsupported.json", "400");
   }
 
   @Test
-  public void loadModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
+  public void loadTextToVectorModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
     loadTextToVectorModel("dummy-model-ambiguous.json");
 
     final String modelName = "dummy-1";

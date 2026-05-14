@@ -34,7 +34,7 @@ public class TestTextToVectorModelManagerPersistence extends TestLanguageModelBa
   }
 
   @Test
-  public void testModelStorePersistence() throws Exception {
+  public void testTextToVectorModelStorePersistence() throws Exception {
     // check models are empty
     assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/==[]");
 
