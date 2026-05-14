@@ -28,9 +28,8 @@ public class TestLargeLanguageModelStoreInitialization extends TestLanguageModel
   }
 
   @Test
-  public void
-      managedLargeLanguageModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
-          throws Exception {
+  public void largeLanguageModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
+      throws Exception {
     setupTest("solrconfig-document-enrichment.xml", "schema-language-models.xml", false, false);
 
     assertJQ(LargeLanguageModelStore.REST_END_POINT, "/responseHeader/status==0");
@@ -38,8 +37,7 @@ public class TestLargeLanguageModelStoreInitialization extends TestLanguageModel
   }
 
   @Test
-  public void managedLargeLanguageModelStore_whenNoComponents_shouldNotBeInitialized()
-      throws Exception {
+  public void largeLanguageModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(
