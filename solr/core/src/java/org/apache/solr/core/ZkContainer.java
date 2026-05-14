@@ -115,7 +115,13 @@ public class ZkContainer {
       // ZooKeeperServerEmbedded being used under the covers.
       // When running multiple quorum nodes on the same machine sharing a solrHome,
       // override the default data and config directories with unique ones
-      final int zkPort = config.getSolrHostPort() + 1000;
+      final int zkClientPortOffset =
+          EnvUtils.getPropertyAsInteger("solr.zookeeper.server.client.port.offset", 1000);
+      final int zkQuorumPortOffset =
+          EnvUtils.getPropertyAsInteger("solr.zookeeper.server.quorum.port.offset", 1010);
+      final int zkElectionPortOffset =
+          EnvUtils.getPropertyAsInteger("solr.zookeeper.server.election.port.offset", 1020);
+      final int zkPort = config.getSolrHostPort() + zkClientPortOffset;
       final var zkDataDir =
           solrHome.resolve(EnvUtils.getProperty("solr.zookeeper.server.datadir", "zoo_data"));
       final var zkConfDir =
@@ -167,8 +173,10 @@ public class ZkContainer {
           throw new IllegalStateException(
               "Invalid port in zkHost entry '" + host + "': " + hostComponents[1], e);
         }
-        final var zkQuorumPort = zkClientPort + 1;
-        final var zkLeaderPort = zkClientPort + 2;
+        // Derive quorum/election ports from the peer's ZK client port using the same offsets.
+        // All nodes are assumed to use the same offset configuration.
+        final var zkQuorumPort = zkClientPort - zkClientPortOffset + zkQuorumPortOffset;
+        final var zkLeaderPort = zkClientPort - zkClientPortOffset + zkElectionPortOffset;
         final String configEntry =
             "server." + (i + 1) + "=" + zkServer + ":" + zkQuorumPort + ":" + zkLeaderPort + "\n";
         zooCfgContents = zooCfgContents + configEntry;

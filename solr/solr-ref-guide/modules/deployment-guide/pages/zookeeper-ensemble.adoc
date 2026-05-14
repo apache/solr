@@ -575,13 +575,15 @@ Port scheme used by each node:
 |9983
 
 |ZK quorum peer
-|`zk_client_port + 1`
-|9984
+|`solr_port + 1010`
+|9993
 
 |ZK leader election
-|`zk_client_port + 2`
-|9985
+|`solr_port + 1020`
+|10003
 |===
+
+All three port offsets can be overridden with system properties — see <<embedded-zk-ports,Configuring Embedded ZK Ports>> below.
 
 === Starting a 3-Node Embedded ZK Ensemble
 
@@ -601,6 +603,29 @@ bin/solr start -p 20000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeepe
 bin/solr start -p 30000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_2
 bin/solr start -p 40000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_3
 ----
+
+[[embedded-zk-ports]]
+=== Configuring Embedded ZK Ports
+
+By default the three ZooKeeper ports are derived from the Solr port.
+Each can be overridden with a system property:
+
+[cols="2,1,2"]
+|===
+|System property |Default |Description
+
+|`solr.zookeeper.server.client.port.offset`
+|`1000`
+|Offset from Solr port to ZK client port
+
+|`solr.zookeeper.server.quorum.port.offset`
+|`1010`
+|Offset from Solr port to ZK quorum peer port
+
+|`solr.zookeeper.server.election.port.offset`
+|`1020`
+|Offset from Solr port to ZK leader election port
+|===
 
 === Known Limitations
 
