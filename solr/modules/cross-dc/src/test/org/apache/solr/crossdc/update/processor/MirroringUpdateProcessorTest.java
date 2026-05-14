@@ -596,8 +596,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       document.addField(entry.getKey(), entry.getValue());
     }
-    assertEquals(
-        MirroringUpdateProcessor.ObjectSizeEstimator.estimate(document), estimate(map));
+    assertEquals(MirroringUpdateProcessor.ObjectSizeEstimator.estimate(document), estimate(map));
 
     SolrInputDocument childDocument = new SolrInputDocument();
     for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -605,8 +604,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     }
     document.addChildDocument(childDocument);
     assertEquals(
-        MirroringUpdateProcessor.ObjectSizeEstimator.estimate(document),
-        estimate(map) * 2);
+        MirroringUpdateProcessor.ObjectSizeEstimator.estimate(document), estimate(map) * 2);
   }
 
   @Test
