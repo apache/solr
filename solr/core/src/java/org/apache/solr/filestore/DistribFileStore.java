@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +49,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -189,14 +189,15 @@ public class DistribFileStore implements FileStore {
       var solrClient = coreContainer.getDefaultHttpSolrClient();
 
       try {
-        GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + getMetaPath());
-        request.setResponseParser(new InputStreamResponseParser(null));
-        var response = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
-        is = (InputStream) response.get("stream");
-        metadata =
-            Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
-        m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
-      } catch (SolrServerException | IOException e) {
+        final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
+        final var response = metadataRequest.processWithBaseUrl(solrClient, baseUrl, null);
+        try (final var responseStream = response.getResponseStreamIfSuccessful()) {
+          metadata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(responseStream);
+          m =
+              (Map<?, ?>)
+                  Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
+        }
+      } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       } finally {
         org.apache.solr.common.util.IOUtils.closeQuietly(is);
@@ -235,18 +236,12 @@ public class DistribFileStore implements FileStore {
         try {
           String baseUrl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
-          final var solrParams = new ModifiableSolrParams();
-          solrParams.add("meta", "true");
-          solrParams.add("omitHeader", "true");
-
-          final var request = new GenericSolrRequest(GET, "/node/files" + path, solrParams);
-          boolean nodeHasBlob = false;
-          var solrClient = coreContainer.getDefaultHttpSolrClient();
-          var resp = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
-
-          if (Utils.getObjectByPath(resp, false, Arrays.asList("files", path)) != null) {
-            nodeHasBlob = true;
-          }
+          final var metadataRequest = new FileStoreApi.GetMetadata(path);
+          final var client = coreContainer.getDefaultHttpSolrClient();
+          final var metadataResponse = metadataRequest.processWithBaseUrl(client, baseUrl, null);
+          final var parsed = metadataResponse.getParsed();
+          boolean nodeHasBlob =
+              parsed != null && parsed.files != null && parsed.files.containsKey(path);
           if (nodeHasBlob) {
             boolean success = fetchFileFromNodeAndPersist(liveNode);
             if (success) return true;
@@ -388,7 +383,6 @@ public class DistribFileStore implements FileStore {
           var solrClient = coreContainer.getDefaultHttpSolrClient();
           var solrParams = new ModifiableSolrParams();
           solrParams.set("getFrom", getFrom);
-
           var request = new GenericSolrRequest(GET, "/node/files" + info.path, solrParams);
           // fire and forget
           solrClient.requestWithBaseUrl(baseUrl, request::process);
