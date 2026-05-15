@@ -85,7 +85,25 @@ Deletes a collection or core depending on whether Solr is running in SolrCloud o
 // end::picocli-generated-man-section-commands[]
 
 // tag::picocli-generated-man-section-exit-status[]
+==  Exit Codes:
+
+*0*::
+  Collection or core deleted successfully.
+
+*1*::
+  Failed to delete; collection or core may not exist, or Solr may not be running.
+
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
+==  Examples:
+
+[%hardbreaks]
+  # Delete a collection in SolrCloud mode
+  bin/solr delete -c myCollection
+
+[%hardbreaks]
+  # Delete and also remove the associated configset
+  bin/solr delete -c myCollection --delete-config
+
 // end::picocli-generated-man-section-footer[]

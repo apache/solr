@@ -19,7 +19,20 @@ package org.apache.solr.cli;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "start", description = "Starts Solr in standalone or SolrCloud mode.")
+@CommandLine.Command(
+    name = "start",
+    description = "Starts Solr in standalone or SolrCloud mode.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Start Solr in SolrCloud mode on the default port",
+      "  bin/solr start",
+      "",
+      "  # Start on a custom port with 2g heap",
+      "  bin/solr start -p 8984 -m 2g",
+      "",
+      "  # Start in standalone mode with an external ZooKeeper",
+      "  bin/solr start --user-managed -z localhost:2181/solr"
+    })
 public class StartCommand implements Callable<Integer> {
 
   @CommandLine.Mixin HelpMixin helpMixin;

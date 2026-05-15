@@ -121,4 +121,18 @@ Starts Solr in standalone or SolrCloud mode.
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
+==  Examples:
+
+[%hardbreaks]
+  # Start Solr in SolrCloud mode on the default port
+  bin/solr start
+
+[%hardbreaks]
+  # Start on a custom port with 2g heap
+  bin/solr start -p 8984 -m 2g
+
+[%hardbreaks]
+  # Start in standalone mode with an external ZooKeeper
+  bin/solr start --user-managed -z localhost:2181/solr
+
 // end::picocli-generated-man-section-footer[]
