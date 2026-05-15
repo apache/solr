@@ -189,8 +189,7 @@ public class DistribFileStore implements FileStore {
 
       try {
         final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
-        final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-        final var response = metadataRequest.process(client);
+        final var response = metadataRequest.processWithBaseUrl(solrClient, baseUrl, null);
         try (final var responseStream = response.getResponseStreamIfSuccessful()) {
           metadata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(responseStream);
           m =
@@ -240,8 +239,8 @@ public class DistribFileStore implements FileStore {
           String baseUrl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
           final var metadataRequest = new FileStoreApi.GetMetadata(path);
-          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-          final var metadataResponse = metadataRequest.process(client);
+          final var client = coreContainer.getDefaultHttpSolrClient();
+          final var metadataResponse = metadataRequest.processWithBaseUrl(client, baseUrl, null);
           boolean nodeHasBlob =
               metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
