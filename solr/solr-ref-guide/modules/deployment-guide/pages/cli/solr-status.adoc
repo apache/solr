@@ -82,7 +82,29 @@ Get the status of a Solr server.
 // end::picocli-generated-man-section-commands[]
 
 // tag::picocli-generated-man-section-exit-status[]
+==  Exit Codes:
+
+*0*::
+  Solr is running.
+
+*1*::
+  Solr is not running, or the URL/port could not be reached.
+
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
+==  Examples:
+
+[%hardbreaks]
+  # Check status of Solr running on the default port
+  bin/solr status
+
+[%hardbreaks]
+  # Check status of a specific Solr instance by URL
+  bin/solr status -s http://localhost:8983
+
+[%hardbreaks]
+  # Wait up to 30 seconds for Solr to start
+  bin/solr status --max-wait-secs 30 -s http://localhost:8983
+
 // end::picocli-generated-man-section-footer[]
