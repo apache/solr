@@ -33,7 +33,7 @@ bin/solr status - Get the status of a Solr server.
 == Synopsis
 
 ....
-bin/solr status [-hvV] [--short] [--max-wait-secs=<maxWaitSecs>] [-p=<port>]
+bin/solr status [-v] [--short] [--max-wait-secs=<maxWaitSecs>] [-p=<port>]
                 [-s=<solrUrl>] [-u=<credentials>]
 ....
 
@@ -48,9 +48,6 @@ Get the status of a Solr server.
 
 // tag::picocli-generated-man-section-options[]
 == Options
-
-*-h*, *--help*::
-  Show this help message and exit.
 
 *--max-wait-secs*=_<maxWaitSecs>_::
   Wait up to the specified number of seconds to see Solr running.
@@ -69,9 +66,6 @@ Get the status of a Solr server.
 
 *-v*, *--verbose*::
   Enable verbose mode.
-
-*-V*, *--version*::
-  Print version information and exit.
 
 // end::picocli-generated-man-section-options[]
 

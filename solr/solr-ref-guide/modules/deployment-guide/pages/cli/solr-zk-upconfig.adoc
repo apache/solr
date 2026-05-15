@@ -33,7 +33,7 @@ bin/solr zk upconfig - Upload a configset from the local filesystem to ZooKeeper
 == Synopsis
 
 ....
-bin/solr zk upconfig [-hvV] -d=DIR -n=<confName> [-s=<solrUrl>]
+bin/solr zk upconfig [-v] -d=DIR -n=<confName> [-s=<solrUrl>]
                      [-u=<credentials>] [-z=<zkHost>]
 ....
 
@@ -52,9 +52,6 @@ Upload a configset from the local filesystem to ZooKeeper.
 *-d*, *--conf-dir*=_DIR_::
   Local directory with configs.
 
-*-h*, *--help*::
-  Show this help message and exit.
-
 *-n*, *--conf-name*=_<confName>_::
   Configset name in ZooKeeper.
 
@@ -66,9 +63,6 @@ Upload a configset from the local filesystem to ZooKeeper.
 
 *-v*, *--verbose*::
   Enable verbose mode.
-
-*-V*, *--version*::
-  Print version information and exit.
 
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.

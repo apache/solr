@@ -33,7 +33,7 @@ bin/solr zk mkroot - Make a znode in ZooKeeper with no data. Can be used to make
 == Synopsis
 
 ....
-bin/solr zk mkroot [-hvV] [--fail-on-exists[=<failOnExists>]] [-s=<solrUrl>]
+bin/solr zk mkroot [-v] [--fail-on-exists[=<failOnExists>]] [-s=<solrUrl>]
                    [-u=<credentials>] [-z=<zkHost>] <path>
 ....
 
@@ -52,9 +52,6 @@ Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary 
 *--fail-on-exists*[=_<failOnExists>_]::
   Raise an error if the znode already exists. Defaults to false.
 
-*-h*, *--help*::
-  Show this help message and exit.
-
 *-s*, *--solr-url*=_<solrUrl>_::
   Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
 
@@ -63,9 +60,6 @@ Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary 
 
 *-v*, *--verbose*::
   Enable verbose mode.
-
-*-V*, *--version*::
-  Print version information and exit.
 
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.

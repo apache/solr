@@ -33,7 +33,7 @@ bin/solr zk updateacls - Update ACLs for a ZooKeeper znode.
 == Synopsis
 
 ....
-bin/solr zk updateacls [-hvV] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
+bin/solr zk updateacls [-v] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
                        <path>
 ....
 
@@ -49,9 +49,6 @@ Update ACLs for a ZooKeeper znode.
 // tag::picocli-generated-man-section-options[]
 == Options
 
-*-h*, *--help*::
-  Show this help message and exit.
-
 *-s*, *--solr-url*=_<solrUrl>_::
   Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
 
@@ -60,9 +57,6 @@ Update ACLs for a ZooKeeper znode.
 
 *-v*, *--verbose*::
   Enable verbose mode.
-
-*-V*, *--version*::
-  Print version information and exit.
 
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.

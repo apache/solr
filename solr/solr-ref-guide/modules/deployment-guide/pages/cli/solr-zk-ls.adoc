@@ -33,7 +33,7 @@ bin/solr zk ls - List the contents of a ZooKeeper node.
 == Synopsis
 
 ....
-bin/solr zk ls [-hrvV] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <path>
+bin/solr zk ls [-rv] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <path>
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -48,9 +48,6 @@ List the contents of a ZooKeeper node.
 // tag::picocli-generated-man-section-options[]
 == Options
 
-*-h*, *--help*::
-  Show this help message and exit.
-
 *-r*, *--recursive*::
   Apply the command recursively.
 
@@ -62,9 +59,6 @@ List the contents of a ZooKeeper node.
 
 *-v*, *--verbose*::
   Enable verbose mode.
-
-*-V*, *--version*::
-  Print version information and exit.
 
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.

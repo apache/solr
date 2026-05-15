@@ -33,7 +33,7 @@ bin/solr stop - Stops Solr.
 == Synopsis
 
 ....
-bin/solr stop [-hV] [--all] [--verbose] [-k=<key>] [-p=<port>]
+bin/solr stop [-h] [--all] [--verbose] [-k=<key>] [-p=<port>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -52,7 +52,7 @@ Stops Solr.
   Find and stop all running Solr servers on this host
 
 *-h*, *--help*::
-  Show this help message and exit.
+  Print this help message and exit.
 
 *-k*, *--key*=_<key>_::
   Stop key; default is solrrocks
@@ -61,9 +61,6 @@ Stops Solr.
   Specify the port the Solr HTTP listener is bound to.
 +
 The STOP_PORT is derived as ($SOLR_PORT-1000).
-
-*-V*, *--version*::
-  Print version information and exit.
 
 *--verbose*::
   Enable verbose mode.

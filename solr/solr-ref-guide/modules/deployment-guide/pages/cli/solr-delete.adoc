@@ -19,13 +19,13 @@
 // To update: modify the @Command/@Option annotations in the Java source, then run:
 //   ./gradlew :solr:solr-ref-guide:generateCliDocs
 
-= bin/solr zk cp
+= bin/solr delete
 :page-toclevels: 2
 
 // tag::picocli-generated-man-section-name[]
 == Name
 
-bin/solr zk cp - Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.
+bin/solr delete - Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.
 
 // end::picocli-generated-man-section-name[]
 
@@ -33,8 +33,8 @@ bin/solr zk cp - Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeep
 == Synopsis
 
 ....
-bin/solr zk cp [-rv] [-s=<solrUrl>] [--solr-home=DIR] [-u=<credentials>]
-               [-z=<zkHost>] <src> <dst>
+bin/solr delete [-fhvV] [--delete-config] -c=<name> [-u=<credentials>]
+                [-s=<solrUrl> | -z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -42,27 +42,27 @@ bin/solr zk cp [-rv] [-s=<solrUrl>] [--solr-home=DIR] [-u=<credentials>]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.
-
-<src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node
-NOTE: <src> and <dest> may both be ZooKeeper resources prefixed by 'zk:'
-When <src> is a zk resource, <dest> may be '.'
-If <dest> ends with '/', then <dest> will be a local folder or parent znode
-and the last element of the <src> path will be appended unless <src> also ends in a slash.
+Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.
 
 // end::picocli-generated-man-section-description[]
 
 // tag::picocli-generated-man-section-options[]
 == Options
 
-*-r*, *--recursive*::
-  Apply the command recursively.
+*-c*, *--name*=_<name>_::
+  Name of the core / collection to delete.
+
+*--delete-config*::
+  Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.
+
+*-f*, *--force*::
+  Skip safety checks when deleting the configuration directory used by a collection.
+
+*-h*, *--help*::
+  Show this help message and exit.
 
 *-s*, *--solr-url*=_<solrUrl>_::
-  Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
-
-*--solr-home*=_DIR_::
-  Required to look up configuration for compressing state.json.
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
 
 *-u*, *--credentials*=_<credentials>_::
   Credentials in the format username:password. Example: --credentials solr:SolrRocks
@@ -70,20 +70,15 @@ and the last element of the <src> path will be appended unless <src> also ends i
 *-v*, *--verbose*::
   Enable verbose mode.
 
+*-V*, *--version*::
+  Print version information and exit.
+
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
 
 // end::picocli-generated-man-section-options[]
 
 // tag::picocli-generated-man-section-arguments[]
-== Arguments
-
-_<src>_::
-  Source path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
-
-_<dst>_::
-  Destination path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
-
 // end::picocli-generated-man-section-arguments[]
 
 // tag::picocli-generated-man-section-commands[]
@@ -93,18 +88,4 @@ _<dst>_::
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
-==  Examples:
-
-[%hardbreaks]
-  # Upload a local file to ZooKeeper
-  bin/solr zk cp /local/conf/solrconfig.xml zk:/configs/myconfig/solrconfig.xml -z localhost:9983
-
-[%hardbreaks]
-  # Recursively copy a local directory to ZooKeeper
-  bin/solr zk cp -r file:/local/conf/ zk:/configs/myconfig/ -z localhost:9983
-
-[%hardbreaks]
-  # Copy a ZooKeeper node to the current directory
-  bin/solr zk cp zk:/configs/myconfig/solrconfig.xml . -z localhost:9983
-
 // end::picocli-generated-man-section-footer[]

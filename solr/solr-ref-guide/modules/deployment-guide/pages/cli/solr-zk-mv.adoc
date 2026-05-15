@@ -33,8 +33,7 @@ bin/solr zk mv - Move (rename) a znode on ZooKeeper.
 == Synopsis
 
 ....
-bin/solr zk mv [-hvV] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <src>
-               <dst>
+bin/solr zk mv [-v] [-s=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <src> <dst>
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -53,9 +52,6 @@ and the last element of the <src> path will be appended.
 // tag::picocli-generated-man-section-options[]
 == Options
 
-*-h*, *--help*::
-  Show this help message and exit.
-
 *-s*, *--solr-url*=_<solrUrl>_::
   Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
 
@@ -64,9 +60,6 @@ and the last element of the <src> path will be appended.
 
 *-v*, *--verbose*::
   Enable verbose mode.
-
-*-V*, *--version*::
-  Print version information and exit.
 
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.

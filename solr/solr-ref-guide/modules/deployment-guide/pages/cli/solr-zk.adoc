@@ -33,7 +33,7 @@ bin/solr zk - Sub commands for working with ZooKeeper.
 == Synopsis
 
 ....
-bin/solr zk [-hV] [COMMAND]
+bin/solr zk [-h] [COMMAND]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -49,10 +49,7 @@ Sub commands for working with ZooKeeper.
 == Options
 
 *-h*, *--help*::
-  Show this help message and exit.
-
-*-V*, *--version*::
-  Print version information and exit.
+  Print this help message and exit.
 
 // end::picocli-generated-man-section-options[]
 

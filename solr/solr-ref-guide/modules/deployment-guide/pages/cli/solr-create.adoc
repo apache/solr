@@ -19,13 +19,13 @@
 // To update: modify the @Command/@Option annotations in the Java source, then run:
 //   ./gradlew :solr:solr-ref-guide:generateCliDocs
 
-= bin/solr zk cp
+= bin/solr create
 :page-toclevels: 2
 
 // tag::picocli-generated-man-section-name[]
 == Name
 
-bin/solr zk cp - Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.
+bin/solr create - Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
 
 // end::picocli-generated-man-section-name[]
 
@@ -33,8 +33,9 @@ bin/solr zk cp - Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeep
 == Synopsis
 
 ....
-bin/solr zk cp [-rv] [-s=<solrUrl>] [--solr-home=DIR] [-u=<credentials>]
-               [-z=<zkHost>] <src> <dst>
+bin/solr create [-hvV] -c=<name> [-d=<confDir>] [-n=<confName>]
+                [-rf=<replicationFactor>] [-sh=<shards>] [-u=<credentials>]
+                [-s=<solrUrl> | -z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -42,27 +43,33 @@ bin/solr zk cp [-rv] [-s=<solrUrl>] [--solr-home=DIR] [-u=<credentials>]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeeper.
-
-<src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node
-NOTE: <src> and <dest> may both be ZooKeeper resources prefixed by 'zk:'
-When <src> is a zk resource, <dest> may be '.'
-If <dest> ends with '/', then <dest> will be a local folder or parent znode
-and the last element of the <src> path will be appended unless <src> also ends in a slash.
+Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
 
 // end::picocli-generated-man-section-description[]
 
 // tag::picocli-generated-man-section-options[]
 == Options
 
-*-r*, *--recursive*::
-  Apply the command recursively.
+*-c*, *--name*=_<name>_::
+  Name of collection or core to create.
+
+*-d*, *--conf-dir*=_<confDir>_::
+  Configuration directory to copy when creating the new collection; default is _default.
+
+*-h*, *--help*::
+  Show this help message and exit.
+
+*-n*, *--conf-name*=_<confName>_::
+  Configuration name; default is the collection name.
+
+*-rf, --replication-factor*=_<replicationFactor>_::
+  Number of copies of each document across the collection (replicas per shard); default is 1.
 
 *-s*, *--solr-url*=_<solrUrl>_::
-  Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
 
-*--solr-home*=_DIR_::
-  Required to look up configuration for compressing state.json.
+*-sh, --shards*=_<shards>_::
+  Number of shards; default is 1.
 
 *-u*, *--credentials*=_<credentials>_::
   Credentials in the format username:password. Example: --credentials solr:SolrRocks
@@ -70,20 +77,15 @@ and the last element of the <src> path will be appended unless <src> also ends i
 *-v*, *--verbose*::
   Enable verbose mode.
 
+*-V*, *--version*::
+  Print version information and exit.
+
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
 
 // end::picocli-generated-man-section-options[]
 
 // tag::picocli-generated-man-section-arguments[]
-== Arguments
-
-_<src>_::
-  Source path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
-
-_<dst>_::
-  Destination path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
-
 // end::picocli-generated-man-section-arguments[]
 
 // tag::picocli-generated-man-section-commands[]
@@ -93,18 +95,4 @@ _<dst>_::
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
-==  Examples:
-
-[%hardbreaks]
-  # Upload a local file to ZooKeeper
-  bin/solr zk cp /local/conf/solrconfig.xml zk:/configs/myconfig/solrconfig.xml -z localhost:9983
-
-[%hardbreaks]
-  # Recursively copy a local directory to ZooKeeper
-  bin/solr zk cp -r file:/local/conf/ zk:/configs/myconfig/ -z localhost:9983
-
-[%hardbreaks]
-  # Copy a ZooKeeper node to the current directory
-  bin/solr zk cp zk:/configs/myconfig/solrconfig.xml . -z localhost:9983
-
 // end::picocli-generated-man-section-footer[]

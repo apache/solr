@@ -33,7 +33,7 @@ bin/solr start - Starts Solr in standalone or SolrCloud mode.
 == Synopsis
 
 ....
-bin/solr start [-fhqVy] [--force] [--user-managed] [--verbose]
+bin/solr start [-fhqy] [--force] [--user-managed] [--verbose]
                [--data-home=<dataHome>] [-e=<example>]
                [--example-dir=<exampleDir>] [--host=<host>] [-j=<jettyParams>]
                [--jvm-opts=<jvmOpts>] [-m=<memory>] [-p=<port>]
@@ -69,7 +69,7 @@ Starts Solr in standalone or SolrCloud mode.
   Override warning when attempting to start Solr as root user
 
 *-h*, *--help*::
-  Show this help message and exit.
+  Print this help message and exit.
 
 *--host*=_<host>_::
   Specify the hostname for this Solr instance
@@ -100,9 +100,6 @@ Starts Solr in standalone or SolrCloud mode.
 
 *--user-managed*::
   Start Solr in standalone mode. Default is SolrCloud (ZooKeeper) mode.
-
-*-V*, *--version*::
-  Print version information and exit.
 
 *--verbose*::
   Set log level to DEBUG (verbose); default is INFO
