@@ -34,7 +34,15 @@ import org.slf4j.LoggerFactory;
 @picocli.CommandLine.Command(
     name = "upconfig",
     mixinStandardHelpOptions = true,
-    description = "Upload a configset from the local filesystem to ZooKeeper.")
+    description = "Upload a configset from the local filesystem to ZooKeeper.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Upload a configset to ZooKeeper",
+      "  bin/solr zk upconfig -n myconfig -d /local/conf -z localhost:9983",
+      "",
+      "  # Upload using a path relative to the Solr installation",
+      "  bin/solr zk upconfig -n myconfig -d server/solr/configsets/myconfig/conf -z localhost:9983"
+    })
 public class ConfigSetUploadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

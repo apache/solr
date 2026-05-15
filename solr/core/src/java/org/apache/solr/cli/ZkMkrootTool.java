@@ -34,7 +34,15 @@ import org.slf4j.LoggerFactory;
     mixinStandardHelpOptions = true,
     description =
         "Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary depth"
-            + " but primarily intended to create a 'chroot'.")
+            + " but primarily intended to create a 'chroot'.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Create a chroot path for Solr",
+      "  bin/solr zk mkroot /solr -z localhost:2181",
+      "",
+      "  # Create a nested chroot path",
+      "  bin/solr zk mkroot /solr/myapp -z localhost:2181"
+    })
 public class ZkMkrootTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

@@ -32,7 +32,15 @@ import org.apache.solr.common.cloud.SolrZkClient;
 @picocli.CommandLine.Command(
     name = "updateacls",
     mixinStandardHelpOptions = true,
-    description = "Update ACLs for a ZooKeeper znode.")
+    description = "Update ACLs for a ZooKeeper znode.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Apply ACLs to the root Solr znode",
+      "  bin/solr zk updateacls /solr -z localhost:9983",
+      "",
+      "  # Apply ACLs to a specific configset",
+      "  bin/solr zk updateacls /configs/myconfig -z localhost:9983"
+    })
 public class UpdateACLTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 

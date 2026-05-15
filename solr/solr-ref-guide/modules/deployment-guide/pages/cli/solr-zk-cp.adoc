@@ -14,6 +14,7 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
+//
 // DO NOT EDIT -- this page is auto-generated from picocli annotations.
 // To update: modify the @Command/@Option annotations in the Java source, then run:
 //   ./gradlew :solr:solr-ref-guide:generateCliDocs
@@ -98,4 +99,18 @@ _<dst>_::
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
+==  Examples:
+
+[%hardbreaks]
+  # Upload a local file to ZooKeeper
+  bin/solr zk cp /local/conf/solrconfig.xml zk:/configs/myconfig/solrconfig.xml -z localhost:9983
+
+[%hardbreaks]
+  # Recursively copy a local directory to ZooKeeper
+  bin/solr zk cp -r file:/local/conf/ zk:/configs/myconfig/ -z localhost:9983
+
+[%hardbreaks]
+  # Copy a ZooKeeper node to the current directory
+  bin/solr zk cp zk:/configs/myconfig/solrconfig.xml . -z localhost:9983
+
 // end::picocli-generated-man-section-footer[]

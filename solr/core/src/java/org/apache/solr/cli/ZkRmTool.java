@@ -31,7 +31,15 @@ import org.slf4j.LoggerFactory;
 @picocli.CommandLine.Command(
     name = "rm",
     mixinStandardHelpOptions = true,
-    description = "Remove a znode from ZooKeeper.")
+    description = "Remove a znode from ZooKeeper.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Remove a single file from ZooKeeper",
+      "  bin/solr zk rm /configs/myconfig/solrconfig.xml -z localhost:9983",
+      "",
+      "  # Recursively remove a configset",
+      "  bin/solr zk rm -r /configs/myconfig -z localhost:9983"
+    })
 public class ZkRmTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

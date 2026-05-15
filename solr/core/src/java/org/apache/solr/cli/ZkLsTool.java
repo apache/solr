@@ -29,7 +29,15 @@ import picocli.CommandLine;
 @CommandLine.Command(
     name = "ls",
     mixinStandardHelpOptions = true,
-    description = "List the contents of a ZooKeeper node.")
+    description = "List the contents of a ZooKeeper node.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # List top-level ZooKeeper nodes",
+      "  bin/solr zk ls /configs -z localhost:9983",
+      "",
+      "  # Recursively list a configset",
+      "  bin/solr zk ls -r /configs/myconfig -z localhost:9983"
+    })
 public class ZkLsTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

@@ -32,7 +32,15 @@ import org.slf4j.LoggerFactory;
 @picocli.CommandLine.Command(
     name = "downconfig",
     mixinStandardHelpOptions = true,
-    description = "Download a configset from ZooKeeper to the local filesystem.")
+    description = "Download a configset from ZooKeeper to the local filesystem.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Download a configset from ZooKeeper",
+      "  bin/solr zk downconfig -n myconfig -d /local/conf -z localhost:9983",
+      "",
+      "  # Download into a path relative to the Solr installation",
+      "  bin/solr zk downconfig -n myconfig -d server/solr/configsets/myconfig/conf -z localhost:9983"
+    })
 public class ConfigSetDownloadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
