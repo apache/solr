@@ -81,7 +81,7 @@ xref:cli/solr-zk-rm.adoc[*rm*]::
   Remove a znode from ZooKeeper.
 
 xref:cli/solr-zk-updateacls.adoc[*updateacls*]::
-  Update ACLs for a ZooKeeper znode.
+  Recursively re-applies ZooKeeper ACLs to a znode and all its descendants. The ACLs are determined by the ZkACLProvider configured via the zkACLProvider system property (pass via SOLR_TOOL_OPTS). Without a custom provider, the default OPEN_ACL_UNSAFE ACLs are applied.
 
 // end::picocli-generated-man-section-commands[]
 

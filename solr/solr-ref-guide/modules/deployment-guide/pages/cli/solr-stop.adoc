@@ -74,14 +74,6 @@ The STOP_PORT is derived as ($SOLR_PORT-1000).
 // end::picocli-generated-man-section-commands[]
 
 // tag::picocli-generated-man-section-exit-status[]
-==  Exit Codes:
-
-*0*::
-  Solr stopped successfully.
-
-*1*::
-  Solr was not running, or failed to stop.
-
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
