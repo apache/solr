@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 /** Supports zk downconfig command in the bin/solr script. */
 @picocli.CommandLine.Command(
     name = "downconfig",
-    mixinStandardHelpOptions = true,
     description = "Download a configset from ZooKeeper to the local filesystem.",
     footerHeading = "%nExamples:%n",
     footer = {

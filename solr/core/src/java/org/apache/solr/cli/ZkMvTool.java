@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 /** Supports zk mv command in the bin/solr script. */
 @picocli.CommandLine.Command(
     name = "mv",
-    mixinStandardHelpOptions = true,
     description = {
       "Move (rename) a znode on ZooKeeper.",
       "",

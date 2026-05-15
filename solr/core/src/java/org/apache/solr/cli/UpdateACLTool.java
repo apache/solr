@@ -31,7 +31,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
  */
 @picocli.CommandLine.Command(
     name = "updateacls",
-    mixinStandardHelpOptions = true,
     description = "Update ACLs for a ZooKeeper znode.",
     footerHeading = "%nExamples:%n",
     footer = {

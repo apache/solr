@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 /** Supports zk mkroot command in the bin/solr script. */
 @picocli.CommandLine.Command(
     name = "mkroot",
-    mixinStandardHelpOptions = true,
     description =
         "Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary depth"
             + " but primarily intended to create a 'chroot'.",
