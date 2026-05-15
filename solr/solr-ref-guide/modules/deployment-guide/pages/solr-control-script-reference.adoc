@@ -25,6 +25,47 @@ The SolrCLI makes Solr easier to work with by providing simple commands and opti
 
 More examples of SolrCLI in use are available throughout this Guide, particularly in the sections xref:installing-solr.adoc#starting-solr[Starting Solr] and xref:getting-started:tutorial-solrcloud.adoc[].
 
+== Command Reference
+
+The table below lists all available `bin/solr` commands.
+Commands marked with (✓) have dedicated reference pages auto-generated from source annotations; others are documented inline below.
+
+[cols="1,1,3",options="header"]
+|===
+|Command |Sub-command |Description
+
+|xref:cli/solr-start.adoc[start] |(✓) |Start Solr
+|restart | |Restart a running Solr node
+|xref:cli/solr-stop.adoc[stop] |(✓) |Stop a running Solr node
+|xref:cli/solr-status.adoc[status] |(✓) |Display status of running Solr nodes
+|xref:cli/solr-version.adoc[version] |(✓) |Print Solr version
+|create | |Create a collection or core
+|delete | |Delete a collection or core
+|healthcheck | |Generate a JSON-formatted health report for a collection
+|assert | |Assert conditions about the Solr installation
+|auth | |Configure authentication
+|config | |Set or unset configuration properties
+|export | |Export documents from a collection
+|import | |Import documents into a collection
+|api | |Interact with the Solr API
+|package | |Manage Solr packages
+|postlogs | |Index log data
+|stream | |Execute a streaming expression
+|snapshot-create | |Create a snapshot of a collection
+|snapshot-delete | |Delete a snapshot
+|snapshot-list | |List available snapshots
+|snapshot-describe | |Describe a snapshot
+|snapshot-export | |Export a snapshot
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-upconfig.adoc[upconfig] (✓) |Upload a configset to ZooKeeper
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-downconfig.adoc[downconfig] (✓) |Download a configset from ZooKeeper
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-cp.adoc[cp] (✓) |Copy files to/from ZooKeeper
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-ls.adoc[ls] (✓) |List ZooKeeper node contents
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-rm.adoc[rm] (✓) |Remove a ZooKeeper path
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-mv.adoc[mv] (✓) |Move a ZooKeeper node
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-mkroot.adoc[mkroot] (✓) |Create a root ZooKeeper path
+|xref:cli/solr-zk.adoc[zk] |xref:cli/solr-zk-updateacls.adoc[updateacls] (✓) |Update ZooKeeper ACLs
+|===
+
 == Starting and Stopping
 
 === Start and Restart
@@ -45,6 +86,8 @@ The `start` and `restart` commands have several options to allow you to run in S
 When using the `restart` command, you must pass all of the parameters you initially passed when you started Solr.
 Behind the scenes, a stop request is initiated, so Solr will be stopped before being started again.
 If no nodes are already running, restart will skip the step to stop and proceed to starting Solr.
+
+For a full list of options see xref:cli/solr-start.adoc[].
 
 ==== Start Parameters
 
@@ -394,6 +437,8 @@ The command will wait up to 180 seconds for Solr to stop gracefully and then wil
 
 `bin/solr stop --help`
 
+For a full list of options see xref:cli/solr-stop.adoc[].
+
 ==== Stop Parameters
 
 `-p <port>`::
@@ -453,6 +498,8 @@ $ bin/solr --version
 X.Y.0
 ----
 
+For a full list of options see xref:cli/solr-version.adoc[].
+
 === Status
 
 The `status` command displays basic JSON-formatted status information for all locally running Solr servers.
@@ -491,6 +538,8 @@ Solr process 39827 running on port 8865
     "liveNodes":"2",
     "collections":"2"}}
 ----
+
+For a full list of options see xref:cli/solr-status.adoc[].
 
 === Assert
 
@@ -1166,6 +1215,24 @@ All `bin/solr zk` sub-commands require a ZooKeeper connection string to function
 4. If none are provided, the tools will default to `localhost:2181`
 
 This means if you have `ZK_HOST` configured in your environment, you do not need to pass the `-z` option to every command.
+
+=== ZooKeeper Subcommands
+
+All `bin/solr zk` subcommands have dedicated reference pages with full option documentation:
+
+[cols="1,3",options="header"]
+|===
+|Command |Description
+
+|xref:cli/solr-zk-upconfig.adoc[upconfig] |Upload a configuration set to ZooKeeper
+|xref:cli/solr-zk-downconfig.adoc[downconfig] |Download a configuration set from ZooKeeper
+|xref:cli/solr-zk-cp.adoc[cp] |Copy files between the local file system and ZooKeeper, or between two ZooKeeper paths
+|xref:cli/solr-zk-ls.adoc[ls] |List the contents of a ZooKeeper node
+|xref:cli/solr-zk-rm.adoc[rm] |Remove a ZooKeeper path
+|xref:cli/solr-zk-mv.adoc[mv] |Move a ZooKeeper node from one path to another
+|xref:cli/solr-zk-mkroot.adoc[mkroot] |Create a root ZooKeeper path
+|xref:cli/solr-zk-updateacls.adoc[updateacls] |Update Access Control on a ZooKeeper path
+|===
 
 === Upload a Configuration Set
 

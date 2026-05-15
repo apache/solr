@@ -1,0 +1,138 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+
+= bin/solr start
+:page-toclevels: 2
+
+// tag::picocli-generated-man-section-name[]
+== Name
+
+bin/solr start - Starts Solr in standalone or SolrCloud mode.
+
+// end::picocli-generated-man-section-name[]
+
+// tag::picocli-generated-man-section-synopsis[]
+== Synopsis
+
+....
+bin/solr start [-fhqy] [--force] [--user-managed] [--verbose]
+               [--data-home=<dataHome>] [-e=<example>] [--example-dir=<exampleDir>]
+               [--host=<host>] [-j=<jettyParams>] [--jvm-opts=<jvmOpts>]
+               [-m=<memory>] [-p=<port>] [--prompt-inputs=<values>]
+               [--server-dir=<serverDir>] [--solr-home=<solrHome>] [-z=<zkHost>]
+....
+
+// end::picocli-generated-man-section-synopsis[]
+
+// tag::picocli-generated-man-section-description[]
+== Description
+
+Starts Solr in standalone or SolrCloud mode.
+
+// end::picocli-generated-man-section-description[]
+
+// tag::picocli-generated-man-section-options[]
+== Options
+
+*--data-home*=_<dataHome>_::
+  Set solr.data.home system property for index data storage; default is solr.solr.home
+
+*-e*, *--example*=_<example>_::
+  Run an example: cloud, techproducts, schemaless, films
+
+*--example-dir*=_<exampleDir>_::
+  Override the directory containing example configurations used when running examples with --example
+
+*-f*, *--foreground*::
+  Start Solr in foreground; default is background with logs to solr-PORT-console.log
+
+*--force*::
+  Override warning when attempting to start Solr as root user
+
+*-h*, *--help*::
+  Print this help message and exit.
+
+*--host*=_<host>_::
+  Specify the hostname for this Solr instance
+
+*-j*, *--jettyconfig*=_<jettyParams>_::
+  Additional Jetty parameters, e.g., -j "--include-jetty-dir=/etc/jetty/custom/server/"
+
+*--jvm-opts*=_<jvmOpts>_::
+  Additional JVM parameters, e.g., --jvm-opts "-verbose:gc"
+
+*-m*, *--memory*=_<memory>_::
+  Set JVM heap size, e.g., -m 4g sets -Xms4g -Xmx4g; default is 512m
+
+*-p*, *--port*=_<port>_::
+  Specify the Solr HTTP port; default is 8983. STOP_PORT=($SOLR_PORT-1000), RMI_PORT=($SOLR_PORT+10000)
+
+*--prompt-inputs*=_<values>_::
+  Don't prompt for input; comma-delimited list of inputs to use when running examples that accept user input
+
+*-q*, *--quiet*::
+  Set log level to WARN (quiet); default is INFO
+
+*--server-dir*=_<serverDir>_::
+  Specify the Solr server directory; default is 'server'
+
+*--solr-home*=_<solrHome>_::
+  Set solr.solr.home system property; default is 'server/solr'. Ignored in examples mode
+
+*--user-managed*::
+  Start Solr in standalone mode. Default is SolrCloud (ZooKeeper) mode.
+
+*--verbose*::
+  Set log level to DEBUG (verbose); default is INFO
+
+*-y*, *--no-prompt*::
+  Don't prompt for input; accept all defaults when running examples
+
+*-z*, *--zk-host*=_<zkHost>_::
+  Zookeeper connection string; default is to start an embedded ZooKeeper on PORT+10000
+
+// end::picocli-generated-man-section-options[]
+
+// tag::picocli-generated-man-section-arguments[]
+// end::picocli-generated-man-section-arguments[]
+
+// tag::picocli-generated-man-section-commands[]
+// end::picocli-generated-man-section-commands[]
+
+// tag::picocli-generated-man-section-exit-status[]
+// end::picocli-generated-man-section-exit-status[]
+
+// tag::picocli-generated-man-section-footer[]
+==  Examples:
+
+[%hardbreaks]
+  # Start Solr in SolrCloud mode on the default port
+  bin/solr start
+
+[%hardbreaks]
+  # Start on a custom port with 2g heap
+  bin/solr start -p 8984 -m 2g
+
+[%hardbreaks]
+  # Start in standalone mode with an external ZooKeeper
+  bin/solr start --user-managed -z localhost:2181/solr
+
+// end::picocli-generated-man-section-footer[]

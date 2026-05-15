@@ -42,7 +42,20 @@ import org.slf4j.LoggerFactory;
     name = "delete",
     mixinStandardHelpOptions = true,
     description =
-        "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.")
+        "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+      "0:Collection or core deleted successfully.",
+      "1:Failed to delete; collection or core may not exist, or Solr may not be running."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Delete a collection in SolrCloud mode",
+      "  bin/solr delete -c myCollection",
+      "",
+      "  # Delete and also remove the associated configset",
+      "  bin/solr delete -c myCollection --delete-config"
+    })
 public class DeleteTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

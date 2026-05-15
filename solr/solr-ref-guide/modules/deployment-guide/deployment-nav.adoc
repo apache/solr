@@ -17,7 +17,24 @@
 
 .Deployment Guide
 
+// CLI-DOCS-START
 * xref:solr-control-script-reference.adoc[]
+** xref:cli/solr-create.adoc[create]
+** xref:cli/solr-delete.adoc[delete]
+** xref:cli/solr-start.adoc[start]
+** xref:cli/solr-status.adoc[status]
+** xref:cli/solr-stop.adoc[stop]
+** xref:cli/solr-version.adoc[version]
+** xref:cli/solr-zk.adoc[zk]
+*** xref:cli/solr-zk-cp.adoc[cp]
+*** xref:cli/solr-zk-downconfig.adoc[downconfig]
+*** xref:cli/solr-zk-ls.adoc[ls]
+*** xref:cli/solr-zk-mkroot.adoc[mkroot]
+*** xref:cli/solr-zk-mv.adoc[mv]
+*** xref:cli/solr-zk-rm.adoc[rm]
+*** xref:cli/solr-zk-upconfig.adoc[upconfig]
+*** xref:cli/solr-zk-updateacls.adoc[updateacls]
+// CLI-DOCS-END
 
 * Installation & Deployment
 ** xref:system-requirements.adoc[]

@@ -1,0 +1,109 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+
+= bin/solr delete
+:page-toclevels: 2
+
+// tag::picocli-generated-man-section-name[]
+== Name
+
+bin/solr delete - Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.
+
+// end::picocli-generated-man-section-name[]
+
+// tag::picocli-generated-man-section-synopsis[]
+== Synopsis
+
+....
+bin/solr delete [-fhvV] [--delete-config] -c=<name> [-u=<credentials>]
+                [-s=<solrUrl> | -z=<zkHost>]
+....
+
+// end::picocli-generated-man-section-synopsis[]
+
+// tag::picocli-generated-man-section-description[]
+== Description
+
+Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.
+
+// end::picocli-generated-man-section-description[]
+
+// tag::picocli-generated-man-section-options[]
+== Options
+
+*-c*, *--name*=_<name>_::
+  Name of the core / collection to delete.
+
+*--delete-config*::
+  Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.
+
+*-f*, *--force*::
+  Skip safety checks when deleting the configuration directory used by a collection.
+
+*-h*, *--help*::
+  Show this help message and exit.
+
+*-s*, *--solr-url*=_<solrUrl>_::
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
+
+*-u*, *--credentials*=_<credentials>_::
+  Credentials in the format username:password. Example: --credentials solr:SolrRocks
+
+*-v*, *--verbose*::
+  Enable verbose mode.
+
+*-V*, *--version*::
+  Print version information and exit.
+
+*-z*, *--zk-host*=_<zkHost>_::
+  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+// end::picocli-generated-man-section-options[]
+
+// tag::picocli-generated-man-section-arguments[]
+// end::picocli-generated-man-section-arguments[]
+
+// tag::picocli-generated-man-section-commands[]
+// end::picocli-generated-man-section-commands[]
+
+// tag::picocli-generated-man-section-exit-status[]
+==  Exit Codes:
+
+*0*::
+  Collection or core deleted successfully.
+
+*1*::
+  Failed to delete; collection or core may not exist, or Solr may not be running.
+
+// end::picocli-generated-man-section-exit-status[]
+
+// tag::picocli-generated-man-section-footer[]
+==  Examples:
+
+[%hardbreaks]
+  # Delete a collection in SolrCloud mode
+  bin/solr delete -c myCollection
+
+[%hardbreaks]
+  # Delete and also remove the associated configset
+  bin/solr delete -c myCollection --delete-config
+
+// end::picocli-generated-man-section-footer[]

@@ -49,6 +49,17 @@ import org.slf4j.LoggerFactory;
       "When <src> is a zk resource, <dest> may be '.'",
       "If <dest> ends with '/', then <dest> will be a local folder or parent znode",
       "and the last element of the <src> path will be appended unless <src> also ends in a slash."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Upload a local file to ZooKeeper",
+      "  bin/solr zk cp /local/conf/solrconfig.xml zk:/configs/myconfig/solrconfig.xml -z localhost:9983",
+      "",
+      "  # Recursively copy a local directory to ZooKeeper",
+      "  bin/solr zk cp -r file:/local/conf/ zk:/configs/myconfig/ -z localhost:9983",
+      "",
+      "  # Copy a ZooKeeper node to the current directory",
+      "  bin/solr zk cp zk:/configs/myconfig/solrconfig.xml . -z localhost:9983"
     })
 public class ZkCpTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

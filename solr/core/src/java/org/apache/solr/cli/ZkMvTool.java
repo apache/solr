@@ -38,6 +38,14 @@ import org.slf4j.LoggerFactory;
       "<src>, <dest> : ZooKeeper nodes, the 'zk:' prefix is optional.",
       "If <dest> ends with '/', then <dest> will be a parent znode",
       "and the last element of the <src> path will be appended."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Rename a configset",
+      "  bin/solr zk mv /configs/oldconfig /configs/myconfig -z localhost:9983",
+      "",
+      "  # Move a node into a parent znode",
+      "  bin/solr zk mv /configs/myconfig /configs/ -z localhost:9983"
     })
 public class ZkMvTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

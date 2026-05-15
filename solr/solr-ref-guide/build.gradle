@@ -60,11 +60,16 @@ configurations {
   officialPlaybook
   localPlaybook
   localJavadocs
+  cliClasspath {
+    canBeResolved = true
+    canBeConsumed = false
+  }
 }
 
 dependencies {
   localJavadocs project(path: ":solr:documentation", configuration: 'javadocs')
   localJavadocs project(path: ":solr:documentation", configuration: 'site')
+  cliClasspath project(path: ':solr:core', configuration: 'cliDocsRuntime')
 }
 
 ext {
@@ -539,6 +544,225 @@ task buildOfficialSite(type: NpxTask) {
     project.logger.lifecycle("\t${project.ext.siteDir}")
   }
 }
+
+/*
+ CLI Documentation Generation from Picocli Annotations
+ Generates per-command AsciiDoc reference pages for the Antora ref guide.
+ Usage:
+   ./gradlew :solr:solr-ref-guide:generateCliDocs   -- regenerate pages/cli/
+   ./gradlew :solr:solr-ref-guide:checkCliDocsUpToDate -- verify in-sync (also run by check)
+ */
+
+def ASF_LICENSE_HEADER = """\
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+"""
+
+def DO_NOT_EDIT_NOTICE = """\
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+"""
+
+// Convert a generated filename stem (e.g. "solr-zk-ls") to an Antora page title
+// e.g. "solr-zk-ls" -> "bin/solr zk ls"
+String cliFileNameToTitle(String baseName) {
+  def parts = baseName.split('-')
+  return "bin/solr " + parts.drop(1).join(' ')
+}
+
+// Return the short nav label for a command file (last segment of dash-separated name)
+// e.g. "solr-zk-ls" -> "ls"
+String cliFileNameToNavLabel(String baseName) {
+  return baseName.split('-').last()
+}
+
+// Post-process a raw ManPageGenerator AsciiDoc file for Antora compatibility.
+// The title lives inside the man-section-header block, so we replace the whole
+// header block with an Antora-compatible page title + attributes.
+String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNotice) {
+  def content = rawFile.text
+  def baseName = rawFile.name.replace('.adoc', '')
+  def newTitle = cliFileNameToTitle(baseName)
+
+  // Replace the entire man-section-header block (which contains :doctype:manpage, the page title
+  // "= solr-start(1)", etc.) with our Antora-compatible title and page attributes.
+  content = content.replaceAll(
+    /(?s)\/\/ tag::picocli-generated-man-section-header\[\].*?\/\/ end::picocli-generated-man-section-header\[\]\n\n?/,
+    "= ${newTitle}\n:page-toclevels: 2\n\n")
+
+  // Fix xref paths: ManPageGenerator generates "xref:solr-*.adoc" but in Antora xrefs are resolved
+  // from the module's pages/ root, so pages/cli/ files need the "cli/" prefix.
+  content = content.replace('xref:solr-', 'xref:cli/solr-')
+
+  // ManPageGenerator renders the command's file-stem as "solr-start" (parent-dash-child) in the
+  // Name section. Replace occurrences of that with the correct spaced form "bin/solr start".
+  // Use a negative lookahead (?!-) to avoid replacing "solr-zk" inside xref paths like
+  // "xref:cli/solr-zk-downconfig.adoc" where it is a prefix of a longer command name.
+  content = content.replaceAll("${baseName}(?!-)", newTitle)
+
+  // Wrap the synopsis paragraph in a literal block to preserve line breaks and indentation.
+  // ManPageGenerator generates a plain paragraph with picocli AsciiDoc marks (*bold*, _italic_)
+  // which Asciidoctor collapses to a single line. A `....` literal block preserves whitespace
+  // but does not render inline formatting, so we strip the marks for a clean monospace output.
+  content = content.replaceAll(
+    /(?s)(== Synopsis\n\n)(.*?)(\n\n\/\/ end::picocli-generated-man-section-synopsis\[\])/
+  ) { List<String> m ->
+    def synopsis = m[2]
+      .replaceAll(/\*([^*]+)\*/, '$1')  // *bold* → plain
+      .replaceAll(/_([^_]+)_/, '$1')    // _italic_ → plain
+      .replaceAll(/(?m)^solr /, 'bin/solr ')  // qualified name "solr start" → "bin/solr start"
+      .replaceAll(/(?m)^( +)/, '    $1')     // re-align wrapped lines: add 4 spaces ("bin/" length)
+    "${m[1]}....\n${synopsis}\n....${m[3]}"
+  }
+
+  // Strip the outer full-manpage tag wrappers
+  content = content.replace("// tag::picocli-generated-full-manpage[]\n", '')
+  content = content.replace("// end::picocli-generated-full-manpage[]\n", '')
+
+  return asfHeader + doNotEditNotice + "\n" + content.stripTrailing() + "\n"
+}
+
+// Build the CLI sub-page nav entries from the generated .adoc files in destDir.
+// Returns a list of nav lines like "** xref:cli/solr-start.adoc[start]"
+List<String> buildCliNavEntries(File cliDir) {
+  // Sort so that parent commands always precede their children.
+  // The trick: append '\u0000' (NUL, ASCII 0) to the stem before sorting.
+  // NUL < '-' (ASCII 45), so "solr-zk\0" < "solr-zk-cp\0", placing the parent first.
+  def files = ((cliDir.listFiles() ?: []) as List<File>)
+    .findAll { it.name.endsWith('.adoc') }
+    .sort { (it.name.replace('.adoc', '') + '\u0000') }
+  return files.collect { file ->
+    def baseName = file.name.replace('.adoc', '')
+    def parts = baseName.split('-')
+    // depth: "solr-start" has 2 parts → "**", "solr-zk-ls" has 3 parts → "***"
+    def stars = '*' * parts.length
+    def label = cliFileNameToNavLabel(baseName)
+    "${stars} xref:cli/${file.name}[${label}]"
+  }
+}
+
+// Run ManPageGenerator and return the set of generated files (excluding the top-level solr.adoc).
+// SolrCLI is annotated @Command(name="solr"), so ManPageGenerator writes all files flat into outputDir.
+List<File> runManPageGenerator(File outputDir) {
+  javaexec {
+    classpath = configurations.cliClasspath
+    mainClass = 'picocli.codegen.docgen.manpage.ManPageGenerator'
+    args = ['--outdir', outputDir.absolutePath, 'org.apache.solr.cli.SolrCLI']
+  }
+
+  // Exclude solr.adoc (the top-level parent page — we don't publish it as a standalone page)
+  return (outputDir.listFiles() as List<File>)
+    .findAll { f -> f.name.endsWith('.adoc') && f.name != 'solr.adoc' }
+    .sort { it.name }
+}
+
+task generateCliDocs {
+  group = 'generation'
+  description = 'Regenerate CLI reference pages in pages/cli/ from picocli annotations.'
+
+  dependsOn ':solr:core:classes'
+
+  def rawOutputDir = file("${buildDir}/generated-cli-docs-raw")
+  def destDir = file("modules/deployment-guide/pages/cli")
+  def navFile = file("modules/deployment-guide/deployment-nav.adoc")
+
+  inputs.files(configurations.cliClasspath)
+  outputs.dir(destDir)
+
+  doLast {
+    rawOutputDir.mkdirs()
+    destDir.mkdirs()
+
+    def rawFiles = runManPageGenerator(rawOutputDir)
+
+    rawFiles.each { rawFile ->
+      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE)
+      new File(destDir, rawFile.name).text = processed
+    }
+
+    // Update the CLI nav section in deployment-nav.adoc between marker comments
+    def navContent = navFile.text
+    if (navContent.contains('// CLI-DOCS-START')) {
+      def navEntries = buildCliNavEntries(destDir).join('\n')
+      def replacement = "// CLI-DOCS-START\n* xref:solr-control-script-reference.adoc[]\n${navEntries}\n// CLI-DOCS-END"
+      navContent = navContent.replaceAll(/(?s)\/\/ CLI-DOCS-START.*?\/\/ CLI-DOCS-END/, replacement)
+      navFile.text = navContent
+    } else {
+      logger.warn("deployment-nav.adoc does not contain // CLI-DOCS-START marker; nav not updated.")
+    }
+
+    logger.lifecycle("Generated ${rawFiles.size()} CLI doc pages in ${destDir}")
+  }
+}
+
+task checkCliDocsUpToDate {
+  group = 'verification'
+  description = 'Verify that pages/cli/ CLI docs are in sync with picocli annotations.'
+
+  dependsOn ':solr:core:classes'
+
+  def rawOutputDir = file("${buildDir}/generated-cli-docs-check")
+  def committedDir = file("modules/deployment-guide/pages/cli")
+
+  inputs.files(configurations.cliClasspath)
+  inputs.dir(committedDir)
+
+  doLast {
+    rawOutputDir.mkdirs()
+
+    def rawFiles = runManPageGenerator(rawOutputDir)
+    def issues = []
+
+    rawFiles.each { rawFile ->
+      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE)
+      def committed = new File(committedDir, rawFile.name)
+      if (!committed.exists()) {
+        issues << "MISSING committed file (new command): ${rawFile.name}"
+      } else {
+        def processedNorm = processed.replace('\r\n', '\n')
+        def committedNorm = committed.text.replace('\r\n', '\n')
+        if (processedNorm != committedNorm) {
+          issues << "OUT OF DATE: ${rawFile.name}"
+        }
+      }
+    }
+
+    // Check for committed pages that are no longer generated (deleted commands)
+    if (committedDir.exists()) {
+      def generatedNames = rawFiles.collect { it.name }.toSet()
+      ((committedDir.listFiles() ?: []) as List<File>).findAll { it.name.endsWith('.adoc') }.each { committed ->
+        if (!generatedNames.contains(committed.name)) {
+          issues << "STALE (command removed): ${committed.name}"
+        }
+      }
+    }
+
+    if (!issues.isEmpty()) {
+      throw new GradleException(
+        "CLI docs are out of date. Run './gradlew :solr:solr-ref-guide:generateCliDocs' to regenerate.\n" +
+        "Issues:\n" + issues.collect { "  - ${it}" }.join('\n'))
+    }
+    logger.lifecycle("CLI docs are up to date.")
+  }
+}
+
+check.dependsOn checkCliDocsUpToDate
 
 /*
  Compiling, Testing and Validation for the java examples in the Solr Ref Guide

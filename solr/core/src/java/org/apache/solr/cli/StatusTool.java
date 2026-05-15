@@ -44,7 +44,25 @@ import org.noggit.JSONWriter;
  *
  * <p>Get the status of a Solr server.
  */
-@picocli.CommandLine.Command(name = "status", description = "Get the status of a Solr server.")
+@picocli.CommandLine.Command(
+    name = "status",
+    description = "Get the status of a Solr server.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+      "0:Solr is running.",
+      "1:Solr is not running, or the URL/port could not be reached."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Check status of Solr running on the default port",
+      "  bin/solr status",
+      "",
+      "  # Check status of a specific Solr instance by URL",
+      "  bin/solr status -s http://localhost:8983",
+      "",
+      "  # Wait up to 30 seconds for Solr to start",
+      "  bin/solr status --max-wait-secs 30 -s http://localhost:8983"
+    })
 public class StatusTool extends ToolBase {
   @picocli.CommandLine.Option(
       names = {"--max-wait-secs"},

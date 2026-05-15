@@ -55,10 +55,10 @@ import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
 @picocli.CommandLine.Command(
-    name = "bin/solr",
+    name = "solr",
     version = "Apache Solr version " + SolrVersion.LATEST_STRING,
     mixinStandardHelpOptions = true,
-    synopsisHeading = "usage: ",
+    synopsisHeading = "usage: bin/",
     commandListHeading = "\nCommands:\n",
     footer = {
       "",

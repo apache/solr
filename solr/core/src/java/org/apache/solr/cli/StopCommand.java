@@ -22,7 +22,17 @@ import picocli.CommandLine;
  * This class is currently only used for printing CLI usage. The stop logic is currently handled in
  * start script.
  */
-@CommandLine.Command(name = "stop", description = "Stops Solr.")
+@CommandLine.Command(
+    name = "stop",
+    description = "Stops Solr.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Stop Solr running on the default port",
+      "  bin/solr stop -p 8983",
+      "",
+      "  # Stop all running Solr instances on this host",
+      "  bin/solr stop --all"
+    })
 public class StopCommand {
 
   @CommandLine.Mixin HelpMixin helpMixin;
