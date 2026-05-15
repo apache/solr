@@ -21,7 +21,7 @@ import picocli.CommandLine;
 
 @CommandLine.Command(
     name = "start",
-    description = "Starts Solr in standalone or SolrCloud mode.",
+    description = "Starts Solr",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Start Solr in SolrCloud mode on the default port",
@@ -30,8 +30,8 @@ import picocli.CommandLine;
       "  # Start on a custom port with 2g heap",
       "  bin/solr start -p 8984 -m 2g",
       "",
-      "  # Start in standalone mode with an external ZooKeeper",
-      "  bin/solr start --user-managed -z localhost:2181/solr"
+      "  # Start in user managed mode",
+      "  bin/solr start --user-managed"
     })
 public class StartCommand implements Callable<Integer> {
 
@@ -50,7 +50,11 @@ public class StartCommand implements Callable<Integer> {
       description = "Start Solr in standalone mode. Default is SolrCloud (ZooKeeper) mode.")
   boolean userManaged;
 
-  @CommandLine.Option(names = "--host", description = "Specify the hostname for this Solr instance")
+  @CommandLine.Option(
+      names = "--host",
+      description =
+          "Specify the hostname this Solr node will advertise to ZooKeeper and other cluster members (SOLR_HOST_ADVERTISE)."
+              + " Defaults to the canonical hostname of the local host.")
   String host;
 
   @CommandLine.Option(
@@ -136,6 +140,8 @@ public class StartCommand implements Callable<Integer> {
       description = "Set log level to WARN (quiet); default is INFO")
   boolean quiet;
 
+  // TODO: SOLR-17697 remove --fullhelp when commons-cli is removed; picocli's --help already
+  // produces equivalent output from the annotations.
   @CommandLine.Option(
       names = "--fullhelp",
       description = "Print detailed help with full option descriptions",
@@ -151,6 +157,7 @@ public class StartCommand implements Callable<Integer> {
     return 0;
   }
 
+  // TODO: Remove when removing commons-cli
   private void printFullHelp() {
     CLIO.out(
         """

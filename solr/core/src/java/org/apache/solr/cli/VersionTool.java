@@ -20,6 +20,7 @@ package org.apache.solr.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.api.util.SolrVersion;
 
+@SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
 public class VersionTool extends ToolBase {
 

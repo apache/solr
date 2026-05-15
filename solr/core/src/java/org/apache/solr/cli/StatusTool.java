@@ -44,6 +44,7 @@ import org.noggit.JSONWriter;
  *
  * <p>Get the status of a Solr server.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "status",
     description = "Get the status of a Solr server.",

@@ -43,6 +43,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.ConfigSetService;
 
 /** Supports create command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "create",
     mixinStandardHelpOptions = true,
@@ -55,7 +56,7 @@ import org.apache.solr.core.ConfigSetService;
     },
     footerHeading = "%nExamples:%n",
     footer = {
-      "  # Create a collection in SolrCloud mode",
+      "  # Create a collection or core",
       "  bin/solr create -c myCollection",
       "",
       "  # Create a collection with 2 shards and 2 replicas",

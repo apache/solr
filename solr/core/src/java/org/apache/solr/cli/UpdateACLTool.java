@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
  *
  * <p>Set ACL properties by directly manipulating ZooKeeper.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "updateacls",
     description =

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import picocli.CommandLine;
+
 /**
  * Picocli ArgGroup for mutually-exclusive Solr URL / ZooKeeper connection options.
  *
@@ -23,13 +25,13 @@ package org.apache.solr.cli;
  * ensure the user provides at most one of {@code --solr-url} or {@code --zk-host}.
  */
 class ConnectionOptions {
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = {"-s", "--solr-url"},
       description =
           "Base Solr URL, which can be used to determine the zk-host if that's not known.")
   String solrUrl;
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = {"-z", "--zk-host"},
       description =
           "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "

@@ -189,4 +189,4 @@ org.slf4j:jcl-over-slf4j:2.0.17=apiHelper,jarValidation,runtimeClasspath,runtime
 org.slf4j:slf4j-api:2.0.17=apiHelper,compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 ua.net.nlp:morfologik-ukrainian-search:4.9.1=jarValidation,testRuntimeClasspath
-empty=apiHelperTest,missingdoclet,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUsedUndeclared,signatures
+empty=apiHelperTest,missingdoclet,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures

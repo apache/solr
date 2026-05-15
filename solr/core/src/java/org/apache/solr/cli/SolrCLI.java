@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "solr",
     version = "Apache Solr version " + SolrVersion.LATEST_STRING,
@@ -90,7 +91,7 @@ public class SolrCLI implements CLIO {
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
-    } catch (java.lang.SecurityException secExc) {
+    } catch (SecurityException secExc) {
       if (exitStatus != 0)
         throw new RuntimeException("SolrCLI failed to exit with status " + exitStatus);
     }

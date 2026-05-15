@@ -25,7 +25,7 @@
 // tag::picocli-generated-man-section-name[]
 == Name
 
-bin/solr start - Starts Solr in standalone or SolrCloud mode.
+bin/solr start - Starts Solr
 
 // end::picocli-generated-man-section-name[]
 
@@ -45,7 +45,7 @@ bin/solr start [-fhqy] [--force] [--user-managed] [--verbose]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Starts Solr in standalone or SolrCloud mode.
+Starts Solr
 
 // end::picocli-generated-man-section-description[]
 
@@ -71,7 +71,7 @@ Starts Solr in standalone or SolrCloud mode.
   Print this help message and exit.
 
 *--host*=_<host>_::
-  Specify the hostname for this Solr instance
+  Specify the hostname this Solr node will advertise to ZooKeeper and other cluster members (SOLR_HOST_ADVERTISE). Defaults to the canonical hostname of the local host.
 
 *-j*, *--jettyconfig*=_<jettyParams>_::
   Additional Jetty parameters, e.g., -j "--include-jetty-dir=/etc/jetty/custom/server/"
@@ -132,7 +132,7 @@ Starts Solr in standalone or SolrCloud mode.
   bin/solr start -p 8984 -m 2g
 
 [%hardbreaks]
-  # Start in standalone mode with an external ZooKeeper
-  bin/solr start --user-managed -z localhost:2181/solr
+  # Start in user managed mode
+  bin/solr start --user-managed
 
 // end::picocli-generated-man-section-footer[]

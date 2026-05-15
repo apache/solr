@@ -16,13 +16,15 @@
  */
 package org.apache.solr.cli;
 
+import picocli.CommandLine;
+
 /**
  * Picocli mixin providing the common {@code --credentials} option.
  *
  * <p>Use as {@code @CommandLine.Mixin CredentialsOptions credentialsOptions} in a command class.
  */
 public class CredentialsOptions {
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = {"-u", "--credentials"},
       description =
           "Credentials in the format username:password. Example: --credentials solr:SolrRocks")

@@ -106,7 +106,7 @@ Creates a core or collection depending on whether Solr is running in standalone 
 ==  Examples:
 
 [%hardbreaks]
-  # Create a collection in SolrCloud mode
+  # Create a collection or core
   bin/solr create -c myCollection
 
 [%hardbreaks]

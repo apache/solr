@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import picocli.CommandLine;
 
 /**
  * Runs all {@link ZkSubcommandsTest} tests through the picocli invocation path.
@@ -32,7 +33,7 @@ public class ZkSubcommandsPicocliTest extends ZkSubcommandsTest {
     // args[0] is the tool/subcommand name used by commons-cli dispatch; strip it for picocli.
     String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
     ToolBase tool = clazz.getDeclaredConstructor().newInstance();
-    return new picocli.CommandLine(tool)
+    return new CommandLine(tool)
         .setDefaultValueProvider(new CliDefaultValueProvider())
         .execute(toolArgs);
   }
@@ -43,7 +44,7 @@ public class ZkSubcommandsPicocliTest extends ZkSubcommandsTest {
       throws Exception {
     String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
     ToolBase tool = clazz.getDeclaredConstructor(ToolRuntime.class).newInstance(runtime);
-    return new picocli.CommandLine(tool)
+    return new CommandLine(tool)
         .setDefaultValueProvider(new CliDefaultValueProvider())
         .execute(toolArgs);
   }
