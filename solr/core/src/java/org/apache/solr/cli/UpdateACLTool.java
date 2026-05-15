@@ -31,7 +31,11 @@ import org.apache.solr.common.cloud.SolrZkClient;
  */
 @picocli.CommandLine.Command(
     name = "updateacls",
-    description = "Update ACLs for a ZooKeeper znode.",
+    description =
+        "Recursively re-applies ZooKeeper ACLs to a znode and all its descendants."
+            + " The ACLs are determined by the ZkACLProvider configured via the zkACLProvider"
+            + " system property (pass via SOLR_TOOL_OPTS). Without a custom provider, the"
+            + " default OPEN_ACL_UNSAFE ACLs are applied.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Apply ACLs to the root Solr znode",
