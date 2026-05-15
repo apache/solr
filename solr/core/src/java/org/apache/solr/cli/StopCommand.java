@@ -25,8 +25,6 @@ import picocli.CommandLine;
 @CommandLine.Command(
     name = "stop",
     description = "Stops Solr.",
-    exitCodeListHeading = "%nExit Codes:%n",
-    exitCodeList = {"0:Solr stopped successfully.", "1:Solr was not running, or failed to stop."},
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Stop Solr running on the default port",
