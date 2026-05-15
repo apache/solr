@@ -1,5 +1,5 @@
 title: Fixed NPE in size estimator for null valued fields
-type: other
+type: fixed
 authors:
   - name: Jalaz Kumar
 links:
