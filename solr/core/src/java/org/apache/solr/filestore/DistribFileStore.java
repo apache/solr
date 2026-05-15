@@ -402,9 +402,9 @@ public class DistribFileStore implements FileStore {
         try {
           final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
           pullFileRequest.setGetFrom(nodeToFetchFrom);
-          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
+          final var client = coreContainer.getDefaultHttpSolrClient();
           // fire and forget
-          pullFileRequest.process(client);
+          pullFileRequest.processWithBaseUrl(client, baseUrl, null);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception
