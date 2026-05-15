@@ -26,7 +26,9 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 /** Supports zk ls command in the bin/solr script. */
-@CommandLine.Command(name = "ls", description = "List the contents of a ZooKeeper node.",
+@CommandLine.Command(
+    name = "ls",
+    description = "List the contents of a ZooKeeper node.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # List top-level ZooKeeper nodes",

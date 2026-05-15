@@ -34,11 +34,10 @@ bin/solr start - Starts Solr in standalone or SolrCloud mode.
 
 ....
 bin/solr start [-fhqy] [--force] [--user-managed] [--verbose]
-               [--data-home=<dataHome>] [-e=<example>]
-               [--example-dir=<exampleDir>] [--host=<host>] [-j=<jettyParams>]
-               [--jvm-opts=<jvmOpts>] [-m=<memory>] [-p=<port>]
-               [--prompt-inputs=<values>] [--server-dir=<serverDir>]
-               [--solr-home=<solrHome>] [-z=<zkHost>]
+               [--data-home=<dataHome>] [-e=<example>] [--example-dir=<exampleDir>]
+               [--host=<host>] [-j=<jettyParams>] [--jvm-opts=<jvmOpts>]
+               [-m=<memory>] [-p=<port>] [--prompt-inputs=<values>]
+               [--server-dir=<serverDir>] [--solr-home=<solrHome>] [-z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
