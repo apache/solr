@@ -1,5 +1,5 @@
 title: Replace SolrClientCache with CoreContainer.getDefaultHttpSolrClient in DistribFileStore
-type:
+type: other
 authors:
   - name: Jalaz Kumar
 links:
