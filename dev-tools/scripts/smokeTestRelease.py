@@ -443,6 +443,7 @@ def testChangelogFolder(dir, version):
       # Non-version folders (e.g., documentation or support directories) are allowed
       # and are not required to contain a release-date.txt file.
       # They are intentionally ignored by this check.
+      pass
 
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(SOLR)_\d\d\d\d+)')
@@ -484,8 +485,8 @@ def checkChangesContent(s, version, name, isHTML):
     if not date_pattern.search(second_header):
       raise RuntimeError('Second h2 header should contain a release date [yyyy-mm-dd], but got "%s" in %s' % (second_header, name))
 
-    print('      ✓ First h2: "%s" (no date)' % first_header)
-    print('      ✓ Second h2: "%s" (with date)' % second_header)
+    print('      - First h2: "%s" (no date)' % first_header)
+    print('      - Second h2: "%s" (with date)' % second_header)
 
   if isHTML:
     r = reUnderbarNotDashHTML
@@ -738,7 +739,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
 
   if isSrc:
-    testChangelogFolder('.', version)
+    testChangelogFolder(unpackPath, version)
     print('    make sure no JARs/WARs in src dist...')
     lines = os.popen('find . -name \\*.jar').readlines()
     if len(lines) != 0:
