@@ -961,15 +961,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
-    /** Handle list of active tasks request. Do list collection request to zk host */
-    LIST_TASK_OP(
-        LIST,
-        (req, rsp, h) -> {
-          final ListActiveTasks listActiveTasks = new ListActiveTasks(req);
-          final ListActiveTaskResponse listActiveTaskResponse = listActiveTasks.listActiveTasks(req.getParams().get(TASK_CHECK_UUID));
-          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listActiveTaskResponse);
-          return null;
-        }),
     /**
      * Handle cluster status request. Can return status per specific collection/shard or per all
      * collections.
@@ -1389,8 +1380,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class,
-        ClusterProperty.class,
-        ListActiveTasks.class);
+        ClusterProperty.class);
   }
 
   @Override

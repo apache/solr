@@ -114,7 +114,6 @@ public interface CollectionParams {
     // For testing. Could eventually be exposed publicly if needed
     DISTRIBUTEDAPIPROCESSING(false, LockLevel.NONE),
     LIST(false, LockLevel.NONE),
-    LIST_TASK(false, LockLevel.NONE),
     CLUSTERSTATUS(false, LockLevel.NONE),
     ADDREPLICAPROP(true, LockLevel.NONE), // atomic; no lock
     DELETEREPLICAPROP(true, LockLevel.NONE), // atomic; no lock
