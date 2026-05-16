@@ -41,6 +41,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrJMetricTestUtils;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -65,6 +66,12 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("parts", "ccjoin", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
+    System.setProperty("solr.allow-external-clusters", "true");
+  }
+
+  @After
+  public void afterEach() {
+    System.clearProperty("solr.allow-external-clusters");
   }
 
   public static void setupIndexes(boolean routeByKey) throws IOException, SolrServerException {
