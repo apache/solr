@@ -70,7 +70,7 @@ public class SolrCLI implements CLIO {
     }
 
     if (Arrays.asList("-v", "--version").contains(args[0])) {
-      // select the version tool to be run
+      // select the version tool to be run, printing the CLIENT version
       args = new String[] {"version"};
     }
     if (Arrays.asList("upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "updateacls")
