@@ -69,6 +69,10 @@ reHREF = re.compile('<a href="(.*?)">(.*?)</a>')
 # Set to False to avoid re-downloading the packages...
 FORCE_CLEAN = True
 
+# Set to True via --skip-changelog to skip changelog-state checks that require
+# 'logchange release' and 'logchange generate' to have been run first.
+SKIP_CHANGELOG = False
+
 
 def getHREFs(urlString):
 
@@ -453,11 +457,11 @@ reUnderbarNotDashTXT = re.compile(r'\s+((SOLR)_\d\d\d\d+)', re.MULTILINE)
 def checkChangesContent(s, version, name, isHTML):
   currentVersionTuple = versionToTuple(version, name)
 
-  if isHTML and s.find('Release %s' % version) == -1:
+  if isHTML and not SKIP_CHANGELOG and s.find('Release %s' % version) == -1:
     raise RuntimeError('did not see "Release %s" in %s' % (version, name))
 
-  # Validate h2 header structure for Changes.html
-  if isHTML:
+  # Validate h2 header structure for Changes.html (requires logchange generate to have been run)
+  if isHTML and not SKIP_CHANGELOG:
     print('    validate h2 header structure...')
     h2_pattern = re.compile(r'<h2[^>]*>\s*<a[^>]*>(Release\s+[^<]+)</a>\s*</h2>', re.IGNORECASE | re.DOTALL)
     headers = h2_pattern.findall(s)
@@ -497,7 +501,7 @@ def checkChangesContent(s, version, name, isHTML):
   if m is not None:
     raise RuntimeError('incorrect issue (_ instead of -) in %s: %s' % (name, m.group(1)))
 
-  if s.lower().find('not yet released') != -1:
+  if not SKIP_CHANGELOG and s.lower().find('not yet released') != -1:
     raise RuntimeError('saw "not yet released" in %s' % name)
 
   if not isHTML:
@@ -739,7 +743,8 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
 
   if isSrc:
-    testChangelogFolder(unpackPath, version)
+    if not SKIP_CHANGELOG:
+      testChangelogFolder(unpackPath, version)
     print('    make sure no JARs/WARs in src dist...')
     lines = os.popen('find . -name \\*.jar').readlines()
     if len(lines) != 0:
@@ -803,7 +808,8 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     os.chdir(unpackPath)
 
-  testChangelogMd('.', version)
+  if not SKIP_CHANGELOG:
+    testChangelogMd('.', version)
 
 
 def find_available_port(max_attempts=100):
@@ -1155,6 +1161,8 @@ def parse_config():
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
                       help='Enable dev mode, will not check branch compatibility')
+  parser.add_argument('--skip-changelog', action='store_true', default=False,
+                      help='Skip changelog state checks that require logchange release/generate to have been run')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1199,6 +1207,9 @@ reVersion2 = re.compile(r'-(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?\.', re.IGNORECASE)
 
 def main():
   c = parse_config()
+
+  global SKIP_CHANGELOG
+  SKIP_CHANGELOG = c.skip_changelog
 
   # Pick <major>.<minor> part of version and require script to be from same branch
   scriptVersion = re.search(r'((\d+).(\d+)).(\d+)', scriptutil.find_current_version()).group(1).strip()
