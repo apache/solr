@@ -1,8 +1,0 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Update grpc to v1.80.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3117
-  url: https://github.com/apache/solr/pull/3117
