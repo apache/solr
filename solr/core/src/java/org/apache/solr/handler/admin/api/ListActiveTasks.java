@@ -4,9 +4,13 @@ import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ListActiveTasksApi;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -14,6 +18,8 @@ import java.util.Map;
 import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
 public class ListActiveTasks extends JerseyResource implements ListActiveTasksApi {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrQueryRequest solrQueryRequest;
 
@@ -30,6 +36,13 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
   public ListActiveTaskResponse listActiveTasks(String taskUUID) throws Exception {
 
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
+    CoreContainer coreContainer = solrQueryRequest.getCoreContainer();
+
+    if (coreContainer.isZooKeeperAware()) {
+      log.debug("solr cloud");
+    } else {
+      log.debug("stand alone");
+    }
 
     Iterator<Map.Entry<String, String>> iterator = solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
