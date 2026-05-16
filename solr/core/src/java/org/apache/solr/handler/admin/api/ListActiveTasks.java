@@ -4,16 +4,13 @@ import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ListActiveTasksApi;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
 public class ListActiveTasks extends JerseyResource implements ListActiveTasksApi {
@@ -29,7 +26,7 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
 
 
   @Override
-  @PermissionName(COLL_READ_PERM)
+  @PermissionName(READ_PERM)
   public ListActiveTaskResponse listActiveTasks(String taskUUID) throws Exception {
 
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
