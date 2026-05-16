@@ -69,6 +69,7 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -800,7 +801,6 @@ public class CoreContainer {
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, Attributes.empty());
-    solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -827,7 +827,9 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
+      var connection =
+          CloudSolrClient.CloudSolrClientConnection.parse(getZkController().getZkServerAddress());
+      solrClientCache = new InternalSolrClientCache(solrClientProvider.getSolrClient(), connection);
       // initialize ZkClient metrics
       zkSys
           .getZkMetricsProducer()
@@ -850,6 +852,8 @@ public class CoreContainer {
       registerV2Api(packageLoader.getPackageAPI().editAPI);
       registerV2Api(packageLoader.getPackageAPI().readAPI);
       registerV2Api(ZookeeperRead.class);
+    } else {
+      solrClientCache = new InternalSolrClientCache(solrClientProvider.getSolrClient());
     }
 
     MDCLoggingContext.setNode(this);

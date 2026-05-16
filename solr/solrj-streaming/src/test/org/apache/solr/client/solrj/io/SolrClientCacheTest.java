@@ -64,16 +64,28 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkACLsNotUsedWithDifferentZkHost() {
+  public void testZkACLsShouldNotBeUsedByDefault() {
     try (SolrClientCache cache = new SolrClientCache()) {
-      // This ZK Host is fake, thus the ZK ACLs should not be used
-      cache.setDefaultZKHost("test:2181");
+      // useZookeeperACL by default is false
       expectThrows(
           SolrException.class,
           () ->
               cache.getCloudSolrClient(
                   CloudSolrClient.CloudSolrClientConnection.parse(
                       zkClient().getZkServerAddress())));
+    }
+  }
+
+  @Test
+  public void testZkACLsShouldBeUsedWhenThisExplicitlySets() {
+    String zkConnectionString = zkClient().getZkServerAddress();
+    try (SolrClientCache cache = new SolrClientCache()) {
+      cache.setUseZookeeperACL(true);
+      CloudSolrClient cloudSolrClient =
+          cache.getCloudSolrClient(
+              CloudSolrClient.CloudSolrClientConnection.parse(zkConnectionString));
+      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
+      Assert.assertEquals(1, clusterState.getLiveNodes().size());
     }
   }
 
@@ -85,29 +97,6 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
           cache.getCloudSolrClient(CloudSolrClient.CloudSolrClientConnection.parse(solrUrl));
       ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
       Assert.assertEquals(1, clusterState.getLiveNodes().size());
-    }
-  }
-
-  @Test
-  public void testGetClientWithZookeeper() {
-    String zkConnectionString = zkClient().getZkServerAddress();
-    try (SolrClientCache cache = new SolrClientCache()) {
-      cache.setDefaultZKHost(zkClient().getZkServerAddress());
-      CloudSolrClient cloudSolrClient =
-          cache.getCloudSolrClient(
-              CloudSolrClient.CloudSolrClientConnection.parse(zkConnectionString));
-      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
-      Assert.assertEquals(1, clusterState.getLiveNodes().size());
-    }
-  }
-
-  @Test
-  public void testZkACLsUsedWithDifferentChroot() {
-    try (SolrClientCache cache = new SolrClientCache()) {
-      // The same ZK Host is used, so the ZK ACLs should still be applied
-      cache.setDefaultZKHost(zkClient().getZkServerAddress() + "/random/chroot");
-      cache.getCloudSolrClient(
-          CloudSolrClient.CloudSolrClientConnection.parse(zkClient().getZkServerAddress()));
     }
   }
 }

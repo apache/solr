@@ -91,8 +91,6 @@ public class CalciteSolrDriver extends Driver {
     }
     var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(schemaName);
     if (!solrConnection.isZookeeper()) {
-      // TODO: add support for 'solrConnection' for both connection string types:
-      // TODO: zookeeper and HTTP(s)
       throw new SQLException(
           String.format(
               Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", schemaName));

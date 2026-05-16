@@ -62,7 +62,7 @@ public class SolrJdbcUrlParserTest extends SolrTestCase {
         for (String paramString : PARAMS.keySet()) {
           String url = "jdbc:solr://" + zkHostString + chroot + "?" + paramString;
 
-          var jdbcConnectionMetadata = SolrJdbcUrlParser.parse(url, new Properties());
+          var jdbcConnectionMetadata = DriverImpl.SolrJdbcUrlParser.parse(url, new Properties());
           var solrConnection = jdbcConnectionMetadata.solrConnection();
           List<String> expectedZookeepers = ZOOKEEPERS.get(zkHostString);
           Assert.assertTrue(solrConnection.isZookeeper());
@@ -82,7 +82,7 @@ public class SolrJdbcUrlParserTest extends SolrTestCase {
       for (String paramString : PARAMS.keySet()) {
         String url = "jdbc:solr:" + httpString + "?" + paramString;
 
-        var jdbcConnectionMetadata = SolrJdbcUrlParser.parse(url, new Properties());
+        var jdbcConnectionMetadata = DriverImpl.SolrJdbcUrlParser.parse(url, new Properties());
         var solrConnection = jdbcConnectionMetadata.solrConnection();
         Assert.assertFalse(solrConnection.isZookeeper());
         Assert.assertEquals(1, solrConnection.quorumItems().size());
