@@ -97,6 +97,7 @@ import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
@@ -124,6 +125,7 @@ import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
+import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SetClusterPropertyRequestBody;
@@ -194,6 +196,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShard;
 import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
+import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
@@ -958,6 +961,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
+    /** Handle list of active tasks request. Do list collection request to zk host */
+    LIST_TASK_OP(
+        LIST,
+        (req, rsp, h) -> {
+          final ListActiveTasks listActiveTasks = new ListActiveTasks(req);
+          final ListActiveTaskResponse listActiveTaskResponse = listActiveTasks.listActiveTasks(req.getParams().get(TASK_CHECK_UUID));
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listActiveTaskResponse);
+          return null;
+        }),
     /**
      * Handle cluster status request. Can return status per specific collection/shard or per all
      * collections.
@@ -1377,7 +1389,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class,
-        ClusterProperty.class);
+        ClusterProperty.class,
+        ListActiveTasks.class);
   }
 
   @Override
