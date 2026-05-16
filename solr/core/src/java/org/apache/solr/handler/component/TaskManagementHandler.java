@@ -21,14 +21,18 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.ListActiveTasks;
+import org.apache.solr.handler.admin.api.NodeHealth;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -131,5 +135,10 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
     rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
 
     return rb;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(ListActiveTasks.class);
   }
 }
