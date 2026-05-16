@@ -39,11 +39,24 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
     CoreContainer coreContainer = solrQueryRequest.getCoreContainer();
 
     if (coreContainer.isZooKeeperAware()) {
-      log.debug("solr cloud");
+      if (log.isDebugEnabled()) {
+        log.debug("solr cloud");
+      }
+      handleSolrCloudMode(response, taskUUID);
     } else {
-      log.debug("stand alone");
+      if (log.isDebugEnabled()) {
+        log.debug("standalone solr");
+      }
+      handleStandAloneMode(response, taskUUID);
     }
 
+    log.debug("something random");
+
+    return response;
+
+  }
+
+  private void handleStandAloneMode(ListActiveTaskResponse response, String taskUUID) {
     Iterator<Map.Entry<String, String>> iterator = solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
     Map<String, String> taskList = new HashMap<>();
@@ -53,8 +66,17 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
     }
 
     response.taskList = taskList;
+  }
 
-    return response;
+  private void handleSolrCloudMode(ListActiveTaskResponse response, String taskUUID) {
+    Iterator<Map.Entry<String, String>> iterator = solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
+    Map<String, String> taskList = new HashMap<>();
+    while (iterator.hasNext()) {
+      Map.Entry<String, String> entry = iterator.next();
+      taskList.put(entry.getKey(), entry.getValue());
+    }
+
+    response.taskList = taskList;
   }
 }
