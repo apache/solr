@@ -1,4 +1,4 @@
-title: Restrict external Solr cluster connections by default in internal server-side components
+title: Restrict external Solr cluster connections in internal server-side components by default
 type: security
 authors:
   - name: vyatkin.v

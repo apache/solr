@@ -1,4 +1,4 @@
-title: Add StreamFactory methods for configuring default and collection-specific Solr connections. Old Zookeeper-based methods have been deprecated.
+title: Add 'StreamFactory' methods for configuring default and collection-specific Solr connections; deprecate ZooKeeper-based methods.
 type: changed
 authors:
   - name: vyatkin.v

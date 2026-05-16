@@ -1,4 +1,4 @@
-title: Add 'solrConnection' parameter to the Join Query Parser supporting both ZooKeeper and HTTP(S) connection types
+title: Add 'solrConnection' parameter to Join Query Parser to support ZooKeeper and HTTP(S) connection types
 type: changed
 authors:
   - name: vyatkin.v
