@@ -36,13 +36,11 @@ import org.apache.solr.core.MockShardHandlerFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests exercising Solr's two "out-of-the-box" ShardHandlerFactory implementations */
+/** Tests exercising Solr's "out-of-the-box" {@link HttpShardHandlerFactory} */
 public class TestShardHandlerFactory extends SolrTestCaseJ4 {
 
   private static final String[] SHARD_HANDLER_FACTORY_IMPLEMENTATIONS =
-      new String[] {
-        HttpShardHandlerFactory.class.getName(), ParallelHttpShardHandlerFactory.class.getName()
-      };
+      new String[] {HttpShardHandlerFactory.class.getName()};
 
   private static final String LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE =
       "solr.tests.loadBalancerRequestsMinimumAbsolute";

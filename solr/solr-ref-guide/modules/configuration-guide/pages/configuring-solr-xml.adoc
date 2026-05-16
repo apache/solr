@@ -509,9 +509,8 @@ Solr uses "Shard Handlers" to send and track the inter-node requests made intern
 A factory, configured via the `<shardHandlerFactory>` element, is used to create new Shard Handlers as needed.
 The factory defined here will be used throughout Solr, unless overridden by particular requestHandler's in solrconfig.xml.
 
-Two factory implementations are available, each creating a corresponding Shard Handler.
-The default, `HttpShardHandlerFactory`, serves as the best option for most deployments.
-However some deployments, especially those using authentication or with massively sharded collections, may benefit from the additional parallelization offered by `ParallelHttpShardHandlerFactory`.
+Solr ships with a single built-in factory implementation, `HttpShardHandlerFactory`, which dispatches each shard request on its own virtual thread.
+This is the default and serves the needs of all deployments, including those with massively sharded collections.
 
 Custom shard handlers are also supported and should be referenced in `solr.xml` by their fully-qualified class name:
 
@@ -520,7 +519,7 @@ Custom shard handlers are also supported and should be referenced in `solr.xml` 
 <shardHandlerFactory name="ShardHandlerFactory" class="qualified.class.name"/>
 ----
 
-Sub-elements of `<shardHandlerFactory>` may vary in the case of custom shard handlers, but both `HttpShardHandlerFactory` and `ParallelShardHandlerFactory` support the following configuration options:
+Sub-elements of `<shardHandlerFactory>` may vary in the case of custom shard handlers, but `HttpShardHandlerFactory` supports the following configuration options:
 
 [[sockettimeout]]`socketTimeout`::
 +

@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -83,6 +84,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   //
   // This executor is initialized in the init method
   protected ExecutorService commExecutor;
+
+  /**
+   * Virtual-thread-per-task executor used for the per-shard scatter/gather fan-out in {@link
+   * HttpShardHandler}. Distinct from {@link #commExecutor}, which serves as Jetty's HTTP client
+   * worker executor.
+   */
+  protected ExecutorService shardExecutor;
 
   protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
@@ -286,6 +294,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             // collection as an optimization. see SOLR-11880 for more details
             false);
 
+    this.shardExecutor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("httpShardVT-", 0).factory());
+
     this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
     int connectionTimeout =
         getParameter(
@@ -341,16 +353,24 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   @Override
   public void close() {
     try {
-      if (loadbalancer != null) {
-        loadbalancer.close();
+      // Stop the per-shard virtual-thread executor first so in-flight tasks are interrupted before
+      // the load balancer / HTTP client they depend on are torn down.
+      if (shardExecutor != null) {
+        ExecutorUtil.shutdownNowAndAwaitTermination(shardExecutor);
       }
     } finally {
       try {
-        if (defaultClient != null) {
-          IOUtils.closeQuietly(defaultClient);
+        if (loadbalancer != null) {
+          loadbalancer.close();
         }
       } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
+        try {
+          if (defaultClient != null) {
+            IOUtils.closeQuietly(defaultClient);
+          }
+        } finally {
+          ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
+        }
       }
     }
     IOUtils.closeQuietly(asyncRequestsGauge);
@@ -459,6 +479,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     commExecutor =
         solrMetricsContext.instrumentedExecutorService(
             commExecutor, "solr.core.executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
+    shardExecutor =
+        solrMetricsContext.instrumentedExecutorService(
+            shardExecutor, "solr.core.executor", "httpShardVT", SolrInfoBean.Category.QUERY);
     if (defaultClient != null) {
       asyncRequestsGauge =
           solrMetricsContext.observableLongGauge(
