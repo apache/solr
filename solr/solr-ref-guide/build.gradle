@@ -592,6 +592,42 @@ String cliFileNameToNavLabel(String baseName) {
   return baseName.split('-').last()
 }
 
+// Repeatedly strip "[...]" (optional groups) and "(...)" (required groups whose
+// members aren't *individually* required) from a synopsis line. What remains are
+// the tokens that the user must always provide.
+String stripSynopsisGroups(String text) {
+  String s = text
+  String prev = null
+  while (s != prev) {
+    prev = s
+    s = s.replaceAll(/\[[^\[\]]*\]/, '')
+    s = s.replaceAll(/\([^()]*\)/, '')
+  }
+  return s
+}
+
+// Extract option names (e.g. "-d", "--name") that appear unbracketed in the
+// synopsis. Picocli's ManPageGenerator doesn't emit a per-option required marker,
+// but the synopsis bracket convention does encode it — we use that as the source
+// of truth so we don't have to reach into the CommandSpec.
+Set<String> extractRequiredOptionNames(String synopsis) {
+  def stripped = stripSynopsisGroups(synopsis)
+  def result = new LinkedHashSet<String>()
+  def m = stripped =~ /(-{1,2}[a-zA-Z][a-zA-Z0-9-]*)/
+  while (m.find()) { result.add(m.group(1)) }
+  return result
+}
+
+// Extract positional argument names (e.g. "<src>") that appear unbracketed in the
+// synopsis — same approach as required options.
+Set<String> extractRequiredPositionalNames(String synopsis) {
+  def stripped = stripSynopsisGroups(synopsis)
+  def result = new LinkedHashSet<String>()
+  def m = stripped =~ /(<[^<>\s]+>)/
+  while (m.find()) { result.add(m.group(1)) }
+  return result
+}
+
 // Post-process a raw ManPageGenerator AsciiDoc file for Antora compatibility.
 // The title lives inside the man-section-header block, so we replace the whole
 // header block with an Antora-compatible page title + attributes.
@@ -629,6 +665,45 @@ String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNot
       .replaceAll(/(?m)^solr /, 'bin/solr ')  // qualified name "solr start" → "bin/solr start"
       .replaceAll(/(?m)^( +)/, '    $1')     // re-align wrapped lines: add 4 spaces ("bin/" length)
     "${m[1]}....\n${synopsis}\n....${m[3]}"
+  }
+
+  // Mark required options and positional arguments in the Options/Arguments sections.
+  // Picocli's ManPageGenerator doesn't emit a per-option required marker, so we parse
+  // the synopsis (where required tokens are unbracketed) and prepend "*(required)*" to
+  // the matching description lines.
+  def synopsisMatch = content =~ /(?s)== Synopsis\n\n\.{4}\n(.*?)\n\.{4}/
+  if (synopsisMatch.find()) {
+    def synopsisText = synopsisMatch.group(1).replaceAll(/\s+/, ' ')
+    def requiredOpts = extractRequiredOptionNames(synopsisText)
+    def requiredArgs = extractRequiredPositionalNames(synopsisText)
+
+    // Option labels look like "*-d*, *--conf-dir*=_DIR_::" or "*-rf, --replication-factor*=_<x>_::"
+    // or "*--all*::". We strip the asciidoc marks, look at the part before '=', and pull
+    // every -x / --xx token so we match against the required set regardless of label shape.
+    if (!requiredOpts.isEmpty()) {
+      content = content.replaceAll(/(?m)^(\*-[^\n]+::)\n( +)([^\n]+)/) { List<String> m ->
+        def label = m[1]
+        def indent = m[2]
+        def descLine = m[3]
+        def beforeEq = label.replaceAll(/[*_]/, '').split('=', 2)[0]
+        def names = []
+        def nm = beforeEq =~ /(-{1,2}[a-zA-Z][a-zA-Z0-9-]*)/
+        while (nm.find()) { names << nm.group(1) }
+        names.any { requiredOpts.contains(it) } ?
+          "${label}\n${indent}*(required)* ${descLine}" : m[0]
+      }
+    }
+
+    // Positional arg labels look like "_<src>_::".
+    if (!requiredArgs.isEmpty()) {
+      content = content.replaceAll(/(?m)^_(<[^<>\n]+>)_::\n( +)([^\n]+)/) { List<String> m ->
+        def name = m[1]
+        def indent = m[2]
+        def descLine = m[3]
+        requiredArgs.contains(name) ?
+          "_${name}_::\n${indent}*(required)* ${descLine}" : m[0]
+      }
+    }
   }
 
   // Strip the outer full-manpage tag wrappers

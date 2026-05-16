@@ -69,7 +69,7 @@ List the contents of a ZooKeeper node.
 == Arguments
 
 _<path>_::
-  The path of the ZooKeeper znode path to list.
+  *(required)* The path of the ZooKeeper znode path to list.
 
 // end::picocli-generated-man-section-arguments[]
 

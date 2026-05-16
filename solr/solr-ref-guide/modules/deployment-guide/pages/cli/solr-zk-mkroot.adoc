@@ -70,7 +70,7 @@ Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary 
 == Arguments
 
 _<path>_::
-  The ZooKeeper znode path to create.
+  *(required)* The ZooKeeper znode path to create.
 
 // end::picocli-generated-man-section-arguments[]
 
