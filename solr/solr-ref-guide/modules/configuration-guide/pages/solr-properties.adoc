@@ -132,7 +132,13 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.zookeeper.server.datadir|zkServerDataDir|Defaults to solr.home/zoo_data dir.|Where to store ZooKeeper data when running embedded ZooKeeper.
 
+|solr.zookeeper.server.client.port.offset||1000|Port offset from the Solr port to the embedded ZooKeeper client port when running in quorum mode. All nodes in the ensemble must use the same offset.
+
+|solr.zookeeper.server.election.port.offset||1020|Port offset from the Solr port to the embedded ZooKeeper leader election port when running in quorum mode. All nodes in the ensemble must use the same offset.
+
 |solr.zookeeper.server.enabled|zk.run|false|Controls whether embedded ZooKeeper is started. Set by the start script.
+
+|solr.zookeeper.server.quorum.port.offset||1010|Port offset from the Solr port to the embedded ZooKeeper quorum peer port when running in quorum mode. All nodes in the ensemble must use the same offset.
 
 |===
 

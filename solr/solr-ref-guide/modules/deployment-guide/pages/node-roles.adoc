@@ -49,7 +49,7 @@ If a node has been started with no `solr.node.roles` parameter, it will be assum
 ====
 
 .Supported roles
-[cols="1,1"] 
+[cols="1,1"]
 |===
 |Role |Modes
 
@@ -60,6 +60,9 @@ If a node has been started with no `solr.node.roles` parameter, it will be assum
 |allowed, preferred, disallowed
 
 |`coordinator`
+|on, off
+
+|`zookeeper_quorum` _(experimental)_
 |on, off
 |===
 
@@ -87,6 +90,15 @@ In such cases, a few dedicated nodes can be started with a *`coordinator`* role 
 3. if there is no such core, it checks if there is a synthetic collection *`.sys.COORDINATOR-COLL-configset-A`* and a replica for that collection is present locally. If not the collection and replica is created on the fly and it goes to *`step 1`*
 
 
+
+=== `zookeeper_quorum` role
+
+WARNING: This feature is *experimental / alpha* and should not be used in production. The configuration interface may change without notice.
+
+A node with this role will start an embedded ZooKeeper server that joins a multi-node ZooKeeper quorum (ensemble) on startup.
+This allows running a self-contained SolrCloud cluster without deploying a separate ZooKeeper process.
+
+See xref:zookeeper-ensemble.adoc#embedded-zookeeper-ensemble[Embedded ZooKeeper Ensemble] for full details on how to configure and start a cluster with this role.
 
 == Example usage
 
@@ -125,6 +137,10 @@ curl http://localhost:8983/api/cluster/node-roles/supported
       "modes":["disallowed",
         "allowed",
         "preferred"]
+    },
+    "zookeeper_quorum":{
+      "modes":["off",
+        "on"]
     }
   }
 }
