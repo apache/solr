@@ -618,6 +618,7 @@ Set<String> extractRequiredTokens(String synopsis, java.util.regex.Pattern patte
 // Options and Arguments sections. Picocli's ManPageGenerator doesn't emit a
 // per-option required marker, so we use the synopsis bracketing as the source of
 // truth instead of reaching into the CommandSpec.
+// See https://github.com/remkop/picocli/issues/2519.
 String markRequiredOptionsAndArgs(String content) {
   final String MARKER = '*(required)*'
   final def OPTION_NAME = ~/(-{1,2}[a-zA-Z][a-zA-Z0-9-]*)/
