@@ -1,0 +1,7 @@
+title: Add '--solr-connection' option to Solr CLI tools supporting both ZooKeeper and HTTP(S) connection types
+type: changed
+authors:
+  - name: vyatkin.v
+links:
+  - name: SOLR-18130
+    url: https://issues.apache.org/jira/browse/SOLR-18130

@@ -1,0 +1,7 @@
+title: Restrict external Solr cluster connections by default in internal server-side components
+type: security
+authors:
+  - name: vyatkin.v
+links:
+  - name: SOLR-18130
+    url: https://issues.apache.org/jira/browse/SOLR-18130
