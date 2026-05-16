@@ -69,9 +69,9 @@ reHREF = re.compile('<a href="(.*?)">(.*?)</a>')
 # Set to False to avoid re-downloading the packages...
 FORCE_CLEAN = True
 
-# Set to True via --skip-changelog to skip changelog-state checks that require
-# 'logchange release' and 'logchange generate' to have been run first.
-SKIP_CHANGELOG = False
+# Set to True via --skip-changelog-current to skip checks that verify the changelog
+# is current (i.e. that 'logchange release' and 'logchange generate' have been run).
+SKIP_CHANGELOG_CURRENT = False
 
 
 def getHREFs(urlString):
@@ -415,8 +415,14 @@ def testChangelogFolder(dir, version):
   if len(unreleased_contents) > 0:
     raise RuntimeError('changelog/unreleased folder is not empty, contains: %s' % unreleased_contents)
 
-  # Pattern to match version folders (e.g., v9.5.0, v10.0.0 or v10.1.0-beta1)
-  version_pattern = re.compile(r'^v\d+\.\d+\.\d+(-\w+)?$')
+  # Explicitly verify that the version folder for the current release exists
+  version_folder = os.path.join(changelog_folder, 'v%s' % version)
+  if not os.path.exists(version_folder):
+    raise RuntimeError('changelog/v%s folder not found (run logchange release first)' % version)
+
+  # Pattern to match version folders (e.g., v9.5.0, v10.0.0, v10.1.0-beta1, v10.1.0-beta-1, v10.1.0-RC1)
+  # Uses a prefix match to handle any suffix format without silently skipping unusual variants.
+  version_pattern = re.compile(r'^v\d+\.\d+\.\d+')
 
   # Check all subdirectories in changelog
   for entry in os.listdir(changelog_folder):
@@ -457,11 +463,11 @@ reUnderbarNotDashTXT = re.compile(r'\s+((SOLR)_\d\d\d\d+)', re.MULTILINE)
 def checkChangesContent(s, version, name, isHTML):
   currentVersionTuple = versionToTuple(version, name)
 
-  if isHTML and not SKIP_CHANGELOG and s.find('Release %s' % version) == -1:
+  if isHTML and not SKIP_CHANGELOG_CURRENT and s.find('Release %s' % version) == -1:
     raise RuntimeError('did not see "Release %s" in %s' % (version, name))
 
   # Validate h2 header structure for Changes.html (requires logchange generate to have been run)
-  if isHTML and not SKIP_CHANGELOG:
+  if isHTML and not SKIP_CHANGELOG_CURRENT:
     print('    validate h2 header structure...')
     h2_pattern = re.compile(r'<h2[^>]*>\s*<a[^>]*>(Release\s+[^<]+)</a>\s*</h2>', re.IGNORECASE | re.DOTALL)
     headers = h2_pattern.findall(s)
@@ -501,7 +507,7 @@ def checkChangesContent(s, version, name, isHTML):
   if m is not None:
     raise RuntimeError('incorrect issue (_ instead of -) in %s: %s' % (name, m.group(1)))
 
-  if not SKIP_CHANGELOG and s.lower().find('not yet released') != -1:
+  if not SKIP_CHANGELOG_CURRENT and s.lower().find('not yet released') != -1:
     raise RuntimeError('saw "not yet released" in %s' % name)
 
   if not isHTML:
@@ -743,7 +749,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
 
   if isSrc:
-    if not SKIP_CHANGELOG:
+    if not SKIP_CHANGELOG_CURRENT:
       testChangelogFolder(unpackPath, version)
     print('    make sure no JARs/WARs in src dist...')
     lines = os.popen('find . -name \\*.jar').readlines()
@@ -808,7 +814,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     os.chdir(unpackPath)
 
-  if not SKIP_CHANGELOG:
+  if not SKIP_CHANGELOG_CURRENT:
     testChangelogMd('.', version)
 
 
@@ -1161,8 +1167,8 @@ def parse_config():
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
                       help='Enable dev mode, will not check branch compatibility')
-  parser.add_argument('--skip-changelog', action='store_true', default=False,
-                      help='Skip changelog state checks that require logchange release/generate to have been run')
+  parser.add_argument('--skip-changelog-current', action='store_true', default=False,
+                      help='Skip checks that verify the changelog is current (i.e. logchange release/generate have been run)')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1208,13 +1214,13 @@ reVersion2 = re.compile(r'-(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?\.', re.IGNORECASE)
 def main():
   c = parse_config()
 
-  global SKIP_CHANGELOG
-  SKIP_CHANGELOG = c.skip_changelog
-
   # Pick <major>.<minor> part of version and require script to be from same branch
   scriptVersion = re.search(r'((\d+).(\d+)).(\d+)', scriptutil.find_current_version()).group(1).strip()
   if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
+
+  global SKIP_CHANGELOG_CURRENT
+  SKIP_CHANGELOG_CURRENT = c.skip_changelog_current
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args),
