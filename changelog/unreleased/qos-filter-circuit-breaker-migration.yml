@@ -1,0 +1,14 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: |
+  Move circuit breaker enforcement from request handlers into a new SolrQoSFilter that
+  asynchronously suspends requests by priority lane (admin/probe > query > update) instead of
+  failing fast. Async queueing is enabled by default; per-priority admission caps prevent a
+  flood of low-priority traffic from rejecting high-priority probes; clients can opt into a
+  specific lane with the Solr-Request-Priority header. The drain budget auto-scales with
+  maxSuspendedRequests so saturated queues drain before the suspension timeout. Add
+  GcOverheadCircuitBreaker and TTL-cache CPU/load-average samples. Rewrite MemoryCircuitBreaker
+  to read post-GC live bytes from the old/tenured pool instead of the raw heap usage moving
+  average.
+type: changed
+authors:
+  - name: Mark Robert Miller

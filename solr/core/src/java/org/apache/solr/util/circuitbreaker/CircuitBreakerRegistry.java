@@ -52,15 +52,26 @@ import org.slf4j.LoggerFactory;
 public class CircuitBreakerRegistry implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Pattern SYSPROP_REGEX =
-      Pattern.compile("solr.circuitbreaker\\.(update|query)\\.(cpu|mem|loadavg)");
+      Pattern.compile("solr.circuitbreaker\\.(update|query)\\.(cpu|mem|loadavg|gcoverhead)");
   public static final String SYSPROP_PREFIX = "solr.circuitbreaker.";
   public static final String SYSPROP_UPDATE_CPU = SYSPROP_PREFIX + "update.cpu";
   public static final String SYSPROP_UPDATE_MEM = SYSPROP_PREFIX + "update.mem";
   public static final String SYSPROP_UPDATE_LOADAVG = SYSPROP_PREFIX + "update.loadavg";
+  public static final String SYSPROP_UPDATE_GCOVERHEAD = SYSPROP_PREFIX + "update.gcoverhead";
   public static final String SYSPROP_QUERY_CPU = SYSPROP_PREFIX + "query.cpu";
   public static final String SYSPROP_QUERY_MEM = SYSPROP_PREFIX + "query.mem";
   public static final String SYSPROP_QUERY_LOADAVG = SYSPROP_PREFIX + "query.loadavg";
+  public static final String SYSPROP_QUERY_GCOVERHEAD = SYSPROP_PREFIX + "query.gcoverhead";
   public static final String SYSPROP_WARN_ONLY_SUFFIX = ".warnonly";
+
+  /**
+   * Default TTL (ms) of cached load-average / CPU samples consulted by {@link
+   * LoadAverageCircuitBreaker} and {@link CPUCircuitBreaker}. Override per-process via the {@value
+   * #SYSPROP_SAMPLE_TTL_MS} system property.
+   */
+  public static final long DEFAULT_SAMPLE_TTL_MS = 1000L;
+
+  public static final String SYSPROP_SAMPLE_TTL_MS = SYSPROP_PREFIX + "sampleTtlMs";
 
   private static boolean globalsInitialized = false;
   private static final Map<SolrRequestType, List<CircuitBreaker>> globalCircuitBreakerMap =
@@ -103,6 +114,11 @@ public class CircuitBreakerRegistry implements Closeable {
                 case "loadavg":
                   breaker =
                       new LoadAverageCircuitBreaker()
+                          .setThreshold(Double.parseDouble(breakerAndValueArr[1]));
+                  break;
+                case "gcoverhead":
+                  breaker =
+                      new GcOverheadCircuitBreaker()
                           .setThreshold(Double.parseDouble(breakerAndValueArr[1]));
                   break;
                 default:
@@ -208,6 +224,85 @@ public class CircuitBreakerRegistry implements Closeable {
     }
 
     return triggeredCircuitBreakers;
+  }
+
+  /**
+   * Check globally-registered (process-wide) circuit breakers for the given request type. Warn-only
+   * breakers are excluded from the result so that callers performing admission control do not act
+   * on them.
+   *
+   * <p>Filter-level callers (e.g. {@link org.apache.solr.servlet.SolrQoSFilter}) do not have
+   * per-core context and therefore consult only the static global map.
+   *
+   * @return null if no global breakers are registered for {@code requestType} or none are tripped;
+   *     otherwise a non-empty list of tripped breakers
+   */
+  public static List<CircuitBreaker> checkTrippedGlobal(SolrRequestType requestType) {
+    return selectTripped(globalCircuitBreakerMap.get(requestType));
+  }
+
+  /**
+   * Per-core variant of {@link #checkTrippedGlobal(SolrRequestType)} that consults only this
+   * registry's local breakers. Warn-only breakers are excluded.
+   */
+  public List<CircuitBreaker> checkTrippedLocal(SolrRequestType requestType) {
+    List<CircuitBreaker> snapshot;
+    synchronized (circuitBreakerMap) {
+      List<CircuitBreaker> breakersOfType = circuitBreakerMap.get(requestType);
+      snapshot = (breakersOfType == null) ? null : new ArrayList<>(breakersOfType);
+    }
+    return selectTripped(snapshot);
+  }
+
+  private static List<CircuitBreaker> selectTripped(List<CircuitBreaker> breakers) {
+    if (breakers == null || breakers.isEmpty()) {
+      return null;
+    }
+    List<CircuitBreaker> tripped = null;
+    for (CircuitBreaker cb : breakers) {
+      if (cb.isTripped() && !cb.isWarnOnly()) {
+        if (tripped == null) {
+          tripped = new ArrayList<>();
+        }
+        tripped.add(cb);
+      }
+    }
+    return tripped;
+  }
+
+  /**
+   * Filter-level admission control helper: combine globally-registered and every
+   * per-core-registered circuit breaker for {@code requestType}. Returns null if nothing is
+   * tripped, otherwise a non-empty list of tripped breakers.
+   *
+   * <p>Iteration is over all cores in {@code cc}. If any core has a tripped breaker for the type,
+   * the request is treated as tripped cluster-wide; this is intentionally conservative since the
+   * filter does not yet know which core a request will resolve to.
+   */
+  public static List<CircuitBreaker> checkTrippedAcrossCores(
+      CoreContainer cc, SolrRequestType requestType) {
+    List<CircuitBreaker> tripped = checkTrippedGlobal(requestType);
+    if (cc == null) {
+      return tripped;
+    }
+    @SuppressWarnings("deprecation")
+    List<org.apache.solr.core.SolrCore> cores = cc.getCores();
+    for (org.apache.solr.core.SolrCore core : cores) {
+      CircuitBreakerRegistry reg = core.getCircuitBreakerRegistry();
+      if (reg == null) {
+        continue;
+      }
+      List<CircuitBreaker> coreTripped = reg.checkTrippedLocal(requestType);
+      if (coreTripped == null || coreTripped.isEmpty()) {
+        continue;
+      }
+      if (tripped == null) {
+        tripped = new ArrayList<>(coreTripped);
+      } else {
+        tripped.addAll(coreTripped);
+      }
+    }
+    return tripped;
   }
 
   /**

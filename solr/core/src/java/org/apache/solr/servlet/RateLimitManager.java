@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -82,22 +81,21 @@ public class RateLimitManager implements ClusterPropertiesListener {
   }
 
   // Handles an incoming request. The main orchestration code path, this method will
-  // identify which (if any) rate limiter can handle this request. Internal requests will not be
-  // rate limited
-  // Returns true if request is accepted for processing, false if it should be rejected
+  // identify which (if any) rate limiter can handle this request. Internal requests
+  // (sub-shard fan-out, server-context SolrJ traffic) are unconditionally admitted to
+  // mirror the SolrQoSFilter bypass and avoid distributed deadlock.
+  // Returns a SlotReservation when accepted, null when rejected.
   public RequestRateLimiter.SlotReservation handleRequest(HttpServletRequest request)
       throws InterruptedException {
-    String requestContext = request.getHeader(SOLR_REQUEST_CONTEXT_PARAM);
-    String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
-
-    if (typeOfRequest == null) {
-      // Cannot determine if this request should be throttled
+    // Do not throttle internal intra-cluster requests. Detection mirrors SolrQoSFilter so the
+    // two filter-tier admission checks agree on what counts as "internal".
+    if (InternalRequestUtils.isInternalServerRequest(request)) {
       return RequestRateLimiter.UNLIMITED;
     }
 
-    // Do not throttle internal requests
-    if (requestContext != null
-        && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
+    String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
+    if (typeOfRequest == null) {
+      // Cannot determine if this request should be throttled
       return RequestRateLimiter.UNLIMITED;
     }
 
