@@ -59,6 +59,11 @@ The universal connection string is now supported in the following components and
 * Added `--solr-connection` option to the CLI tools.
 * Added `solrConnection` parameter to the Join Query Parser.
 
+[IMPORTANT]
+====
+For security reasons, connections to external Solr clusters are disabled by default in internal server-side components. External cluster access can be explicitly enabled by setting `-Dsolr.allow-external-clusters=true`. Enabling this option may expose the server to SSRF risks and should only be used in trusted environments.
+====
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
