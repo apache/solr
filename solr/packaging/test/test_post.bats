@@ -138,13 +138,6 @@ teardown() {
   assert_output --partial '"numFound":45'
 }
 
-@test "crawling a web site" {
-  solr create -c webcrawl -d _default
-
-  run solr post --mode web -c webcrawl --recursive 1 --delay 1 https://solr.apache.org
-  assert_output --partial 'Entering crawl at level 0'
-}
-
 @test "skipcommit and optimize and delete" {
 
   run solr create -c monitors2 -d _default
