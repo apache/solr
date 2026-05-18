@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -170,9 +169,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void validateNotWhitelisted() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
       zsh.validateZkRawResponse(
-          Collections.singletonList("mntr is not executed because it is not in the whitelist."),
-          "zoo1:2181",
-          "mntr");
+          List.of("mntr is not executed because it is not in the whitelist."), "zoo1:2181", "mntr");
     } catch (IOException e) {
       fail("Error closing ZookeeperStatusHandler");
     }
@@ -191,7 +188,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void validateNotServingRequestsResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
       zsh.validateZkRawResponse(
-          Collections.singletonList("This ZooKeeper instance is not currently serving requests"),
+          List.of("This ZooKeeper instance is not currently serving requests"),
           "zoo1:2181",
           "mntr");
     } catch (IOException e) {

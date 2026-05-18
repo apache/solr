@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
@@ -441,8 +440,11 @@ public class Utils {
     }
   }
 
+  @SuppressForbidden(
+      reason = "singletonList(null) is intentional — null is a sentinel path element")
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
-    if (hierarchy == null) return getObjectByPath(root, onlyPrimitive, singletonList(null));
+    if (hierarchy == null)
+      return getObjectByPath(root, onlyPrimitive, Collections.singletonList(null));
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return getObjectByPath(root, onlyPrimitive, parts);
   }

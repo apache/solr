@@ -1,0 +1,9 @@
+title: Update org.eclipse.jgit:org.eclipse.jgit to v7.6.0.202603022253-r
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3757
+  url: https://github.com/apache/solr/pull/3757
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
@@ -423,7 +422,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         }
       } catch (Exception e) {
         resp.setException(e);
-        resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
+        resp.add(CommandOperation.ERR_MSGS, List.of(SchemaManager.getErrorStr(e)));
       }
     }
 

@@ -1,0 +1,9 @@
+title: Update com.fasterxml.jackson:jackson-bom to v2.21.2
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4095
+  url: https://github.com/apache/solr/pull/4095
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

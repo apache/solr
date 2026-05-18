@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MissingMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.WeightedSumMetric;
 
@@ -133,6 +134,10 @@ public interface ParallelMetricsRollup {
           // can't properly rollup mean metrics w/o a count (reqd by WeightedSumMetric)
           return Optional.empty();
         }
+      } else if (next instanceof MissingMetric) {
+        // sum of missing counts
+        nextRollup = new SumMetric(next.getIdentifier());
+        nextRollup.outputLong = next.outputLong;
       } else if (next instanceof CountDistinctMetric) {
         // rollup of count distinct is the max across the tiers
         nextRollup = new MaxMetric(next.getIdentifier());

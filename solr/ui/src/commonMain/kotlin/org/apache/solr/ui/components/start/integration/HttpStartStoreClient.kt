@@ -63,6 +63,7 @@ class HttpStartStoreClient(
 
         return when (response.status) {
             HttpStatusCode.OK -> Result.success(Unit)
+
             HttpStatusCode.Unauthorized -> {
                 val methods = getAuthMethodsFromHeader(response.headers)
                 Result.failure(
@@ -104,6 +105,7 @@ class HttpStartStoreClient(
 
                 when (scheme.lowercase()) {
                     "basic", "xbasic" -> AuthMethod.BasicAuthMethod(realm = params["realm"])
+
                     "bearer" -> {
                         // There should be one X-Solr-Authdata header for each scheme
                         val base64AuthData = headers.getAll("X-Solr-Authdata")
@@ -128,6 +130,7 @@ class HttpStartStoreClient(
                             AuthMethod.Unknown
                         }
                     }
+
                     else -> AuthMethod.Unknown
                 }
             }
