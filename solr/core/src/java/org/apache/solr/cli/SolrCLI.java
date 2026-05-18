@@ -115,7 +115,8 @@ public class SolrCLI implements CLIO {
    * This customization is only installed on the interactive CLI command setup, so ref-guide
    * generation, which runs the doc generator directly, still sees the full description.
    */
-  private static void installFirstLineOnlyHelpFactory(picocli.CommandLine cmd) {
+  @VisibleForTesting
+  static void installFirstLineOnlyHelpFactory(picocli.CommandLine cmd) {
     cmd.setHelpFactory(
         (spec, colorScheme) ->
             new picocli.CommandLine.Help(spec, colorScheme) {
