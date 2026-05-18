@@ -27,7 +27,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.cloud.ClusterState;
@@ -121,7 +121,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     for (String node : liveNodes) {
       try {
         String nodeURL = Utils.getBaseUrlForNodeName(node, urlScheme);
-        solrClient = new HttpJettySolrClient.Builder(nodeURL).build();
+        solrClient = HttpSolrClient.builder(nodeURL).build();
 
         SystemInfoRequest req = new SystemInfoRequest();
         SystemInfoResponse resp = req.process(solrClient);
