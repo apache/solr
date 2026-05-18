@@ -84,7 +84,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     System.setProperty("solr.tests.numeric.dv", "true");
 
     configureCluster(NUM_COLLECTIONS)
-        .withMetrics(false)
         .addConfig(
             "conf",
             getFile("solrj")

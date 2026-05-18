@@ -355,6 +355,10 @@ Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format n
 The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`.
 Update your dashboards to use `solr_core_indexsearcher_warmup_time` instead.
 
+==== Overseer Status Metrics Removed
+
+The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute via OpenTelemetry.
+
 === Lucene Codec Change
 
 Solr 10.1 upgrades the underlying Lucene library from 10.3 to 10.4, which introduces a new index codec (`Lucene104`).
