@@ -112,8 +112,8 @@ public class SolrCLI implements CLIO {
   /**
    * Truncates each option's description to its first line for interactive {@code --help} output.
    * The remaining lines of the {@code description} array are reserved for the generated ref-guide.
-   * ManPageGenerator bypasses this customization (it always calls {@code
-   * createDefaultOptionRenderer()} on a fresh Help), so the .adoc still shows the full description.
+   * This customization is only installed on the interactive CLI command setup, so ref-guide
+   * generation, which runs the doc generator directly, still sees the full description.
    */
   private static void installFirstLineOnlyHelpFactory(picocli.CommandLine cmd) {
     cmd.setHelpFactory(
