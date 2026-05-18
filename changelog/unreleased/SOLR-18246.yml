@@ -1,4 +1,4 @@
-title: Solr Admin UI does not support multiple facet.field parameters correctly
+title: Solr Admin UI properly supports multiple facet.field parameters
 type: fixed
 authors:
   - name: Umut Saribiyik
