@@ -30,9 +30,9 @@ public class ConfigSetOptions {
       names = {"-n", "--conf-name"},
       description = {
         "Configset name in ZooKeeper.",
-        "Name of the configuration set in ZooKeeper. This command will upload the configuration set to the \"configs\" ZooKeeper node giving it the name specified.",
+        "Name of the configuration set under the \"/configs\" ZooKeeper node.",
         "",
-        "You can see all uploaded configuration sets in the Admin UI via the Cloud screens. Choose Cloud → Tree → configs to see them.",
+        "You can see available configuration sets in the Admin UI via the Cloud screens. Choose Cloud → Tree → configs to see them.",
         "",
         "If a pre-existing configuration set is specified, it will be overwritten in ZooKeeper.",
         "",
