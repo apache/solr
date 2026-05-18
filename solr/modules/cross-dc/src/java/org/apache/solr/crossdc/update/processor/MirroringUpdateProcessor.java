@@ -516,6 +516,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     }
 
     private static long primitiveEstimate(Object obj, long def) {
+      if (obj == null) return def;
       Class<?> clazz = obj.getClass();
       if (clazz.isPrimitive()) {
         return primitiveSizes.get(clazz);
