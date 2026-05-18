@@ -79,10 +79,10 @@ and the last element of the <src> path will be appended unless <src> also ends i
 == Arguments
 
 _<src>_::
-  Source path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
+  *(required)* Source path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
 
 _<dst>_::
-  Destination path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
+  *(required)* Destination path: [file:][/]path/to/local/file or zk:/path/to/zk/node.
 
 // end::picocli-generated-man-section-arguments[]
 

@@ -51,7 +51,7 @@ Creates a core or collection depending on whether Solr is running in standalone 
 == Options
 
 *-c*, *--name*=_<name>_::
-  Name of collection or core to create.
+  *(required)* Name of collection or core to create.
 
 *-d*, *--conf-dir*=_<confDir>_::
   Configuration directory to copy when creating the new collection; default is _default.

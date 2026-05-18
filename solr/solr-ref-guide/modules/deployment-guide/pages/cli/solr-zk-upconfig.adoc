@@ -50,10 +50,10 @@ Upload a configset from the local filesystem to ZooKeeper.
 == Options
 
 *-d*, *--conf-dir*=_DIR_::
-  Local directory with configs.
+  *(required)* Local directory with configs.
 
 *-n*, *--conf-name*=_<confName>_::
-  Configset name in ZooKeeper.
+  *(required)* Configset name in ZooKeeper.
 
 *-s*, *--solr-url*=_<solrUrl>_::
   Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
