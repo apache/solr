@@ -1,0 +1,9 @@
+title: Remove Dropwizard Metrics as a direct Solr dependency. The `OVERSEERSTATUS` response no longer includes per-operation timing metrics per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute.
+type: removed
+authors:
+  - name: Matthew Biscocho
+  - name: Eric Pugh
+  - name: David Smiley
+links:
+  - name: SOLR-17855
+    url: https://issues.apache.org/jira/browse/SOLR-17855

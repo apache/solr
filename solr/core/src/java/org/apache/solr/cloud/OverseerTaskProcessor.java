@@ -20,7 +20,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_I
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
@@ -497,7 +496,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   protected LeaderStatus amILeader() {
     String statsName = "collection_am_i_leader";
-    Timer.Context timerContext = stats.time(statsName);
     boolean success = true;
     String propsId = null;
     try {
@@ -524,7 +522,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
       success = false;
       Thread.currentThread().interrupt();
     } finally {
-      timerContext.stop();
       if (success) {
         stats.success(statsName);
       } else {
@@ -577,7 +574,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
-      final Timer.Context timerContext = stats.time(statsName);
 
       boolean success = false;
       final String asyncId = message.getStr(ASYNC);
@@ -590,7 +586,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
           }
           response = messageHandler.processMessage(message, operation, lock);
         } finally {
-          timerContext.stop();
           updateStats(statsName);
         }
 
