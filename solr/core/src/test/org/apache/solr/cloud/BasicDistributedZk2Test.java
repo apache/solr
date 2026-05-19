@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -158,11 +159,25 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
           .getZkController()
           .getZkClient()
           .getCuratorFramework()
-          .blockUntilConnected(50, TimeUnit.MILLISECONDS);
+          .blockUntilConnected(30, TimeUnit.SECONDS);
 
       indexr("id", docId + 1, t1, "slip this doc in");
 
-      waitForRecoveriesToFinish(false);
+      // Wait for the session-expired node to fully re-register its replica as ACTIVE.
+      // waitForRecoveriesToFinish alone is insufficient because it ignores replicas on nodes
+      // not yet back in live_nodes, which can race with teardown.
+      String expiredNodeName = cloudJetty.jetty.getNodeName();
+      ZkStateReader.from(cloudClient)
+          .waitForState(
+              DEFAULT_COLLECTION,
+              60,
+              TimeUnit.SECONDS,
+              (liveNodes, collectionState) ->
+                  liveNodes.contains(expiredNodeName)
+                      && collectionState.getSlices().stream()
+                          .flatMap(s -> s.getReplicas().stream())
+                          .filter(r -> liveNodes.contains(r.getNodeName()))
+                          .allMatch(r -> r.getState() == Replica.State.ACTIVE));
 
       checkShardConsistency(SHARD1);
       checkShardConsistency(SHARD2);
