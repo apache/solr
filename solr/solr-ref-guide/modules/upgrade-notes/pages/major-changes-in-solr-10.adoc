@@ -355,10 +355,17 @@ For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_ex
 *Workaround for OTLP consumers depending on the old names:*
 Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
 
-==== Metric `solr_core_indexsearcher_open_warmup_time` removed
+==== Metric that are Removed or Changed
 
-The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`.
-Update your dashboards to use `solr_core_indexsearcher_warmup_time` instead.
+* The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`
+* The metric `solr.zk.cumulative.children_fetched` has been removed
+* The metric `solr.zk.child.fetches` is now `solr.zk.get_children.ops`
+* All CrossDC consumer metrics have been renamed: `crossdc.consumer.*` → `solr.crossdc.consumer.*`
+  (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
+* All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
+  (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
+
+Update your dashboards or other metrics consumers accordingly.
 
 ==== Overseer Status Metrics Removed
 
