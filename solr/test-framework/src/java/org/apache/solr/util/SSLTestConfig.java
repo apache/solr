@@ -27,16 +27,9 @@ import java.security.UnrecoverableKeyException;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.net.ssl.SSLContext;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.solr.client.solrj.apache.HttpClientUtil.SocketFactoryRegistryProvider;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.eclipse.jetty.util.resource.Resource;
@@ -45,9 +38,9 @@ import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
- * An SSLConfig that provides {@link SSLConfig} and {@link SocketFactoryRegistryProvider} for both
- * clients and servers that supports reading key/trust store information directly from resource
- * files provided with the Solr test-framework classes
+ * An SSLConfig that provides {@link SSLConfig} for both clients and servers that supports reading
+ * key/trust store information directly from resource files provided with the Solr test-framework
+ * classes
  */
 public class SSLTestConfig {
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE =
@@ -128,23 +121,6 @@ public class SSLTestConfig {
 
   public boolean isClientAuthMode() {
     return clientAuth;
-  }
-
-  /**
-   * Creates a {@link SocketFactoryRegistryProvider} for HTTP <b>clients</b> to use when
-   * communicating with servers which have been configured based on the settings of this object.
-   * When {@link #isSSLMode} is true, this <code>SocketFactoryRegistryProvider</code> will
-   * <i>only</i> support HTTPS (no HTTP scheme) using the appropriate certs. When {@link #isSSLMode}
-   * is false, <i>only</i> HTTP (no HTTPS scheme) will be supported.
-   */
-  public SocketFactoryRegistryProvider buildClientSocketFactoryRegistryProvider() {
-    if (isSSLMode()) {
-      SSLConnectionSocketFactory sslConnectionFactory = buildClientSSLConnectionSocketFactory();
-      assert null != sslConnectionFactory;
-      return new SSLSocketFactoryRegistryProvider(sslConnectionFactory);
-    } else {
-      return HTTP_ONLY_SCHEMA_PROVIDER;
-    }
   }
 
   /**
@@ -268,64 +244,6 @@ public class SSLTestConfig {
           "Unable to build KeyStore from resource: " + resource.getName(), ex);
     }
   }
-
-  /**
-   * Constructs a new SSLConnectionSocketFactory for HTTP <b>clients</b> to use when communicating
-   * with servers which have been configured based on the settings of this object. Will return null
-   * unless {@link #isSSLMode} is true.
-   */
-  public SSLConnectionSocketFactory buildClientSSLConnectionSocketFactory() {
-    if (!isSSLMode()) {
-      return null;
-    }
-    SSLConnectionSocketFactory sslConnectionFactory;
-    try {
-      SSLContext sslContext = buildClientSSLContext();
-      if (checkPeerName == false) {
-        sslConnectionFactory =
-            new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
-      } else {
-        sslConnectionFactory = new SSLConnectionSocketFactory(sslContext);
-      }
-    } catch (KeyManagementException
-        | UnrecoverableKeyException
-        | NoSuchAlgorithmException
-        | KeyStoreException e) {
-      throw new IllegalStateException(
-          "Unable to setup https scheme for HTTPClient to test SSL.", e);
-    }
-    return sslConnectionFactory;
-  }
-
-  /**
-   * A SocketFactoryRegistryProvider that only knows about SSL using a specified
-   * SSLConnectionSocketFactory
-   */
-  private static class SSLSocketFactoryRegistryProvider extends SocketFactoryRegistryProvider {
-    private final SSLConnectionSocketFactory sslConnectionFactory;
-
-    public SSLSocketFactoryRegistryProvider(SSLConnectionSocketFactory sslConnectionFactory) {
-      this.sslConnectionFactory = sslConnectionFactory;
-    }
-
-    @Override
-    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
-      return RegistryBuilder.<ConnectionSocketFactory>create()
-          .register("https", sslConnectionFactory)
-          .build();
-    }
-  }
-
-  /** A SocketFactoryRegistryProvider that only knows about HTTP */
-  private static final SocketFactoryRegistryProvider HTTP_ONLY_SCHEMA_PROVIDER =
-      new SocketFactoryRegistryProvider() {
-        @Override
-        public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
-          return RegistryBuilder.<ConnectionSocketFactory>create()
-              .register("http", PlainConnectionSocketFactory.getSocketFactory())
-              .build();
-        }
-      };
 
   /**
    * A mocked up instance of SecureRandom that just uses {@link Random} under the covers. This is to
