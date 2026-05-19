@@ -1,9 +1,12 @@
-name: Solr Tests
+name: Solr Tests via Crave
 
 on:
   pull_request:
     branches:
       - '*'
+    paths:
+      - 'solr/**/src/**'
+      - 'gradle/libs.versions.toml'
 
 jobs:
   test:
