@@ -1,5 +1,7 @@
 
-title: Introduce org.apache.solr.client.solrj.HttpSolrClient, implemented by the Jetty & JDK HttpClient based SolrClients.
+title: >
+  Introduce org.apache.solr.client.solrj.HttpSolrClient, implemented by the Jetty & JDK HttpClient based SolrClients.
+  It's builder will use Jetty if available, otherwise JDK.
 type: other
 authors:
   - name: David Smiley

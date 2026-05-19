@@ -462,23 +462,31 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       try (SolrZkClient client =
           new SolrZkClient.Builder().withUrl(server.getZkAddress()).build()) {
         ZkController.createClusterZkNodes(client);
+
+        testUrlSchemeWithSystemProperties(client);
+
+        assumeFalse(
+            "Skip schema default and cluster property checks when SSL is enabled", isSSLMode());
         testUrlSchemeWithClusterProperties(client);
         testUrlSchemeDefault(client);
-        testUrlSchemeWithSystemProperties(client);
       }
     } finally {
       server.shutdown();
     }
   }
 
+  /**
+   * Used by {@link #testZkClusterStateProviderUrlScheme}. Only valid if {@link #isSSLMode} is false
+   */
   private void testUrlSchemeDefault(SolrZkClient client) throws Exception {
-    assumeFalse("Skip the test when ssl is enabled", isSSLMode());
+    assertFalse("These checks are not supported in SSL mode", isSSLMode());
     try (var zkStateReader = new ZkStateReader(client);
         var clusterStateProvider = new ZkClientClusterStateProvider(zkStateReader)) {
       assertEquals("http", clusterStateProvider.getUrlScheme());
     }
   }
 
+  /** Used by {@link #testZkClusterStateProviderUrlScheme} */
   private void testUrlSchemeWithSystemProperties(SolrZkClient client) throws Exception {
     try (var zkStateReader = new ZkStateReader(client);
         var clusterStateProvider = new ZkClientClusterStateProvider(zkStateReader)) {
@@ -487,8 +495,11 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     }
   }
 
+  /**
+   * Used by {@link #testZkClusterStateProviderUrlScheme}. Only valid if {@link #isSSLMode} is false
+   */
   private void testUrlSchemeWithClusterProperties(SolrZkClient client) throws Exception {
-    assumeFalse("Skip the test when ssl is enabled", isSSLMode());
+    assertFalse("These checks are not supported in SSL mode", isSSLMode());
     ClusterProperties cp = new ClusterProperties(client);
     cp.setClusterProperty("urlScheme", "ftp");
     try (var zkStateReader = new ZkStateReader(client);

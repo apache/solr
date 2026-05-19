@@ -41,7 +41,7 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
 
   @Override
   protected SolrClient getSolrClient(String baseUrl) {
-    return new HttpApacheSolrClient.Builder()
+    return new HttpSolrClient.Builder()
         .withBaseSolrUrl(baseUrl)
         .withHttpClient(httpClient)
         .build();

@@ -53,6 +53,19 @@ The `blockUnknown` setting in the JWT Authentication plugin now defaults to `tru
 In Solr 10.0, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
 Users upgrading from 10.0 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
 
+=== Security
+
+PKI Authentication v1 support has been removed.
+Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node communication.
+
+Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
+The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
+
+=== SolrJ
+
+HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
+Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
+
 == Solr 10.0
 
 === Solr Jetty parameters
@@ -346,6 +359,10 @@ Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format n
 
 The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`.
 Update your dashboards to use `solr_core_indexsearcher_warmup_time` instead.
+
+==== Overseer Status Metrics Removed
+
+The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute via OpenTelemetry.
 
 === Lucene Codec Change
 

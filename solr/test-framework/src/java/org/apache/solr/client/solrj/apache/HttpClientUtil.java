@@ -572,7 +572,7 @@ public class HttpClientUtil implements SolrHttpConstants {
    */
   public static HttpClientContext createNewHttpClientRequestContext() {
     HttpClientContext context =
-        httpClientRequestContextBuilder.createContext(HttpApacheSolrClient.cacheKey);
+        httpClientRequestContextBuilder.createContext(HttpSolrClient.cacheKey);
 
     return context;
   }
