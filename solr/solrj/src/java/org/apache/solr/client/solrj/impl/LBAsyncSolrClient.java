@@ -37,7 +37,7 @@ import org.slf4j.MDC;
 public abstract class LBAsyncSolrClient extends LBSolrClient {
   // formerly known as LBHttp2SolrClient, using Http2SolrClient (jetty)
 
-  protected final HttpSolrClientBase solrClient;
+  protected final HttpSolrClient solrClient;
 
   protected LBAsyncSolrClient(Builder<?> builder) {
     super(builder);
@@ -45,7 +45,7 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
   }
 
   @Override
-  protected HttpSolrClientBase getClient(Endpoint endpoint) {
+  protected HttpSolrClient getClient(Endpoint endpoint) {
     return solrClient;
   }
 

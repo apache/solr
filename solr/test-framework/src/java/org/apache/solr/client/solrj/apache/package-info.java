@@ -16,4 +16,5 @@
  */
 
 /** Apache HttpClient based {@link org.apache.solr.client.solrj.SolrClient} implementations */
+@Deprecated
 package org.apache.solr.client.solrj.apache;
