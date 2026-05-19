@@ -58,6 +58,7 @@ jobs:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
+          set -euo pipefail
           mkdir -p artifact
           if [ -d changelog/unreleased ]; then
             cp -r changelog/unreleased artifact/changelog-unreleased

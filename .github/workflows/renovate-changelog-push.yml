@@ -21,8 +21,12 @@ permissions:
 
 jobs:
   push-changelog:
-    # Only proceed if Stage 1 succeeded (not cancelled or failed)
-    if: github.event.workflow_run.conclusion == 'success'
+    # Only proceed if Stage 1 succeeded for the expected fork.
+    # Checking head_repository here avoids a spurious artifact-not-found failure
+    # when Stage 1 ran but skipped its generate job (e.g. non-solrbot PR).
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == 'solrbot/apache-_-solr'
     runs-on: ubuntu-latest
 
     steps:
@@ -37,14 +41,18 @@ jobs:
       - name: Read and validate PR metadata
         id: meta
         run: |
+          set -euo pipefail
           META_FILE="downloaded-artifact/pr-metadata.env"
           if [ ! -f "$META_FILE" ]; then
             echo "::error::Metadata file missing from artifact"; exit 1
           fi
 
-          set -a; source "$META_FILE"; set +a
+          # Parse with grep/cut rather than source to avoid executing file content as shell
+          PR_NUMBER=$(grep '^PR_NUMBER=' "$META_FILE" | cut -d= -f2-)
+          HEAD_REF=$(grep  '^HEAD_REF='  "$META_FILE" | cut -d= -f2-)
+          HEAD_REPO=$(grep '^HEAD_REPO=' "$META_FILE" | cut -d= -f2-)
 
-          if [ -z "${PR_NUMBER:-}" ] || [ -z "${HEAD_REF:-}" ] || [ -z "${HEAD_REPO:-}" ]; then
+          if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_REF" ] || [ -z "$HEAD_REPO" ]; then
             echo "::error::Missing required metadata fields (PR_NUMBER, HEAD_REF, or HEAD_REPO)"; exit 1
           fi
 
@@ -58,13 +66,14 @@ jobs:
             echo "::error::PR_NUMBER is not a valid positive integer: '$PR_NUMBER'"; exit 1
           fi
 
-          # Validate HEAD_REF looks like a safe branch name (prevents path traversal)
-          if ! [[ "$HEAD_REF" =~ ^[a-zA-Z0-9._/:-]+$ ]]; then
+          # Validate HEAD_REF looks like a safe branch name (prevents path traversal).
+          # Includes @ because Renovate uses it in branch names (e.g. renovate/node@lts).
+          if ! [[ "$HEAD_REF" =~ ^[a-zA-Z0-9._/@:-]+$ ]]; then
             echo "::error::HEAD_REF contains unexpected characters: '$HEAD_REF'"; exit 1
           fi
 
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$HEAD_REF"   >> "$GITHUB_OUTPUT"
           echo "head_repo=$HEAD_REPO" >> "$GITHUB_OUTPUT"
           echo "Validated: PR#${PR_NUMBER} on ${HEAD_REPO}@${HEAD_REF}"
 
@@ -74,10 +83,13 @@ jobs:
           HEAD_REPO: ${{ steps.meta.outputs.head_repo }}
           HEAD_REF: ${{ steps.meta.outputs.head_ref }}
         run: |
-          git clone \
-            --depth=1 \
-            --branch "$HEAD_REF" \
-            "https://x-access-token:${SOLRBOT_TOKEN}@github.com/${HEAD_REPO}.git" \
+          set -euo pipefail
+          # Store credentials so the token never appears in the command line or process list
+          git config --global credential.helper store
+          printf 'https://x-access-token:%s@github.com\n' "$SOLRBOT_TOKEN" > ~/.git-credentials
+
+          git clone --depth=1 --branch "$HEAD_REF" \
+            "https://github.com/${HEAD_REPO}.git" \
             fork-checkout
 
       - name: Apply changelog to fork checkout
@@ -85,6 +97,7 @@ jobs:
         env:
           PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
         run: |
+          set -euo pipefail
           CHANGELOG_DIR="fork-checkout/changelog/unreleased"
           ARTIFACT_DIR="downloaded-artifact/changelog-unreleased"
 
@@ -121,10 +134,10 @@ jobs:
       - name: Commit and push to fork branch
         if: steps.apply.outputs.has_changes == 'true'
         env:
-          SOLRBOT_TOKEN: ${{ secrets.SOLRBOT_GITHUB_TOKEN }}
-          HEAD_REPO: ${{ steps.meta.outputs.head_repo }}
           HEAD_REF: ${{ steps.meta.outputs.head_ref }}
+          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
         run: |
+          set -euo pipefail
           cd fork-checkout
 
           if [ -z "$(git status --porcelain changelog/unreleased/)" ]; then
@@ -136,8 +149,7 @@ jobs:
           git config user.email "solrbot@cominvent.com"
 
           git add changelog/unreleased/
-          git commit -m "Update changelog entry"
+          git commit -m "Add changelog entry for PR#${PR_NUMBER}"
 
-          git push \
-            "https://x-access-token:${SOLRBOT_TOKEN}@github.com/${HEAD_REPO}.git" \
-            "HEAD:${HEAD_REF}"
+          # Credential store (configured in Clone step) provides authentication
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
