@@ -50,7 +50,7 @@ Deletes a collection or core depending on whether Solr is running in SolrCloud o
 == Options
 
 *-c*, *--name*=_<name>_::
-  Name of the core / collection to delete.
+  *(required)* Name of the core / collection to delete.
 
 *--delete-config*::
   Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.

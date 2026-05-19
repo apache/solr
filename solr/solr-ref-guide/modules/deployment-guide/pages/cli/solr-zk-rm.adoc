@@ -69,7 +69,7 @@ Remove a znode from ZooKeeper.
 == Arguments
 
 _<path>_::
-  The ZooKeeper znode path to remove (zk: prefix optional).
+  *(required)* The ZooKeeper znode path to remove (zk: prefix optional).
 
 // end::picocli-generated-man-section-arguments[]
 

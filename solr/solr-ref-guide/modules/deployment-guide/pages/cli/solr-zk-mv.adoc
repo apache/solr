@@ -70,10 +70,10 @@ and the last element of the <src> path will be appended.
 == Arguments
 
 _<src>_::
-  Source ZooKeeper znode path (zk: prefix optional).
+  *(required)* Source ZooKeeper znode path (zk: prefix optional).
 
 _<dst>_::
-  Destination ZooKeeper znode path (zk: prefix optional).
+  *(required)* Destination ZooKeeper znode path (zk: prefix optional).
 
 // end::picocli-generated-man-section-arguments[]
 

@@ -50,7 +50,7 @@ Upload a configset from the local filesystem to ZooKeeper.
 == Options
 
 *-d*, *--conf-dir*=_DIR_::
-  Local directory with configs.
+  *(required)* Local directory with configs.
 
 *-n*, *--conf-name*=_<confName>_::
   Configset name in ZooKeeper.
