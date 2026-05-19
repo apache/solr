@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.handler.component;
 
 import com.carrotsearch.hppc.IntObjectHashMap;
@@ -28,15 +44,21 @@ import org.apache.solr.search.SolrIndexSearcher;
  *
  * <p>Activation: Add {@code matched_queries=true} (or {@code mq=true}) to the request.
  *
- * <p>Output: - per-doc: each hit gets a "matched_queries": ["name1","name2"] field - response
- * section: "matched_queries_summary": { "name1": {"count": 5, "docIds": ["id1","id2"]}, "name2":
- * {"count": 2, "docIds": ["id3"]} }
+ * <p>Output:
+ *
+ * <ul>
+ *   <li>{@code matched_queries_per_hit}: map of unique-key value → list of names that matched that
+ *       document. Documents that matched no named query are absent.
+ *   <li>{@code matched_queries_summary}: map of name → ordered list of unique-key values of
+ *       documents it matched.
+ * </ul>
  *
  * <p>Implementation: We use the {@link Weight#matches(LeafReaderContext, int)} API which performs a
  * separate, post-search pass over each requested document. {@link NamedMatches} become identifiable
  * through {@link NamedMatches#findNamedMatches(Matches)} on the returned Matches tree.
- * ScoreMode.COMPLETE_NO_SCORES is used for the matches Weight because matching does not need
- * scoring and this lets Lucene skip score computation entirely for this pass.
+ * {@link org.apache.lucene.search.ScoreMode#COMPLETE_NO_SCORES} is used for the matches Weight
+ * because matching does not need scoring and this lets Lucene skip score computation entirely for
+ * this pass.
  */
 public class MatchedQueriesComponent extends SearchComponent {
 
