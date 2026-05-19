@@ -24,12 +24,19 @@ import java.security.SecureRandom;
 import java.security.SecureRandomParameters;
 import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.SSLContexts;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.eclipse.jetty.util.resource.Resource;
@@ -94,7 +101,6 @@ public class SSLTestConfig {
    *     Certificate (and which testing Cert should be used)
    * @see SolrHttpConstants#SYS_PROP_CHECK_PEER_NAME
    */
-  @SuppressWarnings("removal")
   public SSLTestConfig(boolean useSsl, boolean clientAuth, boolean checkPeerName) {
     this.useSsl = useSsl;
     this.clientAuth = clientAuth;
@@ -139,22 +145,25 @@ public class SSLTestConfig {
 
     assert isSSLMode();
 
-    SSLContextBuilder builder = SSLContexts.custom();
-    builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
-
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server
     // perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
-    builder
-        .loadTrustMaterial(buildKeyStore(keyStore, TEST_PASSWORD), new TrustSelfSignedStrategy())
-        .build();
+    var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    tmf.init(buildKeyStore(keyStore, TEST_PASSWORD));
 
+    KeyManager[] keyManagers = null;
     if (isClientAuthMode()) {
-      builder.loadKeyMaterial(
-          buildKeyStore(trustStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
+      var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      kmf.init(buildKeyStore(trustStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
+      keyManagers = kmf.getKeyManagers();
     }
 
-    return builder.build();
+    SSLContext sslContext = SSLContext.getInstance("TLS");
+    sslContext.init(
+        keyManagers,
+        trustSelfSignedStrategy(tmf.getTrustManagers()),
+        NotSecurePseudoRandom.INSTANCE);
+    return sslContext;
   }
 
   public SSLConfig buildClientSSLConfig() {
@@ -198,24 +207,69 @@ public class SSLTestConfig {
       public SslContextFactory.Server createContextFactory() {
         SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
-          SSLContextBuilder builder = SSLContexts.custom();
-          builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
+          var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+          kmf.init(buildKeyStore(keyStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
 
-          builder.loadKeyMaterial(
-              buildKeyStore(keyStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
-
+          TrustManager[] trustManagers = null;
           if (isClientAuthMode()) {
-            builder
-                .loadTrustMaterial(
-                    buildKeyStore(trustStore, TEST_PASSWORD), new TrustSelfSignedStrategy())
-                .build();
+            var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(buildKeyStore(trustStore, TEST_PASSWORD));
+            trustManagers = trustSelfSignedStrategy(tmf.getTrustManagers());
           }
-          factory.setSslContext(builder.build());
+
+          SSLContext sslContext = SSLContext.getInstance("TLS");
+          sslContext.init(kmf.getKeyManagers(), trustManagers, NotSecurePseudoRandom.INSTANCE);
+          factory.setSslContext(sslContext);
         } catch (Exception e) {
           throw new RuntimeException("ssl context init failure: " + e.getMessage(), e);
         }
         factory.setNeedClientAuth(isClientAuthMode());
         return factory;
+      }
+    };
+  }
+
+  /**
+   * Returns trust managers that accept self-signed certs, delegating all others to {@code
+   * delegates}.
+   */
+  private static TrustManager[] trustSelfSignedStrategy(TrustManager[] delegates) {
+    return new TrustManager[] {
+      new X509TrustManager() {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
+          if (chain.length == 1) return;
+          for (TrustManager tm : delegates) {
+            if (tm instanceof X509TrustManager) {
+              ((X509TrustManager) tm).checkClientTrusted(chain, authType);
+              return;
+            }
+          }
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
+          if (chain.length == 1) return;
+          for (TrustManager tm : delegates) {
+            if (tm instanceof X509TrustManager) {
+              ((X509TrustManager) tm).checkServerTrusted(chain, authType);
+              return;
+            }
+          }
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+          List<X509Certificate> issuers = new ArrayList<>();
+          for (TrustManager tm : delegates) {
+            if (tm instanceof X509TrustManager) {
+              issuers.addAll(Arrays.asList(((X509TrustManager) tm).getAcceptedIssuers()));
+            }
+          }
+          return issuers.toArray(new X509Certificate[0]);
+        }
       }
     };
   }
