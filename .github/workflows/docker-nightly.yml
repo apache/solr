@@ -25,13 +25,13 @@ jobs:
             version: 11.0.0-SNAPSHOT
             gradle-jdk: 21
             dist: full
-            base-image: eclipse-temurin:25-jre-jammy
+            base-image: eclipse-temurin:25-jre-noble
             tag-suffix: ''
           - branch: main
             version: 11.0.0-SNAPSHOT
             gradle-jdk: 21
             dist: slim
-            base-image: eclipse-temurin:25-jre-jammy
+            base-image: eclipse-temurin:25-jre-noble
             tag-suffix: ''
 
           # branch_10x - Gradle on JDK21, Docker images with JRE21 (default) and JRE25
@@ -39,19 +39,19 @@ jobs:
             version: 10.1.0-SNAPSHOT
             gradle-jdk: 21
             dist: full
-            base-image: eclipse-temurin:21-jre-jammy
+            base-image: eclipse-temurin:21-jre-noble
             tag-suffix: ''
           - branch: branch_10x
             version: 10.1.0-SNAPSHOT
             gradle-jdk: 21
             dist: slim
-            base-image: eclipse-temurin:21-jre-jammy
+            base-image: eclipse-temurin:21-jre-noble
             tag-suffix: ''
           - branch: branch_10x
             version: 10.1.0-SNAPSHOT
             gradle-jdk: 21
             dist: full
-            base-image: eclipse-temurin:25-jre-jammy
+            base-image: eclipse-temurin:25-jre-noble
             tag-suffix: '-java25'
 
           # branch_10_0 - Gradle on JDK21, Docker images with JRE21 (default) and JRE25
@@ -76,18 +76,38 @@ jobs:
 
           # branch_9x - Gradle on JDK17, Docker images with JRE17 (default) and JRE21
           - branch: branch_9x
-            version: 9.11.0-SNAPSHOT
+            version: 9.12.0-SNAPSHOT
             gradle-jdk: 17
             dist: full
             base-image: eclipse-temurin:17-jre-jammy
             tag-suffix: ''
           - branch: branch_9x
-            version: 9.11.0-SNAPSHOT
+            version: 9.12.0-SNAPSHOT
             gradle-jdk: 17
             dist: slim
             base-image: eclipse-temurin:17-jre-jammy
             tag-suffix: ''
           - branch: branch_9x
+            version: 9.12.0-SNAPSHOT
+            gradle-jdk: 17
+            dist: full
+            base-image: eclipse-temurin:21-jre-jammy
+            tag-suffix: '-java21'
+
+          # branch_9_11 - Gradle on JDK17, Docker images with JRE17 (default) and JRE21
+          - branch: branch_9_11
+            version: 9.11.0-SNAPSHOT
+            gradle-jdk: 17
+            dist: full
+            base-image: eclipse-temurin:17-jre-jammy
+            tag-suffix: ''
+          - branch: branch_9_11
+            version: 9.11.0-SNAPSHOT
+            gradle-jdk: 17
+            dist: slim
+            base-image: eclipse-temurin:17-jre-jammy
+            tag-suffix: ''
+          - branch: branch_9_11
             version: 9.11.0-SNAPSHOT
             gradle-jdk: 17
             dist: full
