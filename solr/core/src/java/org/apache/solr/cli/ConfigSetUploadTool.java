@@ -68,6 +68,22 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
 
+  @picocli.CommandLine.Option(
+      names = {"-d", "--conf-dir"},
+      description = {
+        "Local directory for configs.",
+        "The local directory of the configuration set to upload. It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.",
+        "",
+        "If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked for this name. An absolute path may be supplied instead.",
+        "",
+        "**Examples:**",
+        "* `-d directory_under_configsets`",
+        "* `-d /path/to/configset/source`"
+      },
+      required = true,
+      paramLabel = "DIR")
+  public String confDir;
+
   public ConfigSetUploadTool() {
     this(new DefaultToolRuntime());
   }
@@ -142,7 +158,7 @@ public class ConfigSetUploadTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doUpconfig(zkClient, zkHost, configSetOpts.confName, configSetOpts.confDir);
+      doUpconfig(zkClient, zkHost, configSetOpts.confName, confDir);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete upconfig operation for reason: ", e);

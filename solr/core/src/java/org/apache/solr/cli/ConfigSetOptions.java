@@ -40,11 +40,4 @@ public class ConfigSetOptions {
       },
       required = true)
   public String confName;
-
-  @CommandLine.Option(
-      names = {"-d", "--conf-dir"},
-      description = "Local directory with configs.",
-      required = true,
-      paramLabel = "DIR")
-  public String confDir;
 }

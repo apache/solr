@@ -50,10 +50,24 @@ Upload a configset from the local filesystem to ZooKeeper.
 == Options
 
 *-d*, *--conf-dir*=_DIR_::
-  *(required)* Local directory with configs.
+  *(required)* Local directory for configs.
++
+The local directory of the configuration set to upload. It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.
++
+
++
+If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked for this name. An absolute path may be supplied instead.
++
+
++
+**Examples:**
++
+* `-d directory_under_configsets`
++
+* `-d /path/to/configset/source`
 
 *-n*, *--conf-name*=_<confName>_::
-  Configset name in ZooKeeper.
+  *(required)* Configset name in ZooKeeper.
 +
 Name of the configuration set under the "/configs" ZooKeeper node.
 +

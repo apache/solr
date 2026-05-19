@@ -66,6 +66,22 @@ public class ConfigSetDownloadTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
 
+  @picocli.CommandLine.Option(
+      names = {"-d", "--conf-dir"},
+      description = {
+        "Local directory for configs.",
+        "The path to write the downloaded configuration set into. If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be the parent. An absolute path may be supplied as well.",
+        "",
+        "In either case, _pre-existing configurations at the destination will be overwritten_!",
+        "",
+        "**Examples:**",
+        "* `-d directory_under_configsets`",
+        "* `-d /path/to/configset/destination`"
+      },
+      required = true,
+      paramLabel = "DIR")
+  public String confDir;
+
   public ConfigSetDownloadTool() {
     this(new DefaultToolRuntime());
   }
@@ -138,7 +154,7 @@ public class ConfigSetDownloadTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doDownconfig(zkClient, zkHost, configSetOpts.confName, configSetOpts.confDir);
+      doDownconfig(zkClient, zkHost, configSetOpts.confName, confDir);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete downconfig operation for reason: ", e);

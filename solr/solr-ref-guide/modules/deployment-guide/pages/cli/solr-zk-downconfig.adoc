@@ -50,11 +50,24 @@ Download a configset from ZooKeeper to the local filesystem.
 == Options
 
 *-d*, *--conf-dir*=_DIR_::
-  *(required)* Local directory with configs.
+  *(required)* Local directory for configs.
++
+The path to write the downloaded configuration set into. If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be the parent. An absolute path may be supplied as well.
++
+
++
+In either case, _pre-existing configurations at the destination will be overwritten_!
++
+
++
+**Examples:**
++
+* `-d directory_under_configsets`
++
+* `-d /path/to/configset/destination`
 
 *-n*, *--conf-name*=_<confName>_::
-<<<<<<< SOLR-17697-allow-description-with-long-markdown
-  Configset name in ZooKeeper.
+  *(required)* Configset name in ZooKeeper.
 +
 Name of the configuration set under the "/configs" ZooKeeper node.
 +
@@ -69,9 +82,6 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 
 +
 **Example:** `-n myconfig`
-=======
-  *(required)* Configset name in ZooKeeper.
->>>>>>> jira/SOLR-17697-picocli
 
 *-s*, *--solr-url*=_<solrUrl>_::
   Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
