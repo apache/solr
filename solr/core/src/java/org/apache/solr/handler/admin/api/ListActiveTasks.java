@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ListActiveTasksApi;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
+import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -29,12 +30,9 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
     this.solrQueryRequest = solrQueryRequest;
   }
 
-
-
   @Override
   @PermissionName(READ_PERM)
-  public ListActiveTaskResponse listActiveTasks(String taskUUID) throws Exception {
-
+  public ListActiveTaskResponse listAllActiveTasks() throws Exception {
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
     CoreContainer coreContainer = solrQueryRequest.getCoreContainer();
 
@@ -42,21 +40,28 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
       if (log.isDebugEnabled()) {
         log.debug("solr cloud");
       }
-      handleSolrCloudMode(response, taskUUID);
+      handleSolrCloudMode(response);
     } else {
       if (log.isDebugEnabled()) {
         log.debug("standalone solr");
       }
-      handleStandAloneMode(response, taskUUID);
+      handleStandAloneMode(response);
     }
 
     log.debug("something random");
 
     return response;
-
   }
 
-  private void handleStandAloneMode(ListActiveTaskResponse response, String taskUUID) {
+  @Override
+  @PermissionName(READ_PERM)
+  public TaskStatusResponse getTaskStatus(String taskUUID) throws Exception {
+    return null;
+  }
+
+
+
+  private void handleStandAloneMode(ListActiveTaskResponse response) {
     Iterator<Map.Entry<String, String>> iterator = solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
     Map<String, String> taskList = new HashMap<>();
@@ -68,7 +73,7 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
     response.taskList = taskList;
   }
 
-  private void handleSolrCloudMode(ListActiveTaskResponse response, String taskUUID) {
+  private void handleSolrCloudMode(ListActiveTaskResponse response) {
     Iterator<Map.Entry<String, String>> iterator = solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
     Map<String, String> taskList = new HashMap<>();
@@ -79,4 +84,6 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
 
     response.taskList = taskList;
   }
+
+
 }
