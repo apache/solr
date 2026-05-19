@@ -35,7 +35,6 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.ScorerSupplier;
@@ -191,10 +190,6 @@ public class TermsQParserPlugin extends QParserPlugin {
           mainQuery = method.makeFilter(fname, bytesRefs);
         }
 
-        String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
-        if (queryName != null && !queryName.isBlank()) {
-          return NamedMatches.wrapQuery(queryName, mainQuery);
-        }
         return mainQuery;
       }
     };

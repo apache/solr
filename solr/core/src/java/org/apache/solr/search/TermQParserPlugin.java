@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -65,10 +64,6 @@ public class TermQParserPlugin extends QParserPlugin {
           mainQuery = new TermQuery(new Term(fname, term.get()));
         }
 
-        String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
-        if (queryName != null && !queryName.isBlank()) {
-          return NamedMatches.wrapQuery(queryName, mainQuery);
-        }
         return mainQuery;
       }
     };

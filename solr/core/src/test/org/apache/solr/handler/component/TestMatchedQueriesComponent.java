@@ -67,9 +67,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         "/matched_queries_per_hit/2/[0]=='fantasy_cat'",
         "/matched_queries_per_hit/3/[0]=='fantasy_cat'",
         "/matched_queries_per_hit/4/[0]=='fantasy_cat'",
-        "/matched_queries_summary/fantasy_cat/count==4",
-        "/matched_queries_summary/fantasy_cat/docIds/[0]=='1'",
-        "/matched_queries_summary/fantasy_cat/docIds/[3]=='4'");
+        "/matched_queries_summary/fantasy_cat/[0]=='1'",
+        "/matched_queries_summary/fantasy_cat/[3]=='4'");
   }
 
   /** The short alias {@code mq=true} must work identically to {@code matched_queries=true}. */
@@ -83,7 +82,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
             "sort", "id asc",
             "rows", "10"),
         "/response/numFound==4",
-        "/matched_queries_summary/fantasy_cat/count==4");
+        "/matched_queries_summary/fantasy_cat/[0]=='1'");
   }
 
   /**
@@ -103,8 +102,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         "/response/numFound==7",
         "/matched_queries_per_hit/1/[0]=='fantasy_cat'",
         "/matched_queries_per_hit/5/[0]=='scifi_cat'",
-        "/matched_queries_summary/fantasy_cat/count==4",
-        "/matched_queries_summary/scifi_cat/count==3");
+        "/matched_queries_summary/fantasy_cat/[3]=='4'",
+        "/matched_queries_summary/scifi_cat/[2]=='7'");
   }
 
   /** An unnamed term query must produce no matched_queries output even when mq=true. */
@@ -135,10 +134,9 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
             "sort", "id asc",
             "rows", "10"),
         "/response/numFound==4",
-        "/matched_queries_summary/fantasy_cat/count==4",
-        "/matched_queries_summary/childrens_cat/count==2",
-        "/matched_queries_summary/childrens_cat/docIds/[0]=='2'",
-        "/matched_queries_summary/childrens_cat/docIds/[1]=='3'");
+        "/matched_queries_summary/fantasy_cat/[3]=='4'",
+        "/matched_queries_summary/childrens_cat/[0]=='2'",
+        "/matched_queries_summary/childrens_cat/[1]=='3'");
   }
 
   /**
@@ -157,9 +155,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         "/response/numFound==7",
         "/matched_queries_per_hit/1/[0]=='genre_all'",
         "/matched_queries_per_hit/5/[0]=='genre_all'",
-        "/matched_queries_summary/genre_all/count==7",
-        "/matched_queries_summary/genre_all/docIds/[0]=='1'",
-        "/matched_queries_summary/genre_all/docIds/[6]=='7'");
+        "/matched_queries_summary/genre_all/[0]=='1'",
+        "/matched_queries_summary/genre_all/[6]=='7'");
   }
 
   /**
@@ -181,10 +178,10 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
             "rows", "10"),
         "/response/numFound==7",
         // every doc carries all_books (outer name)
-        "/matched_queries_summary/all_books/count==7",
+        "/matched_queries_summary/all_books/[6]=='7'",
         // inner names split correctly
-        "/matched_queries_summary/fantasy_cat/count==4",
-        "/matched_queries_summary/scifi_cat/count==3",
+        "/matched_queries_summary/fantasy_cat/[3]=='4'",
+        "/matched_queries_summary/scifi_cat/[2]=='7'",
         // spot-check: doc 1 has both all_books and fantasy_cat
         "/matched_queries_per_hit/1/[0]=='all_books'",
         "/matched_queries_per_hit/1/[1]=='fantasy_cat'",
@@ -214,8 +211,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         "/matched_queries_per_hit/4/[0]=='fantasy_cat'",
         "/matched_queries_per_hit/5/[0]=='scifi_cat'",
         "/matched_queries_per_hit/7/[0]=='scifi_cat'",
-        "/matched_queries_summary/fantasy_cat/count==4",
-        "/matched_queries_summary/scifi_cat/count==3");
+        "/matched_queries_summary/fantasy_cat/[3]=='4'",
+        "/matched_queries_summary/scifi_cat/[2]=='7'");
   }
 
   /**
@@ -243,9 +240,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         // docs 1 and 4 matched only the unnamed MUST — no entry for them
         "!/matched_queries_per_hit/1==null",
         "!/matched_queries_per_hit/4==null",
-        "/matched_queries_summary/childrens_cat/count==2",
-        "/matched_queries_summary/childrens_cat/docIds/[0]=='2'",
-        "/matched_queries_summary/childrens_cat/docIds/[1]=='3'");
+        "/matched_queries_summary/childrens_cat/[0]=='2'",
+        "/matched_queries_summary/childrens_cat/[1]=='3'");
   }
 
   /**
@@ -262,7 +258,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
             "sort", "id asc",
             "rows", "10"),
         "/response/numFound==4",
-        "/matched_queries_summary/fanta_prefix/count==4",
+        "/matched_queries_summary/fanta_prefix/[3]=='4'",
         "/matched_queries_per_hit/1/[0]=='fanta_prefix'",
         "/matched_queries_per_hit/4/[0]=='fanta_prefix'");
   }
@@ -280,7 +276,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
             "sort", "id asc",
             "rows", "10"),
         "/response/numFound==4",
-        "/matched_queries_summary/fantasy_edismax/count==4",
+        "/matched_queries_summary/fantasy_edismax/[3]=='4'",
         "/matched_queries_per_hit/1/[0]=='fantasy_edismax'",
         "/matched_queries_per_hit/4/[0]=='fantasy_edismax'");
   }
@@ -298,7 +294,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
             "sort", "id asc",
             "rows", "10"),
         "/response/numFound==3",
-        "/matched_queries_summary/scifi_lucene/count==3",
+        "/matched_queries_summary/scifi_lucene/[2]=='7'",
         "/matched_queries_per_hit/5/[0]=='scifi_lucene'",
         "/matched_queries_per_hit/7/[0]=='scifi_lucene'");
   }

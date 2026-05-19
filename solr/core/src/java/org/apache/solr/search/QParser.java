@@ -26,6 +26,7 @@ import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -196,6 +197,11 @@ public abstract class QParser {
       query = parse();
 
       if (localParams != null) {
+        String name = localParams.get(QueryParsing.NAME);
+        if (name != null && !name.isBlank() && query != null) {
+          query = NamedMatches.wrapQuery(name, query);
+        }
+
         String cacheStr = localParams.get(CommonParams.CACHE);
         if (cacheStr != null) {
           if (CommonParams.FALSE.equals(cacheStr)) {

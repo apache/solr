@@ -40,7 +40,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
-import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.analysis.TokenizerChain;
@@ -211,10 +210,6 @@ public class ExtendedDismaxQParser extends QParser {
       topQuery = FunctionScoreQuery.boostByValue(topQuery, boosts.get(0).asDoubleValuesSource());
     }
 
-    String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
-    if (queryName != null && !queryName.isBlank()) {
-      return NamedMatches.wrapQuery(queryName, topQuery);
-    }
     return topQuery;
   }
 

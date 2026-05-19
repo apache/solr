@@ -96,6 +96,17 @@ If this parameter is not set, the usual rules about boolean queries still apply 
 Comma separated list of tags for excluding queries from parameters above.
 See explanation below.
 
+`_name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A label that tags every document matched by this query.
+When xref:matched-queries-component.adoc[] is active (`mq=true`), the label appears in `matched_queries_per_hit` and `matched_queries_summary` in the response.
+Inner sub-queries may carry their own `_name` labels independently.
+
 *Examples*
 
 [source,text]
@@ -435,6 +446,16 @@ The maximum number of terms to match.
 |===
 +
 `true` if transpositions should be treated as a primitive edit operation. If this is `false`, comparisons will implement the classic Levenshtein algorithm.
+
+`_name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A label that tags every document matched by this query.
+When xref:matched-queries-component.adoc[] is active (`mq=true`), the label appears in `matched_queries_per_hit` and `matched_queries_summary` in the response.
 
 *Examples*
 
@@ -1220,8 +1241,27 @@ Find all documents with the phrase "foo bar" where term "foo" has a payload grea
 `PrefixQParser` extends the `QParserPlugin` by creating a prefix query from the input value.
 Currently, no analysis or value transformation is done to create this prefix query.
 
-The parameter is `f`, the field.
-The string after the prefix declaration is treated as a wildcard query.
+*Parameters*
+
+`f`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The field on which to run the prefix query.
+The value that follows the local params declaration is treated as the prefix.
+
+`_name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A label that tags every document matched by this query.
+When xref:matched-queries-component.adoc[] is active (`mq=true`), the label appears in `matched_queries_per_hit` and `matched_queries_summary` in the response.
 
 Example:
 
@@ -1438,7 +1478,27 @@ Using the example configuration below, clients can optionally specify the custom
 
 `TermQParser` extends the `QParserPlugin` by creating a single term query from the input value equivalent to `readableToIndexed()`.
 This is useful for generating filter queries from the external human-readable terms returned by the faceting or terms components.
-The only parameter is `f`, for the field.
+
+*Parameters*
+
+`f`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The field on which to run the term query.
+
+`_name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A label that tags every document matched by this query.
+When xref:matched-queries-component.adoc[] is active (`mq=true`), the label appears in `matched_queries_per_hit` and `matched_queries_summary` in the response.
 
 Example:
 
@@ -1520,6 +1580,16 @@ But it is less performant on very large numbers of query terms.
 +
 `automaton` creates an `AutomatonQuery` representing the request with each term forming a union.
 Scales well with index size and moderately with the number of query terms.
+
+`_name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A label that tags every document matched by this query.
+When xref:matched-queries-component.adoc[] is active (`mq=true`), the label appears in `matched_queries_per_hit` and `matched_queries_summary` in the response.
 
 *Examples*
 

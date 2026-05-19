@@ -1,5 +1,6 @@
 package org.apache.solr.handler.component;
 
+import com.carrotsearch.hppc.IntObjectHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
@@ -18,6 +19,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -64,8 +66,7 @@ public class MatchedQueriesComponent extends SearchComponent {
     }
 
     SolrIndexSearcher searcher = rb.req.getSearcher();
-    // schema's unique key field — used to populate docIds in the summary
-    String idField = rb.req.getCore().getLatestSchema().getUniqueKeyField().getName();
+    String idField = searcher.getSchema().getUniqueKeyField().getName();
 
     // Build a Weight for matching only (no scoring needed)
     Query rewritten = searcher.rewrite(query);
@@ -75,17 +76,16 @@ public class MatchedQueriesComponent extends SearchComponent {
     Map<Integer, Set<String>> perDocNames = new LinkedHashMap<>();
     // Collect: per name → list of global doc ids (preserves document order)
     Map<String, List<Integer>> perNameDocs = new LinkedHashMap<>();
-    // Cache unique-key values: each matching doc's stored id field is read exactly once here
-    // and reused in both output loops below, avoiding redundant stored-field access.
-    Map<Integer, String> idCache = new LinkedHashMap<>();
+    IntObjectHashMap<String> idCache = new IntObjectHashMap<>(docList.size());
 
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
 
     DocIterator it = docList.iterator();
     while (it.hasNext()) {
       int globalDoc = it.nextDoc();
 
-      LeafReaderContext leaf = leafFor(leaves, globalDoc);
+      LeafReaderContext leaf = leaves.get(ReaderUtil.subIndex(globalDoc, leaves));
       int leafDoc = globalDoc - leaf.docBase;
 
       Matches matches = matchesWeight.matches(leaf, leafDoc);
@@ -102,7 +102,7 @@ public class MatchedQueriesComponent extends SearchComponent {
         names.add(nm.getName());
       }
       perDocNames.put(globalDoc, names);
-      idCache.put(globalDoc, readUniqueKeyValue(searcher, idField, globalDoc));
+      idCache.put(globalDoc, readUniqueKeyValue(docFetcher, idField, globalDoc));
       for (String name : names) {
         perNameDocs.computeIfAbsent(name, k -> new ArrayList<>()).add(globalDoc);
       }
@@ -121,17 +121,14 @@ public class MatchedQueriesComponent extends SearchComponent {
       perHit.add(idCache.get(e.getKey()), new ArrayList<>(e.getValue()));
     }
 
-    // Summary: name → {count, docIds}
+    // Summary: name → [id1, id2, ...]
     SimpleOrderedMap<Object> summary = new SimpleOrderedMap<>();
     for (Map.Entry<String, List<Integer>> e : perNameDocs.entrySet()) {
       List<String> ids = new ArrayList<>(e.getValue().size());
       for (Integer luceneId : e.getValue()) {
         ids.add(idCache.get(luceneId));
       }
-      SimpleOrderedMap<Object> entry = new SimpleOrderedMap<>();
-      entry.add("count", ids.size());
-      entry.add("docIds", ids);
-      summary.add(e.getKey(), entry);
+      summary.add(e.getKey(), ids);
     }
 
     NamedList<Object> response = rb.rsp.getValues();
@@ -139,28 +136,9 @@ public class MatchedQueriesComponent extends SearchComponent {
     response.add("matched_queries_summary", summary);
   }
 
-  private LeafReaderContext leafFor(List<LeafReaderContext> leaves, int globalDoc) {
-    // Standard binary search for the leaf owning a global docId
-    int lo = 0, hi = leaves.size() - 1;
-    while (lo <= hi) {
-      int mid = (lo + hi) >>> 1;
-      LeafReaderContext c = leaves.get(mid);
-      int max = c.docBase + c.reader().maxDoc();
-      if (globalDoc < c.docBase) {
-        hi = mid - 1;
-      } else if (globalDoc >= max) {
-        lo = mid + 1;
-      } else {
-        return c;
-      }
-    }
-    throw new IllegalStateException("No leaf for global doc " + globalDoc);
-  }
-
-  private String readUniqueKeyValue(IndexSearcher searcher, String idField, int globalDoc)
+  private String readUniqueKeyValue(SolrDocumentFetcher docFetcher, String idField, int globalDoc)
       throws IOException {
-    var doc = searcher.storedFields().document(globalDoc, Set.of(idField));
-    return doc.get(idField);
+    return docFetcher.doc(globalDoc, Set.of(idField)).get(idField);
   }
 
   private boolean isEnabled(ResponseBuilder rb) {

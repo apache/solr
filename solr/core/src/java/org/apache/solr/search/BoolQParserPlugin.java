@@ -21,7 +21,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
@@ -43,13 +42,7 @@ public class BoolQParserPlugin extends QParserPlugin {
     return new FiltersQParser(qstr, localParams, params, req) {
       @Override
       public Query parse() throws SyntaxError {
-        String queryName = localParams != null ? localParams.get(QueryParsing.NAME) : null;
-        Query mainQuery = parseImpl();
-
-        if (queryName != null && !queryName.isBlank()) {
-          return NamedMatches.wrapQuery(queryName, mainQuery);
-        }
-        return mainQuery;
+        return parseImpl();
       }
 
       @Override
