@@ -68,16 +68,17 @@ public class ConfigSetDownloadTool extends ToolBase {
 
   @picocli.CommandLine.Option(
       names = {"-d", "--conf-dir"},
-      description = {
-        "Local directory for configs.",
-        "The path to write the downloaded configuration set into. If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be the parent. An absolute path may be supplied as well.",
-        "",
-        "In either case, _pre-existing configurations at the destination will be overwritten_!",
-        "",
-        "**Examples:**",
-        "* `-d directory_under_configsets`",
-        "* `-d /path/to/configset/destination`"
-      },
+      description =
+          """
+        Local directory for configs.
+        The path to write the downloaded configuration set into. If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be the parent. An absolute path may be supplied as well.
+
+        In either case, _pre-existing configurations at the destination will be overwritten_!
+
+        **Examples:**
+        * `-d directory_under_configsets`
+        * `-d /path/to/configset/destination`
+        """,
       required = true,
       paramLabel = "DIR")
   public String confDir;

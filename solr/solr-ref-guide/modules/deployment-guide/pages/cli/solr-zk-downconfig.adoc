@@ -65,6 +65,8 @@ In either case, _pre-existing configurations at the destination will be overwrit
 * `-d directory_under_configsets`
 +
 * `-d /path/to/configset/destination`
++
+
 
 *-n*, *--conf-name*=_<confName>_::
   *(required)* Configset name in ZooKeeper.

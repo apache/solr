@@ -65,6 +65,8 @@ If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked f
 * `-d directory_under_configsets`
 +
 * `-d /path/to/configset/source`
++
+
 
 *-n*, *--conf-name*=_<confName>_::
   *(required)* Configset name in ZooKeeper.

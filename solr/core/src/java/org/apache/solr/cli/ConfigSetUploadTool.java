@@ -70,16 +70,17 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @picocli.CommandLine.Option(
       names = {"-d", "--conf-dir"},
-      description = {
-        "Local directory for configs.",
-        "The local directory of the configuration set to upload. It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.",
-        "",
-        "If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked for this name. An absolute path may be supplied instead.",
-        "",
-        "**Examples:**",
-        "* `-d directory_under_configsets`",
-        "* `-d /path/to/configset/source`"
-      },
+      description =
+          """
+          Local directory for configs.
+          The local directory of the configuration set to upload. It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.
+
+          If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked for this name. An absolute path may be supplied instead.
+
+          **Examples:**
+          * `-d directory_under_configsets`
+          * `-d /path/to/configset/source`
+          """,
       required = true,
       paramLabel = "DIR")
   public String confDir;
