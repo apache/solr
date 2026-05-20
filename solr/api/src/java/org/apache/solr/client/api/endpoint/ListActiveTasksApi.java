@@ -10,16 +10,16 @@ import org.apache.solr.client.api.util.StoreApiParameters;
 
 import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
-@Path(INDEX_PATH_PREFIX + "/tasks/listjalaz")
+@Path(INDEX_PATH_PREFIX + "/tasks/list")
 public interface ListActiveTasksApi {
 
-  // Handles: .../tasks/listjalaz (Lists all)
+  // Handles: .../tasks/list (Lists all)
   @GET
   @StoreApiParameters
   @Operation(summary = "Lists all the currently running tasks", tags = {"tasks"})
   ListActiveTaskResponse listAllActiveTasks() throws Exception;
 
-  // Handles: .../tasks/listjalaz/xyz (Lists specific)
+  // Handles: .../tasks/list/xyz (Lists specific)
   @GET
   @Path("/{taskUUID}")
   @StoreApiParameters
