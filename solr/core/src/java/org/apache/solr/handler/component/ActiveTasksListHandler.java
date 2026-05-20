@@ -33,11 +33,10 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
-
 /**
- * Handles request for listing all active cancellable tasks
- * All active tasks logic lives in the v2 {@link ListActiveTasks}; this handler is a thin v1 bridge
- * that extracts request parameters and delegates.
+ * Handles request for listing all active cancellable tasks All active tasks logic lives in the v2
+ * {@link ListActiveTasks}; this handler is a thin v1 bridge that extracts request parameters and
+ * delegates.
  */
 public class ActiveTasksListHandler extends TaskManagementHandler {
   // This can be a parent level member but we keep it here to allow future handlers to have
@@ -48,7 +47,8 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
     String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
 
     if (taskStatusCheckUUID != null) {
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new ListActiveTasks(req).getTaskStatus(taskStatusCheckUUID));
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+          rsp, new ListActiveTasks(req).getTaskStatus(taskStatusCheckUUID));
     } else {
       Map<String, String> mapTasks = new HashMap<>();
       List<ActiveTaskDetails> taskList = new ListActiveTasks(req).listAllActiveTasks().taskList;
@@ -100,5 +100,4 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(ListActiveTasks.class);
   }
-
 }

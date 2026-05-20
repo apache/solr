@@ -4,6 +4,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public class ListActiveTaskResponse extends SolrJerseyResponse {
-  @JsonProperty
-  public List<ActiveTaskDetails> taskList;
+  @JsonProperty public List<ActiveTaskDetails> taskList;
 }

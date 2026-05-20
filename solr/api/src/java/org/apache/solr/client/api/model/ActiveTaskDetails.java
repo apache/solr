@@ -13,5 +13,4 @@ public class ActiveTaskDetails {
 
   @JsonProperty public String taskUUID;
   @JsonProperty public String taskQuery;
-
 }
