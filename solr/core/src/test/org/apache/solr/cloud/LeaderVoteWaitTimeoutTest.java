@@ -17,9 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.HTTP;
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -39,7 +36,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SocketProxy;
@@ -79,10 +75,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-    configureCluster(NODE_COUNT)
-        .withProperty(ZkStateReader.URL_SCHEME, System.getProperty(URL_SCHEME, HTTP))
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(NODE_COUNT).addConfig("conf", configset("cloud-minimal")).configure();
 
     // Add proxies
     proxies = new HashMap<>(cluster.getJettySolrRunners().size());

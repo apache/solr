@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.Utils.toJSON;
 
@@ -26,7 +24,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -145,7 +142,7 @@ public class CommandOperation {
         if (l.isEmpty()) return def;
         return l;
       } else {
-        return singletonList(String.valueOf(v));
+        return List.of(String.valueOf(v));
       }
     }
   }
@@ -228,7 +225,7 @@ public class CommandOperation {
             if (value instanceof List && !singletonCommands.contains(key)) {
               vals = (List<?>) value;
             } else {
-              vals = Collections.singletonList(value);
+              vals = List.of(value);
             }
             for (Object val : vals) {
               operations.add(new CommandOperation(String.valueOf(key), val));
@@ -315,7 +312,7 @@ public class CommandOperation {
 
   @Override
   public String toString() {
-    return new String(toJSON(singletonMap(name, commandData)), StandardCharsets.UTF_8);
+    return new String(toJSON(Map.of(name, commandData)), StandardCharsets.UTF_8);
   }
 
   public static List<CommandOperation> readCommands(

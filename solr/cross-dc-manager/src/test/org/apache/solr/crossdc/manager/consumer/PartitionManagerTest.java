@@ -25,7 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -125,8 +125,7 @@ public class PartitionManagerTest {
 
     // Verify that the consumer.commitSync() method was called with the correct parameters
     verify(consumer, times(1))
-        .commitSync(
-            Collections.singletonMap(partition, new OffsetAndMetadata(workUnit.nextOffset)));
+        .commitSync(Map.of(partition, new OffsetAndMetadata(workUnit.nextOffset)));
 
     // Verify that the partitionQueue is empty after processing
     assertTrue(partitionWork.partitionQueue.isEmpty());
@@ -178,10 +177,8 @@ public class PartitionManagerTest {
 
     // Verify that the updateOffset method was called for each partition
     verify(mockConsumer, times(1))
-        .commitSync(
-            Collections.singletonMap(partition1, new OffsetAndMetadata(workUnit1.nextOffset)));
+        .commitSync(Map.of(partition1, new OffsetAndMetadata(workUnit1.nextOffset)));
     verify(mockConsumer, times(1))
-        .commitSync(
-            Collections.singletonMap(partition2, new OffsetAndMetadata(workUnit2.nextOffset)));
+        .commitSync(Map.of(partition2, new OffsetAndMetadata(workUnit2.nextOffset)));
   }
 }

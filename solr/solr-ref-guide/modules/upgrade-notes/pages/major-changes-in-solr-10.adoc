@@ -36,12 +36,35 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.1
 
+For SSL (https), it's no longer necessary to set the "urlScheme" cluster property since the `SOLR_SSL_ENABLED` env var (or `solr.ssl.enabled` sys-prop) suffices.
+These are now honored by CloudSolrClient, as well as scheme detection from the connection string / hosts.
+The "urlScheme" cluster property and httpShardHandlerFactory configuration is likely to be deprecated; feedback welcome.
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
 Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer should take care to review any custom `RuleBasedAuthorizationPlugin` permissions and ensure that v2 API paths are adequately secured.
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
+
+=== JWT Authentication
+
+The `blockUnknown` setting in the JWT Authentication plugin now defaults to `true`, meaning requests without a valid JWT token are blocked by default.
+In Solr 10.0, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
+Users upgrading from 10.0 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
+
+=== Security
+
+PKI Authentication v1 support has been removed.
+Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node communication.
+
+Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
+The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
+
+=== SolrJ
+
+HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
+Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
 
 == Solr 10.0
 
@@ -150,13 +173,29 @@ A new experimental Admin UI is available alongside the existing Admin UI (SOLR-1
 It can be accessed at the URL path `/solr/ui/`.
 This UI is still in active development and provided as a preview; the existing Admin UI remains the default.
 
-=== Vector Search Enhancements
+=== Vector Search
+
+==== Enhancements
 
 * The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
 
 * Scalar and binary quantized dense vectors are now supported for `DenseVectorField` (SOLR-17780, SOLR-17812). Quantization reduces memory consumption and can improve search performance at some cost to accuracy. See the reference guide for configuration details.
 
 * GPU-accelerated approximate nearest neighbor search is now available via the cuVS-Lucene pluggable codec (SOLR-17892). This allows NVIDIA GPU hardware to be used for vector search workloads.
+
+* Early termination strategy for KNN queries is now supported (SOLR-17814). `PatienceKnnVectorQuery` is a version of knn vector query that exits early the graph when HNSW queue saturates over a saturationThreshold for more than patience times.
+
+* Lexically accelerated vector search is now supported (SOLR-17813). `SeededKnnVectorQuery` is a version of knn vector query that introduces a “seed” query, allowing the search to start from a predefined subset of documents and guide the vector similarity computation.
+
+* The `filteredSearchThreshold` parameter is now available to regulate ACORN-based filtering in vector search (SOLR-17815). This approach addresses the performance limitations typically associated with pre-filtering and post-filtering strategies by modifying both the construction and search phases of the HNSW graph.
+
+* Fixed incorrect behavior of `TextToVectorUpdateProcessor` during partial updates (SOLR-17843).
+
+==== Renaming of HNSW Parameters
+Attention:
+
+* The `llm` module has been renamed to `language-models`.
+* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
 
 === Deprecation Code Removals
 
@@ -293,11 +332,9 @@ Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHie
 </fieldType>
 ----
 
-=== Renaming in Vector Search
-Attention:
+=== Learning To Rank (LTR)
 
-* The `llm` module has been renamed to `language-models`.
-* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
+A new feature vector cache was added that is used not only for feature logging but also for the reranking phase (SOLR-16667).
 
 == Solr 10.1
 
@@ -318,10 +355,21 @@ For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_ex
 *Workaround for OTLP consumers depending on the old names:*
 Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
 
-==== Metric `solr_core_indexsearcher_open_warmup_time` removed
+==== Metric that are Removed or Changed
 
-The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`.
-Update your dashboards to use `solr_core_indexsearcher_warmup_time` instead.
+* The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`
+* The metric `solr.zk.cumulative.children_fetched` has been removed
+* The metric `solr.zk.child.fetches` is now `solr.zk.get_children.ops`
+* All CrossDC consumer metrics have been renamed: `crossdc.consumer.*` → `solr.crossdc.consumer.*`
+  (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
+* All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
+  (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
+
+Update your dashboards or other metrics consumers accordingly.
+
+==== Overseer Status Metrics Removed
+
+The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute via OpenTelemetry.
 
 === Lucene Codec Change
 
@@ -331,6 +379,13 @@ Older segments will continue to be readable.
 
 WARNING: After upgrading to Solr 10.1, downgrading to an earlier Solr 10.0.x version may fail because the older version does not include the `Lucene104` codec needed to read the newly written segments.
 If you require the ability to roll back, back up your indexes before upgrading.
+
+=== API Changes
+
+Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
+Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
+Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
+However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
 
 === Docker
 
@@ -343,3 +398,12 @@ In large clusters, a single query can fan out to hundreds of sub-requests, quick
 This limit is now configurable via the system property `solr.solrj.http.jetty.async_requests.max`.
 
 Current permit utilization can be monitored via the `solr_client_request_async_permits` metric (see xref:deployment-guide:metrics-reporting.adoc#http-client-registry[HTTP Client Registry]).
+
+=== Language Detection
+
+The `langid` module's `LangDetectLanguageIdentifierUpdateProcessor` now uses `io.github.azagniotov:language-detection` instead of the abandoned `com.cybozu.labs:langdetect` (last released in 2012).
+The new library supports a broader set of languages and uses a different statistical model, so detection results may differ from previous versions — particularly for short texts, texts that mix Latin characters with other scripts, or documents containing CJK characters alongside Latin-script content.
+
+=== Query Changes
+
+* Combined Query Feature is now available, enabling the execution of multiple queries of multiple kinds across multiple shards (SOLR-17319). Introduced `CombinedQuerySearchHandler` for hybrid search, using reciprocal rank fusion (RRF) by default and supporting custom ranking algorithms via plugins.

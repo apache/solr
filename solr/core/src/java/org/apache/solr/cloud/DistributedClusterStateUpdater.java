@@ -17,14 +17,12 @@
 
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.overseer.ZkStateWriter.NO_OP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -547,7 +545,7 @@ public class DistributedClusterStateUpdater {
       } else {
         // Collection update or creation
         DocCollection collection = updatedState.getCollection(updater.getCollectionName());
-        byte[] stateJson = Utils.toJSON(singletonMap(updater.getCollectionName(), collection));
+        byte[] stateJson = Utils.toJSON(Map.of(updater.getCollectionName(), collection));
 
         if (updater.isCollectionCreation()) {
           // The state.json file does not exist yet (more precisely it is assumed not to exist)
@@ -939,10 +937,7 @@ public class DistributedClusterStateUpdater {
             (zkcmd != ZkStateWriter.NO_OP)
                 ? clusterState.copyWith(zkcmd.name, zkcmd.collection)
                 : null;
-        replicaOpsList =
-            (zkcmd.ops != null && zkcmd.ops.get() != null)
-                ? Collections.singletonList(zkcmd.ops)
-                : null;
+        replicaOpsList = (zkcmd.ops != null && zkcmd.ops.get() != null) ? List.of(zkcmd.ops) : null;
       } else {
         computedState = null;
         replicaOpsList = null;

@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,11 +89,8 @@ public class SliceMutator {
     }
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
     String baseUrl =
-        Utils.getBaseUrlForNodeName(
-            nodeName,
-            cloudManager
-                .getClusterStateProvider()
-                .getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
+        URLUtil.getBaseUrlForNodeName(
+            nodeName, cloudManager.getClusterStateProvider().getUrlScheme());
 
     Map<String, Object> replicaProps =
         Utils.makeMap(

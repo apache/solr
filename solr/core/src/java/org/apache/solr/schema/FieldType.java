@@ -348,7 +348,7 @@ public abstract class FieldType extends FieldProperties {
       throw new UnsupportedOperationException(
           "This field type does not support doc values: " + this);
     }
-    return f == null ? List.of() : Collections.singletonList(f);
+    return f == null ? List.of() : List.of(f);
   }
 
   /**

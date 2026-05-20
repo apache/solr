@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -47,7 +46,7 @@ public interface PlacementPlugin {
       PlacementRequest placementRequest, PlacementContext placementContext)
       throws PlacementException, InterruptedException {
     List<PlacementPlan> placementPlans =
-        computePlacements(Collections.singletonList(placementRequest), placementContext);
+        computePlacements(List.of(placementRequest), placementContext);
     if (placementPlans == null || placementPlans.isEmpty()) {
       return null;
     } else {
