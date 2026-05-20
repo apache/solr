@@ -1,9 +1,9 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
+import java.util.List;
 
 public class ListActiveTaskResponse extends SolrJerseyResponse {
   @JsonProperty
-  public Map<String, String> taskList;
+  public List<ActiveTaskDetails> taskList;
 }

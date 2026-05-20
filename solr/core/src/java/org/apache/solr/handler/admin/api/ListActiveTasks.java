@@ -3,24 +3,20 @@ package org.apache.solr.handler.admin.api;
 import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ListActiveTasksApi;
+import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
 public class ListActiveTasks extends JerseyResource implements ListActiveTasksApi {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrQueryRequest solrQueryRequest;
 
@@ -34,19 +30,8 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
   @PermissionName(READ_PERM)
   public ListActiveTaskResponse listAllActiveTasks() throws Exception {
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
-    CoreContainer coreContainer = solrQueryRequest.getCoreContainer();
 
-    if (coreContainer.isZooKeeperAware()) {
-      if (log.isDebugEnabled()) {
-        log.debug("solr cloud");
-      }
-      response.taskList = handleSolrCloudMode();
-    } else {
-      if (log.isDebugEnabled()) {
-        log.debug("standalone solr");
-      }
-      response.taskList = handleStandAloneMode();
-    }
+    response.taskList = extractActiveTaskLists();
 
     return response;
   }
@@ -55,48 +40,22 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
   @PermissionName(READ_PERM)
   public TaskStatusResponse getTaskStatus(String taskUUID) throws Exception {
     final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
-    CoreContainer coreContainer = solrQueryRequest.getCoreContainer();
 
-    if (coreContainer.isZooKeeperAware()) {
-      if (log.isDebugEnabled()) {
-        log.debug("solr cloud");
-      }
-      response.taskStatus = solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskUUID);
-    } else {
-      if (log.isDebugEnabled()) {
-        log.debug("standalone solr");
-      }
-      response.taskStatus = solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskUUID);
-    }
+    response.taskStatus = solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskUUID);
 
     return response;
   }
 
-
-
-  private Map<String, String> handleStandAloneMode() {
+  private List<ActiveTaskDetails> extractActiveTaskLists() {
     Iterator<Map.Entry<String, String>> iterator = solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
-    Map<String, String> taskList = new HashMap<>();
+    List<ActiveTaskDetails> activeTaskDetails = new ArrayList<>();
     while (iterator.hasNext()) {
       Map.Entry<String, String> entry = iterator.next();
-      taskList.put(entry.getKey(), entry.getValue());
+      activeTaskDetails.add(new ActiveTaskDetails(entry.getKey(), entry.getValue()));
     }
 
-    return taskList;
+    return activeTaskDetails;
   }
-
-  private Map<String, String> handleSolrCloudMode() {
-    Iterator<Map.Entry<String, String>> iterator = solrQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
-
-    Map<String, String> taskList = new HashMap<>();
-    while (iterator.hasNext()) {
-      Map.Entry<String, String> entry = iterator.next();
-      taskList.put(entry.getKey(), entry.getValue());
-    }
-
-    return taskList;
-  }
-
 
 }
