@@ -19,9 +19,12 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -48,14 +51,22 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
     if (taskStatusCheckUUID != null) {
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new ListActiveTasks(req).getTaskStatus(taskStatusCheckUUID));
     } else {
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new ListActiveTasks(req).listAllActiveTasks());
+      Map<String, String> mapTasks = new HashMap<>();
+      List<ActiveTaskDetails> taskList = new ListActiveTasks(req).listAllActiveTasks().taskList;
+      if (taskList != null) {
+        for (ActiveTaskDetails task : taskList) {
+          mapTasks.put(task.taskUUID, task.taskQuery);
+        }
+      }
+      rsp.add("taskList", mapTasks);
     }
-
   }
+
+  // ////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
   public String getDescription() {
-    return "activetaskslist";
+    return "Active Tasks List";
   }
 
   @Override
@@ -73,7 +84,6 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
     if (path.startsWith("/tasks/list")) {
       return this;
     }
-
     return null;
   }
 
