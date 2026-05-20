@@ -47,10 +47,12 @@ jobs:
             echo "::error::Metadata file missing from artifact"; exit 1
           fi
 
-          # Parse with grep/cut rather than source to avoid executing file content as shell
-          PR_NUMBER=$(grep '^PR_NUMBER=' "$META_FILE" | cut -d= -f2-)
-          HEAD_REF=$(grep  '^HEAD_REF='  "$META_FILE" | cut -d= -f2-)
-          HEAD_REPO=$(grep '^HEAD_REPO=' "$META_FILE" | cut -d= -f2-)
+          # Parse with grep/cut rather than source to avoid executing file content as shell.
+          # Use || true so a missing key doesn't abort under set -euo pipefail before the
+          # explicit emptiness check below can emit a meaningful error message.
+          PR_NUMBER=$(grep '^PR_NUMBER=' "$META_FILE" | cut -d= -f2- || true)
+          HEAD_REF=$(grep  '^HEAD_REF='  "$META_FILE" | cut -d= -f2- || true)
+          HEAD_REPO=$(grep '^HEAD_REPO=' "$META_FILE" | cut -d= -f2- || true)
 
           if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_REF" ] || [ -z "$HEAD_REPO" ]; then
             echo "::error::Missing required metadata fields (PR_NUMBER, HEAD_REF, or HEAD_REPO)"; exit 1
@@ -66,10 +68,11 @@ jobs:
             echo "::error::PR_NUMBER is not a valid positive integer: '$PR_NUMBER'"; exit 1
           fi
 
-          # Validate HEAD_REF looks like a safe branch name (prevents path traversal).
-          # Includes @ because Renovate uses it in branch names (e.g. renovate/node@lts).
-          if ! [[ "$HEAD_REF" =~ ^[a-zA-Z0-9._/@:-]+$ ]]; then
-            echo "::error::HEAD_REF contains unexpected characters: '$HEAD_REF'"; exit 1
+          # Validate HEAD_REF using Git's own branch-name rules. This rejects edge cases
+          # such as '..', '@{', trailing '.lock', and ':' (dangerous in push refspecs)
+          # while still accepting valid Renovate branch names like renovate/node@lts.
+          if ! git check-ref-format --branch "$HEAD_REF" > /dev/null 2>&1; then
+            echo "::error::HEAD_REF is not a valid Git branch name: '$HEAD_REF'"; exit 1
           fi
 
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
@@ -87,6 +90,7 @@ jobs:
           # Store credentials so the token never appears in the command line or process list
           git config --global credential.helper store
           printf 'https://x-access-token:%s@github.com\n' "$SOLRBOT_TOKEN" > ~/.git-credentials
+          chmod 600 ~/.git-credentials
 
           git clone --depth=1 --branch "$HEAD_REF" \
             "https://github.com/${HEAD_REPO}.git" \
@@ -153,3 +157,6 @@ jobs:
 
           # Credential store (configured in Clone step) provides authentication
           git push origin "HEAD:refs/heads/${HEAD_REF}"
+
+          # Remove credentials from disk now that the push is complete
+          rm -f ~/.git-credentials
