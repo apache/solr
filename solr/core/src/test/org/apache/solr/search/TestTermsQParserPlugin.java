@@ -193,7 +193,7 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testNamedTermsQuery() throws Exception {
     Query actual =
-        QParser.getParser("{!terms _name=genre_fiction f=cat_s}fantasy,scifi", req()).getQuery();
+        QParser.getParser("{!terms name=genre_fiction f=cat_s}fantasy,scifi", req()).getQuery();
     assertEquals(
         NamedMatches.wrapQuery(
             "genre_fiction",

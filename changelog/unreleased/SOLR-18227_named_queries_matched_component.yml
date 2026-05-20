@@ -1,4 +1,4 @@
-title: "SOLR-18227: Add `_name` local parameter support and `MatchedQueriesComponent` to identify which named sub-queries matched each document."
+title: "Add `name` local parameter support and `MatchedQueriesComponent` to identify which named sub-queries matched each document."
 type: added
 authors:
   - name: Dmitrii Tikhonov

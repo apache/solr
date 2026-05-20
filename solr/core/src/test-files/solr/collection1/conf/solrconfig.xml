@@ -383,14 +383,6 @@
 
   </requestHandler>
 
-  <searchComponent name="matchedQueriesComponent" class="org.apache.solr.handler.component.MatchedQueriesComponent"/>
-
-  <requestHandler name="/matched-queries" class="org.apache.solr.handler.component.SearchHandler">
-    <arr name="last-components">
-      <str>matchedQueriesComponent</str>
-    </arr>
-  </requestHandler>
-
   <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
 
   <requestHandler name="/tvrh" class="org.apache.solr.handler.component.SearchHandler">
@@ -527,7 +519,7 @@
   </restManager>
 
   <!-- warning: not a best practice; requests generally ought to be explicit to thus not require this -->
-  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/matched-queries,/search-facet-def,/search-facet-invariants">
+  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

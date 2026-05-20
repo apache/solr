@@ -213,7 +213,7 @@ bq={!func}div(sales_rank,ms(NOW,release_date))
 bq={!lucene}( {!func v='div(1,sum(1,price))'} )^1.5
 ----
 
-=== _name Parameter
+=== name Parameter
 
 When set, every document matched by this query is tagged with the given label.
 Activate xref:matched-queries-component.adoc[] (`mq=true`) to see the labels in the response.
@@ -222,7 +222,7 @@ Example:
 
 [source,text]
 ----
-{!dismax _name=my_query qf=title}solr
+{!dismax name=my_query qf=title}solr
 ----
 
 == Examples of Queries Submitted to the DisMax Query Parser

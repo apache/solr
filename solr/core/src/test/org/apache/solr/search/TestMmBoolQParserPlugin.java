@@ -154,7 +154,7 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testNamedBoolQuery() throws Exception {
-    Query actual = parseQuery(req("q", "{!bool _name=my_bool must=name:foo should=name:bar}"));
+    Query actual = parseQuery(req("q", "{!bool name=my_bool must=name:foo should=name:bar}"));
 
     BooleanQuery inner =
         new BooleanQuery.Builder()
@@ -171,7 +171,7 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
         parseQuery(
             req(
                 "q",
-                "{!bool _name=at_least_two should=name:foo should=name:bar should=name:qux mm=2}"));
+                "{!bool name=at_least_two should=name:foo should=name:bar should=name:qux mm=2}"));
 
     BooleanQuery inner =
         new BooleanQuery.Builder()
@@ -189,7 +189,7 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
     Query actual =
         parseQuery(
             req(
-                "q", "{!bool _name=my_ref must=$ref excludeTags=t2}",
+                "q", "{!bool name=my_ref must=$ref excludeTags=t2}",
                 "ref", "{!tag=t1}foo",
                 "ref", "{!tag=t2}bar",
                 "df", "name"));
@@ -206,5 +206,26 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
         SolrException.class,
         NumberFormatException.class,
         () -> parseQuery(req("q", "{!bool should=name:foo mm=2.9}")));
+  }
+
+  /** cache and cost local params must survive alongside name: WrappedQuery wraps NamedMatches. */
+  @Test
+  public void testNameWithCacheAndCostPreserved() throws Exception {
+    Query actual = parseQuery(req("q", "{!bool name=my_bool cache=false cost=200 must=name:foo}"));
+
+    assertTrue("expected WrappedQuery", actual instanceof WrappedQuery);
+    WrappedQuery wrapped = (WrappedQuery) actual;
+    assertFalse("cache=false must be preserved", wrapped.getCache());
+    assertEquals("cost=200 must be preserved", 200, wrapped.getCost());
+
+    BooleanQuery inner =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.MUST)
+            .setMinimumNumberShouldMatch(0)
+            .build();
+    assertEquals(
+        "WrappedQuery must wrap NamedMatches",
+        NamedMatches.wrapQuery("my_bool", inner),
+        wrapped.getWrappedQuery());
   }
 }

@@ -132,18 +132,6 @@ The default is to allow all fields and no embedded Solr queries, equivalent to `
 Per-field overrides of the `qf` parameter may be specified to provide 1-to-many aliasing from field names specified in the query string, to field names used in the underlying query.
 By default, no aliasing is used and field names specified in the query string are treated as literal field names in the index.
 
-== `_name` Parameter
-
-When set, every document matched by this query is tagged with the given label.
-Activate xref:matched-queries-component.adoc[] (`mq=true`) to see the labels in the response.
-
-Example:
-
-[source,text]
-----
-{!edismax _name=my_query qf=title}solr
-----
-
 == Examples of eDisMax Queries
 
 All of the sample URLs in this section assume you are running Solr's "techproducts" example:

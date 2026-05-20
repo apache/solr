@@ -96,7 +96,7 @@ If this parameter is not set, the usual rules about boolean queries still apply 
 Comma separated list of tags for excluding queries from parameters above.
 See explanation below.
 
-`_name`::
+`name`::
 +
 [%autowidth,frame=none]
 |===
@@ -105,7 +105,7 @@ See explanation below.
 +
 A label that tags every document matched by this query.
 When xref:matched-queries-component.adoc[] is active (`mq=true`), the label appears in `matched_queries_per_hit` and `matched_queries_summary` in the response.
-Inner sub-queries may carry their own `_name` labels independently.
+Inner sub-queries may carry their own `name` labels independently.
 
 *Examples*
 
@@ -447,7 +447,7 @@ The maximum number of terms to match.
 +
 `true` if transpositions should be treated as a primitive edit operation. If this is `false`, comparisons will implement the classic Levenshtein algorithm.
 
-`_name`::
+`name`::
 +
 [%autowidth,frame=none]
 |===
@@ -1253,7 +1253,7 @@ Currently, no analysis or value transformation is done to create this prefix que
 The field on which to run the prefix query.
 The value that follows the local params declaration is treated as the prefix.
 
-`_name`::
+`name`::
 +
 [%autowidth,frame=none]
 |===
@@ -1490,7 +1490,7 @@ This is useful for generating filter queries from the external human-readable te
 +
 The field on which to run the term query.
 
-`_name`::
+`name`::
 +
 [%autowidth,frame=none]
 |===
@@ -1581,7 +1581,7 @@ But it is less performant on very large numbers of query terms.
 `automaton` creates an `AutomatonQuery` representing the request with each term forming a union.
 Scales well with index size and moderately with the number of query terms.
 
-`_name`::
+`name`::
 +
 [%autowidth,frame=none]
 |===

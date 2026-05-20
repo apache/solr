@@ -141,7 +141,7 @@ public class TestTermQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testNamedTermQuery() throws Exception {
-    Query actual = QParser.getParser("{!term _name=title_left f=t_title}left", req()).getQuery();
+    Query actual = QParser.getParser("{!term name=title_left f=t_title}left", req()).getQuery();
     assertEquals(
         NamedMatches.wrapQuery("title_left", new TermQuery(new Term("t_title", "left"))), actual);
   }

@@ -26,7 +26,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    initCore("solrconfig-matched-queries.xml", "schema.xml");
 
     // 4 fantasy books (ids 1–4), 2 of which are also childrens (ids 2–3)
     assertU(adoc("id", "1", "cat_s", "fantasy", "author_s1", "Lev Grossman"));
@@ -47,7 +47,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   @Test
   public void testNotEnabledByDefault() throws Exception {
     assertJQ(
-        req("qt", HANDLER, "q", "{!term _name=fantasy_cat f=cat_s}fantasy", "sort", "id asc"),
+        req("qt", HANDLER, "q", "{!term name=fantasy_cat f=cat_s}fantasy", "sort", "id asc"),
         "!/matched_queries_per_hit==null",
         "!/matched_queries_summary==null");
   }
@@ -58,7 +58,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!term _name=fantasy_cat f=cat_s}fantasy",
+            "q", "{!term name=fantasy_cat f=cat_s}fantasy",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -77,7 +77,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!term _name=fantasy_cat f=cat_s}fantasy",
+            "q", "{!term name=fantasy_cat f=cat_s}fantasy",
             "mq", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -95,7 +95,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         req(
             "qt", HANDLER,
             "q",
-                "({!term _name=fantasy_cat f=cat_s}fantasy) OR ({!term _name=scifi_cat f=cat_s}scifi)",
+                "({!term name=fantasy_cat f=cat_s}fantasy) OR ({!term name=scifi_cat f=cat_s}scifi)",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -129,7 +129,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         req(
             "qt", HANDLER,
             "q",
-                "({!term _name=fantasy_cat f=cat_s}fantasy) OR ({!term _name=childrens_cat f=cat_s}childrens)",
+                "({!term name=fantasy_cat f=cat_s}fantasy) OR ({!term name=childrens_cat f=cat_s}childrens)",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -148,7 +148,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!terms _name=genre_all f=cat_s}fantasy,scifi",
+            "q", "{!terms name=genre_all f=cat_s}fantasy,scifi",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -160,7 +160,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
   }
 
   /**
-   * Outer {@code {!bool _name=...}} plus inner named {@code {!term _name=...}} SHOULD clauses: the
+   * Outer {@code {!bool name=...}} plus inner named {@code {!term name=...}} SHOULD clauses: the
    * outer name appears on every hit; inner names appear only on the docs whose specific clause
    * fired. All three names are independent entries in the summary.
    */
@@ -170,9 +170,9 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         req(
             "qt", HANDLER,
             "q",
-                "{!bool _name=all_books"
-                    + "  should='{!term _name=fantasy_cat f=cat_s}fantasy'"
-                    + "  should='{!term _name=scifi_cat  f=cat_s}scifi'}",
+                "{!bool name=all_books"
+                    + "  should='{!term name=fantasy_cat f=cat_s}fantasy'"
+                    + "  should='{!term name=scifi_cat  f=cat_s}scifi'}",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -201,8 +201,8 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
         req(
             "qt", HANDLER,
             "q",
-                "{!bool should='{!term _name=fantasy_cat f=cat_s}fantasy'"
-                    + "     should='{!term _name=scifi_cat f=cat_s}scifi'}",
+                "{!bool should='{!term name=fantasy_cat f=cat_s}fantasy'"
+                    + "     should='{!term name=scifi_cat f=cat_s}scifi'}",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -229,7 +229,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
             "qt", HANDLER,
             "q",
                 "{!bool must='{!term f=cat_s}fantasy'"
-                    + "     should='{!term _name=childrens_cat f=cat_s}childrens'}",
+                    + "     should='{!term name=childrens_cat f=cat_s}childrens'}",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -253,7 +253,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!prefix _name=fanta_prefix f=cat_s}fanta",
+            "q", "{!prefix name=fanta_prefix f=cat_s}fanta",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -271,7 +271,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!edismax _name=fantasy_edismax qf=cat_s}fantasy",
+            "q", "{!edismax name=fantasy_edismax qf=cat_s}fantasy",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),
@@ -289,7 +289,7 @@ public class TestMatchedQueriesComponent extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt", HANDLER,
-            "q", "{!lucene _name=scifi_lucene df=cat_s}scifi",
+            "q", "{!lucene name=scifi_lucene df=cat_s}scifi",
             "matched_queries", "true",
             "sort", "id asc",
             "rows", "10"),

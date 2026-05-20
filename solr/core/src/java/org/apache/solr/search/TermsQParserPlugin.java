@@ -161,7 +161,6 @@ public class TermsQParserPlugin extends QParserPlugin {
             sepIsSpace ? qstr.split("\\s+") : qstr.split(Pattern.quote(separator), -1);
         assert splitVals.length > 0;
 
-        final Query mainQuery;
         if (ft.isPointField()) {
           if (localParams.get(METHOD) != null) {
             throw new SolrException(
@@ -171,26 +170,24 @@ public class TermsQParserPlugin extends QParserPlugin {
                     "Method '%s' not supported in TermsQParser when using PointFields",
                     localParams.get(METHOD)));
           }
-          mainQuery =
-              ((PointField) ft)
-                  .getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
-        } else {
-          BytesRef[] bytesRefs = new BytesRef[splitVals.length];
-          BytesRefBuilder term = new BytesRefBuilder();
-          for (int i = 0; i < splitVals.length; i++) {
-            String stringVal = splitVals[i];
-            // logic same as TermQParserPlugin
-            if (ft != null) {
-              ft.readableToIndexed(stringVal, term);
-            } else {
-              term.copyChars(stringVal);
-            }
-            bytesRefs[i] = term.toBytesRef();
-          }
-          mainQuery = method.makeFilter(fname, bytesRefs);
+          return ((PointField) ft)
+              .getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
         }
 
-        return mainQuery;
+        BytesRef[] bytesRefs = new BytesRef[splitVals.length];
+        BytesRefBuilder term = new BytesRefBuilder();
+        for (int i = 0; i < splitVals.length; i++) {
+          String stringVal = splitVals[i];
+          // logic same as TermQParserPlugin
+          if (ft != null) {
+            ft.readableToIndexed(stringVal, term);
+          } else {
+            term.copyChars(stringVal);
+          }
+          bytesRefs[i] = term.toBytesRef();
+        }
+
+        return method.makeFilter(fname, bytesRefs);
       }
     };
   }

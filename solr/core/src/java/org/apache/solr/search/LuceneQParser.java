@@ -47,9 +47,8 @@ public class LuceneQParser extends QParser {
             getParam(QueryParsing.SPLIT_ON_WHITESPACE),
             SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
     lparser.setAllowSubQueryParsing(true);
-    Query query = lparser.parse(qstr);
 
-    return query;
+    return lparser.parse(qstr);
   }
 
   @Override

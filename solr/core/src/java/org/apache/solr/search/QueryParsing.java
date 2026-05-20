@@ -53,7 +53,7 @@ public class QueryParsing {
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
   public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
-  public static final String NAME = "_name";
+  public static final String NAME = "name";
 
   /**
    * @param txt Text to parse

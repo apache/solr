@@ -121,7 +121,7 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testNamedPrefixQuery() throws Exception {
     Query inner = QParser.getParser("{!prefix f=cat_s}fanta", req()).getQuery();
-    Query named = QParser.getParser("{!prefix _name=fanta_cat f=cat_s}fanta", req()).getQuery();
+    Query named = QParser.getParser("{!prefix name=fanta_cat f=cat_s}fanta", req()).getQuery();
     assertEquals(NamedMatches.wrapQuery("fanta_cat", inner), named);
   }
 
@@ -129,7 +129,7 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
   public void testNamedPrefixQueryDifferentField() throws Exception {
     Query inner = QParser.getParser("{!prefix f=author_s1}Robert", req()).getQuery();
     Query named =
-        QParser.getParser("{!prefix _name=robert_author f=author_s1}Robert", req()).getQuery();
+        QParser.getParser("{!prefix name=robert_author f=author_s1}Robert", req()).getQuery();
     assertEquals(NamedMatches.wrapQuery("robert_author", inner), named);
   }
 

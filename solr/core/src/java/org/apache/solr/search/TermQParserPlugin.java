@@ -54,17 +54,13 @@ public class TermQParserPlugin extends QParserPlugin {
         }
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
         String val = localParams.get(QueryParsing.V);
-
-        Query mainQuery;
         if (ft != null) {
-          mainQuery = ft.getFieldTermQuery(this, req.getSchema().getField(fname), val);
+          return ft.getFieldTermQuery(this, req.getSchema().getField(fname), val);
         } else {
           BytesRefBuilder term = new BytesRefBuilder();
           term.copyChars(val);
-          mainQuery = new TermQuery(new Term(fname, term.get()));
+          return new TermQuery(new Term(fname, term.get()));
         }
-
-        return mainQuery;
       }
     };
   }

@@ -27,28 +27,28 @@ This is useful when a query is composed of multiple named logical conditions and
 Add `matched_queries=true` (or the short alias `mq=true`) as a request parameter.
 Without this parameter the component is a no-op and adds nothing to the response.
 
-== Naming queries with `_name`
+== Naming queries with `name`
 
-Any query parser accepts the `_name` local parameter.
+Any query parser accepts the `name` local parameter.
 When present, every document matched by that sub-query is tagged with the given name.
 
 [source,text]
 ----
-{!term _name=fantasy_cat f=cat}fantasy
+{!term name=fantasy_cat f=cat}fantasy
 ----
 
 Named queries may be freely composed:
 
 [source,text]
 ----
-({!term _name=fantasy_cat f=cat}fantasy) OR ({!term _name=scifi_cat f=cat}scifi)
+({!term name=fantasy_cat f=cat}fantasy) OR ({!term name=scifi_cat f=cat}scifi)
 ----
 
 [source,text]
 ----
-{!bool _name=all_genres
-  should='{!term _name=fantasy_cat f=cat}fantasy'
-  should='{!term _name=scifi_cat  f=cat}scifi'}
+{!bool name=all_genres
+  should='{!term name=fantasy_cat f=cat}fantasy'
+  should='{!term name=scifi_cat  f=cat}scifi'}
 ----
 
 == Response
@@ -68,7 +68,7 @@ Request:
 
 [source,text]
 ----
-q=({!term _name=fantasy_cat f=cat}fantasy) OR ({!term _name=scifi_cat f=cat}scifi)
+q=({!term name=fantasy_cat f=cat}fantasy) OR ({!term name=scifi_cat f=cat}scifi)
 &matched_queries=true&rows=3&sort=id asc
 ----
 

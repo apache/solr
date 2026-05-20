@@ -38,9 +38,7 @@ public class PrefixQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() {
         SchemaField sf = req.getSchema().getField(localParams.get(QueryParsing.F));
-        Query query = sf.getType().getPrefixQuery(this, sf, localParams.get(QueryParsing.V));
-
-        return query;
+        return sf.getType().getPrefixQuery(this, sf, localParams.get(QueryParsing.V));
       }
     };
   }
