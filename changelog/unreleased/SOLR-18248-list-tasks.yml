@@ -1,0 +1,7 @@
+title: Migrated ListTasks API & TaskStatus API from homegrown @EndPoint to JAX-RS
+type: added
+authors:
+  - name: Jalaz Kumar
+links:
+  - name: SOLR-18248
+    url: https://issues.apache.org/jira/browse/SOLR-18248
