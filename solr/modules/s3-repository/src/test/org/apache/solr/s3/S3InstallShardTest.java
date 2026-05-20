@@ -20,6 +20,7 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.BeforeClass;
@@ -44,6 +45,12 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
           + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
           + "      <str name=\"delegateRepoName\">s3</str>\n"
           + "    </repository>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + AbstractIncrementalBackupTest.ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">s3</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
           + "    <repository name=\"s3\" class=\"org.apache.solr.s3.S3BackupRepository\"> \n"
           + "      <str name=\"s3.bucket.name\">BUCKET</str>\n"
           + "      <str name=\"s3.region\">REGION</str>\n"
@@ -65,7 +72,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
 
     AbstractS3ClientTest.setS3ConfFile();
 
-    configureCluster(1) // nodes
+    configureCluster(2) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(
             SOLR_XML
