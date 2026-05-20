@@ -118,9 +118,6 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
     QueryCancellationComponent component = new QueryCancellationComponent();
     components.add(component);
 
-    ActiveTasksListComponent activeTasksListComponent = new ActiveTasksListComponent();
-    components.add(activeTasksListComponent);
-
     return components;
   }
 
@@ -136,8 +133,4 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
     return rb;
   }
 
-  @Override
-  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(ListActiveTasks.class);
-  }
 }
