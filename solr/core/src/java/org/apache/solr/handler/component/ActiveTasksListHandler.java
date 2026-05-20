@@ -36,7 +36,6 @@ import org.apache.solr.security.PermissionNameProvider;
 
 /**
  * Handles request for listing all active cancellable tasks
- *
  * All active tasks logic lives in the v2 {@link ListActiveTasks}; this handler is a thin v1 bridge
  * that extracts request parameters and delegates.
  */

@@ -19,7 +19,7 @@ public interface ListActiveTasksApi {
   @Operation(summary = "Lists all the currently running tasks", tags = {"tasks"})
   ListActiveTaskResponse listAllActiveTasks() throws Exception;
 
-  // Handles: .../tasks/list/xyz (Lists specific)
+  // Handles: .../tasks/list/slow-task-id (Lists specific)
   @GET
   @Path("/{taskUUID}")
   @StoreApiParameters
