@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -133,9 +132,7 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
             errorMessage + ". No leader-eligible replicas are live.");
       } else {
         throw new SolrErrorWrappingException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            errorMessage,
-            Collections.singletonList(failures.asMap(1)));
+            SolrException.ErrorCode.SERVER_ERROR, errorMessage, List.of(failures.asMap(1)));
       }
     } else if (successfulReplicas.size() < leaderEligibleReplicas.size()) {
       // Some, but not all, leader-eligible replicas succeeded.
