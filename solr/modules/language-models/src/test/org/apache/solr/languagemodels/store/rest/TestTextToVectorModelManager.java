@@ -27,7 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestModelManager extends TestLanguageModelBase {
+public class TestTextToVectorModelManager extends TestLanguageModelBase {
 
   @BeforeClass
   public static void init() throws Exception {
@@ -49,7 +49,7 @@ public class TestModelManager extends TestLanguageModelBase {
 
     final String resourceId = "/schema/mstore1";
     registry.registerManagedResource(
-        resourceId, ManagedTextToVectorModelStore.class, new TextToVectorQParserPlugin());
+        resourceId, TextToVectorModelStore.class, new TextToVectorQParserPlugin());
 
     final NamedList<String> initArgs = new NamedList<>();
 
@@ -57,7 +57,7 @@ public class TestModelManager extends TestLanguageModelBase {
     restManager.init(loader, initArgs, new ManagedResourceStorage.InMemoryStorageIO());
 
     final ManagedResource res = restManager.getManagedResource(resourceId);
-    assertTrue(res instanceof ManagedTextToVectorModelStore);
+    assertTrue(res instanceof TextToVectorModelStore);
     assertEquals(res.getResourceId(), resourceId);
   }
 
@@ -70,7 +70,7 @@ public class TestModelManager extends TestLanguageModelBase {
     // Add models
     String model = "{ \"name\":\"testModel1\", \"class\":\"" + cohereModelClassName + "\"}";
     // fails since it does not have params
-    assertJPut(ManagedTextToVectorModelStore.REST_END_POINT, model, "/responseHeader/status==400");
+    assertJPut(TextToVectorModelStore.REST_END_POINT, model, "/responseHeader/status==400");
     // success
     model =
         "{ name:\"testModel2\", class:\""
@@ -84,7 +84,7 @@ public class TestModelManager extends TestLanguageModelBase {
             + "logRequests:true,"
             + "logResponses:false"
             + "}}";
-    assertJPut(ManagedTextToVectorModelStore.REST_END_POINT, model, "/responseHeader/status==0");
+    assertJPut(TextToVectorModelStore.REST_END_POINT, model, "/responseHeader/status==0");
     // success
     final String multipleModels =
         "[{ name:\"testModel3\", class:\""
@@ -107,122 +107,116 @@ public class TestModelManager extends TestLanguageModelBase {
             + "logRequests:true,"
             + "logResponses:false"
             + "}}]";
-    assertJPut(
-        ManagedTextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
-    final String qryResult = JQ(ManagedTextToVectorModelStore.REST_END_POINT);
+    assertJPut(TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+    final String qryResult = JQ(TextToVectorModelStore.REST_END_POINT);
 
     assertTrue(
         qryResult.contains("\"name\":\"testModel2\"")
             && qryResult.contains("\"name\":\"testModel3\"")
             && qryResult.contains("\"name\":\"testModel4\""));
 
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='testModel2'");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[1]/name=='testModel3'");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[2]/name=='testModel4'");
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/testModel2");
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/testModel3");
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/testModel4");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='testModel2'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[1]/name=='testModel3'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[2]/name=='testModel4'");
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/testModel2");
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/testModel3");
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/testModel4");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models==[]'");
   }
 
   @Test
-  public void loadModel_cohere_shouldLoadModelConfig() throws Exception {
-    loadModel("cohere-model.json");
+  public void loadTextToVectorModel_cohere_shouldLoadModelConfig() throws Exception {
+    loadTextToVectorModel("cohere-model.json");
 
     final String modelName = "cohere-1";
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
-    assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/inputType=='search_document'");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/" + modelName);
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/" + modelName);
   }
 
   @Test
-  public void loadModel_openAi_shouldLoadModelConfig() throws Exception {
-    loadModel("openai-model.json");
+  public void loadTextToVectorModel_openAi_shouldLoadModelConfig() throws Exception {
+    loadTextToVectorModel("openai-model.json");
 
     final String modelName = "openai-1";
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='text-embedding-3-small'");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/" + modelName);
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/" + modelName);
   }
 
   @Test
-  public void loadModel_mistralAi_shouldLoadModelConfig() throws Exception {
-    loadModel("mistralai-model.json");
+  public void loadTextToVectorModel_mistralAi_shouldLoadModelConfig() throws Exception {
+    loadTextToVectorModel("mistralai-model.json");
 
     final String modelName = "mistralai-1";
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.mistral.ai/v1'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/apiKey=='apiKey-mistralAI'");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
-        "/models/[0]/params/modelName=='mistral-embed'");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
+        TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/modelName=='mistral-embed'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/" + modelName);
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/" + modelName);
   }
 
   @Test
-  public void loadModel_huggingface_shouldLoadModelConfig() throws Exception {
-    loadModel("huggingface-model.json");
+  public void loadTextToVectorModel_huggingface_shouldLoadModelConfig() throws Exception {
+    loadTextToVectorModel("huggingface-model.json");
 
     final String modelName = "huggingface-1";
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/accessToken=='apiKey-huggingface'");
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelId=='sentence-transformers/all-MiniLM-L6-v2'");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/" + modelName);
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/" + modelName);
   }
 
   @Test
-  public void loadModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
-    loadModel("dummy-model-unsupported.json", "400");
+  public void loadTextToVectorModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
+    loadTextToVectorModel("dummy-model-unsupported.json", "400");
   }
 
   @Test
-  public void loadModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
-    loadModel("dummy-model-ambiguous.json");
+  public void loadTextToVectorModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
+    loadTextToVectorModel("dummy-model-ambiguous.json");
 
     final String modelName = "dummy-1";
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/ambiguous==10");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models/[0]/params/ambiguous==10");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/" + modelName);
+    restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/" + modelName);
   }
 }

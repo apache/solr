@@ -20,7 +20,7 @@ import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.After;
 import org.junit.Test;
 
-public class TestManagedLanguageModelStoreInitialization extends TestLanguageModelBase {
+public class TestTextToVectorModelStoreInitialization extends TestLanguageModelBase {
 
   @After
   public void cleanUp() throws Exception {
@@ -28,7 +28,7 @@ public class TestManagedLanguageModelStoreInitialization extends TestLanguageMod
   }
 
   @Test
-  public void managedModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
+  public void textToVectorModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
       throws Exception {
     setupTest(
         "solrconfig-language-models-update-request-processor-only.xml",
@@ -36,12 +36,12 @@ public class TestManagedLanguageModelStoreInitialization extends TestLanguageMod
         false,
         false);
 
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test
-  public void managedModelStore_whenQueryParserComponentConfigured_shouldBeInitialized()
+  public void textToVectorModelStore_whenQueryParserComponentConfigured_shouldBeInitialized()
       throws Exception {
     setupTest(
         "solrconfig-language-models-query-parser-only.xml",
@@ -49,19 +49,19 @@ public class TestManagedLanguageModelStoreInitialization extends TestLanguageMod
         false,
         false);
 
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(TextToVectorModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test
-  public void managedModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
+  public void textToVectorModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
     setupTest(
         "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(
-        ManagedTextToVectorModelStore.REST_END_POINT,
+        TextToVectorModelStore.REST_END_POINT,
         "/responseHeader/status==400",
         "/error/msg=='No REST managed resource registered for path "
-            + ManagedTextToVectorModelStore.REST_END_POINT
+            + TextToVectorModelStore.REST_END_POINT
             + "'");
   }
 }
