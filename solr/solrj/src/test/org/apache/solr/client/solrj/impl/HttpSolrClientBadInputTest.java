@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;

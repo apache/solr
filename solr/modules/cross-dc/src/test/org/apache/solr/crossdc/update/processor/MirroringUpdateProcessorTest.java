@@ -16,6 +16,7 @@
  */
 package org.apache.solr.crossdc.update.processor;
 
+import static org.apache.solr.crossdc.update.processor.MirroringUpdateProcessor.ObjectSizeEstimator.estimate;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -27,6 +28,8 @@ import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -568,6 +571,40 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     assertEquals(2, counters.get("submitted").get());
     assertEquals(1, counters.get("submittedAdd").get());
     assertEquals(1, counters.get("submittedDeleteByQuery").get());
+  }
+
+  @Test
+  public void testEstimateObjectSize() {
+    assertEquals(estimate(null), 0);
+    assertEquals(estimate("abc"), 6);
+    assertEquals(estimate("abcdefgh"), 16);
+    List<String> keys = List.of("int", "long", "double", "float", "str");
+    assertEquals(estimate(keys), 42);
+    List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
+    assertEquals(estimate(values), 8);
+
+    Map<String, Object> map = new HashMap<>();
+    map.put("int", 12);
+    map.put("long", 5L);
+    map.put("double", 12.0);
+    map.put("float", 5.0f);
+    map.put("str", "duck");
+    map.put("short", null);
+    assertEquals(estimate(map), 60);
+
+    SolrInputDocument document = new SolrInputDocument();
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
+      document.addField(entry.getKey(), entry.getValue());
+    }
+    assertEquals(MirroringUpdateProcessor.ObjectSizeEstimator.estimate(document), estimate(map));
+
+    SolrInputDocument childDocument = new SolrInputDocument();
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
+      childDocument.addField(entry.getKey(), entry.getValue());
+    }
+    document.addChildDocument(childDocument);
+    assertEquals(
+        MirroringUpdateProcessor.ObjectSizeEstimator.estimate(document), estimate(map) * 2);
   }
 
   @Test

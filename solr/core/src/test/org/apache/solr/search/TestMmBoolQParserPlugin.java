@@ -30,6 +30,14 @@ import org.junit.Test;
 
 public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
 
+  private static BooleanQuery.Builder shouldBuilder(String... terms) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    for (String term : terms) {
+      builder.add(new TermQuery(new Term("name", term)), BooleanClause.Occur.SHOULD);
+    }
+    return builder;
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
@@ -61,12 +69,55 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
         parseQuery(req("q", "{!bool should=name:foo should=name:bar should=name:qux mm=2}"));
 
     BooleanQuery expected =
-        new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("name", "bar")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("name", "qux")), BooleanClause.Occur.SHOULD)
-            .setMinimumNumberShouldMatch(2)
-            .build();
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(2).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchPercentage75() throws Exception {
+    Query actual =
+        parseQuery(req("q", "{!bool should=name:foo should=name:bar should=name:qux mm=75%}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(2).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchPercentage50() throws Exception {
+    Query actual =
+        parseQuery(req("q", "{!bool should=name:foo should=name:bar should=name:qux mm=50%}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(1).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchThresholdsLower() throws Exception {
+    Query actual =
+        parseQuery(
+            req("q", "{!bool should=name:foo should=name:bar should=name:qux mm='2<-1 5<-2'}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(2).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchThresholdsUpper() throws Exception {
+    Query actual =
+        parseQuery(
+            req(
+                "q",
+                "{!bool should=name:foo should=name:bar should=name:qux should=name:n1 should=name:n2 should=name:n3 mm='2<-1 5<-2'}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux", "n1", "n2", "n3").setMinimumNumberShouldMatch(4).build();
 
     assertEquals(expected, actual);
   }
@@ -102,11 +153,6 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testInvalidMinShouldMatchThrowsException() {
-    expectThrows(
-        SolrException.class,
-        NumberFormatException.class,
-        () -> parseQuery(req("q", "{!bool should=name:foo mm=20%}")));
-
     expectThrows(
         SolrException.class,
         NumberFormatException.class,
