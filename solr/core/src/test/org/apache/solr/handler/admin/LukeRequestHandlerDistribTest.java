@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 import java.util.Map;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.request.LukeRequest;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -30,7 +29,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.BaseTestHarness;
 import org.junit.Test;
 
 public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase {
@@ -72,15 +70,8 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   private void assertLukeXPath(ModifiableSolrParams extra, String... xpaths) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("shards", shards);
-    params.set("shards.info", "true");
     params.add(extra);
-    LukeRequest req = new LukeRequest(params);
-    req.setNumTerms(0);
-    req.setResponseParser(new InputStreamResponseParser("xml"));
-    NamedList<Object> raw = controlClient.request(req);
-    String xml = InputStreamResponseParser.consumeResponseToString(raw);
-    String failedXpath = BaseTestHarness.validateXPath(xml, xpaths);
-    assertNull("XPath validation failed: " + failedXpath + "\nResponse:\n" + xml, failedXpath);
+    LukeTestUtil.assertLukeXPath(controlClient, null, params, xpaths);
   }
 
   private void indexTestData() throws Exception {
@@ -92,9 +83,10 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
   @Test
   @ShardsFixed(num = 2)
-  public void testDistributedAggregate() throws Exception {
+  public void testDistributedAggregateAndFields() throws Exception {
     indexTestData();
 
+    // --- Aggregate index stats ---
     LukeResponse rsp = requestLuke();
 
     assertEquals("aggregated numDocs should equal total docs", NUM_DOCS, rsp.getNumDocs());
@@ -114,15 +106,8 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     }
     assertEquals(
         "sum of per-shard numDocs should equal aggregated numDocs", rsp.getNumDocs(), sumShardDocs);
-  }
 
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDistributedFieldsAggregate() throws Exception {
-    indexTestData();
-
-    LukeResponse rsp = requestLuke();
-
+    // --- Field-level aggregation ---
     Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
     assertNotNull("fields should be present", fields);
 
@@ -149,32 +134,22 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='fields']/lst[@name='name']/long[@name='docs'][.='20']",
         "//lst[@name='fields']/lst[@name='id']/str[@name='type'][.='string']",
         "//lst[@name='fields']/lst[@name='id']/long[@name='docs'][.='20']");
-  }
 
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDetailedFieldStatsPerShard() throws Exception {
-    indexTestData();
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("fl", "name");
-    params.set("numTerms", "5");
-
-    LukeResponse rsp = requestLuke(params);
-
-    // Top-level fields should NOT have topTerms, distinct, histogram
-    LukeResponse.FieldInfo nameField = rsp.getFieldInfo().get("name");
-    assertNotNull("'name' field should be present", nameField);
-    assertNull("topTerms should NOT be in top-level fields", nameField.getTopTerms());
-    assertEquals("distinct should NOT be in top-level fields", 0, nameField.getDistinct());
-
-    // Per-shard entries should have detailed stats
-    Map<String, LukeResponse> shardResponses = rsp.getShardResponses();
-    assertNotNull("shards section should be present", shardResponses);
-
+    // --- Detailed per-shard stats (topTerms, histogram, distinct) ---
     ModifiableSolrParams detailedParams = new ModifiableSolrParams();
     detailedParams.set("fl", "name");
     detailedParams.set("numTerms", "5");
+
+    LukeResponse detailedRsp = requestLuke(detailedParams);
+
+    LukeResponse.FieldInfo detailedNameField = detailedRsp.getFieldInfo().get("name");
+    assertNotNull("'name' field should be present", detailedNameField);
+    assertNull("topTerms should NOT be in top-level fields", detailedNameField.getTopTerms());
+    assertEquals("distinct should NOT be in top-level fields", 0, detailedNameField.getDistinct());
+
+    Map<String, LukeResponse> detailedShardResponses = detailedRsp.getShardResponses();
+    assertNotNull("shards section should be present", detailedShardResponses);
+
     assertLukeXPath(
         detailedParams,
         "/response/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
@@ -185,39 +160,54 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/lst[@name='topTerms']",
         "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/lst[@name='histogram']/int[@name='1']",
         "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/int[@name='distinct']");
-  }
 
-  @Test
-  @ShardsFixed(num = 2)
-  public void testLocalModeDefault() throws Exception {
-    indexTestData();
+    // --- Doc lookup not found ---
+    ModifiableSolrParams notFoundParams = new ModifiableSolrParams();
+    notFoundParams.set("id", "999888777");
 
-    // Query a single client without the shards param — local mode
-    LukeRequest req = new LukeRequest();
-    req.setNumTerms(0);
-    LukeResponse rsp = req.process(controlClient);
+    LukeResponse notFoundRsp = requestLuke(notFoundParams);
 
-    assertNotNull("index info should be present", rsp.getIndexInfo());
-    assertNull("shards should NOT be present in local mode", rsp.getShardResponses());
-  }
+    NamedList<Object> notFoundRaw = notFoundRsp.getResponse();
+    assertNull("doc section should NOT be present for missing ID", notFoundRaw.get("doc"));
 
-  @Test
-  @ShardsFixed(num = 2)
-  public void testExplicitDistribFalse() throws Exception {
-    indexTestData();
+    assertLukeXPath(notFoundParams, "not(//lst[@name='doc'])");
 
-    // Query a single client with distrib=false — no shards param
-    LukeRequest req = new LukeRequest(params("distrib", "false"));
-    req.setNumTerms(0);
-    LukeResponse rsp = req.process(controlClient);
+    // --- Doc lookup found ---
+    ModifiableSolrParams foundParams = new ModifiableSolrParams();
+    foundParams.set("id", "0");
 
-    assertNotNull("index info should be present", rsp.getIndexInfo());
-    assertNull("shards should NOT be present with distrib=false", rsp.getShardResponses());
+    assertLukeXPath(
+        foundParams,
+        "//lst[@name='doc']/int[@name='docId']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='type'][.='string']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='value'][.='0']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='type'][.='nametext']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='value'][.='name_0']",
+        "//lst[@name='doc']/arr[@name='solr']/str[.='0']",
+        "//lst[@name='doc']/arr[@name='solr']/str[.='name_0']",
+        "//lst[@name='index']",
+        "//lst[@name='info']");
+
+    // --- Schema view ---
+    ModifiableSolrParams schemaParams = new ModifiableSolrParams();
+    schemaParams.set("show", "schema");
+
+    assertLukeXPath(
+        schemaParams,
+        "//lst[@name='schema']/lst[@name='fields']/lst[@name='id']/str[@name='type'][.='string']",
+        "//lst[@name='schema']/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
+        "//lst[@name='schema']/lst[@name='dynamicFields']/lst[@name='*_s']",
+        "//lst[@name='schema']/str[@name='uniqueKeyField'][.='id']",
+        "//lst[@name='schema']/lst[@name='types']/lst[@name='string']",
+        "//lst[@name='schema']/lst[@name='types']/lst[@name='nametext']",
+        "//lst[@name='schema']/lst[@name='similarity']",
+        "not(/response/lst[@name='fields'])",
+        "count(//lst[@name='shards']/lst)=2");
   }
 
   @Test
   @ShardsFixed(num = 12)
-  public void testSparseShards() throws Exception {
+  public void testSparseShardsAndDeferredIndexFlags() throws Exception {
     // Index a single doc on shard 0
     index_specific(
         0, "id", "100", "name", "sparse test", "subject", "subject value", "cat_s", "category");
@@ -275,36 +265,11 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='fields']/lst[@name='cat_s']/str[@name='type'][.='string']",
         "//lst[@name='fields']/lst[@name='cat_s']/str[@name='dynamicBase'][.='*_s']",
         "//lst[@name='fields']/lst[@name='cat_s']/long[@name='docs'][.='1']");
-  }
 
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDistribShowSchema() throws Exception {
-    indexTestData();
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("show", "schema");
-
-    assertLukeXPath(
-        params,
-        "//lst[@name='schema']/lst[@name='fields']/lst[@name='id']/str[@name='type'][.='string']",
-        "//lst[@name='schema']/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
-        "//lst[@name='schema']/lst[@name='dynamicFields']/lst[@name='*_s']",
-        "//lst[@name='schema']/str[@name='uniqueKeyField'][.='id']",
-        "//lst[@name='schema']/lst[@name='types']/lst[@name='string']",
-        "//lst[@name='schema']/lst[@name='types']/lst[@name='nametext']",
-        "//lst[@name='schema']/lst[@name='similarity']",
-        "not(/response/lst[@name='fields'])",
-        "count(//lst[@name='shards']/lst)=2");
-  }
-
-  @Test
-  @ShardsFixed(num = 16)
-  public void testDeferredIndexFlags() throws Exception {
     // Index docs with the target field across shards, plus anchor docs without it.
     // Use numeric IDs (the default test schema copies id to integer fields).
     // Target docs get even IDs starting at 1000, anchor docs get odd IDs.
-    for (int i = 0; i < 16 * 4; i++) {
+    for (int i = 0; i < 12 * 4; i++) {
       index("id", String.valueOf(1000 + i * 2), "flag_target_s", "value_" + i);
       index("id", String.valueOf(1001 + i * 2), "name", "anchor");
     }
@@ -320,92 +285,22 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     controlClient.deleteByQuery("flag_target_s:* AND -id:1000");
     controlClient.optimize();
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("fl", "flag_target_s");
+    ModifiableSolrParams flagParams = new ModifiableSolrParams();
+    flagParams.set("fl", "flag_target_s");
 
-    LukeResponse rsp = requestLuke(params);
+    LukeResponse flagRsp = requestLuke(flagParams);
 
-    Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
-    assertNotNull("fields should be present", fields);
-    LukeResponse.FieldInfo targetField = fields.get("flag_target_s");
+    Map<String, LukeResponse.FieldInfo> flagFields = flagRsp.getFieldInfo();
+    assertNotNull("fields should be present", flagFields);
+    LukeResponse.FieldInfo targetField = flagFields.get("flag_target_s");
     assertNotNull("'flag_target_s' field should be present", targetField);
 
-    ModifiableSolrParams xpathParams = new ModifiableSolrParams();
-    xpathParams.set("fl", "flag_target_s");
     assertLukeXPath(
-        xpathParams,
+        flagParams,
         "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='type'][.='string']",
         "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='dynamicBase'][.='*_s']",
         "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='index']",
         "//lst[@name='fields']/lst[@name='flag_target_s']/long[@name='docs'][.='1']");
-  }
-
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDistributedShardError() throws Exception {
-    indexTestData();
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("id", "0");
-    params.set("show", "schema");
-
-    Exception ex = expectThrows(Exception.class, () -> requestLuke(params));
-    String fullMessage = SolrException.getRootCause(ex).getMessage();
-    assertTrue(
-        "exception should mention doc style mismatch: " + fullMessage,
-        fullMessage.contains("missing doc param for doc style"));
-  }
-
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDistributedDocIdRejected() throws Exception {
-    indexTestData();
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("docId", "0");
-
-    Exception ex = expectThrows(Exception.class, () -> requestLuke(params));
-    String fullMessage = SolrException.getRootCause(ex).getMessage();
-    assertTrue(
-        "exception should mention docId not supported: " + fullMessage,
-        fullMessage.contains("docId parameter is not supported in distributed mode"));
-  }
-
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDistributedDocLookupFound() throws Exception {
-    indexTestData();
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("id", "0");
-
-    assertLukeXPath(
-        params,
-        "//lst[@name='doc']/int[@name='docId']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='type'][.='string']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='value'][.='0']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='type'][.='nametext']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='value'][.='name_0']",
-        "//lst[@name='doc']/arr[@name='solr']/str[.='0']",
-        "//lst[@name='doc']/arr[@name='solr']/str[.='name_0']",
-        "//lst[@name='index']",
-        "//lst[@name='info']");
-  }
-
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDistributedDocLookupNotFound() throws Exception {
-    indexTestData();
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("id", "999888777");
-
-    LukeResponse rsp = requestLuke(params);
-
-    NamedList<Object> raw = rsp.getResponse();
-    assertNull("doc section should NOT be present for missing ID", raw.get("doc"));
-
-    assertLukeXPath(params, "not(//lst[@name='doc'])");
   }
 
   @Test
@@ -443,40 +338,6 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     assertTrue(
         "exception should mention duplicate/corrupt index: " + fullMessage,
         fullMessage.contains("found on multiple shards"));
-  }
-
-  @Test
-  @ShardsFixed(num = 2)
-  public void testShardsParamRoutesToSpecificShard() throws Exception {
-    // Index a doc with a dynamic field only to shard 0
-    index_specific(0, "id", "700", "name", "shard0_only", "only_on_shard0_s", "present");
-    // Index a plain doc to shard 1 (no dynamic field)
-    index_specific(1, "id", "701", "name", "shard1_only");
-    commit();
-
-    // Query with shards= pointing only at shard 1 — the dynamic field should NOT appear.
-    // This also tests that a single remote shard is correctly fanned out to rather than
-    // falling through to local-mode on the coordinating node.
-    LukeRequest req = new LukeRequest(params("shards", shardsArr[1]));
-    req.setNumTerms(0);
-    LukeResponse rsp = req.process(controlClient);
-
-    Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
-    assertNotNull("fields should be present", fields);
-    assertNull(
-        "only_on_shard0_s should NOT be present when querying only shard 1",
-        fields.get("only_on_shard0_s"));
-    assertNotNull("'name' field should still be present", fields.get("name"));
-
-    // Now query with shards= pointing only at shard 0 — the dynamic field SHOULD appear
-    req = new LukeRequest(params("shards", shardsArr[0]));
-    req.setNumTerms(0);
-    rsp = req.process(controlClient);
-
-    fields = rsp.getFieldInfo();
-    assertNotNull("fields should be present", fields);
-    assertNotNull(
-        "only_on_shard0_s SHOULD be present when querying shard 0", fields.get("only_on_shard0_s"));
   }
 
   @Test

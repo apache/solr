@@ -26,7 +26,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
+import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -41,15 +43,136 @@ import org.junit.Test;
 /** Cloud-specific Luke tests that require SolrCloud features like managed schema and Schema API. */
 public class LukeHandlerCloudTest extends SolrCloudTestCase {
 
+  private static final String DISTRIB_COLLECTION = "lukeDistribTests";
+  private static final int NUM_DOCS = 20;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig("managed", configset("cloud-managed")).configure();
+    System.setProperty("managed.schema.mutable", "true");
+    configureCluster(2)
+        .addConfig("managed", configset("cloud-managed"))
+        .addConfig("dynamic", configset("cloud-dynamic"))
+        .configure();
+
+    CollectionAdminRequest.createCollection(DISTRIB_COLLECTION, "dynamic", 2, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.waitForActiveCollection(DISTRIB_COLLECTION, 2, 2);
+
+    for (int i = 0; i < NUM_DOCS; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", String.valueOf(i));
+      doc.addField("name", "name_" + i);
+      doc.addField("subject", "subject value " + (i % 5));
+      cluster.getSolrClient().add(DISTRIB_COLLECTION, doc);
+    }
+    cluster.getSolrClient().commit(DISTRIB_COLLECTION);
   }
 
   private void requestLuke(String collection, SolrParams extra) throws Exception {
     LukeRequest req = new LukeRequest(extra);
     req.setNumTerms(0);
     req.process(cluster.getSolrClient(), collection);
+  }
+
+  @Test
+  public void testLocalMode() throws Exception {
+    DocCollection docColl = getCollectionState(DISTRIB_COLLECTION);
+    Slice slice = docColl.getSlices().iterator().next();
+    Replica leader = slice.getLeader();
+    try (SolrClient client = getHttpSolrClient(leader)) {
+      LukeRequest req = new LukeRequest(params(DISTRIB, "false"));
+      req.setNumTerms(0);
+      LukeResponse rsp = req.process(client);
+
+      assertNotNull("index info should be present", rsp.getIndexInfo());
+      assertNull("shards should NOT be present in local mode", rsp.getShardResponses());
+    }
+  }
+
+  @Test
+  public void testDistributedShardError() {
+    SolrParams lukeParams = params("id", "0", "show", "schema");
+
+    Exception ex = expectThrows(Exception.class, () -> requestLuke(DISTRIB_COLLECTION, lukeParams));
+    String fullMessage = SolrException.getRootCause(ex).getMessage();
+    assertTrue(
+        "exception should mention doc style mismatch: " + fullMessage,
+        fullMessage.contains("missing doc param for doc style"));
+  }
+
+  @Test
+  public void testDistributedDocIdRejected() {
+    SolrParams lukeParams = params("docId", "0");
+
+    Exception ex = expectThrows(Exception.class, () -> requestLuke(DISTRIB_COLLECTION, lukeParams));
+    String fullMessage = SolrException.getRootCause(ex).getMessage();
+    assertTrue(
+        "exception should mention docId not supported: " + fullMessage,
+        fullMessage.contains("docId parameter is not supported in distributed mode"));
+  }
+
+  @Test
+  public void testShardsParamRoutesToSpecificShard() throws Exception {
+    String collection = "lukeShardsRouting";
+    CollectionAdminRequest.createCollectionWithImplicitRouter(
+            collection, "dynamic", "shard1,shard2", 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.waitForActiveCollection(collection, 2, 2);
+
+    try {
+      // Index a doc with a dynamic field only to shard1
+      SolrInputDocument docWithField = new SolrInputDocument();
+      docWithField.addField("id", "700");
+      docWithField.addField("name", "shard1_only");
+      docWithField.addField("only_on_shard1_s", "present");
+      UpdateRequest addToShard1 = new UpdateRequest();
+      addToShard1.add(docWithField);
+      addToShard1.setParam("_route_", "shard1");
+      addToShard1.process(cluster.getSolrClient(), collection);
+
+      // Index a plain doc to shard2 (no dynamic field)
+      SolrInputDocument docWithoutField = new SolrInputDocument();
+      docWithoutField.addField("id", "701");
+      docWithoutField.addField("name", "shard2_only");
+      UpdateRequest addToShard2 = new UpdateRequest();
+      addToShard2.add(docWithoutField);
+      addToShard2.setParam("_route_", "shard2");
+      addToShard2.process(cluster.getSolrClient(), collection);
+
+      cluster.getSolrClient().commit(collection);
+
+      DocCollection docColl = getCollectionState(collection);
+      String shard1Url = docColl.getSlice("shard1").getLeader().getCoreUrl();
+      String shard2Url = docColl.getSlice("shard2").getLeader().getCoreUrl();
+
+      // Query with shards= pointing only at shard2 — the dynamic field should NOT appear.
+      // This also tests that a single remote shard is correctly fanned out to rather than
+      // falling through to local-mode on the coordinating node.
+      LukeRequest req = new LukeRequest(params("shards", shard2Url));
+      req.setNumTerms(0);
+      LukeResponse rsp = req.process(cluster.getSolrClient(), collection);
+
+      Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
+      assertNotNull("fields should be present", fields);
+      assertNull(
+          "only_on_shard1_s should NOT be present when querying only shard2",
+          fields.get("only_on_shard1_s"));
+      assertNotNull("'name' field should still be present", fields.get("name"));
+
+      // Now query with shards= pointing only at shard1 — the dynamic field SHOULD appear
+      req = new LukeRequest(params("shards", shard1Url));
+      req.setNumTerms(0);
+      rsp = req.process(cluster.getSolrClient(), collection);
+
+      fields = rsp.getFieldInfo();
+      assertNotNull("fields should be present", fields);
+      assertNotNull(
+          "only_on_shard1_s SHOULD be present when querying shard1",
+          fields.get("only_on_shard1_s"));
+    } finally {
+      CollectionAdminRequest.deleteCollection(collection)
+          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    }
   }
 
   /**
@@ -60,7 +183,6 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
   @Test
   public void testInconsistentIndexFlagsAcrossShards() throws Exception {
     String collection = "lukeInconsistentFlags";
-    System.setProperty("managed.schema.mutable", "true");
     CollectionAdminRequest.createCollection(collection, "managed", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
