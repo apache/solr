@@ -341,6 +341,40 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   }
 
   @Test
+  @ShardsFixed(num = 2)
+  public void testShardsParamRoutesToSpecificShard() throws Exception {
+    // Index a doc with a dynamic field only to shard 0
+    index_specific(0, "id", "700", "name", "shard0_only", "only_on_shard0_s", "present");
+    // Index a plain doc to shard 1 (no dynamic field)
+    index_specific(1, "id", "701", "name", "shard1_only");
+    commit();
+
+    // Query with shards= pointing only at shard 1 — the dynamic field should NOT appear.
+    // This also tests that a single remote shard is correctly fanned out to rather than
+    // falling through to local-mode on the coordinating node.
+    LukeRequest req = new LukeRequest(params("shards", shardsArr[1]));
+    req.setNumTerms(0);
+    LukeResponse rsp = req.process(controlClient);
+
+    Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
+    assertNotNull("fields should be present", fields);
+    assertNull(
+        "only_on_shard0_s should NOT be present when querying only shard 1",
+        fields.get("only_on_shard0_s"));
+    assertNotNull("'name' field should still be present", fields.get("name"));
+
+    // Now query with shards= pointing only at shard 0 — the dynamic field SHOULD appear
+    req = new LukeRequest(params("shards", shardsArr[0]));
+    req.setNumTerms(0);
+    rsp = req.process(controlClient);
+
+    fields = rsp.getFieldInfo();
+    assertNotNull("fields should be present", fields);
+    assertNotNull(
+        "only_on_shard0_s SHOULD be present when querying shard 0", fields.get("only_on_shard0_s"));
+  }
+
+  @Test
   @ShardsFixed(num = 1)
   public void testSingleShardViaParamStillDistributes() throws Exception {
     index("id", "500", "name", "test_name");

@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -109,70 +108,6 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
     assertTrue(
         "exception should mention docId not supported: " + fullMessage,
         fullMessage.contains("docId parameter is not supported in distributed mode"));
-  }
-
-  @Test
-  public void testShardsParamRoutesToSpecificShard() throws Exception {
-    String collection = "lukeShardsRouting";
-    CollectionAdminRequest.createCollectionWithImplicitRouter(
-            collection, "dynamic", "shard1,shard2", 1)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    cluster.waitForActiveCollection(collection, 2, 2);
-
-    try {
-      // Index a doc with a dynamic field only to shard1
-      SolrInputDocument docWithField = new SolrInputDocument();
-      docWithField.addField("id", "700");
-      docWithField.addField("name", "shard1_only");
-      docWithField.addField("only_on_shard1_s", "present");
-      UpdateRequest addToShard1 = new UpdateRequest();
-      addToShard1.add(docWithField);
-      addToShard1.setParam("_route_", "shard1");
-      addToShard1.process(cluster.getSolrClient(), collection);
-
-      // Index a plain doc to shard2 (no dynamic field)
-      SolrInputDocument docWithoutField = new SolrInputDocument();
-      docWithoutField.addField("id", "701");
-      docWithoutField.addField("name", "shard2_only");
-      UpdateRequest addToShard2 = new UpdateRequest();
-      addToShard2.add(docWithoutField);
-      addToShard2.setParam("_route_", "shard2");
-      addToShard2.process(cluster.getSolrClient(), collection);
-
-      cluster.getSolrClient().commit(collection);
-
-      DocCollection docColl = getCollectionState(collection);
-      String shard1Url = docColl.getSlice("shard1").getLeader().getCoreUrl();
-      String shard2Url = docColl.getSlice("shard2").getLeader().getCoreUrl();
-
-      // Query with shards= pointing only at shard2 — the dynamic field should NOT appear.
-      // This also tests that a single remote shard is correctly fanned out to rather than
-      // falling through to local-mode on the coordinating node.
-      LukeRequest req = new LukeRequest(params("shards", shard2Url));
-      req.setNumTerms(0);
-      LukeResponse rsp = req.process(cluster.getSolrClient(), collection);
-
-      Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
-      assertNotNull("fields should be present", fields);
-      assertNull(
-          "only_on_shard1_s should NOT be present when querying only shard2",
-          fields.get("only_on_shard1_s"));
-      assertNotNull("'name' field should still be present", fields.get("name"));
-
-      // Now query with shards= pointing only at shard1 — the dynamic field SHOULD appear
-      req = new LukeRequest(params("shards", shard1Url));
-      req.setNumTerms(0);
-      rsp = req.process(cluster.getSolrClient(), collection);
-
-      fields = rsp.getFieldInfo();
-      assertNotNull("fields should be present", fields);
-      assertNotNull(
-          "only_on_shard1_s SHOULD be present when querying shard1",
-          fields.get("only_on_shard1_s"));
-    } finally {
-      CollectionAdminRequest.deleteCollection(collection)
-          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    }
   }
 
   /**
