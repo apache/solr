@@ -802,7 +802,7 @@ def _dockerAvailable():
   return os.system('docker info > /dev/null 2>&1') == 0
 
 
-def testMavenBuild(mavenDir, tmpDir, version):
+def testMavenBuild(mavenDir, tmpDir, version, skipExternalClient=False):
   """
   Runs the test-external-client project with both Maven and Gradle to verify that the
   published POMs for solr-solrj and solr-test-framework declare correct transitive
@@ -812,6 +812,10 @@ def testMavenBuild(mavenDir, tmpDir, version):
   tmpDir: temp directory for log files
   version: Solr version string (e.g. "10.0.0")
   """
+  if skipExternalClient:
+    print('    skipping external client test (--skip-external-client specified).')
+    return
+
   print('    test external client project (verify POMs are consumable)...')
 
   scriptDir = os.path.dirname(os.path.abspath(__file__))
@@ -841,8 +845,7 @@ def testMavenBuild(mavenDir, tmpDir, version):
         ' mvn -B -f /project/pom.xml -Dsolr.version="%s" -Dlocal.solr.repo=/solr-local-release test'
         % (dockerUserArg, projectDir, mavenDir, version), os.path.join(tmpDir, 'maven-build.log'))
   else:
-    print('      WARNING: Neither Maven nor Docker found; skipping Maven build.')
-    print('               Install Maven or Docker to enable this check.')
+    raise RuntimeError('Neither Maven nor Docker is available. Install one or pass --skip-external-client to skip.')
 
   # Also run Gradle build
   gradlew = os.path.normpath(os.path.join(projectDir, '..', 'gradlew'))
@@ -853,7 +856,7 @@ def testMavenBuild(mavenDir, tmpDir, version):
   print('    external client project: SUCCESS')
 
 
-def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
+def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile, skipExternalClient=False):
   print('    download artifacts')
   artifacts = []
   artifactsURL = '%s/maven/org/apache/solr/' % baseURL
@@ -874,7 +877,7 @@ def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
 
   checkAllJARs('%s/maven/org/apache/solr' % tmpDir, gitRevision, version)
 
-  testMavenBuild('%s/maven' % tmpDir, tmpDir, version)
+  testMavenBuild('%s/maven' % tmpDir, tmpDir, version, skipExternalClient=skipExternalClient)
 
 
 def getBinaryDistFiles(tmpDir, version, baseURL):
@@ -1134,6 +1137,8 @@ def parse_config():
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
                       help='Enable dev mode, will not check branch compatibility')
+  parser.add_argument('--skip-external-client', action='store_true', default=False,
+                      help='Skip the external client smoke test (requires Maven or Docker by default)')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1186,10 +1191,10 @@ def main():
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args),
-            downloadOnly=c.download_only)
+            downloadOnly=c.download_only, skipExternalClient=c.skip_external_client)
 
 
-def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
+def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False, skipExternalClient=False):
   startTime = datetime.datetime.now()
 
   # Avoid @Nightly and @Badapple tests as they are slow and buggy
@@ -1247,7 +1252,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
-    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
+    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile, skipExternalClient=skipExternalClient)
   else:
     print("Solr test done (--download-only specified)")
 
