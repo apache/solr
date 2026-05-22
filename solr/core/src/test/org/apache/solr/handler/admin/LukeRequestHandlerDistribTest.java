@@ -137,24 +137,24 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='fields']/lst[@name='id']/long[@name='docs'][.='20']");
 
     // --- Detailed per-shard stats (topTerms, histogram, distinct) ---
-    ModifiableSolrParams detailedParams = new ModifiableSolrParams();
-    detailedParams.set("fl", "name");
-    detailedParams.set("numTerms", "5");
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("fl", "name");
+    params.set("numTerms", "5");
 
-    LukeResponse detailedRsp = requestLuke(detailedParams);
+    rsp = requestLuke(params);
 
     // Top-level fields should NOT have topTerms, distinct, histogram
-    nameField = detailedRsp.getFieldInfo().get("name");
+    nameField = rsp.getFieldInfo().get("name");
     assertNotNull("'name' field should be present", nameField);
     assertNull("topTerms should NOT be in top-level fields", nameField.getTopTerms());
     assertEquals("distinct should NOT be in top-level fields", 0, nameField.getDistinct());
 
     // Per-shard entries should have detailed stats
-    shardResponses = detailedRsp.getShardResponses();
+    shardResponses = rsp.getShardResponses();
     assertNotNull("shards section should be present", shardResponses);
 
     assertLukeXPath(
-        detailedParams,
+        params,
         "/response/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
         "/response/lst[@name='fields']/lst[@name='name']/long[@name='docs'][.='20']",
         "not(/response/lst[@name='fields']/lst[@name='name']/lst[@name='topTerms'])",
@@ -165,22 +165,22 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/int[@name='distinct']");
 
     // --- Doc lookup not found ---
-    ModifiableSolrParams notFoundParams = new ModifiableSolrParams();
-    notFoundParams.set("id", "999888777");
+    params = new ModifiableSolrParams();
+    params.set("id", "999888777");
 
-    LukeResponse notFoundRsp = requestLuke(notFoundParams);
+    rsp = requestLuke(params);
 
-    NamedList<Object> notFoundRaw = notFoundRsp.getResponse();
-    assertNull("doc section should NOT be present for missing ID", notFoundRaw.get("doc"));
+    NamedList<Object> raw = rsp.getResponse();
+    assertNull("doc section should NOT be present for missing ID", raw.get("doc"));
 
-    assertLukeXPath(notFoundParams, "not(//lst[@name='doc'])");
+    assertLukeXPath(params, "not(//lst[@name='doc'])");
 
     // --- Doc lookup found ---
-    ModifiableSolrParams foundParams = new ModifiableSolrParams();
-    foundParams.set("id", "0");
+    params = new ModifiableSolrParams();
+    params.set("id", "0");
 
     assertLukeXPath(
-        foundParams,
+        params,
         "//lst[@name='doc']/int[@name='docId']",
         "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='type'][.='string']",
         "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='value'][.='0']",
@@ -208,11 +208,11 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     assertNull("shards should NOT be present with distrib=false", rsp.getShardResponses());
 
     // --- Schema view ---
-    ModifiableSolrParams schemaParams = new ModifiableSolrParams();
-    schemaParams.set("show", "schema");
+    params = new ModifiableSolrParams();
+    params.set("show", "schema");
 
     assertLukeXPath(
-        schemaParams,
+        params,
         "//lst[@name='schema']/lst[@name='fields']/lst[@name='id']/str[@name='type'][.='string']",
         "//lst[@name='schema']/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
         "//lst[@name='schema']/lst[@name='dynamicFields']/lst[@name='*_s']",
