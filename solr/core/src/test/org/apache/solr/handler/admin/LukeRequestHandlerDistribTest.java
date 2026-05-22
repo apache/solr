@@ -83,7 +83,6 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   }
 
   @Test
-  @ShardsFixed(num = 2)
   public void testDistributedAggregateAndFields() throws Exception {
     indexTestData();
 
@@ -241,7 +240,10 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
     Map<String, LukeResponse> shardResponses = rsp.getShardResponses();
     assertNotNull("shards section should be present", shardResponses);
-    assertEquals("should have 4 shard entries", 4, shardResponses.size());
+    assertEquals(
+        "should have " + getShardCount() + " shard entries",
+        getShardCount(),
+        shardResponses.size());
 
     long sumShardDocs = 0;
     for (Map.Entry<String, LukeResponse> entry : shardResponses.entrySet()) {
@@ -276,7 +278,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         new ModifiableSolrParams(),
         "//lst[@name='index']/long[@name='numDocs'][.='1']",
         "//lst[@name='index']/long[@name='deletedDocs'][.='0']",
-        "count(//lst[@name='shards']/lst)=4",
+        "count(//lst[@name='shards']/lst)=" + getShardCount(),
         "//lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
         "//lst[@name='fields']/lst[@name='name']/str[@name='schema']",
         "//lst[@name='fields']/lst[@name='name']/str[@name='index']",
@@ -288,7 +290,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     // Index docs with the target field across shards, plus anchor docs without it.
     // Use numeric IDs (the default test schema copies id to integer fields).
     // Target docs get even IDs starting at 1000, anchor docs get odd IDs.
-    for (int i = 0; i < 4 * 4; i++) {
+    for (int i = 0; i < getShardCount() * 4; i++) {
       index("id", String.valueOf(1000 + i * 2), "flag_target_s", "value_" + i);
       index("id", String.valueOf(1001 + i * 2), "name", "anchor");
     }
@@ -323,7 +325,6 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   }
 
   @Test
-  @ShardsFixed(num = 2)
   public void testDistributedDocLookupDuplicateId() throws Exception {
     String dupId = "99999";
 
@@ -360,7 +361,6 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   }
 
   @Test
-  @ShardsFixed(num = 2)
   public void testShardsParamRoutesToSpecificShard() throws Exception {
     // Index a doc with a dynamic field only to shard 0
     index_specific(0, "id", "700", "name", "shard0_only", "only_on_shard0_s", "present");
