@@ -55,10 +55,10 @@ import org.apache.solr.search.SolrIndexSearcher;
  *
  * <p>Implementation: We use the {@link Weight#matches(LeafReaderContext, int)} API which performs a
  * separate, post-search pass over each requested document. {@link NamedMatches} become identifiable
- * through {@link NamedMatches#findNamedMatches(Matches)} on the returned Matches tree.
- * {@link org.apache.lucene.search.ScoreMode#COMPLETE_NO_SCORES} is used for the matches Weight
- * because matching does not need scoring and this lets Lucene skip score computation entirely for
- * this pass.
+ * through {@link NamedMatches#findNamedMatches(Matches)} on the returned Matches tree. {@link
+ * org.apache.lucene.search.ScoreMode#COMPLETE_NO_SCORES} is used for the matches Weight because
+ * matching does not need scoring and this lets Lucene skip score computation entirely for this
+ * pass.
  */
 public class MatchedQueriesComponent extends SearchComponent {
 

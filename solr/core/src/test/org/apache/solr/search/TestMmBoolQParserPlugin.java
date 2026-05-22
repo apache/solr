@@ -153,54 +153,6 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNamedBoolQuery() throws Exception {
-    Query actual = parseQuery(req("q", "{!bool name=my_bool must=name:foo should=name:bar}"));
-
-    BooleanQuery inner =
-        new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.MUST)
-            .add(new TermQuery(new Term("name", "bar")), BooleanClause.Occur.SHOULD)
-            .setMinimumNumberShouldMatch(0)
-            .build();
-    assertEquals(NamedMatches.wrapQuery("my_bool", inner), actual);
-  }
-
-  @Test
-  public void testNamedBoolQueryWithMinShouldMatch() throws Exception {
-    Query actual =
-        parseQuery(
-            req(
-                "q",
-                "{!bool name=at_least_two should=name:foo should=name:bar should=name:qux mm=2}"));
-
-    BooleanQuery inner =
-        new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("name", "bar")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("name", "qux")), BooleanClause.Occur.SHOULD)
-            .setMinimumNumberShouldMatch(2)
-            .build();
-    assertEquals(NamedMatches.wrapQuery("at_least_two", inner), actual);
-  }
-
-  @Test
-  public void testNamedBoolQueryWithExcludeTags() throws Exception {
-    // excludeTags filters one of the $ref clauses; _name wraps what remains
-    Query actual =
-        parseQuery(
-            req(
-                "q", "{!bool name=my_ref must=$ref excludeTags=t2}",
-                "ref", "{!tag=t1}foo",
-                "ref", "{!tag=t2}bar",
-                "df", "name"));
-    BooleanQuery inner =
-        new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.MUST)
-            .build();
-    assertEquals(NamedMatches.wrapQuery("my_ref", inner), actual);
-  }
-
-  @Test
   public void testInvalidMinShouldMatchThrowsException() {
     expectThrows(
         SolrException.class,

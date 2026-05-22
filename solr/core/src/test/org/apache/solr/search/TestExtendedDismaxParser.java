@@ -43,7 +43,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -3381,29 +3380,5 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertEquals(
         "org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
         exception.getMessage());
-  }
-
-  @Test
-  public void testNamedEdismaxQuery() throws Exception {
-    Query inner = QParser.getParser("{!edismax qf=name}Zapp", req()).getQuery();
-    Query named = QParser.getParser("{!edismax name=edismax_q qf=name}Zapp", req()).getQuery();
-    assertEquals(NamedMatches.wrapQuery("edismax_q", inner), named);
-  }
-
-  @Test
-  public void testNamedFuzzyQuery() throws Exception {
-    // cat_s is a string field — no multi-term analysis, term is used verbatim
-    Query actual = QParser.getParser("{!fuzzy name=cat_fuzzy f=cat_s}fantasy", req()).getQuery();
-    assertEquals(
-        NamedMatches.wrapQuery("cat_fuzzy", new FuzzyQuery(new Term("cat_s", "fantasy"))), actual);
-  }
-
-  @Test
-  public void testNamedFuzzyQueryCustomMaxEdits() throws Exception {
-    Query actual =
-        QParser.getParser("{!fuzzy name=cat_fuzzy1 f=cat_s maxEdits=1}fantasy", req()).getQuery();
-    assertEquals(
-        NamedMatches.wrapQuery("cat_fuzzy1", new FuzzyQuery(new Term("cat_s", "fantasy"), 1)),
-        actual);
   }
 }

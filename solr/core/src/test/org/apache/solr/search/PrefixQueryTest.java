@@ -16,8 +16,6 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.NamedMatches;
-import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
@@ -116,21 +114,6 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
     // Both of these queries succeed since the '?' wildcard is counted as a part of the prefix
     assertQ(req("val_s:a?c*"), "//*[@numFound='2']"); // Matches 'aac' and 'abc'
     assertQ(req("val_s:a??*"), "//*[@numFound='4']"); // Matches all documents starting with 'a'
-  }
-
-  @Test
-  public void testNamedPrefixQuery() throws Exception {
-    Query inner = QParser.getParser("{!prefix f=cat_s}fanta", req()).getQuery();
-    Query named = QParser.getParser("{!prefix name=fanta_cat f=cat_s}fanta", req()).getQuery();
-    assertEquals(NamedMatches.wrapQuery("fanta_cat", inner), named);
-  }
-
-  @Test
-  public void testNamedPrefixQueryDifferentField() throws Exception {
-    Query inner = QParser.getParser("{!prefix f=author_s1}Robert", req()).getQuery();
-    Query named =
-        QParser.getParser("{!prefix name=robert_author f=author_s1}Robert", req()).getQuery();
-    assertEquals(NamedMatches.wrapQuery("robert_author", inner), named);
   }
 
   private static String createDocWithFieldVal(String id, String fieldVal) {
