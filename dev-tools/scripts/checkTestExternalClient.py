@@ -29,10 +29,10 @@ Set JAVA_HOME if you need to point at a specific JDK.
 Usage examples:
 
   # Test against a local Maven repository (produced by "gradlew mavenToLocalFolder"):
-  python3 checkTestExternalClient.py --maven-dir build/maven-local 10.0.0
+  python3 checkTestExternalClient.py --repo-dir build/maven-local 10.0.0
 
   # Test against a release-candidate Maven staging URL (artifacts are downloaded):
-  python3 checkTestExternalClient.py --url https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-abc1234/maven 10.0.0
+  python3 checkTestExternalClient.py --repo-url https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-abc1234/maven 10.0.0
 
 Requirements: Maven (mvn) or Docker must be available for the Maven build.  The Gradle
 build uses the gradlew wrapper in the repository root.
@@ -53,10 +53,10 @@ def parse_config():
   epilog = textwrap.dedent('''
     Examples:
       # Use locally published Maven artifacts (run "gradlew mavenToLocalFolder" first):
-      python3 checkTestExternalClient.py --maven-dir build/maven-local 10.0.0
+      python3 checkTestExternalClient.py --repo-dir build/maven-local 10.0.0
 
       # Download Maven artifacts from a release-candidate staging URL:
-      python3 checkTestExternalClient.py --url https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-abc1234/maven 10.0.0
+      python3 checkTestExternalClient.py --repo-url https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-abc1234/maven 10.0.0
   ''')
   parser = argparse.ArgumentParser(
     description='Build the test-external-client project against Solr Maven artifacts.',
@@ -67,10 +67,10 @@ def parse_config():
                       help='Solr version to test (e.g. 10.0.0)')
 
   source = parser.add_mutually_exclusive_group(required=True)
-  source.add_argument('--maven-dir', metavar='DIR',
+  source.add_argument('--repo-dir', metavar='DIR',
                       help='Local Maven repository directory whose root contains '
                            'org/apache/solr/ (e.g. the output of "gradlew mavenToLocalFolder")')
-  source.add_argument('--url', metavar='URL',
+  source.add_argument('--repo-url', metavar='URL',
                       help='URL of the Maven repository to test against '
                            '(artifacts will be downloaded into --tmp-dir)')
 
@@ -92,20 +92,20 @@ def main():
 
   print('Using tmp dir: %s' % tmp_dir)
 
-  if c.maven_dir:
-    maven_dir = os.path.abspath(c.maven_dir)
-    print('Using local Maven repository: %s' % maven_dir)
+  if c.repo_dir:
+    repo_dir = os.path.abspath(c.repo_dir)
+    print('Using local Maven repository: %s' % repo_dir)
   else:
     # Download Maven artifacts from the given URL
-    maven_dir = os.path.join(tmp_dir, 'maven')
-    target_dir = os.path.join(maven_dir, 'org', 'apache', 'solr')
+    repo_dir = os.path.join(tmp_dir, 'maven')
+    target_dir = os.path.join(repo_dir, 'org', 'apache', 'solr')
     os.makedirs(target_dir, exist_ok=True)
-    artifacts_url = c.url.rstrip('/') + '/org/apache/solr/'
+    artifacts_url = c.repo_url.rstrip('/') + '/org/apache/solr/'
     print('Downloading Maven artifacts from %s' % artifacts_url)
     smokeTestRelease.crawl([], artifacts_url, target_dir)
     print()
 
-  smokeTestRelease.testMavenBuild(maven_dir, tmp_dir, c.version)
+  smokeTestRelease.testMavenBuild(repo_dir, tmp_dir, c.version)
 
   print('\nSUCCESS!')
 
@@ -115,4 +115,3 @@ if __name__ == '__main__':
     main()
   except KeyboardInterrupt:
     print('Keyboard interrupt...exiting')
-

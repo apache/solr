@@ -802,13 +802,13 @@ def _dockerAvailable():
   return os.system('docker info > /dev/null 2>&1') == 0
 
 
-def testMavenBuild(mavenDir, tmpDir, version, skipExternalClient=False):
+def testMavenBuild(repoDir, tmpDir, version, skipExternalClient=False):
   """
   Runs the test-external-client project with both Maven and Gradle to verify that the
   published POMs for solr-solrj and solr-test-framework declare correct transitive
   dependencies.
 
-  mavenDir: root of the local Maven repository (contains org/apache/solr/...)
+  repoDir: root of the local Maven repository (contains org/apache/solr/...)
   tmpDir: temp directory for log files
   version: Solr version string (e.g. "10.0.0")
   """
@@ -828,7 +828,7 @@ def testMavenBuild(mavenDir, tmpDir, version, skipExternalClient=False):
   if mvnCmd is not None:
     print('      using local Maven: %s' % mvnCmd)
     run('"%s" -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" test'
-        % (mvnCmd, projectDir, version, mavenDir), os.path.join(tmpDir, 'maven-build.log'))
+        % (mvnCmd, projectDir, version, repoDir), os.path.join(tmpDir, 'maven-build.log'))
   elif _dockerAvailable():
     print('      Maven not found; using Docker Maven image...')
     # Note: the Docker image already includes Java 21
@@ -843,7 +843,7 @@ def testMavenBuild(mavenDir, tmpDir, version, skipExternalClient=False):
         ' -v "%s":/solr-local-release:ro'
         ' maven:3.9-eclipse-temurin-21'
         ' mvn -B -f /project/pom.xml -Dsolr.version="%s" -Dlocal.solr.repo=/solr-local-release test'
-        % (dockerUserArg, projectDir, mavenDir, version), os.path.join(tmpDir, 'maven-build.log'))
+        % (dockerUserArg, projectDir, repoDir, version), os.path.join(tmpDir, 'maven-build.log'))
   else:
     raise RuntimeError('Neither Maven nor Docker is available. Install one or pass --skip-external-client to skip.')
 
@@ -851,7 +851,7 @@ def testMavenBuild(mavenDir, tmpDir, version, skipExternalClient=False):
   gradlew = os.path.normpath(os.path.join(projectDir, '..', 'gradlew'))
   print('      using Gradle: %s' % gradlew)
   run('"%s" --no-daemon -p "%s" -Psolr.version="%s" -Plocal.solr.repo="%s" test'
-      % (gradlew, projectDir, version, mavenDir), os.path.join(tmpDir, 'gradle-build.log'))
+      % (gradlew, projectDir, version, repoDir), os.path.join(tmpDir, 'gradle-build.log'))
 
   print('    external client project: SUCCESS')
 
