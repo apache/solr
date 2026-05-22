@@ -33,12 +33,4 @@ To force Maven to avoid online repos while resolving, add `-o` (offline).
   test)
 ```
 
-## Optional: use Maven Wrapper
-
-From the project directory:
-
-```bash
-cd test-external-client
-mvn -N wrapper:wrapper
-```
 

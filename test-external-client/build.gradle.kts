@@ -23,7 +23,7 @@ group = "org.apache.solr"
 version = "1.0-SNAPSHOT"
 description = "A smoke test for solr-test-framework & SolrJ dependencies and usage."
 
-val solrVersion = providers.gradleProperty("solr.version").orElse("11.0.0-SNAPSHOT")
+val solrVersion = project.property("solr.version") as String
 val localSolrRepo =
     providers.gradleProperty("local.solr.repo")
         .orElse("${System.getProperty("user.home")}/.m2/repository")
@@ -54,8 +54,8 @@ configurations.configureEach {
 }
 
 dependencies {
-    testImplementation("org.apache.solr:solr-solrj:${solrVersion.get()}")
-    testImplementation("org.apache.solr:solr-test-framework:${solrVersion.get()}")
+    testImplementation("org.apache.solr:solr-solrj:$solrVersion")
+    testImplementation("org.apache.solr:solr-test-framework:$solrVersion")
 }
 
 tasks.withType<Test>().configureEach {

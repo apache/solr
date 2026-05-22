@@ -29,7 +29,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <local.solr.repo>${user.home}/.m2/repository</local.solr.repo>
-    <solr.version>11.0.0-SNAPSHOT</solr.version>
   </properties>
 
   <repositories>
