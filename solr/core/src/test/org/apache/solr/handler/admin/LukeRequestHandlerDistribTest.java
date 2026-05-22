@@ -164,33 +164,6 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/lst[@name='histogram']/int[@name='1']",
         "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/int[@name='distinct']");
 
-    // --- Doc lookup not found ---
-    params = new ModifiableSolrParams();
-    params.set("id", "999888777");
-
-    rsp = requestLuke(params);
-
-    NamedList<Object> raw = rsp.getResponse();
-    assertNull("doc section should NOT be present for missing ID", raw.get("doc"));
-
-    assertLukeXPath(params, "not(//lst[@name='doc'])");
-
-    // --- Doc lookup found ---
-    params = new ModifiableSolrParams();
-    params.set("id", "0");
-
-    assertLukeXPath(
-        params,
-        "//lst[@name='doc']/int[@name='docId']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='type'][.='string']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='value'][.='0']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='type'][.='nametext']",
-        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='value'][.='name_0']",
-        "//lst[@name='doc']/arr[@name='solr']/str[.='0']",
-        "//lst[@name='doc']/arr[@name='solr']/str[.='name_0']",
-        "//lst[@name='index']",
-        "//lst[@name='info']");
-
     // Query a single client without the shards param — local mode
     LukeRequest req = new LukeRequest();
     req.setNumTerms(0);
@@ -222,6 +195,33 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='schema']/lst[@name='similarity']",
         "not(/response/lst[@name='fields'])",
         "count(//lst[@name='shards']/lst)=2");
+
+    // --- Doc lookup not found ---
+    params = new ModifiableSolrParams();
+    params.set("id", "999888777");
+
+    rsp = requestLuke(params);
+
+    NamedList<Object> raw = rsp.getResponse();
+    assertNull("doc section should NOT be present for missing ID", raw.get("doc"));
+
+    assertLukeXPath(params, "not(//lst[@name='doc'])");
+
+    // --- Doc lookup found ---
+    params = new ModifiableSolrParams();
+    params.set("id", "0");
+
+    assertLukeXPath(
+        params,
+        "//lst[@name='doc']/int[@name='docId']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='type'][.='string']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='value'][.='0']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='type'][.='nametext']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='value'][.='name_0']",
+        "//lst[@name='doc']/arr[@name='solr']/str[.='0']",
+        "//lst[@name='doc']/arr[@name='solr']/str[.='name_0']",
+        "//lst[@name='index']",
+        "//lst[@name='info']");
   }
 
   @Test
@@ -304,18 +304,18 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     controlClient.deleteByQuery("flag_target_s:* AND -id:1000");
     controlClient.optimize();
 
-    ModifiableSolrParams flagParams = new ModifiableSolrParams();
-    flagParams.set("fl", "flag_target_s");
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("fl", "flag_target_s");
 
-    LukeResponse flagRsp = requestLuke(flagParams);
+    rsp = requestLuke(params);
 
-    Map<String, LukeResponse.FieldInfo> flagFields = flagRsp.getFieldInfo();
-    assertNotNull("fields should be present", flagFields);
-    LukeResponse.FieldInfo targetField = flagFields.get("flag_target_s");
+    fields = rsp.getFieldInfo();
+    assertNotNull("fields should be present", fields);
+    LukeResponse.FieldInfo targetField = fields.get("flag_target_s");
     assertNotNull("'flag_target_s' field should be present", targetField);
 
     assertLukeXPath(
-        flagParams,
+        params,
         "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='type'][.='string']",
         "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='dynamicBase'][.='*_s']",
         "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='index']",
