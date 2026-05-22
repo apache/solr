@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
-import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -71,21 +70,6 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
     LukeRequest req = new LukeRequest(extra);
     req.setNumTerms(0);
     req.process(cluster.getSolrClient(), collection);
-  }
-
-  @Test
-  public void testLocalMode() throws Exception {
-    DocCollection docColl = getCollectionState(DISTRIB_COLLECTION);
-    Slice slice = docColl.getSlices().iterator().next();
-    Replica leader = slice.getLeader();
-    try (SolrClient client = getHttpSolrClient(leader)) {
-      LukeRequest req = new LukeRequest(params(DISTRIB, "false"));
-      req.setNumTerms(0);
-      LukeResponse rsp = req.process(client);
-
-      assertNotNull("index info should be present", rsp.getIndexInfo());
-      assertNull("shards should NOT be present in local mode", rsp.getShardResponses());
-    }
   }
 
   @Test

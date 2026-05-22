@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.util.Map;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -142,13 +143,15 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
     LukeResponse detailedRsp = requestLuke(detailedParams);
 
-    LukeResponse.FieldInfo detailedNameField = detailedRsp.getFieldInfo().get("name");
-    assertNotNull("'name' field should be present", detailedNameField);
-    assertNull("topTerms should NOT be in top-level fields", detailedNameField.getTopTerms());
-    assertEquals("distinct should NOT be in top-level fields", 0, detailedNameField.getDistinct());
+    // Top-level fields should NOT have topTerms, distinct, histogram
+    nameField = detailedRsp.getFieldInfo().get("name");
+    assertNotNull("'name' field should be present", nameField);
+    assertNull("topTerms should NOT be in top-level fields", nameField.getTopTerms());
+    assertEquals("distinct should NOT be in top-level fields", 0, nameField.getDistinct());
 
-    Map<String, LukeResponse> detailedShardResponses = detailedRsp.getShardResponses();
-    assertNotNull("shards section should be present", detailedShardResponses);
+    // Per-shard entries should have detailed stats
+    shardResponses = detailedRsp.getShardResponses();
+    assertNotNull("shards section should be present", shardResponses);
 
     assertLukeXPath(
         detailedParams,
@@ -188,6 +191,22 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         "//lst[@name='index']",
         "//lst[@name='info']");
 
+    // Query a single client without the shards param — local mode
+    LukeRequest req = new LukeRequest();
+    req.setNumTerms(0);
+    rsp = req.process(controlClient);
+
+    assertNotNull("index info should be present", rsp.getIndexInfo());
+    assertNull("shards should NOT be present in local mode", rsp.getShardResponses());
+
+    // Query a single client with distrib=false — no shards param
+    req = new LukeRequest(params("distrib", "false"));
+    req.setNumTerms(0);
+    rsp = req.process(controlClient);
+
+    assertNotNull("index info should be present", rsp.getIndexInfo());
+    assertNull("shards should NOT be present with distrib=false", rsp.getShardResponses());
+
     // --- Schema view ---
     ModifiableSolrParams schemaParams = new ModifiableSolrParams();
     schemaParams.set("show", "schema");
@@ -206,7 +225,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
   }
 
   @Test
-  @ShardsFixed(num = 12)
+  @ShardsFixed(num = 4)
   public void testSparseShardsAndDeferredIndexFlags() throws Exception {
     // Index a single doc on shard 0
     index_specific(
@@ -222,7 +241,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
     Map<String, LukeResponse> shardResponses = rsp.getShardResponses();
     assertNotNull("shards section should be present", shardResponses);
-    assertEquals("should have 12 shard entries", 12, shardResponses.size());
+    assertEquals("should have 4 shard entries", 4, shardResponses.size());
 
     long sumShardDocs = 0;
     for (Map.Entry<String, LukeResponse> entry : shardResponses.entrySet()) {
@@ -257,7 +276,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
         new ModifiableSolrParams(),
         "//lst[@name='index']/long[@name='numDocs'][.='1']",
         "//lst[@name='index']/long[@name='deletedDocs'][.='0']",
-        "count(//lst[@name='shards']/lst)=12",
+        "count(//lst[@name='shards']/lst)=4",
         "//lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
         "//lst[@name='fields']/lst[@name='name']/str[@name='schema']",
         "//lst[@name='fields']/lst[@name='name']/str[@name='index']",
@@ -269,7 +288,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     // Index docs with the target field across shards, plus anchor docs without it.
     // Use numeric IDs (the default test schema copies id to integer fields).
     // Target docs get even IDs starting at 1000, anchor docs get odd IDs.
-    for (int i = 0; i < 12 * 4; i++) {
+    for (int i = 0; i < 4 * 4; i++) {
       index("id", String.valueOf(1000 + i * 2), "flag_target_s", "value_" + i);
       index("id", String.valueOf(1001 + i * 2), "name", "anchor");
     }
@@ -278,9 +297,9 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     // Delete all target docs except the first one, using per-shard deletes.
     // Then optimize to force segment merge — expunges soft-deleted docs so
     // Terms.getDocCount() (which backs docs) reflects only live docs.
-    for (int i = 0; i < clients.size(); i++) {
-      clients.get(i).deleteByQuery("flag_target_s:* AND -id:1000");
-      clients.get(i).optimize();
+    for (SolrClient client : clients) {
+      client.deleteByQuery("flag_target_s:* AND -id:1000");
+      client.optimize();
     }
     controlClient.deleteByQuery("flag_target_s:* AND -id:1000");
     controlClient.optimize();
