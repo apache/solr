@@ -823,18 +823,23 @@ def testMavenBuild(mavenDir, tmpDir, version):
   mvnCmd = findMaven()
   if mvnCmd is not None:
     print('      using local Maven: %s' % mvnCmd)
-    run('%s -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" test'
+    run('"%s" -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" test'
         % (mvnCmd, projectDir, version, mavenDir), os.path.join(tmpDir, 'maven-build.log'))
   elif _dockerAvailable():
     print('      Maven not found; using Docker Maven image...')
     # Note: the Docker image already includes Java 21
-    # Project is mounted writable so Maven can write its build output directory
-    run('docker run --rm'
+    # Project is mounted writable so Maven can write its build output directory.
+    # When supported, run the container as the current user to avoid leaving
+    # root-owned files in the bind-mounted working copy.
+    dockerUserArg = ''
+    if hasattr(os, 'getuid') and hasattr(os, 'getgid'):
+      dockerUserArg = ' -u %d:%d' % (os.getuid(), os.getgid())
+    run('docker run --rm%s'
         ' -v "%s":/project'
         ' -v "%s":/solr-local-release:ro'
         ' maven:3.9-eclipse-temurin-21'
         ' mvn -B -f /project/pom.xml -Dsolr.version="%s" -Dlocal.solr.repo=/solr-local-release test'
-        % (projectDir, mavenDir, version), os.path.join(tmpDir, 'maven-build.log'))
+        % (dockerUserArg, projectDir, mavenDir, version), os.path.join(tmpDir, 'maven-build.log'))
   else:
     print('      WARNING: Neither Maven nor Docker found; skipping Maven build.')
     print('               Install Maven or Docker to enable this check.')

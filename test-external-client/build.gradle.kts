@@ -26,7 +26,7 @@ description = "A smoke test for solr-test-framework & SolrJ dependencies and usa
 val solrVersion = providers.gradleProperty("solr.version").orElse("11.0.0-SNAPSHOT")
 val localSolrRepo =
     providers.gradleProperty("local.solr.repo")
-        .orElse("${System.getProperty("user.dir")}/build/maven-local")
+        .orElse("${System.getProperty("user.home")}/.m2/repository")
 
 java {
     toolchain {
