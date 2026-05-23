@@ -22,7 +22,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.apache.solr.languagemodels.model.SolrTextToVectorModel;
-import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.After;
@@ -187,7 +187,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLanguageModelBas
       String inputFieldName, String outputFieldName, SolrCore collection1, String modelName) {
     NamedList<String> args = new NamedList<>();
 
-    ManagedTextToVectorModelStore.getManagedModelStore(collection1)
+    TextToVectorModelStore.getManagedModelStore(collection1)
         .addModel(new SolrTextToVectorModel(modelName, null, null));
     args.add("inputField", inputFieldName);
     args.add("outputField", outputFieldName);

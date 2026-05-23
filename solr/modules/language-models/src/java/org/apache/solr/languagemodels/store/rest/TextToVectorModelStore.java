@@ -27,8 +27,7 @@ import org.apache.solr.rest.ManagedResourceStorage;
 
 /** Managed Resource wrapper for the text-to-vector model store, exposed via REST */
 @ThreadSafe
-public class ManagedTextToVectorModelStore
-    extends ManagedLanguageModelStore<SolrTextToVectorModel> {
+public class TextToVectorModelStore extends ManagedLanguageModelStore<SolrTextToVectorModel> {
 
   /** the model store rest endpoint */
   public static final String REST_END_POINT = "/schema/text-to-vector-model-store";
@@ -38,11 +37,11 @@ public class ManagedTextToVectorModelStore
     solrResourceLoader
         .getManagedResourceRegistry()
         .registerManagedResource(
-            REST_END_POINT, ManagedTextToVectorModelStore.class, managedResourceObserver);
+            REST_END_POINT, TextToVectorModelStore.class, managedResourceObserver);
   }
 
-  public static ManagedTextToVectorModelStore getManagedModelStore(SolrCore core) {
-    return (ManagedTextToVectorModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
+  public static TextToVectorModelStore getManagedModelStore(SolrCore core) {
+    return (TextToVectorModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
   @Override
@@ -56,7 +55,7 @@ public class ManagedTextToVectorModelStore
         (Map<String, Object>) textToVectorModel.get(PARAMS_KEY));
   }
 
-  public ManagedTextToVectorModelStore(
+  public TextToVectorModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
