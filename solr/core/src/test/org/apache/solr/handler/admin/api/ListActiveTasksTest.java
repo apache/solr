@@ -1,30 +1,26 @@
 package org.apache.solr.handler.admin.api;
 
-import io.opentelemetry.api.trace.Span;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
-import org.apache.solr.client.api.model.ListAliasesResponse;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.client.api.model.TaskStatusResponse;
+import org.apache.solr.core.CancellableQueryTracker;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class ListActiveTasksTest extends SolrTestCaseJ4 {
 
   private SolrQueryRequest mockQueryRequest;
+  private SolrCore solrCore;
+  private CancellableQueryTracker cancellableQueryTracker;
 
   private ListActiveTasks listActiveTasks;
 
@@ -39,6 +35,8 @@ public class ListActiveTasksTest extends SolrTestCaseJ4 {
     super.setUp();
 
     mockQueryRequest = mock(SolrQueryRequest.class);
+    solrCore = mock(SolrCore.class);
+    cancellableQueryTracker = mock(CancellableQueryTracker.class);
 
     listActiveTasks = new ListActiveTasks(mockQueryRequest);
   }
@@ -46,15 +44,40 @@ public class ListActiveTasksTest extends SolrTestCaseJ4 {
   @Test
   public void testGetActiveTasks() throws Exception {
 
-    Map<String, String> myMap = new HashMap<>();
-    myMap.put("Key1", "Value1");
-    myMap.put("Key2", "Value2");
+    Map<String, String> myMap = new LinkedHashMap<>();
+    myMap.put("taskID1", "/search?q=h&gf=text-1");
+    myMap.put("taskID2", "/search?q=h&gf=text-2");
     Iterator<Map.Entry<String, String>> mockIterator = myMap.entrySet().iterator();
 
-    when(mockQueryRequest.getCore().getCancellableQueryTracker().getActiveQueriesGenerated()).thenReturn(mockIterator);
+    when(mockQueryRequest.getCore()).thenReturn(solrCore);
+    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
+    when(cancellableQueryTracker.getActiveQueriesGenerated()).thenReturn(mockIterator);
 
     ListActiveTaskResponse response = listActiveTasks.listAllActiveTasks();
+    assertNotNull(response.taskList);
 
+    assertEquals(2, response.taskList.size());
+
+    assertEquals("taskID1", response.taskList.get(0).taskUUID);
+    assertEquals("/search?q=h&gf=text-1", response.taskList.get(0).taskQuery);
+
+    assertNull(response.error);
   }
 
+  @Test
+  public void testGetTaskStatus() throws Exception {
+
+    when(mockQueryRequest.getCore()).thenReturn(solrCore);
+    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
+    when(cancellableQueryTracker.isQueryIdActive("taskID_running")).thenReturn(true);
+    when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
+
+    TaskStatusResponse responseRunningTask = listActiveTasks.getTaskStatus("taskID_running");
+    assertTrue(responseRunningTask.taskStatus);
+    assertNull(responseRunningTask.error);
+
+    TaskStatusResponse responseStoppedTask = listActiveTasks.getTaskStatus("taskID_stopped");
+    assertFalse(responseStoppedTask.taskStatus);
+    assertNull(responseStoppedTask.error);
+  }
 }
