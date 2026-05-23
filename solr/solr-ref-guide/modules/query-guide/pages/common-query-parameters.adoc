@@ -288,6 +288,7 @@ The `debug` parameter can be specified multiple times and supports the following
 * `debug=timing`: return debug information about how long the query took to process.
 * `debug=results`: return debug information about the score results (also known as "explain").
 ** By default, score explanations are returned as large string values, using newlines and tab indenting for structure & readability, but an additional `debug.explain.structured=true` parameter may be specified to return this information as nested data structures native to the response format requested by `wt`.
+** To see which named sub-queries matched each document (rather than score breakdowns), see xref:matched-queries-component.adoc[].
 * `debug=all`: return all available debug information about the request request.
 An alternative usage is `debug=true`.
 
