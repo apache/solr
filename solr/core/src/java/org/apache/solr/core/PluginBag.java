@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 import java.io.IOException;
@@ -253,7 +252,7 @@ public class PluginBag<T> implements AutoCloseable {
           if (registerApi) {
             Collection<Api> apis = apiSupport.getApis();
             if (apis != null) {
-              Map<String, String> nameSubstitutes = singletonMap(HANDLER_NAME, name);
+              Map<String, String> nameSubstitutes = Map.of(HANDLER_NAME, name);
               for (Api api : apis) {
                 apiBag.register(api, nameSubstitutes);
               }
@@ -414,8 +413,7 @@ public class PluginBag<T> implements AutoCloseable {
 
     public PluginHolder(T inst, SolrConfig.SolrPluginInfo info) {
       this.inst = inst;
-      pluginInfo =
-          new PluginInfo(info.tag, Collections.singletonMap("class", inst.getClass().getName()));
+      pluginInfo = new PluginInfo(info.tag, Map.of("class", inst.getClass().getName()));
     }
 
     public PluginHolder(PluginInfo info) {

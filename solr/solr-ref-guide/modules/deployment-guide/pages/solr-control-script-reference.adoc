@@ -339,7 +339,7 @@ For more information about starting Solr in SolrCloud mode, see also the section
 
 `bin/solr start --user-managed` starts Solr in User Managed mode (AKA Standalone mode).  This was the default mode up until Solr 10x.
 
-For more information about the different modes, see the section xref:deployment-guide:cluster-types.adoc[].
+For more information about the different modes, see the section xref:getting-started:cluster-types.adoc[].
 
 
 ==== Running with Example Configurations
@@ -361,18 +361,18 @@ When chosen, an interactive session will start to guide you through options to s
 +
 When using this example, you can choose from any of the available configsets found in `$SOLR_TIP/server/solr/configsets`.
 
-* *techproducts*: This example starts a single-node Solr instance with a schema designed for the sample documents included in the `$SOLR_HOME/example/exampledocs` directory.
+* *techproducts*: This example starts a standalone Solr instance with a schema designed for the sample documents included in the `$SOLR_HOME/example/exampledocs` directory.
 +
 The configset used can be found in `$SOLR_TIP/server/solr/configsets/sample_techproducts_configs`.
 +
 The data used can be found in `$SOLR_HOME/example/exampledocs/`.
 
-* *schemaless*: This example starts a single-node Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
+* *schemaless*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
 Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
 +
 The configset used can be found in `$SOLR_TIP/server/solr/configsets/_default`.
 
-* *films*: This example starts a single-node Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and then uses the Schema API to create some custom fields.
+* *films*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and then uses the Schema API to create some custom fields.
 Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents as well.
 It then loads some sample film data.
 +
@@ -800,7 +800,7 @@ See also the section <<Set or Unset Configuration Properties>>.
 
 === Delete Collection or Core
 
-The `delete` command detects the mode that Solr is running in and then deletes the specified collection (SolrCloud) or core (user-managed or single-node) as appropriate.
+The `delete` command detects the mode that Solr is running in and then deletes the specified collection (SolrCloud) or core (user-managed or standalone) as appropriate.
 
 `bin/solr delete [options]`
 

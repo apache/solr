@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
@@ -68,7 +67,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     configureCluster(1).addConfig("_default", ExternalPaths.DEFAULT_CONFIGSET).configure();
     solrClient =
         new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
 
     final String SCHEME = "digest";
@@ -123,8 +122,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
           @Override
           protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
             return new DefaultZkCredentialsProvider(
-                Collections.singletonList(
-                    new AuthInfo(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8))));
+                List.of(new AuthInfo(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8))));
           }
         };
   }

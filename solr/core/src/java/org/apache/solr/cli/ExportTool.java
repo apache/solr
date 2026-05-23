@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -247,9 +246,7 @@ public class ExportTool extends ToolBase {
       var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
-              .withHttpClientBuilder(builder)
-              .build();
+          new CloudSolrClient.Builder(List.of(baseurl)).withHttpClientBuilder(builder).build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(

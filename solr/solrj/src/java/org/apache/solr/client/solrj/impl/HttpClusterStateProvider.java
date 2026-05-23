@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 /** A CSP that uses Solr HTTP APIs. */
-public class HttpClusterStateProvider<C extends HttpSolrClientBase>
+public class HttpClusterStateProvider<C extends HttpSolrClient>
     extends BaseHttpClusterStateProvider {
   // formerly known as Http2ClusterStateProvider
 
@@ -32,7 +32,7 @@ public class HttpClusterStateProvider<C extends HttpSolrClientBase>
    * caller's responsibility to close the client.
    *
    * @param solrUrls root path solr urls
-   * @param httpClient an instance of HttpSolrClientBase
+   * @param httpClient an instance of HttpSolrClient
    * @throws Exception if a problem with initialization occurs
    */
   public HttpClusterStateProvider(List<String> solrUrls, C httpClient) throws Exception {
@@ -51,7 +51,7 @@ public class HttpClusterStateProvider<C extends HttpSolrClientBase>
   @Override
   @SuppressWarnings("unchecked")
   protected C getSolrClient(String baseUrl) {
-    return (C) httpClient.builder().withBaseSolrUrl(baseUrl).build();
+    return (C) httpClient.toBuilder(baseUrl).build();
   }
 
   public C getHttpClient() {

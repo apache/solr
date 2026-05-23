@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io;
 
 import java.io.Closeable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,10 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
@@ -50,7 +47,7 @@ public class SolrClientCache implements Closeable {
   protected String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
-  private final HttpSolrClientBase httpSolrClient;
+  private final HttpSolrClient httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
 
@@ -58,7 +55,7 @@ public class SolrClientCache implements Closeable {
     this.httpSolrClient = null;
   }
 
-  public SolrClientCache(HttpSolrClientBase httpSolrClient) {
+  public SolrClientCache(HttpSolrClient httpSolrClient) {
     this.httpSolrClient = httpSolrClient;
   }
 
@@ -77,29 +74,36 @@ public class SolrClientCache implements Closeable {
     }
   }
 
-  public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
+  public synchronized CloudSolrClient getCloudSolrClient(String connectionString) {
     ensureOpen();
-    Objects.requireNonNull(zkHost, "ZooKeeper host cannot be null!");
-    if (solrClients.containsKey(zkHost)) {
-      return (CloudSolrClient) solrClients.get(zkHost);
+    Objects.requireNonNull(connectionString, "Connection string cannot be null!");
+    if (solrClients.containsKey(connectionString)) {
+      return (CloudSolrClient) solrClients.get(connectionString);
     }
     // Can only use ZK ACLs if there is a default ZK Host, and the given ZK host contains that
     // default.
     // Basically the ZK ACLs are assumed to be only used for the default ZK host,
     // thus we should only provide the ACLs to that Zookeeper instance.
-    String zkHostNoChroot = zkHost.split("/")[0];
-    boolean canUseACLs =
-        Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
+    boolean canUseACLs = false;
+    var cloudClientConnection = CloudSolrClient.CloudSolrClientConnection.parse(connectionString);
+    if (cloudClientConnection.isZk()) {
+      String chroot = cloudClientConnection.zkChroot();
+      String zkHostNoChroot =
+          chroot != null && connectionString.endsWith(chroot)
+              ? connectionString.substring(0, connectionString.length() - chroot.length())
+              : connectionString;
+      canUseACLs =
+          Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
+    }
 
-    final var client = newCloudSolrClient(zkHost, httpSolrClient, canUseACLs);
-    solrClients.put(zkHost, client);
+    final var client = newCloudSolrClient(connectionString, httpSolrClient, canUseACLs);
+    solrClients.put(connectionString, client);
     return client;
   }
 
   protected CloudSolrClient newCloudSolrClient(
-      String zkHost, HttpSolrClientBase httpSolrClient, boolean canUseACLs) {
-    final List<String> hosts = List.of(zkHost);
-    var builder = new CloudSolrClient.Builder(hosts, Optional.empty());
+      String connectionString, HttpSolrClient httpSolrClient, boolean canUseACLs) {
+    var builder = new CloudSolrClient.Builder(connectionString);
     builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
     builder = builder.withHttpClientBuilder(newHttpSolrClientBuilder(null, httpSolrClient));
@@ -132,15 +136,18 @@ public class SolrClientCache implements Closeable {
     return client;
   }
 
-  protected HttpSolrClientBuilderBase<?, ?> newHttpSolrClientBuilder(
-      String url, HttpSolrClientBase httpSolrClient) {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  protected HttpSolrClient.BuilderBase<?, ?> newHttpSolrClientBuilder(
+      String url, HttpSolrClient httpSolrClient) {
     final var builder =
         (url == null || URLUtil.isBaseUrl(url)) // URL may be null here and set by caller
-            ? new HttpJettySolrClient.Builder(url)
-            : new HttpJettySolrClient.Builder(URLUtil.extractBaseUrl(url))
+            ? HttpSolrClient.builder(url)
+            : HttpSolrClient.builder(URLUtil.extractBaseUrl(url))
                 .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(url));
     if (httpSolrClient != null) {
-      builder.withHttpClient((HttpJettySolrClient) httpSolrClient); // TODO support JDK
+      // this generics hack works around the fact that we can't guarantee that the new client and
+      // the existing passed-in client are compatible  Oh well; tough luck, best-effort.
+      ((HttpSolrClient.BuilderBase) builder).withHttpClient(httpSolrClient);
       // cannot set connection timeout
     } else {
       builder.withConnectionTimeout(minConnTimeout, TimeUnit.MILLISECONDS);

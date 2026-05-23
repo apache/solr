@@ -18,7 +18,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -218,8 +217,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
-      return Collections.singletonList(
-          hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
+      return List.of(hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
     }
 
     Range completeRange = new KeyParser(id).getRange();
@@ -255,7 +253,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       throw new IllegalArgumentException("Key range does not overlap given range");
     }
     if (keyRange.equals(range)) {
-      return Collections.singletonList(keyRange);
+      return List.of(keyRange);
     } else if (keyRange.isSubsetOf(range)) {
       result.add(new Range(range.min, keyRange.min - 1));
       result.add(keyRange);

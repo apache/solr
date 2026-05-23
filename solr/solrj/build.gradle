@@ -37,9 +37,6 @@ dependencies {
 
   compileOnly libs.stephenc.jcip.annotations
 
-  testImplementation libs.apache.httpcomponents.httpclient
-  testImplementation libs.apache.httpcomponents.httpcore
-
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')

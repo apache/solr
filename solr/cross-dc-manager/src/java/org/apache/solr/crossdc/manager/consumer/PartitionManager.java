@@ -16,11 +16,12 @@
  */
 package org.apache.solr.crossdc.manager.consumer;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,13 +45,16 @@ public class PartitionManager {
     final Queue<WorkUnit> partitionQueue = new ArrayDeque<>();
   }
 
-  static class WorkUnit {
-    final TopicPartition partition;
-    Set<Future<?>> workItems = new HashSet<>();
+  @VisibleForTesting
+  public static class WorkUnit {
+    final int partition;
+    final String topic;
+    final Set<Future<?>> workItems = new HashSet<>();
     long nextOffset;
 
-    public WorkUnit(TopicPartition partition) {
-      this.partition = partition;
+    WorkUnit(TopicPartition partition) {
+      this.partition = partition.partition();
+      this.topic = partition.topic();
     }
   }
 
@@ -146,7 +150,7 @@ public class PartitionManager {
           nextOffset);
     }
 
-    consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(nextOffset)));
+    consumer.commitSync(Map.of(partition, new OffsetAndMetadata(nextOffset)));
   }
 
   static long getOffsetForPartition(

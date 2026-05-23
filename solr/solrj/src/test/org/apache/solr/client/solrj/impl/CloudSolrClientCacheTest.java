@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.http.NoHttpResponseException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -94,7 +93,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     }
     Map<String, Function<?, ?>> responses = new HashMap<>();
     NamedList<Object> okResponse = new NamedList<>();
-    okResponse.add("responseHeader", new NamedList<>(Collections.singletonMap("status", 0)));
+    okResponse.add("responseHeader", new NamedList<>(Map.of("status", 0)));
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
@@ -120,7 +119,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               return new SocketException("TEST");
             }
             if (i == 3) {
-              return new NoHttpResponseException("TEST");
+              return new ConnectException("TEST");
             }
             return okResponse;
           });
@@ -333,7 +332,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
       @Override
       public List<String> resolveAlias(String collection) {
-        return Collections.singletonList(collection);
+        return List.of(collection);
       }
 
       @Override

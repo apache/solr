@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -138,42 +137,16 @@ public abstract class CloudSolrClient extends SolrClient {
    * based {@code HttpClient} if available, or will otherwise use the JDK.
    */
   public static class Builder {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-    // If the Jetty-based HttpJettySolrClient builder is on the classpath, this will be its no-arg
-    // constructor; otherwise it will be null and we will fall back to the JDK HTTP client.
-    private static final Constructor<? extends HttpSolrClientBuilderBase<?, ?>>
-        HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR;
-
-    static {
-      Constructor<? extends HttpSolrClientBuilderBase<?, ?>> ctor = null;
-      try {
-        @SuppressWarnings("unchecked")
-        Class<? extends HttpSolrClientBuilderBase<?, ?>> builderClass =
-            (Class<? extends HttpSolrClientBuilderBase<?, ?>>)
-                Class.forName("org.apache.solr.client.solrj.jetty.HttpJettySolrClient$Builder");
-        ctor = builderClass.getDeclaredConstructor();
-        ctor.newInstance(); // perhaps fails because Jetty libs aren't on the classpath
-      } catch (Throwable t) {
-        // Class not present or incompatible; leave ctor as null to indicate unavailability
-        if (log.isTraceEnabled()) {
-          log.trace(
-              "HttpJettySolrClient$Builder not available on classpath; will use HttpJdkSolrClient",
-              t);
-        }
-      }
-      HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR = ctor;
-    }
 
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;
-    protected HttpSolrClientBase httpClient;
+    protected HttpSolrClient httpClient;
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
-    protected HttpSolrClientBuilderBase<?, ?> internalClientBuilder;
+    protected HttpSolrClient.BuilderBase<?, ?> internalClientBuilder;
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
     protected long retryExpiryTimeNano =
@@ -239,6 +212,30 @@ public abstract class CloudSolrClient extends SolrClient {
     /** for an expert use-case */
     public Builder(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
+    }
+
+    /**
+     * Creates a client builder based on a connection string of 2 possible formats:
+     *
+     * <ul>
+     *   <li>ZooKeeper connection string (optionally with chroot), e.g. {@code
+     *       zk1:2181,zk2:2181,zk3:2181/solr}
+     *   <li>Comma-separated list of Solr node base URLs (HTTP or HTTPS), e.g. {@code
+     *       http://solr1:8983/solr,http://solr2:8983/solr}
+     * </ul>
+     *
+     * @param connectionString a string specifying either ZooKeeper connection string or HTTP(S)
+     *     Solr URLs
+     * @throws IllegalArgumentException if string is null, empty, or malformed
+     */
+    public Builder(String connectionString) {
+      CloudSolrClientConnection connection = CloudSolrClientConnection.parse(connectionString);
+      if (connection.isZk()) {
+        this.zkHosts = connection.quorumItems();
+        this.zkChroot = connection.zkChroot();
+      } else {
+        this.solrUrls = connection.quorumItems();
+      }
     }
 
     /** Whether to use the default ZK ACLs when building a ZK Client. */
@@ -371,7 +368,7 @@ public abstract class CloudSolrClient extends SolrClient {
      *
      * @return this
      */
-    public Builder withHttpClient(HttpSolrClientBase httpSolrClient) {
+    public Builder withHttpClient(HttpSolrClient httpSolrClient) {
       if (this.internalClientBuilder != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -388,7 +385,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this
      */
-    public Builder withHttpClientBuilder(HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
+    public Builder withHttpClientBuilder(HttpSolrClient.BuilderBase<?, ?> internalClientBuilder) {
       if (this.httpClient != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -399,7 +396,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     @Deprecated(since = "9.10")
     public Builder withInternalClientBuilder(
-        HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
+        HttpSolrClient.BuilderBase<?, ?> internalClientBuilder) {
       return withHttpClientBuilder(internalClientBuilder);
     }
 
@@ -443,31 +440,17 @@ public abstract class CloudSolrClient extends SolrClient {
       return new CloudHttp2SolrClient(this);
     }
 
-    protected HttpSolrClientBase createOrGetHttpClient() {
+    protected HttpSolrClient createOrGetHttpClient() {
       if (httpClient != null) {
         return httpClient;
       } else if (internalClientBuilder != null) {
         return internalClientBuilder.build();
-      }
-
-      HttpSolrClientBuilderBase<?, ?> builder;
-      if (HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR != null) {
-        try {
-          log.debug("Using HttpJettySolrClient as the delegate http client");
-          builder = HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR.newInstance();
-        } catch (RuntimeException e) {
-          throw e;
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
       } else {
-        log.debug("Using HttpJdkSolrClient as the delegate http client");
-        builder = new HttpJdkSolrClient.Builder();
+        return HttpSolrClient.builder(null).build();
       }
-      return builder.build();
     }
 
-    protected LBSolrClient createOrGetLbClient(HttpSolrClientBase myClient) {
+    protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
       return myClient.createLBSolrClient();
     }
 
@@ -481,7 +464,7 @@ public abstract class CloudSolrClient extends SolrClient {
       return stateProvider;
     }
 
-    protected ClusterStateProvider createHttpClusterStateProvider(HttpSolrClientBase httpClient) {
+    protected ClusterStateProvider createHttpClusterStateProvider(HttpSolrClient httpClient) {
       try {
         return new HttpClusterStateProvider<>(solrUrls, httpClient);
       } catch (Exception e) {
@@ -729,8 +712,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as
     // long as they are routed aliases
-    List<String> aliasedCollections =
-        new ArrayList<>(resolveAliases(Collections.singletonList(collection)));
+    List<String> aliasedCollections = new ArrayList<>(resolveAliases(List.of(collection)));
     if (aliasedCollections.size() == 1 || getClusterStateProvider().isRoutedAlias(collection)) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
     } else {
@@ -1841,5 +1823,53 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     return true;
+  }
+
+  /** Universal connection string parser logic. */
+  public record CloudSolrClientConnection(boolean isZk, List<String> quorumItems, String zkChroot) {
+
+    public CloudSolrClientConnection {
+      if (quorumItems == null || quorumItems.isEmpty()) {
+        throw new IllegalArgumentException("No valid hosts/urls found");
+      }
+    }
+
+    public static CloudSolrClientConnection parse(String connectionString) {
+      if (connectionString == null || connectionString.trim().isEmpty()) {
+        throw new IllegalArgumentException("Connection string must not be null or empty");
+      }
+      connectionString = connectionString.trim();
+      if (connectionString.contains("://")) {
+        return parseHttpQuorum(connectionString);
+      }
+      return parseZkQuorum(connectionString);
+    }
+
+    private static CloudSolrClientConnection parseZkQuorum(String connectionString) {
+      String zkChroot = null;
+      String zkHosts = connectionString;
+      int slashIndex = connectionString.indexOf('/');
+      if (slashIndex != -1) {
+        zkHosts = connectionString.substring(0, slashIndex);
+        zkChroot = connectionString.substring(slashIndex);
+      }
+      List<String> quorumItems = StrUtils.split(zkHosts, ',');
+      for (String host : quorumItems) {
+        if (host == null || host.isBlank()) {
+          throw new IllegalArgumentException("Empty host in Zookeeper connection string");
+        }
+      }
+      return new CloudSolrClientConnection(true, quorumItems, zkChroot);
+    }
+
+    private static CloudSolrClientConnection parseHttpQuorum(String connectionString) {
+      List<String> quorumItems = StrUtils.split(connectionString, ',');
+      for (String url : quorumItems) {
+        if (url == null || url.isBlank()) {
+          throw new IllegalArgumentException("Empty URL in HTTP(S) connection string");
+        }
+      }
+      return new CloudSolrClientConnection(false, quorumItems, null);
+    }
   }
 }
