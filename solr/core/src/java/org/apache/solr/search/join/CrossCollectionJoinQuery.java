@@ -303,9 +303,9 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     }
 
     private DocSet getDocSet() throws IOException {
-      SolrClientCache solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
       TupleStream solrStream;
       if (solrConnection != null || solrUrl == null) {
+        var solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
         solrStream = createCloudSolrStream(solrClientCache);
       } else {
         solrStream = createSolrStream();

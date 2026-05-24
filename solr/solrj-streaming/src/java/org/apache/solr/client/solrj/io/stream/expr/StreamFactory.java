@@ -138,19 +138,20 @@ public class StreamFactory implements Serializable {
   }
 
   /**
-   * @deprecated use {@link #getCollectionSolrConnection(String)}
+   * @deprecated use {@link #getConnectionForCollection(String)}
    */
   @Deprecated
   public String getCollectionZkHost(String collectionName) {
-    return getCollectionSolrConnection(collectionName).toString();
+    return getConnectionForCollection(collectionName).toString();
   }
 
-  public CloudSolrClient.CloudSolrClientConnection getCollectionSolrConnection(
+  /**
+   * Gets a SolrConnection using collection-to-connection configuration. Defaults to {@link
+   * #getDefaultSolrConnection()}
+   */
+  public CloudSolrClient.CloudSolrClientConnection getConnectionForCollection(
       String collectionName) {
-    if (this.collectionSolrConnection.containsKey(collectionName)) {
-      return this.collectionSolrConnection.get(collectionName);
-    }
-    return null;
+    return this.collectionSolrConnection.getOrDefault(collectionName, defaultSolrConnection);
   }
 
   public Map<String, Supplier<Class<? extends Expressible>>> getFunctionNames() {

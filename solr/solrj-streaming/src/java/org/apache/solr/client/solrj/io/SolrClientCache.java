@@ -74,12 +74,8 @@ public class SolrClientCache implements Closeable {
   public synchronized CloudSolrClient getCloudSolrClient(
       CloudSolrClient.CloudSolrClientConnection solrConnection) {
     ensureOpen();
-    if (cloudSolClients.containsKey(solrConnection)) {
-      return cloudSolClients.get(solrConnection);
-    }
-    final var client = newCloudSolrClient(solrConnection, httpSolrClient, false);
-    cloudSolClients.put(solrConnection, client);
-    return client;
+    return cloudSolClients.computeIfAbsent(
+        solrConnection, sc -> newCloudSolrClient(sc, httpSolrClient, false));
   }
 
   protected CloudSolrClient newCloudSolrClient(
@@ -111,12 +107,8 @@ public class SolrClientCache implements Closeable {
   public synchronized SolrClient getHttpSolrClient(String baseUrl) {
     ensureOpen();
     Objects.requireNonNull(baseUrl, "Url cannot be null!");
-    if (httpSolrClients.containsKey(baseUrl)) {
-      return httpSolrClients.get(baseUrl);
-    }
-    final var client = newHttpSolrClientBuilder(baseUrl, httpSolrClient).build();
-    httpSolrClients.put(baseUrl, client);
-    return client;
+    return httpSolrClients.computeIfAbsent(
+        baseUrl, url -> newHttpSolrClientBuilder(url, httpSolrClient).build());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

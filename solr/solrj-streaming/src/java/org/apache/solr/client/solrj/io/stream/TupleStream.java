@@ -244,10 +244,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     CloudSolrClient.CloudSolrClientConnection solrConnection = null;
 
     if (zkHostExpression == null && solrConnectionExpression == null) {
-      solrConnection = streamFactory.getCollectionSolrConnection(collectionName);
-      if (solrConnection == null) {
-        solrConnection = streamFactory.getDefaultSolrConnection();
-      }
+      solrConnection = streamFactory.getConnectionForCollection(collectionName);
     } else if (solrConnectionExpression != null
         && solrConnectionExpression.getParameter() instanceof StreamExpressionValue exprValue) {
       solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
