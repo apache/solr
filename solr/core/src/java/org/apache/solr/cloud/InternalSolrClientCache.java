@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.core;
+package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
