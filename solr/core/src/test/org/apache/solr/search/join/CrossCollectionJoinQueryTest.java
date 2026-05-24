@@ -41,7 +41,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrJMetricTestUtils;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -67,7 +67,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
