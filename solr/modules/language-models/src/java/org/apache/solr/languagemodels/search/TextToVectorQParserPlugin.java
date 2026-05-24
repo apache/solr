@@ -27,7 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.model.SolrTextToVectorModel;
-import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
@@ -44,7 +44,7 @@ import org.apache.solr.search.vector.KnnQParser;
 public class TextToVectorQParserPlugin extends QParserPlugin
     implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String EMBEDDING_MODEL_PARAM = "model";
-  private ManagedTextToVectorModelStore modelStore = null;
+  private TextToVectorModelStore modelStore = null;
 
   @Override
   public QParser createParser(
@@ -55,14 +55,14 @@ public class TextToVectorQParserPlugin extends QParserPlugin
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     final SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
-    ManagedTextToVectorModelStore.registerManagedTextToVectorModelStore(solrResourceLoader, this);
+    TextToVectorModelStore.registerManagedTextToVectorModelStore(solrResourceLoader, this);
   }
 
   @Override
   public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
       throws SolrException {
-    if (res instanceof ManagedTextToVectorModelStore) {
-      modelStore = (ManagedTextToVectorModelStore) res;
+    if (res instanceof TextToVectorModelStore) {
+      modelStore = (TextToVectorModelStore) res;
     }
     if (modelStore != null) {
       modelStore.loadStoredModels();
@@ -105,7 +105,7 @@ public class TextToVectorQParserPlugin extends QParserPlugin
             "The model requested '"
                 + embeddingModelName
                 + "' can't be found in the store: "
-                + ManagedTextToVectorModelStore.REST_END_POINT);
+                + TextToVectorModelStore.REST_END_POINT);
       }
     }
   }

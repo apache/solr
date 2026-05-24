@@ -76,7 +76,7 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
   public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {
     /**
      * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
-     *     HttpSolrClientBase)
+     *     HttpSolrClient)
      */
     public Builder(String baseUrl, HttpJdkSolrClient client) {
 
@@ -88,9 +88,9 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
 
     /**
      * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
-     *     HttpSolrClientBase, boolean)
+     *     HttpSolrClient, boolean)
      */
-    public Builder(String baseSolrUrl, HttpSolrClientBase client, boolean closeHttpClient) {
+    public Builder(String baseSolrUrl, HttpSolrClient client, boolean closeHttpClient) {
       super(baseSolrUrl, client, closeHttpClient);
     }
 

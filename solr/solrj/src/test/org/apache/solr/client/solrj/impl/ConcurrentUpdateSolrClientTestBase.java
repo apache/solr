@@ -63,10 +63,10 @@ import org.slf4j.LoggerFactory;
 public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public abstract HttpSolrClientBase solrClient(Integer overrideIdleTimeoutMs);
+  public abstract HttpSolrClient solrClient(Integer overrideIdleTimeoutMs);
 
   public abstract ConcurrentUpdateBaseSolrClient concurrentClient(
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       String baseUrl,
       String defaultCollection,
       int queueSize,
@@ -77,7 +77,7 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
       String serverUrl,
       int queueSize,
       int threadCount,
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       AtomicInteger successCounter,
       AtomicInteger failureCounter,
       StringBuilder errors);
