@@ -64,9 +64,12 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkACLsShouldNotBeUsedByDefault() {
+  public void testCloudClientFailsWhenDirectZooKeeperAccessRequiresACLs() {
+    /* Passing ZooKeeper credentials is intentionally disabled by default for security reasons.
+     Applications that require direct ZooKeeper-based connections with credentials may override
+     newCloudSolrClient() to provide a custom CloudSolrClient configuration.
+    */
     try (SolrClientCache cache = new SolrClientCache()) {
-      // useZookeeperACL by default is false
       expectThrows(
           SolrException.class,
           () ->
@@ -77,20 +80,7 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkACLsShouldBeUsedWhenThisExplicitlySets() {
-    String zkConnectionString = zkClient().getZkServerAddress();
-    try (SolrClientCache cache = new SolrClientCache()) {
-      cache.setUseZookeeperACL(true);
-      CloudSolrClient cloudSolrClient =
-          cache.getCloudSolrClient(
-              CloudSolrClient.CloudSolrClientConnection.parse(zkConnectionString));
-      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
-      Assert.assertEquals(1, clusterState.getLiveNodes().size());
-    }
-  }
-
-  @Test
-  public void testGetClientWithHttp() {
+  public void testCloudClientCanConnectUsingHttpWithoutZooKeeperAccess() {
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
     try (SolrClientCache cache = new SolrClientCache()) {
       CloudSolrClient cloudSolrClient =

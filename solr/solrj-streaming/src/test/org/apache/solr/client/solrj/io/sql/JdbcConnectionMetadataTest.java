@@ -26,7 +26,7 @@ import org.apache.solr.SolrTestCase;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SolrJdbcUrlParserTest extends SolrTestCase {
+public class JdbcConnectionMetadataTest extends SolrTestCase {
 
   private static final Map<String, List<String>> ZOOKEEPERS =
       Map.of(
@@ -62,7 +62,8 @@ public class SolrJdbcUrlParserTest extends SolrTestCase {
         for (String paramString : PARAMS.keySet()) {
           String url = "jdbc:solr://" + zkHostString + chroot + "?" + paramString;
 
-          var jdbcConnectionMetadata = DriverImpl.SolrJdbcUrlParser.parse(url, new Properties());
+          var jdbcConnectionMetadata =
+              DriverImpl.JdbcConnectionMetadata.parse(url, new Properties());
           var solrConnection = jdbcConnectionMetadata.solrConnection();
           List<String> expectedZookeepers = ZOOKEEPERS.get(zkHostString);
           Assert.assertTrue(solrConnection.isZookeeper());
@@ -82,7 +83,7 @@ public class SolrJdbcUrlParserTest extends SolrTestCase {
       for (String paramString : PARAMS.keySet()) {
         String url = "jdbc:solr:" + httpString + "?" + paramString;
 
-        var jdbcConnectionMetadata = DriverImpl.SolrJdbcUrlParser.parse(url, new Properties());
+        var jdbcConnectionMetadata = DriverImpl.JdbcConnectionMetadata.parse(url, new Properties());
         var solrConnection = jdbcConnectionMetadata.solrConnection();
         Assert.assertFalse(solrConnection.isZookeeper());
         Assert.assertEquals(1, solrConnection.quorumItems().size());

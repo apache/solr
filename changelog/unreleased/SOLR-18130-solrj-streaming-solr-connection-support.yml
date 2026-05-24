@@ -1,5 +1,5 @@
-title: Add new 'solrConnection' parameter to solrj-streaming supporting both ZooKeeper and HTTP(S) connection types
-type: changed
+title: Added solrConnection param to solrj-streaming module, expanding use to HTTP based SolrCloud coordinates. zkHost is deprecated.
+type: added
 authors:
   - name: vyatkin.v
 links:

@@ -1,7 +1,0 @@
-title: Add 'StreamFactory' methods for configuring default and collection-specific Solr connections; deprecate ZooKeeper-based methods.
-type: changed
-authors:
-  - name: vyatkin.v
-links:
-  - name: SOLR-18130
-    url: https://issues.apache.org/jira/browse/SOLR-18130

@@ -1,5 +1,5 @@
-title: Add --solr-connection option to Solr CLI tools supporting ZooKeeper and HTTP(S) connections
-type: changed
+title: Add --solr-connection option to Solr CLI tools, enabling HTTP(S)-based communication without requiring direct ZooKeeper access
+type: added
 authors:
   - name: vyatkin.v
 links:

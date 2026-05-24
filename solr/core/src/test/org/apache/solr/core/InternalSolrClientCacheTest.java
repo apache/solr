@@ -26,8 +26,6 @@ import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
-import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.security.MockSolrMetricsContextFactory;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -74,48 +72,36 @@ public class InternalSolrClientCacheTest extends SolrCloudTestCase {
 
   @Test
   public void testSelfClusterShouldBeAllowed() {
-    final SolrMetricsContext metricsContext = MockSolrMetricsContextFactory.create();
-    try (HttpSolrClientProvider httpSolrClientProvider =
-        new HttpSolrClientProvider(null, metricsContext)) {
-      try (SolrClientCache cache =
-          new InternalSolrClientCache(
-              httpSolrClientProvider.getSolrClient(), getZookeeperSolrConnection())) {
-        CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(getZookeeperSolrConnection());
-        Assert.assertEquals(1, cloudSolrClient.getClusterStateProvider().getLiveNodes().size());
-      }
+    try (SolrClientCache cache =
+        new InternalSolrClientCache(
+            cluster.getRandomJetty(random()).getSolrClient(), getZookeeperSolrConnection())) {
+      CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(getZookeeperSolrConnection());
+      Assert.assertEquals(1, cloudSolrClient.getClusterStateProvider().getLiveNodes().size());
     }
   }
 
   @Test
   public void testNotRegisteredClusterShouldBeAllowedWhenPropertySpecified() {
     System.setProperty("solr.allow-external-clusters", "true");
-    final SolrMetricsContext metricsContext = MockSolrMetricsContextFactory.create();
-    try (HttpSolrClientProvider httpSolrClientProvider =
-        new HttpSolrClientProvider(null, metricsContext)) {
-      try (SolrClientCache cache =
-          new InternalSolrClientCache(
-              httpSolrClientProvider.getSolrClient(), getZookeeperSolrConnection())) {
-        // Trying to connect via HTTP, which the cache knows nothing about.
-        CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(getHttpSolrConnection());
-        Assert.assertEquals(1, cloudSolrClient.getClusterStateProvider().getLiveNodes().size());
-      }
+    try (SolrClientCache cache =
+        new InternalSolrClientCache(
+            cluster.getRandomJetty(random()).getSolrClient(), getZookeeperSolrConnection())) {
+      // Trying to connect via HTTP, which the cache knows nothing about.
+      CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(getHttpSolrConnection());
+      Assert.assertEquals(1, cloudSolrClient.getClusterStateProvider().getLiveNodes().size());
     }
   }
 
   @Test
   public void testExternalClusterShouldBeProhibited() {
-    final SolrMetricsContext metricsContext = MockSolrMetricsContextFactory.create();
-    try (HttpSolrClientProvider httpSolrClientProvider =
-        new HttpSolrClientProvider(null, metricsContext)) {
-      try (SolrClientCache cache =
-          new InternalSolrClientCache(
-              httpSolrClientProvider.getSolrClient(), getZookeeperSolrConnection())) {
-        expectThrows(
-            SolrException.class,
-            () ->
-                cache.getCloudSolrClient(
-                    CloudSolrClient.CloudSolrClientConnection.parse("test:2181")));
-      }
+    try (SolrClientCache cache =
+        new InternalSolrClientCache(
+            cluster.getRandomJetty(random()).getSolrClient(), getZookeeperSolrConnection())) {
+      expectThrows(
+          SolrException.class,
+          () ->
+              cache.getCloudSolrClient(
+                  CloudSolrClient.CloudSolrClientConnection.parse("test:2181")));
     }
   }
 }

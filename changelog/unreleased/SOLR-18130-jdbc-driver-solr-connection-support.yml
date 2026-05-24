@@ -1,5 +1,5 @@
 title: Add HTTP(S)-based SolrCloud connection support for the Solr SQL JDBC driver
-type: changed
+type: added
 authors:
   - name: vyatkin.v
 links:

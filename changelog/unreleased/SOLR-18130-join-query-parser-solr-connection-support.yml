@@ -1,5 +1,5 @@
-title: Add 'solrConnection' parameter to Join Query Parser to support ZooKeeper and HTTP(S) connection types
-type: changed
+title: Add 'solrConnection' parameter to cross-collection joins in the Join Query Parser, expanding use to HTTP based SolrCloud coordinates.
+type: added
 authors:
   - name: vyatkin.v
 links:

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.util.IOUtils;
@@ -50,7 +49,7 @@ public class SolrClientCache implements Closeable {
       new HashMap<>();
   private final HttpSolrClient httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
-  private boolean useZookeeperACL = false;
+
   public SolrClientCache() {
     this.httpSolrClient = null;
   }
@@ -61,21 +60,6 @@ public class SolrClientCache implements Closeable {
 
   public void setBasicAuthCredentials(String basicAuthCredentials) {
     this.basicAuthCredentials = basicAuthCredentials;
-  }
-
-  /**
-   * Controls whether ZooKeeper ACL credentials may be propagated to ZooKeeper hosts used by {@link
-   * CloudSolrClient} instances created by this cache.
-   *
-   * <p>This option is disabled by default for security reasons. Enabling it may expose ZooKeeper
-   * credentials to external or untrusted ZooKeeper ensembles if arbitrary cluster connections are
-   * allowed.
-   *
-   * @param useZookeeperACL whether ZooKeeper ACL credentials should be used by clients created from
-   *     this cache
-   */
-  public void setUseZookeeperACL(boolean useZookeeperACL) {
-    this.useZookeeperACL = useZookeeperACL;
   }
 
   /**
@@ -93,7 +77,7 @@ public class SolrClientCache implements Closeable {
     if (cloudSolClients.containsKey(solrConnection)) {
       return cloudSolClients.get(solrConnection);
     }
-    final var client = newCloudSolrClient(solrConnection, httpSolrClient, useZookeeperACL);
+    final var client = newCloudSolrClient(solrConnection, httpSolrClient, false);
     cloudSolClients.put(solrConnection, client);
     return client;
   }

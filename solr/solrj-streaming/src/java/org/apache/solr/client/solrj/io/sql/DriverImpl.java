@@ -53,7 +53,7 @@ public class DriverImpl implements Driver {
     if (!acceptsURL(url)) {
       return null;
     }
-    var jdbcConnMetadata = SolrJdbcUrlParser.parse(url, props);
+    var jdbcConnMetadata = JdbcConnectionMetadata.parse(url, props);
     return new ConnectionImpl(
         jdbcConnMetadata.originalUrl(),
         jdbcConnMetadata.solrConnection(),
@@ -96,7 +96,11 @@ public class DriverImpl implements Driver {
     return null;
   }
 
-  static class SolrJdbcUrlParser {
+  record JdbcConnectionMetadata(
+      String originalUrl,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      Properties properties) {
 
     static JdbcConnectionMetadata parse(String jdbcUrl, Properties properties) throws SQLException {
       URI uri = toURI(jdbcUrl);
@@ -174,10 +178,4 @@ public class DriverImpl implements Driver {
       return "http".equals(scheme) || "https".equals(scheme);
     }
   }
-
-  record JdbcConnectionMetadata(
-      String originalUrl,
-      CloudSolrClient.CloudSolrClientConnection solrConnection,
-      String collection,
-      Properties properties) {}
 }
