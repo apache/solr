@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -113,10 +115,19 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   protected SolrClient newSolrClient(String collection) {
-    return new HttpJettySolrClient.Builder()
-        .withHttpClient(jetty.getSolrClient())
+    return newSolrClientBuilder()
         .withDefaultCollection(collection) // Properly handles when collection is 'null'
         .build();
+  }
+
+  /**
+   * Creates a client builder with the URL, shared Jetty HttpClient, and default collection
+   * "collection1" (can be changed).
+   */
+  public HttpJettySolrClient.Builder newSolrClientBuilder() {
+    return new HttpJettySolrClient.Builder(getBaseUrl())
+        .withHttpClient(jetty.getSolrClient())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
   }
 
   /** URL to Solr. */

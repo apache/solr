@@ -39,7 +39,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -114,11 +113,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpJettySolrClient.Builder()
-            .withHttpClient(solrTestRule.getJetty().getSolrClient())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new XMLRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new XMLRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -127,11 +122,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpJettySolrClient.Builder()
-            .withHttpClient(solrTestRule.getJetty().getSolrClient())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new JavaBinRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new JavaBinRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }

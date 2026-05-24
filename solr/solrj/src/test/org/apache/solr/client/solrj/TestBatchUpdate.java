@@ -60,7 +60,7 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpJettySolrClient.Builder()
+        new HttpJettySolrClient.Builder(solrTestRule.getJetty().getBaseUrl().toString())
             .withHttpClient(solrTestRule.getJetty().getSolrClient())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new XMLRequestWriter())
@@ -73,11 +73,7 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpJettySolrClient.Builder()
-            .withHttpClient(solrTestRule.getJetty().getSolrClient())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new JavaBinRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new JavaBinRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -86,11 +82,7 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithBinaryBean() throws Exception {
     try (SolrClient client =
-        new HttpJettySolrClient.Builder()
-            .withHttpClient(solrTestRule.getJetty().getSolrClient())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new JavaBinRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new JavaBinRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       final int[] counter = new int[1];
       counter[0] = 0;
