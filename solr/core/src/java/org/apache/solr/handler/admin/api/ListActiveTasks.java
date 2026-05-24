@@ -56,12 +56,12 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
   public TaskStatusResponse getTaskStatus(String taskUUID) throws Exception {
     final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
 
-
-    boolean isTaskActive = solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskUUID);
+    boolean isTaskActive =
+        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskUUID);
     if (isTaskActive) {
-      response.taskStatus = "id: "+ taskUUID + ", status: active";
+      response.taskStatus = "id: " + taskUUID + ", status: active";
     } else {
-      response.taskStatus = "id: "+ taskUUID + ", status: inactive";
+      response.taskStatus = "id: " + taskUUID + ", status: inactive";
     }
 
     return response;

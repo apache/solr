@@ -19,9 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
