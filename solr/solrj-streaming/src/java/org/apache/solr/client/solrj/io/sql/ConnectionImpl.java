@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ class ConnectionImpl implements Connection {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String url;
-  private final SolrClientCache solrClientCache = new SolrClientCache();
+  private final SolrClientCache solrClientCache;
   private final CloudSolrClient client;
   private final Properties properties;
   private final DatabaseMetaData databaseMetaData;
@@ -63,11 +64,18 @@ class ConnectionImpl implements Connection {
       Properties properties)
       throws SQLException {
     this.url = url;
-    this.client = this.solrClientCache.getCloudSolrClient(solrConnection);
     this.collection = collection;
     this.properties = properties;
     this.connectionStatement = createStatement();
     this.databaseMetaData = new DatabaseMetaDataImpl(this, this.connectionStatement);
+
+    // must use InternalSolrClientCache if we're within Solr
+    if (ExecutorUtil.isSolrServerThread()) {
+      throw new IllegalStateException("Not permitted within Solr");
+    }
+    this.solrClientCache = new SolrClientCache();
+
+    this.client = this.solrClientCache.getCloudSolrClient(solrConnection);
   }
 
   String getUrl() {
