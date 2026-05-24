@@ -66,12 +66,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("parts", "ccjoin", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
-    System.setProperty("solr.allow-external-clusters", "true");
-  }
-
-  @After
-  public void afterEach() {
-    System.clearProperty("solr.allow-external-clusters");
+    System.setProperty("solr.cloud.external.enabled", "true");
   }
 
   public static void setupIndexes(boolean routeByKey) throws IOException, SolrServerException {

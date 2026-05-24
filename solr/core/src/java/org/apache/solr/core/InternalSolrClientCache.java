@@ -26,7 +26,7 @@ import org.apache.solr.common.util.EnvUtils;
 /** A restricted {@link SolrClientCache} that only permits access local solr cluster */
 public class InternalSolrClientCache extends SolrClientCache {
 
-  private static final String ALLOW_EXTERNAL_CLUSTERS_PROPERTY = "solr.allow-external-clusters";
+  private static final String ALLOW_EXTERNAL_CLUSTERS_PROPERTY = "solr.cloud.external.enabled";
 
   public InternalSolrClientCache(
       HttpSolrClient httpSolrClient, CloudSolrClient.CloudSolrClientConnection solrConnection) {

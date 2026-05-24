@@ -65,11 +65,6 @@ public class InternalSolrClientCacheTest extends SolrCloudTestCase {
     sysProps.keySet().forEach(System::clearProperty);
   }
 
-  @After
-  public void afterEach() {
-    System.clearProperty("solr.allow-external-clusters");
-  }
-
   @Test
   public void testSelfClusterShouldBeAllowed() {
     try (SolrClientCache cache =
@@ -82,7 +77,7 @@ public class InternalSolrClientCacheTest extends SolrCloudTestCase {
 
   @Test
   public void testNotRegisteredClusterShouldBeAllowedWhenPropertySpecified() {
-    System.setProperty("solr.allow-external-clusters", "true");
+    System.setProperty("solr.cloud.external.enabled", "true");
     try (SolrClientCache cache =
         new InternalSolrClientCache(
             cluster.getRandomJetty(random()).getSolrClient(), getZookeeperSolrConnection())) {

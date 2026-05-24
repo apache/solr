@@ -117,12 +117,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
           .process(cluster.getSolrClient());
     }
-    System.setProperty("solr.allow-external-clusters", "true");
-  }
-
-  @AfterClass
-  public static void cleanup() {
-    System.clearProperty("solr.allow-external-clusters");
+    System.setProperty("solr.cloud.external.enabled", "true");
   }
 
   @Before
