@@ -61,16 +61,17 @@ public class StreamFactory implements Serializable {
   }
 
   /**
-   * @deprecated use {@link #withCollectionSolrConnection(String,
+   * @deprecated use {@link #withCollectionUseThisConnection(String,
    *     CloudSolrClient.CloudSolrClientConnection)}
    */
   @Deprecated
   public StreamFactory withCollectionZkHost(String collectionName, String zkHost) {
     var solrConnection = zkHostToSolrConnection(zkHost);
-    return withCollectionSolrConnection(collectionName, solrConnection);
+    return withCollectionUseThisConnection(collectionName, solrConnection);
   }
 
-  public StreamFactory withCollectionSolrConnection(
+  /** If an expressions references this collection, then use the specified Solr connection. */
+  public StreamFactory withCollectionUseThisConnection(
       String collectionName, CloudSolrClient.CloudSolrClientConnection solrConnection) {
     this.collectionSolrConnection.put(collectionName, solrConnection);
     this.defaultCollection = collectionName;
@@ -111,7 +112,7 @@ public class StreamFactory implements Serializable {
     // Shallow copy
     StreamFactory clone = new StreamFactory(functionNames);
     return clone
-        .withCollectionSolrConnection(defaultCollection, defaultSolrConnection)
+        .withCollectionUseThisConnection(defaultCollection, defaultSolrConnection)
         .withDefaultSort(defaultSort);
   }
 

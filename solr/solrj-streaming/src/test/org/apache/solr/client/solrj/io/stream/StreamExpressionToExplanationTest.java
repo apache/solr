@@ -42,8 +42,8 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
     var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse("testhost:1234");
     factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
-            .withCollectionSolrConnection("collection2", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection2", solrConnection)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("merge", MergeStream.class)

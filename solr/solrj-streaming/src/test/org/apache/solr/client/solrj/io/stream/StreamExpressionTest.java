@@ -140,7 +140,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamFactory factory =
         new StreamFactory()
             .withDefaultSolrConnection(solrConnection)
-            .withCollectionSolrConnection(COLLECTIONORALIAS, solrConnection);
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection);
     StreamExpression expression;
     CloudSolrStream stream;
     List<Tuple> tuples;
@@ -578,7 +578,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, solrConnection)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection)
             .withFunctionName("search", CloudSolrStream.class);
     try {
       // Basic test
@@ -654,7 +654,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, solrConnection)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection)
             .withFunctionName("random", RandomFacadeStream.class);
 
     StreamContext context = new StreamContext();
@@ -876,7 +876,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamFactory factory =
         new StreamFactory()
             .withDefaultSolrConnection(solrConnection)
-            .withCollectionSolrConnection(COLLECTIONORALIAS, solrConnection)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection)
             .withFunctionName("stats", StatsStream.class)
             .withFunctionName("sum", SumMetric.class)
             .withFunctionName("min", MinMetric.class)
@@ -1354,7 +1354,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples;
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("facet", FacetStream.class)
             .withFunctionName("sum", SumMetric.class)
             .withFunctionName("min", MinMetric.class)
@@ -2274,7 +2274,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("facet", FacetStream.class)
             .withFunctionName("sum", SumMetric.class)
             .withFunctionName("min", MinMetric.class)
@@ -2550,7 +2550,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("daemon", DaemonStream.class);
@@ -2729,7 +2729,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("parallel", ParallelStream.class)
@@ -3684,8 +3684,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
-            .withCollectionSolrConnection("destinationCollection", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("destinationCollection", solrConnection)
             .withFunctionName("features", FeaturesSelectionStream.class)
             .withFunctionName("train", TextLogitStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -3813,8 +3813,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
-            .withCollectionSolrConnection("destinationCollection", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("destinationCollection", solrConnection)
             .withFunctionName("featuresSelection", FeaturesSelectionStream.class)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class);
@@ -3892,7 +3892,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withDefaultSolrConnection(solrConnection)
             .withFunctionName("significantTerms", SignificantTermsStream.class);
 

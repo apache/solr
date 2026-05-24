@@ -144,7 +144,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class);
 
@@ -225,7 +225,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     try {
       StreamFactory factory =
           new StreamFactory()
-              .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
               .withFunctionName("search", CloudSolrStream.class)
               .withFunctionName("sort", SortStream.class);
 
@@ -286,7 +286,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("null", NullStream.class);
 
@@ -326,7 +326,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("null", NullStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -372,7 +372,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("merge", MergeStream.class);
@@ -497,7 +497,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class);
@@ -601,7 +601,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("reduce", ReducerStream.class)
             .withFunctionName("group", GroupOperation.class);
@@ -691,7 +691,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("having", HavingStream.class)
             .withFunctionName("rollup", RollupStream.class)
@@ -820,7 +820,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("having", HavingStream.class)
             .withFunctionName("rollup", RollupStream.class)
@@ -965,7 +965,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("fetch", FetchStream.class);
 
@@ -1089,7 +1089,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("fetch", FetchStream.class);
@@ -1186,7 +1186,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("rollup", RollupStream.class)
             .withFunctionName("sum", SumMetric.class)
@@ -1313,7 +1313,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("daemon", DaemonStream.class);
 
@@ -1357,7 +1357,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("rollup", RollupStream.class)
             .withFunctionName("sum", SumMetric.class)
@@ -1505,7 +1505,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("hashRollup", HashRollupStream.class)
             .withFunctionName("sum", SumMetric.class)
@@ -1655,7 +1655,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class)
@@ -1758,7 +1758,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("shuffle", ShuffleStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -1810,7 +1810,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("group", GroupOperation.class)
             .withFunctionName("reduce", ReducerStream.class)
@@ -1906,7 +1906,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class)
@@ -1959,7 +1959,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class)
@@ -2032,7 +2032,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("rollup", RollupStream.class)
@@ -2174,7 +2174,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("hashRollup", HashRollupStream.class)
@@ -2344,7 +2344,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class);
 
@@ -2466,7 +2466,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class);
 
@@ -2606,7 +2606,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("fullOuterJoin", FullOuterJoinStream.class);
 
@@ -2746,7 +2746,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("hashJoin", HashJoinStream.class);
     try {
@@ -2824,7 +2824,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("hashJoin", HashJoinStream.class);
     try {
@@ -2864,7 +2864,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection(COLLECTIONORALIAS, getSolrConnection())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
     try {
@@ -2933,7 +2933,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
     try {
@@ -3039,7 +3039,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class)
             .withFunctionName("select", SelectStream.class)
@@ -3176,7 +3176,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("priority", PriorityStream.class);
 
@@ -3241,7 +3241,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("priority", PriorityStream.class);
@@ -3322,8 +3322,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("destinationCollection", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("destinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class);
 
@@ -3433,8 +3433,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("parallelDestinationCollection", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -3552,8 +3552,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("parallelDestinationCollection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("parallel", ParallelStream.class)
@@ -3749,8 +3749,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("parallelDestinationCollection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection1", getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("parallel", ParallelStream.class)
@@ -3956,8 +3956,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("destinationCollection", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("destinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("commit", CommitStream.class);
@@ -4066,8 +4066,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("parallelDestinationCollection", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("commit", CommitStream.class)
@@ -4187,8 +4187,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("parallelDestinationCollection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("commit", CommitStream.class)
@@ -4372,7 +4372,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("intersect", IntersectStream.class);
 
@@ -4442,9 +4442,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
-            .withCollectionSolrConnection("modelCollection", getSolrConnection())
-            .withCollectionSolrConnection("uknownCollection", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("modelCollection", getSolrConnection())
+            .withCollectionUseThisConnection("uknownCollection", getSolrConnection())
             .withFunctionName("features", FeaturesSelectionStream.class)
             .withFunctionName("train", TextLogitStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -4682,9 +4682,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("workQueue", getSolrConnection())
-            .withCollectionSolrConnection("mainCorpus", getSolrConnection())
-            .withCollectionSolrConnection("destination", getSolrConnection())
+            .withCollectionUseThisConnection("workQueue", getSolrConnection())
+            .withCollectionUseThisConnection("mainCorpus", getSolrConnection())
+            .withCollectionUseThisConnection("destination", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("executor", ExecutorStream.class)
             .withFunctionName("update", UpdateStream.class);
@@ -4764,9 +4764,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("workQueue1", getSolrConnection())
-            .withCollectionSolrConnection("mainCorpus1", getSolrConnection())
-            .withCollectionSolrConnection("destination1", getSolrConnection())
+            .withCollectionUseThisConnection("workQueue1", getSolrConnection())
+            .withCollectionUseThisConnection("mainCorpus1", getSolrConnection())
+            .withCollectionUseThisConnection("destination1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("executor", ExecutorStream.class)
             .withFunctionName("parallel", ParallelStream.class)
@@ -4832,7 +4832,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("intersect", IntersectStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -4890,7 +4890,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("complement", ComplementStream.class);
 
@@ -4932,7 +4932,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("cartesian", CartesianProductStream.class);
 
@@ -5085,7 +5085,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("complement", ComplementStream.class)
             .withFunctionName("parallel", ParallelStream.class);

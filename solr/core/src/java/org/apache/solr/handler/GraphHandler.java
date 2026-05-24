@@ -81,7 +81,7 @@ public class GraphHandler extends RequestHandlerBase
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);
-      streamFactory.withCollectionSolrConnection(defaultCollection, solrConnection);
+      streamFactory.withCollectionUseThisConnection(defaultCollection, solrConnection);
       streamFactory.withDefaultSolrConnection(solrConnection);
     }
 

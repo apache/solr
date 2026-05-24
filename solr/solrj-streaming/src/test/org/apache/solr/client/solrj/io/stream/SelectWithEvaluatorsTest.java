@@ -99,7 +99,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("add", AddEvaluator.class)

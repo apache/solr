@@ -130,7 +130,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("shortestPath", ShortestPathStream.class);
 
     stream =
@@ -424,7 +424,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("nodes", GatherNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -752,7 +752,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withDefaultSolrConnection(solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("scoreNodes", ScoreNodesStream.class)
@@ -917,7 +917,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withDefaultSolrConnection(solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("scoreNodes", ScoreNodesStream.class)
@@ -986,7 +986,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionSolrConnection("collection1", solrConnection)
+            .withCollectionUseThisConnection("collection1", solrConnection)
             .withFunctionName("gatherNodes", GatherNodesStream.class)
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("count", CountMetric.class)
