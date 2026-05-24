@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -50,14 +51,14 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
           rsp, new ListActiveTasks(req).getTaskStatus(taskStatusCheckUUID));
     } else {
-      Map<String, String> mapTasks = new HashMap<>();
+      NamedList<String> tasks = new NamedList<>();
       List<ActiveTaskDetails> taskList = new ListActiveTasks(req).listAllActiveTasks().taskList;
       if (taskList != null) {
         for (ActiveTaskDetails task : taskList) {
-          mapTasks.put(task.taskUUID, task.taskQuery);
+          tasks.add(task.taskUUID, task.taskQuery);
         }
       }
-      rsp.add("taskList", mapTasks);
+      rsp.add("taskList", tasks);
     }
   }
 

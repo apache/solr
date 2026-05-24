@@ -90,11 +90,11 @@ public class ListActiveTasksTest extends SolrTestCaseJ4 {
     when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
 
     TaskStatusResponse responseRunningTask = listActiveTasks.getTaskStatus("taskID_running");
-    assertTrue(responseRunningTask.taskStatus);
+    assertTrue(responseRunningTask.taskStatus.contains("active"));
     assertNull(responseRunningTask.error);
 
     TaskStatusResponse responseStoppedTask = listActiveTasks.getTaskStatus("taskID_stopped");
-    assertFalse(responseStoppedTask.taskStatus);
+    assertTrue(responseStoppedTask.taskStatus.contains("inactive"));
     assertNull(responseStoppedTask.error);
   }
 }
