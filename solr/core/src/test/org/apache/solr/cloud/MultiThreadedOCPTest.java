@@ -337,6 +337,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
           RequestStatusState.RUNNING,
           state);
 
+      getRequestStateAfterCompletion("2000", REQUEST_STATUS_TIMEOUT, client);
     } finally {
       try {
         indexThread.join();
