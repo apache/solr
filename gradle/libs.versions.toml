@@ -327,7 +327,6 @@ cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cu
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jetty12-ee10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
 eclipse-jdt-ecj = { module = "org.eclipse.jdt:ecj", version.ref = "eclipse-ecj" }
 eclipse-jetty-alpnjavaclient = { module = "org.eclipse.jetty:jetty-alpn-java-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-server", version.ref = "eclipse-jetty" }
