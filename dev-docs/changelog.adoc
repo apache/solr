@@ -10,7 +10,7 @@ organized in versioned folders and collated into a human-readable *CHANGELOG.md*
 
 This document walks you through the workflow, explains the Gradle helpers
 available, and finishes with a concrete example fragment. We use a tool called
-[logchange](https://logchange.dev/tools/logchange/) as a gradle plugin to manage
+https://logchange.dev/tools/logchange/[logchange] as a gradle plugin to manage
 the changelog.
 
 == 1. Workflow Overview
@@ -45,12 +45,12 @@ title: Fix nasty bug in CoreContainer shutdown
 # added, changed, fixed, deprecated, removed, dependency_update, security, other
 type: fixed
 authors:
-  - name: John Contributor
-    nick: johngithub
-    url: https://home.apache.org/phonebook.html?uid=johnasfid
+  - name: Alex Doe
+    nick: alex_githubid
+    url: https://home.apache.org/phonebook.html?uid=alex_asfid
 links:
-  - name: SOLR-3333
-    url: https://issues.apache.org/jira/browse/SOLR-3333
+  - name: SOLR-12345
+    url: https://issues.apache.org/jira/browse/SOLR-12345
 ----
 
 === 3.1 Tool to draft a YAML for your change
@@ -73,9 +73,9 @@ use that information. Example:
 [source, properties]
 ----
 # Changelog generator settings (./gradlew writeChangelog)
-user.name=John Doe
-user.githubid=johngithub
-user.asfid=johnapache
+user.name=Alex Doe
+user.githubid=alex_githubid
+user.asfid=alex_asfid
 ----
 
 The changelog has comments to help you fill it out.  Remove them after filling out the form.
