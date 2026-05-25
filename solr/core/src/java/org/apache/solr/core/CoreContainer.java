@@ -853,8 +853,6 @@ public class CoreContainer {
       registerV2Api(packageLoader.getPackageAPI().editAPI);
       registerV2Api(packageLoader.getPackageAPI().readAPI);
       registerV2Api(ZookeeperRead.class);
-    } else {
-      solrClientCache = new InternalSolrClientCache(solrClientProvider.getSolrClient());
     }
 
     MDCLoggingContext.setNode(this);

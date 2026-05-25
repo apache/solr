@@ -18,7 +18,6 @@ package org.apache.solr.handler.sql;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Locale;
 import java.util.Properties;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
@@ -90,11 +89,6 @@ public class CalciteSolrDriver extends Driver {
       throw new SQLException("zk must be set");
     }
     var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(schemaName);
-    if (!solrConnection.isZookeeper()) {
-      throw new SQLException(
-          String.format(
-              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", schemaName));
-    }
     final SolrSchema solrSchema = new SolrSchema(info, solrClientCache, solrConnection);
     rootSchema.add(schemaName, solrSchema);
 
