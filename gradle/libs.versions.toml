@@ -82,6 +82,7 @@ decompose = "3.4.0"
 diffplug-spotless = "8.3.0"
 # @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
+dropwizard-metrics = "4.2.33"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.34"
 # @keep jgit version used by git-status.gradle
@@ -325,6 +326,8 @@ cuvs-java = { module = "com.nvidia.cuvs:cuvs-java", version.ref = "cuvs-java" }
 cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cuvs-lucene" }
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
+dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jetty12-ee10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
 eclipse-jdt-ecj = { module = "org.eclipse.jdt:ecj", version.ref = "eclipse-ecj" }
 eclipse-jetty-alpnjavaclient = { module = "org.eclipse.jetty:jetty-alpn-java-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-server", version.ref = "eclipse-jetty" }

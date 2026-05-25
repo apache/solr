@@ -1,4 +1,8 @@
-title: Remove Dropwizard Metrics as a direct Solr dependency. The `OVERSEERSTATUS` response no longer includes per-operation timing metrics per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute.
+title: >
+  Remove Dropwizard Metrics as a *direct* Solr dependency.
+  The `OVERSEERSTATUS` response no longer includes per-operation timing metrics per-operation `requests` and `errors` counts still exist.
+  Users needing per-operation latency can use distributed tracing as a substitute.
+  Nonetheless, Solr still includes dropwizard-metrics for embedding ZooKeeper.
 type: removed
 authors:
   - name: Matthew Biscocho
