@@ -1,4 +1,4 @@
-title: Enable hideStackTrace config
+title: "V2 APIs now properly respect the hideStackTrace config setting"
 type: fixed
 authors:
   - name: Utsav Parmar
