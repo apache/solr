@@ -956,7 +956,10 @@ public class CoreContainer {
     // 8).
     try {
       Class<?> reporter =
-          Class.forName("org.apache.solr.security.agent.ViolationMetricsReporter", false, null);
+          Class.forName(
+              "org.apache.solr.security.agent.ViolationMetricsReporter",
+              false,
+              CoreContainer.class.getClassLoader());
       reporter
           .getMethod("registerWithSolrMetrics", Object.class, String.class)
           .invoke(null, metricManager, NODE_REGISTRY);

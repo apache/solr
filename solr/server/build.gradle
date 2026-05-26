@@ -62,6 +62,12 @@ dependencies {
   serverLib libs.eclipse.jetty.http2.hpack
   serverLib libs.jakarta.servlet.api
 
+  // Security agent fat JAR — auto-detected by bin/solr and loaded via -javaagent:.
+  // transitive=false because ByteBuddy and SLF4J are already bundled inside the fat JAR.
+  libExt(project(path: ':solr:agent-sm'), {
+    transitive false
+  })
+
   libExt libs.lmax.disruptor
   libExt libs.slf4j.jcloverslf4j
   libExt libs.slf4j.jultoslf4j

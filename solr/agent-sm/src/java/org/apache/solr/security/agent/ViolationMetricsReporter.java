@@ -17,8 +17,8 @@
 package org.apache.solr.security.agent;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -42,6 +42,8 @@ import java.util.function.Supplier;
  *   <li>{@code security.agent.violations.exit}
  *   <li>{@code security.agent.violations.exec}
  * </ul>
+ *
+ * <p>In Prometheus format these appear as {@code security_agent_violations_file_total}, etc.
  */
 public final class ViolationMetricsReporter {
 
@@ -121,61 +123,98 @@ public final class ViolationMetricsReporter {
    *
    * <pre>{@code
    * Class.forName("org.apache.solr.security.agent.ViolationMetricsReporter", false, null)
-   *      .getMethod("registerWithSolrMetrics", SolrMetricManager.class, String.class)
-   *      .invoke(null, metricManager, "solr.jvm");
+   *      .getMethod("registerWithSolrMetrics", Object.class, String.class)
+   *      .invoke(null, metricManager, "solr.node");
    * }</pre>
    *
    * <p>Because this module has no compile-time dependency on {@code solr:core}, the parameter type
    * is declared as {@link Object}; the reflective call site in {@code CoreContainer} passes the
    * real {@code SolrMetricManager} instance.
    *
+   * <p>Metrics are registered as OTel observable counters via {@code
+   * SolrMetricManager.observableLongCounter()}. In Prometheus format they appear as {@code
+   * security_agent_violations_file_total} etc.
+   *
    * @param metricManager the {@code SolrMetricManager} instance (type-erased to {@link Object} to
    *     avoid a compile-time dependency on solr:core)
-   * @param registryName the target metrics registry name (e.g. {@code "solr.jvm"})
+   * @param registryName the target metrics registry name (e.g. {@code "solr.node"})
    */
   public static void registerWithSolrMetrics(Object metricManager, String registryName) {
-    // Reflectively call SolrMetricManager.registerGauge(...) for each counter.
-    // We use a Supplier<Long> so the gauge always returns the current counter value.
     try {
       Class<?> mmClass = metricManager.getClass();
-      // SolrMetricManager.registerGauge(SolrInfoBean reporter, String registry,
-      //     Gauge<?> gauge, String scope, boolean force, String... path)
-      // We use the simpler overload that accepts a Supplier directly where available.
-      // Fall back to the Gauge overload if the Supplier overload is absent.
-      registerGauge(mmClass, metricManager, registryName, METRIC_FILE, FILE_COUNTER::sum);
-      registerGauge(mmClass, metricManager, registryName, METRIC_NETWORK, NETWORK_COUNTER::sum);
-      registerGauge(mmClass, metricManager, registryName, METRIC_EXIT, EXIT_COUNTER::sum);
-      registerGauge(mmClass, metricManager, registryName, METRIC_EXEC, EXEC_COUNTER::sum);
+      // SolrMetricManager.observableLongCounter(String registry, String name, String description,
+      //     Consumer<ObservableLongMeasurement> callback, OtelUnit unit)
+      Method counterMethod = findMethod(mmClass, "observableLongCounter", 5);
+      if (counterMethod == null) {
+        agentErr(
+            "[Solr SecurityAgent] SolrMetricManager.observableLongCounter not found"
+                + " — violation metrics will not be registered in /admin/metrics");
+        return;
+      }
+      registerCounter(
+          counterMethod,
+          metricManager,
+          registryName,
+          METRIC_FILE,
+          "Security agent file-access violation count",
+          FILE_COUNTER::sum);
+      registerCounter(
+          counterMethod,
+          metricManager,
+          registryName,
+          METRIC_NETWORK,
+          "Security agent network-connection violation count",
+          NETWORK_COUNTER::sum);
+      registerCounter(
+          counterMethod,
+          metricManager,
+          registryName,
+          METRIC_EXIT,
+          "Security agent JVM-exit violation count",
+          EXIT_COUNTER::sum);
+      registerCounter(
+          counterMethod,
+          metricManager,
+          registryName,
+          METRIC_EXEC,
+          "Security agent process-exec violation count",
+          EXEC_COUNTER::sum);
     } catch (Exception e) {
       // Log to stderr — SLF4J may not be reachable from bootstrap context during premain.
       agentErr("[Solr SecurityAgent] Failed to register violation metrics: " + e);
     }
   }
 
-  private static void registerGauge(
-      Class<?> mmClass, Object mm, String registry, String metricName, Supplier<Long> valueSupplier)
-      throws Exception {
-    // Look for registerGauge(SolrInfoBean, String, Gauge, boolean, String, String...)
-    // The gauge is a lambda; metrics names are split as scope + path segments.
-    // We use the most compatible call: registerGauge(null, registry, gauge, false, metricName)
-    Method registerMethod = null;
-    for (Method m : mmClass.getMethods()) {
-      if ("registerGauge".equals(m.getName())) {
-        registerMethod = m;
-        break;
+  private static Method findMethod(Class<?> cls, String name, int paramCount) {
+    for (Method m : cls.getMethods()) {
+      if (name.equals(m.getName()) && m.getParameterCount() == paramCount) {
+        return m;
       }
     }
-    if (registerMethod == null) {
-      agentErr("[Solr SecurityAgent] SolrMetricManager.registerGauge not found");
-      return;
-    }
-    // Build a com.codahale.metrics.Gauge lambda via a proxy or cast.
-    // Since we can't import codahale types here, create an anonymous class via reflection.
-    // Most robust: use the Gauge<Long> functional interface via dynamic proxy.
-    Object gauge = buildGauge(valueSupplier);
-    // Invoke: registerGauge(SolrInfoBean=null, String registry, Gauge gauge, boolean force, String
-    // name, String... path)
-    registerMethod.invoke(mm, null, registry, gauge, false, metricName, new String[0]);
+    return null;
+  }
+
+  private static void registerCounter(
+      Method counterMethod,
+      Object mm,
+      String registry,
+      String name,
+      String description,
+      Supplier<Long> valueSupplier)
+      throws Exception {
+    // Consumer<ObservableLongMeasurement> — type-erased to Consumer at runtime.
+    // Called by the OTel SDK at each metric collection cycle.
+    Consumer<Object> callback =
+        measurement -> {
+          try {
+            Method record = measurement.getClass().getMethod("record", long.class);
+            record.invoke(measurement, valueSupplier.get());
+          } catch (ReflectiveOperationException ignored) {
+            // Silently skip if ObservableLongMeasurement.record() is unavailable
+          }
+        };
+    // observableLongCounter(registry, name, description, callback, unit=null)
+    counterMethod.invoke(mm, registry, name, description, callback, null);
   }
 
   @SuppressForbidden(
@@ -184,26 +223,5 @@ public final class ViolationMetricsReporter {
               + "before SLF4J is reachable from the bootstrap classloader.")
   private static void agentErr(String msg) {
     System.err.println(msg);
-  }
-
-  @SuppressForbidden(
-      reason =
-          "Thread.getContextClassLoader() is required here to locate com.codahale.metrics.Gauge "
-              + "from the application classloader when this agent class lives in the bootstrap loader.")
-  private static Object buildGauge(Supplier<Long> supplier) throws Exception {
-    // com.codahale.metrics.Gauge is a single-method interface (functional).
-    // Create a dynamic proxy implementing Gauge<Long>.
-    Class<?> gaugeInterface =
-        Class.forName(
-            "com.codahale.metrics.Gauge", true, Thread.currentThread().getContextClassLoader());
-    return Proxy.newProxyInstance(
-        gaugeInterface.getClassLoader(),
-        new Class<?>[] {gaugeInterface},
-        (proxy, method, args) -> {
-          if ("getValue".equals(method.getName())) return supplier.get();
-          if ("equals".equals(method.getName())) return proxy == args[0];
-          if ("hashCode".equals(method.getName())) return System.identityHashCode(proxy);
-          return null;
-        });
   }
 }
