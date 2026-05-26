@@ -34,6 +34,9 @@ plugins {
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
   alias(libs.plugins.logchange)
+
+  id "org.sonarqube" version "7.3.0.8198"
+
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
@@ -76,6 +79,13 @@ allprojects {
     tasks.withType(JavaCompile) {
       options.compilerArgs << "-Xmaxerrs" << "1000"
     }
+  }
+}
+
+sonar {
+  properties {
+    property "sonar.projectKey", "jaykay12_solr"
+    property "sonar.organization", "jaykay12"
   }
 }
 
