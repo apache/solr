@@ -1168,19 +1168,13 @@ fi
 
 # Security agent: detect agent JAR and add -javaagent: if present and not skipped.
 # Set SOLR_SECURITY_AGENT_SKIP=true to disable the agent (for troubleshooting only).
+# Agent reads its configuration (SOLR_SECURITY_AGENT_MODE, SOLR_SECURITY_AGENT_EXTRA_POLICY,
+# and policy file variables like SOLR_HOME) directly from env vars — no -D flags needed.
 AGENT_SM_OPTS=()
 if [ "${SOLR_SECURITY_AGENT_SKIP:-false}" != "true" ]; then
   AGENT_JAR=$(ls "${SOLR_SERVER_DIR}/lib/ext/solr-agent-sm-"*.jar 2>/dev/null | head -1)
   if [ -n "$AGENT_JAR" ]; then
     AGENT_SM_OPTS+=("-javaagent:${AGENT_JAR}")
-    # Convert env vars to JVM system properties so the agent can read them via System.getProperty()
-    # (the agent JAR has no dependency on solr:core and cannot use EnvUtils).
-    if [ -n "${SOLR_SECURITY_AGENT_MODE:-}" ]; then
-      AGENT_SM_OPTS+=("-Dsolr.security.agent.mode=${SOLR_SECURITY_AGENT_MODE}")
-    fi
-    if [ -n "${SOLR_SECURITY_AGENT_EXTRA_POLICY:-}" ]; then
-      AGENT_SM_OPTS+=("-Dsolr.security.agent.extra.policy=${SOLR_SECURITY_AGENT_EXTRA_POLICY}")
-    fi
   fi
 fi
 

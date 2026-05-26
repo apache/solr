@@ -29,9 +29,8 @@ import org.junit.Test;
  * Verifies that the Solr security agent enforcement logic is compatible with Java virtual threads
  * (Project Loom, available since Java 21).
  *
- * <p>{@link StackInspector} uses {@link StackWalker} which is virtual-thread–safe by specification
- * (JEP 425). These tests exercise the file and network interceptors from virtual threads to
- * confirm:
+ * <p>{@link StackWalker} is virtual-thread–safe by specification (JEP 425). These tests exercise
+ * the file and network interceptors from virtual threads to confirm:
  *
  * <ul>
  *   <li>Permitted operations succeed from a virtual thread context.
@@ -44,11 +43,11 @@ public class VirtualThreadCompatibilityTest extends SolrTestCase {
 
   @After
   public void resetSingleton() {
-    SolrSecurityPolicy.resetForTesting();
+    AgentPolicy.resetForTesting();
   }
 
   private void resetSingletonSilent() {
-    SolrSecurityPolicy.resetForTesting();
+    AgentPolicy.resetForTesting();
   }
 
   /** Runs {@code task} on a virtual thread and re-throws any exception it produces. */
@@ -93,14 +92,10 @@ public class VirtualThreadCompatibilityTest extends SolrTestCase {
     }
     PermittedPath allowed =
         new PermittedPath(realDirStr, "read", true, PolicyLoader.PolicySource.DEFAULT);
-    SolrSecurityPolicy policy =
-        new SolrSecurityPolicy(
-            List.of(allowed),
-            List.of(),
-            List.of(),
-            List.of(),
-            SolrSecurityPolicy.EnforcementMode.ENFORCE);
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(allowed), List.of(), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(policy);
 
     // Create the file so toRealPath() resolves correctly (no fallback to unresolved path)
     Path testFile = tmpDir.resolve("test.txt");
@@ -109,23 +104,23 @@ public class VirtualThreadCompatibilityTest extends SolrTestCase {
     // Must not throw — permitted path from a virtual thread
     runOnVirtualThread(
         () ->
-            FileAccessInterceptor.checkPath(
+            FileInterceptor.checkPath(
                 testFile, "read", SecurityViolationLogger.ViolationType.FILE_READ));
   }
 
   @Test
   public void testDeniedFileAccessFromVirtualThreadIncrementsCounter() throws Exception {
     resetSingletonSilent();
-    SolrSecurityPolicy policy =
-        new SolrSecurityPolicy(
-            List.of(), List.of(), List.of(), List.of(), SolrSecurityPolicy.EnforcementMode.ENFORCE);
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(), List.of(), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(policy);
 
     long before = ViolationMetricsReporter.fileCount();
     try {
       runOnVirtualThread(
           () ->
-              FileAccessInterceptor.checkPath(
+              FileInterceptor.checkPath(
                   Path.of("/tmp/denied-vt.txt"),
                   "read",
                   SecurityViolationLogger.ViolationType.FILE_READ));
@@ -138,10 +133,10 @@ public class VirtualThreadCompatibilityTest extends SolrTestCase {
   @Test
   public void testDeniedFileAccessFromVirtualThreadNoStackWalkerException() throws Exception {
     resetSingletonSilent();
-    SolrSecurityPolicy policy =
-        new SolrSecurityPolicy(
-            List.of(), List.of(), List.of(), List.of(), SolrSecurityPolicy.EnforcementMode.WARN);
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(), List.of(), List.of(), List.of(), AgentPolicy.EnforcementMode.WARN);
+    AgentPolicy.initialize(policy);
 
     // In warn mode, no SecurityException is thrown, but we must verify no NPE/CCE from StackWalker
     AtomicReference<Throwable> unexpected = new AtomicReference<>();
@@ -150,7 +145,7 @@ public class VirtualThreadCompatibilityTest extends SolrTestCase {
             .start(
                 () -> {
                   try {
-                    FileAccessInterceptor.checkPath(
+                    FileInterceptor.checkPath(
                         Path.of("/tmp/vt-check.txt"),
                         "read",
                         SecurityViolationLogger.ViolationType.FILE_READ);
@@ -175,29 +170,25 @@ public class VirtualThreadCompatibilityTest extends SolrTestCase {
     resetSingletonSilent();
     PermittedEndpoint ep =
         new PermittedEndpoint("*:8983", "connect,resolve", null, PolicyLoader.PolicySource.DEFAULT);
-    SolrSecurityPolicy policy =
-        new SolrSecurityPolicy(
-            List.of(),
-            List.of(ep),
-            List.of(),
-            List.of(),
-            SolrSecurityPolicy.EnforcementMode.ENFORCE);
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(), List.of(ep), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(policy);
 
     runOnVirtualThread(
         () ->
             assertTrue(
-                NetworkAccessInterceptor.isEndpointPermitted(
-                    SolrSecurityPolicy.getInstance(), "10.0.0.1", 8983)));
+                SocketChannelInterceptor.isEndpointPermitted(
+                    AgentPolicy.getInstance(), "10.0.0.1", 8983)));
   }
 
   @Test
   public void testDeniedNetworkFromVirtualThreadIncrementsCounter() throws Exception {
     resetSingletonSilent();
-    SolrSecurityPolicy policy =
-        new SolrSecurityPolicy(
-            List.of(), List.of(), List.of(), List.of(), SolrSecurityPolicy.EnforcementMode.ENFORCE);
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(), List.of(), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(policy);
 
     long before = ViolationMetricsReporter.networkCount();
     try {
@@ -205,7 +196,7 @@ public class VirtualThreadCompatibilityTest extends SolrTestCase {
           () -> {
             InetSocketAddress addr =
                 new InetSocketAddress(InetAddress.getByName("10.0.0.99"), 9999);
-            NetworkAccessInterceptor.checkConnect(addr);
+            SocketChannelInterceptor.checkConnect(addr);
           });
     } catch (SecurityException ignored) {
       // expected

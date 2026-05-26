@@ -652,3 +652,15 @@ The S3 Output Stream is based on ASL 2.0 reference implementations found at:
     https://github.com/confluentinc/kafka-connect-storage-cloud/blob/5.0.x/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java
 This files resides at:
     modules/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java
+
+
+This project contains source files in the "solr/agent-sm" module that were copied and adapted from the
+OpenSearch project (https://github.com/opensearch-project/OpenSearch), git tag "3.6.0", originally
+licensed under the Apache License 2.0.
+
+The following files were adapted from the interceptor classes in libs/agent-sm/agent/:
+  FileInterceptor.java, SocketChannelInterceptor.java, SystemExitInterceptor.java,
+  RuntimeHaltInterceptor.java, StackCallerClassChainExtractor.java
+
+The following files were adapted from the policy parser in libs/agent-sm/agent-policy/:
+  PolicyFileParser.java, PolicyToken.java, PolicyTokenStream.java

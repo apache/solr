@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
  * SECURITY VIOLATION [TYPE] target=<t> caller=<c> mode=<m> source=<DEFAULT|OPERATOR>
  * }</pre>
  *
- * <p>In {@link SolrSecurityPolicy.EnforcementMode#WARN warn mode} entries are logged at {@code
- * WARN} level and the operation is allowed to proceed. In {@link
- * SolrSecurityPolicy.EnforcementMode#ENFORCE enforce mode} entries are logged at {@code ERROR}
- * level and the operation must be blocked by the calling interceptor.
+ * <p>In {@link AgentPolicy.EnforcementMode#WARN warn mode} entries are logged at {@code WARN} level
+ * and the operation is allowed to proceed. In {@link AgentPolicy.EnforcementMode#ENFORCE enforce
+ * mode} entries are logged at {@code ERROR} level and the operation must be blocked by the calling
+ * interceptor.
  *
  * <p>The {@code source} field identifies whether the matching policy entry (if any) came from the
  * default bundled policy ({@code DEFAULT}) or from an operator extension ({@code OPERATOR}). For
@@ -74,12 +74,12 @@ public final class SecurityViolationLogger {
       ViolationType type,
       String target,
       String caller,
-      SolrSecurityPolicy.EnforcementMode mode,
+      AgentPolicy.EnforcementMode mode,
       String source) {
 
     String message = buildMessage(type, target, caller, mode, source);
 
-    if (mode == SolrSecurityPolicy.EnforcementMode.ENFORCE) {
+    if (mode == AgentPolicy.EnforcementMode.ENFORCE) {
       log.error(message);
       if (log.isDebugEnabled()) {
         log.debug(
@@ -99,15 +99,15 @@ public final class SecurityViolationLogger {
    * source tagging is available).
    */
   public static void log(
-      ViolationType type, String target, String caller, SolrSecurityPolicy.EnforcementMode mode) {
+      ViolationType type, String target, String caller, AgentPolicy.EnforcementMode mode) {
     log(type, target, caller, mode, null);
   }
 
-  static String buildMessage(
+  public static String buildMessage(
       ViolationType type,
       String target,
       String caller,
-      SolrSecurityPolicy.EnforcementMode mode,
+      AgentPolicy.EnforcementMode mode,
       String source) {
 
     StringBuilder sb = new StringBuilder();

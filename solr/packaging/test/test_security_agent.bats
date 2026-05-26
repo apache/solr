@@ -105,3 +105,37 @@ EOF
   with_extra=$(grep -oE "permitted paths=[0-9]+" "$(console_log)" | grep -oE "[0-9]+" | head -1)
   [ "${with_extra:-0}" -gt 0 ]
 }
+
+@test "enforce mode blocks unauthorized file access with SecurityException" {
+  local agent_jar
+  agent_jar=$(ls "${SOLR_TIP}/server/lib/ext/solr-agent-sm-"*.jar)
+
+  # Tiny program that reads /etc/hosts — outside every path the default policy permits.
+  cat > "${BATS_TEST_TMPDIR}/FileViolation.java" <<'EOF'
+public class FileViolation {
+    public static void main(String[] args) throws Exception {
+        java.nio.file.Files.readAllBytes(java.nio.file.Path.of("/etc/hosts"));
+        System.out.println("read succeeded -- agent did NOT block");
+    }
+}
+EOF
+
+  javac -d "${BATS_TEST_TMPDIR}" "${BATS_TEST_TMPDIR}/FileViolation.java"
+
+  # Run standalone under the agent in enforce mode — no Solr startup needed.
+  # Provide the sysprops that bin/solr would normally pass so policy variables resolve.
+  run java \
+    -javaagent:"${agent_jar}" \
+    -Dsolr.security.agent.mode=enforce \
+    -Dsolr.install.dir="${SOLR_TIP}" \
+    -Dsolr.solr.home="${SOLR_TIP}/server/solr" \
+    -Dsolr.logs.dir="${BATS_TEST_TMPDIR}" \
+    -Dsolr.port.listen=8983 \
+    -cp "${BATS_TEST_TMPDIR}" \
+    FileViolation
+
+  # SecurityException propagates uncaught → non-zero exit with stack trace in output.
+  assert_failure
+  assert_output --partial "SecurityException"
+  refute_output --partial "read succeeded"
+}

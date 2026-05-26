@@ -16,18 +16,19 @@
  */
 package org.apache.solr.security.agent;
 
+import java.lang.reflect.Method;
 import net.bytebuddy.asm.Advice;
 
 /**
  * ByteBuddy {@link Advice} interceptor for child process spawning.
  *
  * <p>Intercepts {@code ProcessBuilder.start()} and {@code Runtime.exec()} to enforce the {@link
- * SolrSecurityPolicy#approvedExecCallers()} list. By default, no call sites are approved in the
- * production policy (the list is empty), so all process-spawning attempts will be flagged unless an
- * operator explicitly adds an entry to {@code agent-security-extra.policy}.
+ * AgentPolicy#approvedExecCallers()} list. By default, no call sites are approved in the production
+ * policy (the list is empty), so all process-spawning attempts will be flagged unless an operator
+ * explicitly adds an entry to {@code agent-security-extra.policy}.
  *
- * <p>This interceptor is not present in the OpenSearch {@code agent-sm} module; it is a Solr
- * addition to cover the {@code ProcessBuilder} usage sites in Solr core (FR-007).
+ * <p>This is a Solr-specific interceptor to cover the {@code ProcessBuilder} usage sites in Solr
+ * core (FR-007).
  *
  * <p>Known legitimate process-spawning call sites in Solr (kept out of the default production
  * policy because they use {@code ProcessHandle}, not {@code ProcessBuilder}):
@@ -40,24 +41,30 @@ public final class ProcessExecInterceptor {
 
   private ProcessExecInterceptor() {}
 
-  /** Called before {@code ProcessBuilder.start()}. */
-  @Advice.OnMethodEnter(suppress = Throwable.class)
-  public static void onProcessBuilderStart() {
-    checkExec("ProcessBuilder.start()");
+  /**
+   * Single entry point for both {@code ProcessBuilder.start()} and {@code Runtime.exec()}.
+   *
+   * <p>ByteBuddy requires exactly one {@code @OnMethodEnter} method per advice class. This method
+   * is registered on both {@code ProcessBuilder} and {@code Runtime} via separate {@code
+   * AgentBuilder} transform chains in {@link SolrAgentEntryPoint}.
+   *
+   * @param args all arguments of the intercepted method
+   * @param method the intercepted method (used to identify the call site in the violation log)
+   */
+  @Advice.OnMethodEnter(suppress = java.io.IOException.class)
+  public static void onExec(@Advice.AllArguments Object[] args, @Advice.Origin Method method) {
+    checkExec(deriveTarget(method.getName(), args));
   }
 
-  /**
-   * Called before {@code Runtime.exec(String[])}.
-   *
-   * @param command the command array (first element used for the violation log target)
-   */
-  @Advice.OnMethodEnter(suppress = Throwable.class)
-  public static void onRuntimeExec(@Advice.Argument(0) String[] command) {
-    String target =
-        command != null && command.length > 0
-            ? "Runtime.exec(" + command[0] + ")"
-            : "Runtime.exec()";
-    checkExec(target);
+  public static String deriveTarget(String methodName, Object[] args) {
+    if (args == null || args.length == 0) return methodName + "()";
+    Object arg0 = args[0];
+    if (arg0 instanceof String[]) {
+      String[] cmd = (String[]) arg0;
+      return methodName + "(" + (cmd.length > 0 ? cmd[0] : "") + ")";
+    }
+    if (arg0 instanceof String) return methodName + "(" + arg0 + ")";
+    return methodName + "()";
   }
 
   // ---------------------------------------------------------------------------
@@ -70,11 +77,14 @@ public final class ProcessExecInterceptor {
    *
    * @param target a human-readable description of the intercepted call for the violation log
    */
-  static void checkExec(String target) {
-    if (!SolrSecurityPolicy.isInitialized()) return;
+  public static void checkExec(String target) {
+    if (!AgentPolicy.isInitialized()) return;
 
-    SolrSecurityPolicy policy = SolrSecurityPolicy.getInstance();
-    String caller = StackInspector.topCallerClassName();
+    AgentPolicy policy = AgentPolicy.getInstance();
+    String caller =
+        StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+            .getCallerClass()
+            .getName();
 
     if (!policy.isExecApproved(caller)) {
       ViolationMetricsReporter.incrementExec();
@@ -83,7 +93,7 @@ public final class ProcessExecInterceptor {
           target,
           caller,
           policy.enforcementMode());
-      if (policy.enforcementMode() == SolrSecurityPolicy.EnforcementMode.ENFORCE) {
+      if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
         throw new SecurityException(
             "Process spawning denied by Solr security agent — unapproved caller: " + caller);
       }

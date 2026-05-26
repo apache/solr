@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security.agent;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -34,7 +35,7 @@ import java.util.Set;
  * is intentionally not used here because the agent JAR has no compile-time dependency on Solr
  * application code.
  */
-public final class SolrSecurityPolicy {
+public final class AgentPolicy {
 
   /** Whether violations block the operation or are merely logged. */
   public enum EnforcementMode {
@@ -45,7 +46,7 @@ public final class SolrSecurityPolicy {
   }
 
   // Singleton holder — set once at premain; never null after initialization.
-  private static volatile SolrSecurityPolicy instance;
+  private static volatile AgentPolicy instance;
 
   private final List<PermittedPath> permittedPaths;
   private final List<PermittedEndpoint> permittedEndpoints;
@@ -53,9 +54,10 @@ public final class SolrSecurityPolicy {
   private final List<ApprovedCallSite> approvedExecCallers;
   private final EnforcementMode enforcementMode;
   private final Set<String> trustedFileSystems;
+  private final Set<String> trustedHosts;
 
   /** Constructs the policy. Called exclusively by {@link PolicyLoader#load(java.nio.file.Path)}. */
-  SolrSecurityPolicy(
+  AgentPolicy(
       List<PermittedPath> permittedPaths,
       List<PermittedEndpoint> permittedEndpoints,
       List<ApprovedCallSite> approvedExitCallers,
@@ -67,26 +69,32 @@ public final class SolrSecurityPolicy {
         approvedExitCallers,
         approvedExecCallers,
         enforcementMode,
+        Set.of(),
         Set.of());
   }
 
   /**
-   * Constructs the policy with an explicit set of trusted filesystem schemes (e.g. in-memory FS
-   * schemes used in tests).
+   * Constructs the policy with explicit trusted filesystem schemes and trusted hosts.
+   *
+   * @param trustedFileSystems filesystem URI schemes exempt from path checks (e.g. {@code "jrt"},
+   *     {@code "memory"} used in tests)
+   * @param trustedHosts host strings exempt from network checks (e.g. loopback addresses)
    */
-  SolrSecurityPolicy(
+  AgentPolicy(
       List<PermittedPath> permittedPaths,
       List<PermittedEndpoint> permittedEndpoints,
       List<ApprovedCallSite> approvedExitCallers,
       List<ApprovedCallSite> approvedExecCallers,
       EnforcementMode enforcementMode,
-      Set<String> trustedFileSystems) {
+      Set<String> trustedFileSystems,
+      Set<String> trustedHosts) {
     this.permittedPaths = Collections.unmodifiableList(permittedPaths);
     this.permittedEndpoints = Collections.unmodifiableList(permittedEndpoints);
     this.approvedExitCallers = Collections.unmodifiableList(approvedExitCallers);
     this.approvedExecCallers = Collections.unmodifiableList(approvedExecCallers);
     this.enforcementMode = enforcementMode;
     this.trustedFileSystems = Collections.unmodifiableSet(trustedFileSystems);
+    this.trustedHosts = Collections.unmodifiableSet(trustedHosts);
   }
 
   // ---------------------------------------------------------------------------
@@ -97,11 +105,11 @@ public final class SolrSecurityPolicy {
    * Sets the global singleton policy. May only be called once; subsequent calls throw {@link
    * SecurityException}.
    */
-  public static void initialize(SolrSecurityPolicy policy) {
-    synchronized (SolrSecurityPolicy.class) {
+  public static void initialize(AgentPolicy policy) {
+    synchronized (AgentPolicy.class) {
       if (instance != null) {
         throw new SecurityException(
-            "SolrSecurityPolicy has already been initialized and cannot be replaced. "
+            "AgentPolicy has already been initialized and cannot be replaced. "
                 + "This is a programming error; only SolrAgentEntryPoint.premain() should call initialize().");
       }
       instance = policy;
@@ -113,11 +121,11 @@ public final class SolrSecurityPolicy {
    *
    * @throws IllegalStateException if the policy has not yet been initialized
    */
-  public static SolrSecurityPolicy getInstance() {
-    SolrSecurityPolicy p = instance;
+  public static AgentPolicy getInstance() {
+    AgentPolicy p = instance;
     if (p == null) {
       throw new IllegalStateException(
-          "SolrSecurityPolicy has not been initialized. "
+          "AgentPolicy has not been initialized. "
               + "Ensure the Solr security agent JAR is on the -javaagent: command-line.");
     }
     return p;
@@ -183,6 +191,14 @@ public final class SolrSecurityPolicy {
     return trustedFileSystems;
   }
 
+  /**
+   * Host strings exempt from outbound network checks (e.g. {@code "localhost"}, {@code
+   * "127.0.0.1"}). Populated by {@link SolrAgentEntryPoint} at startup.
+   */
+  public Set<String> trustedHosts() {
+    return trustedHosts;
+  }
+
   // ---------------------------------------------------------------------------
   // Policy checks (convenience helpers called by interceptors)
   // ---------------------------------------------------------------------------
@@ -216,6 +232,27 @@ public final class SolrSecurityPolicy {
   public boolean isExecApproved(String className) {
     for (ApprovedCallSite cs : approvedExecCallers) {
       if (cs.operation() == ApprovedCallSite.Operation.EXEC && cs.matches(className)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} if any class in the call chain is approved to call {@code System.exit()}
+   * or {@code Runtime.halt()}. Mirrors {@code AgentPolicy.isChainThatCanExit()} in the OpenSearch
+   * reference implementation: any approved class anywhere in the chain grants permission.
+   *
+   * <p>Class names are matched using {@link String#matches} (full regex), so the approved-caller
+   * list supports wildcard patterns such as {@code "org\\.apache\\.solr\\..*"}.
+   *
+   * @param chain the full set of non-hidden classes in the call stack
+   */
+  public boolean isChainThatCanExit(Collection<Class<?>> chain) {
+    for (Class<?> cls : chain) {
+      for (ApprovedCallSite cs : approvedExitCallers) {
+        if (cs.operation() == ApprovedCallSite.Operation.EXIT && cs.matches(cls.getName())) {
+          return true;
+        }
+      }
     }
     return false;
   }

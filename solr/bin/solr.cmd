@@ -1023,13 +1023,13 @@ IF "%GC_TUNE%"=="" (
 
 REM Security agent: detect agent JAR and add -javaagent: if present and not skipped.
 REM Set SOLR_SECURITY_AGENT_SKIP=true to disable the agent (for troubleshooting only).
+REM Agent reads its configuration (SOLR_SECURITY_AGENT_MODE, SOLR_SECURITY_AGENT_EXTRA_POLICY,
+REM and policy file variables like SOLR_HOME) directly from env vars -- no -D flags needed.
 set AGENT_SM_OPTS=
 IF NOT "%SOLR_SECURITY_AGENT_SKIP%"=="true" (
   IF EXIST "%SOLR_SERVER_DIR%\lib\ext\solr-agent-sm-*.jar" (
     FOR %%F IN ("%SOLR_SERVER_DIR%\lib\ext\solr-agent-sm-*.jar") DO SET "AGENT_JAR=%%F"
     SET "AGENT_SM_OPTS=-javaagent:!AGENT_JAR!"
-    IF DEFINED SOLR_SECURITY_AGENT_MODE SET "AGENT_SM_OPTS=!AGENT_SM_OPTS! -Dsolr.security.agent.mode=!SOLR_SECURITY_AGENT_MODE!"
-    IF DEFINED SOLR_SECURITY_AGENT_EXTRA_POLICY SET "AGENT_SM_OPTS=!AGENT_SM_OPTS! -Dsolr.security.agent.extra.policy=!SOLR_SECURITY_AGENT_EXTRA_POLICY!"
   )
 )
 

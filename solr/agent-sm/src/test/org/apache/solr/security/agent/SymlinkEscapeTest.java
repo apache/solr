@@ -25,7 +25,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 /**
- * Tests that symlink-escape attacks are blocked by {@link FileAccessInterceptor}.
+ * Tests that symlink-escape attacks are blocked by {@link FileInterceptor}.
  *
  * <p>A symlink inside a permitted directory that points to a target outside permitted directories
  * must be denied even though the symlink path itself would have matched a permitted rule. The
@@ -38,14 +38,14 @@ public class SymlinkEscapeTest extends SolrTestCase {
 
   @After
   public void resetSingleton() {
-    SolrSecurityPolicy.resetForTesting();
+    AgentPolicy.resetForTesting();
   }
 
   private void resetSingletonSilent() {
-    SolrSecurityPolicy.resetForTesting();
+    AgentPolicy.resetForTesting();
   }
 
-  private SolrSecurityPolicy buildPolicyPermitting(Path dir) {
+  private AgentPolicy buildPolicyPermitting(Path dir) {
     resetSingletonSilent();
     // Use the real (symlink-resolved) path so the policy matches after toRealPath() resolution
     String realDirStr;
@@ -56,14 +56,10 @@ public class SymlinkEscapeTest extends SolrTestCase {
     }
     PermittedPath allowed =
         new PermittedPath(realDirStr, "read", true, PolicyLoader.PolicySource.DEFAULT);
-    SolrSecurityPolicy policy =
-        new SolrSecurityPolicy(
-            List.of(allowed),
-            List.of(),
-            List.of(),
-            List.of(),
-            SolrSecurityPolicy.EnforcementMode.ENFORCE);
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(allowed), List.of(), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(policy);
     return policy;
   }
 
@@ -88,8 +84,7 @@ public class SymlinkEscapeTest extends SolrTestCase {
     }
 
     // Symlink resolves to a path inside the permitted dir — should NOT throw
-    FileAccessInterceptor.checkPath(
-        symlink, "read", SecurityViolationLogger.ViolationType.FILE_READ);
+    FileInterceptor.checkPath(symlink, "read", SecurityViolationLogger.ViolationType.FILE_READ);
   }
 
   // ---------------------------------------------------------------------------
@@ -118,8 +113,7 @@ public class SymlinkEscapeTest extends SolrTestCase {
 
     // Accessing via the symlink path should be denied because the REAL path is outside permitted
     // dir
-    FileAccessInterceptor.checkPath(
-        symlink, "read", SecurityViolationLogger.ViolationType.FILE_READ);
+    FileInterceptor.checkPath(symlink, "read", SecurityViolationLogger.ViolationType.FILE_READ);
   }
 
   @Test
@@ -141,8 +135,7 @@ public class SymlinkEscapeTest extends SolrTestCase {
 
     long before = ViolationMetricsReporter.fileCount();
     try {
-      FileAccessInterceptor.checkPath(
-          symlink, "read", SecurityViolationLogger.ViolationType.FILE_READ);
+      FileInterceptor.checkPath(symlink, "read", SecurityViolationLogger.ViolationType.FILE_READ);
     } catch (SecurityException ignored) {
       // expected
     }
@@ -161,7 +154,6 @@ public class SymlinkEscapeTest extends SolrTestCase {
     // Non-existent file inside the permitted dir — toRealPath() fails → normalized path used
     Path nonExistent = tmpDir.resolve("does-not-exist.txt");
     // Should NOT throw — the normalized path falls within the permitted dir
-    FileAccessInterceptor.checkPath(
-        nonExistent, "read", SecurityViolationLogger.ViolationType.FILE_READ);
+    FileInterceptor.checkPath(nonExistent, "read", SecurityViolationLogger.ViolationType.FILE_READ);
   }
 }

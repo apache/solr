@@ -60,7 +60,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
     return policy;
   }
 
-  private SolrSecurityPolicy loadWithExtra(Path defaultPolicy, Path extraPolicy) {
+  private AgentPolicy loadWithExtra(Path defaultPolicy, Path extraPolicy) {
     if (extraPolicy != null) {
       System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
     }
@@ -86,7 +86,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
             + "};\n",
         StandardCharsets.UTF_8);
 
-    SolrSecurityPolicy policy = loadWithExtra(defaultPolicy, extraPolicy);
+    AgentPolicy policy = loadWithExtra(defaultPolicy, extraPolicy);
     assertTrue(policy.isPathPermitted(tmpDir.resolve("data.txt").toString(), "read"));
   }
 
@@ -105,7 +105,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
             + "};\n",
         StandardCharsets.UTF_8);
 
-    SolrSecurityPolicy policy = loadWithExtra(defaultPolicy, extraPolicy);
+    AgentPolicy policy = loadWithExtra(defaultPolicy, extraPolicy);
     // /etc is not in either policy
     assertFalse(policy.isPathPermitted("/etc/shadow", "read"));
   }
@@ -125,7 +125,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
             + "};\n",
         StandardCharsets.UTF_8);
 
-    SolrSecurityPolicy policy = loadWithExtra(defaultPolicy, extraPolicy);
+    AgentPolicy policy = loadWithExtra(defaultPolicy, extraPolicy);
     List<PermittedPath> paths = policy.permittedPaths();
     boolean hasOperator =
         paths.stream().anyMatch(p -> p.source() == PolicyLoader.PolicySource.OPERATOR);
@@ -137,7 +137,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
     Path tmpDir = createTempDir();
     Path defaultPolicy = writeDefaultPolicy(tmpDir);
 
-    SolrSecurityPolicy policy = loadWithExtra(defaultPolicy, null);
+    AgentPolicy policy = loadWithExtra(defaultPolicy, null);
     List<PermittedPath> paths = policy.permittedPaths();
     boolean hasDefault =
         paths.stream().anyMatch(p -> p.source() == PolicyLoader.PolicySource.DEFAULT);
@@ -158,7 +158,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
         "solr.security.agent.extra.policy", tmpDir.resolve("nonexistent.policy").toString());
 
     // Should not throw; default policy still loads
-    SolrSecurityPolicy policy = new PolicyLoader().load(defaultPolicy);
+    AgentPolicy policy = new PolicyLoader().load(defaultPolicy);
     assertTrue(policy.isPathPermitted("/opt/solr/conf", "read"));
   }
 
@@ -178,7 +178,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
     System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
 
     // Should not throw; default policy still loads
-    SolrSecurityPolicy policy = new PolicyLoader().load(defaultPolicy);
+    AgentPolicy policy = new PolicyLoader().load(defaultPolicy);
     // Default policy (/opt/solr) is still active
     assertTrue(policy.isPathPermitted("/opt/solr/conf", "read"));
     // Malformed extra policy adds no new paths
@@ -197,7 +197,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
             SecurityViolationLogger.ViolationType.FILE_READ,
             "/tmp/secret.txt",
             "com.example.Caller",
-            SolrSecurityPolicy.EnforcementMode.WARN,
+            AgentPolicy.EnforcementMode.WARN,
             "OPERATOR");
     assertTrue("Expected source=OPERATOR in log message", msg.contains("source=OPERATOR"));
   }
@@ -209,7 +209,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
             SecurityViolationLogger.ViolationType.FILE_READ,
             "/tmp/secret.txt",
             "com.example.Caller",
-            SolrSecurityPolicy.EnforcementMode.WARN,
+            AgentPolicy.EnforcementMode.WARN,
             null);
     assertFalse("Expected no source= field when source is null", msg.contains("source="));
   }

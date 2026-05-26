@@ -17,9 +17,13 @@
 package org.apache.solr.security.agent;
 
 import java.lang.instrument.Instrumentation;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
+import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.asm.Advice;
+import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.matcher.ElementMatchers;
 
 /**
@@ -35,7 +39,7 @@ import net.bytebuddy.matcher.ElementMatchers;
  * <ol>
  *   <li>Locate and parse {@code agent-security.policy} (and the optional {@code
  *       agent-security-extra.policy}) via {@link PolicyLoader}.
- *   <li>Initialize the {@link SolrSecurityPolicy} singleton.
+ *   <li>Initialize the {@link AgentPolicy} singleton.
  *   <li>Register all four ByteBuddy interceptors with the JVM instrumentation API.
  *   <li>If policy loading fails and enforcement mode is {@code ENFORCE}, halt the JVM; in {@code
  *       WARN} mode, log the error and continue without protection.
@@ -43,7 +47,7 @@ import net.bytebuddy.matcher.ElementMatchers;
  *
  * <h2>Bootstrap injection</h2>
  *
- * The interceptor classes ({@link FileAccessInterceptor}, etc.) are injected into the bootstrap
+ * The interceptor classes ({@link FileInterceptor}, etc.) are injected into the bootstrap
  * classloader using {@code ClassInjector.UsingUnsafe.ofBootLoader()} so that they can intercept JDK
  * methods which are loaded by the bootstrap loader. The {@code @SuppressForbidden} annotation on
  * the injection call acknowledges the intentional use of {@code sun.misc.Unsafe}.
@@ -87,13 +91,14 @@ public final class SolrAgentEntryPoint {
     // Locate the default policy file next to the agent JAR.
     Path defaultPolicyPath = resolveDefaultPolicyPath();
 
-    SolrSecurityPolicy policy = null;
+    AgentPolicy policy = null;
     try {
       PolicyLoader loader = new PolicyLoader();
       policy = loader.load(defaultPolicyPath);
     } catch (IllegalStateException e) {
       // Policy load failed.
-      String modeStr = System.getProperty("solr.security.agent.mode", "warn");
+      String modeStr = PolicyPropertyExpander.getPropertyOrEnv("solr.security.agent.mode");
+      if (modeStr == null) modeStr = "warn";
       if ("enforce".equalsIgnoreCase(modeStr.trim())) {
         System.err.println(
             "[Solr SecurityAgent] FATAL: Cannot load security policy in enforce mode. "
@@ -109,7 +114,7 @@ public final class SolrAgentEntryPoint {
       }
     }
 
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy.initialize(policy);
 
     // Register ByteBuddy interceptors.
     try {
@@ -127,62 +132,92 @@ public final class SolrAgentEntryPoint {
             + policy.permittedEndpoints().size());
   }
 
+  private static final String[] FILE_INTERCEPTED_METHODS = {
+    "write",
+    "createFile",
+    "createDirectories",
+    "createLink",
+    "copy",
+    "move",
+    "newByteChannel",
+    "delete",
+    "deleteIfExists",
+    "read",
+    "open"
+  };
+
   /**
-   * Installs all four ByteBuddy interceptors using the provided {@link Instrumentation} instance.
-   * The interceptor classes are injected into the bootstrap classloader so that they can redefine
-   * JDK methods.
+   * Installs all ByteBuddy interceptors using the provided {@link Instrumentation} instance. The
+   * interceptor classes are injected into the bootstrap classloader so that they can redefine JDK
+   * methods.
    */
   private static void installInterceptors(Instrumentation inst) {
-    new AgentBuilder.Default()
-        // Intercept java.nio.file.Files read/copy/move operations → FileAccessInterceptor
-        .type(ElementMatchers.named("java.nio.file.Files"))
-        .transform(
-            (builder, type, classLoader, module, domain) ->
-                builder.visit(
-                    Advice.to(FileAccessInterceptor.class)
-                        .on(
-                            ElementMatchers.named("newInputStream")
-                                .or(ElementMatchers.named("readAllBytes"))
-                                .or(ElementMatchers.named("readString"))
-                                .or(ElementMatchers.named("readAllLines"))
-                                .or(ElementMatchers.named("newOutputStream"))
-                                .or(ElementMatchers.named("write"))
-                                .or(ElementMatchers.named("delete"))
-                                .or(ElementMatchers.named("deleteIfExists"))
-                                .or(ElementMatchers.named("copy"))
-                                .or(ElementMatchers.named("move")))))
-        // Intercept SocketChannel.connect(SocketAddress) → NetworkAccessInterceptor
+    // AgentBuilder configuration for JDK class instrumentation:
+    //   - Implementation.Context.Disabled: required for REDEFINE so ByteBuddy does not try to
+    //     add auxiliary types (forbidden when redefining already-loaded JDK classes).
+    //   - InitializationStrategy.NoOp: skip static initializer injection (same reason).
+    //   - RedefinitionStrategy.REDEFINITION: redefine already-loaded bootstrap classes (Files,
+    // etc.)
+    //     in-place rather than scheduling a retransformation pass.
+    final ByteBuddy byteBuddy =
+        new ByteBuddy().with(Implementation.Context.Disabled.Factory.INSTANCE);
+
+    new AgentBuilder.Default(byteBuddy)
+        .with(AgentBuilder.InitializationStrategy.NoOp.INSTANCE)
+        .with(AgentBuilder.RedefinitionStrategy.REDEFINITION)
+        .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
+        // Override the default ignore filter so we can instrument bootstrap-loaded JDK classes
+        // in named modules (java.lang, java.nio, etc.). Without this, ByteBuddy 1.18.x silently
+        // skips those classes due to module-visibility checks in its default ignore rules.
+        // Also exclude ByteBuddy's own classes to prevent circular instrumentation at startup.
+        .ignore(ElementMatchers.isSynthetic().or(ElementMatchers.nameStartsWith("net.bytebuddy.")))
+        // Intercept FileSystemProvider subclasses, java.nio.file.Files, and FileChannel subtypes.
         .type(
-            ElementMatchers.named("java.nio.channels.SocketChannel")
-                .or(ElementMatchers.named("java.net.Socket")))
+            ElementMatchers.isSubTypeOf(FileSystemProvider.class)
+                .or(ElementMatchers.named("java.nio.file.Files"))
+                .or(ElementMatchers.isSubTypeOf(FileChannel.class)))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
-                    Advice.to(NetworkAccessInterceptor.class).on(ElementMatchers.named("connect"))))
-        // Intercept System.exit(int) → ExitInterceptor.onSystemExit
-        .type(ElementMatchers.named("java.lang.System"))
+                    Advice.to(FileInterceptor.class)
+                        .on(
+                            ElementMatchers.namedOneOf(FILE_INTERCEPTED_METHODS)
+                                .or(ElementMatchers.isAbstract()))))
+        // Intercept SocketChannel / Socket outbound connections → SocketChannelInterceptor
+        .type(
+            ElementMatchers.isSubTypeOf(java.nio.channels.SocketChannel.class)
+                .or(ElementMatchers.isSubTypeOf(java.net.Socket.class)))
         .transform(
             (builder, type, classLoader, module, domain) ->
-                builder.visit(Advice.to(ExitInterceptor.class).on(ElementMatchers.named("exit"))))
-        // Intercept Runtime.halt(int) → ExitInterceptor.onRuntimeHalt
-        .type(ElementMatchers.named("java.lang.Runtime"))
+                builder.visit(
+                    Advice.to(SocketChannelInterceptor.class)
+                        .on(
+                            ElementMatchers.named("connect")
+                                .and(ElementMatchers.not(ElementMatchers.isAbstract())))))
+        // Intercept System.exit(int) → SystemExitInterceptor
+        .type(ElementMatchers.is(java.lang.System.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
-                builder.visit(Advice.to(ExitInterceptor.class).on(ElementMatchers.named("halt"))))
-        // Intercept ProcessBuilder.start() → ProcessExecInterceptor.onProcessBuilderStart
-        .type(ElementMatchers.named("java.lang.ProcessBuilder"))
+                builder.visit(
+                    Advice.to(SystemExitInterceptor.class).on(ElementMatchers.named("exit"))))
+        // Intercept Runtime.halt(int) → RuntimeHaltInterceptor
+        .type(ElementMatchers.is(java.lang.Runtime.class))
+        .transform(
+            (builder, type, classLoader, module, domain) ->
+                builder.visit(
+                    Advice.to(RuntimeHaltInterceptor.class).on(ElementMatchers.named("halt"))))
+        // Intercept ProcessBuilder.start() → ProcessExecInterceptor
+        .type(ElementMatchers.is(java.lang.ProcessBuilder.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(ProcessExecInterceptor.class).on(ElementMatchers.named("start"))))
-        // Intercept Runtime.exec(String[]) → ProcessExecInterceptor.onRuntimeExec
-        .type(ElementMatchers.named("java.lang.Runtime"))
+        // Intercept Runtime.exec(String[]) → ProcessExecInterceptor
+        .type(ElementMatchers.is(java.lang.Runtime.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(ProcessExecInterceptor.class).on(ElementMatchers.named("exec"))))
-        .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
-        .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
         .installOn(inst);
   }
 

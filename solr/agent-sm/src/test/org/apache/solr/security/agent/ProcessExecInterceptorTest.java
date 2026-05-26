@@ -31,8 +31,7 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
     execCountBefore = ViolationMetricsReporter.execCount();
   }
 
-  private void initPolicy(
-      boolean approved, String callerClass, SolrSecurityPolicy.EnforcementMode mode) {
+  private void initPolicy(boolean approved, String callerClass, AgentPolicy.EnforcementMode mode) {
     resetPolicySingleton();
     List<ApprovedCallSite> execCallers =
         approved
@@ -42,21 +41,18 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
                     ApprovedCallSite.Operation.EXEC,
                     PolicyLoader.PolicySource.DEFAULT))
             : List.of();
-    SolrSecurityPolicy policy =
-        new SolrSecurityPolicy(List.of(), List.of(), List.of(), execCallers, mode);
-    SolrSecurityPolicy.initialize(policy);
+    AgentPolicy policy = new AgentPolicy(List.of(), List.of(), List.of(), execCallers, mode);
+    AgentPolicy.initialize(policy);
   }
 
   private static void resetPolicySingleton() {
-    SolrSecurityPolicy.resetForTesting();
+    AgentPolicy.resetForTesting();
   }
 
   @Test
   public void testApprovedCallerDoesNotIncreaseCounter() {
     initPolicy(
-        true,
-        ProcessExecInterceptorTest.class.getName(),
-        SolrSecurityPolicy.EnforcementMode.ENFORCE);
+        true, ProcessExecInterceptorTest.class.getName(), AgentPolicy.EnforcementMode.ENFORCE);
     ProcessExecInterceptor.checkExec("ProcessBuilder.start()");
     assertEquals(execCountBefore, ViolationMetricsReporter.execCount());
     resetPolicySingleton();
@@ -64,7 +60,7 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
 
   @Test
   public void testUnapprovedCallerInWarnModeIncrementsCounter() {
-    initPolicy(false, "nobody", SolrSecurityPolicy.EnforcementMode.WARN);
+    initPolicy(false, "nobody", AgentPolicy.EnforcementMode.WARN);
     ProcessExecInterceptor.checkExec("ProcessBuilder.start()");
     assertEquals(execCountBefore + 1, ViolationMetricsReporter.execCount());
     resetPolicySingleton();
@@ -72,7 +68,7 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
 
   @Test(expected = SecurityException.class)
   public void testUnapprovedCallerInEnforceModeThrows() {
-    initPolicy(false, "nobody", SolrSecurityPolicy.EnforcementMode.ENFORCE);
+    initPolicy(false, "nobody", AgentPolicy.EnforcementMode.ENFORCE);
     try {
       ProcessExecInterceptor.checkExec("ProcessBuilder.start()");
     } finally {
@@ -82,7 +78,7 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
 
   @Test
   public void testRuntimeExecBlocked() {
-    initPolicy(false, "nobody", SolrSecurityPolicy.EnforcementMode.WARN);
+    initPolicy(false, "nobody", AgentPolicy.EnforcementMode.WARN);
     long before = ViolationMetricsReporter.execCount();
     ProcessExecInterceptor.checkExec("Runtime.exec(ls)");
     assertEquals(before + 1, ViolationMetricsReporter.execCount());
@@ -91,7 +87,7 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
 
   @Test
   public void testWildcardApprovalMatchesAny() {
-    initPolicy(true, "*", SolrSecurityPolicy.EnforcementMode.ENFORCE);
+    initPolicy(true, "*", AgentPolicy.EnforcementMode.ENFORCE);
     // Should not throw even for an unknown caller
     ProcessExecInterceptor.checkExec("ProcessBuilder.start()");
     assertEquals(execCountBefore, ViolationMetricsReporter.execCount());

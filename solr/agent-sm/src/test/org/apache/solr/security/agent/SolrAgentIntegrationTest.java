@@ -18,6 +18,7 @@ package org.apache.solr.security.agent;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import org.apache.solr.SolrTestCase;
 import org.junit.After;
 import org.junit.Test;
@@ -34,18 +35,18 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
 
   @After
   public void resetSingleton() {
-    SolrSecurityPolicy.resetForTesting();
+    AgentPolicy.resetForTesting();
   }
 
-  private SolrSecurityPolicy buildEnforcePolicy(
+  private AgentPolicy buildEnforcePolicy(
       List<PermittedPath> paths,
       List<PermittedEndpoint> endpoints,
       List<ApprovedCallSite> exitCallers,
       List<ApprovedCallSite> execCallers) {
-    SolrSecurityPolicy p =
-        new SolrSecurityPolicy(
-            paths, endpoints, exitCallers, execCallers, SolrSecurityPolicy.EnforcementMode.ENFORCE);
-    SolrSecurityPolicy.initialize(p);
+    AgentPolicy p =
+        new AgentPolicy(
+            paths, endpoints, exitCallers, execCallers, AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(p);
     return p;
   }
 
@@ -62,8 +63,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
 
     Path target = tmpDir.resolve("test.txt");
     // checkPath should not throw for a path inside the permitted dir
-    FileAccessInterceptor.checkPath(
-        target, "read", SecurityViolationLogger.ViolationType.FILE_READ);
+    FileInterceptor.checkPath(target, "read", SecurityViolationLogger.ViolationType.FILE_READ);
   }
 
   @Test(expected = SecurityException.class)
@@ -71,7 +71,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     Path tmpDir = createTempDir();
     // Policy permits nothing
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
-    FileAccessInterceptor.checkPath(
+    FileInterceptor.checkPath(
         tmpDir.resolve("secret.txt"), "read", SecurityViolationLogger.ViolationType.FILE_READ);
   }
 
@@ -80,26 +80,12 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     long before = ViolationMetricsReporter.fileCount();
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
     try {
-      FileAccessInterceptor.checkPath(
+      FileInterceptor.checkPath(
           Path.of("/etc/passwd"), "read", SecurityViolationLogger.ViolationType.FILE_READ);
     } catch (SecurityException ignored) {
       // expected
     }
     assertEquals(before + 1, ViolationMetricsReporter.fileCount());
-  }
-
-  // ---------------------------------------------------------------------------
-  // UNC path tests
-  // ---------------------------------------------------------------------------
-
-  @Test
-  public void testUncPathAlwaysBlocked() {
-    PermittedPath all = new PermittedPath("/", "read", true, PolicyLoader.PolicySource.DEFAULT);
-    buildEnforcePolicy(List.of(all), List.of(), List.of(), List.of());
-    // Even with a broad policy, UNC paths are blocked unconditionally
-    assertTrue(FileAccessInterceptor.isUncPath("\\\\server\\share\\file"));
-    assertTrue(FileAccessInterceptor.isUncPath("//server/share/file"));
-    assertFalse(FileAccessInterceptor.isUncPath("/normal/path"));
   }
 
   // ---------------------------------------------------------------------------
@@ -112,8 +98,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
         new PermittedEndpoint("*:8983", "connect,resolve", null, PolicyLoader.PolicySource.DEFAULT);
     buildEnforcePolicy(List.of(), List.of(ep), List.of(), List.of());
     assertTrue(
-        NetworkAccessInterceptor.isEndpointPermitted(
-            SolrSecurityPolicy.getInstance(), "10.0.0.1", 8983));
+        SocketChannelInterceptor.isEndpointPermitted(AgentPolicy.getInstance(), "10.0.0.1", 8983));
   }
 
   @Test(expected = SecurityException.class)
@@ -121,7 +106,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
     java.net.InetSocketAddress addr =
         new java.net.InetSocketAddress(java.net.InetAddress.getByName("10.0.0.99"), 9999);
-    NetworkAccessInterceptor.checkConnect(addr);
+    SocketChannelInterceptor.checkConnect(addr);
   }
 
   @Test
@@ -131,7 +116,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     java.net.InetSocketAddress addr =
         new java.net.InetSocketAddress(java.net.InetAddress.getByName("10.0.0.99"), 9999);
     try {
-      NetworkAccessInterceptor.checkConnect(addr);
+      SocketChannelInterceptor.checkConnect(addr);
     } catch (SecurityException ignored) {
       // expected
     }
@@ -139,25 +124,26 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
   }
 
   // ---------------------------------------------------------------------------
-  // System.exit tests
+  // System.exit tests — tested via AgentPolicy.isChainThatCanExit()
   // ---------------------------------------------------------------------------
 
-  @Test(expected = SecurityException.class)
-  public void testUnapprovedExitThrowsInEnforceMode() {
+  @Test
+  public void testUnapprovedExitChainDenied() {
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
-    ExitInterceptor.checkExit("System.exit(0)");
+    assertFalse(AgentPolicy.getInstance().isChainThatCanExit(Set.of(String.class)));
   }
 
   @Test
-  public void testUnapprovedExitIncrementsCounter() {
-    long before = ViolationMetricsReporter.exitCount();
-    buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
-    try {
-      ExitInterceptor.checkExit("System.exit(0)");
-    } catch (SecurityException ignored) {
-      // expected
-    }
-    assertEquals(before + 1, ViolationMetricsReporter.exitCount());
+  public void testApprovedExitChainPermitted() {
+    List<ApprovedCallSite> exitCallers =
+        List.of(
+            new ApprovedCallSite(
+                SolrAgentIntegrationTest.class.getName(),
+                ApprovedCallSite.Operation.EXIT,
+                PolicyLoader.PolicySource.DEFAULT));
+    buildEnforcePolicy(List.of(), List.of(), exitCallers, List.of());
+    assertTrue(
+        AgentPolicy.getInstance().isChainThatCanExit(Set.of(SolrAgentIntegrationTest.class)));
   }
 
   // ---------------------------------------------------------------------------

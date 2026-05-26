@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security.agent;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -24,30 +23,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 /**
  * Reads and parses JDK-style {@code .policy} files, performing Solr-specific variable substitution,
- * and produces a {@link SolrSecurityPolicy} ready for enforcement.
+ * and produces a {@link AgentPolicy} ready for enforcement.
  *
  * <h2>Variable substitution</h2>
  *
- * The following variables are expanded in permission targets and {@code codeBase} URLs before
- * parsing:
- *
- * <ul>
- *   <li>{@code ${solr.home}} — Solr home directory
- *   <li>{@code ${solr.data.dir}} — Solr data directory
- *   <li>{@code ${solr.log.dir}} — Solr log directory
- *   <li>{@code ${solr.install.dir}} — Solr installation root (parent of {@code server/})
- *   <li>{@code ${java.io.tmpdir}} — JVM temporary directory
- *   <li>{@code ${java.home}} — JDK installation directory
- *   <li>{@code ${user.home}} — OS user home directory
- *   <li>{@code ${solr.port}} — Solr HTTP port (from system property {@code solr.port})
- *   <li>{@code ${solr.zk.port}} — ZooKeeper port; defaults to {@code solr.port + 1000} when not
- *       explicitly configured
- * </ul>
+ * {@code ${property}} placeholders in permission targets and {@code codeBase} URLs are expanded
+ * per-token by {@link PolicyPropertyExpander} using system properties. Any unresolved placeholder
+ * causes startup to fail immediately (fail-fast). The only built-in default is {@code
+ * ${solr.zk.port}}, which falls back to {@code solr.port + 1000} when not explicitly set.
  *
  * <h2>Two-file merge</h2>
  *
@@ -68,28 +55,14 @@ public class PolicyLoader {
     OPERATOR
   }
 
-  // Variables expanded in path and codeBase expressions before parsing.
-  private static final String[] SYSTEM_VARS = {
-    "solr.home",
-    "solr.data.dir",
-    "solr.log.dir",
-    "solr.install.dir",
-    "java.io.tmpdir",
-    "java.home",
-    "user.home",
-  };
-
-  // Pattern to match a variable reference such as ${solr.home}
-  private static final Pattern VAR_PATTERN = Pattern.compile("\\$\\{([^}]+)\\}");
-
   /**
    * Loads and merges the default policy file and the optional operator extension file.
    *
    * @param defaultPolicyPath absolute path to the default {@code agent-security.policy} file
-   * @return a fully initialized {@link SolrSecurityPolicy}
+   * @return a fully initialized {@link AgentPolicy}
    * @throws IllegalStateException if the default policy file is absent or cannot be parsed
    */
-  public SolrSecurityPolicy load(Path defaultPolicyPath) {
+  public AgentPolicy load(Path defaultPolicyPath) {
     if (!Files.exists(defaultPolicyPath)) {
       throw new IllegalStateException(
           "Security agent default policy not found: "
@@ -132,7 +105,8 @@ public class PolicyLoader {
    * available.
    */
   static Path resolveExtraPolicyPath() {
-    String explicitPath = System.getProperty("solr.security.agent.extra.policy");
+    String explicitPath =
+        PolicyPropertyExpander.getPropertyOrEnv("solr.security.agent.extra.policy");
     if (explicitPath != null && !explicitPath.isBlank()) {
       return Path.of(explicitPath);
     }
@@ -144,59 +118,13 @@ public class PolicyLoader {
   }
 
   /**
-   * Parses a policy file, substituting variables, and appends the resulting {@link GrantBlock}
-   * entries — tagged with the given {@code source} — to {@code out}.
+   * Parses a policy file and appends the resulting {@link GrantBlock} entries — tagged with the
+   * given {@code source} — to {@code out}. Variable substitution is performed per-token by {@link
+   * PolicyPropertyExpander}; any unresolved {@code ${variable}} causes an {@link
+   * IllegalStateException}.
    */
   static void parsePolicy(String content, PolicySource source, List<GrantBlock> out) {
-    String expanded = substituteVariables(content);
-    parsePolicyBlocks(expanded, source, out);
-  }
-
-  /**
-   * Expands all {@code ${variable}} references in {@code text}. Unknown variables are left as-is.
-   * {@code ${solr.port}} and {@code ${solr.zk.port}} receive special handling so that the ZK port
-   * defaults to {@code solr.port + 1000} when not explicitly set.
-   */
-  static String substituteVariables(String text) {
-    // Resolve solr.port once so we can derive the default ZK port.
-    String solrPortStr = System.getProperty("solr.port", "8983");
-    int solrPort;
-    try {
-      solrPort = Integer.parseInt(solrPortStr.trim());
-    } catch (NumberFormatException e) {
-      solrPort = 8983;
-    }
-    String zkPortStr = System.getProperty("solr.zk.port");
-    String zkPort =
-        (zkPortStr != null && !zkPortStr.isBlank())
-            ? zkPortStr.trim()
-            : String.valueOf(solrPort + 1000);
-
-    StringBuffer sb = new StringBuffer();
-    Matcher m = VAR_PATTERN.matcher(text);
-    while (m.find()) {
-      String varName = m.group(1);
-      String replacement;
-      if ("solr.port".equals(varName)) {
-        replacement = solrPortStr.trim();
-      } else if ("solr.zk.port".equals(varName)) {
-        replacement = zkPort;
-      } else {
-        replacement = resolveSystemVar(varName);
-      }
-      m.appendReplacement(
-          sb, Matcher.quoteReplacement(replacement != null ? replacement : m.group(0)));
-    }
-    m.appendTail(sb);
-    return sb.toString();
-  }
-
-  private static String resolveSystemVar(String varName) {
-    // Try system property first, then environment-style lookup.
-    String val = System.getProperty(varName);
-    if (val != null) return val;
-    // For well-known vars, also try without dots.
-    return null;
+    parsePolicyBlocks(content, source, out);
   }
 
   /**
@@ -209,97 +137,62 @@ public class PolicyLoader {
    *   <li>{@code java.lang.RuntimePermission "exitVM"} → {@link ApprovedCallSite} EXIT
    *   <li>{@code java.lang.RuntimePermission "exec"} → {@link ApprovedCallSite} EXEC
    * </ul>
+   *
+   * <p>Parsing uses {@link PolicyFileParser} (backed by {@link java.io.StreamTokenizer}) which
+   * natively handles {@code //} and {@code /* *\/} comments and quoted strings — no regex.
    */
   static void parsePolicyBlocks(String text, PolicySource source, List<GrantBlock> out) {
-    // Strip single-line comments
-    String noComments = stripComments(text);
-
-    // Match: grant [codeBase "url"] { ... };
-    Pattern grantPattern =
-        Pattern.compile(
-            "grant\\s*(?:codeBase\\s*\"([^\"]*?)\")?\\s*\\{([^}]*)\\}\\s*;",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    Matcher grantMatcher = grantPattern.matcher(noComments);
-    while (grantMatcher.find()) {
-      String codeBase = grantMatcher.group(1); // null for global grants
-      String body = grantMatcher.group(2);
-      GrantBlock block = new GrantBlock(codeBase, source);
-      parsePermissions(body, block);
+    List<PolicyFileParser.GrantEntry> grantEntries;
+    try {
+      grantEntries = PolicyFileParser.read(new StringReader(text));
+    } catch (PolicyFileParser.ParsingException | IOException e) {
+      throw new IllegalStateException("Failed to parse security policy: " + e.getMessage(), e);
+    }
+    for (PolicyFileParser.GrantEntry ge : grantEntries) {
+      GrantBlock block = new GrantBlock(ge.codeBase(), source);
+      for (PolicyFileParser.PermEntry pe : ge.permissions()) {
+        addPermission(pe, block);
+      }
       out.add(block);
     }
   }
 
-  private static String stripComments(String text) {
-    // Remove // line comments; leave /* */ block comments as-is (not used in standard policy files)
-    StringBuilder sb = new StringBuilder();
-    try (BufferedReader reader = new BufferedReader(new StringReader(text))) {
-      String line;
-      while ((line = reader.readLine()) != null) {
-        int commentIdx = line.indexOf("//");
-        if (commentIdx >= 0) {
-          line = line.substring(0, commentIdx);
+  private static void addPermission(PolicyFileParser.PermEntry pe, GrantBlock block) {
+    String permClass = pe.permission();
+    String target = pe.name();
+    String actions = pe.action();
+    switch (permClass) {
+      case "java.io.FilePermission":
+        if (target != null) {
+          block.filePaths.add(
+              new RawFilePermission(target, actions != null ? actions : "read", block.source));
         }
-        sb.append(line).append('\n');
-      }
-    } catch (IOException e) {
-      // StringReader never throws
-      throw new AssertionError(e);
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Parses individual {@code permission} lines inside a grant block body and adds recognised
-   * permissions to the block.
-   */
-  static void parsePermissions(String body, GrantBlock block) {
-    // permission <class> ["target"] [, "actions"];
-    Pattern permPattern =
-        Pattern.compile(
-            "permission\\s+(\\S+)\\s*(?:\"([^\"]*?)\")?\\s*(?:,\\s*\"([^\"]*?)\")?\\s*;",
-            Pattern.CASE_INSENSITIVE);
-
-    Matcher m = permPattern.matcher(body);
-    while (m.find()) {
-      String permClass = m.group(1);
-      String target = m.group(2); // may be null
-      String actions = m.group(3); // may be null
-
-      switch (permClass) {
-        case "java.io.FilePermission":
-          if (target != null) {
-            block.filePaths.add(
-                new RawFilePermission(target, actions != null ? actions : "read", block.source));
-          }
-          break;
-        case "java.net.SocketPermission":
-          if (target != null) {
-            block.socketPerms.add(
-                new RawSocketPermission(
-                    target,
-                    actions != null ? actions : "connect,resolve",
-                    block.codeBase,
-                    block.source));
-          }
-          break;
-        case "java.lang.RuntimePermission":
-          if ("exitVM".equals(target) || (target != null && target.startsWith("exitVM."))) {
-            block.runtimePerms.add(
-                new RawRuntimePermission("exitVM", block.codeBase, block.source));
-          } else if ("exec".equals(target)) {
-            block.runtimePerms.add(new RawRuntimePermission("exec", block.codeBase, block.source));
-          }
-          break;
-        default:
-          // Unrecognised permission types are ignored (e.g. PropertyPermission in legacy policy)
-          break;
-      }
+        break;
+      case "java.net.SocketPermission":
+        if (target != null) {
+          block.socketPerms.add(
+              new RawSocketPermission(
+                  target,
+                  actions != null ? actions : "connect,resolve",
+                  block.codeBase,
+                  block.source));
+        }
+        break;
+      case "java.lang.RuntimePermission":
+        if ("exitVM".equals(target) || (target != null && target.startsWith("exitVM."))) {
+          block.runtimePerms.add(new RawRuntimePermission("exitVM", block.codeBase, block.source));
+        } else if ("exec".equals(target)) {
+          block.runtimePerms.add(new RawRuntimePermission("exec", block.codeBase, block.source));
+        }
+        break;
+      default:
+        // Unrecognised permission types are ignored (e.g. PropertyPermission in legacy policy)
+        break;
     }
   }
 
-  /** Converts raw parsed grant blocks into an immutable {@link SolrSecurityPolicy}. */
-  private SolrSecurityPolicy buildPolicy(List<GrantBlock> grants) {
+  /** Converts raw parsed grant blocks into an immutable {@link AgentPolicy}. */
+  private AgentPolicy buildPolicy(List<GrantBlock> grants) {
     List<PermittedPath> paths = new ArrayList<>();
     List<PermittedEndpoint> endpoints = new ArrayList<>();
     List<ApprovedCallSite> exitCallers = new ArrayList<>();
@@ -328,15 +221,18 @@ public class PolicyLoader {
       }
     }
 
-    // Read enforcement mode from system property (not from EnvUtils — agent has no dep on
-    // solr:core)
-    String modeStr = System.getProperty("solr.security.agent.mode", "warn");
-    SolrSecurityPolicy.EnforcementMode mode =
+    // Read enforcement mode from sysprop or env var (agent has no dep on solr:core/EnvUtils)
+    String modeStr = PolicyPropertyExpander.getPropertyOrEnv("solr.security.agent.mode");
+    if (modeStr == null) modeStr = "warn";
+    AgentPolicy.EnforcementMode mode =
         "enforce".equalsIgnoreCase(modeStr.trim())
-            ? SolrSecurityPolicy.EnforcementMode.ENFORCE
-            : SolrSecurityPolicy.EnforcementMode.WARN;
+            ? AgentPolicy.EnforcementMode.ENFORCE
+            : AgentPolicy.EnforcementMode.WARN;
 
-    return new SolrSecurityPolicy(paths, endpoints, exitCallers, execCallers, mode);
+    Set<String> trustedHosts =
+        Set.of("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1", "::1", "0.0.0.0");
+    return new AgentPolicy(
+        paths, endpoints, exitCallers, execCallers, mode, Set.of(), trustedHosts);
   }
 
   // ---------------------------------------------------------------------------

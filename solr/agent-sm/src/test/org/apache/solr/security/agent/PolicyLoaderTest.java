@@ -28,53 +28,46 @@ import org.junit.Test;
 public class PolicyLoaderTest extends SolrTestCase {
 
   // ---------------------------------------------------------------------------
-  // Variable substitution
+  // Variable expansion (PolicyPropertyExpander)
   // ---------------------------------------------------------------------------
 
   @Test
-  public void testSubstituteKnownSystemProperties() {
-    System.setProperty("solr.home", "/opt/solr");
-    String result = PolicyLoader.substituteVariables("path=${solr.home}");
-    assertEquals("path=/opt/solr", result);
+  public void testExpandKnownSystemProperty() throws Exception {
+    System.setProperty("solr.solr.home", "/opt/solr");
+    assertEquals("/opt/solr", PolicyPropertyExpander.expand("${solr.solr.home}"));
   }
 
   @Test
-  public void testSolrPortSubstitution() {
-    System.setProperty("solr.port", "8983");
-    String result = PolicyLoader.substituteVariables("*:${solr.port}");
-    assertEquals("*:8983", result);
+  public void testExpandSolrPort() throws Exception {
+    System.setProperty("solr.port.listen", "8983");
+    assertEquals("*:8983", PolicyPropertyExpander.expand("*:${solr.port.listen}"));
   }
 
   @Test
-  public void testSolrZkPortDefaultsToSolrPortPlusOneThousand() {
-    System.setProperty("solr.port", "8983");
+  public void testSolrZkPortDefaultsToSolrPortPlusOneThousand() throws Exception {
+    System.setProperty("solr.port.listen", "8983");
     System.clearProperty("solr.zk.port");
-    String result = PolicyLoader.substituteVariables("*:${solr.zk.port}");
-    assertEquals("*:9983", result);
+    assertEquals("*:9983", PolicyPropertyExpander.expand("*:${solr.zk.port}"));
   }
 
   @Test
-  public void testSolrZkPortExplicitOverride() {
+  public void testSolrZkPortExplicitOverride() throws Exception {
     System.setProperty("solr.zk.port", "2181");
     try {
-      String result = PolicyLoader.substituteVariables("*:${solr.zk.port}");
-      assertEquals("*:2181", result);
+      assertEquals("*:2181", PolicyPropertyExpander.expand("*:${solr.zk.port}"));
     } finally {
       System.clearProperty("solr.zk.port");
     }
   }
 
   @Test
-  public void testSolrInstallDirSubstitution() {
-    System.setProperty("solr.install.dir", "/opt/solr");
-    String result = PolicyLoader.substituteVariables("file:${solr.install.dir}/modules/jwt-auth/-");
-    assertEquals("file:/opt/solr/modules/jwt-auth/-", result);
+  public void testExpandNullReturnsNull() throws Exception {
+    assertNull(PolicyPropertyExpander.expand(null));
   }
 
-  @Test
-  public void testUnknownVariableLeftAsIs() {
-    String result = PolicyLoader.substituteVariables("path=${unknown.var}");
-    assertEquals("path=${unknown.var}", result);
+  @Test(expected = PolicyPropertyExpander.ExpandException.class)
+  public void testUnknownVariableThrows() throws Exception {
+    PolicyPropertyExpander.expand("path=${solr.this.property.does.not.exist.xyz}");
   }
 
   // ---------------------------------------------------------------------------
@@ -174,7 +167,7 @@ public class PolicyLoaderTest extends SolrTestCase {
         StandardCharsets.UTF_8);
 
     PolicyLoader loader = new PolicyLoader();
-    SolrSecurityPolicy policy = loader.load(policyFile);
+    AgentPolicy policy = loader.load(policyFile);
 
     assertFalse(policy.permittedPaths().isEmpty());
     assertFalse(policy.permittedEndpoints().isEmpty());
@@ -198,7 +191,7 @@ public class PolicyLoaderTest extends SolrTestCase {
     System.setProperty(
         "solr.security.agent.extra.policy", createTempDir().resolve("absent.policy").toString());
     try {
-      SolrSecurityPolicy policy = new PolicyLoader().load(defaultPolicy);
+      AgentPolicy policy = new PolicyLoader().load(defaultPolicy);
       // Must succeed — absent extra policy is not an error
       assertNotNull(policy);
     } finally {
@@ -222,7 +215,7 @@ public class PolicyLoaderTest extends SolrTestCase {
 
     System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
     try {
-      SolrSecurityPolicy policy = new PolicyLoader().load(defaultPolicy);
+      AgentPolicy policy = new PolicyLoader().load(defaultPolicy);
 
       // Both paths must be present
       List<PermittedPath> paths = policy.permittedPaths();
@@ -246,7 +239,7 @@ public class PolicyLoaderTest extends SolrTestCase {
         "grant { permission java.io.FilePermission \"/data/-\", \"read,write,delete\"; };\n",
         StandardCharsets.UTF_8);
 
-    SolrSecurityPolicy policy = new PolicyLoader().load(policyFile);
+    AgentPolicy policy = new PolicyLoader().load(policyFile);
     PermittedPath path = policy.permittedPaths().get(0);
     assertEquals("/data", path.path());
     assertTrue(path.recursive());
