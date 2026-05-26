@@ -20,8 +20,10 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -45,10 +47,11 @@ public class SolrClientCache implements Closeable {
   protected String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
   private final Map<String, SolrClient> httpSolrClients = new HashMap<>();
-  protected final Map<CloudSolrClient.CloudSolrClientConnection, CloudSolrClient> cloudSolClients =
+  private final Map<CloudSolrClient.CloudSolrClientConnection, CloudSolrClient> cloudSolClients =
       new HashMap<>();
   private final HttpSolrClient httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
+  private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
 
   public SolrClientCache() {
     this.httpSolrClient = null;
@@ -60,6 +63,17 @@ public class SolrClientCache implements Closeable {
 
   public void setBasicAuthCredentials(String basicAuthCredentials) {
     this.basicAuthCredentials = basicAuthCredentials;
+  }
+
+  public void setDefaultZKHost(String zkHost) {
+    if (zkHost != null) {
+      zkHost = zkHost.split("/")[0];
+      if (!zkHost.isEmpty()) {
+        defaultZkHost.set(zkHost);
+      } else {
+        defaultZkHost.set(null);
+      }
+    }
   }
 
   /**
@@ -75,7 +89,21 @@ public class SolrClientCache implements Closeable {
       CloudSolrClient.CloudSolrClientConnection solrConnection) {
     ensureOpen();
     return cloudSolClients.computeIfAbsent(
-        solrConnection, sc -> newCloudSolrClient(sc, httpSolrClient, false));
+        solrConnection, sc -> newCloudSolrClient(sc, httpSolrClient, useAclForZookeeper(sc)));
+  }
+
+  // Can only use ZK ACLs if there is a default ZK Host, and the given ZK host contains that
+  // default.
+  // Basically the ZK ACLs are assumed to be only used for the default ZK host,
+  // thus we should only provide the ACLs to that Zookeeper instance.
+  private boolean useAclForZookeeper(CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    boolean canUseACLs = false;
+    if (solrConnection.isZookeeper()) {
+      String zkHostNoChroot = String.join(",", solrConnection.quorumItems());
+      canUseACLs =
+          Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
+    }
+    return canUseACLs;
   }
 
   protected CloudSolrClient newCloudSolrClient(

@@ -64,12 +64,10 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCloudClientFailsWhenDirectZooKeeperAccessRequiresACLs() {
-    /* Passing ZooKeeper credentials is intentionally disabled by default for security reasons.
-     Applications that require direct ZooKeeper-based connections with credentials may override
-     newCloudSolrClient() to provide a custom CloudSolrClient configuration.
-    */
+  public void testZkACLsNotUsedWithDifferentZkHost() {
     try (SolrClientCache cache = new SolrClientCache()) {
+      // This ZK Host is fake, thus the ZK ACLs should not be used
+      cache.setDefaultZKHost("test:2181");
       expectThrows(
           SolrException.class,
           () ->
@@ -80,13 +78,36 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCloudClientCanConnectUsingHttpWithoutZooKeeperAccess() {
+  public void testGetClientWithHttp() {
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
     try (SolrClientCache cache = new SolrClientCache()) {
       CloudSolrClient cloudSolrClient =
           cache.getCloudSolrClient(CloudSolrClient.CloudSolrClientConnection.parse(solrUrl));
       ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
       Assert.assertEquals(1, clusterState.getLiveNodes().size());
+    }
+  }
+
+  @Test
+  public void testGetClientWithZookeeper() {
+    String zkConnectionString = zkClient().getZkServerAddress();
+    try (SolrClientCache cache = new SolrClientCache()) {
+      cache.setDefaultZKHost(zkClient().getZkServerAddress());
+      CloudSolrClient cloudSolrClient =
+          cache.getCloudSolrClient(
+              CloudSolrClient.CloudSolrClientConnection.parse(zkConnectionString));
+      ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
+      Assert.assertEquals(1, clusterState.getLiveNodes().size());
+    }
+  }
+
+  @Test
+  public void testZkACLsUsedWithDifferentChroot() {
+    try (SolrClientCache cache = new SolrClientCache()) {
+      // The same ZK Host is used, so the ZK ACLs should still be applied
+      cache.setDefaultZKHost(zkClient().getZkServerAddress() + "/random/chroot");
+      cache.getCloudSolrClient(
+          CloudSolrClient.CloudSolrClientConnection.parse(zkClient().getZkServerAddress()));
     }
   }
 }
