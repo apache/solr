@@ -18,6 +18,7 @@ package org.apache.solr.security.agent;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
@@ -85,12 +86,14 @@ public class SocketChannelInterceptorTest extends SolrTestCase {
   }
 
   @Test
-  public void testCodebaseScopedEntrySkipped() {
+  public void testCodebaseScopedEntryDeniedWhenCallerNotFromThatCodeBase() {
+    // A codeBase grant for a path where no class in the current test stack is loaded from.
+    // The call chain contains test-framework classes, not classes from /nonexistent/path.
     PermittedEndpoint codeBasedEp =
         new PermittedEndpoint(
             "*",
             "connect,resolve",
-            "file:/opt/solr/modules/jwt-auth/-",
+            "file:/nonexistent/solr/modules/jwt-auth/-",
             PolicyLoader.PolicySource.DEFAULT);
     AgentPolicy policy =
         new AgentPolicy(
@@ -100,6 +103,27 @@ public class SocketChannelInterceptorTest extends SolrTestCase {
             List.of(),
             AgentPolicy.EnforcementMode.ENFORCE);
     assertFalse(SocketChannelInterceptor.isEndpointPermitted(policy, "external.host", 443));
+  }
+
+  @Test
+  public void testIsCallerFromCodeBaseMatchesTestClassCodeSource() {
+    // Get the actual code source URL of this test class and verify isCallerFromCodeBase accepts it.
+    java.net.URL loc =
+        SocketChannelInterceptorTest.class.getProtectionDomain().getCodeSource().getLocation();
+    String codeBase = "file:" + loc.getPath();
+    // Strip any trailing "/" so it acts as an exact-directory match
+    if (codeBase.endsWith("/")) codeBase = codeBase.substring(0, codeBase.length() - 1);
+    // Append "/-" to make it a recursive match (any class under the test build dir)
+    codeBase = codeBase + "/-";
+
+    Collection<Class<?>> chain = Set.of(SocketChannelInterceptorTest.class);
+    assertTrue(SocketChannelInterceptor.isCallerFromCodeBase(chain, codeBase));
+  }
+
+  @Test
+  public void testIsCallerFromCodeBaseNoMatchForUnrelatedPath() {
+    Collection<Class<?>> chain = Set.of(SocketChannelInterceptorTest.class);
+    assertFalse(SocketChannelInterceptor.isCallerFromCodeBase(chain, "file:/nonexistent/path/-"));
   }
 
   @Test

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security.agent;
 
+import java.io.File;
 import java.util.Locale;
 
 /**
@@ -61,12 +62,15 @@ public final class PermittedPath {
 
   /** Returns {@code true} if this rule permits the given action on the given resolved path. */
   public boolean permits(String resolvedPath, String action) {
-    boolean pathMatch =
-        recursive
-            ? resolvedPath.startsWith(path + "/")
-                || resolvedPath.startsWith(path + "\\")
-                || resolvedPath.equals(path)
-            : resolvedPath.equals(path);
+    boolean pathMatch;
+    if (recursive) {
+      // Use the platform separator so the check is correct on both POSIX and Windows.
+      // Strip any trailing separator from 'path' to avoid double-separator issues.
+      String base = path.endsWith(File.separator) ? path : path + File.separator;
+      pathMatch = resolvedPath.startsWith(base) || resolvedPath.equals(path);
+    } else {
+      pathMatch = resolvedPath.equals(path);
+    }
     return pathMatch && actions.contains(action.toLowerCase(Locale.ROOT));
   }
 }

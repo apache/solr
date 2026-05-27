@@ -228,14 +228,12 @@ REM automatically. See the Solr Reference Guide for full documentation.
 
 REM Enforcement mode: "warn" (log violations, allow operation — default) or
 REM                   "enforce" (log violations, block operation with SecurityException).
-REM The startup script converts this env var to -Dsolr.security.agent.mode for the agent.
 REM set SOLR_SECURITY_AGENT_MODE=warn
 
 REM Set to "true" to completely disable the security agent (for troubleshooting only).
 REM set SOLR_SECURITY_AGENT_SKIP=false
 
 REM Path to the operator extension policy file (default: server\etc\agent-security-extra.policy).
-REM The startup script converts this env var to -Dsolr.security.agent.extra.policy for the agent.
 REM set SOLR_SECURITY_AGENT_EXTRA_POLICY=C:\path\to\custom-agent-security-extra.policy
 
 REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and

@@ -16,8 +16,11 @@
  */
 package org.apache.solr.security.agent;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.solr.SolrTestCase;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,6 +32,11 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
   @Before
   public void snapshotCounters() {
     execCountBefore = ViolationMetricsReporter.execCount();
+  }
+
+  @After
+  public void resetSingleton() {
+    AgentPolicy.resetForTesting();
   }
 
   private void initPolicy(boolean approved, String callerClass, AgentPolicy.EnforcementMode mode) {
@@ -92,5 +100,38 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
     ProcessExecInterceptor.checkExec("ProcessBuilder.start()");
     assertEquals(execCountBefore, ViolationMetricsReporter.execCount());
     resetPolicySingleton();
+  }
+
+  @Test
+  public void testApprovedCallerAnywhereInChainPermits() {
+    // isChainThatCanExec mirrors isChainThatCanExit: any approved class anywhere grants permission.
+    AgentPolicy.resetForTesting();
+    List<ApprovedCallSite> execCallers =
+        List.of(
+            new ApprovedCallSite(
+                ProcessExecInterceptorTest.class.getName(),
+                ApprovedCallSite.Operation.EXEC,
+                PolicyLoader.PolicySource.DEFAULT));
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(), List.of(), List.of(), execCallers, AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(policy);
+
+    // Approved class is deep in the chain — should still grant permission
+    Collection<Class<?>> chain =
+        Set.of(String.class, Integer.class, ProcessExecInterceptorTest.class);
+    assertTrue(policy.isChainThatCanExec(chain));
+  }
+
+  @Test
+  public void testUnapprovedChainDenies() {
+    AgentPolicy.resetForTesting();
+    AgentPolicy policy =
+        new AgentPolicy(
+            List.of(), List.of(), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);
+    AgentPolicy.initialize(policy);
+
+    Collection<Class<?>> chain = Set.of(String.class, Integer.class);
+    assertFalse(policy.isChainThatCanExec(chain));
   }
 }

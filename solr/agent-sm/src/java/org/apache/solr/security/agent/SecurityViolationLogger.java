@@ -81,16 +81,13 @@ public final class SecurityViolationLogger {
 
     if (mode == AgentPolicy.EnforcementMode.ENFORCE) {
       log.error(message);
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Stack trace for violation above:", new RuntimeException("violation stack trace"));
-      }
     } else {
       log.warn(message);
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Stack trace for violation above:", new RuntimeException("violation stack trace"));
-      }
+    }
+    // When DEBUG logging is enabled, emit the current call stack so the violation origin is visible
+    // in logs. The RuntimeException is never thrown — it is a carrier for the stack trace only.
+    if (log.isDebugEnabled()) {
+      log.debug("Call stack at point of violation:", new RuntimeException("call stack"));
     }
   }
 

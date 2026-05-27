@@ -28,14 +28,14 @@ Key classes:
 
 * `SolrAgentEntryPoint` — `premain()` and `agentmain()` entry points; wires all ByteBuddy interceptors
 * `PolicyLoader` — parses `.policy` files and performs variable substitution
-* `SolrSecurityPolicy` — immutable singleton holding the merged policy
-* `StackInspector` — `StackWalker`-based call chain analysis (virtual-thread safe)
+* `AgentPolicy` — immutable singleton holding the merged policy
+* `StackCallerClassChainExtractor` — `StackWalker`-based call chain analysis (virtual-thread safe)
 * `SecurityViolationLogger` — emits structured SLF4J log entries for violations
 * `ViolationMetricsReporter` — `LongAdder` counters per violation type; deferred registration with `SolrMetricManager`
 
 == Adding an Approved Exit Caller
 
-To allow a new class to call `System.exit()` or `Runtime.halt()`, add it to the approved callers list in `SolrSecurityPolicy`.
+To allow a new class to call `System.exit()` or `Runtime.halt()`, add it to the approved callers list in `AgentPolicy`.
 The list is populated from the policy file using `java.lang.RuntimePermission "exitVM"` entries.
 Add an entry to `agent-security.policy`:
 
@@ -46,18 +46,18 @@ grant codeBase "file:${solr.install.dir}/..." {
 };
 ----
 
-Alternatively, add the class name to the default approved list in `SolrSecurityPolicy` if it is always a trusted Solr internal class.
+Alternatively, add the class name to the default approved list in `AgentPolicy` if it is always a trusted Solr internal class.
 
 == Adding an Approved Exec Caller
 
 The default exec allow-list is empty — `ProcessBuilder.start()` and `Runtime.exec()` are blocked for all callers.
-To permit a specific class, add a `java.lang.RuntimePermission "exec"` entry to the policy or the `SolrSecurityPolicy` defaults.
+To permit a specific class, add a `java.lang.RuntimePermission "exec"` entry to the policy or the `AgentPolicy` defaults.
 Document the reason in a code comment.
 
 == Adding a Trusted Filesystem Scheme
 
 Paths on certain virtual filesystems (e.g., `jrt:/` for JDK resources) are excluded from file policy checks.
-To add a trusted scheme, extend the `trustedFileSystems` set in `SolrSecurityPolicy`.
+To add a trusted scheme, extend the `trustedFileSystems` set in `AgentPolicy`.
 Trusted schemes bypass all file access checks.
 
 == Deferred Metrics Registration
@@ -97,7 +97,6 @@ Before flipping to enforce mode:
 1. Run the full suite in warn mode and collect all `SECURITY VIOLATION` log entries.
 2. Triage each violation — legitimate Solr operations need policy entries; plugin violations need plugin fixes or policy entries.
 3. Update `agent-security.policy` or test-specific extra-policy files as needed.
-4. File a JIRA (child of SOLR-17767) tracking this work before flipping.
 
 == No Compile-Time Dependency from solr:core on solr:agent-sm
 

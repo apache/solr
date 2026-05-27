@@ -68,7 +68,7 @@ public class SystemExitInterceptorTest extends SolrTestCase {
   }
 
   @Test
-  public void testApprovedCallerAnywherInChainPermits() {
+  public void testApprovedCallerAnywhereInChainPermits() {
     AgentPolicy policy =
         initPolicy(
             true, SystemExitInterceptorTest.class.getName(), AgentPolicy.EnforcementMode.ENFORCE);

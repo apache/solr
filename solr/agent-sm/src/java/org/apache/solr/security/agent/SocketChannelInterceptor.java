@@ -19,6 +19,8 @@ package org.apache.solr.security.agent;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.UnixDomainSocketAddress;
+import java.security.CodeSource;
+import java.util.Collection;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.asm.Advice.Origin;
 
@@ -132,11 +134,72 @@ public class SocketChannelInterceptor {
    *   <li>Entry {@code host:low-high} — matches the host with a port in the inclusive range
    *   <li>Entry {@code *} (no colon) — matches everything (broad wildcard)
    * </ul>
+   *
+   * <p>Entries with a {@code codeBase} restriction are evaluated against the current call chain via
+   * {@link StackWalker}: the entry permits the connection only if at least one class in the chain
+   * was loaded from a code source under that codeBase path. The stack walk is performed lazily —
+   * only when a codeBase-restricted entry whose endpoint pattern matches is encountered.
    */
   public static boolean isEndpointPermitted(AgentPolicy policy, String host, int port) {
+    Collection<Class<?>> chain = null; // lazily populated
+
     for (PermittedEndpoint entry : policy.permittedEndpoints()) {
-      if (entry.codeBase() != null) continue;
-      if (matchesEndpoint(entry.hostPort(), host, port)) return true;
+      if (!matchesEndpoint(entry.hostPort(), host, port)) continue;
+
+      if (entry.codeBase() == null) {
+        // Global grant — no code-source restriction
+        return true;
+      }
+
+      // codeBase-scoped grant: check if any class in the call chain was loaded from that codeBase
+      if (chain == null) {
+        chain =
+            StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+                .walk(StackCallerClassChainExtractor.INSTANCE);
+      }
+      if (isCallerFromCodeBase(chain, entry.codeBase())) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} if any class in {@code chain} has a code source whose location is under
+   * the given {@code codeBase} path. Supports JDK policy file {@code codeBase} syntax:
+   *
+   * <ul>
+   *   <li>{@code file:/path/to/dir/-} — recursive: matches any JAR or class in that directory tree
+   *   <li>{@code file:/path/to/dir/} or {@code file:/path/to/dir} — exact directory
+   *   <li>{@code file:/path/to/specific.jar} — exact JAR file
+   * </ul>
+   */
+  static boolean isCallerFromCodeBase(Collection<Class<?>> chain, String codeBase) {
+    // Strip "file:" scheme prefix if present
+    String base = codeBase.startsWith("file:") ? codeBase.substring(5) : codeBase;
+    boolean recursive = base.endsWith("/-");
+    if (recursive) base = base.substring(0, base.length() - 2);
+    // Normalise: strip trailing "/" so startsWith checks are consistent
+    while (base.endsWith("/") || base.endsWith("\\")) base = base.substring(0, base.length() - 1);
+
+    for (Class<?> cls : chain) {
+      try {
+        CodeSource cs = cls.getProtectionDomain().getCodeSource();
+        if (cs == null) continue;
+        java.net.URL loc = cs.getLocation();
+        if (loc == null) continue;
+        String locPath = loc.getPath();
+        if (locPath == null) continue;
+        // Normalise: strip trailing separators
+        while (locPath.endsWith("/") || locPath.endsWith("\\"))
+          locPath = locPath.substring(0, locPath.length() - 1);
+
+        if (recursive) {
+          if (locPath.equals(base) || locPath.startsWith(base + "/")) return true;
+        } else {
+          if (locPath.equals(base)) return true;
+        }
+      } catch (Exception ignored) {
+        // SecurityException or other runtime exception — skip this frame
+      }
     }
     return false;
   }

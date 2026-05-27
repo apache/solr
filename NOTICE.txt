@@ -653,6 +653,9 @@ The S3 Output Stream is based on ASL 2.0 reference implementations found at:
 This files resides at:
     modules/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java
 
+=========================================================================
+==         java agent notice                                           ==
+=========================================================================
 
 This project contains source files in the "solr/agent-sm" module that were copied and adapted from the
 OpenSearch project (https://github.com/opensearch-project/OpenSearch), git tag "3.6.0", originally

@@ -144,7 +144,16 @@ public final class ViolationMetricsReporter {
       Class<?> mmClass = metricManager.getClass();
       // SolrMetricManager.observableLongCounter(String registry, String name, String description,
       //     Consumer<ObservableLongMeasurement> callback, OtelUnit unit)
-      Method counterMethod = findMethod(mmClass, "observableLongCounter", 5);
+      // SolrMetricManager.observableLongCounter(String, String, String, Consumer, OtelUnit)
+      Method counterMethod =
+          findMethod(
+              mmClass,
+              "observableLongCounter",
+              "String",
+              "String",
+              "String",
+              "Consumer",
+              "OtelUnit");
       if (counterMethod == null) {
         agentErr(
             "[Solr SecurityAgent] SolrMetricManager.observableLongCounter not found"
@@ -185,11 +194,23 @@ public final class ViolationMetricsReporter {
     }
   }
 
-  private static Method findMethod(Class<?> cls, String name, int paramCount) {
+  /**
+   * Finds a public method on {@code cls} by name and parameter type simple-names. Using simple
+   * names avoids a compile-time dependency on {@code solr:core} types (e.g. {@code OtelUnit}).
+   */
+  private static Method findMethod(Class<?> cls, String name, String... paramTypeSimpleNames) {
     for (Method m : cls.getMethods()) {
-      if (name.equals(m.getName()) && m.getParameterCount() == paramCount) {
-        return m;
+      if (!name.equals(m.getName())) continue;
+      Class<?>[] params = m.getParameterTypes();
+      if (params.length != paramTypeSimpleNames.length) continue;
+      boolean match = true;
+      for (int i = 0; i < params.length; i++) {
+        if (!params[i].getSimpleName().equals(paramTypeSimpleNames[i])) {
+          match = false;
+          break;
+        }
       }
+      if (match) return m;
     }
     return null;
   }

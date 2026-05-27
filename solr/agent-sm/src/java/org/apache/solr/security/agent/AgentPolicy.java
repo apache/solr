@@ -144,6 +144,10 @@ public final class AgentPolicy {
    *
    * <p>This method is package-private and intended exclusively for unit tests in the {@code
    * org.apache.solr.security.agent} package. Production code must never call this method.
+   *
+   * <p>The write is not synchronized: {@code instance} is {@code volatile}, so the assignment is
+   * immediately visible to all threads. Unlike {@link #initialize}, there is no invariant to
+   * protect here — tests call this only from a single thread during teardown.
    */
   static void resetForTesting() {
     instance = null;
@@ -249,6 +253,25 @@ public final class AgentPolicy {
     for (Class<?> cls : chain) {
       for (ApprovedCallSite cs : approvedExitCallers) {
         if (cs.operation() == ApprovedCallSite.Operation.EXIT && cs.matches(cls.getName())) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} if any class in the call chain is approved to spawn child processes via
+   * {@code ProcessBuilder.start()} or {@code Runtime.exec()}. Any approved class anywhere in the
+   * chain grants permission, mirroring the exit-caller semantics in {@link
+   * #isChainThatCanExit(Collection)}.
+   *
+   * @param chain the full set of non-hidden classes in the call stack
+   */
+  public boolean isChainThatCanExec(Collection<Class<?>> chain) {
+    for (Class<?> cls : chain) {
+      for (ApprovedCallSite cs : approvedExecCallers) {
+        if (cs.operation() == ApprovedCallSite.Operation.EXEC && cs.matches(cls.getName())) {
           return true;
         }
       }

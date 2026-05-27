@@ -79,19 +79,10 @@ public class FileInterceptor {
     boolean isUnixSocketCaller = false;
     if (isDelete == true) {
       final Collection<Class<?>> chain = walker.walk(StackCallerClassChainExtractor.INSTANCE);
-
-      if (walker
-              .getCallerClass()
-              .getName()
-              .equalsIgnoreCase("sun.nio.ch.PipeImpl$Initializer$LoopbackConnector")
-          == true) {
-        isUnixSocketCaller = true;
-      } else {
-        for (final Class<?> cls : chain) {
-          if (cls.getName().equalsIgnoreCase("sun.nio.ch.PipeImpl$Initializer$LoopbackConnector")) {
-            isUnixSocketCaller = true;
-            break;
-          }
+      for (final Class<?> cls : chain) {
+        if (cls.getName().equalsIgnoreCase("sun.nio.ch.PipeImpl$Initializer$LoopbackConnector")) {
+          isUnixSocketCaller = true;
+          break;
         }
       }
     }
@@ -103,7 +94,7 @@ public class FileInterceptor {
       String targetFilePath = null;
       if (isMutating == false && isDelete == false) {
         if (name.equals("newByteChannel") == true || name.equals("open") == true) {
-          if (args.length > 1 && args instanceof Object) {
+          if (args.length > 1) {
             if (args instanceof OpenOption[] opts) {
               for (final OpenOption opt : opts) {
                 if (opt != StandardOpenOption.READ) {
@@ -189,6 +180,19 @@ public class FileInterceptor {
         }
       }
 
+      // Plain read operations (e.g. Files.read(), Files.readAllBytes())
+      if (name.equals("read") && !policy.isPathPermitted(filePath, "read")) {
+        ViolationMetricsReporter.incrementFile();
+        SecurityViolationLogger.log(
+            SecurityViolationLogger.ViolationType.FILE_READ,
+            filePath,
+            caller,
+            policy.enforcementMode());
+        if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
+          throw new SecurityException("Denied READ access to file: " + filePath);
+        }
+      }
+
       // File mutating operations
       if (isMutating && !policy.isPathPermitted(filePath, "write")) {
         ViolationMetricsReporter.incrementFile();
@@ -221,11 +225,6 @@ public class FileInterceptor {
   // Static helpers (used by advice and by tests)
   // ---------------------------------------------------------------------------
 
-  /**
-   * Resolves the real path of {@code path}, following symlinks. Falls back to {@code
-   * normalize().toAbsolutePath()} if the file does not exist or if a security manager blocks the
-   * call.
-   */
   public static String topCallerClassName() {
     try {
       return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
@@ -236,6 +235,15 @@ public class FileInterceptor {
     }
   }
 
+  /**
+   * Resolves the real path of {@code path}, following symlinks. Falls back to {@code
+   * normalize().toAbsolutePath()} if the file does not exist or if an I/O error occurs.
+   *
+   * <p><b>Note:</b> This method must NOT be called from the ByteBuddy {@link #intercept} advice
+   * method — {@code toRealPath()} performs file-system I/O which would trigger re-entrant
+   * interception and cause infinite recursion. It is safe to use only from the test-side {@link
+   * #checkPath} helper where no live instrumentation is active.
+   */
   public static String resolveRealPath(Path path) {
     try {
       return path.toRealPath(new LinkOption[0]).toString();

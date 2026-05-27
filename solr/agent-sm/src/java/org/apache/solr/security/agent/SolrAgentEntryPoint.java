@@ -64,7 +64,7 @@ public final class SolrAgentEntryPoint {
    * @param inst the {@link Instrumentation} instance provided by the JVM
    */
   public static void premain(String agentArgs, Instrumentation inst) {
-    bootOtel(inst);
+    bootAgent(inst);
   }
 
   /**
@@ -87,7 +87,7 @@ public final class SolrAgentEntryPoint {
           "System.err is the only output available during premain (before logging is initialized). "
               + "System.exit(1) is required to halt the JVM on a fatal policy-load failure in "
               + "enforce mode — this is intentional agent behavior, not application code.")
-  private static void bootOtel(Instrumentation inst) {
+  private static void bootAgent(Instrumentation inst) {
     // Locate the default policy file next to the agent JAR.
     Path defaultPolicyPath = resolveDefaultPolicyPath();
 
@@ -182,7 +182,7 @@ public final class SolrAgentEntryPoint {
                     Advice.to(FileInterceptor.class)
                         .on(
                             ElementMatchers.namedOneOf(FILE_INTERCEPTED_METHODS)
-                                .or(ElementMatchers.isAbstract()))))
+                                .and(ElementMatchers.not(ElementMatchers.isAbstract())))))
         // Intercept SocketChannel / Socket outbound connections → SocketChannelInterceptor
         .type(
             ElementMatchers.isSubTypeOf(java.nio.channels.SocketChannel.class)

@@ -229,8 +229,8 @@ public class PolicyLoader {
             ? AgentPolicy.EnforcementMode.ENFORCE
             : AgentPolicy.EnforcementMode.WARN;
 
-    Set<String> trustedHosts =
-        Set.of("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1", "::1", "0.0.0.0");
+    // 0.0.0.0 is the unspecified bind address, not a loopback — intentionally excluded.
+    Set<String> trustedHosts = Set.of("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1", "::1");
     return new AgentPolicy(
         paths, endpoints, exitCallers, execCallers, mode, Set.of(), trustedHosts);
   }

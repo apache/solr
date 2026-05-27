@@ -254,7 +254,6 @@
 
 # Enforcement mode: "warn" (log violations, allow operation — default) or
 #                   "enforce" (log violations, block operation with SecurityException).
-# The startup script converts this env var to -Dsolr.security.agent.mode for the agent.
 #SOLR_SECURITY_AGENT_MODE=warn
 
 # Set to "true" to completely disable the security agent (for troubleshooting only).
@@ -264,7 +263,6 @@
 # Path to the operator extension policy file.
 # Defaults to ${server.dir}/etc/agent-security-extra.policy when unset.
 # Override to support read-only install trees, container images, or config-management tooling.
-# The startup script converts this env var to -Dsolr.security.agent.extra.policy for the agent.
 #SOLR_SECURITY_AGENT_EXTRA_POLICY=/path/to/custom-agent-security-extra.policy
 
 # This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and

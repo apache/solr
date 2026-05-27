@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-// NOTE: The JSM policy sections in this file are no longer enforced by the JVM — the Java Security
-// Manager API was removed in JDK 24. This file is retained for use by the randomized test
-// framework infrastructure and will be reviewed for removal in a future release.
-
 // Policy file for solr. Please keep minimal and avoid wildcards.
 
 // permissions needed for tests to pass, based on properties set by the build system

@@ -17,6 +17,7 @@
 package org.apache.solr.security.agent;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
 import net.bytebuddy.asm.Advice;
 
 /**
@@ -27,8 +28,10 @@ import net.bytebuddy.asm.Advice;
  * policy (the list is empty), so all process-spawning attempts will be flagged unless an operator
  * explicitly adds an entry to {@code agent-security-extra.policy}.
  *
- * <p>This is a Solr-specific interceptor to cover the {@code ProcessBuilder} usage sites in Solr
- * core (FR-007).
+ * <p>Permission is granted if <em>any</em> class in the full call chain matches an approved entry —
+ * the same semantics as {@link SystemExitInterceptor}. This means that if an approved class (e.g.
+ * {@code SolrCLI}) calls a helper that then calls {@code ProcessBuilder.start()}, the helper call
+ * is still permitted.
  *
  * <p>Known legitimate process-spawning call sites in Solr (kept out of the default production
  * policy because they use {@code ProcessHandle}, not {@code ProcessBuilder}):
@@ -72,8 +75,10 @@ public final class ProcessExecInterceptor {
   // ---------------------------------------------------------------------------
 
   /**
-   * Checks whether the current top caller is in the approved exec-caller list. Delegates to {@link
-   * SecurityViolationLogger} on violation.
+   * Checks whether any class in the current call chain is in the approved exec-caller list. Uses
+   * the full chain walk (same semantics as {@link SystemExitInterceptor}) so that an approved class
+   * anywhere in the stack grants permission. Delegates to {@link SecurityViolationLogger} on
+   * violation.
    *
    * @param target a human-readable description of the intercepted call for the violation log
    */
@@ -81,21 +86,21 @@ public final class ProcessExecInterceptor {
     if (!AgentPolicy.isInitialized()) return;
 
     AgentPolicy policy = AgentPolicy.getInstance();
-    String caller =
-        StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-            .getCallerClass()
-            .getName();
+    final StackWalker walker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+    final Class<?> caller = walker.getCallerClass();
+    final Collection<Class<?>> chain = walker.walk(StackCallerClassChainExtractor.INSTANCE);
 
-    if (!policy.isExecApproved(caller)) {
+    if (!policy.isChainThatCanExec(chain)) {
       ViolationMetricsReporter.incrementExec();
       SecurityViolationLogger.log(
           SecurityViolationLogger.ViolationType.PROCESS_EXEC,
           target,
-          caller,
+          caller.getName(),
           policy.enforcementMode());
       if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
         throw new SecurityException(
-            "Process spawning denied by Solr security agent — unapproved caller: " + caller);
+            "Process spawning denied by Solr security agent — unapproved caller: "
+                + caller.getName());
       }
     }
   }

@@ -17,7 +17,7 @@
 
 apply plugin: 'java-library'
 
-description = 'Apache Solr Security Agent (Java Security Manager replacement)'
+description = 'Apache Solr Security Agent'
 
 dependencies {
   // ByteBuddy references SpotBugs annotations in its class files; needed to suppress -Xlint:classfile
@@ -58,10 +58,6 @@ jar {
       'Agent-Class':             'org.apache.solr.security.agent.SolrAgentEntryPoint',
       'Can-Redefine-Classes':    'true',
       'Can-Retransform-Classes': 'true',
-      // Boot-Class-Path adds this JAR to the bootstrap classloader so that agent classes
-      // (SolrSecurityPolicy, FileAccessInterceptor, etc.) are resolvable when ByteBuddy
-      // inlines advice bytecode into bootstrap-loaded JDK classes like java.nio.file.Files.
-      // The bootstrap loader takes precedence, so there is only one copy of each class.
       'Boot-Class-Path':         archiveFileName
     )
   }
