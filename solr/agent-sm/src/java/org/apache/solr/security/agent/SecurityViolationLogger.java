@@ -16,9 +16,7 @@
  */
 package org.apache.solr.security.agent;
 
-import java.lang.invoke.MethodHandles;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.function.Consumer;
 
 /**
  * Emits structured log entries for security policy violations detected by the Solr security agent.
@@ -26,25 +24,24 @@ import org.slf4j.LoggerFactory;
  * <h2>Log format</h2>
  *
  * <pre>{@code
- * SECURITY VIOLATION [TYPE] target=<t> caller=<c> mode=<m> source=<DEFAULT|OPERATOR>
+ * [Solr SecurityAgent] SECURITY VIOLATION [TYPE] target=<t> caller=<c> mode=<m> source=<DEFAULT|OPERATOR>
  * }</pre>
  *
- * <p>In {@link AgentPolicy.EnforcementMode#WARN warn mode} entries are logged at {@code WARN} level
- * and the operation is allowed to proceed. In {@link AgentPolicy.EnforcementMode#ENFORCE enforce
- * mode} entries are logged at {@code ERROR} level and the operation must be blocked by the calling
- * interceptor.
+ * <p>In {@link AgentPolicy.EnforcementMode#WARN warn mode} entries are emitted and the operation
+ * proceeds. In {@link AgentPolicy.EnforcementMode#ENFORCE enforce mode} the operation is blocked.
  *
- * <p>The {@code source} field identifies whether the matching policy entry (if any) came from the
- * default bundled policy ({@code DEFAULT}) or from an operator extension ({@code OPERATOR}). For
- * violations where no entry matched at all, {@code source} is omitted.
- *
- * <h2>SLF4J and classloader boundary</h2>
- *
- * Agent classes may be injected into the bootstrap classloader, where SLF4J is not directly
- * accessible. The logger is obtained lazily via the context classloader to bridge this boundary. If
- * SLF4J is not yet available (early startup), violations are written to {@code System.err}.
+ * <p>During early startup violations go to {@code System.err}. Once {@code
+ * AgentViolationBridge.wire()} is called from {@code CoreContainer}, the {@link #reporter} bridge
+ * routes them to {@code solr.log} at {@code WARN} level.
  */
 public final class SecurityViolationLogger {
+
+  /**
+   * Bridge set by {@code AgentViolationBridge.wire()} once SLF4J/Log4j2 is available. {@code null}
+   * until wired — violations fall back to {@code System.err}. {@code volatile} for safe
+   * publication.
+   */
+  public static volatile Consumer<String> reporter = null;
 
   /** The operation types that can trigger a violation. */
   public enum ViolationType {
@@ -56,20 +53,13 @@ public final class SecurityViolationLogger {
     PROCESS_EXEC
   }
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private SecurityViolationLogger() {}
 
-  /**
-   * Records a security violation.
-   *
-   * @param type the category of the blocked/warned operation
-   * @param target the resource that was targeted (path, host:port, or operation descriptor)
-   * @param caller the fully-qualified name of the top non-JDK caller class
-   * @param mode the current enforcement mode
-   * @param source the policy source tag ({@code "DEFAULT"}, {@code "OPERATOR"}, or {@code null} if
-   *     no entry matched)
-   */
+  /** Records a security violation. */
+  @SuppressForbidden(
+      reason =
+          "System.err is the only output channel safe from classloader conflicts in a bootstrap "
+              + "agent. SLF4J in Boot-Class-Path permanently poisons the JVM-wide SLF4J binding.")
   public static void log(
       ViolationType type,
       String target,
@@ -78,23 +68,15 @@ public final class SecurityViolationLogger {
       String source) {
 
     String message = buildMessage(type, target, caller, mode, source);
-
-    if (mode == AgentPolicy.EnforcementMode.ENFORCE) {
-      log.error(message);
+    Consumer<String> r = reporter;
+    if (r != null) {
+      r.accept(message);
     } else {
-      log.warn(message);
-    }
-    // When DEBUG logging is enabled, emit the current call stack so the violation origin is visible
-    // in logs. The RuntimeException is never thrown — it is a carrier for the stack trace only.
-    if (log.isDebugEnabled()) {
-      log.debug("Call stack at point of violation:", new RuntimeException("call stack"));
+      System.err.println("[Solr SecurityAgent] " + message);
     }
   }
 
-  /**
-   * Convenience overload without a {@code source} field (used during early startup before policy
-   * source tagging is available).
-   */
+  /** Convenience overload without a {@code source} field (used before policy source tagging). */
   public static void log(
       ViolationType type, String target, String caller, AgentPolicy.EnforcementMode mode) {
     log(type, target, caller, mode, null);

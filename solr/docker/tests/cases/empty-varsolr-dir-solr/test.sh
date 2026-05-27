@@ -46,8 +46,9 @@ container_cleanup "$container_name"
 
 ls -l "$myvarsolr"/
 
-# remove the solr-owned files from inside a container
+# remove the solr-owned files from inside a container (as root so UID 8983-owned dirs are deletable)
 docker run --rm -e VERBOSE=yes \
+  --user root \
   -v "$myvarsolr:/myvarsolr" "$tag" \
   bash -c "rm -fr /myvarsolr/*"
 

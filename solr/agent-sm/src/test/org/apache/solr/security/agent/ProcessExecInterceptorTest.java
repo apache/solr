@@ -45,9 +45,7 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
         approved
             ? List.of(
                 new ApprovedCallSite(
-                    callerClass,
-                    ApprovedCallSite.Operation.EXEC,
-                    PolicyLoader.PolicySource.DEFAULT))
+                    callerClass, ApprovedCallSite.Operation.EXEC, PolicySource.DEFAULT))
             : List.of();
     AgentPolicy policy = new AgentPolicy(List.of(), List.of(), List.of(), execCallers, mode);
     AgentPolicy.initialize(policy);
@@ -111,7 +109,7 @@ public class ProcessExecInterceptorTest extends SolrTestCase {
             new ApprovedCallSite(
                 ProcessExecInterceptorTest.class.getName(),
                 ApprovedCallSite.Operation.EXEC,
-                PolicyLoader.PolicySource.DEFAULT));
+                PolicySource.DEFAULT));
     AgentPolicy policy =
         new AgentPolicy(
             List.of(), List.of(), List.of(), execCallers, AgentPolicy.EnforcementMode.ENFORCE);

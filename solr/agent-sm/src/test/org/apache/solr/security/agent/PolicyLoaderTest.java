@@ -79,7 +79,7 @@ public class PolicyLoaderTest extends SolrTestCase {
     String policy =
         "grant {\n" + "  permission java.io.FilePermission \"/solr/home/-\", \"read\";\n" + "};";
     List<PolicyLoader.GrantBlock> blocks = new ArrayList<>();
-    PolicyLoader.parsePolicyBlocks(policy, PolicyLoader.PolicySource.DEFAULT, blocks);
+    PolicyLoader.parsePolicyBlocks(policy, PolicySource.DEFAULT, blocks);
 
     assertEquals(1, blocks.size());
     PolicyLoader.GrantBlock block = blocks.get(0);
@@ -87,7 +87,7 @@ public class PolicyLoaderTest extends SolrTestCase {
     assertEquals(1, block.filePaths.size());
     assertEquals("/solr/home/-", block.filePaths.get(0).target);
     assertEquals("read", block.filePaths.get(0).actions);
-    assertEquals(PolicyLoader.PolicySource.DEFAULT, block.filePaths.get(0).source);
+    assertEquals(PolicySource.DEFAULT, block.filePaths.get(0).source);
   }
 
   @Test
@@ -97,7 +97,7 @@ public class PolicyLoaderTest extends SolrTestCase {
             + "  permission java.net.SocketPermission \"*:8983\", \"connect,resolve\";\n"
             + "};";
     List<PolicyLoader.GrantBlock> blocks = new ArrayList<>();
-    PolicyLoader.parsePolicyBlocks(policy, PolicyLoader.PolicySource.DEFAULT, blocks);
+    PolicyLoader.parsePolicyBlocks(policy, PolicySource.DEFAULT, blocks);
 
     assertEquals(1, blocks.size());
     assertEquals(1, blocks.get(0).socketPerms.size());
@@ -112,7 +112,7 @@ public class PolicyLoaderTest extends SolrTestCase {
             + "  permission java.net.SocketPermission \"*\", \"connect,resolve\";\n"
             + "};";
     List<PolicyLoader.GrantBlock> blocks = new ArrayList<>();
-    PolicyLoader.parsePolicyBlocks(policy, PolicyLoader.PolicySource.DEFAULT, blocks);
+    PolicyLoader.parsePolicyBlocks(policy, PolicySource.DEFAULT, blocks);
 
     assertEquals(1, blocks.size());
     PolicyLoader.GrantBlock block = blocks.get(0);
@@ -130,7 +130,7 @@ public class PolicyLoaderTest extends SolrTestCase {
             + "  permission java.io.FilePermission \"/tmp/-\", \"read,write,delete\";\n"
             + "};";
     List<PolicyLoader.GrantBlock> blocks = new ArrayList<>();
-    PolicyLoader.parsePolicyBlocks(policy, PolicyLoader.PolicySource.DEFAULT, blocks);
+    PolicyLoader.parsePolicyBlocks(policy, PolicySource.DEFAULT, blocks);
 
     assertEquals(1, blocks.size());
     assertEquals(1, blocks.get(0).filePaths.size());
@@ -144,7 +144,7 @@ public class PolicyLoaderTest extends SolrTestCase {
             + "  permission java.io.FilePermission \"/tmp/-\", \"read\";\n"
             + "};";
     List<PolicyLoader.GrantBlock> blocks = new ArrayList<>();
-    PolicyLoader.parsePolicyBlocks(policy, PolicyLoader.PolicySource.DEFAULT, blocks);
+    PolicyLoader.parsePolicyBlocks(policy, PolicySource.DEFAULT, blocks);
 
     assertEquals(1, blocks.size());
     assertEquals(1, blocks.get(0).filePaths.size());
@@ -225,7 +225,7 @@ public class PolicyLoaderTest extends SolrTestCase {
       // Operator path carries OPERATOR source tag
       PermittedPath operatorPath =
           paths.stream().filter(p -> p.path().equals("/mnt/nfs")).findFirst().orElseThrow();
-      assertEquals(PolicyLoader.PolicySource.OPERATOR, operatorPath.source());
+      assertEquals(PolicySource.OPERATOR, operatorPath.source());
     } finally {
       System.clearProperty("solr.security.agent.extra.policy");
     }

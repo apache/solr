@@ -49,12 +49,6 @@ import java.util.Set;
  */
 public class PolicyLoader {
 
-  /** The source that an entry came from — default bundled policy or operator extension. */
-  public enum PolicySource {
-    DEFAULT,
-    OPERATOR
-  }
-
   /**
    * Loads and merges the default policy file and the optional operator extension file.
    *
@@ -231,8 +225,11 @@ public class PolicyLoader {
 
     // 0.0.0.0 is the unspecified bind address, not a loopback — intentionally excluded.
     Set<String> trustedHosts = Set.of("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1", "::1");
+    // jar/zip/jrt are internal JVM class-loading file systems. Intercepting them causes a
+    // class-initialization deadlock: violation logger → SLF4J → Log4j2 init → JAR read → repeat.
+    Set<String> trustedFileSystems = Set.of("jar", "zip", "jrt");
     return new AgentPolicy(
-        paths, endpoints, exitCallers, execCallers, mode, Set.of(), trustedHosts);
+        paths, endpoints, exitCallers, execCallers, mode, trustedFileSystems, trustedHosts);
   }
 
   // ---------------------------------------------------------------------------

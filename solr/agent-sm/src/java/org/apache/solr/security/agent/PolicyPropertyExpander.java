@@ -64,7 +64,8 @@ class PolicyPropertyExpander {
   private static final Map<String, String> CUSTOM_ENV_NAMES =
       Map.of(
           "solr.solr.home", "SOLR_HOME",
-          "solr.install.dir", "SOLR_TIP");
+          "solr.install.dir", "SOLR_TIP",
+          "solr.install.symDir", "SOLR_TIP_SYM");
 
   /**
    * Returns the value for {@code sysprop} by checking, in order:
@@ -127,6 +128,15 @@ class PolicyPropertyExpander {
       } catch (NumberFormatException e) {
         return "9983";
       }
+    }
+    // solr.install.symDir is optional — falls back to solr.install.dir when absent.
+    if ("solr.install.symDir".equals(placeholder)) {
+      String val = getPropertyOrEnv("solr.install.symDir");
+      if (val != null) return val;
+      val = getPropertyOrEnv("solr.install.dir");
+      if (val != null) return val;
+      throw new ExpandException(
+          "Unresolved policy variable: ${solr.install.symDir} (and ${solr.install.dir} is also unset)");
     }
     // solr.data.home is optional — when not configured, Solr stores data under solr.solr.home
     if ("solr.data.home".equals(placeholder)) {

@@ -32,10 +32,9 @@ public final class PermittedEndpoint {
   private final String hostPort;
   private final String actions;
   private final String codeBase; // null → applies to all code
-  private final PolicyLoader.PolicySource source;
+  private final PolicySource source;
 
-  PermittedEndpoint(
-      String hostPort, String actions, String codeBase, PolicyLoader.PolicySource source) {
+  PermittedEndpoint(String hostPort, String actions, String codeBase, PolicySource source) {
     this.hostPort = hostPort;
     this.actions = actions != null ? actions : "connect,resolve";
     this.codeBase = codeBase;
@@ -65,7 +64,7 @@ public final class PermittedEndpoint {
   }
 
   /** Whether this rule came from the default bundled policy or an operator extension. */
-  public PolicyLoader.PolicySource source() {
+  public PolicySource source() {
     return source;
   }
 }

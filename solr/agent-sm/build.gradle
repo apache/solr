@@ -31,8 +31,6 @@ dependencies {
   implementation libs.bytebuddy.agent
   permitUnusedDeclared libs.bytebuddy.agent
 
-  // SLF4J API for violation logging - bundled; implementation loaded via context classloader
-  implementation libs.slf4j.api
 
   // Test dependencies - NOT bundled
   testImplementation project(':solr:test-framework')
@@ -50,7 +48,12 @@ dependencies {
 }
 
 // Build a self-contained fat JAR so the agent can run before Solr's classpath is set up.
-// ByteBuddy and SLF4J API are bundled; Solr classes are NOT included.
+// ByteBuddy is bundled; Solr classes are NOT included.
+//
+// Build a fat JAR so all agent classes (and ByteBuddy) are available on Boot-Class-Path before
+// the application main class loads. SLF4J is intentionally excluded from this JAR's dependencies:
+// placing SLF4J on Boot-Class-Path would initialise it before Log4j2 is loaded, permanently
+// caching a NOP logger and preventing solr.log from being created.
 jar {
   manifest {
     attributes(
@@ -62,7 +65,7 @@ jar {
     )
   }
 
-  // Bundle runtime dependencies (ByteBuddy, SLF4J API) into the fat agent JAR.
+  // Bundle runtime dependencies (ByteBuddy) into the fat agent JAR.
   // Test dependencies are excluded because they are not on runtimeClasspath.
   from {
     configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }

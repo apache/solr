@@ -47,12 +47,11 @@ import net.bytebuddy.matcher.ElementMatchers;
  *       WARN} mode, log the error and continue without protection.
  * </ol>
  *
- * <h2>Bootstrap injection</h2>
+ * <h2>Bootstrap classloader</h2>
  *
- * The interceptor classes ({@link FileInterceptor}, etc.) are injected into the bootstrap
- * classloader using {@code ClassInjector.UsingUnsafe.ofBootLoader()} so that they can intercept JDK
- * methods which are loaded by the bootstrap loader. The {@code @SuppressForbidden} annotation on
- * the injection call acknowledges the intentional use of {@code sun.misc.Unsafe}.
+ * The agent JAR is placed on {@code Boot-Class-Path} so all interceptor and policy classes are
+ * visible to the bootstrap classloader. SLF4J is intentionally absent from the fat JAR to avoid
+ * poisoning the SLF4J binding before Log4j2 is loaded.
  */
 public final class SolrAgentEntryPoint {
 
@@ -61,21 +60,12 @@ public final class SolrAgentEntryPoint {
   /**
    * Called by the JVM before the application main class is loaded, when the agent JAR is specified
    * via {@code -javaagent:}.
-   *
-   * @param agentArgs optional agent argument string (unused)
-   * @param inst the {@link Instrumentation} instance provided by the JVM
    */
   public static void premain(String agentArgs, Instrumentation inst) {
     bootAgent(inst);
   }
 
-  /**
-   * Called by the JVM when the agent is attached dynamically (post-startup). Delegates to {@link
-   * #premain(String, Instrumentation)}.
-   *
-   * @param agentArgs optional agent argument string (unused)
-   * @param inst the {@link Instrumentation} instance provided by the JVM
-   */
+  /** Called by the JVM when the agent is attached dynamically; delegates to {@link #premain}. */
   public static void agentmain(String agentArgs, Instrumentation inst) {
     premain(agentArgs, inst);
   }
@@ -86,9 +76,8 @@ public final class SolrAgentEntryPoint {
 
   @SuppressForbidden(
       reason =
-          "System.err is the only output available during premain (before logging is initialized). "
-              + "System.exit(1) is required to halt the JVM on a fatal policy-load failure in "
-              + "enforce mode — this is intentional agent behavior, not application code.")
+          "System.err is the only safe output during premain; System.exit(1) is required to halt "
+              + "the JVM on fatal policy-load failure in enforce mode.")
   private static void bootAgent(Instrumentation inst) {
     // Locate the default policy file next to the agent JAR.
     Path defaultPolicyPath = resolveDefaultPolicyPath();
@@ -98,7 +87,6 @@ public final class SolrAgentEntryPoint {
       PolicyLoader loader = new PolicyLoader();
       policy = loader.load(defaultPolicyPath);
     } catch (IllegalStateException e) {
-      // Policy load failed.
       String modeStr = PolicyPropertyExpander.getPropertyOrEnv("solr.security.agent.mode");
       if (modeStr == null) modeStr = "warn";
       if ("enforce".equalsIgnoreCase(modeStr.trim())) {
@@ -118,7 +106,6 @@ public final class SolrAgentEntryPoint {
 
     AgentPolicy.initialize(policy);
 
-    // Register ByteBuddy interceptors.
     try {
       installInterceptors(inst);
     } catch (Exception e) {
@@ -148,11 +135,6 @@ public final class SolrAgentEntryPoint {
     "open"
   };
 
-  /**
-   * Installs all ByteBuddy interceptors using the provided {@link Instrumentation} instance. The
-   * interceptor classes are injected into the bootstrap classloader so that they can redefine JDK
-   * methods.
-   */
   private static void installInterceptors(Instrumentation inst) {
     // AgentBuilder configuration for JDK class instrumentation:
     //   - Implementation.Context.Disabled: required for REDEFINE so ByteBuddy does not try to

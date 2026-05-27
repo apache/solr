@@ -31,9 +31,9 @@ public final class PermittedPath {
   private final String path;
   private final String actions;
   private final boolean recursive;
-  private final PolicyLoader.PolicySource source;
+  private final PolicySource source;
 
-  PermittedPath(String path, String actions, boolean recursive, PolicyLoader.PolicySource source) {
+  PermittedPath(String path, String actions, boolean recursive, PolicySource source) {
     this.path = path;
     this.actions = actions != null ? actions.toLowerCase(Locale.ROOT) : "read";
     this.recursive = recursive;
@@ -56,7 +56,7 @@ public final class PermittedPath {
   }
 
   /** Whether this rule came from the default bundled policy or an operator extension. */
-  public PolicyLoader.PolicySource source() {
+  public PolicySource source() {
     return source;
   }
 

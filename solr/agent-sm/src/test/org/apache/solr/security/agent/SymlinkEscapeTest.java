@@ -55,8 +55,7 @@ public class SymlinkEscapeTest extends SolrTestCase {
     } catch (IOException e) {
       realDirStr = dir.toAbsolutePath().toString();
     }
-    PermittedPath allowed =
-        new PermittedPath(realDirStr, "read", true, PolicyLoader.PolicySource.DEFAULT);
+    PermittedPath allowed = new PermittedPath(realDirStr, "read", true, PolicySource.DEFAULT);
     AgentPolicy policy =
         new AgentPolicy(
             List.of(allowed), List.of(), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);

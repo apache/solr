@@ -43,9 +43,9 @@ public final class ApprovedCallSite {
 
   private final String classNamePattern;
   private final Operation operation;
-  private final PolicyLoader.PolicySource source;
+  private final PolicySource source;
 
-  ApprovedCallSite(String classNamePattern, Operation operation, PolicyLoader.PolicySource source) {
+  ApprovedCallSite(String classNamePattern, Operation operation, PolicySource source) {
     this.classNamePattern = classNamePattern;
     this.operation = operation;
     this.source = source;
@@ -62,7 +62,7 @@ public final class ApprovedCallSite {
   }
 
   /** Whether this entry came from the default bundled policy or an operator extension. */
-  public PolicyLoader.PolicySource source() {
+  public PolicySource source() {
     return source;
   }
 

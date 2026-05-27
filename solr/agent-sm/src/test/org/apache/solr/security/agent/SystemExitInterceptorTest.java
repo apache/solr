@@ -42,9 +42,7 @@ public class SystemExitInterceptorTest extends SolrTestCase {
         approved
             ? List.of(
                 new ApprovedCallSite(
-                    callerClass,
-                    ApprovedCallSite.Operation.EXIT,
-                    PolicyLoader.PolicySource.DEFAULT))
+                    callerClass, ApprovedCallSite.Operation.EXIT, PolicySource.DEFAULT))
             : List.of();
     AgentPolicy policy = new AgentPolicy(List.of(), List.of(), exitCallers, List.of(), mode);
     AgentPolicy.initialize(policy);
@@ -86,7 +84,7 @@ public class SystemExitInterceptorTest extends SolrTestCase {
             new ApprovedCallSite(
                 "org.apache.solr.security.agent.*",
                 ApprovedCallSite.Operation.EXIT,
-                PolicyLoader.PolicySource.DEFAULT));
+                PolicySource.DEFAULT));
     AgentPolicy policy =
         new AgentPolicy(
             List.of(), List.of(), exitCallers, List.of(), AgentPolicy.EnforcementMode.ENFORCE);

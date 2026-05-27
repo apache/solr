@@ -145,6 +145,7 @@ import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AgentViolationBridge;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
@@ -968,6 +969,9 @@ public class CoreContainer {
     } catch (ReflectiveOperationException e) {
       log.warn("Failed to register security agent metrics", e);
     }
+
+    // Wire security agent violations to SLF4J; no-op if agent JAR is absent.
+    AgentViolationBridge.wire();
 
     // setup executor to load cores in parallel
     coreLoadExecutor =

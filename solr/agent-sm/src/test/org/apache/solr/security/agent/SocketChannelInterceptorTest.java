@@ -36,7 +36,7 @@ public class SocketChannelInterceptorTest extends SolrTestCase {
 
   private AgentPolicy policyWithEndpoint(String hostPort) {
     PermittedEndpoint ep =
-        new PermittedEndpoint(hostPort, "connect,resolve", null, PolicyLoader.PolicySource.DEFAULT);
+        new PermittedEndpoint(hostPort, "connect,resolve", null, PolicySource.DEFAULT);
     return new AgentPolicy(
         List.of(), List.of(ep), List.of(), List.of(), AgentPolicy.EnforcementMode.ENFORCE);
   }
@@ -95,7 +95,7 @@ public class SocketChannelInterceptorTest extends SolrTestCase {
             "*",
             "connect,resolve",
             "file:/nonexistent/solr/modules/jwt-auth/-",
-            PolicyLoader.PolicySource.DEFAULT);
+            PolicySource.DEFAULT);
     AgentPolicy policy =
         new AgentPolicy(
             List.of(),

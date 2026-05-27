@@ -60,7 +60,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
   public void testPermittedFileReadSucceeds() {
     Path tmpDir = createTempDir();
     PermittedPath allowed =
-        new PermittedPath(tmpDir.toString(), "read", true, PolicyLoader.PolicySource.DEFAULT);
+        new PermittedPath(tmpDir.toString(), "read", true, PolicySource.DEFAULT);
     buildEnforcePolicy(List.of(allowed), List.of(), List.of(), List.of());
 
     Path target = tmpDir.resolve("test.txt");
@@ -97,7 +97,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
   @Test
   public void testPermittedEndpointNotBlocked() {
     PermittedEndpoint ep =
-        new PermittedEndpoint("*:8983", "connect,resolve", null, PolicyLoader.PolicySource.DEFAULT);
+        new PermittedEndpoint("*:8983", "connect,resolve", null, PolicySource.DEFAULT);
     buildEnforcePolicy(List.of(), List.of(ep), List.of(), List.of());
     assertTrue(
         SocketChannelInterceptor.isEndpointPermitted(AgentPolicy.getInstance(), "10.0.0.1", 8983));
@@ -140,7 +140,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
             new ApprovedCallSite(
                 SolrAgentIntegrationTest.class.getName(),
                 ApprovedCallSite.Operation.EXIT,
-                PolicyLoader.PolicySource.DEFAULT));
+                PolicySource.DEFAULT));
     buildEnforcePolicy(List.of(), List.of(), exitCallers, List.of());
     assertTrue(
         AgentPolicy.getInstance().isChainThatCanExit(Set.of(SolrAgentIntegrationTest.class)));

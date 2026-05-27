@@ -32,7 +32,7 @@ import org.junit.Test;
  * <ul>
  *   <li>An extra policy file present at the configured path is loaded and merged with the default
  *       policy.
- *   <li>Entries from the extra policy are tagged {@link PolicyLoader.PolicySource#OPERATOR}.
+ *   <li>Entries from the extra policy are tagged {@link PolicySource#OPERATOR}.
  *   <li>Paths listed only in the extra policy are permitted; unlisted paths remain blocked.
  *   <li>When the extra policy file is absent the default policy still loads normally.
  *   <li>A malformed extra policy causes {@link IllegalStateException} with a descriptive message.
@@ -127,8 +127,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
 
     AgentPolicy policy = loadWithExtra(defaultPolicy, extraPolicy);
     List<PermittedPath> paths = policy.permittedPaths();
-    boolean hasOperator =
-        paths.stream().anyMatch(p -> p.source() == PolicyLoader.PolicySource.OPERATOR);
+    boolean hasOperator = paths.stream().anyMatch(p -> p.source() == PolicySource.OPERATOR);
     assertTrue("Expected at least one OPERATOR-sourced path entry", hasOperator);
   }
 
@@ -139,8 +138,7 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
 
     AgentPolicy policy = loadWithExtra(defaultPolicy, null);
     List<PermittedPath> paths = policy.permittedPaths();
-    boolean hasDefault =
-        paths.stream().anyMatch(p -> p.source() == PolicyLoader.PolicySource.DEFAULT);
+    boolean hasDefault = paths.stream().anyMatch(p -> p.source() == PolicySource.DEFAULT);
     assertTrue("Expected at least one DEFAULT-sourced path entry", hasDefault);
   }
 

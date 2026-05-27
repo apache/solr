@@ -24,7 +24,8 @@
 //
 // Syntax: JDK-style .policy files with Solr variable substitution.
 // Supported variables: ${solr.solr.home}, ${solr.data.home}, ${solr.logs.dir}, ${solr.install.dir},
-//                      ${java.io.tmpdir}, ${java.home}, ${solr.port.listen}, ${solr.zk.port}
+//                      ${solr.install.symDir}, ${java.io.tmpdir}, ${java.home},
+//                      ${solr.port.listen}, ${solr.zk.port}
 //
 // For documentation see the Solr Reference Guide: Security Agent.
 
@@ -36,7 +37,11 @@ grant {
   // --- File system access ---
 
   // Solr installation directory: read-only (JARs, modules, Jetty config, etc.)
-  permission java.io.FilePermission "${solr.install.dir}/-", "read";
+  // Both the real path and the symlinked path are permitted so that installations where
+  // /opt/solr -> /opt/solr-X.Y.Z/ work correctly (FileInterceptor uses toAbsolutePath(),
+  // not toRealPath(), so accesses via the symlink path must be explicitly allowed).
+  permission java.io.FilePermission "${solr.install.dir}/-",    "read";
+  permission java.io.FilePermission "${solr.install.symDir}/-", "read";
 
   // Solr home: read-only (config files, schema, solrconfig.xml, etc.)
   permission java.io.FilePermission "${solr.solr.home}/-", "read";
@@ -52,6 +57,12 @@ grant {
 
   // JDK runtime libraries: read-only (class loading, native libs, etc.)
   permission java.io.FilePermission "${java.home}/-", "read";
+
+  // Linux pseudo-filesystems: read-only access for JVM internals (e.g. memory-mapping checks,
+  // network configuration, kernel parameters). These paths do not exist on macOS/Windows and
+  // their presence in a cross-platform policy is harmless.
+  permission java.io.FilePermission "/proc/-", "read";
+  permission java.io.FilePermission "/sys/-",  "read";
 
   // --- Outbound network access ---
 
