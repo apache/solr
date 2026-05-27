@@ -1,0 +1,7 @@
+title: Update google.protobuf to v3.25.9
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4364
+  url: https://github.com/apache/solr/pull/4364
