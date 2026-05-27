@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security.agent;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import net.bytebuddy.asm.Advice;
@@ -54,7 +55,7 @@ public final class ProcessExecInterceptor {
    * @param args all arguments of the intercepted method
    * @param method the intercepted method (used to identify the call site in the violation log)
    */
-  @Advice.OnMethodEnter(suppress = java.io.IOException.class)
+  @Advice.OnMethodEnter(suppress = IOException.class)
   public static void onExec(@Advice.AllArguments Object[] args, @Advice.Origin Method method) {
     checkExec(deriveTarget(method.getName(), args));
   }
