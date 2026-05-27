@@ -18,6 +18,7 @@ package org.apache.solr.security.agent;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.net.UnixDomainSocketAddress;
 import java.security.CodeSource;
 import java.util.Collection;
@@ -87,7 +88,7 @@ public class SocketChannelInterceptor {
    *
    * <p>Used by tests to exercise the network check without ByteBuddy instrumentation.
    */
-  public static void checkConnect(java.net.InetSocketAddress address) {
+  public static void checkConnect(InetSocketAddress address) {
     if (!AgentPolicy.isInitialized()) return;
     if (address.isUnresolved()) return;
     AgentPolicy policy = AgentPolicy.getInstance();
@@ -184,7 +185,7 @@ public class SocketChannelInterceptor {
       try {
         CodeSource cs = cls.getProtectionDomain().getCodeSource();
         if (cs == null) continue;
-        java.net.URL loc = cs.getLocation();
+        URL loc = cs.getLocation();
         if (loc == null) continue;
         String locPath = loc.getPath();
         if (locPath == null) continue;
