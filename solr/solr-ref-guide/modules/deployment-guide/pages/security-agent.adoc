@@ -48,8 +48,6 @@ Set the mode in `solr.in.sh` or `solr.in.cmd`:
 SOLR_SECURITY_AGENT_MODE=enforce
 ----
 
-The startup script converts this to the JVM system property `-Dsolr.security.agent.mode=enforce`.
-
 == Policy File Format
 
 Solr uses JDK-style `.policy` files with Solr-specific variable substitution.
