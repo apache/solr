@@ -17,7 +17,9 @@
 package org.apache.solr.security.agent;
 
 import java.lang.instrument.Instrumentation;
+import java.net.Socket;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import net.bytebuddy.ByteBuddy;
@@ -185,8 +187,8 @@ public final class SolrAgentEntryPoint {
                                 .and(ElementMatchers.not(ElementMatchers.isAbstract())))))
         // Intercept SocketChannel / Socket outbound connections → SocketChannelInterceptor
         .type(
-            ElementMatchers.isSubTypeOf(java.nio.channels.SocketChannel.class)
-                .or(ElementMatchers.isSubTypeOf(java.net.Socket.class)))
+            ElementMatchers.isSubTypeOf(SocketChannel.class)
+                .or(ElementMatchers.isSubTypeOf(Socket.class)))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
@@ -195,25 +197,25 @@ public final class SolrAgentEntryPoint {
                             ElementMatchers.named("connect")
                                 .and(ElementMatchers.not(ElementMatchers.isAbstract())))))
         // Intercept System.exit(int) → SystemExitInterceptor
-        .type(ElementMatchers.is(java.lang.System.class))
+        .type(ElementMatchers.is(System.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(SystemExitInterceptor.class).on(ElementMatchers.named("exit"))))
         // Intercept Runtime.halt(int) → RuntimeHaltInterceptor
-        .type(ElementMatchers.is(java.lang.Runtime.class))
+        .type(ElementMatchers.is(Runtime.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(RuntimeHaltInterceptor.class).on(ElementMatchers.named("halt"))))
         // Intercept ProcessBuilder.start() → ProcessExecInterceptor
-        .type(ElementMatchers.is(java.lang.ProcessBuilder.class))
+        .type(ElementMatchers.is(ProcessBuilder.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(ProcessExecInterceptor.class).on(ElementMatchers.named("start"))))
         // Intercept Runtime.exec(String[]) → ProcessExecInterceptor
-        .type(ElementMatchers.is(java.lang.Runtime.class))
+        .type(ElementMatchers.is(Runtime.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
