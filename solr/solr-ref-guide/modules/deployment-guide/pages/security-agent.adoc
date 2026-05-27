@@ -22,7 +22,7 @@ The agent intercepts file access, network connections, `System.exit()`, and proc
 == Protections Active by Default
 
 When the agent JAR is present, the startup scripts automatically activate it.
-The following protections apply to all code running inside the Solr JVM, including plugins:
+The following protections apply to all code running inside the Solr JVM:
 
 * **File access** — reads and writes are restricted to permitted directories (Solr home, data dir, log dir, temp dir).
 * **Outbound network** — connections are restricted to loopback addresses and intra-cluster ports.
@@ -66,7 +66,7 @@ Its location can be overridden via `SOLR_SECURITY_AGENT_EXTRA_POLICY`.
 
 === Variable Substitution
 
-The following variables are expanded in policy entries:
+Any java property will be expanded in policy entries, here are the most common. Environment variables are expanded if they adhere to the mapping convention `SOLR_FOO --> solr.foo`:
 
 [cols="1,2",options="header"]
 |===
@@ -129,10 +129,10 @@ Fields:
 
 Violation counts are also available in `/admin/metrics` under:
 
-* `security.agent.violations.file`
-* `security.agent.violations.network`
-* `security.agent.violations.exit`
-* `security.agent.violations.exec`
+* `solr.security.agent.violations.file`
+* `solr.security.agent.violations.network`
+* `solr.security.agent.violations.exit`
+* `solr.security.agent.violations.exec`
 
 == Disabling the Agent
 
@@ -146,7 +146,7 @@ SOLR_SECURITY_AGENT_SKIP=true
 [WARNING]
 ====
 Disabling the agent removes all runtime security controls.
-Use this only for temporary troubleshooting and re-enable it as soon as possible.
+Use this only for temporary troubleshooting of if you intend to provide similar protection on the operating system level.
 ====
 
 == Modules with Pre-Permitted Network Access

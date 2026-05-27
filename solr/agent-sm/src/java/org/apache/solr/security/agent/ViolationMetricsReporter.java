@@ -37,13 +37,13 @@ import java.util.function.Supplier;
  * <h2>Metric names</h2>
  *
  * <ul>
- *   <li>{@code security.agent.violations.file}
- *   <li>{@code security.agent.violations.network}
- *   <li>{@code security.agent.violations.exit}
- *   <li>{@code security.agent.violations.exec}
+ *   <li>{@code solr.security.agent.violations.file}
+ *   <li>{@code solr.security.agent.violations.network}
+ *   <li>{@code solr.security.agent.violations.exit}
+ *   <li>{@code solr.security.agent.violations.exec}
  * </ul>
  *
- * <p>In Prometheus format these appear as {@code security_agent_violations_file_total}, etc.
+ * <p>In Prometheus format these appear as {@code solr_security_agent_violations_file_total}, etc.
  */
 public final class ViolationMetricsReporter {
 
@@ -54,10 +54,10 @@ public final class ViolationMetricsReporter {
   private static final LongAdder EXEC_COUNTER = new LongAdder();
 
   // Metric names exposed in the Solr metrics registry.
-  public static final String METRIC_FILE = "security.agent.violations.file";
-  public static final String METRIC_NETWORK = "security.agent.violations.network";
-  public static final String METRIC_EXIT = "security.agent.violations.exit";
-  public static final String METRIC_EXEC = "security.agent.violations.exec";
+  public static final String METRIC_FILE = "solr.security.agent.violations.file";
+  public static final String METRIC_NETWORK = "solr.security.agent.violations.network";
+  public static final String METRIC_EXIT = "solr.security.agent.violations.exit";
+  public static final String METRIC_EXEC = "solr.security.agent.violations.exec";
 
   private ViolationMetricsReporter() {}
 
@@ -133,7 +133,7 @@ public final class ViolationMetricsReporter {
    *
    * <p>Metrics are registered as OTel observable counters via {@code
    * SolrMetricManager.observableLongCounter()}. In Prometheus format they appear as {@code
-   * security_agent_violations_file_total} etc.
+   * solr_security_agent_violations_file_total} etc.
    *
    * @param metricManager the {@code SolrMetricManager} instance (type-erased to {@link Object} to
    *     avoid a compile-time dependency on solr:core)
