@@ -109,6 +109,15 @@ tasks.named('compileTestProgramsJava') {
   options.annotationProcessorPath = files()
 }
 
+// Error-prone must also be disabled for compileTestProgramsJava: its Gradle plugin uses
+// tasks.withType(JavaCompile) and would inject -Xplugin:ErrorProne, but the
+// testProgramsAnnotationProcessor configuration has no errorprone JAR on it.
+plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
+  tasks.named('compileTestProgramsJava') {
+    options.errorprone.enabled = false
+  }
+}
+
 task testProgramsJar(type: Jar) {
   description = 'JAR of standalone violation programs used by BATS integration tests'
   group = 'build'

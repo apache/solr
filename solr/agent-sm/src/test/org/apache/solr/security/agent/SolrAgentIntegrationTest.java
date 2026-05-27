@@ -16,6 +16,8 @@
  */
 package org.apache.solr.security.agent;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -104,8 +106,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
   @Test(expected = SecurityException.class)
   public void testDeniedNetworkConnectThrowsInEnforceMode() throws Exception {
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
-    java.net.InetSocketAddress addr =
-        new java.net.InetSocketAddress(java.net.InetAddress.getByName("10.0.0.99"), 9999);
+    InetSocketAddress addr = new InetSocketAddress(InetAddress.getByName("10.0.0.99"), 9999);
     SocketChannelInterceptor.checkConnect(addr);
   }
 
@@ -113,8 +114,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
   public void testDeniedNetworkIncrementsCounter() throws Exception {
     long before = ViolationMetricsReporter.networkCount();
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
-    java.net.InetSocketAddress addr =
-        new java.net.InetSocketAddress(java.net.InetAddress.getByName("10.0.0.99"), 9999);
+    InetSocketAddress addr = new InetSocketAddress(InetAddress.getByName("10.0.0.99"), 9999);
     try {
       SocketChannelInterceptor.checkConnect(addr);
     } catch (SecurityException ignored) {

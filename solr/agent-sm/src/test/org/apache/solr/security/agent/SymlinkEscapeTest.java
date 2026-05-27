@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security.agent;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -51,7 +52,7 @@ public class SymlinkEscapeTest extends SolrTestCase {
     String realDirStr;
     try {
       realDirStr = dir.toRealPath().toString();
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       realDirStr = dir.toAbsolutePath().toString();
     }
     PermittedPath allowed =

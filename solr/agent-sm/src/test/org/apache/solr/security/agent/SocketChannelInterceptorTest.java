@@ -18,6 +18,7 @@ package org.apache.solr.security.agent;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -108,7 +109,7 @@ public class SocketChannelInterceptorTest extends SolrTestCase {
   @Test
   public void testIsCallerFromCodeBaseMatchesTestClassCodeSource() {
     // Get the actual code source URL of this test class and verify isCallerFromCodeBase accepts it.
-    java.net.URL loc =
+    URL loc =
         SocketChannelInterceptorTest.class.getProtectionDomain().getCodeSource().getLocation();
     String codeBase = "file:" + loc.getPath();
     // Strip any trailing "/" so it acts as an exact-directory match
