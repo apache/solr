@@ -92,11 +92,11 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.responses.stacktrace.enabled|!solr.hideStackTrace|false|Controls whether stack traces are included in responses. When set to `true`, stack traces are included in responses.
 
-|solr.security.agent.extra.policy|SOLR_SECURITY_AGENT_EXTRA_POLICY|`${server.dir}/etc/agent-security-extra.policy`|Path to the operator extension policy file for the Solr security agent. Overrides the default location. An absent file is silently skipped. Set env var `SOLR_SECURITY_AGENT_EXTRA_POLICY` to have the startup script pass this as a `-D` system property.
+|solr.security.agent.extra.policy||`${server.dir}/etc/agent-security-extra.policy`|Path to the operator extension policy file for the Solr security agent. Overrides the default location. An absent file is silently skipped. Set env var `SOLR_SECURITY_AGENT_EXTRA_POLICY` to have the startup script pass this as a `-D` system property.
 
-|solr.security.agent.mode|SOLR_SECURITY_AGENT_MODE|`warn`|Enforcement mode for the Solr security agent: `warn` (log violations, continue) or `enforce` (log violations, block the operation with `SecurityException`). Set env var `SOLR_SECURITY_AGENT_MODE` to have the startup script pass this as a `-D` system property.
+|solr.security.agent.mode||`warn`|Enforcement mode for the Solr security agent: `warn` (log violations, continue) or `enforce` (log violations, block the operation with `SecurityException`). Set env var `SOLR_SECURITY_AGENT_MODE` to have the startup script pass this as a `-D` system property.
 
-|SOLR_SECURITY_AGENT_SKIP|_(startup-script only, no system property)_|`false`|If set to `true`, omits the `-javaagent:` flag from the JVM command line, disabling all Solr security agent controls. Intended for temporary troubleshooting only.
+|solr.security.agent.skip||`false`|If set to `true`, omits the `-javaagent:` flag from the JVM command line, disabling all Solr security agent controls. Intended for temporary troubleshooting only.
 
 |solr.security.auth.basicauth.credentials|basicauth||Defines basic authentication credentials.
 

@@ -60,7 +60,7 @@ grant {
   permission java.net.SocketPermission "127.0.0.1:1-65535", "connect,resolve";
   permission java.net.SocketPermission "[::1]:1-65535",     "connect,resolve";
 
-  // Intra-cluster connectivity — Decision 9 (port-wildcard approach):
+  // Intra-cluster connectivity
   // Any host on the Solr HTTP port is permitted, covering all current and future cluster nodes
   // without requiring a static node list at startup. Similarly for the ZooKeeper port.
   permission java.net.SocketPermission "*:${solr.port.listen}", "connect,resolve";

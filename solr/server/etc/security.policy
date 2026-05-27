@@ -15,11 +15,6 @@
  * limitations under the License.
  */
 
-// DEPRECATED: This file is no longer enforced by the JVM. The Java Security Manager (JSM) API
-// was removed in JDK 24. This file is retained as a migration reference only and will be removed
-// in a future Solr release. The replacement is agent-security.policy, loaded by the Solr security
-// agent (solr-agent-sm-*.jar). See the Solr Reference Guide: Security Agent for details.
-
 // Policy file for solr. Please keep minimal and avoid wildcards.
 
 // permissions needed for tests to pass, based on properties set by the build system
