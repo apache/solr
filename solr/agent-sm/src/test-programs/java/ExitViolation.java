@@ -16,14 +16,16 @@
  */
 
 /**
- * BATS test program: calls System.exit(0). The default policy grants no exitVM permission
- * to anonymous codeBase, so this should be blocked by SystemExitInterceptor in enforce mode.
- * Expected: SecurityException thrown, process exits non-zero.
+ * BATS test program: calls System.exit(123). The default policy grants no exitVM permission to
+ * anonymous codeBase, so this should be blocked by SystemExitInterceptor in enforce mode.
+ *
+ * <p>Exit code 123 is used as a sentinel: if the process exits with that code the agent did NOT
+ * block the call. The BATS test asserts both a SecurityException in the output and that {@code
+ * $status != 123}.
  */
 public class ExitViolation {
-    public static void main(String[] args) {
-        System.out.println("attempting System.exit");
-        System.exit(0);
-        System.out.println("exit succeeded -- agent did NOT block");
-    }
+  public static void main(String[] args) {
+    System.out.println("attempting System.exit");
+    System.exit(123);
+  }
 }

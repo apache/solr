@@ -131,7 +131,9 @@ EOF
   local agent_jar
   agent_jar=$(ls "${SOLR_TIP}/server/lib/ext/solr-agent-sm-"*.jar)
 
-  # ExitViolation calls System.exit(0) — no exitVM grant in the default policy.
+  # ExitViolation calls System.exit(123) — no exitVM grant in the default policy.
+  # Exit code 123 is a sentinel: if the process exits with that exact code, the agent
+  # did NOT block the call and System.exit(123) ran unimpeded.
   run java \
     -javaagent:"${agent_jar}" \
     -Dsolr.security.agent.mode=enforce \
@@ -144,7 +146,7 @@ EOF
 
   assert_failure
   assert_output --partial "SecurityException"
-  refute_output --partial "exit succeeded"
+  [ "$status" -ne 123 ]  # status 123 means System.exit(123) ran — agent did NOT block
 }
 
 @test "enforce mode blocks unauthorized outbound connection with SecurityException" {
