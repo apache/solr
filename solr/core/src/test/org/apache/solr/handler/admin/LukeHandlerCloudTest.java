@@ -41,15 +41,57 @@ import org.junit.Test;
 /** Cloud-specific Luke tests that require SolrCloud features like managed schema and Schema API. */
 public class LukeHandlerCloudTest extends SolrCloudTestCase {
 
+  private static final String DISTRIB_COLLECTION = "lukeDistribTests";
+  private static final int NUM_DOCS = 20;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig("managed", configset("cloud-managed")).configure();
+    System.setProperty("managed.schema.mutable", "true");
+    configureCluster(2)
+        .addConfig("managed", configset("cloud-managed"))
+        .addConfig("dynamic", configset("cloud-dynamic"))
+        .configure();
+
+    CollectionAdminRequest.createCollection(DISTRIB_COLLECTION, "dynamic", 2, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.waitForActiveCollection(DISTRIB_COLLECTION, 2, 2);
+
+    for (int i = 0; i < NUM_DOCS; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", String.valueOf(i));
+      doc.addField("name", "name_" + i);
+      doc.addField("subject", "subject value " + (i % 5));
+      cluster.getSolrClient().add(DISTRIB_COLLECTION, doc);
+    }
+    cluster.getSolrClient().commit(DISTRIB_COLLECTION);
   }
 
   private void requestLuke(String collection, SolrParams extra) throws Exception {
     LukeRequest req = new LukeRequest(extra);
     req.setNumTerms(0);
     req.process(cluster.getSolrClient(), collection);
+  }
+
+  @Test
+  public void testDistributedShardError() {
+    SolrParams lukeParams = params("id", "0", "show", "schema");
+
+    Exception ex = expectThrows(Exception.class, () -> requestLuke(DISTRIB_COLLECTION, lukeParams));
+    String fullMessage = SolrException.getRootCause(ex).getMessage();
+    assertTrue(
+        "exception should mention doc style mismatch: " + fullMessage,
+        fullMessage.contains("missing doc param for doc style"));
+  }
+
+  @Test
+  public void testDistributedDocIdRejected() {
+    SolrParams lukeParams = params("docId", "0");
+
+    Exception ex = expectThrows(Exception.class, () -> requestLuke(DISTRIB_COLLECTION, lukeParams));
+    String fullMessage = SolrException.getRootCause(ex).getMessage();
+    assertTrue(
+        "exception should mention docId not supported: " + fullMessage,
+        fullMessage.contains("docId parameter is not supported in distributed mode"));
   }
 
   /**
@@ -60,7 +102,6 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
   @Test
   public void testInconsistentIndexFlagsAcrossShards() throws Exception {
     String collection = "lukeInconsistentFlags";
-    System.setProperty("managed.schema.mutable", "true");
     CollectionAdminRequest.createCollection(collection, "managed", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
