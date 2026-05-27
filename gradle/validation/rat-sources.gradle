@@ -151,6 +151,11 @@ allprojects {
           exclude "src/test-files/**/*-snippet-*.xml"
           break
 
+        case ":solr:agent-sm":
+          // Test-programs are tiny standalone programs for BATS tests, not shipped artifacts.
+          exclude "src/test-programs/**"
+          break
+
         case ":solr:server":
           exclude "**/*.xml"
           exclude "**/*.sh"

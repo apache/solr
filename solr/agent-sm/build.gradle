@@ -95,3 +95,21 @@ configurations.jarValidation {
 }
 
 assemble.dependsOn copyAgentJar
+
+// ---------------------------------------------------------------------------
+// Test programs — standalone Java programs compiled for BATS integration tests.
+// These have no Solr/ByteBuddy dependencies; pure JDK APIs only.
+// ---------------------------------------------------------------------------
+sourceSets {
+  testPrograms {
+    java.srcDirs = ['src/test-programs/java']
+  }
+}
+
+task testProgramsJar(type: Jar) {
+  description = 'JAR of standalone violation programs used by BATS integration tests'
+  group = 'build'
+  archiveClassifier = 'test-programs'
+  from sourceSets.testPrograms.output
+}
+

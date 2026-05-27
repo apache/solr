@@ -110,20 +110,8 @@ EOF
   local agent_jar
   agent_jar=$(ls "${SOLR_TIP}/server/lib/ext/solr-agent-sm-"*.jar)
 
-  # Tiny program that reads /etc/hosts — outside every path the default policy permits.
-  cat > "${BATS_TEST_TMPDIR}/FileViolation.java" <<'EOF'
-public class FileViolation {
-    public static void main(String[] args) throws Exception {
-        java.nio.file.Files.readAllBytes(java.nio.file.Path.of("/etc/hosts"));
-        System.out.println("read succeeded -- agent did NOT block");
-    }
-}
-EOF
-
-  javac -d "${BATS_TEST_TMPDIR}" "${BATS_TEST_TMPDIR}/FileViolation.java"
-
-  # Run standalone under the agent in enforce mode — no Solr startup needed.
-  # Provide the sysprops that bin/solr would normally pass so policy variables resolve.
+  # FileViolation reads /etc/hosts — outside every path the default policy permits.
+  # The class is pre-compiled into AGENT_TEST_PROGRAMS_JAR by the Gradle build.
   run java \
     -javaagent:"${agent_jar}" \
     -Dsolr.security.agent.mode=enforce \
@@ -131,11 +119,71 @@ EOF
     -Dsolr.solr.home="${SOLR_TIP}/server/solr" \
     -Dsolr.logs.dir="${BATS_TEST_TMPDIR}" \
     -Dsolr.port.listen=8983 \
-    -cp "${BATS_TEST_TMPDIR}" \
+    -cp "${AGENT_TEST_PROGRAMS_JAR}" \
     FileViolation
 
-  # SecurityException propagates uncaught → non-zero exit with stack trace in output.
   assert_failure
   assert_output --partial "SecurityException"
   refute_output --partial "read succeeded"
+}
+
+@test "enforce mode blocks System.exit with SecurityException" {
+  local agent_jar
+  agent_jar=$(ls "${SOLR_TIP}/server/lib/ext/solr-agent-sm-"*.jar)
+
+  # ExitViolation calls System.exit(0) — no exitVM grant in the default policy.
+  run java \
+    -javaagent:"${agent_jar}" \
+    -Dsolr.security.agent.mode=enforce \
+    -Dsolr.install.dir="${SOLR_TIP}" \
+    -Dsolr.solr.home="${SOLR_TIP}/server/solr" \
+    -Dsolr.logs.dir="${BATS_TEST_TMPDIR}" \
+    -Dsolr.port.listen=8983 \
+    -cp "${AGENT_TEST_PROGRAMS_JAR}" \
+    ExitViolation
+
+  assert_failure
+  assert_output --partial "SecurityException"
+  refute_output --partial "exit succeeded"
+}
+
+@test "enforce mode blocks unauthorized outbound connection with SecurityException" {
+  local agent_jar
+  agent_jar=$(ls "${SOLR_TIP}/server/lib/ext/solr-agent-sm-"*.jar)
+
+  # NetworkViolation opens a SocketChannel to 192.0.2.1:443 (TEST-NET-1, RFC 5737 —
+  # guaranteed non-routable). The interceptor fires before any TCP I/O, so this is instant.
+  run java \
+    -javaagent:"${agent_jar}" \
+    -Dsolr.security.agent.mode=enforce \
+    -Dsolr.install.dir="${SOLR_TIP}" \
+    -Dsolr.solr.home="${SOLR_TIP}/server/solr" \
+    -Dsolr.logs.dir="${BATS_TEST_TMPDIR}" \
+    -Dsolr.port.listen=8983 \
+    -cp "${AGENT_TEST_PROGRAMS_JAR}" \
+    NetworkViolation
+
+  assert_failure
+  assert_output --partial "SecurityException"
+  refute_output --partial "connect succeeded"
+}
+
+@test "enforce mode blocks process exec with SecurityException" {
+  local agent_jar
+  agent_jar=$(ls "${SOLR_TIP}/server/lib/ext/solr-agent-sm-"*.jar)
+
+  # ExecViolation spawns a child process via ProcessBuilder — no exec grant in default policy.
+  run java \
+    -javaagent:"${agent_jar}" \
+    -Dsolr.security.agent.mode=enforce \
+    -Dsolr.install.dir="${SOLR_TIP}" \
+    -Dsolr.solr.home="${SOLR_TIP}/server/solr" \
+    -Dsolr.logs.dir="${BATS_TEST_TMPDIR}" \
+    -Dsolr.port.listen=8983 \
+    -cp "${AGENT_TEST_PROGRAMS_JAR}" \
+    ExecViolation
+
+  assert_failure
+  assert_output --partial "SecurityException"
+  refute_output --partial "exec succeeded"
 }

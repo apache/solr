@@ -238,8 +238,7 @@ public final class AgentPolicy {
 
   /**
    * Returns {@code true} if any class in the call chain is approved to call {@code System.exit()}
-   * or {@code Runtime.halt()}. Mirrors {@code AgentPolicy.isChainThatCanExit()} in the OpenSearch
-   * reference implementation: any approved class anywhere in the chain grants permission.
+   * or {@code Runtime.halt()}. Any approved class anywhere in the chain grants permission.
    *
    * <p>Class names are matched using {@link String#matches} (full regex), so the approved-caller
    * list supports wildcard patterns such as {@code "org\\.apache\\.solr\\..*"}.
