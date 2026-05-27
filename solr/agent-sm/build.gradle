@@ -102,6 +102,13 @@ sourceSets {
   }
 }
 
+// These are tiny standalone programs with no annotation-processor needs.
+// Disabling annotation processing prevents the auto-created testProgramsAnnotationProcessor
+// configuration from pulling in error-prone and friends, which are not in the lock file.
+tasks.named('compileTestProgramsJava') {
+  options.annotationProcessorPath = files()
+}
+
 task testProgramsJar(type: Jar) {
   description = 'JAR of standalone violation programs used by BATS integration tests'
   group = 'build'

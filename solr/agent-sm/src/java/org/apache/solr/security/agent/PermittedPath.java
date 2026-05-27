@@ -16,7 +16,7 @@
  */
 package org.apache.solr.security.agent;
 
-import java.io.File;
+import java.nio.file.FileSystems;
 import java.util.Locale;
 
 /**
@@ -66,7 +66,8 @@ public final class PermittedPath {
     if (recursive) {
       // Use the platform separator so the check is correct on both POSIX and Windows.
       // Strip any trailing separator from 'path' to avoid double-separator issues.
-      String base = path.endsWith(File.separator) ? path : path + File.separator;
+      String sep = FileSystems.getDefault().getSeparator();
+      String base = path.endsWith(sep) ? path : path + sep;
       pathMatch = resolvedPath.startsWith(base) || resolvedPath.equals(path);
     } else {
       pathMatch = resolvedPath.equals(path);
