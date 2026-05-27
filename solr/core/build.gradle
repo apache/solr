@@ -129,8 +129,9 @@ dependencies {
   }
   testImplementation variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}
 
-  // required for instantiating a Zookeeper server (for embedding ZK or running tests)
+  // required for instantiating a Zookeeper server (for embedding ZK)
   runtimeOnly libs.xerial.snappy.java
+  runtimeOnly libs.dropwizard.metrics.core
 
   implementation(libs.jayway.jsonpath, {
     exclude group: "net.minidev", module: "json-smart"
