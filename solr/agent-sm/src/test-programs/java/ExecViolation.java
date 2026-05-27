@@ -16,14 +16,14 @@
  */
 
 /**
- * BATS test program: spawns a child process via ProcessBuilder. The default policy grants no
- * exec permission, so this should be blocked by ProcessExecInterceptor in enforce mode.
- * Expected: SecurityException thrown, process exits non-zero.
+ * BATS test program: spawns a child process via ProcessBuilder. The default policy grants no exec
+ * permission, so this should be blocked by ProcessExecInterceptor in enforce mode. Expected:
+ * SecurityException thrown, process exits non-zero.
  */
 public class ExecViolation {
-    public static void main(String[] args) throws Exception {
-        System.out.println("attempting process exec");
-        new ProcessBuilder("echo", "blocked").start().waitFor();
-        System.out.println("exec succeeded -- agent did NOT block");
-    }
+  public static void main(String[] args) throws Exception {
+    System.out.println("attempting process exec");
+    new ProcessBuilder("echo", "blocked").start().waitFor();
+    System.out.println("exec succeeded -- agent did NOT block");
+  }
 }

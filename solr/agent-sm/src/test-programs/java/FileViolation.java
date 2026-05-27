@@ -20,8 +20,8 @@
  * Expected: SecurityException thrown by FileInterceptor in enforce mode.
  */
 public class FileViolation {
-    public static void main(String[] args) throws Exception {
-        java.nio.file.Files.readAllBytes(java.nio.file.Path.of("/etc/hosts"));
-        System.out.println("read succeeded -- agent did NOT block");
-    }
+  public static void main(String[] args) throws Exception {
+    java.nio.file.Files.readAllBytes(java.nio.file.Path.of("/etc/hosts"));
+    System.out.println("read succeeded -- agent did NOT block");
+  }
 }

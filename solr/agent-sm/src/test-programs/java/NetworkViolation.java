@@ -22,12 +22,12 @@
  * Expected: SecurityException thrown by SocketChannelInterceptor in enforce mode.
  */
 public class NetworkViolation {
-    public static void main(String[] args) throws Exception {
-        System.out.println("attempting socket connect");
-        var addr = new java.net.InetSocketAddress("192.0.2.1", 443);
-        try (var ch = java.nio.channels.SocketChannel.open()) {
-            ch.connect(addr);
-        }
-        System.out.println("connect succeeded -- agent did NOT block");
+  public static void main(String[] args) throws Exception {
+    System.out.println("attempting socket connect");
+    var addr = new java.net.InetSocketAddress("192.0.2.1", 443);
+    try (var ch = java.nio.channels.SocketChannel.open()) {
+      ch.connect(addr);
     }
+    System.out.println("connect succeeded -- agent did NOT block");
+  }
 }
