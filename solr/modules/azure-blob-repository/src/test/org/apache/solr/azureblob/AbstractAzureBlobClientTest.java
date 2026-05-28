@@ -24,12 +24,15 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -37,6 +40,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
+import reactor.core.scheduler.Schedulers;
 
 /** Abstract class for tests with Azure Blob Storage emulator. */
 @ThreadLeakFilters(
@@ -56,7 +60,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
   private static String connectionString;
 
   protected String containerName;
-  protected org.apache.solr.util.SocketProxy proxy;
+  protected SocketProxy proxy;
 
   protected AzureBlobStorageClient client;
 
@@ -85,8 +89,8 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
             + blobServiceUrl
             + "/devstoreaccount1;";
 
-    proxy = new org.apache.solr.util.SocketProxy();
-    proxy.open(new java.net.URI(blobServiceUrl));
+    proxy = new SocketProxy();
+    proxy.open(new URI(blobServiceUrl));
 
     HttpClient httpClient = new OkHttpAsyncHttpClientBuilder(sharedOkHttpClient).build();
 
@@ -100,7 +104,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
             .httpClient(httpClient)
             .buildClient();
 
-    containerName = "test-" + java.util.UUID.randomUUID();
+    containerName = "test-" + UUID.randomUUID();
     client = new AzureBlobStorageClient(blobServiceClient, containerName);
   }
 
@@ -161,7 +165,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
     }
 
     try {
-      reactor.core.scheduler.Schedulers.shutdownNow();
+      Schedulers.shutdownNow();
       Thread.sleep(100);
     } catch (Throwable ignored) {
     }

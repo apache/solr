@@ -16,6 +16,9 @@
  */
 package org.apache.solr.azureblob;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.Test;
 
 public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
@@ -23,7 +26,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
   /** {@code pathExists()} returns false before push, true after. */
   @Test
   public void testPathExists() throws Exception {
-    String path = "path-exists-test-" + java.util.UUID.randomUUID() + ".txt";
+    String path = "path-exists-test-" + UUID.randomUUID() + ".txt";
 
     assertFalse("Path should not exist initially", client.pathExists(path));
 
@@ -35,7 +38,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
   /** {@code pathExists()} reports a freshly-created directory marker as present. */
   @Test
   public void testDirectoryExists() throws Exception {
-    String dirPath = "test-directory-" + java.util.UUID.randomUUID() + "/";
+    String dirPath = "test-directory-" + UUID.randomUUID() + "/";
 
     assertFalse("Directory should not exist initially", client.pathExists(dirPath));
 
@@ -127,7 +130,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     pushContent(dirPath + "subdir1/file3.txt", "Content 3");
     pushContent(dirPath + "subdir2/file4.txt", "Content 4");
 
-    java.util.Set<String> allFiles = new java.util.HashSet<>();
+    Set<String> allFiles = new HashSet<>();
     listAllRecursive(dirPath, allFiles);
 
     assertTrue("Should find file1.txt", allFiles.contains(dirPath + "file1.txt"));
@@ -136,8 +139,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertTrue("Should find subdir2/file4.txt", allFiles.contains(dirPath + "subdir2/file4.txt"));
   }
 
-  private void listAllRecursive(String dirPath, java.util.Set<String> allFiles)
-      throws AzureBlobException {
+  private void listAllRecursive(String dirPath, Set<String> allFiles) throws AzureBlobException {
     String[] files = client.listDir(dirPath);
     for (String file : files) {
       String fullPath = dirPath + file;
@@ -160,7 +162,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     pushContent(path, "test content");
     assertTrue("File should exist", client.pathExists(path));
 
-    client.delete(java.util.Set.of(path));
+    client.delete(Set.of(path));
 
     assertFalse("File should not exist after deletion", client.pathExists(path));
   }
@@ -191,7 +193,7 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertFalse("File should not exist", client.pathExists(path));
 
     AzureBlobNotFoundException thrown =
-        expectThrows(AzureBlobNotFoundException.class, () -> client.delete(java.util.Set.of(path)));
+        expectThrows(AzureBlobNotFoundException.class, () -> client.delete(Set.of(path)));
     assertTrue(
         "Exception message should reference the missing path: " + thrown.getMessage(),
         thrown.getMessage().contains(path));

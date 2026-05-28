@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.junit.Test;
 
@@ -333,9 +334,8 @@ public class AzureBlobIndexInputTest extends AbstractAzureBlobClientTest {
   }
 
   /**
-   * A clone has an independent file pointer (per {@link
-   * org.apache.lucene.store.BufferedIndexInput#clone()}): seeks and reads on the clone do not move
-   * the parent's position, and vice versa.
+   * A clone has an independent file pointer (per {@link BufferedIndexInput#clone()}): seeks and
+   * reads on the clone do not move the parent's position, and vice versa.
    */
   @Test
   public void testIndexInputCloneIndependent() throws Exception {

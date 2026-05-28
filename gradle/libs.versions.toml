@@ -512,10 +512,10 @@ ow2-asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "ow2-asm" 
 ow2-asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "ow2-asm" }
 # @keep transitive dependency for version alignment
 perfmark-api = { module = "io.perfmark:perfmark-api", version.ref = "perfmark" }
-prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
-prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 # Version managed by azure-sdk-bom
 projectreactor-core = { module = "io.projectreactor:reactor-core" }
+prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
+prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
 semver4j-semver4j = { module = "org.semver4j:semver4j", version.ref = "semver4j" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }

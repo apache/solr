@@ -31,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.Before;
@@ -215,7 +216,7 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     Files.write(tempFile, content.getBytes(StandardCharsets.UTF_8));
 
     try {
-      Directory sourceDir = new org.apache.lucene.store.MMapDirectory(tempDir);
+      Directory sourceDir = new MMapDirectory(tempDir);
       URI destDirUri = getBaseUri().resolve("copy-from-dir");
 
       repository.copyFileFrom(sourceDir, "source-file.txt", destDirUri);
@@ -250,7 +251,7 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     Path tempDir = Files.createTempDirectory("blob-test");
 
     try {
-      Directory destDir = new org.apache.lucene.store.MMapDirectory(tempDir);
+      Directory destDir = new MMapDirectory(tempDir);
 
       repository.copyFileTo(sourceUri, "source-file.txt", destDir);
 
@@ -290,7 +291,7 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     String fileName = "checksum-test.bin";
     long expectedChecksum;
     long expectedLength;
-    try (Directory localDir = new org.apache.lucene.store.MMapDirectory(tempDir)) {
+    try (Directory localDir = new MMapDirectory(tempDir)) {
       try (IndexOutput out = localDir.createOutput(fileName, IOContext.DEFAULT)) {
         CodecUtil.writeIndexHeader(out, "azure-blob-test", 1, new byte[16], "suffix");
         for (int i = 0; i < 10000; i++) {
