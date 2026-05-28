@@ -185,6 +185,7 @@ If users need to be restricted to a specific collection, that can be done with t
 === Add a User or Edit a Password
 
 The `set-user` command allows you to add users and change their passwords.
+Passwords must not be identical to the username.
 For example, the following defines two users and their passwords:
 
 [tabs#set-user]
