@@ -64,7 +64,7 @@ Its location can be overridden via `SOLR_SECURITY_AGENT_EXTRA_POLICY`.
 
 === Variable Substitution
 
-Any java property will be expanded in policy entries, here are the most common. Environment variables are expanded if they adhere to the mapping convention `SOLR_FOO --> solr.foo`:
+Any system property will be expanded in policy entries. Each property is also looked up as an environment variable by upper-casing and replacing `.` with `_` (e.g. `solr.solr.home` → `SOLR_SOLR_HOME`). The most common variables are:
 
 [cols="1,2",options="header"]
 |===
