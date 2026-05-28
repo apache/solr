@@ -54,6 +54,7 @@
 ** xref:terms-component.adoc[]
 ** xref:term-vector-component.adoc[]
 ** xref:stats-component.adoc[]
+** xref:matched-queries-component.adoc[]
 
 * Controlling Results
 ** xref:faceting.adoc[]

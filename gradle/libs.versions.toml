@@ -15,6 +15,9 @@
 [versions]
 adobe-testing-s3mock = "3.12.0"
 amazon-awssdk = "2.42.34"
+androidx-adaptive = "1.3.0-alpha07"
+androidx-lifecycle = "2.10.0"
+androidx-navigation3 = "1.1.0"
 # @keep Antora version used in ref-guide
 antora = "3.1.12"
 # @keep Most recent commit as of 2025-08-03, this repo does not have tags
@@ -90,16 +93,11 @@ fasterxml = "2.21.2"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
-google-api-gax = "2.70.0"
 # @keep for version alignment
 google-api-grpc-proto = "2.61.1"
-google-auth = "1.19.0"
 # @keep for version alignment
 google-autovalue = "1.11.0"
-google-cloud-bom = "0.224.0"
-google-cloud-core = "2.60.1"
-google-cloud-nio = "0.127.3"
-google-cloud-storage = "2.27.0"
+google-cloud-bom = "0.261.0"
 google-errorprone = "2.41.0"
 # @keep for version alignment
 google-gson = "2.13.1"
@@ -112,7 +110,7 @@ google-javaformat = "1.18.1"
 google-protobuf = "3.25.8"
 # @keep Gradle version to run the build
 gradle = "8.10"
-grpc = "1.65.1"
+grpc = "1.80.0"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
 hamcrest = "3.0"
@@ -237,6 +235,12 @@ amazon-awssdk-retries-spi = { module = "software.amazon.awssdk:retries-spi", ver
 amazon-awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "amazon-awssdk" }
 amazon-awssdk-sdkcore = { module = "software.amazon.awssdk:sdk-core", version.ref = "amazon-awssdk" }
 amazon-awssdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "amazon-awssdk" }
+androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewModelNav3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "androidx-adaptive" }
+androidx-material3-adaptive-nav3 = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation3", version.ref = "androidx-adaptive" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "androidx-navigation3" }
 apache-calcite-avatica-core = { module = "org.apache.calcite.avatica:avatica-core", version.ref = "apache-calcite-avatica" }
 apache-calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "apache-calcite" }
 apache-calcite-linq4j = { module = "org.apache.calcite:calcite-linq4j", version.ref = "apache-calcite" }
@@ -331,7 +335,6 @@ cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cu
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jetty12-ee10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
 eclipse-jdt-ecj = { module = "org.eclipse.jdt:ecj", version.ref = "eclipse-ecj" }
 eclipse-jetty-alpnjavaclient = { module = "org.eclipse.jetty:jetty-alpn-java-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-server", version.ref = "eclipse-jetty" }
@@ -369,18 +372,18 @@ flexmark-extensions-abbreviation = { module = "com.vladsch.flexmark:flexmark-ext
 flexmark-extensions-attributes = { module = "com.vladsch.flexmark:flexmark-ext-attributes", version.ref = "flexmark" }
 flexmark-extensions-autolink = { module = "com.vladsch.flexmark:flexmark-ext-autolink", version.ref = "flexmark" }
 flexmark-flexmark = { module = "com.vladsch.flexmark:flexmark", version.ref = "flexmark" }
-google-api-gax = { module = "com.google.api:gax", version.ref = "google-api-gax" }
+google-api-gax = { module = "com.google.api:gax" }
 # @keep transitive dependency for version alignment
 google-api-grpc-proto = { module = "com.google.api.grpc:proto-google-common-protos", version.ref = "google-api-grpc-proto" }
-google-auth-credentials = { module = "com.google.auth:google-auth-library-credentials", version.ref = "google-auth" }
-google-auth-oauth2http = { module = "com.google.auth:google-auth-library-oauth2-http", version.ref = "google-auth" }
+google-auth-credentials = { module = "com.google.auth:google-auth-library-credentials" }
+google-auth-oauth2http = { module = "com.google.auth:google-auth-library-oauth2-http" }
 # @keep transitive dependency for version alignment
 google-autovalue-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "google-autovalue" }
 google-cloud-bom = { module = "com.google.cloud:google-cloud-bom", version.ref = "google-cloud-bom" }
-google-cloud-core = { module = "com.google.cloud:google-cloud-core", version.ref = "google-cloud-core" }
-google-cloud-corehttp = { module = "com.google.cloud:google-cloud-core-http", version.ref = "google-cloud-core" }
-google-cloud-nio = { module = "com.google.cloud:google-cloud-nio", version.ref = "google-cloud-nio" }
-google-cloud-storage = { module = "com.google.cloud:google-cloud-storage", version.ref = "google-cloud-storage" }
+google-cloud-core = { module = "com.google.cloud:google-cloud-core" }
+google-cloud-corehttp = { module = "com.google.cloud:google-cloud-core-http" }
+google-cloud-nio = { module = "com.google.cloud:google-cloud-nio" }
+google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
 # @keep transitive dependency for version alignment
 google-errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "google-errorprone" }
 google-errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "google-errorprone" }

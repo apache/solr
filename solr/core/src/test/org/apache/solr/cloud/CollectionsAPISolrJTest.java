@@ -113,8 +113,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertEquals(0, (int) status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
-    // Sometimes multiple cores land on the same node so it's less than 4
-    int nodesCreated = response.getCollectionNodesStatus().size();
+
     // Use of _default configset should generate a warning for data-driven functionality in
     // production use
     assertTrue(
@@ -126,7 +125,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
-    assertEquals(nodesStatus.toString(), nodesCreated, nodesStatus.size());
+    assertEquals(nodesStatus.toString(), 4, nodesStatus.size());
 
     waitForState(
         "Expected " + collectionName + " to disappear from cluster state",
@@ -246,36 +245,43 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertTrue(status.get("QTime") > 0);
     }
 
-    // Sometimes multiple cores land on the same node so it's less than 4
-    //    int nodesCreated = response.getCollectionNodesStatus().size();
-    //    response =
-    //
-    // CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-    //
-    //    assertEquals(0, response.getStatus());
-    //    assertTrue(response.isSuccess());
-    //    Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
-    //    // Delete could have been sent before the collection was finished coming online
-    //    assertEquals(nodesStatus.toString(), nodesCreated, nodesStatus.size());
-    //
-    //    waitForState(
-    //        "Expected " + collectionName + " to disappear from cluster state",
-    //        collectionName,
-    //        Objects::isNull);
-    //
-    //    // Test Creating a new collection.
-    //    collectionName = "solrj_test2";
-    //
-    //    response =
-    //        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-    //            .process(cluster.getSolrClient());
-    //    assertEquals(0, response.getStatus());
-    //    assertTrue(response.isSuccess());
-    //
-    //    waitForState(
-    //        "Expected " + collectionName + " to appear in cluster state",
-    //        collectionName,
-    //        Objects::nonNull);
+    waitForState(
+        "Expected " + collectionName + " to disappear from cluster state",
+        collectionName,
+        ((liveNodes, collectionState) ->
+            collectionState.getSlices().stream()
+                .flatMap(
+                    s -> s.getReplicas(r -> !r.getState().equals(Replica.State.ACTIVE)).stream())
+                .findAny()
+                .isEmpty()));
+
+    response =
+        CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
+    // Delete could have been sent before the collection was finished coming online
+    assertEquals(nodesStatus.toString(), 4, nodesStatus.size());
+
+    waitForState(
+        "Expected " + collectionName + " to disappear from cluster state",
+        collectionName,
+        Objects::isNull);
+
+    // Test Creating a new collection.
+    collectionName = "solrj_test2";
+
+    response =
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+            .process(cluster.getSolrClient());
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+
+    waitForState(
+        "Expected " + collectionName + " to appear in cluster state",
+        collectionName,
+        Objects::nonNull);
   }
 
   @Test

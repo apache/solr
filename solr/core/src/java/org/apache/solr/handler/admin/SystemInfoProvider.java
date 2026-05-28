@@ -180,8 +180,8 @@ public class SystemInfoProvider {
   }
 
   /** Get system info */
-  public Map<String, String> getSystemInfo() {
-    Map<String, String> info = new HashMap<>();
+  public Map<String, Object> getSystemInfo() {
+    Map<String, Object> info = new HashMap<>();
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
     info.put(NAME, os.getName()); // add at least this one
@@ -193,7 +193,7 @@ public class SystemInfoProvider {
         MetricUtils.OS_MXBEAN_CLASSES,
         (name, value) -> {
           if (info.get(name) == null) {
-            info.put(name, String.valueOf(value));
+            info.put(name, value);
           }
         });
 
@@ -320,8 +320,7 @@ public class SystemInfoProvider {
     }
 
     if (cc != null && cc.getZkController() != null) {
-      String urlScheme =
-          cc.getZkController().zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
+      String urlScheme = cc.getZkController().zkStateReader.getUrlScheme();
       info.tls = ZkStateReader.HTTPS.equals(urlScheme);
     }
 
