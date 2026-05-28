@@ -20,5 +20,17 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TaskStatusResponse extends SolrJerseyResponse {
-  @JsonProperty public String taskStatus;
+
+  public enum TaskStatus {
+    ACTIVE("active"),
+    INACTIVE("inactive");
+
+    private final String value;
+
+    TaskStatus(String value) { this.value = value; }
+
+    public String getValue() { return this.value; }
+  }
+
+  @JsonProperty public TaskStatus taskStatus;
 }

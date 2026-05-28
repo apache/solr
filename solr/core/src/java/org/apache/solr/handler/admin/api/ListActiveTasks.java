@@ -28,11 +28,10 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
-import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 
-public class ListActiveTasks extends JerseyResource implements TasksApi {
+public class ListActiveTasks extends JerseyResource implements TasksApi.List {
 
   private final SolrQueryRequest solrQueryRequest;
 
@@ -45,25 +44,7 @@ public class ListActiveTasks extends JerseyResource implements TasksApi {
   @PermissionName(READ_PERM)
   public ListActiveTaskResponse listAllActiveTasks() throws Exception {
     final ListActiveTaskResponse response = instantiateJerseyResponse(ListActiveTaskResponse.class);
-
     response.taskList = extractActiveTaskLists();
-
-    return response;
-  }
-
-  @Override
-  @PermissionName(READ_PERM)
-  public TaskStatusResponse getTaskStatus(String taskID) throws Exception {
-    final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
-
-    boolean isTaskActive =
-        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskID);
-    if (isTaskActive) {
-      response.taskStatus = "id: " + taskID + ", status: active";
-    } else {
-      response.taskStatus = "id: " + taskID + ", status: inactive";
-    }
-
     return response;
   }
 

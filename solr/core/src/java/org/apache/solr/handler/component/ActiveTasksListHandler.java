@@ -23,9 +23,10 @@ import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
+import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.admin.api.GetTaskStatus;
 import org.apache.solr.handler.admin.api.ListActiveTasks;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -33,9 +34,9 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
 /**
- * Handles request for listing all active cancellable tasks All active tasks logic lives in the v2
- * {@link ListActiveTasks}; this handler is a thin v1 bridge that extracts request parameters and
- * delegates.
+ * Handles request for listing the active cancellable tasks & Status check of any particular task,
+ * actual logic lives in the v2: {@link ListActiveTasks} & {@link GetTaskStatus};
+ * this handler is a thin v1 bridge that extracts request parameters and delegates over to v2.
  */
 public class ActiveTasksListHandler extends TaskManagementHandler {
   // This can be a parent level member but we keep it here to allow future handlers to have
@@ -43,11 +44,13 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
+    String taskStatusCheckID = req.getParams().get(TASK_CHECK_UUID, null);
 
-    if (taskStatusCheckUUID != null) {
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-          rsp, new ListActiveTasks(req).getTaskStatus(taskStatusCheckUUID));
+    if (taskStatusCheckID != null) {
+      TaskStatusResponse taskStatusResponse = new GetTaskStatus(req).getTaskStatus(taskStatusCheckID);
+      String taskStatus = "id: " + taskStatusCheckID + ", status: " + taskStatusResponse.taskStatus.getValue();
+      rsp.add("taskStatus", taskStatus);
+
     } else {
       NamedList<String> tasks = new NamedList<>();
       List<ActiveTaskDetails> taskList = new ListActiveTasks(req).listAllActiveTasks().taskList;
