@@ -186,16 +186,26 @@ public class SocketChannelInterceptor {
   public static boolean matchesEndpoint(String hostPortEntry, String host, int port) {
     if ("*".equals(hostPortEntry)) return true;
 
-    int colonIdx = hostPortEntry.lastIndexOf(':');
-    if (colonIdx < 0) {
-      return matchesHost(hostPortEntry, host);
+    String entryHost;
+    String entryPort;
+    if (hostPortEntry.startsWith("[")) {
+      // IPv6 bracket notation: "[::1]:8983" or "[::1]:1-65535"
+      int closeBracket = hostPortEntry.indexOf(']');
+      if (closeBracket < 0) return false;
+      entryHost = hostPortEntry.substring(1, closeBracket); // strip brackets
+      int colonAfterBracket = hostPortEntry.indexOf(':', closeBracket + 1);
+      entryPort = colonAfterBracket >= 0 ? hostPortEntry.substring(colonAfterBracket + 1) : null;
+    } else {
+      int colonIdx = hostPortEntry.lastIndexOf(':');
+      if (colonIdx < 0) {
+        return matchesHost(hostPortEntry, host);
+      }
+      entryHost = hostPortEntry.substring(0, colonIdx);
+      entryPort = hostPortEntry.substring(colonIdx + 1);
     }
 
-    String entryHost = hostPortEntry.substring(0, colonIdx);
-    String entryPort = hostPortEntry.substring(colonIdx + 1);
-
     if (!matchesHost(entryHost, host)) return false;
-    return matchesPort(entryPort, port);
+    return entryPort == null || matchesPort(entryPort, port);
   }
 
   public static boolean matchesHost(String entryHost, String actualHost) {

@@ -138,4 +138,22 @@ public class SocketChannelInterceptorTest extends SolrTestCase {
     AgentPolicy policy = policyWithEndpoint("*");
     assertTrue(SocketChannelInterceptor.isEndpointPermitted(policy, "anything.com", 443));
   }
+
+  @Test
+  public void testIPv6BracketNotationMatches() {
+    // Policy entries for IPv6 use bracket notation "[::1]:port"; the actual host from
+    // InetSocketAddress.getHostString() is without brackets. Verify stripping works.
+    AgentPolicy policy = policyWithEndpoint("[::1]:8983");
+    assertTrue(SocketChannelInterceptor.isEndpointPermitted(policy, "::1", 8983));
+    assertFalse(SocketChannelInterceptor.isEndpointPermitted(policy, "::1", 8984));
+    assertFalse(SocketChannelInterceptor.isEndpointPermitted(policy, "::2", 8983));
+  }
+
+  @Test
+  public void testIPv6BracketWithPortRange() {
+    AgentPolicy policy = policyWithEndpoint("[::1]:1-65535");
+    assertTrue(SocketChannelInterceptor.isEndpointPermitted(policy, "::1", 8983));
+    assertTrue(SocketChannelInterceptor.isEndpointPermitted(policy, "::1", 1));
+    assertFalse(SocketChannelInterceptor.isEndpointPermitted(policy, "::2", 8983));
+  }
 }
