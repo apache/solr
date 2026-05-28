@@ -86,7 +86,7 @@ public final class SolrAgentEntryPoint {
     try {
       PolicyLoader loader = new PolicyLoader();
       policy = loader.load(defaultPolicyPath);
-    } catch (IllegalStateException e) {
+    } catch (Exception e) {
       String modeStr = PolicyPropertyExpander.getPropertyOrEnv("solr.security.agent.mode");
       if (modeStr == null) modeStr = "warn";
       if ("enforce".equalsIgnoreCase(modeStr.trim())) {
