@@ -17,9 +17,9 @@
 package org.apache.solr.security.agent;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Maintains per-type violation counters and registers them with Solr's metrics registry once it
@@ -34,16 +34,18 @@ import java.util.function.Supplier;
  * {@code solr:agent-sm} from {@code solr:core}). At that point the accumulated counts are already
  * in the counters and the registration just wires them to the metrics registry.
  *
- * <h2>Metric names</h2>
+ * <h2>Metric name and label</h2>
  *
- * <ul>
- *   <li>{@code solr.security.agent.violations.file}
- *   <li>{@code solr.security.agent.violations.network}
- *   <li>{@code solr.security.agent.violations.exit}
- *   <li>{@code solr.security.agent.violations.exec}
- * </ul>
+ * A single OTel observable counter {@value #METRIC_NAME} is registered with the label key {@value
+ * #LABEL_TYPE}. The label takes one of four values: {@code file}, {@code network}, {@code exit}, or
+ * {@code exec}. In Prometheus format the counter appears as:
  *
- * <p>In Prometheus format these appear as {@code solr_security_agent_violations_file_total}, etc.
+ * <pre>
+ *   solr_security_agent_violations_total{type="file"}    N
+ *   solr_security_agent_violations_total{type="network"} N
+ *   solr_security_agent_violations_total{type="exit"}    N
+ *   solr_security_agent_violations_total{type="exec"}    N
+ * </pre>
  */
 public final class ViolationMetricsReporter {
 
@@ -53,11 +55,11 @@ public final class ViolationMetricsReporter {
   private static final LongAdder EXIT_COUNTER = new LongAdder();
   private static final LongAdder EXEC_COUNTER = new LongAdder();
 
-  // Metric names exposed in the Solr metrics registry.
-  public static final String METRIC_FILE = "solr.security.agent.violations.file";
-  public static final String METRIC_NETWORK = "solr.security.agent.violations.network";
-  public static final String METRIC_EXIT = "solr.security.agent.violations.exit";
-  public static final String METRIC_EXEC = "solr.security.agent.violations.exec";
+  /** OTel metric name for the single labeled violation counter. */
+  public static final String METRIC_NAME = "solr.security.agent.violations";
+
+  /** OTel label key used to distinguish violation types. */
+  public static final String LABEL_TYPE = "type";
 
   private ViolationMetricsReporter() {}
 
@@ -114,8 +116,7 @@ public final class ViolationMetricsReporter {
   // ---------------------------------------------------------------------------
 
   /**
-   * Registers the four violation counters with the given {@code SolrMetricManager} in the specified
-   * registry.
+   * Registers a single labeled violation counter with the given {@code SolrMetricManager}.
    *
    * <p>This method is called reflectively from {@code CoreContainer} to avoid a compile-time
    * dependency between {@code solr:core} and {@code solr:agent-sm}. The signature must match what
@@ -131,19 +132,19 @@ public final class ViolationMetricsReporter {
    * is declared as {@link Object}; the reflective call site in {@code CoreContainer} passes the
    * real {@code SolrMetricManager} instance.
    *
-   * <p>Metrics are registered as OTel observable counters via {@code
-   * SolrMetricManager.observableLongCounter()}. In Prometheus format they appear as {@code
-   * solr_security_agent_violations_file_total} etc.
+   * <p>One OTel observable counter named {@value #METRIC_NAME} is registered. The callback records
+   * four labeled values (one per violation type) using {@code
+   * ObservableLongMeasurement.record(long, Attributes)}. {@code io.opentelemetry.api.common
+   * .Attributes} instances are created reflectively via the app classloader because this class
+   * lives in the bootstrap classloader and has no OTel dependency.
    *
-   * @param metricManager the {@code SolrMetricManager} instance (type-erased to {@link Object} to
-   *     avoid a compile-time dependency on solr:core)
+   * @param metricManager the {@code SolrMetricManager} instance (type-erased to {@link Object})
    * @param registryName the target metrics registry name (e.g. {@code "solr.node"})
    */
   public static void registerWithSolrMetrics(Object metricManager, String registryName) {
     Class<?> mmClass = metricManager.getClass();
     // SolrMetricManager.observableLongCounter(String registry, String name, String description,
     //     Consumer<ObservableLongMeasurement> callback, OtelUnit unit)
-    // SolrMetricManager.observableLongCounter(String, String, String, Consumer, OtelUnit)
     Method counterMethod =
         findMethod(
             mmClass, "observableLongCounter", "String", "String", "String", "Consumer", "OtelUnit");
@@ -158,36 +159,63 @@ public final class ViolationMetricsReporter {
               + " This likely indicates a SolrMetricManager API change.");
     }
     try {
-      registerCounter(
-          counterMethod,
+      // Build Attributes objects reflectively — this class is in the bootstrap classloader with no
+      // OTel on its classpath. Use the app classloader (reachable via metricManager) to access
+      // io.opentelemetry.api.common.{AttributeKey, Attributes} at registration time.
+      ClassLoader cl = metricManager.getClass().getClassLoader();
+      Class<?> attrKeyClass = Class.forName("io.opentelemetry.api.common.AttributeKey", false, cl);
+      Class<?> attrsClass = Class.forName("io.opentelemetry.api.common.Attributes", false, cl);
+      // AttributeKey.stringKey("type") — produces AttributeKey<String>
+      Object typeKey = attrKeyClass.getMethod("stringKey", String.class).invoke(null, LABEL_TYPE);
+      // Attributes.of(AttributeKey<T>, T) — after type erasure: (AttributeKey, Object)
+      Method attrOf = attrsClass.getMethod("of", attrKeyClass, Object.class);
+      final Object fileAttrs = attrOf.invoke(null, typeKey, "file");
+      final Object networkAttrs = attrOf.invoke(null, typeKey, "network");
+      final Object exitAttrs = attrOf.invoke(null, typeKey, "exit");
+      final Object execAttrs = attrOf.invoke(null, typeKey, "exec");
+
+      // Cache the two-arg record(long, Attributes) method, found lazily on first callback
+      // invocation.  AtomicReference is used because lambda captures must be effectively final.
+      final AtomicReference<Method> recordRef = new AtomicReference<>();
+
+      Consumer<Object> callback =
+          measurement -> {
+            try {
+              Method record = recordRef.get();
+              if (record == null) {
+                // Locate record(long, <Attributes>) on the concrete ObservableLongMeasurement impl.
+                // The second parameter type is Attributes, erased to Object at the call site —
+                // scan by arity and first-param type to avoid a hard dependency on
+                // Attributes.class.
+                for (Method m : measurement.getClass().getMethods()) {
+                  if ("record".equals(m.getName())
+                      && m.getParameterCount() == 2
+                      && m.getParameterTypes()[0] == long.class) {
+                    recordRef.compareAndSet(null, m);
+                    break;
+                  }
+                }
+                record = recordRef.get();
+              }
+              if (record != null) {
+                record.invoke(measurement, FILE_COUNTER.sum(), fileAttrs);
+                record.invoke(measurement, NETWORK_COUNTER.sum(), networkAttrs);
+                record.invoke(measurement, EXIT_COUNTER.sum(), exitAttrs);
+                record.invoke(measurement, EXEC_COUNTER.sum(), execAttrs);
+              }
+            } catch (ReflectiveOperationException ignored) {
+              // Silently skip if record(long, Attributes) is unavailable
+            }
+          };
+
+      counterMethod.invoke(
           metricManager,
           registryName,
-          METRIC_FILE,
-          "Security agent file-access violation count",
-          FILE_COUNTER::sum);
-      registerCounter(
-          counterMethod,
-          metricManager,
-          registryName,
-          METRIC_NETWORK,
-          "Security agent network-connection violation count",
-          NETWORK_COUNTER::sum);
-      registerCounter(
-          counterMethod,
-          metricManager,
-          registryName,
-          METRIC_EXIT,
-          "Security agent JVM-exit violation count",
-          EXIT_COUNTER::sum);
-      registerCounter(
-          counterMethod,
-          metricManager,
-          registryName,
-          METRIC_EXEC,
-          "Security agent process-exec violation count",
-          EXEC_COUNTER::sum);
+          METRIC_NAME,
+          "Security agent violation count by type (file, network, exit, exec).",
+          callback,
+          null);
     } catch (Exception e) {
-      // Log to stderr — SLF4J may not be reachable from bootstrap context during premain.
       agentErr("[Solr SecurityAgent] Failed to register violation metrics: " + e);
     }
   }
@@ -211,29 +239,6 @@ public final class ViolationMetricsReporter {
       if (match) return m;
     }
     return null;
-  }
-
-  private static void registerCounter(
-      Method counterMethod,
-      Object mm,
-      String registry,
-      String name,
-      String description,
-      Supplier<Long> valueSupplier)
-      throws Exception {
-    // Consumer<ObservableLongMeasurement> — type-erased to Consumer at runtime.
-    // Called by the OTel SDK at each metric collection cycle.
-    Consumer<Object> callback =
-        measurement -> {
-          try {
-            Method record = measurement.getClass().getMethod("record", long.class);
-            record.invoke(measurement, valueSupplier.get());
-          } catch (ReflectiveOperationException ignored) {
-            // Silently skip if ObservableLongMeasurement.record() is unavailable
-          }
-        };
-    // observableLongCounter(registry, name, description, callback, unit=null)
-    counterMethod.invoke(mm, registry, name, description, callback, null);
   }
 
   @SuppressForbidden(

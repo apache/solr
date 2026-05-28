@@ -126,12 +126,19 @@ Fields:
 * `mode` — `warn` or `enforce`
 * `source` — `DEFAULT` (bundled policy) or `OPERATOR` (extra policy)
 
-Violation counts are also available in `/admin/metrics` under:
+Violation counts are also available in `/admin/metrics` as a single labeled counter:
 
-* `solr.security.agent.violations.file`
-* `solr.security.agent.violations.network`
-* `solr.security.agent.violations.exit`
-* `solr.security.agent.violations.exec`
+* Metric name: `solr.security.agent.violations`
+* Label `type`: `file`, `network`, `exit`, or `exec`
+
+In Prometheus format:
+[source,text]
+----
+solr_security_agent_violations_total{type="file"}    3.0
+solr_security_agent_violations_total{type="network"} 0.0
+solr_security_agent_violations_total{type="exit"}    0.0
+solr_security_agent_violations_total{type="exec"}    0.0
+----
 
 == Disabling the Agent
 
