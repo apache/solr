@@ -40,9 +40,8 @@ public final class AgentViolationBridge {
    */
   public static void wire() {
     try {
-      // SecurityViolationLogger is in the bootstrap classloader via Boot-Class-Path.
-      // Use null (bootstrap) explicitly so the lookup succeeds even in containerised environments
-      // where the calling classloader may not delegate to bootstrap for unknown packages.
+      // null = bootstrap classloader (Boot-Class-Path); avoids delegation gaps in containerised
+      // envs.
       Class<?> cls =
           Class.forName("org.apache.solr.security.agent.SecurityViolationLogger", false, null);
       Method setter = cls.getMethod("setReporter", Consumer.class);
@@ -50,7 +49,7 @@ public final class AgentViolationBridge {
       setter.invoke(null, bridge);
       log.info("Security agent violation reporter wired to SLF4J");
     } catch (ClassNotFoundException e) {
-      // Agent JAR not loaded — security agent is inactive, nothing to wire
+      // Agent JAR not loaded — nothing to wire.
     } catch (Exception e) {
       log.warn("Could not wire security agent violation reporter to SLF4J", e);
     }

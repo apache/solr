@@ -27,17 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Registers the security-agent violation counter with {@link SolrMetricManager} using a proper OTel
- * label, keeping all {@code io.opentelemetry} types inside {@code solr:core} where they belong.
+ * Registers the security-agent violation counter with {@link SolrMetricManager}.
  *
- * <p>The agent JAR ({@code solr:agent-sm}) lives in the bootstrap classloader and has no OTel
- * compile dependency. This class bridges the gap: it reads the raw {@code long} counts from {@code
- * ViolationMetricsReporter} reflectively (trivial — only {@code long} primitives cross the
- * boundary), and builds the full {@link Consumer}{@code <}{@link ObservableLongMeasurement}{@code
- * >} callback using OTel types natively.
- *
- * <p>A single OTel observable counter named {@code solr.security.agent.violations} is registered,
- * with label {@code type=file|network|exit|exec}. In Prometheus format:
+ * <p>The agent JAR ({@code solr:agent-sm}) has no OTel compile dependency; this class reads the raw
+ * {@code long} counts from {@code ViolationMetricsReporter} via reflection and builds the OTel
+ * callback natively. A single observable counter named {@code solr.security.agent.violations} is
+ * registered with label {@code type=file|network|exit|exec}. In Prometheus format:
  *
  * <pre>
  *   solr_security_agent_violations_total{type="file"}    N
@@ -71,7 +66,6 @@ public final class AgentViolationMetrics {
       Method exitCount = reporter.getMethod("exitCount");
       Method execCount = reporter.getMethod("execCount");
 
-      // Pre-build Attributes once — these are stable for the lifetime of the process.
       Attributes fileAttrs = Attributes.of(TYPE_KEY, "file");
       Attributes networkAttrs = Attributes.of(TYPE_KEY, "network");
       Attributes exitAttrs = Attributes.of(TYPE_KEY, "exit");
@@ -98,7 +92,7 @@ public final class AgentViolationMetrics {
 
       log.debug("Security agent violation metrics registered under registry '{}'", registryName);
     } catch (ClassNotFoundException ignored) {
-      // Agent JAR not loaded (e.g. SOLR_SECURITY_AGENT_SKIP=true) — nothing to register.
+      // Agent JAR not loaded — nothing to register.
     } catch (Exception e) {
       log.warn("Failed to register security agent violation metrics", e);
     }

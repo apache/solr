@@ -54,9 +54,8 @@ class PolicyFileParser {
   }
 
   /**
-   * @param strictTopLevel if {@code true}, any token that is not the start of a {@code grant} block
-   *     causes a {@link ParsingException}; if {@code false}, such tokens are silently skipped
-   *     (lenient mode, kept for internal use only)
+   * @param strictTopLevel if {@code true}, non-{@code grant} top-level tokens throw {@link
+   *     ParsingException}; if {@code false}, they are silently skipped
    */
   static List<GrantEntry> read(Reader policy, boolean strictTopLevel)
       throws ParsingException, IOException {
@@ -69,7 +68,6 @@ class PolicyFileParser {
         PolicyToken tok = ts.peek();
         throw new ParsingException(tok.line(), "grant", tok.text());
       } else {
-        // skip unexpected top-level token (lenient mode)
         ts.consume();
       }
     }
@@ -131,12 +129,11 @@ class PolicyFileParser {
   }
 
   private static String expand(PolicyTokenStream ts, String raw) throws ParsingException {
-    // Capture the line number before attempting expansion so we preserve it if expansion fails.
     int lineNum = -1;
     try {
       lineNum = ts.line();
     } catch (IOException ignored) {
-      // best-effort — -1 signals "line unknown"
+      // -1 = line unknown
     }
     try {
       return PolicyPropertyExpander.expand(raw);

@@ -64,9 +64,7 @@ public final class PermittedPath {
   public boolean permits(String resolvedPath, String action) {
     boolean pathMatch;
     if (recursive) {
-      // Use Path.startsWith(Path) rather than a string prefix check so that component boundaries
-      // are respected and path-separator style differences (e.g. forward vs back slash on Windows)
-      // are handled by the platform Path implementation.
+      // Path.startsWith(Path) respects component boundaries and cross-platform separator style.
       pathMatch = Path.of(resolvedPath).startsWith(Path.of(path));
     } else {
       pathMatch = resolvedPath.equals(path);

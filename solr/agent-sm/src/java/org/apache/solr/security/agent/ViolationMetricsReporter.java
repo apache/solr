@@ -19,15 +19,10 @@ package org.apache.solr.security.agent;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Maintains per-type violation counters incremented by the agent interceptors.
+ * Per-type violation counters incremented by the agent interceptors.
  *
- * <p>The agent starts (via {@code premain()}) before Solr is fully initialized, so counters must be
- * available immediately. They are implemented as {@link LongAdder}s which are safe for concurrent
- * increment from multiple interceptor threads.
- *
- * <p>Once {@code CoreContainer} and {@code SolrMetricManager} are ready, {@code
- * AgentViolationMetrics} (in {@code solr:core}) reads these counters reflectively and registers
- * them as a single labeled OTel observable counter.
+ * <p>{@code AgentViolationMetrics} (in {@code solr:core}) reads these counters reflectively and
+ * registers them as a single labeled OTel observable counter.
  */
 public final class ViolationMetricsReporter {
 
@@ -38,10 +33,6 @@ public final class ViolationMetricsReporter {
   private static final LongAdder EXEC_COUNTER = new LongAdder();
 
   private ViolationMetricsReporter() {}
-
-  // ---------------------------------------------------------------------------
-  // Counter increment API (called by interceptors)
-  // ---------------------------------------------------------------------------
 
   /** Increments the file-access violation counter. */
   public static void incrementFile() {
@@ -62,11 +53,6 @@ public final class ViolationMetricsReporter {
   public static void incrementExec() {
     EXEC_COUNTER.increment();
   }
-
-  // ---------------------------------------------------------------------------
-  // Counter read API (called reflectively by AgentViolationMetrics in solr:core,
-  // and used directly by tests)
-  // ---------------------------------------------------------------------------
 
   /** Returns the current file-access violation count. */
   public static long fileCount() {
