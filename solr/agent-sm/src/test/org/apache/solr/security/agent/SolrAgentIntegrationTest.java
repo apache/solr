@@ -90,6 +90,59 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     assertEquals(before + 1, ViolationMetricsReporter.fileCount());
   }
 
+  @Test
+  public void testMoveSourceRequiresDeleteNotWrite() {
+    Path tmpDir = createTempDir();
+    // Grant write on destination but NOT delete on source
+    PermittedPath dstAllowed =
+        new PermittedPath(tmpDir.toString(), "write", true, PolicySource.DEFAULT);
+    buildEnforcePolicy(List.of(dstAllowed), List.of(), List.of(), List.of());
+
+    Path src = tmpDir.resolve("src.txt");
+    Path dst = tmpDir.resolve("dst.txt");
+    // Source lacks delete permission — should throw with a message about "delete source"
+    try {
+      FileInterceptor.checkMove(src, dst);
+      fail("Expected SecurityException");
+    } catch (SecurityException e) {
+      assertTrue(e.getMessage(), e.getMessage().contains("delete source"));
+    }
+  }
+
+  @Test
+  public void testMoveDestinationRequiresWrite() {
+    Path tmpDir = createTempDir();
+    Path otherDir = createTempDir();
+    // Grant delete on source dir, but NOT write on destination dir
+    PermittedPath srcAllowed =
+        new PermittedPath(tmpDir.toString(), "delete", true, PolicySource.DEFAULT);
+    buildEnforcePolicy(List.of(srcAllowed), List.of(), List.of(), List.of());
+
+    Path src = tmpDir.resolve("src.txt");
+    Path dst = otherDir.resolve("dst.txt");
+    try {
+      FileInterceptor.checkMove(src, dst);
+      fail("Expected SecurityException");
+    } catch (SecurityException e) {
+      assertTrue(e.getMessage(), e.getMessage().contains("write destination"));
+    }
+  }
+
+  @Test
+  public void testMoveCountsEachViolationOnce() {
+    long before = ViolationMetricsReporter.fileCount();
+    buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
+    Path src = Path.of("/forbidden/src.txt");
+    Path dst = Path.of("/forbidden/dst.txt");
+    // Source (delete) violation fires first and throws in enforce mode
+    try {
+      FileInterceptor.checkMove(src, dst);
+    } catch (SecurityException ignored) {
+      // expected
+    }
+    assertEquals(before + 1, ViolationMetricsReporter.fileCount());
+  }
+
   // ---------------------------------------------------------------------------
   // Network tests
   // ---------------------------------------------------------------------------

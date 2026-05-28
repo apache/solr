@@ -72,8 +72,9 @@ public class FileInterceptor {
     final String caller = walker.getCallerClass().getName();
 
     final String name = method.getName();
-    boolean isMutating = name.equals("move") || name.equals("write") || name.startsWith("create");
-    final boolean isDelete = isMutating == false ? name.startsWith("delete") : false;
+    // "move" and "copy" are handled separately below (both endpoints must be checked).
+    boolean isMutating = name.equals("write") || name.startsWith("create");
+    final boolean isDelete = !isMutating && name.startsWith("delete");
 
     // This is Windows implementation of UNIX Domain Sockets (close)
     boolean isUnixSocketCaller = false;
@@ -123,7 +124,7 @@ public class FileInterceptor {
                   "Unsupported argument type: " + args[1].getClass().getName());
             }
           }
-        } else if (name.equals("copy") == true) {
+        } else if (name.equals("copy") == true || name.equals("move") == true) {
           if (args.length > 1 && args[1] instanceof String pathStr) {
             targetFilePath = Path.of(pathStr).toAbsolutePath().normalize().toString();
           } else if (args.length > 1 && args[1] instanceof Path path) {
@@ -133,77 +134,85 @@ public class FileInterceptor {
       }
 
       // Handle FileChannel.open() and newByteChannel() — check read/write permissions
-      if (method.getName().equals("open") || method.getName().equals("newByteChannel")) {
+      if (name.equals("open") || name.equals("newByteChannel")) {
         final String action = isMutating ? "write" : "read";
-        if (!policy.isPathPermitted(filePath, action)) {
-          ViolationMetricsReporter.incrementFile();
-          SecurityViolationLogger.log(
-              isMutating
-                  ? SecurityViolationLogger.ViolationType.FILE_WRITE
-                  : SecurityViolationLogger.ViolationType.FILE_READ,
-              filePath,
-              caller,
-              policy.enforcementMode());
-          if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-            throw new SecurityException(
-                "Denied "
-                    + (isMutating ? "OPEN (read/write)" : "OPEN (read)")
-                    + " access to file: "
-                    + filePath);
-          }
-        }
-      }
-
-      // Handle Files.copy() — check source read and target write permissions
-      if (method.getName().equals("copy")) {
-        if (!policy.isPathPermitted(filePath, "read")) {
-          ViolationMetricsReporter.incrementFile();
-          SecurityViolationLogger.log(
-              SecurityViolationLogger.ViolationType.FILE_READ,
-              filePath,
-              caller,
-              policy.enforcementMode());
-          if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-            throw new SecurityException("Denied COPY (read) access to file: " + filePath);
-          }
-        }
-        if (targetFilePath != null && !policy.isPathPermitted(targetFilePath, "write")) {
-          ViolationMetricsReporter.incrementFile();
-          SecurityViolationLogger.log(
-              SecurityViolationLogger.ViolationType.FILE_WRITE,
-              targetFilePath,
-              caller,
-              policy.enforcementMode());
-          if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-            throw new SecurityException("Denied COPY (write) access to file: " + targetFilePath);
-          }
-        }
-      }
-
-      // File mutating operations
-      if (isMutating && !policy.isPathPermitted(filePath, "write")) {
-        ViolationMetricsReporter.incrementFile();
-        SecurityViolationLogger.log(
-            SecurityViolationLogger.ViolationType.FILE_WRITE,
+        enforceFileAccess(
+            policy,
             filePath,
+            action,
+            isMutating
+                ? SecurityViolationLogger.ViolationType.FILE_WRITE
+                : SecurityViolationLogger.ViolationType.FILE_READ,
             caller,
-            policy.enforcementMode());
-        if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-          throw new SecurityException("Denied WRITE access to file: " + filePath);
+            "Denied "
+                + (isMutating ? "OPEN (read/write)" : "OPEN (read)")
+                + " access to file: "
+                + filePath);
+        return; // fully handled; do not fall through
+      }
+
+      // Handle Files.copy() — source requires read, destination requires write
+      if (name.equals("copy")) {
+        enforceFileAccess(
+            policy,
+            filePath,
+            "read",
+            SecurityViolationLogger.ViolationType.FILE_READ,
+            caller,
+            "Denied COPY (read) access to file: " + filePath);
+        if (targetFilePath != null) {
+          enforceFileAccess(
+              policy,
+              targetFilePath,
+              "write",
+              SecurityViolationLogger.ViolationType.FILE_WRITE,
+              caller,
+              "Denied COPY (write) access to file: " + targetFilePath);
         }
+        return; // fully handled; do not fall through
+      }
+
+      // Handle Files.move() — source requires delete, destination requires write
+      if (name.equals("move")) {
+        enforceFileAccess(
+            policy,
+            filePath,
+            "delete",
+            SecurityViolationLogger.ViolationType.FILE_DELETE,
+            caller,
+            "Denied MOVE (delete source) access to file: " + filePath);
+        if (targetFilePath != null) {
+          enforceFileAccess(
+              policy,
+              targetFilePath,
+              "write",
+              SecurityViolationLogger.ViolationType.FILE_WRITE,
+              caller,
+              "Denied MOVE (write destination) access to file: " + targetFilePath);
+        }
+        return; // fully handled; do not fall through
+      }
+
+      // Remaining mutating operations (write, createFile, createDirectories, createLink)
+      if (isMutating) {
+        enforceFileAccess(
+            policy,
+            filePath,
+            "write",
+            SecurityViolationLogger.ViolationType.FILE_WRITE,
+            caller,
+            "Denied WRITE access to file: " + filePath);
       }
 
       // File deletion operations
-      if (isDelete && !policy.isPathPermitted(filePath, "delete")) {
-        ViolationMetricsReporter.incrementFile();
-        SecurityViolationLogger.log(
-            SecurityViolationLogger.ViolationType.FILE_DELETE,
+      if (isDelete) {
+        enforceFileAccess(
+            policy,
             filePath,
+            "delete",
+            SecurityViolationLogger.ViolationType.FILE_DELETE,
             caller,
-            policy.enforcementMode());
-        if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-          throw new SecurityException("Denied DELETE access to file: " + filePath);
-        }
+            "Denied DELETE access to file: " + filePath);
       }
     }
   }
@@ -243,8 +252,6 @@ public class FileInterceptor {
    * Checks whether {@code path} may be accessed with {@code action} under the active policy.
    * Increments the file violation counter and logs on violation; throws {@link SecurityException}
    * in enforce mode.
-   *
-   * <p>Used by tests to exercise the file-access check without ByteBuddy instrumentation.
    */
   public static void checkPath(
       Path path, String action, SecurityViolationLogger.ViolationType violationType) {
@@ -252,12 +259,58 @@ public class FileInterceptor {
     AgentPolicy policy = AgentPolicy.getInstance();
     String resolvedPath = resolveRealPath(path);
     String caller = topCallerClassName();
+    enforceFileAccess(
+        policy,
+        resolvedPath,
+        action,
+        violationType,
+        caller,
+        "Denied " + action.toUpperCase(Locale.ROOT) + " access to: " + resolvedPath);
+  }
+
+  /**
+   * Checks whether a move from {@code source} to {@code target} is permitted under the active
+   * policy. Source requires "delete" permission; target requires "write" permission.
+   */
+  public static void checkMove(Path source, Path target) {
+    if (!AgentPolicy.isInitialized()) return;
+    AgentPolicy policy = AgentPolicy.getInstance();
+    String srcPath = resolveRealPath(source);
+    String dstPath = resolveRealPath(target);
+    String caller = topCallerClassName();
+    enforceFileAccess(
+        policy,
+        srcPath,
+        "delete",
+        SecurityViolationLogger.ViolationType.FILE_DELETE,
+        caller,
+        "Denied MOVE (delete source) access to: " + srcPath);
+    enforceFileAccess(
+        policy,
+        dstPath,
+        "write",
+        SecurityViolationLogger.ViolationType.FILE_WRITE,
+        caller,
+        "Denied MOVE (write destination) access to: " + dstPath);
+  }
+
+  /**
+   * Shared enforcement: checks whether the policy permits {@code action} on {@code resolvedPath}.
+   * Increments the file violation counter and logs; throws {@link SecurityException} in enforce
+   * mode. Used by both the {@link #intercept} advice and the test-side check helpers.
+   */
+  static void enforceFileAccess(
+      AgentPolicy policy,
+      String resolvedPath,
+      String action,
+      SecurityViolationLogger.ViolationType violationType,
+      String caller,
+      String securityMessage) {
     if (!policy.isPathPermitted(resolvedPath, action)) {
       ViolationMetricsReporter.incrementFile();
       SecurityViolationLogger.log(violationType, resolvedPath, caller, policy.enforcementMode());
       if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-        throw new SecurityException(
-            "Denied " + action.toUpperCase(Locale.ROOT) + " access to: " + resolvedPath);
+        throw new SecurityException(securityMessage);
       }
     }
   }

@@ -73,7 +73,20 @@ public class SocketChannelInterceptor {
       }
     } else if (args[0] instanceof UnixDomainSocketAddress) {
       // Unix domain socket — local IPC, always allow
-      return;
+    } else if (args[0] != null) {
+      // Unknown SocketAddress subclass — fail closed
+      final String target = args[0].toString();
+      ViolationMetricsReporter.incrementNetwork();
+      SecurityViolationLogger.log(
+          SecurityViolationLogger.ViolationType.NETWORK_CONNECT,
+          target,
+          caller,
+          policy.enforcementMode());
+      if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
+        throw new SecurityException(
+            "Outbound network connection denied by Solr security agent (unknown address type): "
+                + target);
+      }
     }
   }
 

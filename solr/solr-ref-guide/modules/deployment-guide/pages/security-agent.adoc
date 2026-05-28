@@ -168,6 +168,20 @@ The following Solr modules have wildcard outbound network access pre-permitted i
 Other modules (such as `extraction`) require explicit policy entries when connecting to external services.
 See the module's documentation for details.
 
+== Known Limitations
+
+The agent intercepts the standard NIO file APIs (`FileSystemProvider`, `java.nio.file.Files`, `FileChannel`).
+The following Java APIs are *not* instrumented and will bypass policy enforcement:
+
+* `java.io.FileInputStream`, `java.io.FileOutputStream`, `java.io.RandomAccessFile` — legacy stream I/O uses native `open0()` and does not go through `FileSystemProvider`.
+* `java.nio.channels.AsynchronousFileChannel` — async file I/O is not instrumented.
+* `java.net.ServerSocket` — inbound TCP socket creation is not checked; only outbound `connect()` calls are intercepted.
+* `java.nio.channels.DatagramChannel` — UDP send/receive is not checked.
+* `java.nio.channels.AsynchronousSocketChannel` — async socket operations are not checked.
+
+These gaps reflect the current scope of the agent, which targets the primary I/O paths used by Solr and the JVM internals.
+Operators requiring tighter isolation should supplement the agent with OS-level controls (e.g., Linux seccomp, SELinux, or container security profiles).
+
 == See Also
 
 * xref:configuration-guide:solr-properties.adoc[] — `solr.security.agent.*` property reference
