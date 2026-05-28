@@ -146,6 +146,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AgentViolationBridge;
+import org.apache.solr.security.AgentViolationMetrics;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
@@ -953,21 +954,7 @@ public class CoreContainer {
         solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
 
     // Register security agent violation metrics if the agent is loaded.
-    // Uses reflection to avoid a compile-time dependency on solr:agent-sm (see research.md Decision
-    // 8).
-    try {
-      // Use null (bootstrap classloader) to match where the agent JAR is loaded via
-      // Boot-Class-Path, consistent with AgentViolationBridge.wire().
-      Class<?> reporter =
-          Class.forName("org.apache.solr.security.agent.ViolationMetricsReporter", false, null);
-      reporter
-          .getMethod("registerWithSolrMetrics", Object.class, String.class)
-          .invoke(null, metricManager, NODE_REGISTRY);
-    } catch (ClassNotFoundException ignored) {
-      // Agent not loaded (e.g. SOLR_SECURITY_AGENT_SKIP=true); metrics registration skipped.
-    } catch (ReflectiveOperationException e) {
-      log.warn("Failed to register security agent metrics", e);
-    }
+    AgentViolationMetrics.register(metricManager, NODE_REGISTRY);
 
     // Wire security agent violations to SLF4J; no-op if agent JAR is absent.
     AgentViolationBridge.wire();
