@@ -172,10 +172,13 @@ public class SocketChannelInterceptor {
         while (locPath.endsWith("/") || locPath.endsWith("\\"))
           locPath = locPath.substring(0, locPath.length() - 1);
 
+        // Normalise path separators for cross-platform comparison (Windows may use backslashes)
+        String normBase = base.replace('\\', '/');
+        String normLocPath = locPath.replace('\\', '/');
         if (recursive) {
-          if (locPath.equals(base) || locPath.startsWith(base + "/")) return true;
+          if (normLocPath.equals(normBase) || normLocPath.startsWith(normBase + "/")) return true;
         } else {
-          if (locPath.equals(base)) return true;
+          if (normLocPath.equals(normBase)) return true;
         }
       } catch (Exception ignored) {
         // SecurityException or other runtime exception — skip this frame
