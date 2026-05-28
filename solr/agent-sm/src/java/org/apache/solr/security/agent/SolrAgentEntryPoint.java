@@ -184,24 +184,22 @@ public final class SolrAgentEntryPoint {
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(SystemExitInterceptor.class).on(ElementMatchers.named("exit"))))
-        // Intercept Runtime.halt(int) → RuntimeHaltInterceptor
+        // Intercept Runtime.halt(int) and Runtime.exec(...) in a single chain to avoid
+        // applying two separate redefinitions to the same class.
         .type(ElementMatchers.is(Runtime.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
-                builder.visit(
-                    Advice.to(RuntimeHaltInterceptor.class).on(ElementMatchers.named("halt"))))
+                builder
+                    .visit(
+                        Advice.to(RuntimeHaltInterceptor.class).on(ElementMatchers.named("halt")))
+                    .visit(
+                        Advice.to(ProcessExecInterceptor.class).on(ElementMatchers.named("exec"))))
         // Intercept ProcessBuilder.start() → ProcessExecInterceptor
         .type(ElementMatchers.is(ProcessBuilder.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(ProcessExecInterceptor.class).on(ElementMatchers.named("start"))))
-        // Intercept Runtime.exec(String[]) → ProcessExecInterceptor
-        .type(ElementMatchers.is(Runtime.class))
-        .transform(
-            (builder, type, classLoader, module, domain) ->
-                builder.visit(
-                    Advice.to(ProcessExecInterceptor.class).on(ElementMatchers.named("exec"))))
         .installOn(inst);
   }
 
