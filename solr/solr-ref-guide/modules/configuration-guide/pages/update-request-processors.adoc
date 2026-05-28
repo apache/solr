@@ -423,7 +423,7 @@ See the README files associated with each module for details:
 
 The {solr-javadocs}/modules/language-models/index.html[`language-models`] module provides::
 
-{solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/textvectorisation/update/processor/TextToVectorUpdateProcessorFactory.html[TextToVectorUpdateProcessorFactory]:: Update processor which vectorises a textual field in input and adds the resulting vector as the value of a new field.
+{solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/update/processor/factory/TextToVectorUpdateProcessorFactory.html[TextToVectorUpdateProcessorFactory]:: Update processor which vectorises a textual field in input and adds the resulting vector as the value of a new field.
 It uses external text to vectors language models to perform the vectorisation for each processed document.
 For more information: xref:query-guide:text-to-vector.adoc[Update Request Processor]
 

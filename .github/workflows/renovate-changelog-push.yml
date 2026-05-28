@@ -1,0 +1,162 @@
+name: Generate Renovate Changelog (Stage 2 - Push)
+
+# Stage 2: runs after Stage 1 completes, in the base-repo context with access to
+# SOLRBOT_GITHUB_TOKEN. Downloads the pre-generated artifact (no fork code executed here),
+# validates metadata, and pushes the changelog file to the fork branch.
+on:
+  workflow_run:
+    workflows:
+      - "Generate Renovate Changelog (Stage 1 - Prepare)"
+    types:
+      - completed
+
+# Each Stage 2 run corresponds to a unique Stage 1 run (unique workflow_run.id).
+# No cancel-in-progress: Stage 1's concurrency already serializes per-PR.
+concurrency:
+  group: renovate-changelog-push-${{ github.event.workflow_run.id }}
+
+permissions:
+  actions: read  # Required to download artifacts from another workflow run
+  contents: read # Minimal; actual write access to fork uses SOLRBOT_GITHUB_TOKEN PAT
+
+jobs:
+  push-changelog:
+    # Only proceed if Stage 1 succeeded for the expected fork.
+    # Checking head_repository here avoids a spurious artifact-not-found failure
+    # when Stage 1 ran but skipped its generate job (e.g. non-solrbot PR).
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == 'solrbot/apache-_-solr'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact from Stage 1
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: renovate-changelog-artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: downloaded-artifact/
+
+      - name: Read and validate PR metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          META_FILE="downloaded-artifact/pr-metadata.env"
+          if [ ! -f "$META_FILE" ]; then
+            echo "::error::Metadata file missing from artifact"; exit 1
+          fi
+
+          # Parse with grep/cut rather than source to avoid executing file content as shell.
+          # Use || true so a missing key doesn't abort under set -euo pipefail before the
+          # explicit emptiness check below can emit a meaningful error message.
+          PR_NUMBER=$(grep '^PR_NUMBER=' "$META_FILE" | cut -d= -f2- || true)
+          HEAD_REF=$(grep  '^HEAD_REF='  "$META_FILE" | cut -d= -f2- || true)
+          HEAD_REPO=$(grep '^HEAD_REPO=' "$META_FILE" | cut -d= -f2- || true)
+
+          if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_REF" ] || [ -z "$HEAD_REPO" ]; then
+            echo "::error::Missing required metadata fields (PR_NUMBER, HEAD_REF, or HEAD_REPO)"; exit 1
+          fi
+
+          # Security: verify this is the expected fork before using SOLRBOT_GITHUB_TOKEN
+          if [ "$HEAD_REPO" != "solrbot/apache-_-solr" ]; then
+            echo "::error::Unexpected HEAD_REPO: '$HEAD_REPO'. Expected 'solrbot/apache-_-solr'. Aborting."; exit 1
+          fi
+
+          # Validate PR_NUMBER is a plain positive integer (prevents injection)
+          if ! [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::PR_NUMBER is not a valid positive integer: '$PR_NUMBER'"; exit 1
+          fi
+
+          # Validate HEAD_REF using Git's own branch-name rules. This rejects edge cases
+          # such as '..', '@{', trailing '.lock', and ':' (dangerous in push refspecs)
+          # while still accepting valid Renovate branch names like renovate/node@lts.
+          if ! git check-ref-format --branch "$HEAD_REF" > /dev/null 2>&1; then
+            echo "::error::HEAD_REF is not a valid Git branch name: '$HEAD_REF'"; exit 1
+          fi
+
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$HEAD_REF"   >> "$GITHUB_OUTPUT"
+          echo "head_repo=$HEAD_REPO" >> "$GITHUB_OUTPUT"
+          echo "Validated: PR#${PR_NUMBER} on ${HEAD_REPO}@${HEAD_REF}"
+
+      - name: Clone fork branch
+        env:
+          SOLRBOT_TOKEN: ${{ secrets.SOLRBOT_GITHUB_TOKEN }}
+          HEAD_REPO: ${{ steps.meta.outputs.head_repo }}
+          HEAD_REF: ${{ steps.meta.outputs.head_ref }}
+        run: |
+          set -euo pipefail
+          # Store credentials so the token never appears in the command line or process list
+          git config --global credential.helper store
+          printf 'https://x-access-token:%s@github.com\n' "$SOLRBOT_TOKEN" > ~/.git-credentials
+          chmod 600 ~/.git-credentials
+
+          git clone --depth=1 --branch "$HEAD_REF" \
+            "https://github.com/${HEAD_REPO}.git" \
+            fork-checkout
+
+      - name: Apply changelog to fork checkout
+        id: apply
+        env:
+          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          CHANGELOG_DIR="fork-checkout/changelog/unreleased"
+          ARTIFACT_DIR="downloaded-artifact/changelog-unreleased"
+
+          if [ ! -d "$CHANGELOG_DIR" ]; then
+            echo "::error::changelog/unreleased not found in fork checkout"; exit 1
+          fi
+
+          if [ ! -d "$ARTIFACT_DIR" ]; then
+            echo "::warning::No changelog-unreleased directory in artifact for PR#${PR_NUMBER}"
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Remove stale PR#NNN-*.yml files (handles slug changes between synchronize events)
+          find "$CHANGELOG_DIR" -maxdepth 1 -name "PR#${PR_NUMBER}-*.yml" -delete -print
+
+          # Copy the new PR#NNN-*.yml file(s) from the artifact
+          COPIED=0
+          for f in "${ARTIFACT_DIR}/PR#${PR_NUMBER}-"*.yml; do
+            if [ -f "$f" ]; then
+              cp -v "$f" "$CHANGELOG_DIR/"
+              COPIED=$((COPIED + 1))
+            fi
+          done
+
+          if [ "$COPIED" -eq 0 ]; then
+            echo "::warning::No PR#${PR_NUMBER}-*.yml file found in artifact"
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Copied $COPIED changelog file(s)"
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push to fork branch
+        if: steps.apply.outputs.has_changes == 'true'
+        env:
+          HEAD_REF: ${{ steps.meta.outputs.head_ref }}
+          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          cd fork-checkout
+
+          if [ -z "$(git status --porcelain changelog/unreleased/)" ]; then
+            echo "No changelog changes (already up to date)"
+            exit 0
+          fi
+
+          git config user.name "SolrBot"
+          git config user.email "solrbot@cominvent.com"
+
+          git add changelog/unreleased/
+          git commit -m "Add changelog entry for PR#${PR_NUMBER}"
+
+          # Credential store (configured in Clone step) provides authentication
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
+
+          # Remove credentials from disk now that the push is complete
+          rm -f ~/.git-credentials

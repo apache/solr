@@ -112,9 +112,6 @@ allprojects {
           exclude "src/test-files/META-INF/services/*"
           break
 
-        case ":solr:modules:langid":
-          exclude "**/langdetect-profiles/*"
-          break
 
         case ":solr:modules:ltr":
           // TODO: SOLR-15601: Some of these should carry the license, perhaps?

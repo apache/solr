@@ -101,6 +101,7 @@ import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD_BACKUP_ID;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.lang.invoke.MethodHandles;
@@ -1068,6 +1069,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           reqBody.async = req.getParams().get(ASYNC);
           reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
           reqBody.location = req.getParams().get(BACKUP_LOCATION);
+          reqBody.name = req.getParams().get(NAME);
+          reqBody.shardBackupId = req.getParams().get(SHARD_BACKUP_ID);
 
           final InstallShardData installApi = new InstallShardData(h.coreContainer, req, rsp);
           final SolrJerseyResponse installResponse =

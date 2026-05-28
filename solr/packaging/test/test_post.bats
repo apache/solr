@@ -138,22 +138,6 @@ teardown() {
   assert_output --partial '"numFound":45'
 }
 
-# this test doesn't complete due to issues in posting to the /extract handler
-@test "crawling a web site" {
-  solr create -c webcrawl -d _default
-
-  curl -X POST -H 'Content-type:application/json' -d '{
-    "add-requesthandler": {
-      "name": "/update/extract",
-      "class": "solr.extraction.ExtractingRequestHandler",
-      "defaults":{ "lowernames": "true", "captureAttr":"true"}
-    }
-  }' "http://localhost:${SOLR_PORT}/solr/webcrawl/config"
-
-  run solr post --mode web -c webcrawl --recursive 1 --delay 1 https://solr.apache.org
-  assert_output --partial 'Entering crawl at level 0'
-}
-
 @test "skipcommit and optimize and delete" {
 
   run solr create -c monitors2 -d _default

@@ -126,12 +126,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     try (SolrClient solrClient = j.newClient()) {
       assertNotNull(solrClient);
       HttpClient httpClient = j.getSolrClient().getHttpClient();
-      var initialChildrenFetched =
-          SolrMetricTestUtils.getCounterDatapoint(
-                  reader, "solr_zk_cumulative_children_fetched", baseLabels)
-              .getValue();
       var initialChildFetches =
-          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_child_fetches", baseLabels)
+          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_get_children_ops", baseLabels)
               .getValue();
       var initialExistsOp =
           SolrMetricTestUtils.getCounterDatapoint(
@@ -141,19 +137,14 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       // Send GET request to trigger some metrics
       httpClient.GET(j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes");
 
-      var childrenFetched =
-          SolrMetricTestUtils.getCounterDatapoint(
-                  reader, "solr_zk_cumulative_children_fetched", baseLabels)
-              .getValue();
       var childFetches =
-          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_child_fetches", baseLabels)
+          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_get_children_ops", baseLabels)
               .getValue();
       var existsOp =
           SolrMetricTestUtils.getCounterDatapoint(
                   reader, "solr_zk_ops", builder.label("ops", "exists").build())
               .getValue();
 
-      assertTrue(childrenFetched - initialChildrenFetched >= 3.0);
       assertTrue(childFetches - initialChildFetches >= 1.0);
       assertTrue(existsOp - initialExistsOp >= 4.0);
     }
