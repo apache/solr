@@ -118,14 +118,22 @@ class PolicyFileParser {
   }
 
   private static String expand(PolicyTokenStream ts, String raw) throws ParsingException {
+    // Capture the line number before attempting expansion so we preserve it if expansion fails.
+    int lineNum = -1;
+    try {
+      lineNum = ts.line();
+    } catch (IOException ignored) {
+      // best-effort — -1 signals "line unknown"
+    }
     try {
       return PolicyPropertyExpander.expand(raw);
     } catch (PolicyPropertyExpander.ExpandException e) {
-      try {
-        throw new ParsingException(ts.line(), e.getMessage(), raw);
-      } catch (IOException ioe) {
-        throw new ParsingException(e.getMessage());
-      }
+      ParsingException pe =
+          lineNum >= 0
+              ? new ParsingException(lineNum, e.getMessage(), raw)
+              : new ParsingException(e.getMessage());
+      pe.initCause(e);
+      throw pe;
     }
   }
 
