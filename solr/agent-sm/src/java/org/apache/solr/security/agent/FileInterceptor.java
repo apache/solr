@@ -118,8 +118,7 @@ public class FileInterceptor {
                 }
               }
             } else {
-              throw new SecurityException(
-                  "Unsupported argument type: " + args[1].getClass().getName());
+              isMutating = true; // unknown option type — treat conservatively as mutating
             }
           }
         } else if (name.equals("copy") == true || name.equals("move") == true) {
