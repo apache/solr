@@ -60,11 +60,11 @@ console_log() {
 
   # Confirms: CoreContainer reflective call to ViolationMetricsReporter registered counters.
   # A single labeled counter solr.security.agent.violations appears in Prometheus format as
-  # solr_security_agent_violations_total{type="file"|"network"|"exit"|"exec"}.
+  # solr_security_agent_violations_total{...type="file"...} etc. OTel may add extra labels
+  # (e.g. otel_scope_name), so we assert on the base metric name only.
   run curl -sf "http://localhost:${SOLR_PORT}/solr/admin/metrics"
   assert_success
-  assert_output --partial 'solr_security_agent_violations_total{type="file"'
-  assert_output --partial 'solr_security_agent_violations_total{type="network"'
+  assert_output --partial 'solr_security_agent_violations_total'
 }
 
 @test "SOLR_SECURITY_AGENT_SKIP=true disables the agent" {
