@@ -40,7 +40,7 @@ import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-/** Tests for {@link MultiThreadedSearcher}. */
+/** Tests for parallel-segment search via {@link SolrIndexSearcher#search(QueryCommand)}. */
 public class TestMultiThreadedSearcher extends SolrTestCaseJ4 {
 
   @BeforeClass

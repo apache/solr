@@ -24,15 +24,18 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -55,6 +58,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
@@ -96,6 +100,7 @@ import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.CancellableQueryTracker;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.NodeConfig;
@@ -270,88 +275,85 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Builds the necessary collector chain (via delegate wrapping) and executes the query against it.
-   * This method takes into consideration both the explicitly provided collector and postFilter as
-   * well as any needed collector wrappers for dealing with options specified in the QueryCommand.
-   *
-   * @return The collector used for search
+   * Builds a {@link SolrCollectorManagers.ChainCM} wrapping {@code innerManager} with the Solr
+   * collector-chain features driven by {@code cmd} (segment-terminate-early, max-hits early
+   * termination, optional post-filter, optional cancellation). The returned chain is un-executed;
+   * pass it to {@link #runChainAndCollect}.
    */
-  private Collector buildAndRunCollectorChain(
+  private <C extends Collector, T> SolrCollectorManagers.ChainCM<C, T> buildChain(
+      QueryResult qr,
+      QueryCommand cmd,
+      DelegatingCollector postFilter,
+      CollectorManager<C, T> innerManager,
+      boolean parallelEligible)
+      throws IOException {
+    AtomicBoolean cancellationFlag = cmd.isQueryCancellable() ? new AtomicBoolean() : null;
+    Sort mergePolicySort =
+        cmd.getSegmentTerminateEarly() ? core.getSolrCoreState().getMergePolicySort() : null;
+    CancellableQueryTracker tracker =
+        cmd.isQueryCancellable() ? core.getCancellableQueryTracker() : null;
+    return new SolrCollectorManagers.ChainCM<>(
+        innerManager,
+        cmd,
+        postFilter,
+        mergePolicySort,
+        qr,
+        cancellationFlag,
+        tracker,
+        parallelEligible);
+  }
+
+  /**
+   * Executes a search using the supplied {@link SolrCollectorManagers.ChainCM}, returning the inner
+   * manager's reduced result. Selects between single-slice and multi-slice execution based on
+   * {@code chain.requiresSingleSlice()} and {@code parallelEligible}, and translates
+   * partial-results signaling onto {@link QueryResult}.
+   */
+  private <T> T runChainAndCollect(
       QueryResult qr,
       Query query,
-      Collector collector,
-      QueryCommand cmd,
-      DelegatingCollector postFilter)
+      SolrCollectorManagers.ChainCM<?, T> chain,
+      boolean parallelEligible)
       throws IOException {
 
-    EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
-    if (cmd.getSegmentTerminateEarly()) {
-      final Sort cmdSort = cmd.getSort();
-      final int cmdLen = cmd.getLen();
-      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
+    final boolean singleSlice = chain.requiresSingleSlice() || !parallelEligible;
 
-      if (cmdSort == null
-          || cmdLen <= 0
-          || mergeSort == null
-          || !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
-        log.warn(
-            "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}",
-            cmdSort,
-            cmdLen,
-            mergeSort);
-      } else {
-        collector =
-            earlyTerminatingSortingCollector =
-                new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen());
-      }
-    }
-
-    if (cmd.shouldEarlyTerminateSearch()) {
-      collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsAllowed());
-    }
-
-    if (postFilter != null) {
-      postFilter.setLastDelegate(collector);
-      collector = postFilter;
-    }
-
-    if (cmd.isQueryCancellable()) {
-      collector = new CancellableCollector(collector);
-
-      // Add this to the local active queries map
-      core.getCancellableQueryTracker()
-          .addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
-    }
-
+    T result = null;
     try {
       try {
-        search(query, collector);
-      } finally {
-        // The complete() method can use the collectors, so this needs to be surrounded by the same
-        // catch logic that limit collecting
-        if (collector instanceof DelegatingCollector) {
-          ((DelegatingCollector) collector).complete();
+        if (singleSlice) {
+          Collector chainCollector = chain.newCollector();
+          search(query, chainCollector);
+          result = chain.reduce(List.of(chainCollector));
+        } else {
+          result = search(query, chain);
         }
+      } catch (ExitableDirectoryReader.ExitingReaderException
+          | CancellableCollector.QueryCancelledException x) {
+        log.warn("Query: [{}]; ", query, x);
+        qr.setPartialResults(true);
+        result = chain.reduce(List.of());
+      } catch (EarlyTerminatingCollectorException etce) {
+        qr.setPartialResults(true);
+        qr.setMaxHitsTerminatedEarly(true);
+        qr.setPartialResultsDetails(etce.getMessage());
+        qr.setApproximateTotalHits(etce.getApproximateTotalHits(reader.maxDoc()));
+        result = chain.reduce(List.of());
+      } catch (RuntimeException ex) {
+        // Lucene's CollectorManager fan-out wraps slice failures in ExecutionException, which
+        // is itself wrapped in a RuntimeException. Unwrap to surface the original cause so
+        // callers see the same exception they would in single-slice mode.
+        if (ex.getCause() instanceof ExecutionException
+            && ex.getCause().getCause() instanceof RuntimeException) {
+          throw (RuntimeException) ex.getCause().getCause();
+        }
+        throw ex;
       }
-    } catch (ExitableDirectoryReader.ExitingReaderException
-        | CancellableCollector.QueryCancelledException x) {
-      log.warn("Query: [{}]; ", query, x);
-      qr.setPartialResults(true);
-    } catch (EarlyTerminatingCollectorException etce) {
-      qr.setPartialResults(true);
-      qr.setMaxHitsTerminatedEarly(true);
-      qr.setPartialResultsDetails(etce.getMessage());
-      qr.setApproximateTotalHits(etce.getApproximateTotalHits(reader.maxDoc()));
     } finally {
-      if (earlyTerminatingSortingCollector != null) {
-        qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
-      }
-      if (cmd.isQueryCancellable()) {
-        core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
-      }
+      chain.cleanup();
     }
 
-    return collector;
+    return result;
   }
 
   public SolrIndexSearcher(
@@ -1913,6 +1915,81 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
+  /**
+   * Builds and executes the collection phase of a search, returning a uniform {@link
+   * SolrCollectorManagers.SearchResult}. Constructs the inner per-segment-friendly collector
+   * managers (top-docs, max-score, doc-set) and delegates to {@link #runChainAndCollect} which
+   * handles the chain wrappers and selects between single-slice and multi-slice execution.
+   *
+   * <p>The {@link DocSet} shape is preserved from the legacy code paths: when single-slice
+   * execution is forced (post-filter, segment-terminate-early, or {@code multiThreaded=false}) the
+   * doc-set is built via {@link SolrCollectorManagers.DocSetCollectorCM} so sparse results keep the
+   * {@code SortedIntDocSet} optimization; multi-slice uses {@link SolrCollectorManagers.DocSetCM}
+   * which always produces a {@code BitDocSet}.
+   */
+  private SolrCollectorManagers.SearchResult searchAndCollect(
+      QueryResult qr,
+      QueryCommand cmd,
+      ProcessedFilter pf,
+      Query query,
+      int len,
+      boolean needTopDocs,
+      boolean needMaxScore,
+      boolean needDocSet)
+      throws IOException {
+    final boolean parallelEligible =
+        pf.postFilter == null && !cmd.getSegmentTerminateEarly() && cmd.getMultiThreaded();
+
+    Collection<CollectorManager<Collector, Object>> innerCMs = new ArrayList<>();
+    int firstSize = 0;
+    final int firstTopDocsIdx = needTopDocs ? firstSize++ : -1;
+    final int firstMaxScoreIdx = needMaxScore ? firstSize++ : -1;
+    Collector[] firstCollectors = new Collector[firstSize];
+    if (needTopDocs) {
+      innerCMs.add(
+          new SolrCollectorManagers.TopDocsCM(this, len, cmd, firstCollectors, firstTopDocsIdx));
+    }
+    if (needMaxScore) {
+      innerCMs.add(new SolrCollectorManagers.MaxScoreCM(firstCollectors, firstMaxScoreIdx));
+    }
+    if (needDocSet) {
+      if (parallelEligible) {
+        innerCMs.add(new SolrCollectorManagers.DocSetCM(getRawReader().maxDoc()));
+      } else {
+        innerCMs.add(new SolrCollectorManagers.DocSetCollectorCM(this));
+      }
+    }
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    CollectorManager<? extends Collector, Object[]> innerManager =
+        innerCMs.size() == 1
+            // Single inner CM — skip SolrMultiCollectorManager to avoid the per-doc
+            // LeafCollectors fan-out loop. Adapt the inner CM's reduce result to the
+            // Object[] shape the rest of searchAndCollect expects. Mirrors Lucene's
+            // MultiCollectorManager.wrap() short-circuit for the one-collector case.
+            ? SolrCollectorManagers.wrapSingle((CollectorManager) innerCMs.iterator().next())
+            : new SolrMultiCollectorManager(innerCMs.toArray(new CollectorManager[0]));
+
+    SolrCollectorManagers.ChainCM<? extends Collector, Object[]> chain =
+        buildChain(qr, cmd, pf.postFilter, innerManager, parallelEligible);
+    Object[] ret = runChainAndCollect(qr, query, chain, parallelEligible);
+
+    // Use the chain-wrapped collector's score mode rather than the inner per-CM collectors':
+    // a Solr post-filter (e.g. CollapsingPostFilter) overrides scoreMode on the wrapped chain
+    // collector, and that override must propagate to populateScoresIfNeeded so the matches
+    // relation is reported correctly.
+    //
+    // chain.getScoreMode() is populated when newCollector() is first called. Lucene's
+    // IndexSearcher.search(Query, CollectorManager) calls newCollector() unconditionally
+    // before its empty-index short-circuit, so by the time runChainAndCollect returns this
+    // is always non-null.
+    return new SolrCollectorManagers.SearchResult(
+        Objects.requireNonNull(
+            chain.getScoreMode(),
+            "ChainCM.getScoreMode() returned null after runChainAndCollect; "
+                + "Lucene's IndexSearcher.search must call newCollector() at least once"),
+        ret);
+  }
+
   private void getDocListNC(QueryResult qr, QueryCommand cmd) throws IOException {
     final int len = cmd.getSupersetMaxDoc();
     int last = len;
@@ -1962,9 +2039,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             };
       }
 
-      buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
+      runChainAndCollect(
+          qr,
+          query,
+          buildChain(qr, cmd, pf.postFilter, SolrCollectorManagers.singleSlice(collector), false),
+          false);
 
-      totalHits = numHits[0];
       if (collector instanceof TotalHitCountCollector) {
         totalHits = ((TotalHitCountCollector) collector).getTotalHits();
       } else {
@@ -1977,42 +2057,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug("calling from 2, query: {}", query.getClass());
-      }
-      final TopDocs topDocs;
-      final ScoreMode scoreModeUsed;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
-        log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
-        final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
-        MaxScoreCollector maxScoreCollector = null;
-        Collector collector = topCollector;
-        if (needScores) {
-          maxScoreCollector = new MaxScoreCollector();
-          collector = MultiCollector.wrap(topCollector, maxScoreCollector);
-        }
-        scoreModeUsed =
-            buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
-
-        totalHits = topCollector.getTotalHits();
-        topDocs = topCollector.topDocs(0, len);
-
-        maxScore =
-            totalHits > 0
-                ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
-                : 0.0f;
-      } else {
-        log.trace("MULTI-THREADED search, using CollectorManager int getDocListNC");
-        final MultiThreadedSearcher.SearchResult searchResult =
-            new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needScores, false, qr);
-        scoreModeUsed = searchResult.scoreMode;
-
-        MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
-        totalHits = topDocsResult.totalHits;
-        topDocs = topDocsResult.topDocs;
-        maxScore = searchResult.getMaxScore(totalHits);
-      }
+      final SolrCollectorManagers.SearchResult searchResult =
+          searchAndCollect(qr, cmd, pf, query, len, true, needScores, false);
+      final ScoreMode scoreModeUsed = searchResult.scoreMode;
+      final SolrCollectorManagers.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
+      totalHits = topDocsResult.totalHits;
+      final TopDocs topDocs = topDocsResult.topDocs;
+      maxScore = searchResult.getMaxScore(totalHits);
 
       hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query, scoreModeUsed);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -2081,7 +2132,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         collector = MultiCollector.wrap(setCollector, topScoreCollector);
       }
 
-      buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
+      runChainAndCollect(
+          qr,
+          query,
+          buildChain(qr, cmd, pf.postFilter, SolrCollectorManagers.singleSlice(collector), false),
+          false);
 
       set = DocSetUtil.getDocSet(setCollector, this);
 
@@ -2092,48 +2147,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-      final TopDocs topDocs;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
-        log.trace("SINGLE THREADED search, skipping collector manager in getDocListAndSetNC");
-
-        @SuppressWarnings({"rawtypes"})
-        final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
-        final DocSetCollector setCollector = new DocSetCollector(maxDoc);
-        MaxScoreCollector maxScoreCollector = null;
-        List<Collector> collectors = new ArrayList<>(Arrays.asList(topCollector, setCollector));
-
-        if (needScores) {
-          maxScoreCollector = new MaxScoreCollector();
-          collectors.add(maxScoreCollector);
-        }
-
-        Collector collector = MultiCollector.wrap(collectors);
-
-        buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
-
-        set = DocSetUtil.getDocSet(setCollector, this);
-
-        totalHits = topCollector.getTotalHits();
-        assert (totalHits == set.size()) || qr.isPartialResults();
-
-        topDocs = topCollector.topDocs(0, len);
-        maxScore =
-            totalHits > 0
-                ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
-                : 0.0f;
-      } else {
-        log.trace("MULTI-THREADED search, using CollectorManager in getDocListAndSetNC");
-
-        MultiThreadedSearcher.SearchResult searchResult =
-            new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needScores, true, qr);
-        MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
-        totalHits = topDocsResult.totalHits;
-        topDocs = topDocsResult.topDocs;
-        maxScore = searchResult.getMaxScore(totalHits);
-        set = new BitDocSet(searchResult.getFixedBitSet());
-        // TODO: Think about using ScoreMode from searchResult down below
-      }
+      final SolrCollectorManagers.SearchResult searchResult =
+          searchAndCollect(qr, cmd, pf, query, len, true, needScores, true);
+      final SolrCollectorManagers.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
+      totalHits = topDocsResult.totalHits;
+      final TopDocs topDocs = topDocsResult.topDocs;
+      maxScore = searchResult.getMaxScore(totalHits);
+      set = searchResult.getDocSet();
+      assert set != null;
+      assert (totalHits == set.size()) || qr.isPartialResults();
       final Relation relation =
           populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
