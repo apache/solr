@@ -35,7 +35,8 @@ import org.junit.Test;
  *   <li>Entries from the extra policy are tagged {@link PolicySource#OPERATOR}.
  *   <li>Paths listed only in the extra policy are permitted; unlisted paths remain blocked.
  *   <li>When the extra policy file is absent the default policy still loads normally.
- *   <li>A malformed extra policy causes {@link IllegalStateException} with a descriptive message.
+ *   <li>Any non-comment content that is not a valid grant causes {@link IllegalStateException}
+ *       (fail-fast). An empty file or a file containing only comments is silently accepted.
  *   <li>The {@code source=OPERATOR} tag is emitted in violation log entries for paths matched by
  *       operator-policy entries.
  * </ul>
@@ -161,24 +162,67 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
   }
 
   // ---------------------------------------------------------------------------
-  // Malformed extra policy — syntactically invalid content causes ISE (fail-fast)
-  // (Content that parses but contains no grant blocks is silently harmless.)
+  // Malformed extra policy — any non-comment content that is not a valid grant causes ISE
   // ---------------------------------------------------------------------------
 
   @Test(expected = IllegalStateException.class)
-  public void testMalformedExtraPolicyThrowsIllegalStateException() throws Exception {
+  public void testGarbageExtraPolicyThrowsIllegalStateException() throws Exception {
     Path tmpDir = createTempDir();
     Path defaultPolicy = writeDefaultPolicy(tmpDir);
 
     Path extraPolicy = tmpDir.resolve("agent-security-extra.policy");
-    // Syntactically invalid: grant block is not closed — parser throws ParsingException which
-    // PolicyLoader wraps as IllegalStateException (fail-fast on malformed policy)
+    // Non-comment content that is not a valid grant block → fail fast
+    Files.writeString(extraPolicy, "THIS IS NOT A VALID POLICY\n", StandardCharsets.UTF_8);
+
+    System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
+
+    new PolicyLoader().load(defaultPolicy);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testUnclosedGrantExtraPolicyThrowsIllegalStateException() throws Exception {
+    Path tmpDir = createTempDir();
+    Path defaultPolicy = writeDefaultPolicy(tmpDir);
+
+    Path extraPolicy = tmpDir.resolve("agent-security-extra.policy");
+    // Syntactically invalid: unclosed grant block
     Files.writeString(
         extraPolicy, "grant { permission java.io.FilePermission\n", StandardCharsets.UTF_8);
 
     System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
 
     new PolicyLoader().load(defaultPolicy);
+  }
+
+  @Test
+  public void testEmptyExtraPolicyIsAccepted() throws Exception {
+    Path tmpDir = createTempDir();
+    Path defaultPolicy = writeDefaultPolicy(tmpDir);
+
+    Path extraPolicy = tmpDir.resolve("agent-security-extra.policy");
+    Files.writeString(extraPolicy, "", StandardCharsets.UTF_8);
+
+    System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
+
+    // Empty operator file is silently accepted; default policy is still active
+    AgentPolicy policy = new PolicyLoader().load(defaultPolicy);
+    assertTrue(policy.isPathPermitted("/opt/solr/conf", "read"));
+  }
+
+  @Test
+  public void testCommentOnlyExtraPolicyIsAccepted() throws Exception {
+    Path tmpDir = createTempDir();
+    Path defaultPolicy = writeDefaultPolicy(tmpDir);
+
+    Path extraPolicy = tmpDir.resolve("agent-security-extra.policy");
+    Files.writeString(
+        extraPolicy, "// This is a comment\n/* Block comment too */\n", StandardCharsets.UTF_8);
+
+    System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
+
+    // Comment-only operator file is silently accepted; default policy is still active
+    AgentPolicy policy = new PolicyLoader().load(defaultPolicy);
+    assertTrue(policy.isPathPermitted("/opt/solr/conf", "read"));
   }
 
   // ---------------------------------------------------------------------------

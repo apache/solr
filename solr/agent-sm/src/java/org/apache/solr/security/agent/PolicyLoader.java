@@ -75,6 +75,12 @@ public class PolicyLoader {
 
     List<GrantBlock> grants = new ArrayList<>();
     parsePolicy(defaultContent, PolicySource.DEFAULT, grants);
+    if (grants.isEmpty()) {
+      throw new IllegalStateException(
+          "Security agent default policy contains no grant blocks: "
+              + defaultPolicyPath
+              + ". The default policy must define at least one grant.");
+    }
 
     // Resolve extra-policy path: system property → fallback to ${server.dir}/etc/...
     Path extraPolicyPath = resolveExtraPolicyPath();
@@ -86,7 +92,13 @@ public class PolicyLoader {
         throw new IllegalStateException(
             "Failed to read operator security policy extension: " + extraPolicyPath, e);
       }
+      int beforeCount = grants.size();
       parsePolicy(extraContent, PolicySource.OPERATOR, grants);
+      if (grants.size() == beforeCount) {
+        agentOut(
+            "[Solr SecurityAgent] Operator extension policy is empty (no grant blocks): "
+                + extraPolicyPath);
+      }
     }
 
     return buildPolicy(grants);
@@ -286,5 +298,12 @@ public class PolicyLoader {
       this.codeBase = codeBase;
       this.source = source;
     }
+  }
+
+  @SuppressForbidden(
+      reason =
+          "System.err is the only safe output channel during premain, before SLF4J is available.")
+  private static void agentOut(String msg) {
+    System.err.println(msg);
   }
 }

@@ -50,13 +50,26 @@ class PolicyFileParser {
   }
 
   static List<GrantEntry> read(Reader policy) throws ParsingException, IOException {
+    return read(policy, true);
+  }
+
+  /**
+   * @param strictTopLevel if {@code true}, any token that is not the start of a {@code grant} block
+   *     causes a {@link ParsingException}; if {@code false}, such tokens are silently skipped
+   *     (lenient mode, kept for internal use only)
+   */
+  static List<GrantEntry> read(Reader policy, boolean strictTopLevel)
+      throws ParsingException, IOException {
     List<GrantEntry> entries = new ArrayList<>();
     PolicyTokenStream ts = new PolicyTokenStream(policy);
     while (!ts.isEOF()) {
       if (peek(ts, "grant")) {
         entries.add(parseGrantEntry(ts));
+      } else if (strictTopLevel) {
+        PolicyToken tok = ts.peek();
+        throw new ParsingException(tok.line(), "grant", tok.text());
       } else {
-        // skip unexpected top-level token
+        // skip unexpected top-level token (lenient mode)
         ts.consume();
       }
     }
