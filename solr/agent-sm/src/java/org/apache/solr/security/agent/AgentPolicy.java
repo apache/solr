@@ -244,8 +244,9 @@ public final class AgentPolicy {
    * Returns {@code true} if any class in the call chain is approved to call {@code System.exit()}
    * or {@code Runtime.halt()}. Any approved class anywhere in the chain grants permission.
    *
-   * <p>Class names are matched using {@link String#matches} (full regex), so the approved-caller
-   * list supports wildcard patterns such as {@code "org\\.apache\\.solr\\..*"}.
+   * <p>Class names are matched by {@link ApprovedCallSite#matches}: {@code "*"} matches any class;
+   * a pattern ending in {@code ".*"} matches the named package and all its sub-packages; anything
+   * else is an exact class-name match.
    *
    * @param chain the full set of non-hidden classes in the call stack
    */
