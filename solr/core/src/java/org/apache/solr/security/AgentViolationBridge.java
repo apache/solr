@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +40,9 @@ public final class AgentViolationBridge {
    */
   public static void wire() {
     try {
-      // SecurityViolationLogger is injected into the bootstrap classloader by SolrAgentEntryPoint.
+      // SecurityViolationLogger is in the bootstrap classloader via Boot-Class-Path.
       Class<?> cls = Class.forName("org.apache.solr.security.agent.SecurityViolationLogger");
-      java.lang.reflect.Field f = cls.getField("reporter");
+      Field f = cls.getField("reporter");
       Consumer<String> bridge = msg -> log.warn("SECURITY VIOLATION {}", msg);
       f.set(null, bridge);
       log.info("Security agent violation reporter wired to SLF4J");
