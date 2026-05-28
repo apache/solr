@@ -289,10 +289,13 @@ goto err
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [--user-managed] [--host hostname] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [--verbose]
+@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--user-managed] [--host hostname] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [--verbose]
 @echo.
 @echo   -f/--foreground Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
+@echo.
+@echo   -c or --cloud  No-op. Solr starts in cloud mode by default; this flag is accepted for
+@echo                   compatibility with previous Solr scripts. Cannot be combined with --user-managed.
 @echo.
 @echo   --user-managed Start Solr in user managed aka standalone mode"
 @echo                   See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html
@@ -383,6 +386,9 @@ IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="--verbose" goto set_verbose
 IF "%1"=="-q" goto set_warn
 IF "%1"=="--quiet" goto set_warn
+IF "%1"=="-c" goto set_cloud_mode
+IF "%1"=="-cloud" goto set_cloud_mode
+IF "%1"=="--cloud" goto set_cloud_mode
 IF "%1"=="--user-managed" goto set_user_managed_mode
 IF "%1"=="--server-dir" goto set_server_dir
 IF "%1"=="--solr-home" goto set_solr_home_dir
@@ -444,7 +450,21 @@ set SOLR_LOG_LEVEL=WARN
 SHIFT
 goto parse_args
 
+:set_cloud_mode
+IF "%SOLR_MODE%"=="user-managed" (
+  set "SCRIPT_ERROR=Cannot combine -c/--cloud with --user-managed; choose one."
+  goto invalid_cmd_line
+)
+@echo WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.
+set CLOUD_FLAG_SET=true
+SHIFT
+goto parse_args
+
 :set_user_managed_mode
+IF "%CLOUD_FLAG_SET%"=="true" (
+  set "SCRIPT_ERROR=Cannot combine -c/--cloud with --user-managed; choose one."
+  goto invalid_cmd_line
+)
 set SOLR_MODE=user-managed
 set "PASS_TO_RUN_EXAMPLE=--user-managed !PASS_TO_RUN_EXAMPLE!"
 SHIFT

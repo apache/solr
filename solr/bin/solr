@@ -371,10 +371,13 @@ function print_usage() {
 
   if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [--user-managed] [--host host] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [--verbose]"
+    echo "Usage: solr $CMD [-f] [-c] [--user-managed] [--host host] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [--verbose]"
     echo ""
     echo "  -f/--foreground       Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
+    echo ""
+    echo "  -c or --cloud         No-op. Solr starts in cloud mode by default; this flag is accepted for"
+    echo "                          compatibility with previous Solr scripts. Cannot be combined with --user-managed."
     echo ""
     echo "  --user-managed        Start Solr in user managed aka standalone mode"
     echo "                          See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html"
@@ -682,11 +685,27 @@ SOLR_OPTS=(${SOLR_OPTS:-})
 SCRIPT_SOLR_OPTS=()
 PASS_TO_RUN_EXAMPLE=()
 SOLR_MODE="solrcloud"
+CLOUD_FLAG_SET=false
+USER_MANAGED_FLAG_SET=false
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
+        -c|--cloud|-cloud)
+            if [[ "$USER_MANAGED_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            echo "WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default."
+            CLOUD_FLAG_SET=true
+            shift
+        ;;
         --user-managed)
+            if [[ "$CLOUD_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            USER_MANAGED_FLAG_SET=true
             SOLR_MODE="user-managed"
             PASS_TO_RUN_EXAMPLE+=("--user-managed")
             shift
