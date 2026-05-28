@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security.agent;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -37,6 +38,34 @@ public class FileInterceptor {
   public FileInterceptor() {}
 
   /**
+   * Guard to prevent re-entrant calls: set to {@code true} while symlink resolution is in progress
+   * on the current thread, so that any file operation triggered by {@code toRealPath()} is not
+   * intercepted again (which would cause infinite recursion).
+   */
+  static final ThreadLocal<Boolean> IN_SYMLINK_RESOLVE = ThreadLocal.withInitial(() -> false);
+
+  /**
+   * Resolves a path to its real, symlink-free form for policy checks. Falls back to {@link
+   * Path#toAbsolutePath() toAbsolutePath().normalize()} when (a) the path does not exist yet, or
+   * (b) {@code toRealPath()} itself triggers a re-entrant interception (detected via {@link
+   * #IN_SYMLINK_RESOLVE}).
+   */
+  static String resolveRealPath(Path path) {
+    if (Boolean.TRUE.equals(IN_SYMLINK_RESOLVE.get())) {
+      return path.toAbsolutePath().normalize().toString();
+    }
+    IN_SYMLINK_RESOLVE.set(true);
+    try {
+      return path.toRealPath().toString();
+    } catch (IOException e) {
+      // Path does not exist yet — fall back to normalized path
+      return path.toAbsolutePath().normalize().toString();
+    } finally {
+      IN_SYMLINK_RESOLVE.set(false);
+    }
+  }
+
+  /**
    * Intercepts file operations.
    *
    * @param args arguments
@@ -54,7 +83,7 @@ public class FileInterceptor {
     if (args.length > 0 && args[0] instanceof String pathStr) {
       filePath = Path.of(pathStr).toAbsolutePath().normalize().toString();
     } else if (args.length > 0 && args[0] instanceof Path path) {
-      filePath = path.toAbsolutePath().normalize().toString();
+      filePath = resolveRealPath(path);
       provider = path.getFileSystem().provider();
     }
 
@@ -125,7 +154,7 @@ public class FileInterceptor {
           if (args.length > 1 && args[1] instanceof String pathStr) {
             targetFilePath = Path.of(pathStr).toAbsolutePath().normalize().toString();
           } else if (args.length > 1 && args[1] instanceof Path path) {
-            targetFilePath = path.toAbsolutePath().normalize().toString();
+            targetFilePath = resolveRealPath(path);
           }
         }
       }
