@@ -17,7 +17,10 @@
 package org.apache.solr.security.agent;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A single file-system access rule from the security policy.
@@ -29,13 +32,17 @@ import java.util.Locale;
 public final class PermittedPath {
 
   private final String path;
-  private final String actions;
+  private final Set<String> actionSet;
+  private final String actions; // retained for the actions() accessor
   private final boolean recursive;
   private final PolicySource source;
 
   PermittedPath(String path, String actions, boolean recursive, PolicySource source) {
     this.path = path;
-    this.actions = actions != null ? actions.toLowerCase(Locale.ROOT) : "read";
+    String normalized = actions != null ? actions.toLowerCase(Locale.ROOT) : "read";
+    this.actions = normalized;
+    this.actionSet =
+        Arrays.stream(normalized.split(",")).map(String::trim).collect(Collectors.toSet());
     this.recursive = recursive;
     this.source = source;
   }
@@ -69,6 +76,6 @@ public final class PermittedPath {
     } else {
       pathMatch = resolvedPath.equals(path);
     }
-    return pathMatch && actions.contains(action.toLowerCase(Locale.ROOT));
+    return pathMatch && actionSet.contains(action.toLowerCase(Locale.ROOT));
   }
 }
