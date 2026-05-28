@@ -17,7 +17,7 @@
 package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +42,9 @@ public final class AgentViolationBridge {
     try {
       // SecurityViolationLogger is in the bootstrap classloader via Boot-Class-Path.
       Class<?> cls = Class.forName("org.apache.solr.security.agent.SecurityViolationLogger");
-      Field f = cls.getField("reporter");
+      Method setter = cls.getMethod("setReporter", Consumer.class);
       Consumer<String> bridge = msg -> log.warn("SECURITY VIOLATION {}", msg);
-      f.set(null, bridge);
+      setter.invoke(null, bridge);
       log.info("Security agent violation reporter wired to SLF4J");
     } catch (ClassNotFoundException e) {
       // Agent JAR not loaded — security agent is inactive, nothing to wire

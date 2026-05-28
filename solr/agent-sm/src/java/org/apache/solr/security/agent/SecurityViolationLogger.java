@@ -36,12 +36,12 @@ import java.util.function.Consumer;
  */
 public final class SecurityViolationLogger {
 
-  /**
-   * Bridge set by {@code AgentViolationBridge.wire()} once SLF4J/Log4j2 is available. {@code null}
-   * until wired — violations fall back to {@code System.err}. {@code volatile} for safe
-   * publication.
-   */
-  public static volatile Consumer<String> reporter = null;
+  private static volatile Consumer<String> reporter = null;
+
+  /** Sets the violation reporter. Called by {@code AgentViolationBridge.wire()} via reflection. */
+  public static void setReporter(Consumer<String> r) {
+    reporter = r;
+  }
 
   /** The operation types that can trigger a violation. */
   public enum ViolationType {
