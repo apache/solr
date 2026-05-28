@@ -95,7 +95,7 @@ public class FileInterceptor {
       if (isMutating == false && isDelete == false) {
         if (name.equals("newByteChannel") == true || name.equals("open") == true) {
           if (args.length > 1) {
-            if (args instanceof OpenOption[] opts) {
+            if (args[1] instanceof OpenOption[] opts) {
               for (final OpenOption opt : opts) {
                 if (opt != StandardOpenOption.READ) {
                   isMutating = true;
