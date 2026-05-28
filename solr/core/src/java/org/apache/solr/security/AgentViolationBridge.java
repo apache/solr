@@ -41,7 +41,10 @@ public final class AgentViolationBridge {
   public static void wire() {
     try {
       // SecurityViolationLogger is in the bootstrap classloader via Boot-Class-Path.
-      Class<?> cls = Class.forName("org.apache.solr.security.agent.SecurityViolationLogger");
+      // Use null (bootstrap) explicitly so the lookup succeeds even in containerised environments
+      // where the calling classloader may not delegate to bootstrap for unknown packages.
+      Class<?> cls =
+          Class.forName("org.apache.solr.security.agent.SecurityViolationLogger", false, null);
       Method setter = cls.getMethod("setReporter", Consumer.class);
       Consumer<String> bridge = msg -> log.warn("SECURITY VIOLATION {}", msg);
       setter.invoke(null, bridge);

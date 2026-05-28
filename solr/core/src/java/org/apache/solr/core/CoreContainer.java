@@ -956,11 +956,10 @@ public class CoreContainer {
     // Uses reflection to avoid a compile-time dependency on solr:agent-sm (see research.md Decision
     // 8).
     try {
+      // Use null (bootstrap classloader) to match where the agent JAR is loaded via
+      // Boot-Class-Path, consistent with AgentViolationBridge.wire().
       Class<?> reporter =
-          Class.forName(
-              "org.apache.solr.security.agent.ViolationMetricsReporter",
-              false,
-              CoreContainer.class.getClassLoader());
+          Class.forName("org.apache.solr.security.agent.ViolationMetricsReporter", false, null);
       reporter
           .getMethod("registerWithSolrMetrics", Object.class, String.class)
           .invoke(null, metricManager, NODE_REGISTRY);
