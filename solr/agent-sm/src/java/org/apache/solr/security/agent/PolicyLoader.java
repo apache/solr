@@ -215,14 +215,20 @@ public class PolicyLoader {
       }
       for (RawRuntimePermission rp : block.runtimePerms) {
         if ("exitVM".equals(rp.type)) {
-          // codeBase-scoped exitVM grants map to approved exit callers
-          String pattern = rp.codeBase != null ? rp.codeBase : "*";
+          // Grant without codeBase: "*" (any class may exit); with codeBase: match by code source
           exitCallers.add(
-              new ApprovedCallSite(pattern, ApprovedCallSite.Operation.EXIT, rp.source));
+              new ApprovedCallSite(
+                  rp.codeBase != null ? null : "*",
+                  rp.codeBase,
+                  ApprovedCallSite.Operation.EXIT,
+                  rp.source));
         } else if ("exec".equals(rp.type)) {
-          String pattern = rp.codeBase != null ? rp.codeBase : "*";
           execCallers.add(
-              new ApprovedCallSite(pattern, ApprovedCallSite.Operation.EXEC, rp.source));
+              new ApprovedCallSite(
+                  rp.codeBase != null ? null : "*",
+                  rp.codeBase,
+                  ApprovedCallSite.Operation.EXEC,
+                  rp.source));
         }
       }
     }

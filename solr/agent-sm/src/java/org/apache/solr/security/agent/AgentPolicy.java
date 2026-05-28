@@ -224,7 +224,10 @@ public final class AgentPolicy {
    */
   public boolean isExitApproved(String className) {
     for (ApprovedCallSite cs : approvedExitCallers) {
-      if (cs.operation() == ApprovedCallSite.Operation.EXIT && cs.matches(className)) return true;
+      // codeBase entries require a Class<?> object; skip them here
+      if (cs.operation() == ApprovedCallSite.Operation.EXIT
+          && cs.codeBase() == null
+          && cs.matches(className)) return true;
     }
     return false;
   }
@@ -235,7 +238,10 @@ public final class AgentPolicy {
    */
   public boolean isExecApproved(String className) {
     for (ApprovedCallSite cs : approvedExecCallers) {
-      if (cs.operation() == ApprovedCallSite.Operation.EXEC && cs.matches(className)) return true;
+      // codeBase entries require a Class<?> object; skip them here
+      if (cs.operation() == ApprovedCallSite.Operation.EXEC
+          && cs.codeBase() == null
+          && cs.matches(className)) return true;
     }
     return false;
   }
@@ -253,7 +259,8 @@ public final class AgentPolicy {
   public boolean isChainThatCanExit(Collection<Class<?>> chain) {
     for (Class<?> cls : chain) {
       for (ApprovedCallSite cs : approvedExitCallers) {
-        if (cs.operation() == ApprovedCallSite.Operation.EXIT && cs.matches(cls.getName())) {
+        if (cs.operation() != ApprovedCallSite.Operation.EXIT) continue;
+        if (cs.codeBase() != null ? cs.matchesCodeBase(cls) : cs.matches(cls.getName())) {
           return true;
         }
       }
@@ -272,7 +279,8 @@ public final class AgentPolicy {
   public boolean isChainThatCanExec(Collection<Class<?>> chain) {
     for (Class<?> cls : chain) {
       for (ApprovedCallSite cs : approvedExecCallers) {
-        if (cs.operation() == ApprovedCallSite.Operation.EXEC && cs.matches(cls.getName())) {
+        if (cs.operation() != ApprovedCallSite.Operation.EXEC) continue;
+        if (cs.codeBase() != null ? cs.matchesCodeBase(cls) : cs.matches(cls.getName())) {
           return true;
         }
       }

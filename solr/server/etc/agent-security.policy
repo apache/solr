@@ -64,6 +64,22 @@ grant {
   permission java.io.FilePermission "/proc/-", "read";
   permission java.io.FilePermission "/sys/-",  "read";
 
+  // --- RuntimePermission: exitVM / exec ---
+  //
+  // No exitVM grants are present in this default policy. This is intentional:
+  //   - The Solr CLI tools (bin/solr foo bar) are not launched with -javaagent and therefore
+  //     do not need an exitVM grant.
+  //   - The running Solr backend (Jetty) is expected to shut down via graceful thread completion
+  //     (ShutdownHook, server.stop()), not via System.exit(). Calling System.exit() from a plugin
+  //     is the threat model, not the server itself.
+  //   - In WARN mode (the default) any unapproved System.exit() call is logged but permitted.
+  //     In ENFORCE mode it is blocked. Operators who need to allow a specific JAR or class to call
+  //     System.exit() should add a codeBase-scoped RuntimePermission "exitVM" grant in
+  //     agent-security-extra.policy.
+  //
+  // Similarly, no exec grants are present because the Solr server does not spawn child processes
+  // in its normal operation. Plugin code that needs process spawning must be explicitly granted.
+
   // --- Outbound network access ---
 
   // Loopback addresses: unconditionally permitted (inter-thread, localhost HTTP, embedded ZK)
