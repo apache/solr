@@ -131,7 +131,6 @@ public final class SolrAgentEntryPoint {
     "newByteChannel",
     "delete",
     "deleteIfExists",
-    "read",
     "open"
   };
 

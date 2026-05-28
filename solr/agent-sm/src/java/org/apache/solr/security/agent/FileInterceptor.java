@@ -180,19 +180,6 @@ public class FileInterceptor {
         }
       }
 
-      // Plain read operations (e.g. Files.read(), Files.readAllBytes())
-      if (name.equals("read") && !policy.isPathPermitted(filePath, "read")) {
-        ViolationMetricsReporter.incrementFile();
-        SecurityViolationLogger.log(
-            SecurityViolationLogger.ViolationType.FILE_READ,
-            filePath,
-            caller,
-            policy.enforcementMode());
-        if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-          throw new SecurityException("Denied READ access to file: " + filePath);
-        }
-      }
-
       // File mutating operations
       if (isMutating && !policy.isPathPermitted(filePath, "write")) {
         ViolationMetricsReporter.incrementFile();
