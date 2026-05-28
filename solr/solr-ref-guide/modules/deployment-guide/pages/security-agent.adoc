@@ -145,7 +145,7 @@ SOLR_SECURITY_AGENT_SKIP=true
 [WARNING]
 ====
 Disabling the agent removes all runtime security controls.
-Use this only for temporary troubleshooting of if you intend to provide similar protection on the operating system level.
+Use this only for temporary troubleshooting or if you intend to provide similar protection on the operating system level.
 ====
 
 == Modules with Pre-Permitted Network Access
