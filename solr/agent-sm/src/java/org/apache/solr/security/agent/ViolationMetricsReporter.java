@@ -140,26 +140,24 @@ public final class ViolationMetricsReporter {
    * @param registryName the target metrics registry name (e.g. {@code "solr.node"})
    */
   public static void registerWithSolrMetrics(Object metricManager, String registryName) {
+    Class<?> mmClass = metricManager.getClass();
+    // SolrMetricManager.observableLongCounter(String registry, String name, String description,
+    //     Consumer<ObservableLongMeasurement> callback, OtelUnit unit)
+    // SolrMetricManager.observableLongCounter(String, String, String, Consumer, OtelUnit)
+    Method counterMethod =
+        findMethod(
+            mmClass, "observableLongCounter", "String", "String", "String", "Consumer", "OtelUnit");
+    if (counterMethod == null) {
+      // Throw so that CoreContainer's reflective call site logs this at WARN.  A missing method
+      // almost certainly means the SolrMetricManager API changed without updating this class.
+      throw new IllegalStateException(
+          "SolrMetricManager.observableLongCounter(String,String,String,Consumer,OtelUnit)"
+              + " not found on "
+              + mmClass.getName()
+              + " — violation metrics cannot be registered in /admin/metrics."
+              + " This likely indicates a SolrMetricManager API change.");
+    }
     try {
-      Class<?> mmClass = metricManager.getClass();
-      // SolrMetricManager.observableLongCounter(String registry, String name, String description,
-      //     Consumer<ObservableLongMeasurement> callback, OtelUnit unit)
-      // SolrMetricManager.observableLongCounter(String, String, String, Consumer, OtelUnit)
-      Method counterMethod =
-          findMethod(
-              mmClass,
-              "observableLongCounter",
-              "String",
-              "String",
-              "String",
-              "Consumer",
-              "OtelUnit");
-      if (counterMethod == null) {
-        agentErr(
-            "[Solr SecurityAgent] SolrMetricManager.observableLongCounter not found"
-                + " — violation metrics will not be registered in /admin/metrics");
-        return;
-      }
       registerCounter(
           counterMethod,
           metricManager,
