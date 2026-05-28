@@ -27,10 +27,9 @@ import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
-@Path(INDEX_PATH_PREFIX + "/tasks/list")
-public interface ListActiveTasksApi {
+@Path(INDEX_PATH_PREFIX + "/tasks")
+public interface TasksApi {
 
-  // Handles: .../tasks/list (Lists all)
   @GET
   @StoreApiParameters
   @Operation(
@@ -38,12 +37,11 @@ public interface ListActiveTasksApi {
       tags = {"tasks"})
   ListActiveTaskResponse listAllActiveTasks() throws Exception;
 
-  // Handles: .../tasks/list/slow-task-id (Lists specific)
   @GET
-  @Path("/{taskUUID}")
+  @Path("/{taskID}")
   @StoreApiParameters
   @Operation(
       summary = "Status of a specific taskUUID passed as pathParam",
       tags = {"tasks"})
-  TaskStatusResponse getTaskStatus(@PathParam("taskUUID") String taskUUID) throws Exception;
+  TaskStatusResponse getTaskStatus(@PathParam("taskID") String taskID) throws Exception;
 }

@@ -23,11 +23,11 @@ public class ActiveTaskDetails {
 
   public ActiveTaskDetails() {}
 
-  public ActiveTaskDetails(String taskUUID, String taskQuery) {
-    this.taskUUID = taskUUID;
+  public ActiveTaskDetails(String taskID, String taskQuery) {
+    this.taskID = taskID;
     this.taskQuery = taskQuery;
   }
 
-  @JsonProperty public String taskUUID;
+  @JsonProperty public String taskID;
   @JsonProperty public String taskQuery;
 }

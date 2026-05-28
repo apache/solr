@@ -25,14 +25,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.api.endpoint.ListActiveTasksApi;
+import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 
-public class ListActiveTasks extends JerseyResource implements ListActiveTasksApi {
+public class ListActiveTasks extends JerseyResource implements TasksApi {
 
   private final SolrQueryRequest solrQueryRequest;
 
@@ -53,15 +53,15 @@ public class ListActiveTasks extends JerseyResource implements ListActiveTasksAp
 
   @Override
   @PermissionName(READ_PERM)
-  public TaskStatusResponse getTaskStatus(String taskUUID) throws Exception {
+  public TaskStatusResponse getTaskStatus(String taskID) throws Exception {
     final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
 
     boolean isTaskActive =
-        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskUUID);
+        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskID);
     if (isTaskActive) {
-      response.taskStatus = "id: " + taskUUID + ", status: active";
+      response.taskStatus = "id: " + taskID + ", status: active";
     } else {
-      response.taskStatus = "id: " + taskUUID + ", status: inactive";
+      response.taskStatus = "id: " + taskID + ", status: inactive";
     }
 
     return response;
