@@ -102,7 +102,7 @@ public class CertAuthPlugin extends AuthenticationPlugin {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
     X509Certificate[] certs =
-        (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        (X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
     if (certs == null || certs.length == 0) {
       return sendError(response, "require certificate");
     }
