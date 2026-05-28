@@ -161,26 +161,24 @@ public class PolicyLoaderOperatorExtensionTest extends SolrTestCase {
   }
 
   // ---------------------------------------------------------------------------
-  // Malformed extra policy — lenient parsing, default still enforced
+  // Malformed extra policy — syntactically invalid content causes ISE (fail-fast)
+  // (Content that parses but contains no grant blocks is silently harmless.)
   // ---------------------------------------------------------------------------
 
-  @Test
-  public void testMalformedExtraPolicyIsSkippedGracefully() throws Exception {
+  @Test(expected = IllegalStateException.class)
+  public void testMalformedExtraPolicyThrowsIllegalStateException() throws Exception {
     Path tmpDir = createTempDir();
     Path defaultPolicy = writeDefaultPolicy(tmpDir);
 
     Path extraPolicy = tmpDir.resolve("agent-security-extra.policy");
-    // Content with no recognizable grant blocks — parser silently produces empty result
-    Files.writeString(extraPolicy, "THIS IS NOT A VALID POLICY\n", StandardCharsets.UTF_8);
+    // Syntactically invalid: grant block is not closed — parser throws ParsingException which
+    // PolicyLoader wraps as IllegalStateException (fail-fast on malformed policy)
+    Files.writeString(
+        extraPolicy, "grant { permission java.io.FilePermission\n", StandardCharsets.UTF_8);
 
     System.setProperty("solr.security.agent.extra.policy", extraPolicy.toString());
 
-    // Should not throw; default policy still loads
-    AgentPolicy policy = new PolicyLoader().load(defaultPolicy);
-    // Default policy (/opt/solr) is still active
-    assertTrue(policy.isPathPermitted("/opt/solr/conf", "read"));
-    // Malformed extra policy adds no new paths
-    assertFalse(policy.isPathPermitted(tmpDir.toString(), "read"));
+    new PolicyLoader().load(defaultPolicy);
   }
 
   // ---------------------------------------------------------------------------
