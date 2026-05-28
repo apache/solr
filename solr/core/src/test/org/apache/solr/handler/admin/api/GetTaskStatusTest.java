@@ -17,6 +17,9 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.core.CancellableQueryTracker;
@@ -26,9 +29,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class GetTaskStatusTest extends SolrTestCaseJ4 {
 
   private SolrQueryRequest mockQueryRequest;
@@ -36,7 +36,6 @@ public class GetTaskStatusTest extends SolrTestCaseJ4 {
   private CancellableQueryTracker cancellableQueryTracker;
 
   private GetTaskStatus getTaskStatus;
-
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -73,5 +72,4 @@ public class GetTaskStatusTest extends SolrTestCaseJ4 {
     assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, taskStatusResponse.taskStatus);
     assertNull(taskStatusResponse.error);
   }
-
 }

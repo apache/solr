@@ -27,9 +27,13 @@ public class TaskStatusResponse extends SolrJerseyResponse {
 
     private final String value;
 
-    TaskStatus(String value) { this.value = value; }
+    TaskStatus(String value) {
+      this.value = value;
+    }
 
-    public String getValue() { return this.value; }
+    public String getValue() {
+      return this.value;
+    }
   }
 
   @JsonProperty public TaskStatus taskStatus;
