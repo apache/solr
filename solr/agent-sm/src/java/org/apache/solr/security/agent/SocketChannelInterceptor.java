@@ -16,14 +16,12 @@
  */
 package org.apache.solr.security.agent;
 
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.UnixDomainSocketAddress;
 import java.security.CodeSource;
 import java.util.Collection;
 import net.bytebuddy.asm.Advice;
-import net.bytebuddy.asm.Advice.Origin;
 
 /**
  * ByteBuddy {@link Advice} interceptor for outbound socket connections.
@@ -37,15 +35,13 @@ public class SocketChannelInterceptor {
   public SocketChannelInterceptor() {}
 
   /**
-   * Interceptors
+   * Intercepts outbound socket connections.
    *
-   * @param args arguments
-   * @param method method
-   * @throws Exception exceptions
+   * @param args arguments of the intercepted {@code connect} method
+   * @throws Exception if the connection is denied in enforce mode
    */
   @Advice.OnMethodEnter
-  public static void intercept(@Advice.AllArguments Object[] args, @Origin Method method)
-      throws Exception {
+  public static void intercept(@Advice.AllArguments Object[] args) throws Exception {
     if (!AgentPolicy.isInitialized()) return;
     final AgentPolicy policy = AgentPolicy.getInstance();
 
