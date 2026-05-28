@@ -28,8 +28,10 @@
 // An absent file is silently skipped — it is not a startup error.
 //
 // Syntax: JDK-style .policy files (same as agent-security.policy).
-// Supported variables: ${solr.home}, ${solr.data.dir}, ${solr.log.dir}, ${solr.install.dir},
-//                      ${java.io.tmpdir}, ${java.home}, ${solr.port}, ${solr.zk.port}
+// Supported variables: ${solr.solr.home}, ${solr.data.home}, ${solr.logs.dir},
+//                      ${solr.install.dir}, ${solr.install.symDir},
+//                      ${java.io.tmpdir}, ${java.home},
+//                      ${solr.port.listen}, ${solr.zk.port}
 //
 // For documentation and examples, see the Solr Reference Guide: Security Agent.
 //
