@@ -54,9 +54,9 @@ public class FileInterceptor {
     FileSystemProvider provider = null;
     String filePath = null;
     if (args.length > 0 && args[0] instanceof String pathStr) {
-      filePath = Path.of(pathStr).toAbsolutePath().toString();
+      filePath = Path.of(pathStr).toAbsolutePath().normalize().toString();
     } else if (args.length > 0 && args[0] instanceof Path path) {
-      filePath = path.toAbsolutePath().toString();
+      filePath = path.toAbsolutePath().normalize().toString();
       provider = path.getFileSystem().provider();
     }
 
@@ -125,9 +125,9 @@ public class FileInterceptor {
           }
         } else if (name.equals("copy") == true) {
           if (args.length > 1 && args[1] instanceof String pathStr) {
-            targetFilePath = Path.of(pathStr).toAbsolutePath().toString();
+            targetFilePath = Path.of(pathStr).toAbsolutePath().normalize().toString();
           } else if (args.length > 1 && args[1] instanceof Path path) {
-            targetFilePath = path.toAbsolutePath().toString();
+            targetFilePath = path.toAbsolutePath().normalize().toString();
           }
         }
       }
