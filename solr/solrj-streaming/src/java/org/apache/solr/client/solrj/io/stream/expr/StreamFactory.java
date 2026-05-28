@@ -97,6 +97,44 @@ public class StreamFactory implements Serializable {
     return this;
   }
 
+  public CloudSolrClient.CloudSolrClientConnection buildSolrConnection(
+      StreamExpression streamExpression, String collectionName) throws IOException {
+
+    var solrConnectionExpression = getNamedOperand(streamExpression, "solrConnection");
+    var zkHostExpression = getNamedOperand(streamExpression, "zkHost");
+
+    CloudSolrClient.CloudSolrClientConnection solrConnection = null;
+
+    if (zkHostExpression == null && solrConnectionExpression == null) {
+      solrConnection = getConnectionForCollection(collectionName);
+    } else if (solrConnectionExpression != null
+        && solrConnectionExpression.getParameter() instanceof StreamExpressionValue exprValue) {
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
+    } else if (zkHostExpression != null
+        && zkHostExpression.getParameter() instanceof StreamExpressionValue exprValue) {
+      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
+      if (!solrConnection.isZookeeper()) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Expected ZooKeeper connection string, but got: '%s'. "
+                    + "Use 'solrConnection' for pass HTTP(s) quorum",
+                solrConnection));
+      }
+    }
+
+    if (solrConnection == null) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - solrConnection or zkHost not found for collection '%s'",
+              streamExpression,
+              collectionName));
+    }
+
+    return solrConnection;
+  }
+
   private static CloudSolrClient.CloudSolrClientConnection zkHostToSolrConnection(String zkHost) {
     var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     if (!solrConnection.isZookeeper()) {
@@ -126,7 +164,7 @@ public class StreamFactory implements Serializable {
   }
 
   /**
-   * @deprecated use {@link #getDefaultSolrConnection()}
+   * @deprecated use {@link #buildSolrConnection(StreamExpression, String)} ()}
    */
   @Deprecated
   public String getDefaultZkHost() {
@@ -138,7 +176,7 @@ public class StreamFactory implements Serializable {
   }
 
   /**
-   * @deprecated use {@link #getConnectionForCollection(String)}
+   * @deprecated use {@link #buildSolrConnection(StreamExpression, String)}
    */
   @Deprecated
   public String getCollectionZkHost(String collectionName) {
@@ -149,7 +187,7 @@ public class StreamFactory implements Serializable {
    * Gets a SolrConnection using collection-to-connection configuration. Defaults to {@link
    * #getDefaultSolrConnection()}
    */
-  public CloudSolrClient.CloudSolrClientConnection getConnectionForCollection(
+  private CloudSolrClient.CloudSolrClientConnection getConnectionForCollection(
       String collectionName) {
     return this.collectionSolrConnection.getOrDefault(collectionName, defaultSolrConnection);
   }

@@ -157,7 +157,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
               expression));
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
     StreamComparator comp =

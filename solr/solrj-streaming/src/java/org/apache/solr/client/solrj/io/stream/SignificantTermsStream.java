@@ -163,7 +163,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       params.remove("maxDocFreq");
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,
@@ -180,30 +180,16 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp",
     // [aliases="field=alias,..."])
-
-    // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    // collection
-    expression.addParameter(collection);
-
-    // parameters
-    expression.addParameters(params);
-
-    expression.addParameter(new StreamExpressionNamedParameter("field", field));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("minDocFreq", Float.toString(minDocFreq)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("maxDocFreq", Float.toString(maxDocFreq)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)));
-
-    expression.addParameter(
-        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
-
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()))
+        .withParameter(collection)
+        .withMoreParameters(params)
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("minDocFreq", Float.toString(minDocFreq)))
+        .withParameter(new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)))
+        .withParameter(
+            new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)))
+        .withParameter(
+            new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
   }
 
   private void init(

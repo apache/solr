@@ -92,7 +92,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
       }
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, mParams);
   }

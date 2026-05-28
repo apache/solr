@@ -73,7 +73,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     verifyCollectionName(collectionName, expression);
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     int updateBatchSize = extractBatchSize(expression, factory);
     pruneVersionField =

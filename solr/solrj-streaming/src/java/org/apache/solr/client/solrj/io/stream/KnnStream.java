@@ -115,7 +115,7 @@ public class KnnStream extends TupleStream implements Expressible {
       throw new IOException("qf parameter is expected for KnnStream");
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, id, params);
   }

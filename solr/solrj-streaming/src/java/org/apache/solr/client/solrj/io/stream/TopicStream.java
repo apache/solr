@@ -189,7 +189,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
         buildSolrParamsExcept(
             namedParams, Set.of("zkHost", "solrConnection", ID, "checkpointEvery"));
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,

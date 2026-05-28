@@ -203,7 +203,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
       params.set("q", "*:*");
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,

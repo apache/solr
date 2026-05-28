@@ -146,7 +146,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
       qParam = ((StreamExpressionValue) qExpression.getParameter()).getValue();
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     StreamFactory localFactory = (StreamFactory) factory.clone();
     localFactory.withDefaultSort(sortParam);

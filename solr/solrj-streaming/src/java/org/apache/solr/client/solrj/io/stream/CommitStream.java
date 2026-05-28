@@ -68,7 +68,7 @@ public class CommitStream extends TupleStream implements Expressible {
               "invalid expression %s - collectionName expected as first operand",
               expression));
     }
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
     int batchSize = factory.getIntOperand(expression, "batchSize", 0);
     boolean waitFlush = factory.getBooleanOperand(expression, "waitFlush", false);
     boolean waitSearcher = factory.getBooleanOperand(expression, "waitSearcher", false);

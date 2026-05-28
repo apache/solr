@@ -78,12 +78,13 @@ public class StreamExpression implements StreamExpressionParameter {
     this.parameters = parameters;
   }
 
-  public void addParameters(SolrParams parameters) {
+  public StreamExpression withMoreParameters(SolrParams parameters) {
     for (Map.Entry<String, String[]> parameter : parameters) {
       for (String value : parameter.getValue()) {
         addParameter(new StreamExpressionNamedParameter(parameter.getKey(), value));
       }
     }
+    return this;
   }
 
   public StreamExpression withParameters(List<StreamExpressionParameter> parameters) {

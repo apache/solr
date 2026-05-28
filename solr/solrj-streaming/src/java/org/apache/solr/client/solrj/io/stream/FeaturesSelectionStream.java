@@ -172,7 +172,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       throw new IOException("numTerms param cannot be null for FeaturesSelectionStream");
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,
@@ -189,28 +189,18 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp",
     // [aliases="field=alias,..."])
-
-    // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    // collection
-    expression.addParameter(collection);
-
-    // parameters
-    expression.addParameters(params);
-
-    expression.addParameter(new StreamExpressionNamedParameter("field", field));
-    expression.addParameter(new StreamExpressionNamedParameter("outcome", outcome));
-    expression.addParameter(new StreamExpressionNamedParameter("featureSet", featureSet));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("positiveLabel", String.valueOf(positiveLabel)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
-
-    expression.addParameter(
-        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
-
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()))
+        .withParameter(collection)
+        .withMoreParameters(params)
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("outcome", outcome))
+        .withParameter(new StreamExpressionNamedParameter("featureSet", featureSet))
+        .withParameter(
+            new StreamExpressionNamedParameter("positiveLabel", String.valueOf(positiveLabel)))
+        .withParameter(new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)))
+        .withParameter(
+            new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
   }
 
   private void init(

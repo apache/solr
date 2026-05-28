@@ -289,7 +289,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                 "window",
                 "lag"));
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,

@@ -102,7 +102,7 @@ public class ModelStream extends TupleStream implements Expressible {
       cacheMillis = Long.parseLong(cacheMillisParam);
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, modelID, cacheMillis);
   }

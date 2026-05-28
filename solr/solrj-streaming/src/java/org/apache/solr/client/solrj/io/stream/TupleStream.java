@@ -32,9 +32,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
@@ -231,46 +229,6 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     }
 
     return shards;
-  }
-
-  public static CloudSolrClient.CloudSolrClientConnection buildSolrConnection(
-      StreamFactory streamFactory, StreamExpression streamExpression, String collectionName)
-      throws IOException {
-
-    var solrConnectionExpression =
-        streamFactory.getNamedOperand(streamExpression, "solrConnection");
-    var zkHostExpression = streamFactory.getNamedOperand(streamExpression, "zkHost");
-
-    CloudSolrClient.CloudSolrClientConnection solrConnection = null;
-
-    if (zkHostExpression == null && solrConnectionExpression == null) {
-      solrConnection = streamFactory.getConnectionForCollection(collectionName);
-    } else if (solrConnectionExpression != null
-        && solrConnectionExpression.getParameter() instanceof StreamExpressionValue exprValue) {
-      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
-    } else if (zkHostExpression != null
-        && zkHostExpression.getParameter() instanceof StreamExpressionValue exprValue) {
-      solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(exprValue.getValue());
-      if (!solrConnection.isZookeeper()) {
-        throw new IOException(
-            String.format(
-                Locale.ROOT,
-                "Expected ZooKeeper connection string, but got: '%s'. "
-                    + "Use 'solrConnection' for pass HTTP(s) quorum",
-                solrConnection));
-      }
-    }
-
-    if (solrConnection == null) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - solrConnection or zkHost not found for collection '%s'",
-              streamExpression,
-              collectionName));
-    }
-
-    return solrConnection;
   }
 
   public static ModifiableSolrParams buildSolrParamsExcept(

@@ -70,7 +70,7 @@ public class RandomFacadeStream extends TupleStream implements Expressible {
       params.add("rows", "500");
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     if (params.get(ROWS) != null) {
       int rows = Integer.parseInt(params.get(ROWS));

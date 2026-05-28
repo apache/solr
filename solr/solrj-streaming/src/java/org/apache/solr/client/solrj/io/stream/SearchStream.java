@@ -89,7 +89,7 @@ public class SearchStream extends TupleStream implements Expressible {
         buildSolrParamsExcept(
             namedParams, Set.of("zkHost", "solrConnection", "buckets", "bucketSorts", "limit"));
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, params);
   }

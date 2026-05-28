@@ -178,7 +178,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
       }
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, params, x, y, bucketSort, dimensionX, dimensionY, metric);
   }
@@ -237,46 +237,16 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    // collection
-    if (collection.indexOf(',') > -1) {
-      expression.addParameter("\"" + collection + "\"");
-    } else {
-      expression.addParameter(collection);
-    }
-
-    // parameters for q,fl etc
-    expression.addParameters(params);
-
-    // bucket x
-    {
-      StringBuilder builder = new StringBuilder();
-
-      builder.append(x.toString());
-      expression.addParameter(new StreamExpressionNamedParameter("x", builder.toString()));
-    }
-
-    // bucket y
-    {
-      StringBuilder builder = new StringBuilder();
-
-      builder.append(y.toString());
-      expression.addParameter(new StreamExpressionNamedParameter("y", builder.toString()));
-    }
-
-    // dimensions
-    expression.addParameter(
-        new StreamExpressionNamedParameter(
-            "dimensions", Integer.toString(dimensionX) + "," + Integer.toString(dimensionY)));
-
-    // metric
-    expression.addParameter(metric.toExpression(factory));
-
-    expression.addParameter(
-        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
-
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()))
+        .withParameter(collection.indexOf(',') > -1 ? "\"" + collection + "\"" : collection)
+        .withMoreParameters(params)
+        .withParameter(new StreamExpressionNamedParameter("x", x.toString()))
+        .withParameter(new StreamExpressionNamedParameter("y", y.toString()))
+        .withParameter(
+            new StreamExpressionNamedParameter("dimensions", dimensionX + "," + dimensionY))
+        .withParameter(metric.toExpression(factory))
+        .withParameter(
+            new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
   }
 
   @Override

@@ -122,7 +122,7 @@ public class FetchStream extends TupleStream implements Expressible {
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, stream, on, fl, batchSize);
   }

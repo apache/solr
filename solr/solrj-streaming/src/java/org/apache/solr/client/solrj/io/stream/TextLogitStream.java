@@ -227,7 +227,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
       params.remove("weights");
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,
@@ -267,7 +267,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
 
     // parameters
-    expression.addParameters(params);
+    expression.withMoreParameters(params);
 
     expression.addParameter(new StreamExpressionNamedParameter("field", field));
     expression.addParameter(new StreamExpressionNamedParameter("name", name));

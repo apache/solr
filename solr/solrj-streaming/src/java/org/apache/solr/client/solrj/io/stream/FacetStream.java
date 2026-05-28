@@ -359,7 +359,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       }
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,

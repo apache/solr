@@ -207,7 +207,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
                 "threads",
                 "partitionSize"));
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(
         solrConnection,

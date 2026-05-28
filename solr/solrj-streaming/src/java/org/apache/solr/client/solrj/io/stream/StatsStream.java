@@ -125,7 +125,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
       params.set("q", "*:*");
     }
 
-    var solrConnection = buildSolrConnection(factory, expression, collectionName);
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, params, metrics);
   }
