@@ -69,19 +69,20 @@ Any java property will be expanded in policy entries, here are the most common. 
 [cols="1,2",options="header"]
 |===
 |Variable|Resolved Value
-|`${solr.home}`|Solr home directory
-|`${solr.data.dir}`|Solr data directory
-|`${solr.log.dir}`|Solr log directory
+|`${solr.solr.home}`|Solr home directory
+|`${solr.data.home}`|Solr data directory (defaults to `solr.solr.home` if unset)
+|`${solr.logs.dir}`|Solr log directory
 |`${solr.install.dir}`|Solr installation root (parent of `server/`)
+|`${solr.install.symDir}`|Symlink-resolved installation root (falls back to `solr.install.dir`)
 |`${java.io.tmpdir}`|JVM temporary directory
 |`${java.home}`|JDK installation directory
-|`${solr.port}`|Solr HTTP port
-|`${solr.zk.port}`|ZooKeeper port (defaults to `solr.port + 1000` for embedded ZK)
+|`${solr.port.listen}`|Solr HTTP port
+|`${solr.zk.port}`|ZooKeeper port (defaults to `solr.port.listen + 1000` for embedded ZK)
 |===
 
 === Default Intra-Cluster Network Policy
 
-The bundled policy permits connections on `*:${solr.port}` and `*:${solr.zk.port}` from any host, so all cluster nodes can communicate without any operator action.
+The bundled policy permits connections on `*:${solr.port.listen}` and `*:${solr.zk.port}` from any host, so all cluster nodes can communicate without any operator action.
 If your ZooKeeper runs on a non-standard port, set `-Dsolr.zk.port=<port>` at startup or configure it explicitly in the policy.
 
 === Adding Custom Policy Entries
