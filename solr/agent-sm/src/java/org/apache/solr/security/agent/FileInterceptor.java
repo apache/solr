@@ -17,13 +17,11 @@
 package org.apache.solr.security.agent;
 
 import java.lang.reflect.Method;
-import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Set;
 import net.bytebuddy.asm.Advice;
 
@@ -215,83 +213,6 @@ public class FileInterceptor {
             "Denied DELETE access to file: " + filePath);
       }
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Static helpers (used by advice and by tests)
-  // ---------------------------------------------------------------------------
-
-  public static String topCallerClassName() {
-    try {
-      return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-          .getCallerClass()
-          .getName();
-    } catch (Exception e) {
-      return "<unknown>";
-    }
-  }
-
-  /**
-   * Resolves the real path of {@code path}, following symlinks. Falls back to {@code
-   * normalize().toAbsolutePath()} if the file does not exist or if an I/O error occurs.
-   *
-   * <p><b>Note:</b> This method must NOT be called from the ByteBuddy {@link #intercept} advice
-   * method — {@code toRealPath()} performs file-system I/O which would trigger re-entrant
-   * interception and cause infinite recursion. It is safe to use only from the test-side {@link
-   * #checkPath} helper where no live instrumentation is active.
-   */
-  public static String resolveRealPath(Path path) {
-    try {
-      return path.toRealPath(new LinkOption[0]).toString();
-    } catch (Exception e) {
-      return path.normalize().toAbsolutePath().toString();
-    }
-  }
-
-  /**
-   * Checks whether {@code path} may be accessed with {@code action} under the active policy.
-   * Increments the file violation counter and logs on violation; throws {@link SecurityException}
-   * in enforce mode.
-   */
-  public static void checkPath(
-      Path path, String action, SecurityViolationLogger.ViolationType violationType) {
-    if (!AgentPolicy.isInitialized()) return;
-    AgentPolicy policy = AgentPolicy.getInstance();
-    String resolvedPath = resolveRealPath(path);
-    String caller = topCallerClassName();
-    enforceFileAccess(
-        policy,
-        resolvedPath,
-        action,
-        violationType,
-        caller,
-        "Denied " + action.toUpperCase(Locale.ROOT) + " access to: " + resolvedPath);
-  }
-
-  /**
-   * Checks whether a move from {@code source} to {@code target} is permitted under the active
-   * policy. Source requires "delete" permission; target requires "write" permission.
-   */
-  public static void checkMove(Path source, Path target) {
-    if (!AgentPolicy.isInitialized()) return;
-    AgentPolicy policy = AgentPolicy.getInstance();
-    String srcPath = resolveRealPath(source);
-    String dstPath = resolveRealPath(target);
-    String caller = topCallerClassName();
-    enforceFileAccess(
-        policy,
-        srcPath,
-        "delete",
-        SecurityViolationLogger.ViolationType.FILE_DELETE,
-        caller,
-        "Denied MOVE (delete source) access to: " + srcPath);
-    enforceFileAccess(
-        policy,
-        dstPath,
-        "write",
-        SecurityViolationLogger.ViolationType.FILE_WRITE,
-        caller,
-        "Denied MOVE (write destination) access to: " + dstPath);
   }
 
   /**

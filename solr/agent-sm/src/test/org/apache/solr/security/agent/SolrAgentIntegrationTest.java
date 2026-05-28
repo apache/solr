@@ -64,8 +64,8 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     buildEnforcePolicy(List.of(allowed), List.of(), List.of(), List.of());
 
     Path target = tmpDir.resolve("test.txt");
-    // checkPath should not throw for a path inside the permitted dir
-    FileInterceptor.checkPath(target, "read", SecurityViolationLogger.ViolationType.FILE_READ);
+    InterceptorTestHelper.checkPath(
+        target, "read", SecurityViolationLogger.ViolationType.FILE_READ);
   }
 
   @Test(expected = SecurityException.class)
@@ -73,7 +73,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     Path tmpDir = createTempDir();
     // Policy permits nothing
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
-    FileInterceptor.checkPath(
+    InterceptorTestHelper.checkPath(
         tmpDir.resolve("secret.txt"), "read", SecurityViolationLogger.ViolationType.FILE_READ);
   }
 
@@ -82,7 +82,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     long before = ViolationMetricsReporter.fileCount();
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
     try {
-      FileInterceptor.checkPath(
+      InterceptorTestHelper.checkPath(
           Path.of("/etc/passwd"), "read", SecurityViolationLogger.ViolationType.FILE_READ);
     } catch (SecurityException ignored) {
       // expected
@@ -102,7 +102,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     Path dst = tmpDir.resolve("dst.txt");
     // Source lacks delete permission — should throw with a message about "delete source"
     try {
-      FileInterceptor.checkMove(src, dst);
+      InterceptorTestHelper.checkMove(src, dst);
       fail("Expected SecurityException");
     } catch (SecurityException e) {
       assertTrue(e.getMessage(), e.getMessage().contains("delete source"));
@@ -121,7 +121,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     Path src = tmpDir.resolve("src.txt");
     Path dst = otherDir.resolve("dst.txt");
     try {
-      FileInterceptor.checkMove(src, dst);
+      InterceptorTestHelper.checkMove(src, dst);
       fail("Expected SecurityException");
     } catch (SecurityException e) {
       assertTrue(e.getMessage(), e.getMessage().contains("write destination"));
@@ -136,7 +136,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     Path dst = Path.of("/forbidden/dst.txt");
     // Source (delete) violation fires first and throws in enforce mode
     try {
-      FileInterceptor.checkMove(src, dst);
+      InterceptorTestHelper.checkMove(src, dst);
     } catch (SecurityException ignored) {
       // expected
     }
@@ -160,7 +160,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
   public void testDeniedNetworkConnectThrowsInEnforceMode() throws Exception {
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
     InetSocketAddress addr = new InetSocketAddress(InetAddress.getByName("10.0.0.99"), 9999);
-    SocketChannelInterceptor.checkConnect(addr);
+    InterceptorTestHelper.checkConnect(addr);
   }
 
   @Test
@@ -169,7 +169,7 @@ public class SolrAgentIntegrationTest extends SolrTestCase {
     buildEnforcePolicy(List.of(), List.of(), List.of(), List.of());
     InetSocketAddress addr = new InetSocketAddress(InetAddress.getByName("10.0.0.99"), 9999);
     try {
-      SocketChannelInterceptor.checkConnect(addr);
+      InterceptorTestHelper.checkConnect(addr);
     } catch (SecurityException ignored) {
       // expected
     }

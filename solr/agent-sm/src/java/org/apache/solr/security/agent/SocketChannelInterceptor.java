@@ -54,27 +54,12 @@ public class SocketChannelInterceptor {
 
     if (args[0] instanceof InetSocketAddress address) {
       if (!policy.trustedHosts().contains(address.getHostString())) {
-        final String host = address.getHostString();
-        final int port = address.getPort();
-
-        if (!isEndpointPermitted(policy, host, port)) {
-          final String target = host + ":" + port;
-          ViolationMetricsReporter.incrementNetwork();
-          SecurityViolationLogger.log(
-              SecurityViolationLogger.ViolationType.NETWORK_CONNECT,
-              target,
-              caller,
-              policy.enforcementMode());
-          if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
-            throw new SecurityException(
-                "Outbound network connection denied by Solr security agent: " + target);
-          }
-        }
+        enforceNetworkAccess(policy, address.getHostString(), address.getPort(), caller);
       }
     } else if (args[0] instanceof UnixDomainSocketAddress) {
       // Unix domain socket — local IPC, always allow
     } else if (args[0] != null) {
-      // Unknown SocketAddress subclass — fail closed
+      // Unknown SocketAddress subclass — fail closed (host/port unknown, cannot consult policy)
       final String target = args[0].toString();
       ViolationMetricsReporter.incrementNetwork();
       SecurityViolationLogger.log(
@@ -84,31 +69,22 @@ public class SocketChannelInterceptor {
           policy.enforcementMode());
       if (policy.enforcementMode() == AgentPolicy.EnforcementMode.ENFORCE) {
         throw new SecurityException(
-            "Outbound network connection denied by Solr security agent (unknown address type): "
-                + target);
+            "Outbound network connection denied (unknown address type): " + target);
       }
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Static helpers (used by advice and by tests)
+  // Shared enforcement helper
   // ---------------------------------------------------------------------------
 
   /**
-   * Checks whether the given remote address may be connected to under the active policy. Increments
-   * the network violation counter and logs on violation; throws {@link SecurityException} in
-   * enforce mode.
-   *
-   * <p>Used by tests to exercise the network check without ByteBuddy instrumentation.
+   * Enforces the network policy for {@code host:port}. Increments the network violation counter,
+   * logs, and throws {@link SecurityException} in enforce mode if no permitted endpoint matches.
+   * Used by both the {@link #intercept} advice and the test-side helper in {@code
+   * InterceptorTestHelper}.
    */
-  public static void checkConnect(InetSocketAddress address) {
-    if (!AgentPolicy.isInitialized()) return;
-    if (address.isUnresolved()) return;
-    AgentPolicy policy = AgentPolicy.getInstance();
-    if (policy.trustedHosts().contains(address.getHostString())) return;
-    String caller = topCallerClassName();
-    String host = address.getHostString();
-    int port = address.getPort();
+  static void enforceNetworkAccess(AgentPolicy policy, String host, int port, String caller) {
     if (!isEndpointPermitted(policy, host, port)) {
       String target = host + ":" + port;
       ViolationMetricsReporter.incrementNetwork();
@@ -121,16 +97,6 @@ public class SocketChannelInterceptor {
         throw new SecurityException(
             "Outbound network connection denied by Solr security agent: " + target);
       }
-    }
-  }
-
-  public static String topCallerClassName() {
-    try {
-      return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-          .getCallerClass()
-          .getName();
-    } catch (Exception e) {
-      return "<unknown>";
     }
   }
 

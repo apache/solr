@@ -57,7 +57,7 @@ public class SocketChannelInterceptorTest extends SolrTestCase {
     InetSocketAddress loopback = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 8983);
     assertTrue(policy.trustedHosts().contains(loopback.getHostString()));
     // checkConnect skips trusted hosts before policy lookup
-    SocketChannelInterceptor.checkConnect(loopback); // must not throw
+    InterceptorTestHelper.checkConnect(loopback); // must not throw
   }
 
   @Test
