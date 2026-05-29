@@ -50,7 +50,7 @@ public class FileInterceptor {
    * (b) {@code toRealPath()} itself triggers a re-entrant interception (detected via {@link
    * #IN_SYMLINK_RESOLVE}).
    */
-  static String resolveRealPath(Path path) {
+  public static String resolveRealPath(Path path) {
     if (Boolean.TRUE.equals(IN_SYMLINK_RESOLVE.get())) {
       return path.toAbsolutePath().normalize().toString();
     }
@@ -249,7 +249,7 @@ public class FileInterceptor {
    * Increments the file violation counter and logs; throws {@link SecurityException} in enforce
    * mode. Used by both the {@link #intercept} advice and the test-side check helpers.
    */
-  static void enforceFileAccess(
+  public static void enforceFileAccess(
       AgentPolicy policy,
       String resolvedPath,
       String action,
