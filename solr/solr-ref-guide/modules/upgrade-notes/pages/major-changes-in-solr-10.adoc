@@ -56,7 +56,7 @@ The universal connection string is now supported in the following components and
 * Added `solrConnection` parameter to all streaming functions in the SolrJ Streaming module. The existing `zkHost` parameter remains supported.
 * Added `withDefaultSolrConnection` and `withCollectionSolrConnection` methods to `StreamFactory` in the SolrJ Streaming module.
 * Solr SQL JDBC driver now supports both HTTP-based (`jdbc:solr:http://solr1.example.com:8983/solr?collection=COLLECTION_NAME`) and ZooKeeper-based (`jdbc:solr://zoo.example.com:2181/solr?collection=COLLECTION_NAME`) JDBC URLs.
-* Added `--solr-connection` option to the CLI tools.
+* Added `-sc`,`--solr-connection` option to the CLI tools.
 * Added `solrConnection` parameter to the Join Query Parser.
 
 === v2 API
