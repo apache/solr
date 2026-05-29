@@ -178,18 +178,19 @@ For example:
 
 == API Endpoints
 
-* `GET /api/cluster/package` Get the list of packages
-* `POST /api/cluster/package` edit packages
-** `add` command: add a version of a package
-** `delete` command:  delete a version of a package
+* `GET /api/cluster/package` Get the list of all packages
+* `GET /api/cluster/package/{name}` Get the details of a specific package
+* `POST /api/cluster/package/{name}/versions` Add a version of a package
+* `DELETE /api/cluster/package/{name}/versions/{version}` Delete a specific version of a package
+* `POST /api/cluster/package/{name}/refresh` Refresh a package on all nodes in the cluster
 
 === How to Upgrade?
 
-Use the `add` command to add a version that is higher than the current version.
+Use the add version endpoint to add a version that is higher than the current version.
 
 === How to Downgrade?
 
-Use the `delete` command to delete the highest version and choose the next highest version.
+Use the delete version endpoint to delete the highest version and choose the next highest version.
 
 === Using Multiple Versions in Parallel
 
@@ -244,11 +245,9 @@ The plugins loaded from packages cannot depend on core level classes.
 +
 [source,bash]
 ----
-curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
-{"add": {
-         "package" : "mypkg",
-         "version":"1.0",
-         "files" :["/mypkg/1.0/myplugins.jar"]}}'
+curl -X POST http://localhost:8983/api/cluster/package/mypkg/versions \
+  -H 'Content-type:application/json' \
+  -d '{"version":"1.0","files":["/mypkg/1.0/myplugins.jar"]}'
 ----
 
 . Verify the created package:
@@ -350,11 +349,9 @@ curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=t
 +
 [source,bash]
 ----
-curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
-{"add": {
-         "package" : "mypkg",
-         "version":"2.0",
-         "files" :["/mypkg/2.0/myplugins.jar"]}}'
+curl -X POST http://localhost:8983/api/cluster/package/mypkg/versions \
+  -H 'Content-type:application/json' \
+  -d '{"version":"2.0","files":["/mypkg/2.0/myplugins.jar"]}'
 ----
 
 . Verify the plugin to see if the correct version of the package is being used:

@@ -48,12 +48,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
-import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.PackagePayload;
+import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
-import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -151,20 +149,9 @@ public class PackageManager implements Closeable {
     // Delete the package by calling the Package API and remove the Jar
 
     printGreen("Executing Package API to remove this package...");
-    PackagePayload.DelVersion del = new PackagePayload.DelVersion();
-    del.version = version;
-    del.pkg = packageName;
-
-    V2Request req =
-        new V2Request.Builder(PackageUtils.PACKAGE_PATH)
-            .forceV2(true)
-            .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Map.of("delete", del))
-            .build();
-
     try {
-      V2Response resp = req.process(solrClient);
-      printGreen("Response: " + resp.jsonStr());
+      new PackageApi.DeletePackageVersion(packageName, version).process(solrClient);
+      printGreen("Package version deleted from Package API.");
     } catch (SolrServerException | IOException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -176,9 +163,8 @@ public class PackageManager implements Closeable {
         String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"));
     for (String filePath : filesToDelete) {
       DistribFileStore.deleteZKFileEntry(zkClient, filePath);
-      String path = "/api/cluster/filestore/files" + filePath;
-      printGreen("Deleting " + path);
-      solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.DELETE, path));
+      printGreen("Deleting " + filePath);
+      new FileStoreApi.DeleteFile(filePath).process(solrClient);
     }
 
     printGreen("Package uninstalled: " + packageName + ":" + version + ":-)");
@@ -463,10 +449,7 @@ public class PackageManager implements Closeable {
       // If updating, refresh the package version for this to take effect
       if (isUpdate || pegToLatest) {
         try {
-          SolrCLI.postJsonToSolr(
-              solrClient,
-              PackageUtils.PACKAGE_PATH,
-              "{\"refresh\": \"" + packageInstance.name + "\"}");
+          new PackageApi.RefreshPackage(packageInstance.name).process(solrClient);
         } catch (Exception ex) {
           throw new SolrException(ErrorCode.SERVER_ERROR, ex);
         }
@@ -1075,8 +1058,7 @@ public class PackageManager implements Closeable {
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
             "{set: {PKG_VERSIONS: {" + packageName + ": null}}}");
-        SolrCLI.postJsonToSolr(
-            solrClient, PackageUtils.PACKAGE_PATH, "{\"refresh\": \"" + packageName + "\"}");
+        new PackageApi.RefreshPackage(packageName).process(solrClient);
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
