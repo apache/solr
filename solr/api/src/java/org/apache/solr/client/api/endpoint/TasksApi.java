@@ -27,7 +27,7 @@ import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
-@Path(INDEX_PATH_PREFIX)
+@Path(INDEX_PATH_PREFIX + "/tasks")
 public interface TasksApi {
 
   @Path("/tasks")

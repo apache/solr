@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.api.model.TaskStatusResponse.TaskStatus;
 import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
+import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.TaskStatusResponse;
@@ -30,6 +31,7 @@ public class GetTaskStatus extends JerseyResource implements TasksApi.Status {
 
   private final SolrQueryRequest solrQueryRequest;
 
+  @Inject
   public GetTaskStatus(SolrQueryRequest solrQueryRequest) {
     this.solrQueryRequest = solrQueryRequest;
   }

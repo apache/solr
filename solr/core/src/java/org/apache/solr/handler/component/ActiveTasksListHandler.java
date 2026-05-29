@@ -102,6 +102,6 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(ListActiveTasks.class);
+    return List.of(ListActiveTasks.class, GetTaskStatus.class);
   }
 }
