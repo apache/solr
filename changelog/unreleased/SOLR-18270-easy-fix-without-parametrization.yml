@@ -2,7 +2,7 @@ title: Update looked up attribute for SSL authentication
 type: fixed
 authors:
   - name: Jean-Marie HEITZ
-    nich: heitzjm
+    nick: heitzjm
 links:
   - name: SOLR-18270
     url: https://issues.apache.org/jira/projects/SOLR/issues/SOLR-18270
