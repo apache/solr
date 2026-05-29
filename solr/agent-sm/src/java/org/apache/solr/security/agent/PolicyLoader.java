@@ -208,6 +208,19 @@ public class PolicyLoader {
       for (RawFilePermission fp : block.filePaths) {
         boolean recursive = fp.target.endsWith("/-") || fp.target.endsWith("\\-");
         String basePath = recursive ? fp.target.substring(0, fp.target.length() - 2) : fp.target;
+        // Normalize the policy path using the same resolution strategy as FileInterceptor so that
+        // comparisons are always apples-to-apples. toRealPath() resolves symlinks; fall back to
+        // toAbsolutePath().normalize() when the path does not exist yet or the Old Java
+        // SecurityManager blocks the read check on the resolved path.
+        try {
+          basePath = Path.of(basePath).toRealPath().toString();
+        } catch (IOException | SecurityException e) {
+          try {
+            basePath = Path.of(basePath).toAbsolutePath().normalize().toString();
+          } catch (Exception ignored) {
+            // keep the variable-substituted string as-is
+          }
+        }
         paths.add(new PermittedPath(basePath, fp.actions, recursive, fp.source));
       }
       for (RawSocketPermission sp : block.socketPerms) {

@@ -38,8 +38,9 @@ grant {
 
   // Solr installation directory: read-only (JARs, modules, Jetty config, etc.)
   // Both the real path and the symlinked path are permitted so that installations where
-  // /opt/solr -> /opt/solr-X.Y.Z/ work correctly (FileInterceptor uses toAbsolutePath(),
-  // not toRealPath(), so accesses via the symlink path must be explicitly allowed).
+  // /opt/solr -> /opt/solr-X.Y.Z/ work correctly regardless of which form is presented to
+  // FileInterceptor. When the Old Java SecurityManager is active, toRealPath() may fall back
+  // to toAbsolutePath().normalize(), producing the symlinked form; both entries are needed.
   permission java.io.FilePermission "${solr.install.dir}/-",    "read";
   permission java.io.FilePermission "${solr.install.symDir}/-", "read";
 

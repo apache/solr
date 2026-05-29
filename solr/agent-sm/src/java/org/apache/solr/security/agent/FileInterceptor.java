@@ -57,8 +57,9 @@ public class FileInterceptor {
     IN_SYMLINK_RESOLVE.set(true);
     try {
       return path.toRealPath().toString();
-    } catch (IOException e) {
-      // Path does not exist yet — fall back to normalized path
+    } catch (IOException | SecurityException e) {
+      // Path does not exist yet, or the Old Java SecurityManager blocked checkRead() on the
+      // resolved real path — fall back to the normalized (non-symlink-resolved) path.
       return path.toAbsolutePath().normalize().toString();
     } finally {
       IN_SYMLINK_RESOLVE.set(false);
