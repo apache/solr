@@ -42,6 +42,26 @@ This plugin provides no additional checking beyond what has been configured via 
 
 It is best practice to verify the actual contents of certificates issued by your trusted certificate authority before configuring authorization based on the contents.
 
+=== Certificate Lookup
+
+It is expected that the web application server adds an attribute to the request to specify the client certificate(s). 
+
+Historically, this attribute name was `javax.servlet.request.X509Certificate`. However, the attribute name changed in some web application servers to `jakarta.servlet.request.X509Certificate` with the migration from Java EE to Jakarta EE. Therefore, a `requestAttribute` has been introduced to let administrators configure the attribute name the CertAuthPlugin should look up.
+
+The default value is `jakarta.servlet.request.X509Certificate`.
+
+An example :
+
+[source,json]
+----
+{
+ "authentication": {
+  "class":"solr.CertAuthPlugin",
+  "requestAttribute":"javax.servlet.request.X509Certificate"
+ }
+}
+----
+
 == User Principal Extraction
 
 This plugin will configure the user `principal` for the request based on the contents of the client certificate. Solr provides three methods for extracting the `principal`:
