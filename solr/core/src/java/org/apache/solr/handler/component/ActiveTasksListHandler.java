@@ -34,8 +34,8 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
 /**
- * Handles request for listing the active cancellable tasks and Status check of any particular task,
- * actual logic lives in the v2: {@link ListActiveTasks} and {@link GetTaskStatus}; this handler is
+ * Handles request for listing all active cancellable tasks and get status check of any taskId.
+ * Actual logic lives in the v2: {@link ListActiveTasks} and {@link GetTaskStatus}; this handler is
  * a thin v1 bridge that extracts request parameters and delegates over to v2.
  */
 public class ActiveTasksListHandler extends TaskManagementHandler {
@@ -44,13 +44,13 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String taskStatusCheckID = req.getParams().get(TASK_CHECK_UUID, null);
+    String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
 
-    if (taskStatusCheckID != null) {
+    if (taskStatusCheckUUID != null) {
       TaskStatusResponse taskStatusResponse =
-          new GetTaskStatus(req).getTaskStatus(taskStatusCheckID);
+          new GetTaskStatus(req).getTaskStatus(taskStatusCheckUUID);
       String taskStatus =
-          "id: " + taskStatusCheckID + ", status: " + taskStatusResponse.taskStatus.getValue();
+          "id: " + taskStatusCheckUUID + ", status: " + taskStatusResponse.taskStatus.getValue();
       rsp.add("taskStatus", taskStatus);
 
     } else {

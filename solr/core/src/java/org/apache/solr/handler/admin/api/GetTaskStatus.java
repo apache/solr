@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.api.model.TaskStatusResponse.TaskStatus;
 import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
 import org.apache.solr.api.JerseyResource;
@@ -43,8 +44,8 @@ public class GetTaskStatus extends JerseyResource implements TasksApi.Status {
 
     response.taskStatus =
         (isTaskActive)
-            ? TaskStatusResponse.TaskStatus.ACTIVE
-            : TaskStatusResponse.TaskStatus.INACTIVE;
+            ? TaskStatus.ACTIVE
+            : TaskStatus.INACTIVE;
 
     return response;
   }

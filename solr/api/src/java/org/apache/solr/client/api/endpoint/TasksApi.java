@@ -35,7 +35,7 @@ public interface TasksApi {
     @GET
     @StoreApiParameters
     @Operation(
-        summary = "Lists all the currently running active tasks.",
+        summary = "Lists all the active tasks.",
         tags = {"tasks"})
     ListActiveTaskResponse listAllActiveTasks() throws Exception;
   }
@@ -45,7 +45,7 @@ public interface TasksApi {
     @GET
     @StoreApiParameters
     @Operation(
-        summary = "Status of a specific taskID passed as pathParam.",
+        summary = "Status of a specific taskID.",
         tags = {"tasks"})
     TaskStatusResponse getTaskStatus(@PathParam("taskID") String taskID) throws Exception;
   }
