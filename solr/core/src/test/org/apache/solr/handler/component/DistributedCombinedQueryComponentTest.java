@@ -283,6 +283,52 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   }
 
   /**
+   * Tests the combined query feature with faceting, highlighting and elevation with debug.
+   *
+   * @throws Exception if any unexpected error occurs during the test execution.
+   */
+  @Test
+  public void testElevatedQueriesWithFacetAndHighlights() throws Exception {
+    prepareIndexDocs();
+    String jsonQuery =
+        """
+        {
+          "queries": {
+            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 1^1)"}},
+            "lexical2": {"lucene": {"query": "id:(4^1 OR 1^2 OR 7^3 OR 10^2)"}}
+          },
+          "limit": 4,
+          "fields": ["id", "score", "title"],
+          "params": {
+            "combiner": true,
+            "elevateIds": "10,6",
+            "combiner.query": ["lexical1", "lexical2"],
+            "facet": true,
+            "facet.field": "mod3_idv",
+            "hl": true,
+            "hl.fl": "title",
+            "hl.q": "test doc",
+            "debug": "true"
+          }
+        }""";
+    handle.put("debug", SKIP);
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search-elevate");
+    assertEquals(4, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "10", "6", "1", "7");
+    assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
+    assertEquals("[1 (4), 0 (2), 2 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(4, rsp.getHighlighting().size());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 1",
+        rsp.getHighlighting().get("1").get("title").getFirst());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 6",
+        rsp.getHighlighting().get("6").get("title").getFirst());
+    assertTrue(rsp.getDebugMap().containsKey("queryBoosting"));
+    assertEquals(2, ((List<?>) rsp.getDebugMap().get("queryBoosting")).size());
+  }
+
+  /**
    * @see org.apache.solr.handler.component.CombinedQuerySolrCloudTest#testForcedDistrib()
    */
   @Test
