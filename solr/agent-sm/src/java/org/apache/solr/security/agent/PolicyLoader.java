@@ -26,26 +26,10 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Reads and parses JDK-style {@code .policy} files, performing Solr-specific variable substitution,
- * and produces a {@link AgentPolicy} ready for enforcement.
- *
- * <h2>Variable substitution</h2>
- *
- * {@code ${property}} placeholders in permission targets and {@code codeBase} URLs are expanded
- * per-token by {@link PolicyPropertyExpander} using system properties. Any unresolved placeholder
- * causes startup to fail immediately (fail-fast). The only built-in default is {@code
- * ${solr.zk.port}}, which falls back to {@code solr.port + 1000} when not explicitly set.
- *
- * <h2>Two-file merge</h2>
- *
- * Two files are loaded: the mandatory default policy and an optional operator extension file. The
- * extra-policy file path is resolved from system property {@code solr.security.agent.extra.policy},
- * falling back to {@code ${server.dir}/etc/agent-security-extra.policy}. An absent extra-policy
- * file is silently skipped. Each entry carries a {@link PermittedPath#source() source} tag of
- * either {@link PolicySource#DEFAULT} or {@link PolicySource#OPERATOR}.
- *
- * <p>A missing or unparseable <em>default</em> policy causes an {@link IllegalStateException} at
- * startup.
+ * Parses JDK-style {@code .policy} files with Solr variable substitution and produces an {@link
+ * AgentPolicy}. Loads the mandatory default policy and an optional operator extension file (path
+ * from {@code solr.security.agent.extra.policy} or {@code ${server.dir}/etc/agent-security-extra.policy}).
+ * Unresolved {@code ${property}} placeholders fail fast at startup.
  */
 public class PolicyLoader {
 
@@ -82,7 +66,6 @@ public class PolicyLoader {
               + ". The default policy must define at least one grant.");
     }
 
-    // Resolve extra-policy path: system property → fallback to ${server.dir}/etc/...
     Path extraPolicyPath = resolveExtraPolicyPath();
     if (extraPolicyPath != null && Files.exists(extraPolicyPath)) {
       String extraContent;
@@ -104,12 +87,7 @@ public class PolicyLoader {
     return buildPolicy(grants);
   }
 
-  /**
-   * Resolves the extra-policy file path from system property {@code
-   * solr.security.agent.extra.policy}, falling back to {@code
-   * ${server.dir}/etc/agent-security-extra.policy}. Returns {@code null} if no fallback is
-   * available.
-   */
+  /** Returns the extra-policy path, or {@code null} if neither sysprop nor {@code jetty.home} is set. */
   static Path resolveExtraPolicyPath() {
     String explicitPath =
         PolicyPropertyExpander.getPropertyOrEnv("solr.security.agent.extra.policy");
@@ -123,29 +101,15 @@ public class PolicyLoader {
     return null;
   }
 
-  /**
-   * Parses a policy file and appends the resulting {@link GrantBlock} entries — tagged with the
-   * given {@code source} — to {@code out}. Variable substitution is performed per-token by {@link
-   * PolicyPropertyExpander}; any unresolved {@code ${variable}} causes an {@link
-   * IllegalStateException}.
-   */
   static void parsePolicy(String content, PolicySource source, List<GrantBlock> out) {
     parsePolicyBlocks(content, source, out);
   }
 
   /**
-   * Parses grant blocks from the given (already variable-substituted) policy text. Only the
-   * permission types used by the Solr agent are recognised:
-   *
-   * <ul>
-   *   <li>{@code java.io.FilePermission} → {@link PermittedPath}
-   *   <li>{@code java.net.SocketPermission} → {@link PermittedEndpoint}
-   *   <li>{@code java.lang.RuntimePermission "exitVM"} → {@link ApprovedCallSite} EXIT
-   *   <li>{@code java.lang.RuntimePermission "exec"} → {@link ApprovedCallSite} EXEC
-   * </ul>
-   *
-   * <p>Parsing uses {@link PolicyFileParser} (backed by {@link java.io.StreamTokenizer}) which
-   * natively handles {@code //} and {@code /* *\/} comments and quoted strings — no regex.
+   * Parses grant blocks. Recognized permission types:
+   * {@code java.io.FilePermission} → {@link PermittedPath},
+   * {@code java.net.SocketPermission} → {@link PermittedEndpoint},
+   * {@code java.lang.RuntimePermission "exitVM"|"exec"} → {@link ApprovedCallSite}.
    */
   static void parsePolicyBlocks(String text, PolicySource source, List<GrantBlock> out) {
     List<PolicyFileParser.GrantEntry> grantEntries;
@@ -208,10 +172,7 @@ public class PolicyLoader {
       for (RawFilePermission fp : block.filePaths) {
         boolean recursive = fp.target.endsWith("/-") || fp.target.endsWith("\\-");
         String basePath = recursive ? fp.target.substring(0, fp.target.length() - 2) : fp.target;
-        // Normalize the policy path using the same resolution strategy as FileInterceptor so that
-        // comparisons are always apples-to-apples. toRealPath() resolves symlinks; fall back to
-        // toAbsolutePath().normalize() when the path does not exist yet or the Old Java
-        // SecurityManager blocks the read check on the resolved path.
+        // Resolve symlinks so policy paths compare apples-to-apples with FileInterceptor.
         try {
           basePath = Path.of(basePath).toRealPath().toString();
         } catch (IOException | SecurityException e) {
@@ -256,8 +217,8 @@ public class PolicyLoader {
 
     // 0.0.0.0 is the unspecified bind address, not a loopback — intentionally excluded.
     Set<String> trustedHosts = Set.of("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1", "::1");
-    // jar/zip/jrt are internal JVM class-loading file systems. Intercepting them causes a
-    // class-initialization deadlock: violation logger → SLF4J → Log4j2 init → JAR read → repeat.
+    // jar/zip/jrt: JVM class-loading file systems. Intercepting them causes a
+    // classloader deadlock (violation logger → SLF4J → Log4j2 init → JAR read → repeat).
     Set<String> trustedFileSystems = Set.of("jar", "zip", "jrt");
     return new AgentPolicy(
         paths, endpoints, exitCallers, execCallers, mode, trustedFileSystems, trustedHosts);

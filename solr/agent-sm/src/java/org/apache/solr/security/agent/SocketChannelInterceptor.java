@@ -31,15 +31,8 @@ import net.bytebuddy.asm.Advice;
  */
 public class SocketChannelInterceptor {
 
-  /** SocketChannelInterceptor */
   public SocketChannelInterceptor() {}
 
-  /**
-   * Intercepts outbound socket connections.
-   *
-   * @param args arguments of the intercepted {@code connect} method
-   * @throws Exception if the connection is denied in enforce mode
-   */
   @Advice.OnMethodEnter
   public static void intercept(@Advice.AllArguments Object[] args) throws Exception {
     if (!AgentPolicy.isInitialized()) return;
@@ -74,12 +67,7 @@ public class SocketChannelInterceptor {
   // Shared enforcement helper
   // ---------------------------------------------------------------------------
 
-  /**
-   * Enforces the network policy for {@code host:port}. Increments the network violation counter,
-   * logs, and throws {@link SecurityException} in enforce mode if no permitted endpoint matches.
-   * Used by both the {@link #intercept} advice and the test-side helper in {@code
-   * InterceptorTestHelper}.
-   */
+  /** Checks the policy for {@code host:port}; logs and throws {@link SecurityException} in enforce mode. */
   static void enforceNetworkAccess(AgentPolicy policy, String host, int port, String caller) {
     if (!isEndpointPermitted(policy, host, port)) {
       String target = host + ":" + port;
@@ -101,20 +89,9 @@ public class SocketChannelInterceptor {
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns {@code true} if at least one permitted endpoint entry in the policy covers the given
-   * host and port. Matching rules:
-   *
-   * <ul>
-   *   <li>Entry {@code *:port} — matches any host on that exact port
-   *   <li>Entry {@code host:port} — matches exact host and port
-   *   <li>Entry {@code host:low-high} — matches the host with a port in the inclusive range
-   *   <li>Entry {@code *} (no colon) — matches everything (broad wildcard)
-   * </ul>
-   *
-   * <p>Entries with a {@code codeBase} restriction are evaluated against the current call chain via
-   * {@link StackWalker}: the entry permits the connection only if at least one class in the chain
-   * was loaded from a code source under that codeBase path. The stack walk is performed lazily —
-   * only when a codeBase-restricted entry whose endpoint pattern matches is encountered.
+   * Returns {@code true} if the policy permits an outbound connection to {@code host:port}.
+   * Matching rules: {@code *:port} — any host on that port; {@code host:low-high} — port range;
+   * {@code *} — everything. codeBase-restricted entries are checked lazily via {@link StackWalker}.
    */
   public static boolean isEndpointPermitted(AgentPolicy policy, String host, int port) {
     Collection<Class<?>> chain = null; // lazily populated

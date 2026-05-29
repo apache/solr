@@ -26,16 +26,12 @@ import java.util.stream.Stream;
 /**
  * Extracts the set of all non-hidden declaring classes from the current call stack.
  *
- * <p>Used by {@link SystemExitInterceptor} and {@link RuntimeHaltInterceptor} to obtain the full
- * caller chain for exit-permission checks.
- *
  * <p>This file was derived from the OpenSearch project and modified. See {@code NOTICE.txt} for
  * attribution.
  */
 public final class StackCallerClassChainExtractor
     implements Function<Stream<StackFrame>, Collection<Class<?>>> {
 
-  /** Single instance of stateless class. */
   public static final StackCallerClassChainExtractor INSTANCE =
       new StackCallerClassChainExtractor();
 

@@ -19,26 +19,12 @@ package org.apache.solr.security.agent;
 import java.util.List;
 
 /**
- * A call-site pattern that is approved to perform a restricted operation such as calling {@code
- * System.exit()} or spawning a child process via {@code ProcessBuilder}.
+ * A policy entry approving a class (or code source) to perform a restricted operation.
  *
- * <p>Approved call sites are loaded from the security policy at startup and are immutable. Each
- * entry matches callers either by class-name pattern or by code-source location (codeBase).
- *
- * <p><b>Class-name matching</b> (when {@link #codeBase()} is {@code null}): uses the same syntax as
- * {@link AgentPolicy#isChainThatCanExit}: {@code "*"} matches any class; a pattern ending in {@code
- * ".*"} (e.g. {@code org.apache.solr.cli.*}) matches that package and all sub-packages; anything
- * else is an exact fully-qualified class name.
- *
- * <p><b>codeBase matching</b> (when {@link #codeBase()} is non-{@code null}): the calling class
- * must have been loaded from a JAR or directory matching the codeBase URL, using the same syntax as
- * JDK policy files ({@code file:/path/-} for recursive, {@code file:/path/to.jar} for exact).
- *
- * <p>Default approved EXIT callers: none (empty list in the bundled production policy). Operators
- * can add entries via {@code agent-security-extra.policy} when specific code needs to call {@code
- * System.exit()} — for example, a custom lifecycle plugin.
- *
- * <p>Default approved EXEC callers: none (empty list in production policy).
+ * <p>Class-name matching ({@link #codeBase()} is {@code null}): {@code "*"} matches any class; a
+ * pattern ending in {@code ".*"} matches that package and sub-packages; otherwise exact match.
+ * codeBase matching: the calling class must have been loaded from a location matching the JDK
+ * policy {@code codeBase} URL ({@code file:/path/-} recursive, {@code file:/path/to.jar} exact).
  */
 public final class ApprovedCallSite {
 
@@ -53,15 +39,10 @@ public final class ApprovedCallSite {
   private final Operation operation;
   private final PolicySource source;
 
-  /** Constructs a class-name–based approval (no codeBase constraint). */
   ApprovedCallSite(String classNamePattern, Operation operation, PolicySource source) {
     this(classNamePattern, null, operation, source);
   }
 
-  /**
-   * Constructs an approval that is either class-name–based ({@code codeBase == null}) or
-   * code-source–based ({@code classNamePattern == null}).
-   */
   ApprovedCallSite(
       String classNamePattern, String codeBase, Operation operation, PolicySource source) {
     this.classNamePattern = classNamePattern;
@@ -96,11 +77,7 @@ public final class ApprovedCallSite {
     return source;
   }
 
-  /**
-   * Returns {@code true} if the given fully-qualified class name matches this entry's class-name
-   * pattern. Always returns {@code false} when this entry uses codeBase matching — use {@link
-   * #matchesCodeBase(Class)} instead.
-   */
+  /** Returns {@code true} if {@code className} matches the pattern; {@code false} for codeBase entries. */
   public boolean matches(String className) {
     if (codeBase != null) return false; // codeBase entries must be checked via matchesCodeBase
     if ("*".equals(classNamePattern)) return true;
@@ -111,11 +88,7 @@ public final class ApprovedCallSite {
     return classNamePattern.equals(className);
   }
 
-  /**
-   * Returns {@code true} if this entry has a codeBase constraint and the given class was loaded
-   * from a code source matching that codeBase. Always returns {@code false} when this entry uses
-   * class-name matching.
-   */
+  /** Returns {@code true} if {@code cls} was loaded from this entry's codeBase; {@code false} for class-name entries. */
   public boolean matchesCodeBase(Class<?> cls) {
     if (codeBase == null) return false;
     return SocketChannelInterceptor.isCallerFromCodeBase(List.of(cls), codeBase);

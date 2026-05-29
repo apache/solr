@@ -22,39 +22,15 @@ import java.util.Collection;
 import net.bytebuddy.asm.Advice;
 
 /**
- * ByteBuddy {@link Advice} interceptor for child process spawning.
- *
- * <p>Intercepts {@code ProcessBuilder.start()} and {@code Runtime.exec()} to enforce the {@link
- * AgentPolicy#approvedExecCallers()} list. By default, no call sites are approved in the production
- * policy (the list is empty), so all process-spawning attempts will be flagged unless an operator
- * explicitly adds an entry to {@code agent-security-extra.policy}.
- *
- * <p>Permission is granted if <em>any</em> class in the full call chain matches an approved entry —
- * the same semantics as {@link SystemExitInterceptor}. This means that if an approved class (e.g.
- * {@code SolrCLI}) calls a helper that then calls {@code ProcessBuilder.start()}, the helper call
- * is still permitted.
- *
- * <p>Known legitimate process-spawning call sites in Solr (kept out of the default production
- * policy because they use {@code ProcessHandle}, not {@code ProcessBuilder}):
- *
- * <ul>
- *   <li>{@code org.apache.solr.cli.SolrProcessManager} — JVM discovery
- * </ul>
+ * ByteBuddy {@link Advice} interceptor for {@code ProcessBuilder.start()} and {@code
+ * Runtime.exec()}. Permission is granted if any class in the full call chain matches an approved
+ * entry — same semantics as {@link SystemExitInterceptor}.
  */
 public final class ProcessExecInterceptor {
 
   private ProcessExecInterceptor() {}
 
-  /**
-   * Single entry point for both {@code ProcessBuilder.start()} and {@code Runtime.exec()}.
-   *
-   * <p>ByteBuddy requires exactly one {@code @OnMethodEnter} method per advice class. This method
-   * is registered on both {@code ProcessBuilder} and {@code Runtime} via separate {@code
-   * AgentBuilder} transform chains in {@link SolrAgentEntryPoint}.
-   *
-   * @param args all arguments of the intercepted method
-   * @param method the intercepted method (used to identify the call site in the violation log)
-   */
+  /** Shared entry point for {@code ProcessBuilder.start()} and {@code Runtime.exec()}. */
   @Advice.OnMethodEnter(suppress = IOException.class)
   public static void onExec(@Advice.AllArguments Object[] args, @Advice.Origin Method method) {
     checkExec(deriveTarget(method.getName(), args));
@@ -75,14 +51,7 @@ public final class ProcessExecInterceptor {
   // Core check logic
   // ---------------------------------------------------------------------------
 
-  /**
-   * Checks whether any class in the current call chain is in the approved exec-caller list. Uses
-   * the full chain walk (same semantics as {@link SystemExitInterceptor}) so that an approved class
-   * anywhere in the stack grants permission. Delegates to {@link SecurityViolationLogger} on
-   * violation.
-   *
-   * @param target a human-readable description of the intercepted call for the violation log
-   */
+  /** Checks the call chain against the approved exec-caller list; logs and throws in enforce mode. */
   public static void checkExec(String target) {
     if (!AgentPolicy.isInitialized()) return;
 

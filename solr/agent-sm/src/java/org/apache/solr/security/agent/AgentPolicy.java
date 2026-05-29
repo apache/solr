@@ -22,18 +22,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Immutable singleton that holds the active security policy for the Solr JVM.
+ * Immutable singleton holding the active security policy for the Solr JVM.
  *
- * <p>The policy is loaded once at JVM startup by {@link PolicyLoader} and must not be modified
- * afterwards. Any attempt to replace the singleton after it has been set throws a {@link
- * SecurityException}.
- *
- * <p>The singleton is stored as a plain {@code static volatile} field so that it is visible to all
- * classloaders, including bootstrap-injected agent classes. The enforcement mode is read directly
- * from the system property {@code solr.security.agent.mode} (set by the startup script from the
- * environment variable {@code SOLR_SECURITY_AGENT_MODE}). {@code EnvUtils} from {@code solr:core}
- * is intentionally not used here because the agent JAR has no compile-time dependency on Solr
- * application code.
+ * <p>Loaded once at startup by {@link PolicyLoader}; replacing it throws {@link SecurityException}.
+ * Stored as {@code static volatile} so it is visible to the bootstrap classloader used by the agent
+ * JAR.
  */
 public final class AgentPolicy {
 
@@ -74,11 +67,8 @@ public final class AgentPolicy {
   }
 
   /**
-   * Constructs the policy with explicit trusted filesystem schemes and trusted hosts.
-   *
-   * @param trustedFileSystems filesystem URI schemes exempt from path checks (e.g. {@code "jrt"},
-   *     {@code "memory"} used in tests)
-   * @param trustedHosts host strings exempt from network checks (e.g. loopback addresses)
+   * Constructs the policy with explicit trusted filesystem schemes (e.g. {@code "jrt"}, {@code
+   * "memory"}) and trusted hosts (e.g. loopback addresses).
    */
   AgentPolicy(
       List<PermittedPath> permittedPaths,
@@ -131,24 +121,12 @@ public final class AgentPolicy {
     return p;
   }
 
-  /**
-   * Returns {@code true} if the singleton has already been initialized. Used by the agent entry
-   * point to detect double-loading.
-   */
+  /** Returns {@code true} if the singleton has been initialized. */
   public static boolean isInitialized() {
     return instance != null;
   }
 
-  /**
-   * Resets the singleton to {@code null} so that tests can re-initialize it between test methods.
-   *
-   * <p>This method is package-private and intended exclusively for unit tests in the {@code
-   * org.apache.solr.security.agent} package. Production code must never call this method.
-   *
-   * <p>The write is not synchronized: {@code instance} is {@code volatile}, so the assignment is
-   * immediately visible to all threads. Unlike {@link #initialize}, there is no invariant to
-   * protect here — tests call this only from a single thread during teardown.
-   */
+  /** Resets the singleton for tests; must not be called from production code. */
   static void resetForTesting() {
     instance = null;
   }
@@ -179,10 +157,7 @@ public final class AgentPolicy {
     return approvedExecCallers;
   }
 
-  /**
-   * Current enforcement mode. {@link EnforcementMode#WARN} allows violations; {@link
-   * EnforcementMode#ENFORCE} blocks them.
-   */
+  /** Current enforcement mode. */
   public EnforcementMode enforcementMode() {
     return enforcementMode;
   }
@@ -195,10 +170,7 @@ public final class AgentPolicy {
     return trustedFileSystems;
   }
 
-  /**
-   * Host strings exempt from outbound network checks (e.g. {@code "localhost"}, {@code
-   * "127.0.0.1"}). Populated by {@link SolrAgentEntryPoint} at startup.
-   */
+  /** Host strings exempt from outbound network checks (e.g. {@code "localhost"}). */
   public Set<String> trustedHosts() {
     return trustedHosts;
   }
@@ -207,10 +179,7 @@ public final class AgentPolicy {
   // Policy checks (convenience helpers called by interceptors)
   // ---------------------------------------------------------------------------
 
-  /**
-   * Returns {@code true} if at least one {@link PermittedPath} in this policy permits the given
-   * action on the given resolved (real) path.
-   */
+  /** Returns {@code true} if the policy permits {@code action} on the resolved path. */
   public boolean isPathPermitted(String resolvedPath, String action) {
     for (PermittedPath p : permittedPaths) {
       if (p.permits(resolvedPath, action)) return true;
@@ -218,10 +187,7 @@ public final class AgentPolicy {
     return false;
   }
 
-  /**
-   * Returns {@code true} if at least one {@link ApprovedCallSite} with {@link
-   * ApprovedCallSite.Operation#EXIT} matches the given class name.
-   */
+  /** Returns {@code true} if {@code className} matches an approved exit call-site. */
   public boolean isExitApproved(String className) {
     for (ApprovedCallSite cs : approvedExitCallers) {
       // codeBase entries require a Class<?> object; skip them here
@@ -232,10 +198,7 @@ public final class AgentPolicy {
     return false;
   }
 
-  /**
-   * Returns {@code true} if at least one {@link ApprovedCallSite} with {@link
-   * ApprovedCallSite.Operation#EXEC} matches the given class name.
-   */
+  /** Returns {@code true} if {@code className} matches an approved exec call-site. */
   public boolean isExecApproved(String className) {
     for (ApprovedCallSite cs : approvedExecCallers) {
       // codeBase entries require a Class<?> object; skip them here
@@ -247,14 +210,8 @@ public final class AgentPolicy {
   }
 
   /**
-   * Returns {@code true} if any class in the call chain is approved to call {@code System.exit()}
-   * or {@code Runtime.halt()}. Any approved class anywhere in the chain grants permission.
-   *
-   * <p>Class names are matched by {@link ApprovedCallSite#matches}: {@code "*"} matches any class;
-   * a pattern ending in {@code ".*"} matches the named package and all its sub-packages; anything
-   * else is an exact class-name match.
-   *
-   * @param chain the full set of non-hidden classes in the call stack
+   * Returns {@code true} if any class in {@code chain} is approved to call {@code System.exit()}
+   * or {@code Runtime.halt()}. Any match anywhere in the chain is sufficient.
    */
   public boolean isChainThatCanExit(Collection<Class<?>> chain) {
     for (Class<?> cls : chain) {
@@ -269,12 +226,8 @@ public final class AgentPolicy {
   }
 
   /**
-   * Returns {@code true} if any class in the call chain is approved to spawn child processes via
-   * {@code ProcessBuilder.start()} or {@code Runtime.exec()}. Any approved class anywhere in the
-   * chain grants permission, mirroring the exit-caller semantics in {@link
-   * #isChainThatCanExit(Collection)}.
-   *
-   * @param chain the full set of non-hidden classes in the call stack
+   * Returns {@code true} if any class in {@code chain} is approved to spawn child processes.
+   * Same semantics as {@link #isChainThatCanExit(Collection)}.
    */
   public boolean isChainThatCanExec(Collection<Class<?>> chain) {
     for (Class<?> cls : chain) {

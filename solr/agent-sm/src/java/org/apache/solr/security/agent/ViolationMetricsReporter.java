@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public final class ViolationMetricsReporter {
 
-  // Per-type counters — incremented atomically from interceptor hot paths.
   private static final LongAdder FILE_COUNTER = new LongAdder();
   private static final LongAdder NETWORK_COUNTER = new LongAdder();
   private static final LongAdder EXIT_COUNTER = new LongAdder();
@@ -34,42 +33,34 @@ public final class ViolationMetricsReporter {
 
   private ViolationMetricsReporter() {}
 
-  /** Increments the file-access violation counter. */
   public static void incrementFile() {
     FILE_COUNTER.increment();
   }
 
-  /** Increments the network-connection violation counter. */
   public static void incrementNetwork() {
     NETWORK_COUNTER.increment();
   }
 
-  /** Increments the System.exit() / Runtime.halt() violation counter. */
   public static void incrementExit() {
     EXIT_COUNTER.increment();
   }
 
-  /** Increments the process-exec violation counter. */
   public static void incrementExec() {
     EXEC_COUNTER.increment();
   }
 
-  /** Returns the current file-access violation count. */
   public static long fileCount() {
     return FILE_COUNTER.sum();
   }
 
-  /** Returns the current network-connection violation count. */
   public static long networkCount() {
     return NETWORK_COUNTER.sum();
   }
 
-  /** Returns the current System.exit() / Runtime.halt() violation count. */
   public static long exitCount() {
     return EXIT_COUNTER.sum();
   }
 
-  /** Returns the current process-exec violation count. */
   public static long execCount() {
     return EXEC_COUNTER.sum();
   }

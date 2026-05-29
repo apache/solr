@@ -29,38 +29,16 @@ import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.matcher.ElementMatchers;
 
 /**
- * Java agent entry point for the Solr security agent.
- *
- * <p>The JVM invokes {@link #premain(String, Instrumentation)} before the application main method
- * when the agent JAR is listed on the command line as {@code -javaagent:solr-agent-sm-*.jar}. The
- * {@link #agentmain(String, Instrumentation)} method supports attach-based loading (not used by
- * Solr's startup scripts but retained for tooling compatibility).
- *
- * <h2>Startup sequence</h2>
- *
- * <ol>
- *   <li>Locate and parse {@code agent-security.policy} (and the optional {@code
- *       agent-security-extra.policy}) via {@link PolicyLoader}.
- *   <li>Initialize the {@link AgentPolicy} singleton.
- *   <li>Register all four ByteBuddy interceptors with the JVM instrumentation API.
- *   <li>If policy loading fails and enforcement mode is {@code ENFORCE}, halt the JVM; in {@code
- *       WARN} mode, log the error and continue without protection.
- * </ol>
- *
- * <h2>Bootstrap classloader</h2>
- *
- * The agent JAR is placed on {@code Boot-Class-Path} so all interceptor and policy classes are
- * visible to the bootstrap classloader. SLF4J is intentionally absent from the fat JAR to avoid
- * poisoning the SLF4J binding before Log4j2 is loaded.
+ * Java agent entry point. Invoked by the JVM before the application main class when the agent JAR
+ * is specified via {@code -javaagent:}. Loads the policy, initializes {@link AgentPolicy}, and
+ * installs ByteBuddy interceptors. The agent JAR is on {@code Boot-Class-Path} so interceptor
+ * classes are visible to the bootstrap classloader; SLF4J is excluded from the fat JAR to avoid
+ * poisoning the binding before Log4j2 initializes.
  */
 public final class SolrAgentEntryPoint {
 
   private SolrAgentEntryPoint() {}
 
-  /**
-   * Called by the JVM before the application main class is loaded, when the agent JAR is specified
-   * via {@code -javaagent:}.
-   */
   public static void premain(String agentArgs, Instrumentation inst) {
     bootAgent(inst);
   }
@@ -79,7 +57,6 @@ public final class SolrAgentEntryPoint {
           "System.err is the only safe output during premain; System.exit(1) is required to halt "
               + "the JVM on fatal policy-load failure in enforce mode.")
   private static void bootAgent(Instrumentation inst) {
-    // Locate the default policy file next to the agent JAR.
     Path defaultPolicyPath = resolveDefaultPolicyPath();
 
     AgentPolicy policy = null;
@@ -135,13 +112,8 @@ public final class SolrAgentEntryPoint {
   };
 
   private static void installInterceptors(Instrumentation inst) {
-    // AgentBuilder configuration for JDK class instrumentation:
-    //   - Implementation.Context.Disabled: required for REDEFINE so ByteBuddy does not try to
-    //     add auxiliary types (forbidden when redefining already-loaded JDK classes).
-    //   - InitializationStrategy.NoOp: skip static initializer injection (same reason).
-    //   - RedefinitionStrategy.REDEFINITION: redefine already-loaded bootstrap classes (Files,
-    // etc.)
-    //     in-place rather than scheduling a retransformation pass.
+    // Context.Disabled + NoOp: required for REDEFINE — ByteBuddy must not add auxiliary types or
+    // static initializers when redefining already-loaded JDK classes.
     final ByteBuddy byteBuddy =
         new ByteBuddy().with(Implementation.Context.Disabled.Factory.INSTANCE);
 
@@ -149,10 +121,8 @@ public final class SolrAgentEntryPoint {
         .with(AgentBuilder.InitializationStrategy.NoOp.INSTANCE)
         .with(AgentBuilder.RedefinitionStrategy.REDEFINITION)
         .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
-        // Override the default ignore filter so we can instrument bootstrap-loaded JDK classes
-        // in named modules (java.lang, java.nio, etc.). Without this, ByteBuddy 1.18.x silently
-        // skips those classes due to module-visibility checks in its default ignore rules.
-        // Also exclude ByteBuddy's own classes to prevent circular instrumentation at startup.
+        // Custom ignore filter: allows bootstrap JDK classes (java.lang, java.nio, …) to be
+        // instrumented; excludes ByteBuddy's own classes to prevent circular instrumentation.
         .ignore(ElementMatchers.isSynthetic().or(ElementMatchers.nameStartsWith("net.bytebuddy.")))
         // Intercept FileSystemProvider subclasses, java.nio.file.Files, and FileChannel subtypes.
         .type(
@@ -183,8 +153,7 @@ public final class SolrAgentEntryPoint {
             (builder, type, classLoader, module, domain) ->
                 builder.visit(
                     Advice.to(SystemExitInterceptor.class).on(ElementMatchers.named("exit"))))
-        // Intercept Runtime.halt(int) and Runtime.exec(...) in a single chain to avoid
-        // applying two separate redefinitions to the same class.
+        // halt and exec together: avoids two separate redefinitions of Runtime
         .type(ElementMatchers.is(Runtime.class))
         .transform(
             (builder, type, classLoader, module, domain) ->
@@ -202,11 +171,7 @@ public final class SolrAgentEntryPoint {
         .installOn(inst);
   }
 
-  /**
-   * Resolves the default policy file path. Looks for {@code server/etc/agent-security.policy}
-   * relative to the Solr installation root ({@code solr.install.dir}), then falls back to {@code
-   * jetty.home/../etc/agent-security.policy}.
-   */
+  /** Resolves {@code server/etc/agent-security.policy} from {@code solr.install.dir} or {@code jetty.home}. */
   private static Path resolveDefaultPolicyPath() {
     String installDir = System.getProperty("solr.install.dir");
     if (installDir != null && !installDir.isBlank()) {
