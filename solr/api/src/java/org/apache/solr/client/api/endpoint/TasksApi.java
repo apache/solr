@@ -45,7 +45,7 @@ public interface TasksApi {
     @GET
     @StoreApiParameters
     @Operation(
-        summary = "Status of a specific taskID.",
+        summary = "Status of a specific task.",
         tags = {"tasks"})
     TaskStatusResponse getTaskStatus(@PathParam("taskID") String taskID) throws Exception;
   }
