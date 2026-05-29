@@ -33,11 +33,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
-/**
- * Handles request for listing all active cancellable tasks and get status check of any taskId.
- * Actual logic lives in the v2: {@link ListActiveTasks} and {@link GetTaskStatus}; this handler is
- * a thin v1 bridge that extracts request parameters and delegates over to v2.
- */
+/** Handles request for listing all active cancellable tasks and get status check of any taskId. */
 public class ActiveTasksListHandler extends TaskManagementHandler {
   // This can be a parent level member but we keep it here to allow future handlers to have
   // a custom list of components
