@@ -1,0 +1,8 @@
+title: Provide a parameter to be able to configure the lookup request attribute used for SSL authentication
+type: fixed
+authors:
+  name: Jean-Marie HEITZ
+  nick: heitzjm
+links:
+  - name: SOLR-18270
+    url: https://issues.apache.org/jira/projects/SOLR/issues/SOLR-18270
