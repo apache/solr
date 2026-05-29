@@ -38,11 +38,15 @@ public class CertAuthPlugin extends AuthenticationPlugin {
   private static final String PARAM_PRINCIPAL_RESOLVER = "principalResolver";
   private static final String PARAM_CLASS = "class";
   private static final String PARAM_PARAMS = "params";
+  private static final String PARAM_REQUEST_ATTRIBUTE= "requestAttribute";
+
+  private static final String DEFAULT_REQUEST_ATTRIBUTE="jakarta.servlet.request.X509Certificate";
 
   private static final CertPrincipalResolver DEFAULT_PRINCIPAL_RESOLVER =
       certificate -> certificate.getSubjectX500Principal();
   protected final CoreContainer coreContainer;
   private CertPrincipalResolver principalResolver;
+  private String requestAttribute;
 
   public CertAuthPlugin() {
     this(null);
@@ -61,6 +65,14 @@ public class CertAuthPlugin extends AuthenticationPlugin {
             CertPrincipalResolver.class,
             DEFAULT_PRINCIPAL_RESOLVER,
             "principalResolver");
+    requestAttribute = DEFAULT_REQUEST_ATTRIBUTE;
+    Object configuredRequestAttribute= pluginConfig.get(PARAM_REQUEST_ATTRIBUTE);
+    if(configuredRequestAttribute!=null
+        && configuredRequestAttribute instanceof String
+        && !StrUtils.isNullOrEmpty((String) configuredRequestAttribute)) {
+      requestAttribute=(String)(configuredRequestAttribute);
+    }
+    log.debug("Using {} as request attribute",requestAttribute);
   }
 
   @SuppressWarnings("unchecked")
@@ -102,7 +114,7 @@ public class CertAuthPlugin extends AuthenticationPlugin {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
     X509Certificate[] certs =
-        (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        (X509Certificate[]) request.getAttribute(requestAttribute);
     if (certs == null || certs.length == 0) {
       return sendError(response, "require certificate");
     }
