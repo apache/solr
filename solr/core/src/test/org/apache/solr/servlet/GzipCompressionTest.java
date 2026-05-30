@@ -28,8 +28,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Verifies that Solr's Jetty GzipHandler correctly compresses HTTP responses when the client
- * sends {@code Accept-Encoding: gzip} and omits compression when that header is absent.
+ * Verifies that Solr's Jetty GzipHandler correctly compresses HTTP responses when the client sends
+ * {@code Accept-Encoding: gzip} and omits compression when that header is absent.
  *
  * <p>Replaces the BATS integration test {@code test_compression.bats}.
  */
@@ -40,7 +40,8 @@ public class GzipCompressionTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     // Lower the minGzipSize threshold so any non-empty response body is eligible for compression.
-    // jetty-gzip.xml reads this property at Jetty start time via <Property name="jetty.gzip.minGzipSize">.
+    // jetty-gzip.xml reads this property at Jetty start time via <Property
+    // name="jetty.gzip.minGzipSize">.
     System.setProperty("jetty.gzip.minGzipSize", "1");
 
     configureCluster(1).configure();
