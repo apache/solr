@@ -25,11 +25,12 @@
  * org.apache.solr.security.agent.AgentPolicy} (loaded by {@link
  * org.apache.solr.security.agent.PolicyLoader}).
  *
- * <p><b>Advice visibility rule:</b> Every static helper method called directly from an {@code
- * @Advice.OnMethodEnter} body must be {@code public}. ByteBuddy inlines the advice bytecode into
- * the target JDK method (e.g. {@code java.nio.file.Files}, {@code sun.nio.ch.SocketChannelImpl}),
- * so the call site is in {@code java.base}. A package-private method in this package is
- * inaccessible from there and causes {@code IllegalAccessError} at runtime.
+ * <p><b>Advice visibility rule:</b> Every static helper method called directly from an
+ * {@code @Advice.OnMethodEnter} body must be {@code public}. ByteBuddy inlines the advice bytecode
+ * into the target JDK method (e.g. {@code java.nio.file.Files}, {@code
+ * sun.nio.ch.SocketChannelImpl}), so the call site is in {@code java.base}. A package-private
+ * method in this package is inaccessible from there and causes {@code IllegalAccessError} at
+ * runtime.
  *
  * <p>Several files ({@link org.apache.solr.security.agent.FileInterceptor}, {@link
  * org.apache.solr.security.agent.SocketChannelInterceptor}, {@link
