@@ -245,7 +245,7 @@ public class AuthTool extends ToolBase {
 
           ObjectMapper mapper = new ObjectMapper();
           JsonNode securityJson1 = mapper.readTree(resource.openStream());
-          ((ObjectNode) securityJson1).put("blockUnknown", blockUnknown);
+          ((ObjectNode) securityJson1.get("authentication")).put("blockUnknown", blockUnknown);
           JsonNode credentialsNode = securityJson1.get("authentication").get("credentials");
           ((ObjectNode) credentialsNode)
               .put(username, Sha256AuthenticationProvider.getSaltedHashedValue(password));
