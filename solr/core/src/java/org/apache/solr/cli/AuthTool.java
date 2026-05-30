@@ -293,14 +293,16 @@ public class AuthTool extends ToolBase {
               String.format(
                   Locale.ROOT, "Successfully enabled basic auth with username [%s].", username);
           echo(successMessage);
-          CLIO.out(
-              "\nIMPORTANT: The following template users have been created with NO password set"
-                  + " and cannot log in until passwords are assigned:");
-          CLIO.out("  - admin  (roles: admin, index, search)");
-          CLIO.out("  - index  (roles: index, search)");
-          CLIO.out("  - search (roles: search)");
-          CLIO.out(
-              "Set their passwords using the Admin UI Security page or the authentication API.");
+          if (!updateIncludeFileOnly) {
+            CLIO.out(
+                "\nIMPORTANT: The following template users have been created with NO password set"
+                    + " and cannot log in until passwords are assigned:");
+            CLIO.out("  - admin  (roles: admin, index, search)");
+            CLIO.out("  - index  (roles: index, search)");
+            CLIO.out("  - search (roles: search)");
+            CLIO.out(
+                "Set their passwords using the Admin UI Security page or the authentication API.");
+          }
           return;
         }
       case "disable":

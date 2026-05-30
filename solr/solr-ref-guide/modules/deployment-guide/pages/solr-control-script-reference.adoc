@@ -893,7 +893,7 @@ For more information on Basic Authentication support specifically, see the secti
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
-* Take the base https://github.com/apache/solr/blob/main/solr/core/src/resources/security.json[security.json] file, evolves it using `auth` command parameters, and uploads the new file to ZooKeeper.
+* Takes the base https://github.com/apache/solr/blob/main/solr/core/src/resources/security.json[security.json] file, applies `auth` command parameters, and uploads the new file to ZooKeeper.
 +
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:
 +
