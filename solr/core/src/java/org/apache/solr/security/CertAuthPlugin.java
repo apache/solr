@@ -56,6 +56,18 @@ public class CertAuthPlugin extends AuthenticationPlugin {
     this.coreContainer = coreContainer;
   }
 
+   private String computeRequestAttribute(Map<String, Object> pluginConfig)
+   {
+     String ret=DEFAULT_REQUEST_ATTRIBUTE;
+     Object configuredRequestAttribute= pluginConfig.get(PARAM_REQUEST_ATTRIBUTE);
+     if(configuredRequestAttribute!=null
+         && configuredRequestAttribute instanceof String
+         && !StrUtils.isNullOrEmpty((String) configuredRequestAttribute)) {
+       ret=(String)(configuredRequestAttribute);
+     }
+     return ret;
+   }
+
   @Override
   public void init(Map<String, Object> pluginConfig) {
     principalResolver =
@@ -65,13 +77,8 @@ public class CertAuthPlugin extends AuthenticationPlugin {
             CertPrincipalResolver.class,
             DEFAULT_PRINCIPAL_RESOLVER,
             "principalResolver");
-    requestAttribute = DEFAULT_REQUEST_ATTRIBUTE;
-    Object configuredRequestAttribute= pluginConfig.get(PARAM_REQUEST_ATTRIBUTE);
-    if(configuredRequestAttribute!=null
-        && configuredRequestAttribute instanceof String
-        && !StrUtils.isNullOrEmpty((String) configuredRequestAttribute)) {
-      requestAttribute=(String)(configuredRequestAttribute);
-    }
+    requestAttribute = computeRequestAttribute(pluginConfig);
+
     log.debug("Using {} as request attribute",requestAttribute);
   }
 
