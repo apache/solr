@@ -27,44 +27,9 @@ package org.apache.solr.security.agent;
  * <p>An optional {@code codeBase} restricts the grant to code loaded from a specific JAR location.
  * A {@code null} codeBase means the grant applies to all code.
  */
-public final class PermittedEndpoint {
-
-  private final String hostPort;
-  private final String actions;
-  private final String codeBase; // null → applies to all code
-  private final PolicySource source;
-
-  PermittedEndpoint(String hostPort, String actions, String codeBase, PolicySource source) {
-    this.hostPort = hostPort;
-    this.actions = actions != null ? actions : "connect,resolve";
-    this.codeBase = codeBase;
-    this.source = source;
-  }
-
-  /**
-   * Host-and-port string as written in the policy file (after variable substitution). Examples:
-   * {@code "localhost:8983"}, {@code "*:8983"}, {@code "127.0.0.1:1-65535"}.
-   */
-  public String hostPort() {
-    return hostPort;
-  }
-
-  /** Actions string, e.g. {@code "connect,resolve"}. */
-  public String actions() {
-    return actions;
-  }
-
-  /**
-   * The {@code codeBase} URL pattern this entry is scoped to, or {@code null} for a global grant.
-   * Used for pre-permitting bundled modules (e.g. jwt-auth) while keeping the grant out of reach of
-   * arbitrary code.
-   */
-  public String codeBase() {
-    return codeBase;
-  }
-
-  /** Whether this rule came from the default bundled policy or an operator extension. */
-  public PolicySource source() {
-    return source;
+public record PermittedEndpoint(
+    String hostPort, String actions, String codeBase, PolicySource source) {
+  public PermittedEndpoint {
+    if (actions == null) actions = "connect,resolve";
   }
 }

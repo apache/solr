@@ -26,7 +26,8 @@ import java.util.List;
  * codeBase matching: the calling class must have been loaded from a location matching the JDK
  * policy {@code codeBase} URL ({@code file:/path/-} recursive, {@code file:/path/to.jar} exact).
  */
-public final class ApprovedCallSite {
+public record ApprovedCallSite(
+    String classNamePattern, String codeBase, Operation operation, PolicySource source) {
 
   /** The restricted operation covered by this approval. */
   public enum Operation {
@@ -34,47 +35,8 @@ public final class ApprovedCallSite {
     EXEC
   }
 
-  private final String classNamePattern; // null when codeBase matching is used
-  private final String codeBase; // null when class-name matching is used
-  private final Operation operation;
-  private final PolicySource source;
-
   ApprovedCallSite(String classNamePattern, Operation operation, PolicySource source) {
     this(classNamePattern, null, operation, source);
-  }
-
-  ApprovedCallSite(
-      String classNamePattern, String codeBase, Operation operation, PolicySource source) {
-    this.classNamePattern = classNamePattern;
-    this.codeBase = codeBase;
-    this.operation = operation;
-    this.source = source;
-  }
-
-  /**
-   * Fully-qualified class name or prefix pattern (ending in {@code .*}), or {@code null} when this
-   * entry uses codeBase matching instead.
-   */
-  public String classNamePattern() {
-    return classNamePattern;
-  }
-
-  /**
-   * JDK-style codeBase URL for code-source matching (e.g. {@code file:/opt/solr/modules/foo/-}), or
-   * {@code null} when this entry uses class-name matching instead.
-   */
-  public String codeBase() {
-    return codeBase;
-  }
-
-  /** The restricted operation this approval covers. */
-  public Operation operation() {
-    return operation;
-  }
-
-  /** Whether this entry came from the default bundled policy or an operator extension. */
-  public PolicySource source() {
-    return source;
   }
 
   /**

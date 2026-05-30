@@ -245,43 +245,12 @@ public class PolicyLoader {
     }
   }
 
-  static class RawFilePermission {
-    final String target;
-    final String actions;
-    final PolicySource source;
+  record RawFilePermission(String target, String actions, PolicySource source) {}
 
-    RawFilePermission(String target, String actions, PolicySource source) {
-      this.target = target;
-      this.actions = actions;
-      this.source = source;
-    }
-  }
+  record RawSocketPermission(
+      String hostPort, String actions, String codeBase, PolicySource source) {}
 
-  static class RawSocketPermission {
-    final String hostPort;
-    final String actions;
-    final String codeBase;
-    final PolicySource source;
-
-    RawSocketPermission(String hostPort, String actions, String codeBase, PolicySource source) {
-      this.hostPort = hostPort;
-      this.actions = actions;
-      this.codeBase = codeBase;
-      this.source = source;
-    }
-  }
-
-  static class RawRuntimePermission {
-    final String type; // "exitVM" or "exec"
-    final String codeBase;
-    final PolicySource source;
-
-    RawRuntimePermission(String type, String codeBase, PolicySource source) {
-      this.type = type;
-      this.codeBase = codeBase;
-      this.source = source;
-    }
-  }
+  record RawRuntimePermission(String type, String codeBase, PolicySource source) {}
 
   @SuppressForbidden(
       reason =

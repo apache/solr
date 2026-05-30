@@ -85,9 +85,9 @@ public class PolicyLoaderTest extends SolrTestCase {
     PolicyLoader.GrantBlock block = blocks.get(0);
     assertNull(block.codeBase);
     assertEquals(1, block.filePaths.size());
-    assertEquals("/solr/home/-", block.filePaths.get(0).target);
-    assertEquals("read", block.filePaths.get(0).actions);
-    assertEquals(PolicySource.DEFAULT, block.filePaths.get(0).source);
+    assertEquals("/solr/home/-", block.filePaths.get(0).target());
+    assertEquals("read", block.filePaths.get(0).actions());
+    assertEquals(PolicySource.DEFAULT, block.filePaths.get(0).source());
   }
 
   @Test
@@ -101,8 +101,8 @@ public class PolicyLoaderTest extends SolrTestCase {
 
     assertEquals(1, blocks.size());
     assertEquals(1, blocks.get(0).socketPerms.size());
-    assertEquals("*:8983", blocks.get(0).socketPerms.get(0).hostPort);
-    assertNull(blocks.get(0).socketPerms.get(0).codeBase);
+    assertEquals("*:8983", blocks.get(0).socketPerms.get(0).hostPort());
+    assertNull(blocks.get(0).socketPerms.get(0).codeBase());
   }
 
   @Test
@@ -118,8 +118,8 @@ public class PolicyLoaderTest extends SolrTestCase {
     PolicyLoader.GrantBlock block = blocks.get(0);
     assertEquals("file:/opt/solr/modules/jwt-auth/-", block.codeBase);
     assertEquals(1, block.socketPerms.size());
-    assertEquals("*", block.socketPerms.get(0).hostPort);
-    assertEquals("file:/opt/solr/modules/jwt-auth/-", block.socketPerms.get(0).codeBase);
+    assertEquals("*", block.socketPerms.get(0).hostPort());
+    assertEquals("file:/opt/solr/modules/jwt-auth/-", block.socketPerms.get(0).codeBase());
   }
 
   @Test
