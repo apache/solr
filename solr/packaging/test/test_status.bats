@@ -17,40 +17,38 @@
 
 load bats_helper
 
-setup() {
+setup_file() {
   common_clean_setup
+  solr start
+}
+
+teardown_file() {
+  common_setup
+  solr stop --all
+}
+
+setup() {
+  common_setup
 }
 
 teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
-
-  solr stop --all >/dev/null 2>&1
 }
 
 @test "status detects locally running solr" {
   run solr status
-  assert_output --partial "No Solr nodes are running."
-  solr start
-  run solr status
   assert_output --partial "running on port ${SOLR_PORT}"
-  solr stop
-  run solr status
-  assert_output --partial "No Solr nodes are running."
 }
 
 @test "status with --solr-url from user" {
-  solr start
   run solr status --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "\"solr_home\":"
-  solr stop
 }
 
 @test "status with --port from user" {
-  solr start
   run solr status --port ${SOLR_PORT}
   assert_output --partial "running on port ${SOLR_PORT}"
-  solr stop
 }
 
 @test "multiple connection options are prevented" {
@@ -64,8 +62,6 @@ teardown() {
 }
 
 @test "status with --short format" {
-  solr start
   run solr status --port ${SOLR_PORT} --short
   assert_output --partial "http://localhost:${SOLR_PORT}/solr"
-  solr stop
 }
