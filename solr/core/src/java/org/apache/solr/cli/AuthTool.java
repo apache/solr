@@ -227,6 +227,13 @@ public class AuthTool extends ToolBase {
             } while (password.isEmpty());
           }
 
+          if (username.equals(password)) {
+            CLIO.err(
+                "Error: username and password must not be identical."
+                    + " This credential would never authenticate.");
+            runtime.exit(1);
+          }
+
           boolean blockUnknown =
               Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION, "true"));
 
