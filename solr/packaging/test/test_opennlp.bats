@@ -43,8 +43,8 @@ teardown() {
 # I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
 # like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
 @test "Check lifecycle of sentiment classification" {
-  if [ -z "${OPENNLP_TESTS:-}" ]; then
-    skip "Set OPENNLP_TESTS=true to run OpenNLP integration tests (downloads models from network)"
+  if [ -z "${SOLR_BATS_OPENNLP_TESTS:-}" ]; then
+    skip "Set SOLR_BATS_OPENNLP_TESTS=true to run OpenNLP integration tests (downloads models from network)"
   fi
 
   echo "Downloading onnx model and vocab..."
