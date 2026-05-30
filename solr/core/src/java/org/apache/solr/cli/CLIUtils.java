@@ -228,9 +228,13 @@ public final class CLIUtils {
       if (solrConnection == null) {
         solrUrl = getDefaultSolrUrl();
         CLIO.err(
-            "Neither --solr-connectiom, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
+            "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
                 + solrUrl
                 + ".");
+      } else if (!solrConnection.isZookeeper()) {
+        // HTTP form (e.g. `-s http://host:port`): the connection string already names a Solr URL,
+        // so use it directly without spinning up a CloudSolrClient.
+        solrUrl = normalizeSolrUrl(solrConnection.quorumItems().get(0), false);
       } else {
         var builder =
             new HttpJettySolrClient.Builder()
@@ -253,6 +257,17 @@ public final class CLIUtils {
     }
     solrUrl = normalizeSolrUrl(solrUrl);
     return solrUrl;
+  }
+
+  /**
+   * Returns true if the user supplied any of the connection-related CLI options ({@code
+   * --solr-url}, {@code --solr-connection}, or {@code --zk-host}). Use this to gate logic that
+   * should only run when an explicit connection target was provided.
+   */
+  public static boolean hasConnectionOption(CommandLine cli) {
+    return cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)
+        || cli.hasOption(CommonCLIOptions.SOLR_CONNECTION_OPTION)
+        || cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   /**

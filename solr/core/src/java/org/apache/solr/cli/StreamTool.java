@@ -134,7 +134,7 @@ public class StreamTool extends ToolBase {
         .addOption(DELIMITER_OPTION)
         .addOption(ARRAY_DELIMITER_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions(true));
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override

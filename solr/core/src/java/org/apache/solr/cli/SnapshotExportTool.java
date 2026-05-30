@@ -89,7 +89,7 @@ public class SnapshotExportTool extends ToolBase {
         .addOption(BACKUP_REPO_NAME_OPTION)
         .addOption(ASYNC_ID_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions(true));
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override

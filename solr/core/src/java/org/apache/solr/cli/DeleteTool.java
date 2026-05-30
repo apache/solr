@@ -87,7 +87,7 @@ public class DeleteTool extends ToolBase {
         .addOption(DELETE_CONFIG_OPTION)
         .addOption(FORCE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions(true));
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override

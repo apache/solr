@@ -41,7 +41,7 @@ public final class CommonCLIOptions {
           .get();
 
   public static final Option SOLR_CONNECTION_OPTION =
-      Option.builder("sc")
+      Option.builder("s")
           .longOpt("solr-connection")
           .hasArg()
           .argName("HOST")
@@ -52,7 +52,7 @@ public final class CommonCLIOptions {
           .get();
 
   public static final Option SOLR_URL_OPTION =
-      Option.builder("s")
+      Option.builder()
           .longOpt("solr-url")
           .hasArg()
           .argName("HOST")

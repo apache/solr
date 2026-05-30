@@ -252,7 +252,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--execution",
           "local",
           "-v",
-          "-sc",
+          "-s",
           getSolrConnection().toString(),
           "--credentials",
           SecurityJson.USER_PASS,

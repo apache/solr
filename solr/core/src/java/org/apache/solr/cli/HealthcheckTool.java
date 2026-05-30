@@ -63,7 +63,7 @@ public class HealthcheckTool extends ToolBase {
     return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions(true));
+        .addOptionGroup(getConnectionOptions());
   }
 
   enum ShardState {

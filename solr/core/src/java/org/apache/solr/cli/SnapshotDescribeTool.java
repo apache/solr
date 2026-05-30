@@ -72,7 +72,7 @@ public class SnapshotDescribeTool extends ToolBase {
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(SNAPSHOT_NAME_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions(true));
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override

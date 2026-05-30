@@ -89,7 +89,7 @@ public class ConfigTool extends ToolBase {
         .addOption(PROPERTY_OPTION)
         .addOption(VALUE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOptionGroup(getConnectionOptions(true));
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override

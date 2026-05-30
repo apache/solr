@@ -84,7 +84,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
         "delete",
         "-c",
         "testDeleteCollectionWithBasicAuth",
-        "-sc",
+        "-s",
         connectionString,
         "--credentials",
         SecurityJson.USER_PASS,
