@@ -210,8 +210,8 @@ public final class AgentPolicy {
   }
 
   /**
-   * Returns {@code true} if any class in {@code chain} is approved to call {@code System.exit()}
-   * or {@code Runtime.halt()}. Any match anywhere in the chain is sufficient.
+   * Returns {@code true} if any class in {@code chain} is approved to call {@code System.exit()} or
+   * {@code Runtime.halt()}. Any match anywhere in the chain is sufficient.
    */
   public boolean isChainThatCanExit(Collection<Class<?>> chain) {
     for (Class<?> cls : chain) {
@@ -226,8 +226,8 @@ public final class AgentPolicy {
   }
 
   /**
-   * Returns {@code true} if any class in {@code chain} is approved to spawn child processes.
-   * Same semantics as {@link #isChainThatCanExit(Collection)}.
+   * Returns {@code true} if any class in {@code chain} is approved to spawn child processes. Same
+   * semantics as {@link #isChainThatCanExit(Collection)}.
    */
   public boolean isChainThatCanExec(Collection<Class<?>> chain) {
     for (Class<?> cls : chain) {

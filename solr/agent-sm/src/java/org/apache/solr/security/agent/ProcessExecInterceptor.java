@@ -51,7 +51,9 @@ public final class ProcessExecInterceptor {
   // Core check logic
   // ---------------------------------------------------------------------------
 
-  /** Checks the call chain against the approved exec-caller list; logs and throws in enforce mode. */
+  /**
+   * Checks the call chain against the approved exec-caller list; logs and throws in enforce mode.
+   */
   public static void checkExec(String target) {
     if (!AgentPolicy.isInitialized()) return;
 

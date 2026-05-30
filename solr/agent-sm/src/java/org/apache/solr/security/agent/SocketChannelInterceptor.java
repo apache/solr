@@ -67,7 +67,10 @@ public class SocketChannelInterceptor {
   // Shared enforcement helper
   // ---------------------------------------------------------------------------
 
-  /** Checks the policy for {@code host:port}; logs and throws {@link SecurityException} in enforce mode. */
+  /**
+   * Checks the policy for {@code host:port}; logs and throws {@link SecurityException} in enforce
+   * mode.
+   */
   static void enforceNetworkAccess(AgentPolicy policy, String host, int port, String caller) {
     if (!isEndpointPermitted(policy, host, port)) {
       String target = host + ":" + port;

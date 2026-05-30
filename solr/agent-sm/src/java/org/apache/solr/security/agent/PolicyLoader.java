@@ -28,8 +28,9 @@ import java.util.Set;
 /**
  * Parses JDK-style {@code .policy} files with Solr variable substitution and produces an {@link
  * AgentPolicy}. Loads the mandatory default policy and an optional operator extension file (path
- * from {@code solr.security.agent.extra.policy} or {@code ${server.dir}/etc/agent-security-extra.policy}).
- * Unresolved {@code ${property}} placeholders fail fast at startup.
+ * from {@code solr.security.agent.extra.policy} or {@code
+ * ${server.dir}/etc/agent-security-extra.policy}). Unresolved {@code ${property}} placeholders fail
+ * fast at startup.
  */
 public class PolicyLoader {
 
@@ -87,7 +88,10 @@ public class PolicyLoader {
     return buildPolicy(grants);
   }
 
-  /** Returns the extra-policy path, or {@code null} if neither sysprop nor {@code jetty.home} is set. */
+  /**
+   * Returns the extra-policy path, or {@code null} if neither sysprop nor {@code jetty.home} is
+   * set.
+   */
   static Path resolveExtraPolicyPath() {
     String explicitPath =
         PolicyPropertyExpander.getPropertyOrEnv("solr.security.agent.extra.policy");
@@ -106,10 +110,9 @@ public class PolicyLoader {
   }
 
   /**
-   * Parses grant blocks. Recognized permission types:
-   * {@code java.io.FilePermission} → {@link PermittedPath},
-   * {@code java.net.SocketPermission} → {@link PermittedEndpoint},
-   * {@code java.lang.RuntimePermission "exitVM"|"exec"} → {@link ApprovedCallSite}.
+   * Parses grant blocks. Recognized permission types: {@code java.io.FilePermission} → {@link
+   * PermittedPath}, {@code java.net.SocketPermission} → {@link PermittedEndpoint}, {@code
+   * java.lang.RuntimePermission "exitVM"|"exec"} → {@link ApprovedCallSite}.
    */
   static void parsePolicyBlocks(String text, PolicySource source, List<GrantBlock> out) {
     List<PolicyFileParser.GrantEntry> grantEntries;

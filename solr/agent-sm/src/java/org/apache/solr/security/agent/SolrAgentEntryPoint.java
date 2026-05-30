@@ -171,7 +171,10 @@ public final class SolrAgentEntryPoint {
         .installOn(inst);
   }
 
-  /** Resolves {@code server/etc/agent-security.policy} from {@code solr.install.dir} or {@code jetty.home}. */
+  /**
+   * Resolves {@code server/etc/agent-security.policy} from {@code solr.install.dir} or {@code
+   * jetty.home}.
+   */
   private static Path resolveDefaultPolicyPath() {
     String installDir = System.getProperty("solr.install.dir");
     if (installDir != null && !installDir.isBlank()) {

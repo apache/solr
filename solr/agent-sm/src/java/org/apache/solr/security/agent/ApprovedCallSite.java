@@ -77,7 +77,10 @@ public final class ApprovedCallSite {
     return source;
   }
 
-  /** Returns {@code true} if {@code className} matches the pattern; {@code false} for codeBase entries. */
+  /**
+   * Returns {@code true} if {@code className} matches the pattern; {@code false} for codeBase
+   * entries.
+   */
   public boolean matches(String className) {
     if (codeBase != null) return false; // codeBase entries must be checked via matchesCodeBase
     if ("*".equals(classNamePattern)) return true;
@@ -88,7 +91,10 @@ public final class ApprovedCallSite {
     return classNamePattern.equals(className);
   }
 
-  /** Returns {@code true} if {@code cls} was loaded from this entry's codeBase; {@code false} for class-name entries. */
+  /**
+   * Returns {@code true} if {@code cls} was loaded from this entry's codeBase; {@code false} for
+   * class-name entries.
+   */
   public boolean matchesCodeBase(Class<?> cls) {
     if (codeBase == null) return false;
     return SocketChannelInterceptor.isCallerFromCodeBase(List.of(cls), codeBase);
