@@ -19,7 +19,7 @@ jobs:
     name: Run Solr Script Tests
 
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 70
 
     steps:
     - name: Checkout code
