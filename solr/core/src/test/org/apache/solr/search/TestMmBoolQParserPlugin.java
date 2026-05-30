@@ -113,7 +113,7 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
   public void testMinShouldMatchWithEmptyClauseCausedByStopWord() throws Exception {
 
     Query actual =
-        parseQuery(req("q", "{!bool should=name:foo should=name:bar should=name_sw:to mm=-1}"));
+        parseQuery(req("q", "{!bool should=name:foo should=name:bar should=teststop:to mm=-1}"));
 
     BooleanQuery expected = shouldBuilder("foo", "bar").setMinimumNumberShouldMatch(1).build();
 
