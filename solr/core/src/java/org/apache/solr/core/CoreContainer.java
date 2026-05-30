@@ -145,8 +145,6 @@ import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.security.AgentViolationBridge;
-import org.apache.solr.security.AgentViolationMetrics;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
@@ -952,12 +950,6 @@ public class CoreContainer {
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
         solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
-
-    // Register security agent violation metrics if the agent is loaded.
-    AgentViolationMetrics.register(metricManager, NODE_REGISTRY);
-
-    // Wire security agent violations to SLF4J; no-op if agent JAR is absent.
-    AgentViolationBridge.wire();
 
     // setup executor to load cores in parallel
     coreLoadExecutor =
