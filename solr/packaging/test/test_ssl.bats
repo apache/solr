@@ -572,8 +572,8 @@ teardown() {
     # Replace server1 keystore with client's
     cp cert2.keystore.p12 server1.keystore.p12
   )
-  # Give some time for the server reload
-  sleep 6
+  # Wait for Jetty keystore-reload scan to pick up the new certificate
+  wait_for 30 1 solr healthcheck --solr-url https://localhost:${SOLR_PORT}
 
   run solr healthcheck --solr-url https://localhost:${SOLR_PORT}
 
@@ -587,8 +587,8 @@ teardown() {
     # Replace server2 keystore with client's
     cp cert2.keystore.p12 server2.keystore.p12
   )
-  # Give some time for the server reload
-  sleep 6
+  # Wait for Jetty keystore-reload scan to pick up the new certificate
+  wait_for 30 1 solr healthcheck --solr-url https://localhost:${SOLR2_PORT}
 
   run solr healthcheck --solr-url https://localhost:${SOLR_PORT}
   run solr healthcheck --solr-url https://localhost:${SOLR2_PORT}
