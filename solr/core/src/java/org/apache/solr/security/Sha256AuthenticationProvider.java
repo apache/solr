@@ -93,7 +93,7 @@ public class Sha256AuthenticationProvider
 
   @Override
   public boolean authenticate(String username, String password) {
-    if (username.equals(password)) return false;
+    if (username != null && username.equals(password)) return false;
     String cred = credentials.get(username);
     if (cred == null || cred.isEmpty()) return false;
     cred = cred.trim();
