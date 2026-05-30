@@ -29,15 +29,14 @@ teardown() {
 }
 
 @test "healthcheck on cloud solr" {
-  solr start -e films
-  run solr healthcheck -c films
+  solr start
+  solr create -c healthcheck_test -d _default
+  run solr healthcheck -c healthcheck_test
   refute_output --partial 'error'
-  
 }
 
 @test "healthcheck errors on standalone solr" {
-  solr start --user-managed -e films
-  run solr healthcheck -c films
+  solr start --user-managed
+  run solr healthcheck -c healthcheck_test
   assert_output --partial 'Healthcheck tool only works in Solr Cloud mode'
-  
 }
