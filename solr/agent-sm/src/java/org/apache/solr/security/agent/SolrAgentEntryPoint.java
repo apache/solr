@@ -32,8 +32,7 @@ import net.bytebuddy.matcher.ElementMatchers;
  * Java agent entry point. Invoked by the JVM before the application main class when the agent JAR
  * is specified via {@code -javaagent:}. Loads the policy, initializes {@link AgentPolicy}, and
  * installs ByteBuddy interceptors. The agent JAR is on {@code Boot-Class-Path} so interceptor
- * classes are visible to the bootstrap classloader; SLF4J is excluded from the fat JAR to avoid
- * poisoning the binding before Log4j2 initializes.
+ * classes are visible to the bootstrap classloader.
  */
 public final class SolrAgentEntryPoint {
 

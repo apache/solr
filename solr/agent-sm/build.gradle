@@ -24,6 +24,10 @@ dependencies {
   // Not included in the release so exclude from license/checksum checks.
   compileOnly libs.spotbugs.annotations
 
+  // !! DO NOT ADD SLF4J OR OTHER LOGGING JARS !!
+  // They are on Boot-Class-Path and initialise the logging binding before Log4j2 loads,
+  // permanently caching a NOP logger and preventing solr.log from being written.
+
   // ByteBuddy for bytecode instrumentation - bundled into the fat agent JAR
   implementation libs.bytebuddy
   // byte-buddy-agent is the Java agent JAR itself; not directly imported in compiled classes
