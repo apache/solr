@@ -12,6 +12,8 @@ on:
     branches:
       - main
       - 'branch_*'
+    paths-ignore:
+      - '.github/**'
 
 concurrency:
   group: renovate-changelog-prepare-${{ github.event.pull_request.number }}
