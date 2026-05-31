@@ -30,8 +30,6 @@ import org.junit.Test;
 /**
  * Verifies that Solr's Jetty GzipHandler correctly compresses HTTP responses when the client sends
  * {@code Accept-Encoding: gzip} and omits compression when that header is absent.
- *
- * <p>Replaces the BATS integration test {@code test_compression.bats}.
  */
 public class GzipCompressionTest extends SolrCloudTestCase {
 
