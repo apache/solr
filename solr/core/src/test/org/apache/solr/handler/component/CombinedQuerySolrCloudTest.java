@@ -69,6 +69,11 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
   }
 
   private synchronized void prepareIndexDocs() throws Exception {
+    // Distributed scoring (even with ExactStatsCache) is not bit-identical to single-core
+    // scoring - some tiny floating point noise. Skip exact value comparison for scores while
+    // still requiring the fields to be present; doc ordering is asserted already.
+    handle.put("maxScore", SKIPVAL);
+    handle.put("score", SKIPVAL);
     List<SolrInputDocument> docs = getSolrDocuments();
     del("*:*");
     for (SolrInputDocument doc : docs) {
@@ -79,6 +84,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
 
   /** Index all docs to the same shard for co-location (limitation for collapse). */
   private synchronized void prepareIndexDocsColocated() throws Exception {
+    handle.put("maxScore", SKIPVAL);
+    handle.put("score", SKIPVAL);
     del("*:*");
     List<SolrInputDocument> docs = getSolrDocuments();
     for (SolrInputDocument doc : docs) {

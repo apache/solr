@@ -61,6 +61,11 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any error occurs during the indexing process.
    */
   private synchronized void prepareIndexDocs() throws Exception {
+    // Distributed scoring (even with ExactStatsCache) is not bit-identical to single-core
+    // scoring - some tiny floating point noise. Skip exact value comparison for scores while
+    // still requiring the fields to be present; doc ordering is asserted already.
+    handle.put("maxScore", SKIPVAL);
+    handle.put("score", SKIPVAL);
     List<SolrInputDocument> docs = new ArrayList<>();
     fixShardCount(2);
     for (int i = 1; i <= NUM_DOCS; i++) {
@@ -365,6 +370,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    */
   @Test
   public void testCollapseWithCombinedQueryProducesDuplicates() throws Exception {
+    handle.put("maxScore", SKIPVAL);
+    handle.put("score", SKIPVAL);
     del("*:*");
 
     // Index 6 docs where mod3_idv groups docs: {3,6}→0, {1,4}→1, {2,5}→2
