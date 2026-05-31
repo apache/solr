@@ -290,7 +290,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}},
+            "lexical1": {"lucene": {"query": "id:(2^3 OR 3^1 OR 6^2 OR 5^2)"}},
             "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
           },
           "limit": 4,
@@ -308,7 +308,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         }""";
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search-elevate");
     assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "6", "10", "7", "2");
+    assertFieldValues(rsp.getResults(), id, "6", "10", "5", "7");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
     assertEquals("[1 (3), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
     assertEquals(4, rsp.getHighlighting().size());
@@ -316,8 +316,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         "title <em>test</em> for <em>doc</em> 6",
         rsp.getHighlighting().get("6").get("title").getFirst());
     assertEquals(
-        "title <em>test</em> for <em>doc</em> 2",
-        rsp.getHighlighting().get("2").get("title").getFirst());
+        "title <em>test</em> for <em>doc</em> 5",
+        rsp.getHighlighting().get("5").get("title").getFirst());
   }
 
   /**

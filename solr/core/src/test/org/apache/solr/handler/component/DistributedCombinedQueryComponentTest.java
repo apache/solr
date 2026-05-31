@@ -294,7 +294,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 1^1)"}},
+            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 1^2)"}},
             "lexical2": {"lucene": {"query": "id:(4^1 OR 1^2 OR 7^3 OR 10^2)"}}
           },
           "limit": 4,
