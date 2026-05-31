@@ -313,8 +313,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     assertEquals("[1 (3), 0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
     assertEquals(4, rsp.getHighlighting().size());
     assertEquals(
-        "title <em>test</em> for <em>doc</em> 6",
-        rsp.getHighlighting().get("6").get("title").getFirst());
+        "title <em>test</em> for <em>doc</em> 10",
+        rsp.getHighlighting().get("10").get("title").getFirst());
     assertEquals(
         "title <em>test</em> for <em>doc</em> 5",
         rsp.getHighlighting().get("5").get("title").getFirst());
