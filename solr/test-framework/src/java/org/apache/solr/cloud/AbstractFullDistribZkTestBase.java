@@ -552,8 +552,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     }
 
     long ms = (System.nanoTime() - start) / 1_000_000;
-    System.out.println(
-        "[PERF] REUSE: cloud resetCores (collection recreation) in " + ms + "ms");
+    System.out.println("[PERF] REUSE: cloud resetCores (collection recreation) in " + ms + "ms");
   }
 
   @AfterClass
@@ -2436,8 +2435,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     long clientCloseMs = (System.nanoTime() - start) / 1_000_000;
-    System.out.println(
-        "[PERF] cloud destroyServers: client close in " + clientCloseMs + "ms");
+    System.out.println("[PERF] cloud destroyServers: client close in " + clientCloseMs + "ms");
 
     coreClients.clear();
     solrClientByCollection.clear();

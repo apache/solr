@@ -63,7 +63,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -305,8 +304,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     controlJetty = createControlJetty();
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
     long controlMs = (System.nanoTime() - controlStart) / 1_000_000;
-    System.out.println(
-        "[PERF] createServers: control jetty created in " + controlMs + "ms");
+    System.out.println("[PERF] createServers: control jetty created in " + controlMs + "ms");
 
     shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
@@ -335,8 +333,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     shards = sb.toString();
     long totalMs = (System.nanoTime() - totalStart) / 1_000_000;
-    System.out.println(
-        "[PERF] createServers: TOTAL " + totalMs + "ms (" + numShards + " shards)");
+    System.out.println("[PERF] createServers: TOTAL " + totalMs + "ms (" + numShards + " shards)");
   }
 
   protected void setDistributedParams(ModifiableSolrParams params) {
