@@ -45,6 +45,11 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
     fixShardCount(1);
   }
 
+  @Override
+  protected boolean reuseServersAcrossTests() {
+    return true;
+  }
+
   /**
    * Sets up the test class by initializing the core and setting system properties. This method is
    * executed before all test methods in the class.
