@@ -539,6 +539,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
+   * Delegates to {@link QueryBuilder#createFieldQuery(org.apache.lucene.analysis.Analyzer,
+   * org.apache.lucene.search.BooleanClause.Occur, java.lang.String, java.lang.String, boolean,
+   * int)} but returns MatchNoDocsQuery rather than null
+   */
+  protected Query createFieldQuery(
+      Analyzer analyzer,
+      BooleanClause.Occur operator,
+      String field,
+      String queryText,
+      boolean quoted,
+      int phraseSlop) {
+
+    Query fieldQuery =
+        super.createFieldQuery(analyzer, operator, field, queryText, quoted, phraseSlop);
+    return fieldQuery != null ? fieldQuery : new MatchNoDocsQuery("empty query");
+  }
+
+  /**
    * Base implementation delegates to {@link #getFieldQuery(String,String,boolean,boolean)}. This
    * method may be overridden, for example, to return a SpanNearQuery instead of a PhraseQuery.
    */
