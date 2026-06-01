@@ -56,6 +56,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
+  final CloudSolrClient.CloudSolrClientConnection solrConnection;
   final SolrClientCache solrClientCache;
   private volatile boolean isClosed = false;
 
@@ -64,10 +65,14 @@ class SolrSchema extends AbstractSchema implements Closeable {
   // every statement gets a new SolrSchema instance
   private Map<String, RelDataType> schemaCache = new ConcurrentHashMap<>();
 
-  SolrSchema(Properties properties, SolrClientCache solrClientCache) {
+  SolrSchema(
+      Properties properties,
+      SolrClientCache solrClientCache,
+      CloudSolrClient.CloudSolrClientConnection solrConnection) {
     super();
     this.properties = properties;
     this.solrClientCache = solrClientCache;
+    this.solrConnection = solrConnection;
   }
 
   public SolrClientCache getSolrClientCache() {
@@ -85,8 +90,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
   @Override
   protected Map<String, Table> getTableMap() {
-    String zk = this.properties.getProperty("zk");
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(solrConnection);
     ClusterState clusterState = cloudSolrClient.getClusterState();
     Aliases aliases = ZkStateReader.from(cloudSolrClient).getAliases();
 
@@ -97,12 +101,13 @@ class SolrSchema extends AbstractSchema implements Closeable {
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {
-    final String zk = this.properties.getProperty("zk");
     PKIAuthenticationPlugin.withServerIdentity(true);
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
-      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldInfo();
+      return lukeRequest
+          .process(solrClientCache.getCloudSolrClient(solrConnection), collection)
+          .getFieldInfo();
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {
@@ -111,13 +116,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
   }
 
   private LukeResponse getSchema(final String collection) {
-    final String zk = this.properties.getProperty("zk");
     PKIAuthenticationPlugin.withServerIdentity(true);
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setShowSchema(true); // for empty fields and custom type info ...
       lukeRequest.setNumTerms(0);
-      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection);
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(solrConnection), collection);
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {
