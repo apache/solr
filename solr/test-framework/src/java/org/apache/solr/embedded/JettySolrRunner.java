@@ -579,6 +579,10 @@ public class JettySolrRunner implements SolrBackend {
       IOUtils.closeQuietly(jettySolrClient);
       jettySolrClient = null;
 
+      if (enableProxy) {
+        proxy.close();
+      }
+
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
@@ -620,10 +624,6 @@ public class JettySolrRunner implements SolrBackend {
       } while (!server.isStopped());
 
     } finally {
-      if (enableProxy) {
-        proxy.close();
-      }
-
       if (prevContext != null) {
         MDC.setContextMap(prevContext);
       } else {
