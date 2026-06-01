@@ -1,6 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: Luke handler now aggregates results across multiple shards and does this by default in SolrCloud mode.
-type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Luke Kot-Zaniewski
 links:
