@@ -46,6 +46,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrException;
@@ -595,7 +596,7 @@ public class SolrPluginUtils {
             optionalDismaxClauses++;
           }
         } else {
-          optionalClauses++;
+          if (!(c.query() instanceof MatchNoDocsQuery)) optionalClauses++;
         }
       }
     }

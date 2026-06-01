@@ -26,7 +26,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
@@ -64,9 +63,6 @@ public class FiltersQParser extends QParser {
       Query query = clause.getKey().getQuery();
       Occur occur = clause.getValue();
 
-      if (query instanceof MatchNoDocsQuery) {
-        continue;
-      }
       builder.add(unwrapQuery(query, occur), occur);
     }
     // what about empty query?

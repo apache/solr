@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -115,8 +116,11 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
     Query actual =
         parseQuery(req("q", "{!bool should=name:foo should=name:bar should=teststop:to mm=-1}"));
 
-    BooleanQuery expected = shouldBuilder("foo", "bar").setMinimumNumberShouldMatch(1).build();
-
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar")
+            .setMinimumNumberShouldMatch(1)
+            .add(new MatchNoDocsQuery(""), BooleanClause.Occur.SHOULD)
+            .build();
     assertEquals(expected, actual);
   }
 
