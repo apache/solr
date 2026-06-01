@@ -245,12 +245,11 @@ public class StreamTool extends ToolBase {
    *     locally.
    */
   private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
-    String zkHost = CLIUtils.getZkHost(cli);
-
-    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
+    var solrConnection = CLIUtils.getSolrConnection(cli);
+    echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
     solrClientCache.setBasicAuthCredentials(
         cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
-    solrClientCache.getCloudSolrClient(zkHost);
+    solrClientCache.getCloudSolrClient(solrConnection);
 
     TupleStream stream;
     PushBackStream pushBackStream;
@@ -266,7 +265,7 @@ public class StreamTool extends ToolBase {
     // logic about where to read data from.
     streamFactory.withFunctionName("cat", LocalCatStream.class);
 
-    streamFactory.withDefaultZkHost(zkHost);
+    streamFactory.withDefaultSolrConnection(solrConnection);
 
     Lang.register(streamFactory);
 

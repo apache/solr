@@ -138,8 +138,7 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String solrUrl =
-        cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, CLIUtils.getDefaultSolrUrl());
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName =
@@ -209,7 +208,13 @@ public class CreateTool extends ToolBase {
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     String zkHost = CLIUtils.getZkHost(cli);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
+    var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    if (!zkSolrConnection.isZookeeper()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+    }
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(zkSolrConnection, builder)) {
       createCollection(cloudSolrClient, cli);
     }
   }
@@ -232,8 +237,10 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
-    if (solrUrl == null) {
+    String solrUrl;
+    if (CLIUtils.hasConnectionOption(cli)) {
+      solrUrl = CLIUtils.normalizeSolrUrl(cli);
+    } else {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
     }
@@ -254,7 +261,9 @@ public class CreateTool extends ToolBase {
         confName = collectionName;
       }
 
-      // TODO: This should be done using the configSet API
+      // TODO: This should be done using the configSet API.  This would let us remove
+      // the direct dependency on ZooKeeper APIs.  Unlike the bin/solr zk comamnds that
+      // work directly with ZooKeeper.
       final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
       ConfigSetService configSetService =
           new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
@@ -331,7 +340,7 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
+  private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) throws Exception {
     final String confDirectoryName =
         cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
     final String confName = cli.getOptionValue(CONF_NAME_OPTION, "");
@@ -339,8 +348,7 @@ public class CreateTool extends ToolBase {
     if (confDirectoryName.equals("_default")
         && (confName.isEmpty() || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-      final String solrUrl =
-          cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, CLIUtils.getDefaultSolrUrl());
+      final String solrUrl = CLIUtils.normalizeSolrUrl(cli);
       final String curlCommand =
           String.format(
               Locale.ROOT,

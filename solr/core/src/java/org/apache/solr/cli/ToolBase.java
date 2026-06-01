@@ -60,14 +60,16 @@ public abstract class ToolBase implements Tool {
   }
 
   /**
-   * Provides the two ways of connecting to Solr for CLI Tools
+   * Provides the connection options for CLI Tools: {@code --solr-url}, {@code --zk-host}, and the
+   * unified {@code --solr-connection} (which accepts either form).
    *
-   * @return OptionGroup validates that only one option is supplied by the caller.
+   * @return OptionGroup that enforces only one of the connection options is supplied.
    */
   public OptionGroup getConnectionOptions() {
     OptionGroup optionGroup = new OptionGroup();
     optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
     optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    optionGroup.addOption(CommonCLIOptions.SOLR_CONNECTION_OPTION);
     return optionGroup;
   }
 
