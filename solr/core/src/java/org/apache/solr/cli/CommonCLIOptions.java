@@ -44,7 +44,7 @@ public final class CommonCLIOptions {
       Option.builder("s")
           .longOpt("solr-connection")
           .hasArg()
-          .argName("HOST")
+          .argName("CONNECTION_STRING")
           .desc(
               "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
                   + DefaultValues.ZK_HOST
