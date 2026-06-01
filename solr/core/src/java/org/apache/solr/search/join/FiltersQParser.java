@@ -59,11 +59,7 @@ public class FiltersQParser extends QParser {
 
     BooleanQuery.Builder builder = createBuilder();
     for (Map.Entry<QParser, Occur> clause : clauses.entrySet()) {
-
-      Query query = clause.getKey().getQuery();
-      Occur occur = clause.getValue();
-
-      builder.add(unwrapQuery(query, occur), occur);
+      builder.add(unwrapQuery(clause.getKey().getQuery(), clause.getValue()), clause.getValue());
     }
     // what about empty query?
     return builder.build();
