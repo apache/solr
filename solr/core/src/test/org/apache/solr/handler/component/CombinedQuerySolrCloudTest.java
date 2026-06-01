@@ -130,7 +130,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^10\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
@@ -150,8 +150,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^4 OR 3^2 OR 6^3 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^3 OR 7^4 OR 10^2)\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
             + "\"limit\":5,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
@@ -170,8 +170,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^4 OR 3^2 OR 6^3 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^3 OR 7^4 OR 10^2)\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
             + "\"limit\":5,\"sort\":\"mod3_idv desc, score desc\""
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
@@ -192,8 +192,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^4 OR 3^2 OR 6^3 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^3 OR 7^4 OR 10^2)\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
             CommonParams.QT,
@@ -203,8 +203,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^4 OR 3^2 OR 6^3 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^3 OR 7^4 OR 10^2)\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
                 + "\"limit\":4,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
@@ -215,8 +215,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         query(
             CommonParams.JSON,
             "{\"queries\":"
-                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^4 OR 3^2 OR 6^3 OR 5^1)\"}},"
-                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^3 OR 7^4 OR 10^2)\"}}},"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
                 + "\"limit\":4,\"offset\":3,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
                 + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
@@ -236,7 +236,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}}},"
+            + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1 OR 6^=2 OR 5^=1)\"}}},"
             + "\"limit\":3,\"offset\":1"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\",\"facet.mincount\":1,"
@@ -257,8 +257,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
     prepareIndexDocs();
     String jsonQuery =
         "{\"queries\":"
-            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^4 OR 3^2 OR 6^3 OR 5^1)\"}},"
-            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^1 OR 5^3 OR 7^4 OR 10^2)\"}}},"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(8^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
             + "\"limit\":4,"
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"mod3_idv\","
@@ -290,8 +290,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^3 OR 3^1 OR 6^2 OR 5^2)"}},
-            "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
+            "lexical1": {"lucene": {"query": "id:(2^=3 OR 3^=1 OR 6^=2 OR 5^=2)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=2 OR 7^=3 OR 10^=2)"}}
           },
           "limit": 4,
           "fields": ["id", "score", "title"],
@@ -335,12 +335,12 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             "queries": {
                 "lexical1": {
                     "lucene": {
-                        "query": "id:(CO!2^3 OR CO!3^1 OR CO!6^2 OR CO!5^1)"
+                        "query": "id:(CO!2^=3 OR CO!3^=1 OR CO!6^=2 OR CO!5^=1)"
                     }
                 },
                 "lexical2": {
                     "lucene": {
-                        "query": "id:(CO!8^1 OR CO!5^2 OR CO!7^3 OR CO!10^2)"
+                        "query": "id:(CO!8^=1 OR CO!5^=2 OR CO!7^=3 OR CO!10^=2)"
                     }
                 }
             },
