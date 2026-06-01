@@ -255,7 +255,9 @@ public class CreateTool extends ToolBase {
         confName = collectionName;
       }
 
-      // TODO: This should be done using the configSet API
+      // TODO: This should be done using the configSet API.  This would let us remove
+      // the direct dependency on ZooKeeper APIs.  Unlike the bin/solr zk comamnds that
+      // work directly with ZooKeeper.
       final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
       ConfigSetService configSetService =
           new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
