@@ -37,6 +37,11 @@ import org.junit.Test;
  */
 public class DistributedCombinedQueryComponentTest extends BaseDistributedSearchTestCase {
 
+  @Override
+  protected boolean reuseServersAcrossTests() {
+    return true;
+  }
+
   private static final int NUM_DOCS = 10;
   private static final String vectorField = "vector";
 

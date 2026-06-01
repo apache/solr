@@ -49,6 +49,11 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     fixShardCount(3);
   }
 
+  @Override
+  protected boolean reuseServersAcrossTests() {
+    return true;
+  }
+
   @Test
   public void testFillWorkQueue() throws Exception {
     try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
