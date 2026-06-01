@@ -31,6 +31,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.DocValuesUtil;
 
 /**
  * Accumulates stats separated by slot number for the fields with {@link
@@ -70,7 +71,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
-      values = DocValues.getNumeric(readerContext.reader(), sf.getName());
+      values = DocValuesUtil.getNumeric(readerContext.reader(), sf.getName());
     }
 
     @Override

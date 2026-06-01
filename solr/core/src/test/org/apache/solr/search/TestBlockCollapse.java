@@ -35,12 +35,10 @@ import org.junit.After;
 import org.junit.BeforeClass;
 
 /** Test collapse functionality with hierarchical documents using 'block collapse' */
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestBlockCollapse extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     initCore("solrconfig-collapseqparser.xml", "schema15.xml");
   }
 

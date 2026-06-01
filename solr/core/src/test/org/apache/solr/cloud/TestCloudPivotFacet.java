@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -67,6 +68,7 @@ import org.slf4j.LoggerFactory;
  * the counts we get back are correct and match what we get when filtering on those constraints.
  */
 @SuppressSSL // Too Slow
+@SolrTestCaseJ4.EnableNumericDocValues // we need DVs on non-trie fields to compute stats & facets
 public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -82,12 +84,6 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   private static String TRACE_MISS = "_test_miss";
   // param used by test purely for tracing & validation
   private static String TRACE_SORT = "_test_sort";
-
-  public TestCloudPivotFacet() {
-    // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
-      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
-  }
 
   /**
    * Controls the odds of any given doc having a value in any given field -- as this gets lower, the

@@ -73,6 +73,7 @@ import org.apache.solr.schema.FloatValueFieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IntValueFieldType;
 import org.apache.solr.schema.LongValueFieldType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.schema.StrField;
@@ -570,13 +571,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         if (multiValued) {
           writer = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writer = new FloatFieldWriter(field, docValuesCache);
+          writer = new FloatFieldWriter(field, docValuesCache, fieldType instanceof NumericField);
         }
       } else if (fieldType instanceof DoubleValueFieldType) {
         if (multiValued) {
           writer = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writer = new DoubleFieldWriter(field, docValuesCache);
+          writer = new DoubleFieldWriter(field, docValuesCache, fieldType instanceof NumericField);
         }
       } else if (fieldType instanceof StrField || fieldType instanceof SortableTextField) {
         if (multiValued) {

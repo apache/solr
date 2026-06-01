@@ -45,6 +45,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QueryLimits;
@@ -1490,7 +1491,11 @@ public class FacetComponent extends SearchComponent {
             if (ftype == null) {
               sfc.indexed = null;
             } else if (ftype.isPointField()) {
-              sfc.indexed = ((PointField) ftype).toInternalByteRef(sfc.name);
+              if (ftype instanceof PointField pointField) {
+                sfc.indexed = pointField.toInternalByteRef(sfc.name);
+              } else if (ftype instanceof NumericField numericField) {
+                sfc.indexed = numericField.toInternalByteRef(sfc.name);
+              }
             } else {
               sfc.indexed = new BytesRef(ftype.toInternal(sfc.name));
             }

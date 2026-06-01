@@ -18,7 +18,7 @@
 -->
 
 <!--
-   Test Config that enumerates many different parsing update processor chain 
+   Test Config that enumerates many different parsing update processor chain
    configurations.
   -->
 <config>
@@ -47,6 +47,13 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="parse-date-explicit-typeclass-numeric-selector-no-run-processor">
+    <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+      <str name="typeClass">solr.DateField</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="parse-date-explicit-typeclass-point-selector-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="typeClass">solr.DatePointField</str>
@@ -54,7 +61,7 @@
     </processor>
   </updateRequestProcessorChain>
 
-  <updateRequestProcessorChain name="parse-date-explicit-typeclass-selector-no-run-processor">
+  <updateRequestProcessorChain name="parse-date-explicit-typeclass-trie-selector-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="typeClass">solr.TrieDateField</str>
       <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
@@ -217,11 +224,11 @@
     <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseIntFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseLongFieldUpdateProcessorFactory"/>
-    
+
     <!-- Disabled Float because it will always claim floating point values and round -->
     <!-- to fit values in available precision                                        -->
     <!-- <processor class="solr.ParseFloatFieldUpdateProcessorFactory"/> -->
-    
+
     <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <arr name="format">
