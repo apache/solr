@@ -63,7 +63,13 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     mapper
         .coercionConfigFor(LogicalType.Textual)
         .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
-        .setCoercion(CoercionInputShape.Float, CoercionAction.Fail);
+        .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+        .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail);
+
+    mapper
+        .coercionConfigFor(LogicalType.Integer)
+        .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+        .setCoercion(CoercionInputShape.String, CoercionAction.Fail);
 
     return mapper;
   }
