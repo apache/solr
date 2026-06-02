@@ -38,12 +38,14 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.util.LogLevel;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test sync phase that occurs when Leader goes down and a new Leader is elected. */
+@Nightly
 @LogLevel("org.apache.solr.update.processor.DistributedZkUpdateProcessor=WARN")
 public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
