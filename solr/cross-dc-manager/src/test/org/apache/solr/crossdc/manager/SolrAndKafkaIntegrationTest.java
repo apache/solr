@@ -86,6 +86,7 @@ import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -93,6 +94,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Nightly
 @ThreadLeakFilters(
     filters = {
       SolrIgnoredThreadsFilter.class,
