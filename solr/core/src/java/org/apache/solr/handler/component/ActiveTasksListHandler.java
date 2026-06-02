@@ -25,8 +25,9 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.admin.api.GetTaskStatus;
-import org.apache.solr.handler.admin.api.ListActiveTasks;
+import org.apache.solr.handler.admin.api.ActiveTask;
+//import org.apache.solr.handler.admin.api.GetTaskStatus;
+//import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -44,14 +45,14 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
     if (taskStatusCheckUUID != null) {
       TaskStatusResponse taskStatusResponse =
-          new GetTaskStatus(req).getTaskStatus(taskStatusCheckUUID);
+          new ActiveTask(req).getTaskStatus(taskStatusCheckUUID);
       String taskStatus =
           "id: " + taskStatusCheckUUID + ", status: " + taskStatusResponse.taskStatus.getValue();
       rsp.add("taskStatus", taskStatus);
 
     } else {
       NamedList<String> tasks = new NamedList<>();
-      List<ActiveTaskDetails> taskList = new ListActiveTasks(req).listAllActiveTasks().taskList;
+      List<ActiveTaskDetails> taskList = new ActiveTask(req).listAllActiveTasks().taskList;
       if (taskList != null) {
         for (ActiveTaskDetails task : taskList) {
           tasks.add(task.taskID, task.taskQuery);
@@ -98,6 +99,7 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(ListActiveTasks.class, GetTaskStatus.class);
+//    return List.of(ListActiveTasks.class, GetTaskStatus.class);
+    return List.of(ActiveTask.class);
   }
 }

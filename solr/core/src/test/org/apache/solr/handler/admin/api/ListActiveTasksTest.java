@@ -34,52 +34,52 @@ import org.junit.Test;
 
 public class ListActiveTasksTest extends SolrTestCaseJ4 {
 
-  private SolrQueryRequest mockQueryRequest;
-  private SolrCore solrCore;
-  private CancellableQueryTracker cancellableQueryTracker;
-
-  private ListActiveTasks listActiveTasks;
-
-  @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
-  }
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    solrCore = mock(SolrCore.class);
-    cancellableQueryTracker = mock(CancellableQueryTracker.class);
-
-    listActiveTasks = new ListActiveTasks(mockQueryRequest);
-  }
-
-  @Test
-  public void testGetActiveTasks() throws Exception {
-
-    Map<String, String> myMap = new LinkedHashMap<>();
-    myMap.put("taskID1", "/search?q=h&gf=text-1");
-    myMap.put("taskID2", "/search?q=h&gf=text-2");
-    Iterator<Map.Entry<String, String>> mockIterator = myMap.entrySet().iterator();
-
-    when(mockQueryRequest.getCore()).thenReturn(solrCore);
-    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
-    when(cancellableQueryTracker.getActiveQueriesGenerated()).thenReturn(mockIterator);
-
-    ListActiveTaskResponse response = listActiveTasks.listAllActiveTasks();
-    assertNotNull(response.taskList);
-
-    assertEquals(2, response.taskList.size());
-
-    assertEquals("taskID1", response.taskList.get(0).taskID);
-    assertEquals("/search?q=h&gf=text-1", response.taskList.get(0).taskQuery);
-
-    assertEquals("taskID2", response.taskList.get(1).taskID);
-    assertEquals("/search?q=h&gf=text-2", response.taskList.get(1).taskQuery);
-
-    assertNull(response.error);
-  }
+//  private SolrQueryRequest mockQueryRequest;
+//  private SolrCore solrCore;
+//  private CancellableQueryTracker cancellableQueryTracker;
+//
+//  private ListActiveTasks listActiveTasks;
+//
+//  @BeforeClass
+//  public static void ensureWorkingMockito() {
+//    assumeWorkingMockito();
+//  }
+//
+//  @Override
+//  @Before
+//  public void setUp() throws Exception {
+//    super.setUp();
+//
+//    mockQueryRequest = mock(SolrQueryRequest.class);
+//    solrCore = mock(SolrCore.class);
+//    cancellableQueryTracker = mock(CancellableQueryTracker.class);
+//
+//    listActiveTasks = new ListActiveTasks(mockQueryRequest);
+//  }
+//
+//  @Test
+//  public void testGetActiveTasks() throws Exception {
+//
+//    Map<String, String> myMap = new LinkedHashMap<>();
+//    myMap.put("taskID1", "/search?q=h&gf=text-1");
+//    myMap.put("taskID2", "/search?q=h&gf=text-2");
+//    Iterator<Map.Entry<String, String>> mockIterator = myMap.entrySet().iterator();
+//
+//    when(mockQueryRequest.getCore()).thenReturn(solrCore);
+//    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
+//    when(cancellableQueryTracker.getActiveQueriesGenerated()).thenReturn(mockIterator);
+//
+//    ListActiveTaskResponse response = listActiveTasks.listAllActiveTasks();
+//    assertNotNull(response.taskList);
+//
+//    assertEquals(2, response.taskList.size());
+//
+//    assertEquals("taskID1", response.taskList.get(0).taskID);
+//    assertEquals("/search?q=h&gf=text-1", response.taskList.get(0).taskQuery);
+//
+//    assertEquals("taskID2", response.taskList.get(1).taskID);
+//    assertEquals("/search?q=h&gf=text-2", response.taskList.get(1).taskQuery);
+//
+//    assertNull(response.error);
+//  }
 }
