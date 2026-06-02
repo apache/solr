@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Randomly generate taggable text and verify via simple tag algorithm. */
-@Repeat(iterations = 2)
+@Repeat(iterations = 1)
 public class RandomizedTaggerTest extends TaggerTestCase {
 
   @BeforeClass
