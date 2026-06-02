@@ -32,11 +32,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests behaviors of CloudSolrStream when the cluster is behaving badly. */
+@Nightly
 @SolrTestCaseJ4.SuppressSSL
 public class BadClusterTest extends SolrCloudTestCase {
 
