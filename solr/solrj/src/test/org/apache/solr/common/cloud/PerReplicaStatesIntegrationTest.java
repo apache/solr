@@ -33,6 +33,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.util.Utils;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
+@Nightly
 @LogLevel(
     "org.apache.solr.common.cloud.ZkStateReader=DEBUG;"
         + "org.apache.solr.cloud.overseer.ZkStateWriter=DEBUG;"
