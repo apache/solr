@@ -21,8 +21,8 @@ import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.junit.Test;
 
 /**
- * Nightly variant of {@link TestSolr4Spatial2} that runs {@code
- * testLLPDecodeIsStableAndPrecise} the full 10 iterations.
+ * Nightly variant of {@link TestSolr4Spatial2} that runs {@code testLLPDecodeIsStableAndPrecise}
+ * the full 10 iterations.
  */
 @Nightly
 public class TestSolr4Spatial2Nightly extends TestSolr4Spatial2 {
