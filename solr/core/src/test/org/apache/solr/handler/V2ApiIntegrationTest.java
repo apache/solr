@@ -296,6 +296,76 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals(400, ex.code());
   }
 
+
+  @Test
+  public void testCreateCollectionWithBooleanNameIsRejected() {
+    final V2Request request =
+        new V2Request.Builder("/collections")
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload("{\"name\": true, \"numShards\": 1}")
+            .build();
+
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+
+    assertEquals(400, ex.code());
+  }
+
+  @Test
+  public void testCreateCollectionWithStringNumShardsIsRejected() {
+    final V2Request request =
+        new V2Request.Builder("/collections")
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload("{\"name\": \"stringNumShards_collection\", \"numShards\": \"1\"}")
+            .build();
+
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+
+    assertEquals(400, ex.code());
+  }
+
+  @Test
+  public void testCreateCollectionWithDecimalNumShardsIsRejected() {
+    final V2Request request =
+        new V2Request.Builder("/collections")
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload("{\"name\": \"decimalNumShards_collection\", \"numShards\": 1.5}")
+            .build();
+
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+
+    assertEquals(400, ex.code());
+  }
+
+  @Test
+  public void testCreateCollectionWithStringShuffleNodesIsRejected() {
+    final V2Request request =
+        new V2Request.Builder("/collections")
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload("{\"name\": \"stringShuffleNodes_collection\", \"shuffleNodes\": \"true\"}")
+            .build();
+
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+
+    assertEquals(400, ex.code());
+  }
+
+  @Test
+  public void testCreateCollectionWithNumberShuffleNodesIsRejected() {
+    final V2Request request =
+        new V2Request.Builder("/collections")
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload("{\"name\": \"numberShuffleNodes_collection\", \"shuffleNodes\": 0}")
+            .build();
+
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+
+    assertEquals(400, ex.code());
+  }
   private void assertRSECodeAndMessage(
       RemoteSolrException rse, int expectedCode, String... expectedMessagePieces) {
     assertEquals(expectedCode, rse.code());
