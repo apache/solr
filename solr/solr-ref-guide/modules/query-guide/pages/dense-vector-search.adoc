@@ -843,10 +843,11 @@ Details about using the ReRank Query Parser can be found in the xref:query-guide
 
 Setting `knnAlgorithm="flat"` stores vectors without building an HNSW graph, avoiding the indexing cost of graph construction.
 
-Flat fields do not support the `{!knn}` query parser. Use `vectorSimilarity()` function queries to score and rank by similarity:
+Flat fields do not support the `{!knn}`, `{!knn_text_to_vector}`, or `{!vectorSimilarity}` query parsers.
+Use `vectorSimilarity()` function queries to score and rank by similarity:
 
 [source]
-fl=id,sim:vectorSimilarity(vector,[1.0, 2.0, 3.0, 4.0])&sort=vectorSimilarity(vector,[1.0, 2.0, 3.0, 4.0]) desc
+q={!func}vectorSimilarity(vector,[1.0, 2.0, 3.0, 4.0])&fl=id,score
 
 
 == Indexing Multi-Vectors for Late Interaction

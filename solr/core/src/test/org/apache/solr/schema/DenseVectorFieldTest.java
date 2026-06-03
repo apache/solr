@@ -1174,7 +1174,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void flatAlgorithm_vectorSimilarity_shouldReturnResults() throws Exception {
+  public void flatAlgorithm_vectorSimilarityFunction_shouldReturnResults() throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
 
@@ -1197,11 +1197,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
       assertJQ(
           req(
-              "q", "*:*",
-              "fl", "id,sim:vectorSimilarity(vector_flat,[1, 2, 3, 4])",
-              "sort", "vectorSimilarity(vector_flat,[1, 2, 3, 4]) desc"),
+              "q", "{!func}vectorSimilarity(vector_flat,[1, 2, 3, 4])",
+              "fl", "id,score"),
           "/response/numFound==3",
-          "/response/docs/[0]/id=='0'");
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[0]/score==1.0");
     } finally {
       deleteCore();
     }
@@ -1245,11 +1245,28 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
       assertJQ(
           req(
-              "q", "*:*",
-              "fl", "id,sim:vectorSimilarity(vector_flat_byte,[1, 2, 3, 4])",
-              "sort", "vectorSimilarity(vector_flat_byte,[1, 2, 3, 4]) desc"),
+              "q", "{!func}vectorSimilarity(vector_flat_byte,[1, 2, 3, 4])",
+              "fl", "id,score"),
           "/response/numFound==2",
-          "/response/docs/[0]/id=='0'");
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[0]/score==1.0");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_vectorSimilarityQParser_shouldThrowException() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat.xml");
+
+      assertQEx(
+          "Running {!vectorSimilarity} on a flat vector field should raise an Exception",
+          "knnAlgorithm=\"flat\"",
+          req(
+              "q", "{!vectorSimilarity f=vector_flat minReturn=0.99}[1, 2, 3, 4]",
+              "fl", "id"),
+          SolrException.ErrorCode.BAD_REQUEST);
     } finally {
       deleteCore();
     }
