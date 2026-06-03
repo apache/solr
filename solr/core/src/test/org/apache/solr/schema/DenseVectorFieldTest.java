@@ -1202,6 +1202,16 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
           "/response/numFound==3",
           "/response/docs/[0]/id=='0'",
           "/response/docs/[0]/score==1.0");
+
+      // Filtered test
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_flat,[1, 2, 3, 4])",
+              "fq", "id:(0 2)",
+              "fl", "id,score"),
+          "/response/numFound==2",
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[0]/score==1.0");
     } finally {
       deleteCore();
     }
