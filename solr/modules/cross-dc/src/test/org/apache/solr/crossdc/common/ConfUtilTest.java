@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
-import java.util.Collections;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -130,7 +130,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty("custom.zk.property", "zk-value");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     zkProps.store(writer, null);
     writer.close();
     byte[] zkData = baos.toByteArray();
@@ -150,13 +150,13 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   public void testFillProperties_PriorityOrder() throws Exception {
     Map<String, Object> properties = new HashMap<>();
 
-    // Set up ZooKeeper with lowest priority
+    // Set up ZooKeeper with the lowest priority
     Properties zkProps = new Properties();
     zkProps.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "zk-kafka:9092");
     zkProps.setProperty(KafkaCrossDcConf.TOPIC_NAME, "zk-topic");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     zkProps.store(writer, null);
     writer.close();
     byte[] zkData = baos.toByteArray();
@@ -291,7 +291,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFillProperties_SecurityProperties() throws Exception {
+  public void testFillProperties_SecurityProperties() {
     Map<String, Object> properties = new HashMap<>();
 
     // Set security-related properties
@@ -319,7 +319,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty("zk.only.property", "zk-value");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+    OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     zkProps.store(writer, null);
     writer.close();
     byte[] zkData = baos.toByteArray();
@@ -363,7 +363,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     Properties sysProps = new Properties();
     sysProps.setProperty("solr.crossdc.kafka.foo.bar", "sys-value");
 
-    ConfUtil.addAdditionalKafkaProperties(properties, Collections.emptyMap(), sysProps);
+    ConfUtil.addAdditionalKafkaProperties(properties, Map.of(), sysProps);
 
     assertEquals("sys-value", properties.get("foo.bar"));
   }
