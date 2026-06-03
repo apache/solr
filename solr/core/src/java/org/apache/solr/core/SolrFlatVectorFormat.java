@@ -26,7 +26,8 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Flat (non-HNSW) vector format for brute-force KNN search.
+ * SPI-registered wrapper for {@link Lucene99FlatVectorsFormat}, which Lucene does not register as
+ * a {@link KnnVectorsFormat} in SPI.
  *
  * @lucene.spi {@value #NAME}
  * @since 10.1
@@ -39,8 +40,7 @@ public final class SolrFlatVectorFormat extends KnnVectorsFormat {
 
   public SolrFlatVectorFormat() {
     super(NAME);
-    this.delegate =
-        new Lucene99FlatVectorsFormat(FlatVectorScorerUtil.getLucene99FlatVectorsScorer());
+    this.delegate = new Lucene99FlatVectorsFormat(FlatVectorScorerUtil.getLucene99FlatVectorsScorer());
   }
 
   @Override
