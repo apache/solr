@@ -133,7 +133,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   public void fieldDefinition_flatAlgorithm_shouldThrowException() throws Exception {
     assertConfigs(
         "solrconfig-basic.xml",
-        "bad-schema-densevector-flat-sq.xml",
+        "bad-schema-densevector-flat-scalarQuantized.xml",
         "knnAlgorithm 'flat' is not supported for ScalarQuantizedDenseVectorField");
   }
 }

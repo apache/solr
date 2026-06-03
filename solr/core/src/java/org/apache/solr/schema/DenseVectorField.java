@@ -475,8 +475,9 @@ public class DenseVectorField extends FloatPointField {
   public KnnVectorsFormat buildKnnVectorsFormat() {
     if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
       return new SolrFlatVectorFormat();
+    } else {
+      return new Lucene99HnswVectorsFormat(hnswM, hnswEfConstruction);
     }
-    return new Lucene99HnswVectorsFormat(hnswM, hnswEfConstruction);
   }
 
   @Override
