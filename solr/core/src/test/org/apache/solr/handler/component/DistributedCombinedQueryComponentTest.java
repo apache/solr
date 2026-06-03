@@ -60,9 +60,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    *
    * @throws Exception if any error occurs during the indexing process.
    */
-  private synchronized void prepareIndexDocs() throws Exception {
+  private void prepareIndexDocs() throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
-    fixShardCount(2);
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", Integer.toString(i));
@@ -116,6 +115,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any exception occurs during the test execution
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testSingleLexicalQuery() throws Exception {
     prepareIndexDocs();
     String jsonQuery =
@@ -151,6 +151,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any error occurs during the test execution
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testMultipleLexicalQuery() throws Exception {
     prepareIndexDocs();
     String jsonQuery =
@@ -175,6 +176,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception the exception
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testMultipleQueryWithSort() throws Exception {
     prepareIndexDocs();
     String jsonQuery =
@@ -200,6 +202,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any unexpected error occurs during the test execution.
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testHybridQueryWithPagination() throws Exception {
     prepareIndexDocs();
     String jsonQueryAll =
@@ -250,6 +253,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any unexpected error occurs during the test execution.
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testQueryWithFaceting() throws Exception {
     prepareIndexDocs();
     String jsonQuery =
@@ -281,6 +285,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception if any unexpected error occurs during the test execution.
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testQueriesWithFacetAndHighlights() throws Exception {
     prepareIndexDocs();
     String jsonQuery =
@@ -320,6 +325,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @see org.apache.solr.handler.component.CombinedQuerySolrCloudTest#testForcedDistrib()
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testForcedDistrib() throws Exception {
     QueryResponse rsp = query("qt", "/forcedDistribTest", "q", "*:*", "rows", "0");
     // ForcedDistribSearchHandler would trigger a failure if this didn't work
@@ -352,6 +358,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * collapse field.
    */
   @Test
+  @ShardsFixed(num = 2)
   public void testCollapseWithCombinedQueryProducesDuplicates() throws Exception {
     del("*:*");
 
@@ -390,9 +397,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // After collapse, each query returns 3 docs (one per mod3_idv value 0,1,2).
     // But the group heads for mod3_idv=1 differ: query1 picks id=1, query2 picks id=4.
     // simpleCombine() merges by doc ID, so both id=1 and id=4 survive → duplicate on mod3_idv=1.
-    // q1 -> 1,2,5,3,6    q2 -> 2,4,6,3,5
-    // q1 -> 1,2,2,0,0    q2 -> 2,1,0,0,2
-    // q1 -> 1 for sure, 2,3  => 4 for sure, 3 and 2
     String jsonQuery =
         """
         {
@@ -434,7 +438,12 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
      }""";
 
     handle.put("expanded", UNORDERED);
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    QueryResponse rsp;
+    try {
+      rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    } finally {
+      handle.remove("expanded");
+    }
 
     // Collect mod3_idv values from the result to check for duplicates
     List<Integer> collapseValues = new ArrayList<>();
@@ -450,8 +459,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         "Expected no duplicate collapse field values in combined results, "
             + "but got collapseValues="
             + collapseValues,
-        uniqueCollapseValues,
-        collapseValues.size());
+        collapseValues.size(),
+        (int) uniqueCollapseValues);
     assertEquals("Expected exactly 3 groups (mod3_idv values 0, 1, 2)", 3, collapseValues.size());
     assertEquals("id", rsp.getFacetFields().getFirst().getName());
     assertEquals(
