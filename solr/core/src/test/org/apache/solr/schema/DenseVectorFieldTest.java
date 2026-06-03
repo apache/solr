@@ -1267,7 +1267,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SolrException ex =
           expectThrows(
               SolrException.class,
-              () -> type.getKnnVectorQuery("vector_flat", "[1, 2, 3, 4]", 3, 3, null, null, null, null));
+              () ->
+                  type.getKnnVectorQuery(
+                      "vector_flat", "[1, 2, 3, 4]", 3, 3, null, null, null, null));
       assertTrue(ex.getMessage().contains("knnAlgorithm=\"flat\""));
     } finally {
       deleteCore();
