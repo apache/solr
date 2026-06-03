@@ -1483,7 +1483,10 @@ public class JavaBinCodec implements PushWriter {
 
   @Override
   public void close() throws IOException {
-    if (daos != null) {
+    // marshal() already flushes in its own finally block, so skip the redundant flush.
+    // Flushing again after a marshal failure would re-throw the same exception from the broken
+    // stream, causing "Self-suppression not permitted" in the caller's try-with-resources.
+    if (daos != null && !alreadyMarshalled) {
       daos.flushBuffer();
     }
   }
