@@ -133,6 +133,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr")}) {
       testOptions += [
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
           [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
+          [propName: 'tests.ssl', value: false, description: "Force SSL on for all tests that support it (respects @SuppressSSL)."],
       ]
     }
   }
