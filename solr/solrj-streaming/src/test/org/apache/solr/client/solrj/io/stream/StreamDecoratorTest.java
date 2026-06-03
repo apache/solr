@@ -143,7 +143,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class);
 
@@ -224,7 +224,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     try {
       StreamFactory factory =
           new StreamFactory()
-              .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
               .withFunctionName("search", CloudSolrStream.class)
               .withFunctionName("sort", SortStream.class);
 
@@ -285,7 +285,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("null", NullStream.class);
 
@@ -323,10 +323,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
-
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("null", NullStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -372,7 +371,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("merge", MergeStream.class);
@@ -497,7 +496,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class);
@@ -601,7 +600,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("reduce", ReducerStream.class)
             .withFunctionName("group", GroupOperation.class);
@@ -691,7 +690,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("having", HavingStream.class)
             .withFunctionName("rollup", RollupStream.class)
@@ -820,7 +819,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("having", HavingStream.class)
             .withFunctionName("rollup", RollupStream.class)
@@ -965,7 +964,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("fetch", FetchStream.class);
 
@@ -1089,7 +1088,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("fetch", FetchStream.class);
@@ -1186,7 +1185,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("rollup", RollupStream.class)
             .withFunctionName("sum", SumMetric.class)
@@ -1313,7 +1312,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("daemon", DaemonStream.class);
 
@@ -1357,7 +1356,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("rollup", RollupStream.class)
             .withFunctionName("sum", SumMetric.class)
@@ -1505,7 +1504,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("hashRollup", HashRollupStream.class)
             .withFunctionName("sum", SumMetric.class)
@@ -1653,10 +1652,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "8", "a_s", "hello1", "a_i", "13", "a_f", "4")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, zkHost)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class)
@@ -1673,8 +1671,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               streamFactory.constructStream(
                   "parallel("
                       + COLLECTIONORALIAS
-                      + ", unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"), over=\"a_f\"), workers=\"2\", zkHost=\""
-                      + zkHost
+                      + ", unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"), over=\"a_f\"), workers=\"2\", solrConnection=\""
+                      + getSolrConnection().toString()
                       + "\", sort=\"a_f asc\")");
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
@@ -1757,10 +1755,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, zkHost)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("shuffle", ShuffleStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -1771,8 +1768,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               streamFactory.constructStream(
                   "parallel("
                       + COLLECTIONORALIAS
-                      + ", unique(shuffle(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\""
-                      + zkHost
+                      + ", unique(shuffle(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", solrConnection=\""
+                      + getSolrConnection().toString()
                       + "\", sort=\"a_f asc\")");
       pstream.setStreamFactory(streamFactory);
       pstream.setStreamContext(streamContext);
@@ -1810,10 +1807,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, zkHost)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("group", GroupOperation.class)
             .withFunctionName("reduce", ReducerStream.class)
@@ -1832,8 +1828,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                       + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\", qt=\"/export\"), "
                       + "by=\"a_s\","
                       + "group(sort=\"a_i asc\", n=\"5\")), "
-                      + "workers=\"2\", zkHost=\""
-                      + zkHost
+                      + "workers=\"2\", solrConnection=\""
+                      + getSolrConnection().toString()
                       + "\", sort=\"a_s asc\")");
 
       pstream.setStreamContext(streamContext);
@@ -1866,8 +1862,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                       + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\", qt=\"/export\"), "
                       + "by=\"a_s\", "
                       + "group(sort=\"a_i desc\", n=\"5\")),"
-                      + "workers=\"2\", zkHost=\""
-                      + zkHost
+                      + "workers=\"2\", solrConnection=\""
+                      + getSolrConnection().toString()
                       + "\", sort=\"a_s desc\")");
 
       pstream.setStreamContext(streamContext);
@@ -1907,10 +1903,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "10", "a_s", "hello1", "a_i", "10", "a_f", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, zkHost)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class)
@@ -1932,8 +1927,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                       + COLLECTIONORALIAS
                       + ", q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), "
                       + "n=\"11\", "
-                      + "sort=\"a_i desc\"), workers=\"2\", zkHost=\""
-                      + zkHost
+                      + "sort=\"a_i desc\"), workers=\"2\", solrConnection=\""
+                      + getSolrConnection().toString()
                       + "\", sort=\"a_i desc\")");
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
@@ -1961,10 +1956,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "9", "a_s", "hello1", "a_i", "100", "a_f", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, zkHost)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("unique", UniqueStream.class)
             .withFunctionName("top", RankStream.class)
@@ -1986,8 +1980,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                       + COLLECTIONORALIAS
                       + ", q=\"id:(4 1 8 7 9)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), search("
                       + COLLECTIONORALIAS
-                      + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i asc\"), workers=\"2\", zkHost=\""
-                      + zkHost
+                      + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i asc\"), workers=\"2\", solrConnection=\""
+                      + getSolrConnection().toString()
                       + "\", sort=\"a_i asc\")");
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
@@ -2006,8 +2000,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                       + COLLECTIONORALIAS
                       + ", q=\"id:(4 1 8 9)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\", qt=\"/export\"), search("
                       + COLLECTIONORALIAS
-                      + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i desc\"), workers=\"2\", zkHost=\""
-                      + zkHost
+                      + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i desc\"), workers=\"2\", solrConnection=\""
+                      + getSolrConnection().toString()
                       + "\", sort=\"a_i desc\")");
       pstream.setStreamContext(streamContext);
       tuples = getTuples(pstream);
@@ -2037,7 +2031,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("rollup", RollupStream.class)
@@ -2076,8 +2070,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "avg(a_f),"
                   + "count(*)"
                   + "),"
-                  + "workers=\"2\", zkHost=\""
-                  + cluster.getZkServer().getZkAddress()
+                  + "workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"a_s asc\")");
 
       stream = factory.constructStream(expression);
@@ -2179,7 +2173,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("hashRollup", HashRollupStream.class)
@@ -2219,8 +2213,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "avg(a_f),"
                   + "count(*)"
                   + "),"
-                  + "workers=\"2\", zkHost=\""
-                  + cluster.getZkServer().getZkAddress()
+                  + "workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"a_s asc\"), by=\"avg(a_f) asc\")");
 
       stream = factory.constructStream(expression);
@@ -2349,7 +2343,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class);
 
@@ -2471,7 +2465,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class);
 
@@ -2611,7 +2605,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("fullOuterJoin", FullOuterJoinStream.class);
 
@@ -2751,7 +2745,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("hashJoin", HashJoinStream.class);
     try {
@@ -2829,7 +2823,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("hashJoin", HashJoinStream.class);
     try {
@@ -2869,7 +2863,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
     try {
@@ -2938,7 +2932,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
     try {
@@ -3044,7 +3038,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class)
             .withFunctionName("select", SelectStream.class)
@@ -3181,7 +3175,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("priority", PriorityStream.class);
 
@@ -3246,7 +3240,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("parallel", ParallelStream.class)
             .withFunctionName("priority", PriorityStream.class);
@@ -3327,8 +3321,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("destinationCollection", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("destinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class);
 
@@ -3436,12 +3430,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost(
-                "parallelDestinationCollection", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -3454,8 +3446,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
           factory.constructStream(
               "parallel(collection1, "
                   + updateExpression
-                  + ", workers=\"2\", zkHost=\""
-                  + zkHost
+                  + ", workers=\"2\", solrConnection=\""
+                  + getSolrConnection()
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
@@ -3557,12 +3549,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost(
-                "parallelDestinationCollection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("parallel", ParallelStream.class)
@@ -3576,8 +3566,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
           factory.constructStream(
               "parallel(collection1, "
                   + updateExpression
-                  + ", workers=\"2\", zkHost=\""
-                  + zkHost
+                  + ", workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
@@ -3756,12 +3746,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost(
-                "parallelDestinationCollection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection1", getSolrConnection())
             .withFunctionName("topic", TopicStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("parallel", ParallelStream.class)
@@ -3775,8 +3763,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
           factory.constructStream(
               "parallel(collection1, "
                   + updateExpression
-                  + ", workers=\"2\", zkHost=\""
-                  + zkHost
+                  + ", workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
@@ -3967,8 +3955,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("destinationCollection", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("destinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("commit", CommitStream.class);
@@ -4075,12 +4063,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost(
-                "parallelDestinationCollection", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("commit", CommitStream.class)
@@ -4089,15 +4075,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     try {
       // Copy all docs to destinationCollection
       String updateExpression =
-          "commit(parallelDestinationCollection, batchSize=0, zkHost=\""
-              + cluster.getZkServer().getZkAddress()
+          "commit(parallelDestinationCollection, batchSize=0, solrConnection=\""
+              + getSolrConnection().toString()
               + "\", update(parallelDestinationCollection, batchSize=2, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\")))";
       TupleStream parallelUpdateStream =
           factory.constructStream(
               "parallel(collection1, "
                   + updateExpression
-                  + ", workers=\"2\", zkHost=\""
-                  + zkHost
+                  + ", workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
@@ -4198,12 +4184,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost(
-                "parallelDestinationCollection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("parallelDestinationCollection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("update", UpdateStream.class)
             .withFunctionName("commit", CommitStream.class)
@@ -4213,15 +4197,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     try {
       // Copy all docs to destinationCollection
       String updateExpression =
-          "daemon(commit(parallelDestinationCollection1, batchSize=0, zkHost=\""
-              + cluster.getZkServer().getZkAddress()
+          "daemon(commit(parallelDestinationCollection1, batchSize=0, solrConnection=\""
+              + getSolrConnection().toString()
               + "\", update(parallelDestinationCollection1, batchSize=2, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"))), runInterval=\"1000\", id=\"test\")";
       TupleStream parallelUpdateStream =
           factory.constructStream(
               "parallel(collection1, "
                   + updateExpression
-                  + ", workers=\"2\", zkHost=\""
-                  + zkHost
+                  + ", workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
@@ -4387,7 +4371,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("intersect", IntersectStream.class);
 
@@ -4457,9 +4441,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("modelCollection", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("uknownCollection", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withCollectionUseThisConnection("modelCollection", getSolrConnection())
+            .withCollectionUseThisConnection("uknownCollection", getSolrConnection())
             .withFunctionName("features", FeaturesSelectionStream.class)
             .withFunctionName("train", TextLogitStream.class)
             .withFunctionName("search", CloudSolrStream.class)
@@ -4697,9 +4681,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("workQueue", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("mainCorpus", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("destination", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("workQueue", getSolrConnection())
+            .withCollectionUseThisConnection("mainCorpus", getSolrConnection())
+            .withCollectionUseThisConnection("destination", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("executor", ExecutorStream.class)
             .withFunctionName("update", UpdateStream.class);
@@ -4779,9 +4763,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("workQueue1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("mainCorpus1", cluster.getZkServer().getZkAddress())
-            .withCollectionZkHost("destination1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("workQueue1", getSolrConnection())
+            .withCollectionUseThisConnection("mainCorpus1", getSolrConnection())
+            .withCollectionUseThisConnection("destination1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("executor", ExecutorStream.class)
             .withFunctionName("parallel", ParallelStream.class)
@@ -4847,7 +4831,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("intersect", IntersectStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -4858,7 +4842,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
 
     try {
-      String zkHost = cluster.getZkServer().getZkAddress();
       final TupleStream stream =
           streamFactory.constructStream(
               "parallel("
@@ -4867,8 +4850,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
                   + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
                   + "on=\"a_i\"),"
-                  + "workers=\"2\", zkHost=\""
-                  + zkHost
+                  + "workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"a_i asc\")");
 
       stream.setStreamContext(streamContext);
@@ -4906,7 +4889,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("complement", ComplementStream.class);
 
@@ -4948,7 +4931,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("cartesian", CartesianProductStream.class);
 
@@ -5101,7 +5084,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory =
         new StreamFactory()
-            .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("complement", ComplementStream.class)
             .withFunctionName("parallel", ParallelStream.class);
@@ -5111,7 +5094,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
 
     try {
-      final String zkHost = cluster.getZkServer().getZkAddress();
       final TupleStream stream =
           streamFactory.constructStream(
               "parallel("
@@ -5120,8 +5102,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
                   + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
                   + "on=\"a_i\"),"
-                  + "workers=\"2\", zkHost=\""
-                  + zkHost
+                  + "workers=\"2\", solrConnection=\""
+                  + getSolrConnection().toString()
                   + "\", sort=\"a_i asc\")");
 
       stream.setStreamContext(streamContext);
