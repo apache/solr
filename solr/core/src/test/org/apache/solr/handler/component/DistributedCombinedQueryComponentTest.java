@@ -460,7 +460,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
             + "but got collapseValues="
             + collapseValues,
         collapseValues.size(),
-        (int) uniqueCollapseValues);
+        uniqueCollapseValues);
     assertEquals("Expected exactly 3 groups (mod3_idv values 0, 1, 2)", 3, collapseValues.size());
     assertEquals("id", rsp.getFacetFields().getFirst().getName());
     assertEquals(
