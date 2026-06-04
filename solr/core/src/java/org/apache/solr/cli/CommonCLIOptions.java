@@ -40,8 +40,19 @@ public final class CommonCLIOptions {
                   + '.')
           .get();
 
-  public static final Option SOLR_URL_OPTION =
+  public static final Option SOLR_CONNECTION_OPTION =
       Option.builder("s")
+          .longOpt("solr-connection")
+          .hasArg()
+          .argName("CONNECTION_STRING")
+          .desc(
+              "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
+                  + DefaultValues.ZK_HOST
+                  + '.')
+          .get();
+
+  public static final Option SOLR_URL_OPTION =
+      Option.builder()
           .longOpt("solr-url")
           .hasArg()
           .argName("HOST")

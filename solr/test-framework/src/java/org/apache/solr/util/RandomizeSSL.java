@@ -126,6 +126,10 @@ public @interface RandomizeSSL {
                           LuceneTestCase.TEST_NIGHTLY,
                           LuceneTestCase.RANDOM_MULTIPLIER));
 
+      if (Boolean.getBoolean("tests.ssl") && ssl > 0.0D) {
+        return new SSLTestConfig(true, useClientAuth);
+      }
+
       return new SSLTestConfig(useSSL, useClientAuth);
     }
 
