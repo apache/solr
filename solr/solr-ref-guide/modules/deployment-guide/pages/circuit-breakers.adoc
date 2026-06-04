@@ -74,6 +74,16 @@ return a HTTP 503 code instead of the HTTP 429 code used by the new circuit brea
 This circuit breaker tracks JVM heap memory usage and rejects incoming requests with a 429 error code if the heap usage exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx).
 The main configuration for this circuit breaker is controlling the threshold percentage at which the breaker will trip.
 
+The heap-usage signal is read from `MemoryPoolMXBean.getCollectionUsage()` on the old/tenured generation pool — that is, JVM heap usage *immediately after* the most recent collection.
+This is the only heap reading that distinguishes live data from garbage waiting to be reclaimed; on a generational collector, raw `used` heap climbs toward `max` between collections during normal operation, which is the steady-state shape of a healthy JVM rather than a problem worth tripping on.
+
+For non-generational collectors (non-generational ZGC, Shenandoah) where the JVM exposes a single combined heap pool, the breaker sums `getCollectionUsage()` across all `HEAP`-typed pools instead.
+
+[NOTE]
+====
+Until the JVM has performed at least one collection on a heap pool, `getCollectionUsage()` may return `null` on every pool and the breaker will report `0` live bytes — meaning it will not trip. On a freshly started node with a small workload this can take some time, particularly under ZGC or Shenandoah.
+====
+
 To enable and configure the JVM heap usage based circuit breaker, add the following:
 
 .Per collection in `solrconfig.xml`
@@ -157,6 +167,11 @@ SOLR_CIRCUITBREAKER_QUERY_LOADAVG=8.0
 
 The triggering threshold is a floating point number matching load average.
 The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
+
+[NOTE]
+====
+The OS load average is itself a moving average (typically over one minute), so this breaker caches the sampled value for a short TTL and shares it across concurrent requests; under high QPS the underlying `getSystemLoadAverage()` syscall is invoked at most once per TTL window. The TTL defaults to 1000 ms and is configurable per-process with the `solr.circuitbreaker.sample.ttl.ms` system property (or the equivalent `SOLR_CIRCUITBREAKER_SAMPLE_TTL_MS` environment variable). The TTL is read once when each breaker is constructed, so changes apply to subsequently-created breakers, not to instances already in use. The same TTL is also applied to the JVM Heap Usage breaker's post-GC sample.
+====
 
 [NOTE]
 ====

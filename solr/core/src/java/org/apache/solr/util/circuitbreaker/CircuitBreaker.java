@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -121,5 +122,22 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
     } else {
       return SolrException.ErrorCode.TOO_MANY_REQUESTS;
     }
+  }
+
+  /**
+   * Creates a per-instance {@link TtlSampledMetric} for a breaker's expensive sample (OS load
+   * average, post-GC heap-pool walk). The TTL comes from {@link
+   * CircuitBreakerRegistry#SYSPROP_SAMPLE_TTL_MS} (default {@value
+   * CircuitBreakerRegistry#DEFAULT_SAMPLE_TTL_MS} ms) and is read once here, at construction.
+   *
+   * <p>Per-instance rather than shared: breakers are subclassed (notably in tests) to override the
+   * sampler, and a single shared cache would hand one instance's sample to the others. The TTL
+   * still bounds the underlying sample rate per instance.
+   */
+  protected static <T> TtlSampledMetric<T> newSampleCache() {
+    return new TtlSampledMetric<>(
+        EnvUtils.getPropertyAsLong(
+            CircuitBreakerRegistry.SYSPROP_SAMPLE_TTL_MS,
+            CircuitBreakerRegistry.DEFAULT_SAMPLE_TTL_MS));
   }
 }

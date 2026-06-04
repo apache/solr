@@ -356,11 +356,11 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
     public FakeMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
     }
 
     @Override
-    protected long getAvgMemoryUsage() {
+    protected long getCurrentMemoryUsage() {
       return Long.MAX_VALUE;
     }
   }
@@ -369,12 +369,12 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
     private AtomicInteger count;
 
     public BuildingUpMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
       this.count = new AtomicInteger(0);
     }
 
     @Override
-    protected long getAvgMemoryUsage() {
+    protected long getCurrentMemoryUsage() {
       int localCount = count.getAndIncrement();
 
       if (localCount >= 4) {
