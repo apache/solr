@@ -57,10 +57,21 @@ It is recommended that you install and run `shellcheck` to verify your test scri
 
 ## Nightly Tests
 
-Some BATS tests are slow or require network access (e.g. downloading models) and are skipped by default.
-To run these additional tests, set the environment variable `SOLR_BATS_TESTS_NIGHTLY=true`:
+Some BATS tests are slow or require network access (e.g. downloading models) and are
+excluded from regular runs by default. These tests use BATS native tagging via
+`# bats test_tags=nightly` and are filtered out with `--filter-tags !nightly`.
 
-    SOLR_BATS_TESTS_NIGHTLY=true ./gradlew integrationTests
+To include nightly tests, pass the Gradle property `solr.bats.nightly`:
+
+    ./gradlew integrationTests -Psolr.bats.nightly=true
+
+When writing a new test that should only run in nightly builds, add the BATS tag comment
+directly before the `@test` declaration:
+
+    # bats test_tags=nightly
+    @test "my slow test" {
+      ...
+    }
 
 ## Limitations
 
