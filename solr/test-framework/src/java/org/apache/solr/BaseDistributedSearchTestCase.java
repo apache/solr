@@ -63,6 +63,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -187,6 +188,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   private static JettySolrRunner cachedControlJetty;
   private static int cachedShardCount;
   private static boolean serversAreCached = false;
+  private static Map<JettySolrRunner, Map<String, String>> cachedCoreProps;
 
   protected boolean reuseServersAcrossTests() {
     return false;
@@ -423,13 +425,45 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   // --- Jetty reuse helper methods ---
 
+  private int getMaxShardsAcrossMethods() {
+    int max = shardCount > 0 ? shardCount : 2;
+    for (java.lang.reflect.Method m : getClass().getMethods()) {
+      ShardsFixed ann = m.getAnnotation(ShardsFixed.class);
+      if (ann != null && ann.num() > max) {
+        max = ann.num();
+      }
+    }
+    return max;
+  }
+
   private void cacheServers() {
     cachedControlJetty = controlJetty;
     cachedJettys = new ArrayList<>(jettys);
     cachedShardCount = jettys.size();
+    cachedCoreProps = new java.util.IdentityHashMap<>();
+    // Save core properties from each Jetty (needed to recreate cores after unload)
+    saveCoreProps(controlJetty);
+    for (JettySolrRunner j : jettys) {
+      saveCoreProps(j);
+    }
     serversAreCached = true;
     System.out.println(
         "[PERF] REUSE: cached " + cachedShardCount + " shard jettys + 1 control jetty");
+  }
+
+  private void saveCoreProps(JettySolrRunner jetty) {
+    CoreContainer cc = jetty.getCoreContainer();
+    var cd = cc.getCoreDescriptor(DEFAULT_TEST_CORENAME);
+    if (cd != null) {
+      Map<String, String> props = new java.util.HashMap<>();
+      java.util.Properties p = cd.getPersistableStandardProperties();
+      for (String key : p.stringPropertyNames()) {
+        if (!key.equals("name")) {
+          props.put(key, p.getProperty(key));
+        }
+      }
+      cachedCoreProps.put(jetty, props);
+    }
   }
 
   protected void restoreFromCachedServers(int numShards) throws Exception {
@@ -455,19 +489,33 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void resetCores() throws Exception {
     long start = System.nanoTime();
-    resetCoreOnJetty(controlJetty);
-    for (JettySolrRunner jetty : jettys) {
-      resetCoreOnJetty(jetty);
+    // Unload cores from ALL cached Jettys (not just the ones this test uses)
+    unloadCoreIfPresent(controlJetty);
+    for (JettySolrRunner j : cachedJettys) {
+      unloadCoreIfPresent(j);
+    }
+    // Load fresh cores on the control + the N Jettys this test needs
+    loadCore(controlJetty);
+    for (JettySolrRunner j : jettys) {
+      loadCore(j);
     }
     long ms = (System.nanoTime() - start) / 1_000_000;
     System.out.println("[PERF] REUSE: resetCores in " + ms + "ms");
   }
 
-  private void resetCoreOnJetty(JettySolrRunner jetty) throws Exception {
-    try (SolrClient client = createNewSolrClient(jetty.getLocalPort())) {
-      client.deleteByQuery("*:*");
-      client.commit();
+  private void unloadCoreIfPresent(JettySolrRunner jetty) throws Exception {
+    CoreContainer cc = jetty.getCoreContainer();
+    if (cc.getLoadedCoreNames().contains(DEFAULT_TEST_CORENAME)) {
+      cc.unload(DEFAULT_TEST_CORENAME, true, true, false);
     }
+  }
+
+  private void loadCore(JettySolrRunner jetty) throws Exception {
+    CoreContainer cc = jetty.getCoreContainer();
+    Path instanceDir = cc.getCoreRootDirectory().resolve(DEFAULT_TEST_CORENAME);
+    Map<String, String> coreProps =
+        cachedCoreProps.getOrDefault(jetty, Map.of());
+    cc.create(DEFAULT_TEST_CORENAME, instanceDir, coreProps, false);
   }
 
   @AfterClass
@@ -1192,21 +1240,64 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         fixShardCount(numShards);
 
         if (reuseServersAcrossTests() && serversAreCached) {
+          if (numShards > cachedShardCount) {
+            throw new IllegalStateException(
+                "Test needs " + numShards + " shards but only " + cachedShardCount
+                    + " cached. getMaxShardsAcrossMethods() missed this method's requirement.");
+          }
           try {
             long restoreStart = System.nanoTime();
             restoreFromCachedServers(numShards);
             resetCores();
             long restoreMs = (System.nanoTime() - restoreStart) / 1_000_000;
-            System.out.println("[PERF] REUSE: restoreFromCache+resetCores in " + restoreMs + "ms");
+            System.out.println(
+                "[PERF] REUSE: restoreFromCache+resetCores in " + restoreMs + "ms");
             statement.evaluate();
           } finally {
             destroyServers();
           }
         } else {
           try {
-            createServers(numShards);
+            int actualShards = numShards;
+            if (reuseServersAcrossTests()) {
+              // Start with max shards needed across all methods
+              int maxShards = getMaxShardsAcrossMethods();
+              if (maxShards > numShards) {
+                actualShards = maxShards;
+                System.out.println(
+                    "[PERF] REUSE: first test needs " + numShards
+                        + " shards but max across methods is " + maxShards
+                        + ", creating " + maxShards);
+              }
+            }
+            createServers(actualShards);
             if (reuseServersAcrossTests()) {
               cacheServers();
+            }
+            if (actualShards > numShards) {
+              // Unload cores from extra Jettys, close extra clients,
+              // trim instance lists to what this test needs
+              for (int i = numShards; i < jettys.size(); i++) {
+                unloadCoreIfPresent(jettys.get(i));
+                IOUtils.closeQuietly(clients.get(i));
+              }
+              while (clients.size() > numShards) {
+                clients.remove(clients.size() - 1);
+              }
+              while (jettys.size() > numShards) {
+                jettys.remove(jettys.size() - 1);
+              }
+              shardsArr = new String[numShards];
+              StringBuilder sb = new StringBuilder();
+              for (int i = 0; i < numShards; i++) {
+                if (sb.length() > 0) sb.append(',');
+                String shardStr = buildUrl(jettys.get(i).getLocalPort());
+                if (shardStr.endsWith("/")) shardStr += DEFAULT_TEST_CORENAME;
+                else shardStr += "/" + DEFAULT_TEST_CORENAME;
+                shardsArr[i] = shardStr;
+                sb.append(shardStr);
+              }
+              shards = sb.toString();
             }
             statement.evaluate();
           } finally {
