@@ -55,6 +55,13 @@ Some tests will start clusters or create collections,
 
 It is recommended that you install and run `shellcheck` to verify your test scripts and catch common mistakes before committing your changes.
 
+## Nightly Tests
+
+Some BATS tests are slow or require network access (e.g. downloading models) and are skipped by default.
+To run these additional tests, set the environment variable `SOLR_BATS_TESTS_NIGHTLY=true`:
+
+    SOLR_BATS_TESTS_NIGHTLY=true ./gradlew integrationTests
+
 ## Limitations
 
 1. Currently this test suite is only available for \*nix environments. Although, newer
