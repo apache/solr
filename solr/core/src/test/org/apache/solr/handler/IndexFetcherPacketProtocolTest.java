@@ -18,10 +18,12 @@ package org.apache.solr.handler;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.store.Directory;
@@ -275,7 +277,7 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
       }
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      Method writeMethod = stream.getClass().getMethod("write", java.io.OutputStream.class);
+      Method writeMethod = stream.getClass().getMethod("write", OutputStream.class);
       writeMethod.invoke(stream, baos);
       return baos.toByteArray();
     } finally {
@@ -377,7 +379,7 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
   private Object createMockFileInterface(ByteArrayOutputStream output) throws Exception {
     Class<?> fileInterfaceClass = getFileInterfaceClass();
 
-    return java.lang.reflect.Proxy.newProxyInstance(
+    return Proxy.newProxyInstance(
         fileInterfaceClass.getClassLoader(),
         new Class<?>[] {fileInterfaceClass},
         (proxy, method, args) -> {
