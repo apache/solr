@@ -281,6 +281,10 @@ task integrationTests(type: BatsTask) {
     }
   }
 
+  if (!Boolean.parseBoolean((String) project.findProperty('solr.bats.nightly'))) {
+    filterTags = '!nightly'
+  }
+
   inputs.dir(distDir)
   inputs.dir('test')  // Track .bats test files and helper as inputs
   outputs.dir(integrationTestOutput)
@@ -320,6 +324,10 @@ abstract class BatsTask extends Exec {
   @Input
   var testFiles = []
 
+  @Input
+  @Optional
+  String filterTags = null
+
   @Option(option = "tests", description = "Sets test cases to be included")
   public void setTestNamePatterns(List<String> tests) {
     // TODO: bats --filter <regex>
@@ -331,11 +339,18 @@ abstract class BatsTask extends Exec {
   protected void exec() {
     executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
 
+    def batsArgs = []
+    if (logger.isInfoEnabled()) {
+      batsArgs << '--verbose-run'
+    }
+    if (filterTags) {
+      batsArgs += ['--filter-tags', filterTags]
+    }
+    batsArgs +=
+        ['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"]
     // Note: tests to run must be listed after all other arguments
-    // Additional debugging output: -x, --verbose-run
-    setArgs(['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"] +
-        (testFiles.empty ? testDir : testFiles))
-
+    batsArgs += testFiles.empty ? [testDir] : testFiles
+    setArgs(batsArgs)
     super.exec()
   }
 }

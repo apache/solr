@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop --all >/dev/null 2>&1
+  SOLR_STOP_WAIT=30 solr stop --all >/dev/null 2>&1
 }
 
 @test "SOLR-11740 check 'solr stop' connection" {
