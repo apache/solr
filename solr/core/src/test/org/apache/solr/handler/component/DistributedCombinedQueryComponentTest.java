@@ -169,17 +169,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3");
-  }
 
-  /**
-   * Test multiple query execution with sort.
-   *
-   * @throws Exception the exception
-   */
-  @Test
-  @ShardsFixed(num = 2)
-  public void testMultipleQueryWithSort() throws Exception {
-    prepareIndexDocs();
     String jsonQuery =
         """
         {
@@ -195,17 +185,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "2", "7", "10", "4");
-  }
 
-  /**
-   * Tests the hybrid query functionality of the system with various setting of pagination.
-   *
-   * @throws Exception if any unexpected error occurs during the test execution.
-   */
-  @Test
-  @ShardsFixed(num = 2)
-  public void testHybridQueryWithPagination() throws Exception {
-    prepareIndexDocs();
     String jsonQueryAll =
         """
             {
@@ -246,17 +226,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     rsp = query(CommonParams.JSON, jsonQueryPage, CommonParams.QT, "/search");
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "6", "3", "10", "4");
-  }
 
-  /**
-   * Tests the single query functionality with faceting only.
-   *
-   * @throws Exception if any unexpected error occurs during the test execution.
-   */
-  @Test
-  @ShardsFixed(num = 2)
-  public void testQueryWithFaceting() throws Exception {
-    prepareIndexDocs();
     String jsonQuery =
         """
             {
@@ -278,17 +248,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertEquals(3, rsp.getResults().size());
     assertEquals(4, rsp.getResults().getNumFound());
     assertEquals("[0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
-  }
 
-  /**
-   * Tests the combined query feature with faceting and highlighting.
-   *
-   * @throws Exception if any unexpected error occurs during the test execution.
-   */
-  @Test
-  @ShardsFixed(num = 2)
-  public void testQueriesWithFacetAndHighlights() throws Exception {
-    prepareIndexDocs();
     String jsonQuery =
         """
         {
