@@ -229,8 +229,17 @@ public abstract class CloudSolrClient extends SolrClient {
      * @throws IllegalArgumentException if string is null, empty, or malformed
      */
     public Builder(String connectionString) {
-      CloudSolrClientConnection connection = CloudSolrClientConnection.parse(connectionString);
-      if (connection.isZk()) {
+      this(CloudSolrClientConnection.parse(connectionString));
+    }
+
+    /**
+     * Creates a client builder from a {@link CloudSolrClientConnection}.
+     *
+     * @param connection instance of {@link CloudSolrClientConnection}, which can be obtained from
+     *     the solr connection string or created via the constructor
+     */
+    public Builder(CloudSolrClientConnection connection) {
+      if (connection.isZookeeper()) {
         this.zkHosts = connection.quorumItems();
         this.zkChroot = connection.zkChroot();
       } else {
@@ -1826,7 +1835,8 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   /** Universal connection string parser logic. */
-  public record CloudSolrClientConnection(boolean isZk, List<String> quorumItems, String zkChroot) {
+  public record CloudSolrClientConnection(
+      boolean isZookeeper, List<String> quorumItems, String zkChroot) {
 
     public CloudSolrClientConnection {
       if (quorumItems == null || quorumItems.isEmpty()) {
@@ -1870,6 +1880,11 @@ public abstract class CloudSolrClient extends SolrClient {
         }
       }
       return new CloudSolrClientConnection(false, quorumItems, null);
+    }
+
+    @Override
+    public String toString() {
+      return String.join(",", quorumItems) + (isZookeeper && zkChroot != null ? zkChroot : "");
     }
   }
 }

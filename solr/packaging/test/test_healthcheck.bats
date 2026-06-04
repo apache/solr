@@ -31,7 +31,11 @@ teardown() {
 @test "healthcheck on cloud solr" {
   solr start
   solr create -c healthcheck_test -d _default
+  # Local
   run solr healthcheck -c healthcheck_test
+  refute_output --partial 'error'
+  # Remote
+  run solr healthcheck -c healthcheck_test --solr-connection http://localhost:${SOLR_PORT}/solr
   refute_output --partial 'error'
 }
 

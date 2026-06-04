@@ -67,6 +67,9 @@ teardown() {
   run solr zk ls / --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
 
+  run solr zk ls / --solr-connection http://localhost:${SOLR_PORT}
+  assert_output --partial "aliases.json"
+  
   run solr zk ls / -s http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
 

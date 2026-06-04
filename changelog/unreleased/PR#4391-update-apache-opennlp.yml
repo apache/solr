@@ -1,0 +1,7 @@
+title: Update apache.opennlp to v2.5.9
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4391
+  url: https://github.com/apache/solr/pull/4391
