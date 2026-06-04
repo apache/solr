@@ -40,6 +40,11 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     fixShardCount(2);
   }
 
+  @Override
+  protected boolean reuseServersAcrossTests() {
+    return true;
+  }
+
   private LukeResponse requestLuke() throws Exception {
     return requestLuke(new ModifiableSolrParams());
   }

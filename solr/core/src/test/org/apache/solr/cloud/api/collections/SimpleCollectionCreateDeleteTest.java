@@ -45,6 +45,11 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     sliceCount = 1;
   }
 
+  @Override
+  protected boolean reuseServersAcrossTests() {
+    return true;
+  }
+
   @Test
   @ShardsFixed(num = 1)
   public void testCreateAndDeleteThenCreateAgain() throws Exception {

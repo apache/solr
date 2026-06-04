@@ -112,6 +112,7 @@ import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -130,6 +131,10 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   protected static final String DEFAULT_COLLECTION = "collection1";
   protected volatile ZkTestServer zkServer;
+
+  // --- Cloud reuse across test methods (PoC) ---
+  private static ZkTestServer cachedZkServer;
+  private static boolean zkIsCached = false;
 
   @BeforeClass
   public static void beforeThisClass() throws Exception {
@@ -259,21 +264,42 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   public void distribSetUp() throws Exception {
     super.distribSetUp();
 
-    // Setup from AbstractFullDistribZkTestBase
-    Path zkDir = testDir.resolve("zookeeper/server1/data");
-    zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
+    if (reuseServersAcrossTests() && zkIsCached) {
+      // Reuse the cached ZK server
+      zkServer = cachedZkServer;
+      System.setProperty(ZK_HOST, zkServer.getZkAddress());
+      System.setProperty(ENABLE_UPDATE_LOG, "true");
+      System.setProperty(REMOVE_VERSION_FIELD, "true");
+      System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
+      System.setProperty(
+          MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE, "true");
+      System.out.println("[PERF] distribSetUp: REUSE - using cached ZK server");
+    } else {
+      long zkStart = System.nanoTime();
+      // Setup from AbstractFullDistribZkTestBase
+      Path zkDir = testDir.resolve("zookeeper/server1/data");
+      zkServer = new ZkTestServer(zkDir);
+      zkServer.run();
 
-    System.setProperty(ZK_HOST, zkServer.getZkAddress());
-    System.setProperty(ENABLE_UPDATE_LOG, "true");
-    System.setProperty(REMOVE_VERSION_FIELD, "true");
-    System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
-    System.setProperty(
-        MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE, "true");
+      System.setProperty(ZK_HOST, zkServer.getZkAddress());
+      System.setProperty(ENABLE_UPDATE_LOG, "true");
+      System.setProperty(REMOVE_VERSION_FIELD, "true");
+      System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
+      System.setProperty(
+          MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE, "true");
 
-    String schema = getCloudSchemaFile();
-    if (schema == null) schema = "schema.xml";
-    zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
+      String schema = getCloudSchemaFile();
+      if (schema == null) schema = "schema.xml";
+      zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
+      long zkMs = (System.nanoTime() - zkStart) / 1_000_000;
+      System.out.println("[PERF] distribSetUp: ZK create+start+buildZooKeeper in " + zkMs + "ms");
+
+      if (reuseServersAcrossTests()) {
+        cachedZkServer = zkServer;
+        zkIsCached = true;
+        System.out.println("[PERF] distribSetUp: REUSE - cached ZK server for future tests");
+      }
+    }
 
     // ignoreException(".*");
 
@@ -371,12 +397,20 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   @Override
   protected void createServers(int numServers) throws Exception {
+    long totalStart = System.nanoTime();
+
+    long controlStart = System.nanoTime();
     Path controlJettyDir = createTempDir("control");
     setupJettySolrHome(controlJettyDir);
     controlJetty =
         createJetty(
             controlJettyDir, useJettyDataDir ? getDataDir(testDir + "/control/data") : null);
     controlJetty.start();
+    long controlJettyMs = (System.nanoTime() - controlStart) / 1_000_000;
+    System.out.println(
+        "[PERF] cloud createServers: control jetty start in " + controlJettyMs + "ms");
+
+    long controlCollStart = System.nanoTime();
     try (CloudSolrClient client = createCloudClient("control_collection")) {
       assertEquals(
           0,
@@ -386,6 +420,9 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
               .getStatus());
       waitForActiveReplicaCount(client, "control_collection", 1);
     }
+    long controlCollMs = (System.nanoTime() - controlCollStart) / 1_000_000;
+    System.out.println(
+        "[PERF] cloud createServers: control_collection creation in " + controlCollMs + "ms");
 
     controlClient =
         new HttpSolrClient.Builder(controlJetty.getBaseUrl().toString())
@@ -403,9 +440,131 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       return;
     }
 
+    long initCloudStart = System.nanoTime();
     initCloud();
+    long initCloudMs = (System.nanoTime() - initCloudStart) / 1_000_000;
+    System.out.println("[PERF] cloud createServers: initCloud in " + initCloudMs + "ms");
 
+    long createJettysStart = System.nanoTime();
     createJettys(numServers);
+    long createJettysMs = (System.nanoTime() - createJettysStart) / 1_000_000;
+    System.out.println(
+        "[PERF] cloud createServers: createJettys(" + numServers + ") in " + createJettysMs + "ms");
+
+    long totalMs = (System.nanoTime() - totalStart) / 1_000_000;
+    System.out.println(
+        "[PERF] cloud createServers: TOTAL " + totalMs + "ms (" + numServers + " servers)");
+  }
+
+  @Override
+  protected void restoreFromCachedServers(int numShards) throws Exception {
+    super.restoreFromCachedServers(numShards);
+    // Override control client to point at control_collection (cloud path)
+    IOUtils.closeQuietly(controlClient);
+    controlClient =
+        new HttpSolrClient.Builder(controlJetty.getBaseUrl().toString())
+            .withDefaultCollection("control_collection")
+            .build();
+    // Re-init cloud state (CloudSolrClient, ChaosMonkey)
+    cloudInit = false;
+    initCloud();
+    // Recreate core clients
+    coreClients.clear();
+    for (JettySolrRunner j : jettys) {
+      coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
+    }
+  }
+
+  @Override
+  protected void resetCores() throws Exception {
+    long start = System.nanoTime();
+    // Delete existing collections
+    try {
+      CollectionAdminRequest.deleteCollection(DEFAULT_COLLECTION).process(cloudClient);
+      ZkStateReader.from(cloudClient)
+          .waitForState(
+              DEFAULT_COLLECTION,
+              30,
+              TimeUnit.SECONDS,
+              (liveNodes, collectionState) -> collectionState == null);
+    } catch (Exception e) {
+      log.warn("Could not delete collection {} during resetCores", DEFAULT_COLLECTION, e);
+    }
+    try {
+      CollectionAdminRequest.deleteCollection("control_collection").process(cloudClient);
+      ZkStateReader.from(cloudClient)
+          .waitForState(
+              "control_collection",
+              30,
+              TimeUnit.SECONDS,
+              (liveNodes, collectionState) -> collectionState == null);
+    } catch (Exception e) {
+      log.warn("Could not delete control_collection during resetCores", e);
+    }
+
+    // Recreate control_collection on the control Jetty
+    try (CloudSolrClient client = createCloudClient("control_collection")) {
+      assertEquals(
+          0,
+          CollectionAdminRequest.createCollection("control_collection", "conf1", 1, 1)
+              .setCreateNodeSet(controlJetty.getNodeName())
+              .process(client)
+              .getStatus());
+      waitForActiveReplicaCount(client, "control_collection", 1);
+    }
+
+    // Recreate DEFAULT_COLLECTION with empty nodeSet (no cores yet)
+    assertEquals(
+        0,
+        CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, "conf1", sliceCount, 1)
+            .setCreateNodeSet("")
+            .process(cloudClient)
+            .getStatus());
+    ZkStateReader.from(cloudClient)
+        .waitForState(
+            DEFAULT_COLLECTION,
+            30,
+            TimeUnit.SECONDS,
+            SolrCloudTestCase.activeClusterShape(sliceCount, 0));
+
+    // Add replicas on existing Jettys
+    for (int i = 0; i < jettys.size(); i++) {
+      JettySolrRunner j = jettys.get(i);
+      int shardNum = (i % sliceCount) + 1;
+      Replica.Type type = useTlogReplicas() ? Replica.Type.TLOG : Replica.Type.NRT;
+      CollectionAdminResponse response =
+          CollectionAdminRequest.addReplicaToShard(DEFAULT_COLLECTION, "shard" + shardNum)
+              .setNode(j.getNodeName())
+              .setType(type)
+              .process(cloudClient);
+      assertTrue(response.isSuccess());
+    }
+
+    waitForActiveReplicaCount(cloudClient, DEFAULT_COLLECTION, jettys.size());
+
+    // Ensure leaders are elected and mappings updated
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
+    for (int i = 1; i <= sliceCount; i++) {
+      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
+    }
+    if (sliceCount > 0) {
+      updateMappingsFromZk(this.jettys, this.clients);
+    }
+
+    long ms = (System.nanoTime() - start) / 1_000_000;
+    System.out.println("[PERF] REUSE: cloud resetCores (collection recreation) in " + ms + "ms");
+  }
+
+  @AfterClass
+  public static void destroyCachedCloudServers() throws Exception {
+    if (zkIsCached && cachedZkServer != null) {
+      long start = System.nanoTime();
+      cachedZkServer.shutdown();
+      cachedZkServer = null;
+      zkIsCached = false;
+      long ms = (System.nanoTime() - start) / 1_000_000;
+      System.out.println("[PERF] REUSE: destroyCachedCloudServers ZK shutdown in " + ms + "ms");
+    }
   }
 
   public static void waitForCollection(ZkStateReader reader, String collection, int slices)
@@ -2184,14 +2343,26 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     } finally {
       resetExceptionIgnores();
 
-      try {
-        zkServer.shutdown();
-      } catch (Exception e) {
-        throw new RuntimeException("Exception shutting down Zk Test Server.", e);
-      } finally {
+      if (reuseServersAcrossTests() && zkIsCached) {
+        // Skip ZK shutdown - it's cached for reuse
+        System.out.println("[PERF] distribTearDown: REUSE - skipping ZK shutdown");
         try {
           super.distribTearDown();
         } finally {
+        }
+      } else {
+        try {
+          long zkShutdownStart = System.nanoTime();
+          zkServer.shutdown();
+          long zkShutdownMs = (System.nanoTime() - zkShutdownStart) / 1_000_000;
+          System.out.println("[PERF] distribTearDown: ZK shutdown in " + zkShutdownMs + "ms");
+        } catch (Exception e) {
+          throw new RuntimeException("Exception shutting down Zk Test Server.", e);
+        } finally {
+          try {
+            super.distribTearDown();
+          } finally {
+          }
         }
       }
     }
@@ -2242,6 +2413,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   @Override
   protected void destroyServers() throws Exception {
+    long start = System.nanoTime();
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
@@ -2262,11 +2434,17 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     customThreadPool.execute(() -> IOUtils.closeQuietly(cloudClient));
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+    long clientCloseMs = (System.nanoTime() - start) / 1_000_000;
+    System.out.println("[PERF] cloud destroyServers: client close in " + clientCloseMs + "ms");
 
     coreClients.clear();
     solrClientByCollection.clear();
 
+    long superStart = System.nanoTime();
     super.destroyServers();
+    long superMs = (System.nanoTime() - superStart) / 1_000_000;
+    System.out.println(
+        "[PERF] cloud destroyServers: super.destroyServers (jetty stop) in " + superMs + "ms");
   }
 
   @Override

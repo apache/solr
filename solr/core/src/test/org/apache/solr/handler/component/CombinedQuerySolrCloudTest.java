@@ -50,6 +50,11 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
+  protected boolean reuseServersAcrossTests() {
+    return true;
+  }
+
+  @Override
   protected String getCloudSchemaFile() {
     return "schema-vector-catchall.xml";
   }
