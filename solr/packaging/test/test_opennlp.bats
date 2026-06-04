@@ -42,11 +42,8 @@ teardown() {
 # long test as an "integration" test is something we decide is okay?
 # I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
 # like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
+# bats test_tags=nightly
 @test "Check lifecycle of sentiment classification" {
-  if [ -z "${SOLR_BATS_TESTS_NIGHTLY:-}" ]; then
-    skip "Set SOLR_BATS_TESTS_NIGHTLY=true to run nightly BATS tests (downloads models from network)"
-  fi
-
   echo "Downloading onnx model and vocab..."
   
   mkdir -p ${SOLR_TIP}/models/sentiment/
