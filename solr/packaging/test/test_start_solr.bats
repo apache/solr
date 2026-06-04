@@ -96,6 +96,14 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 }
 
+@test "-c flag prints no-op warning and still starts in cloud mode" {
+  run solr start -c
+  assert_output --partial 'WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.'
+
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
+}
+
 @test "bootstrapping a configset" {
   local confdir_path="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs/conf"
   
