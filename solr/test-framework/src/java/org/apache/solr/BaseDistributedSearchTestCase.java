@@ -23,6 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -427,7 +429,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   private int getMaxShardsAcrossMethods() {
     int max = shardCount > 0 ? shardCount : 2;
-    for (java.lang.reflect.Method m : getClass().getMethods()) {
+    for (Method m : getClass().getMethods()) {
       ShardsFixed ann = m.getAnnotation(ShardsFixed.class);
       if (ann != null && ann.num() > max) {
         max = ann.num();
@@ -440,7 +442,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     cachedControlJetty = controlJetty;
     cachedJettys = new ArrayList<>(jettys);
     cachedShardCount = jettys.size();
-    cachedCoreProps = new java.util.IdentityHashMap<>();
+    cachedCoreProps = new HashMap<>();
     // Save core properties from each Jetty (needed to recreate cores after unload)
     saveCoreProps(controlJetty);
     for (JettySolrRunner j : jettys) {
@@ -455,8 +457,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     CoreContainer cc = jetty.getCoreContainer();
     var cd = cc.getCoreDescriptor(DEFAULT_TEST_CORENAME);
     if (cd != null) {
-      Map<String, String> props = new java.util.HashMap<>();
-      java.util.Properties p = cd.getPersistableStandardProperties();
+      Map<String, String> props = new HashMap<>();
+      Properties p = cd.getPersistableStandardProperties();
       for (String key : p.stringPropertyNames()) {
         if (!key.equals("name")) {
           props.put(key, p.getProperty(key));
@@ -513,8 +515,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   private void loadCore(JettySolrRunner jetty) throws Exception {
     CoreContainer cc = jetty.getCoreContainer();
     Path instanceDir = cc.getCoreRootDirectory().resolve(DEFAULT_TEST_CORENAME);
-    Map<String, String> coreProps =
-        cachedCoreProps.getOrDefault(jetty, Map.of());
+    Map<String, String> coreProps = cachedCoreProps.getOrDefault(jetty, Map.of());
     cc.create(DEFAULT_TEST_CORENAME, instanceDir, coreProps, false);
   }
 
@@ -1242,7 +1243,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         if (reuseServersAcrossTests() && serversAreCached) {
           if (numShards > cachedShardCount) {
             throw new IllegalStateException(
-                "Test needs " + numShards + " shards but only " + cachedShardCount
+                "Test needs "
+                    + numShards
+                    + " shards but only "
+                    + cachedShardCount
                     + " cached. getMaxShardsAcrossMethods() missed this method's requirement.");
           }
           try {
@@ -1250,8 +1254,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
             restoreFromCachedServers(numShards);
             resetCores();
             long restoreMs = (System.nanoTime() - restoreStart) / 1_000_000;
-            System.out.println(
-                "[PERF] REUSE: restoreFromCache+resetCores in " + restoreMs + "ms");
+            System.out.println("[PERF] REUSE: restoreFromCache+resetCores in " + restoreMs + "ms");
             statement.evaluate();
           } finally {
             destroyServers();
@@ -1265,9 +1268,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
               if (maxShards > numShards) {
                 actualShards = maxShards;
                 System.out.println(
-                    "[PERF] REUSE: first test needs " + numShards
-                        + " shards but max across methods is " + maxShards
-                        + ", creating " + maxShards);
+                    "[PERF] REUSE: first test needs "
+                        + numShards
+                        + " shards but max across methods is "
+                        + maxShards
+                        + ", creating "
+                        + maxShards);
               }
             }
             createServers(actualShards);
