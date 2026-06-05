@@ -45,7 +45,7 @@ import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrFlatVectorFormat;
+import org.apache.solr.core.Solr101FlatVectorFormat;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.vector.KnnQParser.EarlyTerminationParams;
 import org.apache.solr.search.vector.SolrKnnByteVectorQuery;
@@ -474,7 +474,7 @@ public class DenseVectorField extends FloatPointField {
 
   public KnnVectorsFormat buildKnnVectorsFormat() {
     if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
-      return new SolrFlatVectorFormat();
+      return new Solr101FlatVectorFormat();
     } else {
       return new Lucene99HnswVectorsFormat(hnswM, hnswEfConstruction);
     }

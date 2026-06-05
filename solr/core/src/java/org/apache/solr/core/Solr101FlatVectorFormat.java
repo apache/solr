@@ -32,13 +32,13 @@ import org.apache.lucene.index.SegmentWriteState;
  * @lucene.spi {@value #NAME}
  * @since 10.1
  */
-public final class SolrFlatVectorFormat extends KnnVectorsFormat {
+public final class Solr101FlatVectorFormat extends KnnVectorsFormat {
 
-  static final String NAME = "SolrFlatVectorFormat";
+  static final String NAME = "Solr101FlatVectorFormat";
 
   private final Lucene99FlatVectorsFormat delegate;
 
-  public SolrFlatVectorFormat() {
+  public Solr101FlatVectorFormat() {
     super(NAME);
     this.delegate =
         new Lucene99FlatVectorsFormat(FlatVectorScorerUtil.getLucene99FlatVectorsScorer());
