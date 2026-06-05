@@ -234,9 +234,6 @@ public class AuthTool extends ToolBase {
             runtime.exit(1);
           }
 
-          boolean blockUnknown =
-              Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION, "true"));
-
           String resourceName = "security.json";
           final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
           if (null == resource) {
@@ -245,7 +242,11 @@ public class AuthTool extends ToolBase {
 
           ObjectMapper mapper = new ObjectMapper();
           JsonNode securityJson1 = mapper.readTree(resource.openStream());
-          ((ObjectNode) securityJson1.get("authentication")).put("blockUnknown", blockUnknown);
+          // Only override blockUnknown if explicitly passed; otherwise let the template decide
+          if (cli.hasOption(BLOCK_UNKNOWN_OPTION)) {
+            boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION));
+            ((ObjectNode) securityJson1.get("authentication")).put("blockUnknown", blockUnknown);
+          }
           JsonNode credentialsNode = securityJson1.get("authentication").get("credentials");
           ((ObjectNode) credentialsNode)
               .put(username, Sha256AuthenticationProvider.getSaltedHashedValue(password));
