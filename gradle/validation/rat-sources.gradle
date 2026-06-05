@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import groovy.xml.XmlSlurper
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
 buildscript {
@@ -103,7 +104,7 @@ Set<String> gitTrackedFiles(File dir) {
 
 // Configure the rat validation task and all scanned directories.
 allprojects {
-  task("rat", type: RatTask) {
+  tasks.register("rat", RatTask) {
     group = 'Verification'
     description = 'Runs Apache Rat checks.'
 
@@ -119,7 +120,7 @@ allprojects {
       }
 
       // Don't check under the project's build folder.
-      exclude project.buildDir.name
+      exclude project.layout.buildDirectory.get().asFile.name
 
       // Exclude any generated stuff.
       exclude "src/generated"
@@ -352,11 +353,11 @@ class RatTask extends DefaultTask {
   }
 
   def printUnknownFiles(File reportFile) {
-    def ratXml = new XmlParser().parse(reportFile)
+    def ratXml = new XmlSlurper().parse(reportFile)
     def errors = []
     ratXml.resource.each {resource ->
-      if (resource.'license-approval'.@name[0] == "false") {
-        errors << "Unknown license: ${resource.@name}"
+      if (resource.'license-approval'.@name.text() == "false") {
+        errors << "Unknown license: ${resource.@name.text()}"
       }
     }
     def checkProp = "validation.rat.failOnError"
