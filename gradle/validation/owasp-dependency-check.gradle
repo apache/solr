@@ -27,7 +27,7 @@ configure(rootProject) {
     formats = ['ALL']
     skipProjects = [':solr:solr-ref-guide', ':missing-doclet']
     skipConfigurations = ['unifiedClasspath', 'permitUnusedDeclared']
-    suppressionFile = file("${resources}/exclusions.xml")
+    suppressionFile = file("${resources}/exclusions.xml").absolutePath
     analyzers {
       assemblyEnabled = false
     }
