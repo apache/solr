@@ -83,6 +83,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
     System.setProperty("solr.retries.to.followers", "0");
+    // Keep short so stale PrepRecoveryOp handlers time out within the Jetty graceful stop window
+    System.setProperty("leaderConflictResolveWait", "10000");
   }
 
   public HttpPartitionTest() {
