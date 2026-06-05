@@ -630,9 +630,8 @@ public class HttpJettySolrClient extends HttpSolrClient {
     req.headers(
         h -> {
           h.add(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
-          h.add(
-              CommonParams.SOLR_REQUEST_CONTEXT_PARAM,
-              SolrRequest.SolrClientContext.CLIENT.toString());
+          // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+          h.add(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
         });
 
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);

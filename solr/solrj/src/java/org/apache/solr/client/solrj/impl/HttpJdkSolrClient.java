@@ -462,8 +462,8 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       }
     }
     reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
-    reqb.header(
-        CommonParams.SOLR_REQUEST_CONTEXT_PARAM, SolrRequest.SolrClientContext.CLIENT.toString());
+    // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+    reqb.header(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {
