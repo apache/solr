@@ -16,12 +16,10 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.singletonMap;
-
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.CommandOperation;
@@ -35,10 +33,10 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     String pwd = "Friendly";
     String user = "marcus";
     Map<String, Object> latestConf = createConfigMap(user, pwd);
-    Map<String, Object> params = singletonMap(user, pwd);
+    Map<String, Object> params = Map.of(user, pwd);
     Map<String, Object> result =
         zkAuthenticationProvider.edit(
-            latestConf, Collections.singletonList(new CommandOperation("set-user", params)));
+            latestConf, List.of(new CommandOperation("set-user", params)));
     zkAuthenticationProvider = new Sha256AuthenticationProvider();
     zkAuthenticationProvider.init(result);
 
@@ -54,13 +52,13 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
       Map<String, Object> latestConf = createConfigMap("solr", "SolrRocks");
 
       CommandOperation blockUnknown =
-          new CommandOperation("set-property", singletonMap("blockUnknown", true));
-      basicAuthPlugin.edit(latestConf, Collections.singletonList(blockUnknown));
+          new CommandOperation("set-property", Map.of("blockUnknown", true));
+      basicAuthPlugin.edit(latestConf, List.of(blockUnknown));
       assertEquals(Boolean.TRUE, latestConf.get("blockUnknown"));
       basicAuthPlugin.init(latestConf);
       assertTrue(basicAuthPlugin.getBlockUnknown());
-      blockUnknown = new CommandOperation("set-property", singletonMap("blockUnknown", false));
-      basicAuthPlugin.edit(latestConf, Collections.singletonList(blockUnknown));
+      blockUnknown = new CommandOperation("set-property", Map.of("blockUnknown", false));
+      basicAuthPlugin.edit(latestConf, List.of(blockUnknown));
       assertEquals(Boolean.FALSE, latestConf.get("blockUnknown"));
       basicAuthPlugin.init(latestConf);
       assertFalse(basicAuthPlugin.getBlockUnknown());

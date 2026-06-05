@@ -58,7 +58,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   private TupleStream stream;
   private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
@@ -96,10 +96,10 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
               streamExpressions.size()));
     }
 
-    zkHost = factory.getDefaultZkHost();
+    solrConnection = factory.getDefaultSolrConnection();
 
-    if (null == zkHost) {
-      throw new IOException("zkHost not found");
+    if (null == solrConnection) {
+      throw new IOException("solrConnection not found");
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
@@ -220,7 +220,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
       builder.append(nodeId);
     }
 
-    CloudSolrClient client = clientCache.getCloudSolrClient(zkHost);
+    CloudSolrClient client = clientCache.getCloudSolrClient(solrConnection);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS_FIELD, field);

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,14 +33,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -64,6 +59,7 @@ import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -133,30 +129,31 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
-        case 0:
-          // Sometimes use SolrJ
-          CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-              .process(cluster.getSolrClient());
-          break;
-        case 1:
+        case 0 ->
+        // Sometimes use SolrJ
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
+            .process(cluster.getSolrClient());
+        case 1 -> {
           // Sometimes use v1 API
+          var jetty = cluster.getRandomJetty(random());
           String url =
               String.format(
                   Locale.ROOT,
                   "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&pullReplicas=%s",
-                  cluster.getRandomJetty(random()).getBaseUrl(),
+                  jetty.getBaseUrl(),
                   collectionName,
                   "conf",
                   2, // numShards
                   3); // pullReplicas
           // These options should all mean the same
           url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1");
-          HttpGet createCollectionGet = new HttpGet(url);
-          getHttpClient().execute(createCollectionGet);
-          break;
-        case 2:
+          var response = jetty.getSolrClient().getHttpClient().GET(url);
+          assertEquals(200, response.getStatus());
+        }
+        case 2 -> {
           // Sometimes use V2 API
-          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
+          var jetty = cluster.getRandomJetty(random());
+          String url = jetty.getBaseUrl().toString() + "/____v2/collections";
           String requestBody =
               String.format(
                   Locale.ROOT,
@@ -169,12 +166,17 @@ public class TestPullReplica extends SolrCloudTestCase {
                       "",
                       ", \"nrtReplicas\": 1",
                       ", \"replicationFactor\": 1")); // These options should all mean the same
-          HttpPost createCollectionPost = new HttpPost(url);
-          createCollectionPost.setHeader("Content-type", "application/json");
-          createCollectionPost.setEntity(new StringEntity(requestBody));
-          HttpResponse httpResponse = getHttpClient().execute(createCollectionPost);
-          assertEquals(200, httpResponse.getStatusLine().getStatusCode());
-          break;
+          var response =
+              jetty
+                  .getSolrClient()
+                  .getHttpClient()
+                  .POST(url)
+                  .body(
+                      new StringRequestContent(
+                          "application/json", requestBody, StandardCharsets.UTF_8))
+                  .send();
+          assertEquals(200, response.getStatus());
+        }
       }
       boolean reloaded = false;
       while (true) {
@@ -1023,48 +1025,49 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
   }
 
-  private void addReplicaToShard(String shardName, Replica.Type type)
-      throws IOException, SolrServerException {
+  private void addReplicaToShard(String shardName, Replica.Type type) throws Exception {
     switch (random().nextInt(3)) {
-      case 0: // Add replica with SolrJ
+      case 0 -> {
         CollectionAdminResponse response =
             CollectionAdminRequest.addReplicaToShard(collectionName, shardName, type)
                 .process(cluster.getSolrClient());
         assertEquals(
             "Unexpected response status: " + response.getStatus(), 0, response.getStatus());
-        break;
-      case 1: // Add replica with V1 API
+      }
+      case 1 -> {
+        var jetty = cluster.getRandomJetty(random());
         String url =
             String.format(
                 Locale.ROOT,
                 "%s/admin/collections?action=ADDREPLICA&collection=%s&shard=%s&type=%s",
-                cluster.getRandomJetty(random()).getBaseUrl(),
+                jetty.getBaseUrl(),
                 collectionName,
                 shardName,
                 type);
-        HttpGet addReplicaGet = new HttpGet(url);
-        HttpResponse httpResponse = getHttpClient().execute(addReplicaGet);
-        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
-        break;
-      case 2: // Add replica with V2 API
-        url =
+        var response = jetty.getSolrClient().getHttpClient().GET(url);
+        assertEquals(200, response.getStatus());
+      }
+      case 2 -> {
+        var jetty = cluster.getRandomJetty(random());
+        String url =
             String.format(
                 Locale.ROOT,
                 "%s/____v2/collections/%s/shards/%s/replicas",
-                cluster.getRandomJetty(random()).getBaseUrl(),
+                jetty.getBaseUrl(),
                 collectionName,
                 shardName);
         String requestBody = String.format(Locale.ROOT, "{\"type\": \"%s\"}", type);
-        HttpPost addReplicaPost = new HttpPost(url);
-        addReplicaPost.setHeader("Content-type", "application/json");
-        addReplicaPost.setEntity(new StringEntity(requestBody));
-        httpResponse = getHttpClient().execute(addReplicaPost);
-        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
-        break;
+        var response =
+            jetty
+                .getSolrClient()
+                .getHttpClient()
+                .POST(url)
+                .body(
+                    new StringRequestContent(
+                        "application/json", requestBody, StandardCharsets.UTF_8))
+                .send();
+        assertEquals(200, response.getStatus());
+      }
     }
-  }
-
-  private HttpClient getHttpClient() {
-    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 }

@@ -30,7 +30,6 @@
 *** xref:docker-faq.adoc[]
 
 * Scaling Solr
-** xref:cluster-types.adoc[]
 ** SolrCloud Clusters
 *** xref:solrcloud-shards-indexing.adoc[]
 *** xref:solrcloud-recoveries-and-write-tolerance.adoc[]

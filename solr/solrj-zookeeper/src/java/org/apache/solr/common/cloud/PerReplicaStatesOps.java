@@ -17,8 +17,6 @@
 
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.singletonList;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -306,7 +304,7 @@ public class PerReplicaStatesOps {
       String replica, Replica.State state, boolean isLeader, PerReplicaStates rs) {
     return new PerReplicaStatesOps(
             perReplicaStates ->
-                singletonList(
+                List.of(
                     new PerReplicaStates.Operation(
                         PerReplicaStates.Operation.Type.ADD,
                         new PerReplicaStates.State(replica, state, isLeader, 0))))

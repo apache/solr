@@ -257,8 +257,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
 
-  public volatile boolean searchEnabled = true;
-  public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
 
   private PackageListeners packageListeners = new PackageListeners(this);
@@ -1564,7 +1562,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
       os = new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8);
       p.store(os, IndexFetcher.INDEX_PROPERTIES);
-      dir.sync(Collections.singleton(tmpFileName));
+      dir.sync(Set.of(tmpFileName));
     } catch (Exception e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
@@ -1688,9 +1686,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     map.computeIfAbsent(
         RunUpdateProcessorFactory.PRE_RUN_CHAIN_NAME,
-        k ->
-            new UpdateRequestProcessorChain(
-                Collections.singletonList(new NestedUpdateProcessorFactory()), this));
+        k -> new UpdateRequestProcessorChain(List.of(new NestedUpdateProcessorFactory()), this));
 
     return map;
   }
@@ -2138,11 +2134,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @see #withSearcher(IOFunction)
    */
   public RefCounted<SolrIndexSearcher> getSearcher() {
-    if (searchEnabled) {
-      return getSearcher(false, true, null);
-    }
-    throw new SolrException(
-        SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Search is temporarily disabled");
+    return getSearcher(false, true, null);
   }
 
   /**

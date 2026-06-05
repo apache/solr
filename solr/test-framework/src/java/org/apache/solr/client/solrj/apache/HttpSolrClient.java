@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -105,7 +104,7 @@ public class HttpSolrClient extends SolrClient {
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
 
-  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
+  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Set.of(429);
 
   static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
@@ -151,7 +150,6 @@ public class HttpSolrClient extends SolrClient {
   private final int connectionTimeout;
   private final int soTimeout;
 
-  /** Use the builder to create this client */
   protected HttpSolrClient(Builder builder) {
     this.baseUrl = builder.baseSolrUrl;
     if (baseUrl.endsWith("/")) {
@@ -832,14 +830,14 @@ public class HttpSolrClient extends SolrClient {
       this.responseParser = new JavaBinResponseParser();
     }
 
-    /** Chooses whether created {@link HttpSolrClient}s use compression by default. */
+    /** Chooses whether created clients use compression by default. */
     public Builder allowCompression(boolean compression) {
       this.compression = compression;
       return this;
     }
 
     /**
-     * Adds to the set of params that the created {@link HttpSolrClient} will add on all requests
+     * Adds to the set of params that the created client will add on all requests
      *
      * @param params a set of parameters to add to the invariant-params list. These params must be
      *     unique and may not duplicate a param already in the invariant list.

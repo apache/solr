@@ -18,9 +18,15 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.function.DoubleBinaryOperator;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.DoubleValuesSourceRescorer;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
+import org.apache.lucene.search.Rescorer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -61,6 +67,26 @@ public class ReRankQParserPlugin extends QParserPlugin {
   public QParser createParser(
       String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new ReRankQParser(query, localParams, params, req);
+  }
+
+  /**
+   * Helper method for constructing a {@link Rescorer} from a {@link #RERANK_QUERY}, {@link
+   * #RERANK_WEIGHT}, and {@link #RERANK_OPERATOR}.
+   *
+   * <p>By default, this returns a customized {@link QueryRescorer}, unless the {@link
+   * #RERANK_QUERY} is a known type that can more efficiently be re-ranked using a customized {@link
+   * DoubleValuesSourceRescorer}.
+   */
+  private static Rescorer createRescorer(
+      final Query reRankQuery, final double reRankWeight, final ReRankOperator reRankOperator) {
+    assert null != reRankQuery;
+    return switch (reRankQuery) {
+      case FunctionQuery functionQuery -> new ReRankDoubleValuesSourceRescorer(
+          functionQuery.getValueSource().asDoubleValuesSource(), reRankWeight, reRankOperator);
+      case FunctionScoreQuery functionQuery -> new ReRankDoubleValuesSourceRescorer(
+          functionQuery.getSource(), reRankWeight, reRankOperator);
+      default -> new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator);
+    };
   }
 
   private static class ReRankQParser extends QParser {
@@ -135,7 +161,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
               reRankScale,
               reRankScaleWeight,
               reRankOperator,
-              new ReRankQueryRescorer(reRankQuery, 1, ReRankOperator.REPLACE),
+              createRescorer(reRankQuery, 1, ReRankOperator.REPLACE),
               explainResults);
 
       if (reRankScaler.scaleScores()) {
@@ -145,6 +171,28 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
       return new ReRankQuery(
           reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, explainResults);
+    }
+  }
+
+  private static final class ReRankDoubleValuesSourceRescorer extends DoubleValuesSourceRescorer {
+    final DoubleBinaryOperator scoreCombiner;
+
+    public ReRankDoubleValuesSourceRescorer(
+        final DoubleValuesSource valuesSource,
+        final double reRankWeight,
+        final ReRankOperator reRankOperator) {
+      super(valuesSource);
+      this.scoreCombiner =
+          (score, value) -> reRankOperator.applyAsDouble(score, reRankWeight * value);
+    }
+
+    @Override
+    protected float combine(
+        final float firstPassScore, final boolean valuePresent, final double sourceValue) {
+      if (valuePresent) {
+        return (float) scoreCombiner.applyAsDouble(firstPassScore, sourceValue);
+      }
+      return firstPassScore;
     }
   }
 
@@ -160,20 +208,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
     public ReRankQueryRescorer(
         Query reRankQuery, double reRankWeight, ReRankOperator reRankOperator) {
       super(reRankQuery);
-      switch (reRankOperator) {
-        case ADD:
-          scoreCombiner = (score, second) -> (float) (score + reRankWeight * second);
-          break;
-        case MULTIPLY:
-          scoreCombiner = (score, second) -> (float) (score * reRankWeight * second);
-          break;
-        case REPLACE:
-          scoreCombiner = (score, second) -> (float) (reRankWeight * second);
-          break;
-        default:
-          scoreCombiner = null;
-          throw new IllegalArgumentException("Unexpected: reRankOperator=" + reRankOperator);
-      }
+      scoreCombiner =
+          (score, second) -> (float) reRankOperator.applyAsDouble(score, reRankWeight * second);
     }
 
     @Override
@@ -226,7 +262,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       super(
           defaultQuery,
           reRankDocs,
-          new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator),
+          createRescorer(reRankQuery, reRankWeight, reRankOperator),
           reRankScaler,
           reRankOperator);
       this.reRankQuery = reRankQuery;

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import static java.util.Collections.singletonMap;
-
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.HashMap;
@@ -257,7 +254,6 @@ public class ZkStateWriter {
       }
       return clusterState;
     }
-    Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
       if (!updates.isEmpty()) {
@@ -287,7 +283,7 @@ public class ZkStateWriter {
             log.debug("going to delete state.json {}", path);
             reader.getZkClient().clean(path);
           } else {
-            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+            byte[] data = Utils.toJSON(Map.of(c.getName(), c));
             if (minStateByteLenForCompression > -1 && data.length > minStateByteLenForCompression) {
               // When compressing state.json, we expect at least a 10:1 compression ratio.
               data = compressor.compressBytes(data, data.length / 10);
@@ -349,7 +345,6 @@ public class ZkStateWriter {
       invalidState = true;
       throw bve;
     } finally {
-      timerContext.stop();
       if (success) {
         stats.success("update_state");
       } else {

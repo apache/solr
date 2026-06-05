@@ -190,19 +190,12 @@ public class TestRerankBase extends RestTestBase {
   }
 
   protected static void aftertest() throws Exception {
-    if (null != restTestHarness) {
-      restTestHarness.close();
-      restTestHarness = null;
-    }
+    restTestHarness = null;
     solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-  }
-
-  public static void makeRestTestHarnessNull() {
-    restTestHarness = null;
   }
 
   /** produces a model encoded in json * */

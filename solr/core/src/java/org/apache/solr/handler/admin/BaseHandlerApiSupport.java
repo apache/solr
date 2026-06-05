@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.request.ApiMapping.V2EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -103,7 +104,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (commands.size() > 1) {
               for (ApiCommand command : commands) {
                 if (command.meta().getName().equals(req.getPath())) {
-                  commands = Collections.singletonList(command);
+                  commands = List.of(command);
                   break;
                 }
               }
@@ -126,6 +127,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   }
 
   /** Wrapper for SolrParams that wraps V2 params and exposes them as V1 params. */
+  @SuppressForbidden(
+      reason = "CommandOperation.getCommandData can return null when there is no payload")
   private static void wrapParams(
       final SolrQueryRequest req,
       final CommandOperation co,

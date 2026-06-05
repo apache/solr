@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
@@ -47,6 +48,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -85,6 +87,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
   protected LBAsyncSolrClient loadbalancer;
+  private ObservableLongGauge asyncRequestsGauge;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -106,6 +109,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
+
+  // system property to enable ssl or tls for communication within Solr
+  static final String SOLR_SSL_ENABLED = "solr.ssl.enabled";
 
   // The core size of the threadpool servicing requests
   static final String INIT_CORE_POOL_SIZE = "corePoolSize";
@@ -225,12 +231,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
     NamedList<?> args = info.initArgs;
-    // note: the sys prop is only used in testing
-    this.scheme = getParameter(args, INIT_URL_SCHEME, System.getProperty(INIT_URL_SCHEME), sb);
-    if (this.scheme != null && this.scheme.endsWith("://")) {
-      this.scheme = this.scheme.replace("://", "");
-    }
-
+    this.scheme = initUrlScheme(args, sb);
     String strategy =
         getParameter(
             args, "metricNameStrategy", UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, sb);
@@ -352,6 +353,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
         ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
       }
     }
+    IOUtils.closeQuietly(asyncRequestsGauge);
     try {
       SolrMetricProducer.super.close();
     } catch (Exception e) {
@@ -433,6 +435,23 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     return url;
   }
 
+  /**
+   * Get url scheme of host
+   *
+   * @return http or https or null
+   */
+  private String initUrlScheme(NamedList<?> args, StringBuilder sb) {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool(SOLR_SSL_ENABLED, null);
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    String urlScheme = getParameter(args, INIT_URL_SCHEME, System.getProperty(INIT_URL_SCHEME), sb);
+    if (urlScheme != null && urlScheme.endsWith("://")) {
+      urlScheme = urlScheme.replace("://", "");
+    }
+    return urlScheme;
+  }
+
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
@@ -440,5 +459,20 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     commExecutor =
         solrMetricsContext.instrumentedExecutorService(
             commExecutor, "solr.core.executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
+    if (defaultClient != null) {
+      asyncRequestsGauge =
+          solrMetricsContext.observableLongGauge(
+              "solr.client.request.async_permits",
+              "Outstanding async HTTP request permits in the Jetty SolrJ client"
+                  + " (state=max: configured ceiling; state=available: currently unused permits).",
+              measurement -> {
+                measurement.record(
+                    defaultClient.asyncTrackerMaxPermits(), Attributes.of(STATE_KEY_ATTR, "max"));
+                measurement.record(
+                    defaultClient.asyncTrackerAvailablePermits(),
+                    Attributes.of(STATE_KEY_ATTR, "available"));
+              },
+              null);
+    }
   }
 }
