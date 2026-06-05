@@ -888,12 +888,16 @@ For Basic Authentication the script provides https://github.com/apache/solr/blob
 
 The command `bin/solr auth enable` configures Solr to use Basic Authentication when accessing the User Interface, using `bin/solr` and any API requests.
 
+NOTE: This command currently requires SolrCloud mode — it uploads the generated `security.json` to ZooKeeper so that all nodes pick it up automatically.
+For user-managed (standalone) clusters, you must create the `security.json` file manually and place it in each node's Solr home directory.
+See xref:basic-authentication-plugin.adoc[] for details.
+
 TIP: For more information about Solr's authentication plugins, see the section xref:securing-solr.adoc[].
 For more information on Basic Authentication support specifically, see the section xref:basic-authentication-plugin.adoc[].
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
-* Takes the base https://github.com/apache/solr/blob/main/solr/core/src/resources/security.json[security.json] file, applies `auth` command parameters, and uploads the new file to ZooKeeper.
+* Takes the base https://github.com/apache/solr/blob/main/solr/core/src/resources/security.json[security.json] template with best-practice roles and permissions, applies `auth` command parameters, and uploads the result to ZooKeeper.
 +
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:
 +
@@ -959,11 +963,17 @@ Either `--credentials` or `--prompt` *must* be specified.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: `false` (via template)
 |===
 +
-When `true`, this blocks out access to unauthenticated users from accessing Solr.
-When `false`, unauthenticated users will still be able to access Solr, but only for operations not explicitly requiring a user role in the Authorization plugin configuration.
+Controls whether unauthenticated requests are blocked.
++
+NOTE: The `BasicAuthPlugin` itself defaults `blockUnknown` to `true` when not specified.
+However, because `bin/solr auth enable` installs a best-practice template that includes a `RuleBasedAuthorizationPlugin` with fine-grained permissions, the template sets `blockUnknown` to `false`.
+This means unauthenticated users can only access endpoints explicitly granted to the `null` role in the authorization configuration — by default these are the *health* and *metrics-read* endpoints, which are left open so that load balancers and monitoring tools can operate without credentials.
+All other operations require an authenticated user with the appropriate role.
++
+If you want to require authentication for _all_ requests (including health checks and metrics), pass `--block-unknown true` explicitly.
 
 `--solr-include-file <includeFilePath>`::
 +
