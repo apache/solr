@@ -272,8 +272,6 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       throws IOException, URISyntaxException {
     validateGetRequest(solrRequest);
     reqb.GET();
-    reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
-    reqb.header(CommonParams.SOLR_REQUEST_CONTEXT_PARAM,  SolrRequest.SolrClientContext.CLIENT.toString());
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + queryParams.toQueryString()));
     return new PreparedRequest(reqb, null);
@@ -454,14 +452,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
+
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      for (Map.Entry<String, String> entry : headers.entrySet()) {
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      for (Map.Entry<String, String> entry : customHeaders.entrySet()) {
         reqb.header(entry.getKey(), entry.getValue());
       }
     }
+    reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+    reqb.header(
+        CommonParams.SOLR_REQUEST_CONTEXT_PARAM, SolrRequest.SolrClientContext.CLIENT.toString());
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {

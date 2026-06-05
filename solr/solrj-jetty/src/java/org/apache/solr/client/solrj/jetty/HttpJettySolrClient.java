@@ -607,7 +607,20 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   protected void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    req.headers(h -> h.remove(HttpHeader.ACCEPT_ENCODING));
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      req.headers(h -> customHeaders.forEach(h::add));
+    }
+    // note: if subsequent headers already added, the existing values win (first value considered)
+    req.headers(
+        h -> {
+          h.add(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+          h.add(
+              CommonParams.SOLR_REQUEST_CONTEXT_PARAM,
+              SolrRequest.SolrClientContext.CLIENT.toString());
+        });
+
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
@@ -626,16 +639,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     if (isAsync) {
       req.onRequestQueued(asyncTracker.queuedListener);
       req.onComplete(asyncTracker.completeListener);
-    }
-
-    solrRequest.addHeader(
-        CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
-    solrRequest.addHeader(
-        CommonParams.SOLR_REQUEST_CONTEXT_PARAM, SolrRequest.SolrClientContext.CLIENT.toString());
-
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      req.headers(h -> headers.forEach(h::add));
     }
   }
 
