@@ -72,13 +72,13 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.security.allow.urls.enabled", "false");
+    System.setProperty("solr.disable.allowUrls", "true");
     initCore("solrconfig.xml", "schema.xml");
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    System.clearProperty("solr.security.allow.urls.enabled");
+    System.clearProperty("solr.disable.allowUrls");
   }
 
   // Tests for files that are exact multiples of PACKET_SZ
