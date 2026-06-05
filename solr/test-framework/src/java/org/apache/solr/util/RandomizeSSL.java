@@ -126,8 +126,12 @@ public @interface RandomizeSSL {
                           LuceneTestCase.TEST_NIGHTLY,
                           LuceneTestCase.RANDOM_MULTIPLIER));
 
-      if (Boolean.getBoolean("tests.ssl") && ssl > 0.0D) {
+      // a test can configure @RandomizeSSL(0.0) or with 1.0, and we must honor that.
+      final String sslProp = System.getProperty("tests.ssl");
+      if ("true".equals(sslProp) && ssl > 0.0) {
         return new SSLTestConfig(true, useClientAuth);
+      } else if ("false".equals(sslProp) && ssl < 1.0) {
+        return new SSLTestConfig(false, false);
       }
 
       return new SSLTestConfig(useSSL, useClientAuth);
