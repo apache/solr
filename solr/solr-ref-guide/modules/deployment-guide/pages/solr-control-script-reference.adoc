@@ -963,14 +963,11 @@ Either `--credentials` or `--prompt` *must* be specified.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `false` (via template)
+|Optional |Default: use value from `security.json` template (`false`)
 |===
 +
 Controls whether unauthenticated requests are blocked.
-+
-NOTE: The `BasicAuthPlugin` itself defaults `blockUnknown` to `true` when not specified.
-However, because `bin/solr auth enable` installs a best-practice template that includes a `RuleBasedAuthorizationPlugin` with fine-grained permissions, the template sets `blockUnknown` to `false`.
-This means unauthenticated users can only access endpoints explicitly granted to the `null` role in the authorization configuration — by default these are the *health* and *metrics-read* endpoints, which are left open so that load balancers and monitoring tools can operate without credentials.
+The default `security.json` template sets `blockUnknown` to `false` because it includes a `RuleBasedAuthorizationPlugin` with fine-grained permissions — unauthenticated users can only access endpoints explicitly granted to the `null` role (by default *health* and *metrics-read*, left open so that load balancers and monitoring tools can operate without credentials).
 All other operations require an authenticated user with the appropriate role.
 +
 If you want to require authentication for _all_ requests (including health checks and metrics), pass `--block-unknown true` explicitly.
