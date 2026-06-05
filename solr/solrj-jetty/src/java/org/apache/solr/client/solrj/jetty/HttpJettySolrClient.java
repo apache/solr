@@ -42,8 +42,7 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
@@ -95,12 +94,8 @@ import org.slf4j.MDC;
 /**
  * An HTTP {@link SolrClient} using Jetty {@link HttpClient}. This is Solr's most mature client for
  * direct HTTP.
- *
- * <p>Despite the name, this client supports HTTP 1.1 and 2 -- toggle with {@link
- * HttpSolrClientBuilderBase#useHttp1_1(boolean)}. In retrospect, the name should have been {@code
- * HttpJettySolrClient}.
  */
-public class HttpJettySolrClient extends HttpSolrClientBase {
+public class HttpJettySolrClient extends HttpSolrClient {
   // formerly known at Http2SolrClient
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -512,6 +507,10 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
             "IOException occurred when talking to server at: " + url, cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (IllegalStateException e) {
+      // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
+      abortCause = e;
+      throw new SolrServerException("Connection lost at: " + url, new IOException(e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
@@ -555,8 +554,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public HttpSolrClientBuilderBase<?, ?> builder() {
-    return new HttpJettySolrClient.Builder().withHttpClient(this);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJettySolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   // merely exposing for superclass's method visibility to this package
@@ -579,7 +578,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
   // merely exposing for superclass's method visibility to this package
   protected static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
-    return HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
+    return HttpSolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
   }
 
   private NamedList<Object> processErrorsAndResponse(
@@ -941,8 +940,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     return asyncTracker.availablePermits();
   }
 
-  public static class Builder
-      extends HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient> {
+  public static class Builder extends BuilderBase<Builder, HttpJettySolrClient> {
 
     private HttpClient httpClient;
 
@@ -1004,8 +1002,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    public HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient>
-        withSSLConfig(SSLConfig sslConfig) {
+    public BuilderBase<Builder, HttpJettySolrClient> withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
       return this;
     }
@@ -1041,7 +1038,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return null;
     }
 
-    protected <B extends HttpSolrClientBase> B build(Class<B> type) {
+    protected <B extends HttpSolrClient> B build(Class<B> type) {
       return type.cast(build());
     }
 
