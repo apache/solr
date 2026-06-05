@@ -35,6 +35,12 @@ allprojects {
     description = 'Runs Apache Rat checks.'
 
     def defaultScanFileTree = project.fileTree(projectDir, {
+      // Only check files tracked by git — skip .gitignore-d files (IDE artifacts, AI assistant configs, etc.)
+      def trackedFiles = ["git", "ls-files", "--cached"].execute(null, projectDir).text.trim().split("\n").toList().toSet()
+      exclude { element ->
+        !element.isDirectory() && !trackedFiles.contains(element.relativePath.pathString)
+      }
+
       // Don't check under the project's build folder.
       exclude project.buildDir.name
 
