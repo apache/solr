@@ -29,8 +29,8 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj-zookeeper')
+  testImplementation project(':solr:solrj-jetty')
 
-  testRuntimeOnly project(':solr:solrj-jetty')
   testRuntimeOnly project(':solr:modules:sql')
   testRuntimeOnly libs.hsqldb.hsqldb // runtime because via JDBC reflection
 
