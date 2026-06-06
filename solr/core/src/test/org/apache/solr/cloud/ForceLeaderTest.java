@@ -41,7 +41,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// nocommit fails
 @Nightly // this test is currently too slow for non-nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   public static final String TEST_COLLECTION = "forceleader_lower_terms_collection";
