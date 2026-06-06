@@ -122,7 +122,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:2^10"}}
+            "lexical1": {"lucene": {"query": "id:2^=10"}}
           },
           "limit": 5,
           "fields": ["id", "score", "title"],
@@ -158,8 +158,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}},
-            "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
+            "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
           },
           "limit": 5,
           "fields": ["id", "score", "title"],
@@ -183,8 +183,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}},
-            "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
+            "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
           },
           "limit": 5,
           "sort": "mod3_idv desc, score desc",
@@ -209,8 +209,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}},
-            "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
+            "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
           },
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
@@ -221,8 +221,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}},
-            "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
+            "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
           },
           "limit": 4,
           "fields": ["id", "score", "title"],
@@ -234,8 +234,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}},
-            "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
+            "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
           },
           "limit": 4,
           "offset": 3,
@@ -260,7 +260,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}}
+            "lexical": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}}
           },
           "limit": 3,
           "offset": 1,
@@ -292,8 +292,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         """
         {
           "queries": {
-            "lexical1": {"lucene": {"query": "id:(2^2 OR 3^1 OR 6^2 OR 5^1)"}},
-            "lexical2": {"lucene": {"query": "id:(4^1 OR 5^2 OR 7^3 OR 10^2)"}}
+            "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
           },
           "limit": 4,
           "fields": ["id", "score", "title"],
@@ -319,6 +319,52 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertEquals(
         "title <em>test</em> for <em>doc</em> 5",
         rsp.getHighlighting().get("5").get("title").getFirst());
+  }
+
+  /**
+   * Tests the combined query feature with faceting, highlighting and elevation with debug.
+   *
+   * @throws Exception if any unexpected error occurs during the test execution.
+   */
+  @Test
+  public void testElevatedQueriesWithFacetAndHighlights() throws Exception {
+    prepareIndexDocs();
+    String jsonQuery =
+        """
+        {
+          "queries": {
+            "lexical1": {"lucene": {"query": "id:(2^=2 OR 3^=1 OR 6^=2 OR 1^=3)"}},
+            "lexical2": {"lucene": {"query": "id:(4^=1 OR 1^=2 OR 7^=3 OR 10^=2)"}}
+          },
+          "limit": 4,
+          "fields": ["id", "score", "title"],
+          "params": {
+            "combiner": true,
+            "elevateIds": "10,6",
+            "combiner.query": ["lexical1", "lexical2"],
+            "facet": true,
+            "facet.field": "mod3_idv",
+            "hl": true,
+            "hl.fl": "title",
+            "hl.q": "test doc",
+            "debug": "true"
+          }
+        }""";
+    handle.put("debug", SKIP);
+    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search-elevate");
+    assertEquals(4, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "10", "6", "1", "7");
+    assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
+    assertEquals("[1 (4), 0 (2), 2 (1)]", rsp.getFacetFields().getFirst().getValues().toString());
+    assertEquals(4, rsp.getHighlighting().size());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 1",
+        rsp.getHighlighting().get("1").get("title").getFirst());
+    assertEquals(
+        "title <em>test</em> for <em>doc</em> 6",
+        rsp.getHighlighting().get("6").get("title").getFirst());
+    assertTrue(rsp.getDebugMap().containsKey("queryBoosting"));
+    assertEquals(2, ((List<?>) rsp.getDebugMap().get("queryBoosting")).size());
   }
 
   /**
