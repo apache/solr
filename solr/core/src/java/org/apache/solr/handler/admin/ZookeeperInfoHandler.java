@@ -73,6 +73,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private static final String PARAM_DETAIL = "detail";
+  private static final String PARAM_DUMP = "dump";
   private final CoreContainer cores;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -99,8 +100,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   public Name getPermissionName(AuthorizationContext request) {
     var params = request.getParams();
     String path = normalizePath(params.get(PATH, ""));
-    String detail = params.get(PARAM_DETAIL, "false");
-    if ("/security.json".equalsIgnoreCase(path) && "true".equalsIgnoreCase(detail)) {
+    boolean returnsContent =
+        params.getBool(PARAM_DETAIL, false) || params.getBool(PARAM_DUMP, false);
+    if ("/security.json".equalsIgnoreCase(path) && returnsContent) {
       return Name.SECURITY_READ_PERM;
     } else {
       return Name.ZK_READ_PERM;
@@ -413,7 +415,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     // Extract display options (applicable to graph view)
     boolean detail = params.getBool(PARAM_DETAIL, false);
-    boolean dump = params.getBool("dump", false);
+    boolean dump = params.getBool(PARAM_DUMP, false);
 
     // Create response builder for paginated collections
     return new ZkGraphResponseBuilder(
@@ -431,14 +433,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
    * @return JSON string representing the ZooKeeper path data
    */
   private ZkBaseResponseBuilder handlePathViewRequest(SolrParams params) {
-    // Extract path parameter
-    String path = params.get(PATH);
-
-    // Extract display options
+    String path = normalizePath(params.get(PATH));
     boolean detail = params.getBool(PARAM_DETAIL, false);
-    boolean dump = params.getBool("dump", false);
-
-    // Create response builder for specific path
+    boolean dump = params.getBool(PARAM_DUMP, false);
     return new ZkPathResponseBuilder(cores.getZkController(), path, detail, dump);
   }
 
@@ -504,8 +501,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   }
 
   @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
-  private String normalizePath(String path) {
-    return StringUtils.stripEnd(path, "/");
+  String normalizePath(String path) {
+    if (path == null) {
+      return "/";
+    }
+    String normalized = StringUtils.stripEnd(path.trim(), "/");
+    return normalized.isEmpty() ? "/" : normalized;
   }
 
   // --------------------------------------------------------------------------------------
@@ -567,20 +568,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     public void build() throws IOException {
       if (zkClient == null) {
         return;
-      }
-
-      // normalize path
-      if (path == null) {
-        path = "/";
-      } else {
-        path = path.trim();
-        if (path.isEmpty()) {
-          path = "/";
-        }
-      }
-
-      if (path.endsWith("/") && path.length() > 1) {
-        path = path.substring(0, path.length() - 1);
       }
 
       int idx = path.lastIndexOf('/');
