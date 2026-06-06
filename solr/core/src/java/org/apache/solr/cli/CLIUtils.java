@@ -58,6 +58,8 @@ public final class CLIUtils {
 
   public static String YELLOW = "\u001B[33m";
 
+  public static String RESET = "\u001B[0m";
+
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
