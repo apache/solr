@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.junit.Assume.assumeFalse;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -128,9 +130,11 @@ public @interface RandomizeSSL {
 
       // a test can configure @RandomizeSSL(0.0) or with 1.0, and we must honor that.
       final String sslProp = System.getProperty("tests.ssl");
-      if ("true".equals(sslProp) && ssl > 0.0) {
+      if ("true".equals(sslProp)) {
+        assumeFalse("tests.ssl=true but test does not support SSL", ssl == 0.0);
         return new SSLTestConfig(true, useClientAuth);
-      } else if ("false".equals(sslProp) && ssl < 1.0) {
+      } else if ("false".equals(sslProp)) {
+        assumeFalse("tests.ssl=false but test requires SSL", ssl == 1.0);
         return new SSLTestConfig(false, false);
       }
 
