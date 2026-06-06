@@ -681,9 +681,10 @@ public class PackageManager implements Closeable {
   private boolean prompt(boolean noprompt) {
     boolean shouldExecute = true;
     if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
-      PackageUtils.print(
-          CLIUtils.YELLOW,
-          "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): ");
+      runtime.print(
+          CLIUtils.YELLOW
+              + "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): "
+              + CLIUtils.RESET);
       try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
         String userInput = scanner.next();
         if ("no".trim().equalsIgnoreCase(userInput) || "n".trim().equalsIgnoreCase(userInput)) {
@@ -957,8 +958,11 @@ public class PackageManager implements Closeable {
             Arrays.asList(collections),
             shouldInstallClusterPlugins,
             parameters);
-    PackageUtils.print(
-        res ? CLIUtils.GREEN : CLIUtils.RED, res ? "Deployment successful" : "Deployment failed");
+    if (res) {
+      runtime.printSuccess("Deployment successful");
+    } else {
+      runtime.printError("Deployment failed");
+    }
   }
 
   /** Undeploys a package from given collections. */
