@@ -37,8 +37,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Kindly borrowed the idea and base implementation from the ActiveMQ project; useful for blocking
- * traffic on a specified port.
+ * A TCP-level proxy used in tests to simulate network partitions. It listens on its own port and
+ * forwards all traffic to the target Jetty server. Key operations:
+ *
+ * <ul>
+ *   <li>{@link #close()} — drops all connections and stops accepting new ones (simulates connection
+ *       refused)
+ *   <li>{@link #pause()} / {@link #goOn()} — freezes all data flow while keeping sockets open
+ *       (simulates a hung network)
+ *   <li>{@link #reopen()} — restores connectivity on the same port after a {@link #close()}
+ * </ul>
+ *
+ * <p>The proxy sits <em>in front of</em> Jetty by design: the Jetty server and ZooKeeper heartbeats
+ * continue running normally while the proxy makes the node appear unreachable to clients. A Jetty
+ * Handler cannot achieve this because it requires a TCP connection to already exist.
+ *
+ * <p>Implementation note: each accepted connection creates a {@link Bridge} backed by two {@link
+ * Bridge.Pump} threads (one per direction), using blocking I/O borrowed from ActiveMQ.
+ *
+ * <p>TODO: Replace the blocking-I/O {@link Bridge.Pump} threads with a NIO {@code
+ * java.nio.channels.Selector}-based implementation. The current model spawns 2 OS threads per
+ * connection; under test load with many concurrent connections this is wasteful, and the {@link
+ * #PUMP_SOCKET_TIMEOUT_MS} timeout means threads linger for up to 100 s after connections are
+ * dropped. A single-selector loop would handle all connections with O(1) threads, as Jetty itself
+ * does internally.
  */
 public class SocketProxy {
 

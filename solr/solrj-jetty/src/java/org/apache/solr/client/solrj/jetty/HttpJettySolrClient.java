@@ -507,6 +507,10 @@ public class HttpJettySolrClient extends HttpSolrClient {
             "IOException occurred when talking to server at: " + url, cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (IllegalStateException e) {
+      // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
+      abortCause = e;
+      throw new SolrServerException("Connection lost at: " + url, new IOException(e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;

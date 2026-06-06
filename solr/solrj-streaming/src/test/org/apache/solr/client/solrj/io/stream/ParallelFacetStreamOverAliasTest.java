@@ -37,6 +37,7 @@ import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -273,6 +274,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         };
 
     String zkHost = cluster.getZkServer().getZkAddress();
+    var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
 
@@ -281,7 +283,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrParams.add(TIERED_PARAM, "true");
 
     // tiered stats stream
-    StatsStream statsStream = new StatsStream(zkHost, ALIAS_NAME, solrParams, metrics);
+    StatsStream statsStream = new StatsStream(solrConnection, ALIAS_NAME, solrParams, metrics);
     statsStream.setStreamContext(streamContext);
     List<Tuple> tieredTuples = getTuples(statsStream);
     assertEquals(1, tieredTuples.size());
@@ -290,7 +292,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, "*:*");
     solrParams.add(TIERED_PARAM, "false");
-    statsStream = new StatsStream(zkHost, ALIAS_NAME, solrParams, metrics);
+    statsStream = new StatsStream(solrConnection, ALIAS_NAME, solrParams, metrics);
     statsStream.setStreamContext(streamContext);
     // tiered should match non-tiered results
     assertListOfTuplesEquals(tieredTuples, getTuples(statsStream));
@@ -304,7 +306,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory =
-        new SolrDefaultStreamFactory().withDefaultZkHost(cluster.getZkServer().getZkAddress());
+        new SolrDefaultStreamFactory().withDefaultSolrConnection(getSolrConnection());
 
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);

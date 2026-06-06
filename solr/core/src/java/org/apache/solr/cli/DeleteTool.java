@@ -30,8 +30,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,9 +110,9 @@ public class DeleteTool extends ToolBase {
             .withOptionalBasicAuthCredentials(
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
-    String zkHost = CLIUtils.getZkHost(cli);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
+    var solrConnection = CLIUtils.getSolrConnection(cli);
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
+      echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
       deleteCollection(cloudSolrClient, cli);
     }
   }
@@ -125,14 +125,13 @@ public class DeleteTool extends ToolBase {
           "No live nodes found! Cannot delete a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    if (!zkStateReader.getClusterState().hasCollection(collectionName)) {
+    if (!cloudSolrClient.getClusterState().hasCollection(collectionName)) {
       throw new IllegalArgumentException("Collection " + collectionName + " not found!");
     }
 
     String configName =
-        zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
+        cloudSolrClient.getClusterState().getCollection(collectionName).getConfigName();
     boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
 
     if (deleteConfig && configName != null) {
@@ -142,7 +141,7 @@ public class DeleteTool extends ToolBase {
             configName);
       } else {
         // need to scan all Collections to see if any are using the config
-        Collection<String> collections = zkStateReader.getClusterState().getCollectionNames();
+        Collection<String> collections = cloudSolrClient.getClusterState().getCollectionNames();
 
         // give a little note to the user if there are many collections in case it takes a while
         if (collections.size() > 50)
@@ -159,7 +158,7 @@ public class DeleteTool extends ToolBase {
                 .filter(
                     name ->
                         configName.equals(
-                            zkStateReader.getClusterState().getCollection(name).getConfigName()))
+                            cloudSolrClient.getClusterState().getCollection(name).getConfigName()))
                 .findFirst();
         if (inUse.isPresent()) {
           deleteConfig = false;
@@ -184,14 +183,14 @@ public class DeleteTool extends ToolBase {
     }
 
     if (deleteConfig) {
-      String configZnode = "/configs/" + configName;
       try {
-        zkStateReader.getZkClient().clean(configZnode);
+        var req = new ConfigsetsApi.DeleteConfigSet(configName);
+        req.process(cloudSolrClient);
       } catch (Exception exc) {
         echo(
-            "\nWARNING: Failed to delete configuration directory "
-                + configZnode
-                + " in ZooKeeper due to: "
+            "\nWARNING: Failed to delete configSet "
+                + configName
+                + " in solr due to: "
                 + exc.getMessage()
                 + "\nYou'll need to manually delete this znode using the bin/solr zk rm command.");
       }
