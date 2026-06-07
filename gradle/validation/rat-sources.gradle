@@ -119,9 +119,6 @@ allprojects {
         }
       }
 
-      // Don't check under the project's build folder.
-      exclude project.layout.buildDirectory.get().asFile.name
-
       // Don't recurse into local Lucene dev repo.
       exclude "/lucene"
 
