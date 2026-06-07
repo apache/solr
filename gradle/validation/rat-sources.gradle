@@ -119,6 +119,11 @@ allprojects {
         }
       }
 
+      // Exclude the build directory — even though it's not git-tracked, Gradle
+      // validates input/output overlaps at configuration time before the git
+      // filter closure runs, so this must be excluded explicitly.
+      exclude project.layout.buildDirectory.get().asFile.name
+
       // Don't check any of the subprojects - they have their own rat tasks.
       exclude subprojects.collect {it.projectDir.name}
 
