@@ -122,29 +122,20 @@ allprojects {
       // Don't check under the project's build folder.
       exclude project.layout.buildDirectory.get().asFile.name
 
-      // Exclude any generated stuff.
-      exclude "src/generated"
-
       // Don't recurse into local Lucene dev repo.
       exclude "/lucene"
 
       // Don't check any of the subprojects - they have their own rat tasks.
       exclude subprojects.collect {it.projectDir.name}
 
-      // The git index filter above excludes untracked files. These patterns
-      // further narrow the scan to file types that should carry license headers.
+      // The git index filter above excludes untracked files. These include
+      // patterns select the file types that should carry license headers.
       include "**/*.xml"
       include "**/*.md"
       include "**/*.py"
       include "**/*.sh"
       include "**/*.bat"
-      // include build.gradle but exclude .gradle directories
       include "**/*.gradle"
-      exclude ".gradle/**"
-
-      // Exclude Eclipse
-      exclude ".metadata"
-      exclude ".settings"
 
       // Include selected patterns from any source folders. We could make this
       // relative to source sets but it seems to be of little value - all our source sets
@@ -169,10 +160,6 @@ allprojects {
         case ":":
           include "gradlew"
           include "gradlew.bat"
-          exclude ".idea"
-          exclude ".muse"
-          exclude ".git"
-
           // Exclude github stuff (templates, workflows).
           exclude ".github"
 
