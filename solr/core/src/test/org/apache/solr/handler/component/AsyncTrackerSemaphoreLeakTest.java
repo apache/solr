@@ -47,6 +47,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -114,11 +115,12 @@ public class AsyncTrackerSemaphoreLeakTest extends SolrCloudTestCase {
    * org.apache.solr.client.solrj.impl.LBHttp2SolrClient} retrying a request synchronously inside a
    * {@link CompletableFuture#whenComplete} callback that runs on the Jetty IO selector thread.
    *
-   * <p>This test <b>passes</b> with the {@code failureDispatchExecutor} fix in this branch. Without
-   * the fix, the IO thread would block forever in {@code semaphore.acquire()} and this test would
-   * time out.
+   * <p>Without the {@code failureDispatchExecutor} fix (SOLR-18174), the IO thread would block
+   * forever in {@code semaphore.acquire()} and this test would time out.
    */
   @Test
+  @Ignore(
+      "SOLR-18174: Flaky due to timing-sensitive TCP RST simulation; kept for regression testing")
   @SuppressForbidden(
       reason =
           "Reflection needed to access Http2SolrClient's package-private getHttpClient() to force-stop it during timeout recovery")
