@@ -237,10 +237,12 @@ public class EnvUtils {
 
   private static void applyDeprecatedPropertyMapping(
       String deprecatedKey, String lookupKey, Properties sysProperties) {
-    var newPropName = DEPRECATED_MAPPINGS.getOrDefault(lookupKey, DEPRECATED_MAPPINGS.get("!" + lookupKey));
-    var newValue = DEPRECATED_MAPPINGS.containsKey(lookupKey)
-        ? sysProperties.getProperty(deprecatedKey)
-        : String.valueOf(!Boolean.getBoolean(deprecatedKey));
+    var newPropName =
+        DEPRECATED_MAPPINGS.getOrDefault(lookupKey, DEPRECATED_MAPPINGS.get("!" + lookupKey));
+    var newValue =
+        DEPRECATED_MAPPINGS.containsKey(lookupKey)
+            ? sysProperties.getProperty(deprecatedKey)
+            : String.valueOf(!Boolean.getBoolean(deprecatedKey));
     log.warn(
         "Deprecated system property {} has been replaced by {}. Support for the old property will be removed in a future version of Solr.",
         deprecatedKey,
