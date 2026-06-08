@@ -57,6 +57,7 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -449,14 +450,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
+
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      for (Map.Entry<String, String> entry : headers.entrySet()) {
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      for (Map.Entry<String, String> entry : customHeaders.entrySet()) {
         reqb.header(entry.getKey(), entry.getValue());
       }
     }
+    reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+    // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+    reqb.header(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {
