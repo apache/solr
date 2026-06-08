@@ -158,7 +158,7 @@ public class CreateCore extends CoreAdminAPIBase implements CoreApis.Create {
   }
 
   public static CreateCoreParams createRequestBodyFromV1Params(SolrParams solrParams) {
-    final var v1ParamMap = solrParams.toMap(new HashMap<>());
+    final var v1ParamMap = Utils.convertToMap(solrParams, new HashMap<>());
     v1ParamMap.remove(ACTION);
     v1ParamMap.remove(ASYNC);
 
