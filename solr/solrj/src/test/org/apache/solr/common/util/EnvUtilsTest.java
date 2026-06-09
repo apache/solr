@@ -111,6 +111,14 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
+  public void deprecatedCamelCaseDFlagIsTranslatedToCurrentPropertyName() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("solr.auth.jwt.allowOutboundHttp", "true");
+    EnvUtils.init(false, Map.of(), sysprops);
+    assertTrue(EnvUtils.getPropertyAsBool("solr.auth.jwt.outbound.http.enabled"));
+  }
+
+  @Test
   public void testFlippingDisabledToEnabledPropertyName() {
 
     var env = Map.of("SOLR_ADMIN_UI_DISABLED", "true");
