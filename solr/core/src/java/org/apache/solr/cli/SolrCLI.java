@@ -480,10 +480,8 @@ public class SolrCLI implements CLIO {
   }
 
   public static void print(String color, Object message) {
-    String RESET = "\u001B[0m";
-
     if (color != null) {
-      CLIO.out(color + message + RESET);
+      CLIO.out(color + message + CLIUtils.RESET);
     } else {
       CLIO.out(String.valueOf(message));
     }
