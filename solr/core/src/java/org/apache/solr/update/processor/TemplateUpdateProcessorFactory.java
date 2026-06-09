@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.Cache;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.util.ConcurrentLRUCache;
 
 /**
  * Adds new fields to documents based on a template pattern specified via Template.field request
@@ -40,8 +40,7 @@ import org.apache.solr.util.ConcurrentLRUCache;
  * @since 6.3.0
  */
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
-  private Cache<String, Resolved> templateCache =
-      new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
+  private Cache<String, Resolved> templateCache = Caffeine.newBuilder().maximumSize(1000).build();
   public static final String NAME = "template";
 
   @Override
@@ -77,9 +76,8 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
     return NAME;
   }
 
-  public static Resolved getResolved(
-      String template, Cache<String, Resolved> cache, Pattern pattern) {
-    Resolved r = cache == null ? null : cache.get(template);
+  public static Resolved getResolved(String template, Cache<String, Resolved> cache, Pattern pattern) {
+    Resolved r = cache == null ? null : cache.getIfPresent(template);
     if (r == null) {
       r = new Resolved();
       Matcher m = pattern.matcher(template);
@@ -105,10 +103,7 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
   }
 
   public static String replaceTokens(
-      String template,
-      Cache<String, Resolved> cache,
-      Function<String, Object> fun,
-      Pattern pattern) {
+      String template, Cache<String, Resolved> cache, Function<String, Object> fun, Pattern pattern) {
     if (template == null) {
       return null;
     }

@@ -55,6 +55,8 @@ import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ResourceLoaderAware;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.ConfigNode;
@@ -68,7 +70,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -80,7 +81,6 @@ import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
-import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -145,8 +145,8 @@ public class IndexSchema {
   private static final Set<String> FIELDTYPE_KEYS = Set.of("fieldtype", "fieldType");
   private static final Set<String> FIELD_KEYS = Set.of("dynamicField", "field");
 
-  protected Cache<String, SchemaField> dynamicFieldCache =
-      new ConcurrentLRUCache<>(10000, 8000, 9000, 100, false, false, null);
+  protected final Cache<String, SchemaField> dynamicFieldCache =
+      Caffeine.newBuilder().maximumSize(10000).build();
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
@@ -1390,7 +1390,7 @@ public class IndexSchema {
   public SchemaField getFieldOrNull(String fieldName) {
     SchemaField f = fields.get(fieldName);
     if (f != null) return f;
-    f = dynamicFieldCache.get(fieldName);
+    f = dynamicFieldCache.getIfPresent(fieldName);
     if (f != null) return f;
 
     for (DynamicField df : dynamicFields) {
