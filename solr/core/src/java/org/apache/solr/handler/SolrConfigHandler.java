@@ -336,7 +336,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
       boolean showParams = req.getParams().getBool("expandParams", false);
-      Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
+      Map<String, Object> map = new SimpleOrderedMap<>(this.req.getCore().getSolrConfig());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
 
       @SuppressWarnings({"unchecked"})
@@ -369,7 +369,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (plugin instanceof Map) {
         pluginInfo = (Map) plugin;
       } else if (plugin instanceof PluginInfo) {
-        pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
+        pluginInfo = new SimpleOrderedMap<>((PluginInfo) plugin);
       }
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);

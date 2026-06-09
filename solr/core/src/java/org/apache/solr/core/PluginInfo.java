@@ -194,13 +194,11 @@ public class PluginInfo implements MapWriter {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void writeMap(EntryWriter ew) throws IOException {
     new NamedList<>(attributes).writeMap(ew);
     if (initArgs != null) {
-      for (Map.Entry<String, Object> entry : initArgs.asMap(3).entrySet()) {
-        ew.put(entry.getKey(), entry.getValue());
-      }
+      initArgs.asMap(3).forEach((k, v) -> ew.putNoEx((String) k, v));
     }
     if (children == null || children.isEmpty()) {
       return;
@@ -211,7 +209,7 @@ public class PluginInfo implements MapWriter {
       Object old = childrenGrouped.get(child.name);
       if (old == null) {
         childrenGrouped.put(child.name, child);
-      } else if (old instanceof List<Object> list) {
+      } else if (old instanceof List list) {
         list.add(child);
       } else {
         List<Object> l = new ArrayList<>();
