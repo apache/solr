@@ -71,12 +71,6 @@ public class IncrementalShardBackup {
   private static final int MAX_PARALLEL_UPLOADS =
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleluploads", 1);
 
-  private static final ExecutorService BACKUP_UPLOAD_EXECUTOR =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          MAX_PARALLEL_UPLOADS,
-          Integer.MAX_VALUE,
-          new SolrNamedThreadFactory("BackupUploadExecutor"));
-
   private SolrCore solrCore;
 
   private BackupFilePaths incBackupFiles;
@@ -216,8 +210,20 @@ public class IncrementalShardBackup {
     URI indexDir = incBackupFiles.getIndexDir();
     BackupStats backupStats = new BackupStats();
 
-    List<Future<?>> uploadFutures = new ArrayList<>();
+    var executor =
+            solrCore
+                .getCoreContainer()
+                .getObjectCache()
+                .computeIfAbsent(
+                    "RestoreDownloadExecutor",
+                    ExecutorService.class,
+                    s ->
+                        ExecutorUtil.newMDCAwareCachedThreadPool(
+                            MAX_PARALLEL_UPLOADS,
+                            Integer.MAX_VALUE,
+                            new SolrNamedThreadFactory("BackupUploadExecutor")));
 
+    List<Future<?>> uploadFutures = new ArrayList<>();
     for (String fileName : indexFiles) {
       // Capture variable for lambda
       final String fileNameFinal = fileName;
@@ -255,7 +261,7 @@ public class IncrementalShardBackup {
             }
           };
 
-      uploadFutures.add(BACKUP_UPLOAD_EXECUTOR.submit(uploadTask));
+      uploadFutures.add(executor.submit(uploadTask));
     }
 
     try {
@@ -269,8 +275,9 @@ public class IncrementalShardBackup {
         case Error err -> throw err;
         case IOException ioe -> throw ioe;
         case RuntimeException re -> throw re;
-        default -> throw new SolrException(
-            SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", cause);
+        default ->
+            throw new SolrException(
+                SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", cause);
       }
     } catch (InterruptedException e) {
       uploadFutures.forEach(f -> f.cancel(true));

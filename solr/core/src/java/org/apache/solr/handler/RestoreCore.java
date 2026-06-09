@@ -63,12 +63,6 @@ public class RestoreCore implements Callable<Boolean> {
   private static final int MAX_PARALLEL_DOWNLOADS =
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleldownloads", 1);
 
-  private static final ExecutorService RESTORE_DOWNLOAD_EXECUTOR =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          MAX_PARALLEL_DOWNLOADS,
-          Integer.MAX_VALUE,
-          new SolrNamedThreadFactory("RestoreDownloadExecutor"));
-
   private final SolrCore core;
   private RestoreRepository repository;
 
@@ -135,6 +129,18 @@ public class RestoreCore implements Callable<Boolean> {
 
       List<Future<?>> downloadFutures = new ArrayList<>();
 
+      var executor =
+          core.getCoreContainer()
+              .getObjectCache()
+              .computeIfAbsent(
+                  "RestoreDownloadExecutor",
+                  ExecutorService.class,
+                  s ->
+                      ExecutorUtil.newMDCAwareCachedThreadPool(
+                          MAX_PARALLEL_DOWNLOADS,
+                          Integer.MAX_VALUE,
+                          new SolrNamedThreadFactory("RestoreDownloadExecutor")));
+
       // Move all files from backupDir to restoreIndexDir
       for (String filename : repository.listAllFiles()) {
         checkInterrupted();
@@ -175,7 +181,7 @@ public class RestoreCore implements Callable<Boolean> {
               }
             };
 
-        downloadFutures.add(RESTORE_DOWNLOAD_EXECUTOR.submit(downloadTask));
+        downloadFutures.add(executor.submit(downloadTask));
       }
 
       try {
