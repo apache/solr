@@ -22,8 +22,13 @@ import java.util.Map;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.pattern.PatternReplaceFilterFactory;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.QParser;
 
 /**
  * To be used for field {@link IndexSchema#NEST_PATH_FIELD_NAME} for enhanced nested doc
@@ -61,5 +66,17 @@ public class NestPathField extends SortableTextField {
     // Solr HTTP Schema APIs don't know about CustomAnalyzer so use TokenizerChain instead
     setIndexAnalyzer(new TokenizerChain(customAnalyzer));
     // leave queryAnalyzer as literal
+  }
+
+  @Override
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    if (externalVal == null || externalVal.isEmpty() || "/".equals(externalVal)) {
+      return new BooleanQuery.Builder()
+          .add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST)
+          .add(field.getType().getExistenceQuery(parser, field), BooleanClause.Occur.MUST_NOT)
+          .build();
+    }
+
+    return super.getFieldQuery(parser, field, externalVal);
   }
 }

@@ -1,0 +1,7 @@
+title: Add root document query shortcut support to NestPathField
+type: changed
+authors:
+  - name: Abhishek Umarjikar
+links:
+  - name: SOLR-18197
+    url: https://issues.apache.org/jira/browse/SOLR-18197
