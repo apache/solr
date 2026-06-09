@@ -17,12 +17,12 @@
 
 package org.apache.solr.update.processor;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -76,7 +76,8 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
     return NAME;
   }
 
-  public static Resolved getResolved(String template, Cache<String, Resolved> cache, Pattern pattern) {
+  public static Resolved getResolved(
+      String template, Cache<String, Resolved> cache, Pattern pattern) {
     Resolved r = cache == null ? null : cache.getIfPresent(template);
     if (r == null) {
       r = new Resolved();
@@ -103,7 +104,10 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
   }
 
   public static String replaceTokens(
-      String template, Cache<String, Resolved> cache, Function<String, Object> fun, Pattern pattern) {
+      String template,
+      Cache<String, Resolved> cache,
+      Function<String, Object> fun,
+      Pattern pattern) {
     if (template == null) {
       return null;
     }

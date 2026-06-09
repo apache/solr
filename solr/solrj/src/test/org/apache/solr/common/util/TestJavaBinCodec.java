@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.EnumFieldValue;
@@ -674,8 +675,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     if (cacheSz > 0) {
       stringCache =
           new JavaBinCodec.StringCache() {
-            private final Map<StringBytes, String> cache =
-                new java.util.concurrent.ConcurrentHashMap<>(cacheSz);
+            private final Map<StringBytes, String> cache = new ConcurrentHashMap<>(cacheSz);
 
             @Override
             protected String getFromCache(StringBytes b) {
