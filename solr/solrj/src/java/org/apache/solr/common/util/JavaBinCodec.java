@@ -1456,6 +1456,9 @@ public class JavaBinCodec implements PushWriter {
     boolean wantsAllFields();
   }
 
+  /**
+   * @lucene.internal
+   */
   public abstract static class StringCache {
     public String get(StringBytes b) {
       String result = getFromCache(b);

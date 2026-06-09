@@ -40,7 +40,8 @@ import org.apache.solr.update.AddUpdateCommand;
  * @since 6.3.0
  */
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
-  private Cache<String, Resolved> templateCache = Caffeine.newBuilder().maximumSize(1000).build();
+  private Cache<String, Resolved> templateCache =
+      Caffeine.newBuilder().initialCapacity(10).maximumSize(1000).build();
   public static final String NAME = "template";
 
   @Override
