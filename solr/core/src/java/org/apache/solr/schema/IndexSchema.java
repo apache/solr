@@ -146,7 +146,7 @@ public class IndexSchema {
   private static final Set<String> FIELD_KEYS = Set.of("dynamicField", "field");
 
   protected final Cache<String, SchemaField> dynamicFieldCache =
-      Caffeine.newBuilder().maximumSize(10000).build();
+      Caffeine.newBuilder().initialCapacity(100).maximumSize(10000).build();
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;

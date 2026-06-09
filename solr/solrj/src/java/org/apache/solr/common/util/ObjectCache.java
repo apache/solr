@@ -76,9 +76,7 @@ public class ObjectCache implements SolrCloseable {
 
   public <T> T computeIfAbsent(
       String key, Class<T> clazz, Function<String, ? extends T> mappingFunction) {
-    ensureNotClosed();
-    Object o = map.computeIfAbsent(key, mappingFunction);
-    return clazz.cast(o);
+    return clazz.cast(computeIfAbsent(key, mappingFunction));
   }
 
   @Override
