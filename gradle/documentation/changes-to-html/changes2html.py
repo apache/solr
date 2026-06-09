@@ -213,7 +213,7 @@ class HTMLGenerator:
         # Extract markdown link: [text](url)
         markdown_link_match = re.search(r'\[([^\]]+)\]\(([^)]+)\)', author_text)
         # Extract GitHub handle: @username
-        github_match = re.search(r'@(\w+)', author_text)
+        github_match = re.search(r'@([\w-]+)', author_text)
 
         if markdown_link_match:
             # Has markdown link
@@ -771,6 +771,7 @@ def main():
     html = generator.generate(parser.releases, parser.title, parser.preamble)
 
     # Output
+    sys.stdout.reconfigure(encoding='utf-8') #UTF-8 encoding for Windows compatibility
     print(html)
 
 

@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
@@ -284,7 +283,7 @@ public class Utils {
     // Need below check in both fromJSON methods since
     // utf8.length returns a NPE without this check.
     if (utf8 == null || utf8.length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     return fromJSON(utf8, 0, utf8.length);
   }
@@ -296,7 +295,7 @@ public class Utils {
   public static Object fromJSON(
       byte[] utf8, int offset, int length, Function<JSONParser, ObjectBuilder> fun) {
     if (utf8 == null || utf8.length == 0 || length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     // convert directly from bytes to chars
     // and parse directly from that instead of going through
@@ -441,8 +440,11 @@ public class Utils {
     }
   }
 
+  @SuppressForbidden(
+      reason = "singletonList(null) is intentional — null is a sentinel path element")
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
-    if (hierarchy == null) return getObjectByPath(root, onlyPrimitive, singletonList(null));
+    if (hierarchy == null)
+      return getObjectByPath(root, onlyPrimitive, Collections.singletonList(null));
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return getObjectByPath(root, onlyPrimitive, parts);
   }
@@ -845,6 +847,12 @@ public class Utils {
    * @return a serializable version of the object
    */
   public static Object getReflectWriter(Object o) {
+    // Enums serialized as their declared name so that javabin/NamedList consumers
+    // (e.g. HealthCheckHandlerTest comparing against CommonParams.OK == "OK") see
+    // a plain string rather than "pkg.EnumClass:NAME".
+    if (o instanceof Enum<?> e) {
+      return e.name();
+    }
     List<FieldWriter> fieldWriters = null;
     try {
       fieldWriters =

@@ -38,7 +38,6 @@ import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.util.RandomForceMergePolicy;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,14 +74,6 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     initCore(solrConfigFileName, schemaFileName);
   }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    System.clearProperty("mergePolicySort");
-    System.clearProperty("solr.tests.maxCommitMergeWait");
-    super.tearDown();
-  }
-
   private final Path instanceDir = TEST_PATH().resolve("collection1");
 
   @Test
@@ -103,8 +94,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTieredMPSolrIndexConfigCreation() throws Exception {
-    String solrConfigFileName = solrConfigFileNameTieredMergePolicyFactory;
-    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName);
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameTieredMergePolicyFactory);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
 
@@ -127,8 +117,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   @Test
   public void testConcurrentMergeSchedularSolrIndexConfigCreation() throws Exception {
-    String solrConfigFileName = solrConfigFileNameConnMSPolicyFactory;
-    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName);
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameConnMSPolicyFactory);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
 
@@ -177,7 +166,6 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   public void testMergeOnFlushMPSolrIndexConfigCreation() throws Exception {
-    final SortField sortField1 = new SortField("timestamp_i_dvo", SortField.Type.INT, true);
     final SortField sortField2 = new SortField("id", SortField.Type.STRING, false);
     sortField2.setMissingValue(SortField.STRING_LAST);
 
@@ -250,10 +238,10 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   public void testToMap() throws Exception {
-    final String solrConfigFileNameWarmer = solrConfigFileNameWarmerRandomMergePolicyFactory;
-    final String solrConfigFileNameTMP = solrConfigFileNameTieredMergePolicyFactory;
     final String solrConfigFileName =
-        (random().nextBoolean() ? solrConfigFileNameWarmer : solrConfigFileNameTMP);
+        (random().nextBoolean()
+            ? solrConfigFileNameWarmerRandomMergePolicyFactory
+            : solrConfigFileNameTieredMergePolicyFactory);
     SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
     assertNotNull(solrIndexConfig);

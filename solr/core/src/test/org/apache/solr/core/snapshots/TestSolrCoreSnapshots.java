@@ -19,7 +19,6 @@ package org.apache.solr.core.snapshots;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.BackupRestoreUtils;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,13 +73,6 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     docsSeed = random().nextLong();
-  }
-
-  @AfterClass
-  public static void teardownClass() {
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    System.clearProperty("solr.security.allow.paths");
   }
 
   @Test
@@ -344,7 +335,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     } catch (IndexNotFoundException ex) {
       // This can happen when the delete snapshot functionality cleans up the index files (when the
       // directory storing these files is not the *current* index directory).
-      return Collections.emptyList();
+      return List.of();
     }
   }
 }

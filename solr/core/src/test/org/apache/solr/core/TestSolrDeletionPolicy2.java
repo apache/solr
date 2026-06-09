@@ -47,8 +47,5 @@ public class TestSolrDeletionPolicy2 extends SolrTestCaseJ4 {
 
     assertEquals(
         "test.org.apache.solr.core.FakeDeletionPolicy.onCommit", System.getProperty("onCommit"));
-
-    System.clearProperty("onInit");
-    System.clearProperty("onCommit");
   }
 }

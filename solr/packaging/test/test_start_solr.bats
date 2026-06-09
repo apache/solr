@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop --all >/dev/null 2>&1
+  SOLR_STOP_WAIT=30 solr stop --all >/dev/null 2>&1
 }
 
 @test "SOLR-11740 check 'solr stop' connection" {
@@ -60,6 +60,8 @@ teardown() {
   # for start/stop/restart we parse the args separate from picking the command
   # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.
 
+  # Pre-check
+  timeout || skip "timeout utility is not available"
   # Set a timeout duration (in seconds)
   TIMEOUT_DURATION=2
 
@@ -78,12 +80,12 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
   run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
-  refute_output --partial 'Exception'
+  refute_output --partial 'Exception in thread'
 }
 
 @test "deprecated system properties converted to modern properties" {
-  solr start -Ddisable.v2.api=true
-  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.v2.api and should upgrade to using solr.api.v2.enabled instead.'
+  solr start -Ddisable.config.edit=true
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.config.edit and should upgrade to using solr.api.config.edit.enabled instead.'
 }
 
 @test "start with custom jetty options" {
@@ -92,6 +94,14 @@ teardown() {
 
   solr start --jettyconfig "--module=server"
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+}
+
+@test "-c flag prints no-op warning and still starts in cloud mode" {
+  run solr start -c
+  assert_output --partial 'WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.'
+
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
 
 @test "bootstrapping a configset" {

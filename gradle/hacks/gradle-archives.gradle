@@ -13,11 +13,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 
 // LUCENE-9518: Set up sane defaults for any gradle archiving task.
 allprojects {
-  tasks.withType(AbstractArchiveTask).configureEach { task ->
+  tasks.withType(AbstractArchiveTask).configureEach {task ->
     duplicatesStrategy = DuplicatesStrategy.FAIL
     reproducibleFileOrder = true
     dirMode = 0755

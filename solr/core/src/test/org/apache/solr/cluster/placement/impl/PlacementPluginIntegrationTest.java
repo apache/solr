@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.instanceOf;
 
 import java.util.Arrays;
@@ -145,7 +144,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -203,7 +202,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -221,7 +220,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("update", plugin))
+            .withPayload(Map.of("update", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -241,7 +240,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("update", plugin))
+            .withPayload(Map.of("update", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -260,7 +259,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
     final int oldVersion = version;
@@ -312,7 +311,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 
@@ -413,7 +412,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     req.process(cluster.getSolrClient());
 

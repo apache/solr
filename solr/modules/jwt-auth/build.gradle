@@ -33,6 +33,7 @@ dependencies {
 
   implementation project(':solr:core')
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-jetty')
 
   implementation libs.bc.jose4j
 
@@ -65,6 +66,4 @@ dependencies {
   testImplementation libs.squareup.okhttp3.mockwebserver
   testImplementation libs.squareup.okhttp3.okhttp
   testRuntimeOnly libs.netty.codechttp
-  testImplementation libs.apache.httpcomponents.httpclient
-  testImplementation libs.apache.httpcomponents.httpcore
 }

@@ -19,13 +19,11 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,7 +60,10 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     String collection = "collection1";
     createCollection(collection);
 
-    cluster.waitForActiveCollection(collection, 10, TimeUnit.SECONDS, 2, 6);
+    waitForState(
+        "Timeout waiting for collection to become active",
+        collection,
+        clusterShape(2, NUM_REPLICAS_OF_SHARD1 + 1));
     List<JettySolrRunner> stoppedRunners = new ArrayList<>();
     for (int i = 0; i < 4; i++) {
       // who is the leader?
@@ -108,15 +109,20 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     assertNotNull(jetty);
     cluster.expireZkSession(jetty);
 
-    for (int i = 0; i < 60; i++) { // wait till leader is changed
-      if (jetty != getRunner(getLeader(collection))) {
-        break;
-      }
-      Thread.sleep(100);
-    }
+    // Wait until leadership has moved away from the expired-session node
+    waitForState(
+        "Expected leader to move away after expiring zk session",
+        collection,
+        c -> {
+          var l = c.getLeader("shard1");
+          return l != null && !jetty.getNodeName().equals(l.getNodeName());
+        });
 
-    // make sure we have waited long enough for the first leader to have come back
-    Thread.sleep(ZkTestServer.TICK_TIME * 2 + 100);
+    // Wait until the expired-session node is live again before stopping others
+    waitForState(
+        "Expected expired-session node to rejoin live nodes",
+        collection,
+        (liveNodes, c) -> liveNodes.contains(jetty.getNodeName()));
 
     // kill everyone but the first leader that should have reconnected by now
     for (JettySolrRunner jetty2 : cluster.getJettySolrRunners()) {
@@ -125,18 +131,13 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
       }
     }
 
-    for (int i = 0; i < 320; i++) { // wait till leader is changed
-      try {
-        if (jetty == getRunner(getLeader(collection))) {
-          break;
-        }
-        Thread.sleep(100);
-      } catch (Exception e) {
-        continue;
-      }
-    }
-
-    assertEquals(jetty, getRunner(getLeader(collection)));
+    waitForState(
+        "Expected original node to become leader after others stopped",
+        collection,
+        c -> {
+          var l = c.getLeader("shard1");
+          return l != null && jetty.getNodeName().equals(l.getNodeName());
+        });
   }
 
   private JettySolrRunner getRunner(String nodeName) {
@@ -152,10 +153,5 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     ZkNodeProps props = cluster.getZkStateReader().getLeaderRetry(collection, "shard1", 30000);
 
     return props.getStr(ZkStateReader.NODE_NAME_PROP);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solrcloud.skip.autorecovery");
   }
 }

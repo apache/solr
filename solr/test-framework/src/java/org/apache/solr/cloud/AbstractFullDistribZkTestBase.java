@@ -90,6 +90,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -112,7 +113,6 @@ import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -296,7 +296,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
               .getZkClient()
               .create(
                   ZkStateReader.CLUSTER_PROPS,
-                  Utils.toJSON(Collections.singletonMap(URL_SCHEME, HTTPS)),
+                  Utils.toJSON(Map.of(URL_SCHEME, HTTPS)),
                   CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props =
@@ -326,11 +326,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.update.delay", "0");
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    System.clearProperty("solrcloud.update.delay");
   }
 
   public AbstractFullDistribZkTestBase() {
@@ -384,12 +379,17 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
             controlJettyDir, useJettyDataDir ? getDataDir(testDir + "/control/data") : null);
     controlJetty.start();
     try (CloudSolrClient client = createCloudClient("control_collection")) {
-      assertEquals(
-          0,
-          CollectionAdminRequest.createCollection("control_collection", "conf1", 1, 1)
-              .setCreateNodeSet(controlJetty.getNodeName())
-              .process(client)
-              .getStatus());
+      RetryUtil.retryOnException(
+          SolrException.class,
+          30000,
+          1000,
+          () ->
+              assertEquals(
+                  0,
+                  CollectionAdminRequest.createCollection("control_collection", "conf1", 1, 1)
+                      .setCreateNodeSet(controlJetty.getNodeName())
+                      .process(client)
+                      .getStatus()));
       waitForActiveReplicaCount(client, "control_collection", 1);
     }
 
@@ -2198,16 +2198,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         try {
           super.distribTearDown();
         } finally {
-          System.clearProperty(ZK_HOST);
-          System.clearProperty("collection");
-          System.clearProperty(ENABLE_UPDATE_LOG);
-          System.clearProperty(REMOVE_VERSION_FIELD);
-          System.clearProperty("solr.directoryFactory");
-          System.clearProperty(ZOOKEEPER_FORCE_SYNC);
-          System.clearProperty(
-              MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
-          System.clearProperty("zkHost");
-          System.clearProperty("numShards");
         }
       }
     }
@@ -2277,12 +2267,14 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
     customThreadPool.execute(() -> IOUtils.closeQuietly(cloudClient));
 
-    ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+    try {
+      ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+    } finally {
+      coreClients.clear();
+      solrClientByCollection.clear();
 
-    coreClients.clear();
-    solrClientByCollection.clear();
-
-    super.destroyServers();
+      super.destroyServers();
+    }
   }
 
   @Override
@@ -2456,7 +2448,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       int connectionTimeoutMillis,
       int socketTimeoutMillis) {
     RandomizingCloudSolrClientBuilder builder =
-        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+        new RandomizingCloudSolrClientBuilder(List.of(zkHost), Optional.empty());
     if (shardLeadersOnly) {
       builder.sendUpdatesOnlyToShardLeaders();
     } else {
@@ -3123,17 +3115,13 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected void setupRestTestHarnesses() {
     for (final JettySolrRunner jetty : jettys) {
-      RestTestHarness harness =
-          new RestTestHarness(
-              () -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME);
-      restTestHarnesses.add(harness);
+      restTestHarnesses.add(jetty.getRestClient(DEFAULT_TEST_COLLECTION_NAME));
     }
   }
 
   protected void closeRestTestHarnesses() throws IOException {
-    for (RestTestHarness h : restTestHarnesses) {
-      h.close();
-    }
+    // note: prior to Solr 10.1, there was actual closing to do.
+    restTestHarnesses.clear();
   }
 
   protected RestTestHarness randomRestTestHarness() {

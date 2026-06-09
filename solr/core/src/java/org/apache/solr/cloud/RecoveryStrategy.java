@@ -55,8 +55,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -303,6 +303,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);
       // Why do we need to open searcher if "onlyLeaderIndexes"?
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
+      // If the leader is readOnly, do not fail since the core is already committed.
+      ureq.getParams().set(UpdateParams.FAIL_ON_READ_ONLY, false);
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
     }
   }
@@ -657,15 +659,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
           break;
         }
 
-        // we wait a bit so that any updates on the leader
-        // that started before they saw recovering state
-        // are sure to have finished (see SOLR-7141 for
-        // discussion around current value)
-        // TODO since SOLR-11216, we probably won't need this
-        try {
-          Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+        if (!core.readOnly) {
+          // we wait a bit so that any updates on the leader
+          // that started before they saw recovering state
+          // are sure to have finished (see SOLR-7141 for
+          // discussion around current value)
+          // TODO since SOLR-11216, we probably won't need this
+          try {
+            Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
         }
 
         // first thing we just try to sync
@@ -685,7 +689,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
           }
           if (syncSuccess) {
-            SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+            SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
             // force open a new searcher
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
             req.close();
@@ -846,7 +850,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
     if (replicaType == Replica.Type.TLOG) {
       // roll over all updates during buffering to new tlog, make RTG available
-      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+      SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
       core.getUpdateHandler()
           .getUpdateLog()
           .copyOverBufferingUpdates(new CommitUpdateCommand(req, false));

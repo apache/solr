@@ -37,7 +37,6 @@ ext {
 }
 
 dependencies {
-  permitUnusedDeclared project(":solr:core")
   serverLib project(path: ":solr:server", configuration: "libExt")
   serverLib project(path: ":solr:server", configuration: "serverLib")
   solrCore project(":solr:core")
@@ -147,7 +146,7 @@ task finalizeJsBundleDir(type: Sync) {
 war {
   webAppDirName = "web"
 
-  from (configurations.generatedJSClientBundle, {
+  from(configurations.generatedJSClientBundle, {
     into "libs/solr"
   })
 
@@ -155,11 +154,11 @@ war {
   // By default, we always build dev that does not optimize generated files for release to reduce build times.
   if (gradle.ext.withUiModule) {
     if (rootProject.ext.development) {
-      from (tasks.generateUiDevFiles) {
+      from(tasks.generateUiDevFiles) {
         into "ui"
       }
     } else {
-      from (tasks.generateUiProdFiles) {
+      from(tasks.generateUiProdFiles) {
         into "ui"
       }
     }

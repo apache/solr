@@ -19,13 +19,15 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
+import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
+import static org.apache.solr.security.AuditEvent.EventType.ERROR;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.FORWARD;
+import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
+import static org.apache.solr.servlet.HttpSolrCall.Action.REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.RETRY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +38,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -49,6 +50,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -85,6 +87,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
@@ -95,7 +98,6 @@ import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationUtils;
 import org.apache.solr.security.HttpServletAuthorizationContext;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
@@ -113,7 +115,6 @@ public class HttpSolrCall {
 
   public static final String INTERNAL_REQUEST_COUNT = "_forwardedCount";
 
-  protected final SolrDispatchFilter solrDispatchFilter;
   protected final CoreContainer cores;
   protected final HttpServletRequest req;
   protected final HttpServletResponse response;
@@ -139,13 +140,28 @@ public class HttpSolrCall {
 
   protected RequestType requestType;
 
+  /** Enum to define action that needs to be processed. */
+  public enum Action {
+    /** Forwards the request via {@link jakarta.servlet.RequestDispatcher}. */
+    FORWARD,
+    /**
+     * Returns the control, and no further specific processing is needed. This is generally when an
+     * error is set and returned.
+     */
+    RETURN,
+    /** Retry the request. Currently used when a core isn't found, we refresh state, and retry. */
+    RETRY,
+    ADMIN,
+    REMOTEPROXY,
+    PROCESS,
+    ADMIN_OR_REMOTEPROXY
+  }
+
   public HttpSolrCall(
-      SolrDispatchFilter solrDispatchFilter,
       CoreContainer cores,
       HttpServletRequest request,
       HttpServletResponse response,
       boolean retry) {
-    this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
     this.req = request;
     this.response = response;
@@ -153,9 +169,14 @@ public class HttpSolrCall {
     this.requestType = RequestType.UNKNOWN;
     this.userAgentSolrVersion = parseUserAgentSolrVersion();
     this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
-    this.path = ServletUtils.getPathAfterContext(req);
+    normalizeAndSetPath(ServletUtils.getPathAfterContext(req));
 
     req.setAttribute(HttpSolrCall.class.getName(), this);
+  }
+
+  @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
+  protected void normalizeAndSetPath(String unnormalizedPath) {
+    this.path = StringUtils.stripEnd(unnormalizedPath, "/");
   }
 
   public String getPath() {
@@ -185,7 +206,7 @@ public class HttpSolrCall {
 
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
   public List<String> getCollectionsList() {
-    return collectionsList != null ? collectionsList : Collections.emptyList();
+    return collectionsList != null ? collectionsList : List.of();
   }
 
   @SuppressForbidden(
@@ -212,7 +233,7 @@ public class HttpSolrCall {
       // Try to resolve a Solr core name
       core = cores.getCore(origCorename);
       if (core != null) {
-        path = path.substring(idx);
+        normalizeAndSetPath(path.substring(idx));
       } else {
         // extra mem barriers, so don't look at this before trying to get core
         if (cores.isCoreLoading(origCorename)) {
@@ -221,7 +242,7 @@ public class HttpSolrCall {
         // the core may have just finished loading
         core = cores.getCore(origCorename);
         if (core != null) {
-          path = path.substring(idx);
+          normalizeAndSetPath(path.substring(idx));
         } else {
           if (!cores.isZooKeeperAware()) {
             core = cores.getCore("");
@@ -250,14 +271,14 @@ public class HttpSolrCall {
         core = getCoreByCollection(collectionName, isPreferLeader);
         if (core != null) {
           if (idx > 0) {
-            path = path.substring(idx);
+            normalizeAndSetPath(path.substring(idx));
           }
         } else {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
             extractRemotePath(collectionName);
             if (action == REMOTEPROXY) {
-              path = path.substring(idx);
+              normalizeAndSetPath(path.substring(idx));
               return;
             }
           }
@@ -295,9 +316,11 @@ public class HttpSolrCall {
         return; // we are done with a valid handler
       }
     }
-    log.debug("no handler or core retrieved for {}, follow through...", path);
 
-    action = PASSTHROUGH;
+    String msg = "no handler, collection, or core for " + path;
+    sendError(404, msg);
+    log.info(msg); // not "error" since Solr isn't necessarily at fault
+    action = RETURN;
   }
 
   /**
@@ -341,7 +364,7 @@ public class HttpSolrCall {
    */
   protected List<String> resolveCollectionListOrAlias(String collectionStr) {
     if (collectionStr == null || collectionStr.trim().isEmpty()) {
-      return Collections.emptyList();
+      return List.of();
     }
     List<String> result = null;
     LinkedHashSet<String> uniqueList = null;
@@ -413,14 +436,6 @@ public class HttpSolrCall {
       return RETURN;
     }
 
-    if (solrDispatchFilter.abortErrorMessage != null) {
-      sendError(500, solrDispatchFilter.abortErrorMessage);
-      if (shouldAudit(EventType.ERROR)) {
-        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, getReq()));
-      }
-      return RETURN;
-    }
-
     try {
       init();
 
@@ -443,7 +458,7 @@ public class HttpSolrCall {
         AuthorizationUtils.AuthorizationFailure authzFailure =
             AuthorizationUtils.authorize(req, response, cores, authzContext);
         if (authzFailure != null) {
-          sendError(authzFailure.getStatusCode(), authzFailure.getMessage());
+          sendError(authzFailure.statusCode(), authzFailure.message());
           return RETURN;
         }
       }
@@ -475,21 +490,11 @@ public class HttpSolrCall {
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
             mustClearSolrRequestInfo = true;
             executeCoreRequest(solrRsp);
-            if (shouldAudit(cores)) {
-              EventType eventType =
-                  solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
-              if (shouldAudit(cores, eventType)) {
-                cores
-                    .getAuditLoggerPlugin()
-                    .doAudit(
-                        new AuditEvent(
-                            eventType,
-                            req,
-                            getAuthCtx(),
-                            solrReq.getRequestTimer().getTime(),
-                            solrRsp.getException()));
-              }
-            }
+            Exception exception = solrRsp.getException();
+            EventType eventType = exception == null ? COMPLETED : ERROR;
+            double time = solrReq.getRequestTimer().getTime();
+            cores.audit(
+                () -> new AuditEvent(eventType, req, getAuthCtx(), time, exception), eventType);
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
             while (headers.hasNext()) {
@@ -506,9 +511,7 @@ public class HttpSolrCall {
           return action;
       }
     } catch (Throwable ex) {
-      if (shouldAudit(EventType.ERROR)) {
-        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
-      }
+      cores.audit(() -> new AuditEvent(ERROR, ex, req), ERROR);
       sendError(ex);
       // walk the entire cause chain to search for an Error
       Throwable t = ex;
@@ -576,26 +579,10 @@ public class HttpSolrCall {
     return coreOrColName;
   }
 
-  public boolean shouldAudit() {
-    return shouldAudit(cores);
-  }
-
-  public boolean shouldAudit(AuditEvent.EventType eventType) {
-    return shouldAudit(cores, eventType);
-  }
-
-  public static boolean shouldAudit(CoreContainer cores) {
-    return cores.getAuditLoggerPlugin() != null;
-  }
-
-  public static boolean shouldAudit(CoreContainer cores, AuditEvent.EventType eventType) {
-    return shouldAudit(cores) && cores.getAuditLoggerPlugin().shouldLog(eventType);
-  }
-
   private boolean shouldAuthorize() {
     if (PublicKeyHandler.PATH.equals(path)) return false;
     // admin/info/key is the path where public key is exposed . it is always unsecured
-    if ("/".equals(path) || "/solr/".equals(path))
+    if (StrUtils.isNullOrEmpty(path) || "/".equals(path) || "/solr/".equals(path))
       return false; // Static Admin UI files must always be served
     if (cores.getPkiAuthenticationSecurityBuilder() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationSecurityBuilder().needsAuthorization(req);
@@ -671,7 +658,7 @@ public class HttpSolrCall {
           solrParams = SolrRequestParsers.parseQueryString(req.getQueryString());
         } else {
           // we have no params at all, use empty ones:
-          solrParams = new MapSolrParams(Collections.emptyMap());
+          solrParams = new MapSolrParams(Map.of());
         }
         solrReq = new SolrQueryRequestBase(core, solrParams) {};
       }
@@ -720,7 +707,7 @@ public class HttpSolrCall {
 
   protected void logAndFlushAdminRequest(SolrQueryResponse solrResp) throws IOException {
     if (solrResp.getToLog().size() > 0) {
-      // has to come second and in it's own if to keep ./gradlew check happy.
+      // has to come second and in its own "if" to keep ./gradlew check happy.
       if (log.isInfoEnabled()) {
         log.info(
             handler != null
@@ -729,24 +716,15 @@ public class HttpSolrCall {
             solrResp.getToLogAsString("[admin]"));
       }
     }
+    // node/container requests have no core, use built-in writers
     QueryResponseWriter respWriter =
-        SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
+        ResponseWritersRegistry.getWriter(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
-    if (shouldAudit()) {
-      EventType eventType = solrResp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
-      if (shouldAudit(eventType)) {
-        cores
-            .getAuditLoggerPlugin()
-            .doAudit(
-                new AuditEvent(
-                    eventType,
-                    req,
-                    getAuthCtx(),
-                    solrReq.getRequestTimer().getTime(),
-                    solrResp.getException()));
-      }
-    }
+    Exception ex = solrResp.getException();
+    EventType eventType = ex == null ? COMPLETED : ERROR;
+    double time = solrReq.getRequestTimer().getTime();
+    cores.audit(() -> new AuditEvent(eventType, req, getAuthCtx(), time, ex), eventType);
   }
 
   /**
@@ -760,6 +738,10 @@ public class HttpSolrCall {
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
     SolrCore.preDecorateResponse(solrReq, solrResp);
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
+    }
     handler.handleRequest(solrReq, solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
   }
@@ -782,8 +764,7 @@ public class HttpSolrCall {
     if (collectionParam == null
         && // if collection param already exists, we may need to over-write it
         core != null
-        && collections.equals(
-            Collections.singletonList(core.getCoreDescriptor().getCollectionName()))) {
+        && collections.equals(List.of(core.getCoreDescriptor().getCollectionName()))) {
       return;
     }
     String newCollectionParam = StrUtils.join(collections, ',');
@@ -1090,7 +1071,7 @@ public class HttpSolrCall {
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
-      if (contentStreams == null) parsedCommands = Collections.emptyList();
+      if (contentStreams == null) parsedCommands = List.of();
       else {
         parsedCommands =
             ApiBag.getCommandOperations(
@@ -1105,7 +1086,7 @@ public class HttpSolrCall {
   }
 
   protected Map<String, JsonSchemaValidator> getValidators() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   /**

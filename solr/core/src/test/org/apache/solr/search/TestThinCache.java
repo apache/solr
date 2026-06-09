@@ -16,14 +16,15 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 
 import io.opentelemetry.api.common.Attributes;
 import io.prometheus.metrics.model.snapshots.Labels;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
@@ -46,6 +47,9 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
   public static final String SOLR_NODE_LEVEL_CACHE_XML =
       "<solr>\n"
+          + "  <str name=\"allowPaths\">${"
+          + ALLOW_PATHS_SYSPROP
+          + ":}</str>"
           + "  <caches>\n"
           + "    <cache name='myNodeLevelCache'\n"
           + "      size='10'\n"
@@ -62,11 +66,12 @@ public class TestThinCache extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupSolrHome() throws Exception {
     Path home = createTempDir("home");
+    Path configSet = createTempDir("configSet");
+    System.setProperty(ALLOW_PATHS_SYSPROP, configSet.toAbsolutePath().toString());
     Files.writeString(home.resolve("solr.xml"), SOLR_NODE_LEVEL_CACHE_XML);
 
     solrTestRule.startSolr(home);
 
-    Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
@@ -94,13 +99,14 @@ public class TestThinCache extends SolrTestCaseJ4 {
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
-  public void testSimple() {
+  public void testSimple() throws IOException {
     Object cacheScope = new Object();
     ThinCache.NodeLevelCache<Object, Integer, String> backing = new ThinCache.NodeLevelCache<>();
     ThinCache<Object, Integer, String> lfuCache = new ThinCache<>();
     String lfuCacheName = "lfu_cache";
     lfuCache.setBacking(cacheScope, backing);
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
+    var solrMetricsContext = new SolrMetricsContext(metricManager, registry);
+    solrMetricsContext.registerCloseable(lfuCache);
     lfuCache.initializeMetrics(
         solrMetricsContext,
         Attributes.of(
@@ -109,6 +115,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
     Object cacheScope2 = new Object();
     ThinCache<Object, Integer, String> newLFUCache = new ThinCache<>();
+    solrMetricsContext.registerCloseable(newLFUCache);
     String newLfuCacheName = "new_lfu_cache";
     newLFUCache.setBacking(cacheScope2, backing);
     newLFUCache.initializeMetrics(
@@ -123,8 +130,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
     NoOpRegenerator regenerator = new NoOpRegenerator();
     backing.init(params, null, null);
-    Object initObj =
-        lfuCache.init(Collections.singletonMap("autowarmCount", "25"), null, regenerator);
+    Object initObj = lfuCache.init(Map.of("autowarmCount", "25"), null, regenerator);
     lfuCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       lfuCache.put(i + 1, Integer.toString(i + 1));
@@ -143,7 +149,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertNull(lfuCache.get(1)); // first item put in should be the first out
 
     // Test autowarming
-    newLFUCache.init(Collections.singletonMap("autowarmCount", "25"), initObj, regenerator);
+    newLFUCache.init(Map.of("autowarmCount", "25"), initObj, regenerator);
     newLFUCache.warm(null, lfuCache);
     newLFUCache.setState(SolrCache.State.LIVE);
 
@@ -160,6 +166,8 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertEquals(4L, newhits);
     assertEquals(102L, newinserts);
     assertEquals(0L, evictions);
+
+    solrMetricsContext.close();
   }
 
   @Test

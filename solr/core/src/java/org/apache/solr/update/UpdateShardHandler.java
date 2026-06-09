@@ -167,10 +167,10 @@ public class UpdateShardHandler implements SolrInfoBean {
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
     updateExecutor =
         solrMetricsContext.instrumentedExecutorService(
-            updateExecutor, "solr_core_executor", "updateOnlyExecutor", getCategory());
+            updateExecutor, "solr.core.executor", "updateOnlyExecutor", getCategory());
     recoveryExecutor =
         solrMetricsContext.instrumentedExecutorService(
-            recoveryExecutor, "solr_core_executor", "recoveryExecutor", getCategory());
+            recoveryExecutor, "solr.core.executor", "recoveryExecutor", getCategory());
   }
 
   @Override

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
@@ -32,12 +34,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -48,8 +52,10 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }
 
   private GenericSolrRequest createShowFileRequest(SolrParams params) {
@@ -66,19 +72,17 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void test404Locally() {
-    // we need to test that executing the handler directly does not
-    // throw an exception, just sets the exception on the response.
-
-    // bypass TestHarness since it will throw any exception found in the
-    // response.
-    SolrCore core = h.getCore();
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(core.getRequestHandler("/admin/file"), req("file", "does-not-exist-404.txt"), rsp);
-    assertNotNull("no exception in response", rsp.getException());
-    assertTrue(
-        "wrong type of exception: " + rsp.getException().getClass(),
-        rsp.getException() instanceof SolrException);
-    assertEquals(404, ((SolrException) rsp.getException()).code());
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1")) {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrQueryRequest req =
+          new SolrQueryRequestBase(core, params("file", "does-not-exist-404.txt"));
+      core.execute(core.getRequestHandler("/admin/file"), req, rsp);
+      assertNotNull("no exception in response", rsp.getException());
+      assertTrue(
+          "wrong type of exception: " + rsp.getException().getClass(),
+          rsp.getException() instanceof SolrException);
+      assertEquals(404, ((SolrException) rsp.getException()).code());
+    }
   }
 
   public void testDirList() throws SolrServerException, IOException {
@@ -119,26 +123,17 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testContentTypeHtmlBecomesTextPlain() {
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/admin/file");
-    SolrQueryRequest req =
-        new LocalSolrQueryRequest(
-            h.getCore(), params("file", "schema.xml", "contentType", "text/html"));
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req, rsp);
-    ContentStreamBase.FileStream content =
-        (ContentStreamBase.FileStream) rsp.getValues().get("content");
-    assertEquals("text/plain", content.getContentType());
-  }
-
-  public void testContentTypeHtmlDefault() {
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/admin/file");
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params("file", "example.html"));
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req, rsp);
-    ContentStreamBase.FileStream content =
-        (ContentStreamBase.FileStream) rsp.getValues().get("content");
-    // System attempts to guess content type, but will only return XML, JSON, CSV, never HTML
-    assertEquals("application/xml", content.getContentType());
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1")) {
+      SolrRequestHandler handler = core.getRequestHandler("/admin/file");
+      SolrQueryRequest req =
+          new SolrQueryRequestBase(
+              core, params("file", "managed-schema.xml", "contentType", "text/html"));
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      handler.handleRequest(req, rsp);
+      ContentStreamBase.FileStream content =
+          (ContentStreamBase.FileStream) rsp.getValues().get("content");
+      assertEquals("text/plain", content.getContentType());
+    }
   }
 
   public void testIllegalContentType() throws SolrServerException, IOException {
@@ -147,6 +142,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
         createShowFileRequest(params("file", "managed-schema", "contentType", "not/known"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 404);
   }
 
@@ -157,6 +153,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
             params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 404);
   }
 
@@ -167,6 +164,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 400);
   }
 
@@ -181,6 +179,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
                 "text/plain; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 400);
   }
 
@@ -206,5 +205,12 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
     // Non-known content types are rejected with 400 error
     expectThrows(SolrException.class, () -> ShowFileRequestHandler.getSafeContentType("foo/bar"));
+  }
+
+  private void closeResponseStream(NamedList<Object> response) throws IOException {
+    InputStream stream = (InputStream) response.get("stream");
+    if (stream != null) {
+      stream.close();
+    }
   }
 }

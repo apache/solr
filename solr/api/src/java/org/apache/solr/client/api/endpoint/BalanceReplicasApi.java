@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import org.apache.solr.client.api.model.BalanceReplicasRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 @Path("cluster/replicas/balance")
 public interface BalanceReplicasApi {
@@ -29,7 +29,7 @@ public interface BalanceReplicasApi {
   @Operation(
       summary = "Balance Replicas across the given set of Nodes.",
       tags = {"cluster"})
-  SolrJerseyResponse balanceReplicas(
+  SubResponseAccumulatingJerseyResponse balanceReplicas(
       @RequestBody(description = "Contains user provided parameters")
           BalanceReplicasRequestBody requestBody)
       throws Exception;

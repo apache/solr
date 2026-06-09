@@ -19,12 +19,10 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +34,6 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -55,7 +52,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Set<String> okayExceptions =
-      Collections.singleton(NonExistentCoreException.class.getName());
+      Set.of(NonExistentCoreException.class.getName());
 
   private final CollectionCommandContext ccc;
 
@@ -64,7 +61,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
@@ -91,7 +88,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     // verify the placement modifications caused by the deletion are allowed
-    DocCollection coll = state.getCollectionOrNull(collection);
+    DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
     if (coll != null) {
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
       assignStrategy.verifyDeleteCollection(ccc.getSolrCloudManager(), coll);
@@ -119,13 +116,11 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
 
-      String asyncId = message.getStr(ASYNC);
-
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       List<Replica> failedReplicas =
           CollectionHandlingUtils.collectionCmd(
-              internalMsg, params, results, null, asyncId, okayExceptions, ccc, state);
+              adminCmdContext, internalMsg, params, results, null, okayExceptions, ccc);
       for (Replica failedReplica : failedReplicas) {
         boolean isSharedFS =
             failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false)

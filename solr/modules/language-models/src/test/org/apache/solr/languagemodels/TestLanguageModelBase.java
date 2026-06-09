@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +38,12 @@ public class TestLanguageModelBase extends RestTestBase {
   protected static Path tmpSolrHome;
   protected static Path tmpConfDir;
 
-  public static final String MODEL_FILE_NAME = "_schema_text-to-vector-model-store.json";
+  public static final String TEXT_TO_VECTOR_MODEL_FILE_NAME =
+      "_schema_text-to-vector-model-store.json";
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
-  protected static Path embeddingModelStoreFile = null;
+  protected static Path textToVectorModelStoreFile = null;
 
   protected static String IDField = "id";
   protected static String vectorField = "vector";
@@ -53,7 +54,7 @@ public class TestLanguageModelBase extends RestTestBase {
       String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
       throws Exception {
     initFolders(persistModelStore);
-    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema);
     if (buildIndex) prepareIndex();
   }
 
@@ -61,51 +62,46 @@ public class TestLanguageModelBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
-    final Path modelStore = tmpConfDir.resolve(MODEL_FILE_NAME);
+    final Path textToVectorModelStore = tmpConfDir.resolve(TEXT_TO_VECTOR_MODEL_FILE_NAME);
 
     if (isPersistent) {
-      embeddingModelStoreFile = modelStore;
+      textToVectorModelStoreFile = textToVectorModelStore;
     }
 
-    if (Files.exists(modelStore)) {
+    if (Files.exists(textToVectorModelStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", modelStore.toAbsolutePath());
+        log.info("remove model store config file in {}", textToVectorModelStore.toAbsolutePath());
       }
-      Files.delete(modelStore);
+      Files.delete(textToVectorModelStore);
     }
 
     System.setProperty("managed.schema.mutable", "true");
   }
 
   protected static void afterTest() throws Exception {
-    if (null != restTestHarness) {
-      restTestHarness.close();
-      restTestHarness = null;
-    }
+    restTestHarness = null;
     solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-    System.clearProperty("managed.schema.mutable");
   }
 
-  public static void loadModel(String fileName, String status) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/modelExamples/" + fileName);
+  public static void loadTextToVectorModel(String fileName, String status) throws Exception {
+    final URL url =
+        TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-        ManagedTextToVectorModelStore.REST_END_POINT,
-        multipleModels,
-        "/responseHeader/status==" + status);
+        TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==" + status);
   }
 
-  public static void loadModel(String fileName) throws Exception {
-    final URL url = TestLanguageModelBase.class.getResource("/modelExamples/" + fileName);
+  public static void loadTextToVectorModel(String fileName) throws Exception {
+    final URL url =
+        TestLanguageModelBase.class.getResource("/textToVectorModelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
-    assertJPut(
-        ManagedTextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+    assertJPut(TextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
   protected static void prepareIndex() throws Exception {

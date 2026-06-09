@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
@@ -46,7 +45,7 @@ public class SetAliasPropCmd implements CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String aliasName = message.getStr(NAME);
 

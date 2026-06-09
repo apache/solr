@@ -165,40 +165,35 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     props.setProperty("solr.circuitbreaker.update.cpu.warnonly", "true");
     System.setProperties(props);
 
-    try {
-      final var parsedBreakers =
-          CircuitBreakerRegistry.parseCircuitBreakersFromProperties(h.getCoreContainer()).stream()
-              .sorted(Comparator.comparing(breaker -> breaker.toString()))
-              .collect(Collectors.toList());
+    final var parsedBreakers =
+        CircuitBreakerRegistry.parseCircuitBreakersFromProperties(h.getCoreContainer()).stream()
+            .sorted(Comparator.comparing(breaker -> breaker.toString()))
+            .collect(Collectors.toList());
 
-      assertEquals(3, parsedBreakers.size());
+    assertEquals(3, parsedBreakers.size());
 
-      assertTrue(
-          "Expected CPUCircuitBreaker, but got " + parsedBreakers.get(0).getClass().getName(),
-          parsedBreakers.get(0) instanceof CPUCircuitBreaker);
-      final var cpuBreaker = (CPUCircuitBreaker) parsedBreakers.get(0);
-      assertEquals(56.0, cpuBreaker.getCpuUsageThreshold(), 0.1);
-      assertEquals(true, cpuBreaker.isWarnOnly());
-      assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), cpuBreaker.getRequestTypes());
+    assertTrue(
+        "Expected CPUCircuitBreaker, but got " + parsedBreakers.get(0).getClass().getName(),
+        parsedBreakers.get(0) instanceof CPUCircuitBreaker);
+    final var cpuBreaker = (CPUCircuitBreaker) parsedBreakers.get(0);
+    assertEquals(56.0, cpuBreaker.getCpuUsageThreshold(), 0.1);
+    assertEquals(true, cpuBreaker.isWarnOnly());
+    assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), cpuBreaker.getRequestTypes());
 
-      assertTrue(
-          "Expected LoadAverageCircuitBreaker, but got "
-              + parsedBreakers.get(1).getClass().getName(),
-          parsedBreakers.get(1) instanceof LoadAverageCircuitBreaker);
-      final var loadAvgBreaker = (LoadAverageCircuitBreaker) parsedBreakers.get(1);
-      assertEquals(3.4, loadAvgBreaker.getLoadAverageThreshold(), 0.1);
-      assertEquals(false, loadAvgBreaker.isWarnOnly());
-      assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), loadAvgBreaker.getRequestTypes());
+    assertTrue(
+        "Expected LoadAverageCircuitBreaker, but got " + parsedBreakers.get(1).getClass().getName(),
+        parsedBreakers.get(1) instanceof LoadAverageCircuitBreaker);
+    final var loadAvgBreaker = (LoadAverageCircuitBreaker) parsedBreakers.get(1);
+    assertEquals(3.4, loadAvgBreaker.getLoadAverageThreshold(), 0.1);
+    assertEquals(false, loadAvgBreaker.isWarnOnly());
+    assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), loadAvgBreaker.getRequestTypes());
 
-      assertTrue(
-          "Expected MemoryCircuitBreaker, but got " + parsedBreakers.get(2).getClass().getName(),
-          parsedBreakers.get(2) instanceof MemoryCircuitBreaker);
-      final var memBreaker = (MemoryCircuitBreaker) parsedBreakers.get(2);
-      assertEquals(false, memBreaker.isWarnOnly());
-      assertEquals(Set.of(SolrRequest.SolrRequestType.QUERY), memBreaker.getRequestTypes());
-    } finally {
-      props.keySet().stream().forEach(k -> System.clearProperty((String) k));
-    }
+    assertTrue(
+        "Expected MemoryCircuitBreaker, but got " + parsedBreakers.get(2).getClass().getName(),
+        parsedBreakers.get(2) instanceof MemoryCircuitBreaker);
+    final var memBreaker = (MemoryCircuitBreaker) parsedBreakers.get(2);
+    assertEquals(false, memBreaker.isWarnOnly());
+    assertEquals(Set.of(SolrRequest.SolrRequestType.QUERY), memBreaker.getRequestTypes());
   }
 
   @SuppressWarnings("resource")
@@ -212,7 +207,6 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
                 SolrException ex =
                     expectThrows(SolrException.class, () -> new MockCircuitBreaker(true));
                 assertTrue(ex.getMessage().contains("Invalid error code"));
-                System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
               });
     }
   }

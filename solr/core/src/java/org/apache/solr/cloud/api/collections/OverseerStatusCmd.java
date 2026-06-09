@@ -17,22 +17,16 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import com.codahale.metrics.Timer;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.Stats;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This command returns stats about the Overseer, the cluster state updater and collection API
@@ -85,7 +79,6 @@ import org.slf4j.LoggerFactory;
  *       <ul>
  *         <li>{@code requests}: success count of the given operation
  *         <li>{@code errors}: error count of the operation
- *         <li>More metrics (see below)
  *       </ul>
  *   <li><b>{@code collection_operations}:</b> map (of maps) of success and error counts for
  *       collection related operations. The operations(keys) tracked in this map are <b>all
@@ -108,48 +101,10 @@ import org.slf4j.LoggerFactory;
  *             having two entries, one with key {@code request} with a failed request properties (a
  *             {@link ZkNodeProps}) and the other with key {@code response} with the corresponding
  *             response properties (a {@link org.apache.solr.client.solrj.SolrResponse}).
- *         <li>More metrics (see below)
  *       </ul>
- *   <li><b>{@code overseer_queue}:</b> metrics on operations done on the Zookeeper queue {@code
- *       /overseer/queue} (see metrics below).<br>
- *       The operations that can be done on the queue and that can be keys whose values are a
- *       metrics map are:
- *       <ul>
- *         <li>{@code offer}
- *         <li>{@code peek}
- *         <li>{@code peek_wait}
- *         <li>{@code peek_wait_forever}
- *         <li>{@code peekTopN_wait}
- *         <li>{@code peekTopN_wait_forever}
- *         <li>{@code poll}
- *         <li>{@code remove}
- *         <li>{@code remove_event}
- *         <li>{@code take}
- *       </ul>
- *   <li><b>{@code collection_queue}:</b> same as above but for queue {@code
- *       /overseer/collection-queue-work}
- * </ul>
- *
- * <p>Maps returned as values of keys in <b>{@code overseer_operations}</b>, <b>{@code
- * collection_operations}</b>, <b>{@code overseer_queue}</b> and <b>{@code collection_queue}</b>
- * include additional stats. These stats are provided by {@link MetricUtils}, and represent metrics
- * on each type of operation execution (be it failed or successful), see calls to {@link
- * Stats#time(String)}. The metric keys are:
- *
- * <ul>
- *   <li>{@code avgRequestsPerSecond}
- *   <li>{@code 5minRateRequestsPerSecond}
- *   <li>{@code 15minRateRequestsPerSecond}
- *   <li>{@code avgTimePerRequest}
- *   <li>{@code medianRequestTime}
- *   <li>{@code 75thPcRequestTime}
- *   <li>{@code 95thPcRequestTime}
- *   <li>{@code 99thPcRequestTime}
- *   <li>{@code 999thPcRequestTime}
  * </ul>
  */
 public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
 
   public OverseerStatusCmd(CollectionCommandContext ccc) {
@@ -157,7 +112,7 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     // If Collection API execution is distributed, we're not running on the Overseer node so can't
     // return any Overseer stats.
@@ -179,8 +134,6 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
 
     NamedList<Object> overseerStats = new NamedList<>();
     NamedList<Object> collectionStats = new NamedList<>();
-    NamedList<Object> stateUpdateQueueStats = new NamedList<>();
-    NamedList<Object> collectionQueueStats = new NamedList<>();
     Stats stats = ccc.getOverseerStats();
     for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
       String key = entry.getKey();
@@ -202,25 +155,16 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
           }
           lst.add("recent_failures", failures);
         }
-      } else if (key.startsWith("/overseer/queue_")) {
-        stateUpdateQueueStats.add(key.substring(16), lst);
-      } else if (key.startsWith("/overseer/collection-queue-work_")) {
-        collectionQueueStats.add(key.substring(32), lst);
       } else {
-        // overseer stats
         overseerStats.add(key, lst);
         int successes = stats.getSuccessCount(entry.getKey());
         int errors = stats.getErrorCount(entry.getKey());
         lst.add("requests", successes);
         lst.add("errors", errors);
       }
-      Timer timer = entry.getValue().requestTime;
-      MetricUtils.addMetrics(lst, timer);
     }
 
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);
-    results.add("overseer_queue", stateUpdateQueueStats);
-    results.add("collection_queue", collectionQueueStats);
   }
 }

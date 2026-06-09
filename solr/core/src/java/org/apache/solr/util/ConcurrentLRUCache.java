@@ -817,7 +817,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
 
     @Override
     public Collection<Accountable> getChildResources() {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 
@@ -969,6 +969,6 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
 
   @Override
   public Collection<Accountable> getChildResources() {
-    return Collections.emptyList();
+    return List.of();
   }
 }

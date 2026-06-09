@@ -78,7 +78,6 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             .addConfig(
                 "conf",
                 TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
-    clusterBuilder.withMetrics(true);
     clusterBuilder.configure();
 
     // pick an arbitrary node to use for our requests

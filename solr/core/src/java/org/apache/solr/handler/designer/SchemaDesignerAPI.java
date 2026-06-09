@@ -168,8 +168,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     responseMap.put(SCHEMA_VERSION_PARAM, configSetHelper.getCurrentSchemaVersion(mutableId));
     responseMap.put(
-        "collections",
-        exists ? configSetHelper.listCollectionsForConfig(configSet) : Collections.emptyList());
+        "collections", exists ? configSetHelper.listCollectionsForConfig(configSet) : List.of());
 
     // don't fail if loading sample docs fails
     try {
@@ -223,7 +222,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
     String stringData =
         data != null && data.length > 0 ? new String(data, StandardCharsets.UTF_8) : "";
-    rsp.getValues().addAll(Collections.singletonMap(file, stringData));
+    rsp.getValues().addAll(Map.of(file, stringData));
   }
 
   @EndPoint(method = POST, path = "/schema-designer/file", permission = CONFIG_EDIT_PERM)
@@ -359,16 +358,14 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   public void listCollectionsForConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     rsp.getValues()
-        .addAll(
-            Collections.singletonMap(
-                "collections", configSetHelper.listCollectionsForConfig(configSet)));
+        .addAll(Map.of("collections", configSetHelper.listCollectionsForConfig(configSet)));
   }
 
   // CONFIG_EDIT_PERM is required here since this endpoint is used by the UI to determine if the
   // user has access to the Schema Designer UI
   @EndPoint(method = GET, path = "/schema-designer/configs", permission = CONFIG_EDIT_PERM)
   public void listConfigs(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    rsp.getValues().addAll(Collections.singletonMap("configSets", listEnabledConfigs()));
+    rsp.getValues().addAll(Map.of("configSets", listEnabledConfigs()));
   }
 
   protected Map<String, Integer> listEnabledConfigs() throws IOException {
@@ -657,7 +654,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     if (languages != null) {
       langs =
           languages.length == 0 || (languages.length == 1 && "*".equals(languages[0]))
-              ? Collections.emptyList()
+              ? List.of()
               : Arrays.asList(languages);
       if (!langs.equals(settings.getLanguages())) {
         settings.setLanguages(langs);
@@ -866,7 +863,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // collect the fields to add ... adding all fields at once is faster than one-at-a-time
     List<SchemaField> fieldsToAdd = new ArrayList<>();
     for (String field : docs.keySet()) {
-      List<Object> sampleValues = docs.getOrDefault(field, Collections.emptyList());
+      List<Object> sampleValues = docs.getOrDefault(field, List.of());
 
       // Collapse all whitespace in fields to a single underscore
       String normalizedField = field.trim().replaceAll("\\s+", "_");

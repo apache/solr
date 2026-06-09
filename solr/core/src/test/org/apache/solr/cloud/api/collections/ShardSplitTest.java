@@ -16,12 +16,12 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -78,7 +77,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Nightly
+@Nightly
 @LogLevel(
     "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
@@ -153,8 +152,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
 
     var builder =
-        new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+        new RandomizingCloudSolrClientBuilder(List.of(zkServer.getZkAddress()), Optional.empty());
 
     try (CloudSolrClient client =
         builder
@@ -339,6 +337,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * <p>See SOLR-9439
    */
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18277")
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
@@ -351,7 +350,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
   }
 
-  private void splitAfterFailedSplit() throws KeeperException, InterruptedException {
+  private void splitAfterFailedSplit()
+      throws KeeperException, InterruptedException, TimeoutException {
     try {
       CollectionAdminRequest.SplitShard splitShard =
           CollectionAdminRequest.splitShard(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION);
@@ -393,6 +393,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   @Test
   @Nightly
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18277")
   public void testSplitAfterFailedSplit2() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 

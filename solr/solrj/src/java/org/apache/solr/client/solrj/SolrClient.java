@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -1072,7 +1071,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public SolrDocument getById(String collection, String id, SolrParams params)
       throws SolrServerException, IOException {
-    SolrDocumentList docs = getById(collection, Collections.singletonList(id), params);
+    SolrDocumentList docs = getById(collection, List.of(id), params);
     if (!docs.isEmpty()) {
       return docs.get(0);
     }
@@ -1200,6 +1199,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}
    */
+  @Deprecated(since = "10.1") // TODO replace or refactor; see SOLR-14720 related
   public SolrRequest.SolrClientContext getContext() {
     return SolrRequest.SolrClientContext.CLIENT;
   }

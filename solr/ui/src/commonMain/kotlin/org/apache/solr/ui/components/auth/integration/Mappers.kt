@@ -19,8 +19,10 @@ package org.apache.solr.ui.components.auth.integration
 
 import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.auth.BasicAuthComponent
+import org.apache.solr.ui.components.auth.OAuthComponent
 import org.apache.solr.ui.components.auth.store.AuthenticationStore
 import org.apache.solr.ui.components.auth.store.BasicAuthStore
+import org.apache.solr.ui.components.auth.store.OAuthStore
 import org.apache.solr.ui.errors.InvalidCredentialsException
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.error_invalid_credentials
@@ -45,6 +47,13 @@ internal val stateToBasicAuthModel: (BasicAuthStore.State) -> BasicAuthComponent
         realm = it.method.realm,
         username = it.username,
         password = it.password,
+        hasError = it.error != null,
+    )
+}
+
+internal val stateToOAuthModel: (OAuthStore.State) -> OAuthComponent.Model = {
+    OAuthComponent.Model(
+        realm = it.method.realm,
         hasError = it.error != null,
     )
 }

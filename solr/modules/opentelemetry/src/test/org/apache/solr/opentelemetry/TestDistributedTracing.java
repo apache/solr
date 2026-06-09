@@ -17,8 +17,6 @@
 
 package org.apache.solr.opentelemetry;
 
-import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
-
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
@@ -30,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -43,6 +42,8 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -93,7 +94,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     // Indexing
     cloudClient.add(COLLECTION, sdoc("id", "1"));
-    var finishedSpans = getAndClearSpans();
+    var finishedSpans = getAndClearSpans(1);
     finishedSpans.removeIf(
         span ->
             span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
@@ -112,7 +113,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     // Searching
     cloudClient.query(COLLECTION, new SolrQuery("*:*"));
-    finishedSpans = getAndClearSpans();
+    finishedSpans = getAndClearSpans(1);
     finishedSpans.removeIf(
         span ->
             span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
@@ -136,14 +137,14 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     MetricsRequest request = new MetricsRequest();
-    request.setResponseParser(new InputStreamResponseParser(PROMETHEUS_METRICS_WT));
+    request.setResponseParser(new InputStreamResponseParser(MetricUtils.PROMETHEUS_METRICS_WT));
     NamedList<Object> rsp = cloudClient.request(request);
     ((InputStream) rsp.get("stream")).close();
-    var finishedSpans = getAndClearSpans();
+    var finishedSpans = getAndClearSpans(1);
     assertEquals("get:/admin/metrics", finishedSpans.get(0).getName());
 
     CollectionAdminRequest.listCollections(cloudClient);
-    finishedSpans = getAndClearSpans();
+    finishedSpans = getAndClearSpans(1);
     assertEquals("list:/admin/collections", finishedSpans.get(0).getName());
   }
 
@@ -156,7 +157,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .withPayload("{}")
         .build()
         .process(cloudClient);
-    var finishedSpans = getAndClearSpans();
+    var finishedSpans = getAndClearSpans(1);
     assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).getName());
     assertCollectionName(finishedSpans.get(0), COLLECTION);
 
@@ -166,7 +167,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .withParams(params("commit", "true"))
         .build()
         .process(cloudClient);
-    finishedSpans = getAndClearSpans();
+    finishedSpans = getAndClearSpans(1);
     assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).getName());
     assertCollectionName(finishedSpans.get(0), COLLECTION);
 
@@ -176,7 +177,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
             .withParams(params("q", "id:9"))
             .build()
             .process(cloudClient);
-    finishedSpans = getAndClearSpans();
+    finishedSpans = getAndClearSpans(1);
     assertEquals("get:/c/{collection}/select", finishedSpans.get(0).getName());
     assertCollectionName(finishedSpans.get(0), COLLECTION);
     assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
@@ -192,7 +193,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
     CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
     assertEquals(0, r1.getStatus());
-    var finishedSpans = getAndClearSpans();
+    var finishedSpans = getAndClearSpans(1);
     var parentTraceId = getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
       if (isRootSpan(span)) {
@@ -228,17 +229,25 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
     //
-    // 7..8 (2 times) name=post:/{core}/get
+    // 7..8 (2 times) name=post:/{core}/get (FingerPrinting to get versions from non-leaders)
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
+    //
+    // 9..10 (2 times) name=post:/{core}/get (PeerSync request to non-leaders)
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
+    //
+    // 11..12 (2 times) name=post:/{core}/get (FingerPrinting to get versions from leaders PeerSync)
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
 
-    var finishedSpans = getAndClearSpans();
+    var finishedSpans = getAndClearSpans(1);
     var s0 = finishedSpans.remove(0);
     assertCollectionName(s0, collection);
     assertEquals("create:/admin/collections", s0.getName());
 
     Map<String, Integer> ops = new HashMap<>();
-    assertEquals(7, finishedSpans.size());
+    assertEquals(11, finishedSpans.size());
     var parentTraceId = getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
       if (isRootSpan(span)) {
@@ -251,7 +260,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
     var expectedOps =
-        Map.of("CreateCollectionCmd", 1, "post:/admin/cores", 4, "post:/{core}/get", 2);
+        Map.of("CreateCollectionCmd", 1, "post:/admin/cores", 4, "post:/{core}/get", 6);
     assertEquals(expectedOps, ops);
   }
 
@@ -273,7 +282,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
 
-    var finishedSpans = getAndClearSpans();
+    var finishedSpans = getAndClearSpans(1);
     var s0 = finishedSpans.remove(0);
     assertCollectionName(s0, collection);
     assertEquals("delete:/admin/collections", s0.getName());
@@ -320,7 +329,21 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   static List<SpanData> getAndClearSpans() {
+    return getAndClearSpans(0);
+  }
+
+  static List<SpanData> getAndClearSpans(int minExpected) {
     InMemorySpanExporter exporter = CustomTestOtelTracerConfigurator.getInMemorySpanExporter();
+    try {
+      RetryUtil.retryUntil(
+          "Timed out waiting for " + minExpected + " span(s)",
+          250,
+          20,
+          TimeUnit.MILLISECONDS,
+          () -> exporter.getFinishedSpanItems().size() >= minExpected);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
     List<SpanData> result = new ArrayList<>(exporter.getFinishedSpanItems());
     Collections.reverse(result); // nicer to see spans chronologically
     exporter.reset();

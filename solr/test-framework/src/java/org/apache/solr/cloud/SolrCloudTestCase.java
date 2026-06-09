@@ -26,6 +26,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,14 +41,14 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
@@ -96,6 +98,23 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     ZkStateReader reader = cluster.getZkStateReader();
     if (reader == null) cluster.getSolrClient().connect();
     return cluster.getZkStateReader().getZkClient();
+  }
+
+  protected CloudSolrClient.CloudSolrClientConnection getZookeeperSolrConnection() {
+    return CloudSolrClient.CloudSolrClientConnection.parse(cluster.getZkServer().getZkAddress());
+  }
+
+  protected CloudSolrClient.CloudSolrClientConnection getHttpSolrConnection() {
+    String connectionString =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getBaseUrl)
+            .map(URL::toString)
+            .collect(Collectors.joining(","));
+    return CloudSolrClient.CloudSolrClientConnection.parse(connectionString);
+  }
+
+  protected CloudSolrClient.CloudSolrClientConnection getSolrConnection() {
+    return random().nextBoolean() ? getHttpSolrConnection() : getZookeeperSolrConnection();
   }
 
   /**
@@ -406,13 +425,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static CoreStatusResponse.SingleCoreData getCoreStatus(Replica replica)
       throws IOException, SolrServerException {
-    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (SolrClient client =
-        new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
-            .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
-            .build()) {
-      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
-    }
+    var solrClient = cluster.getReplicaJetty(replica).getSolrClient();
+    return CoreAdminRequest.getCoreStatus(replica.getCoreName(), solrClient);
+  }
+
+  protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
+      String asyncId, Duration timeout) throws Exception {
+    return waitForAsyncClusterRequest(cluster.getSolrClient(), asyncId, timeout);
   }
 
   @SuppressWarnings({"rawtypes"})

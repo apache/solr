@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,6 +92,13 @@ import org.slf4j.LoggerFactory;
  * fixShardCount(N) available, which is identical to {@literal @}ShardsFixed(num = N) for all tests
  * without annotations in that class hierarchy. Ideally this function should be retired in favour of
  * better annotations.
+ *
+ * <p>WARNING each test annotated with @Shards* will spin up its own set of Jetty servers which can
+ * be a substantial performance hit. Therefore, one should be mindful about the total number of
+ * independent tests using such annotations. One approach is to pool assertions in a single test to
+ * minimize jetty server construction overhead. If the test doesn't rely on the comparison features
+ * of this class, i.e. {@link #query} it may be wise to make it a {@link
+ * org.apache.solr.cloud.SolrCloudTestCase} instead.
  *
  * @since solr 1.5
  */
@@ -439,7 +447,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * Override this method to insert extra filters into the JettySolrRunners that are created using
    * createJetty()
    */
-  public SortedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
+  public SequencedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
     return null;
   }
 

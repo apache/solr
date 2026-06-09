@@ -64,7 +64,6 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
       server.close();
       server = null;
     }
-    System.clearProperty("managed.schema.mutable");
   }
 
   @Before

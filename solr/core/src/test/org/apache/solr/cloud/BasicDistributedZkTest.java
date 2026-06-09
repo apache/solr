@@ -59,7 +59,6 @@ import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.Group;
 import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.GroupResponse;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
@@ -1283,7 +1282,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-      req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);
       try (InputStream in = (InputStream) resp.get("stream")) {

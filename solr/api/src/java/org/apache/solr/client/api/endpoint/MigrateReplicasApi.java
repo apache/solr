@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /** V2 API definition for migrating replicas from a set of nodes to another set of nodes. */
 @Path("cluster/replicas/migrate")
@@ -30,7 +30,7 @@ public interface MigrateReplicasApi {
   @Operation(
       summary = "Migrate Replicas from a given set of nodes.",
       tags = {"cluster"})
-  SolrJerseyResponse migrateReplicas(
+  SubResponseAccumulatingJerseyResponse migrateReplicas(
       @RequestBody(description = "Contains user provided parameters", required = true)
           MigrateReplicasRequestBody requestBody)
       throws Exception;

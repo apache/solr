@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
@@ -33,10 +34,11 @@ import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +48,33 @@ public abstract class ConfigSetService {
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN =
       Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
+  public static final String SOLR_CONFIGSET_DEFAULT_CONFDIR = "solr.configset.default.confdir";
+
+  public static final String FORBIDDEN_FILE_TYPES_PROP = "solr.configset.forbidden.file.types";
+  public static final Set<String> DEFAULT_FORBIDDEN_FILE_TYPES =
+      Set.of("class", "java", "jar", "tgz", "zip", "tar", "gz");
+
+  private static final Set<String> USE_FORBIDDEN_FILE_TYPES;
+
+  static {
+    String userForbiddenFileTypes = EnvUtils.getProperty(FORBIDDEN_FILE_TYPES_PROP);
+    USE_FORBIDDEN_FILE_TYPES =
+        StrUtils.isNullOrEmpty(userForbiddenFileTypes)
+            ? DEFAULT_FORBIDDEN_FILE_TYPES
+            : Set.of(userForbiddenFileTypes.split(","));
+  }
+
+  /**
+   * Determine if a file path is forbidden for use in configsets based on its file extension.
+   *
+   * @param filePath the file path or name to check
+   * @return true if the file extension is among the forbidden types
+   */
+  public static boolean isFileForbiddenInConfigSets(String filePath) {
+    int lastDot = filePath.lastIndexOf('.');
+    return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
@@ -108,7 +137,7 @@ public abstract class ConfigSetService {
         log.warn(
             "The _default configset could not be uploaded. Please provide 'solr.configset.default.confdir' parameter that points to a configset {} {}",
             "intended to be the default. Current 'solr.configset.default.confdir' value:",
-            System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE));
+            System.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR));
       } else {
         this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
@@ -133,11 +162,10 @@ public abstract class ConfigSetService {
    * to the sysprop "solr.install.dir". Returns null if not found anywhere.
    *
    * @lucene.internal
-   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR
    */
   public static Path getDefaultConfigDirPath() {
-    String confDir =
-        System.getProperty(SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE);
+    String confDir = System.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR);
     if (confDir != null) {
       Path path = Path.of(confDir);
       if (Files.exists(path)) {
@@ -145,7 +173,7 @@ public abstract class ConfigSetService {
       }
     }
 
-    String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    String installDir = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
     if (installDir != null) {
       Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
       Path path = Path.of(installDir).resolve(subPath);
@@ -353,8 +381,8 @@ public abstract class ConfigSetService {
   public abstract void uploadConfig(String configName, Path dir) throws IOException;
 
   /**
-   * Upload a file to config If file does not exist, it will be uploaded If overwriteOnExists is set
-   * to true then file will be overwritten
+   * Upload a file to config. If file does not exist, it will be uploaded. If overwriteOnExists is
+   * set to true then the file will be overwritten.
    *
    * @param configName the name to give the config
    * @param fileName the name of the file with '/' used as the file path separator
@@ -367,7 +395,7 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Download all files from this config to the filesystem at dir
+   * Download all files from this config to the filesystem at dir.
    *
    * @param configName the config to download
    * @param dir the {@link Path} to write files under
@@ -375,7 +403,7 @@ public abstract class ConfigSetService {
   public abstract void downloadConfig(String configName, Path dir) throws IOException;
 
   /**
-   * Download a file from config If the file does not exist, it returns null
+   * Download a file from config. If the file does not exist, it returns null.
    *
    * @param configName the name of the config
    * @param filePath the file to download with '/' as the separator
@@ -385,7 +413,7 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Copy a config
+   * Copy a config.
    *
    * @param fromConfig the config to copy from
    * @param toConfig the config to copy to
@@ -393,7 +421,7 @@ public abstract class ConfigSetService {
   public abstract void copyConfig(String fromConfig, String toConfig) throws IOException;
 
   /**
-   * Check whether a config exists
+   * Check whether a config exists.
    *
    * @param configName the config to check if it exists
    * @return whether the config exists or not
@@ -401,14 +429,14 @@ public abstract class ConfigSetService {
   public abstract boolean checkConfigExists(String configName) throws IOException;
 
   /**
-   * Delete a config (recursively deletes its files if not empty)
+   * Delete a config (recursively deletes its files if not empty).
    *
    * @param configName the config to delete
    */
   public abstract void deleteConfig(String configName) throws IOException;
 
   /**
-   * Delete files in config
+   * Delete files in config.
    *
    * @param configName the name of the config
    * @param filesToDelete a list of file paths to delete using '/' as file path separator
@@ -417,8 +445,8 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Set the config metadata If config does not exist, it will be created and set metadata on it
-   * Else metadata will be replaced with the provided metadata
+   * Set the config metadata. If config does not exist, it will be created and set metadata on it.
+   * Else metadata will be replaced with the provided metadata.
    *
    * @param configName the config name
    * @param data the metadata to be set on config
@@ -427,7 +455,7 @@ public abstract class ConfigSetService {
       throws IOException;
 
   /**
-   * Get the config metadata (mutable, non-null)
+   * Get the config metadata (mutable, non-null).
    *
    * @param configName the config name
    * @return the config metadata
@@ -435,7 +463,7 @@ public abstract class ConfigSetService {
   public abstract Map<String, Object> getConfigMetadata(String configName) throws IOException;
 
   /**
-   * List the names of configs (non-null)
+   * List the names of configs (non-null).
    *
    * @return list of config names
    */
@@ -443,7 +471,7 @@ public abstract class ConfigSetService {
 
   /**
    * Get the names of the files in config including dirs (mutable, non-null) sorted
-   * lexicographically e.g. solrconfig.xml, lang/, lang/stopwords_en.txt
+   * lexicographically e.g. solrconfig.xml, lang/, lang/stopwords_en.txt.
    *
    * @param configName the config name
    * @return list of file name paths in the config with '/' uses as file path separators

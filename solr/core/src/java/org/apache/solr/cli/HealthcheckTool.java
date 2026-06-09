@@ -31,6 +31,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -39,7 +40,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class HealthcheckTool extends ToolBase {
           .argName("COLLECTION")
           .required()
           .desc("Name of the collection to check.")
-          .build();
+          .get();
 
   @Override
   public Options getOptions() {
@@ -80,14 +80,17 @@ public class HealthcheckTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String zkHost = CLIUtils.getZkHost(cli);
-    if (zkHost == null) {
+    var solrConnection = CLIUtils.getSolrConnection(cli);
+    if (solrConnection == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       runtime.exit(1);
     }
-    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-      cloudSolrClient.connect();
+    var builder =
+        new HttpJettySolrClient.Builder()
+            .withOptionalBasicAuthCredentials(
+                cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
+      echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
       runCloudTool(cloudSolrClient, cli);
     }
   }
@@ -102,9 +105,7 @@ public class HealthcheckTool extends ToolBase {
 
     log.debug("Running healthcheck for {}", collection);
 
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-
-    ClusterState clusterState = zkStateReader.getClusterState();
+    ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection == null || docCollection.getSlices() == null) {
@@ -130,14 +131,6 @@ public class HealthcheckTool extends ToolBase {
 
     for (Slice slice : slices) {
       String shardName = slice.getName();
-      // since we're reporting health of this shard, there's no guarantee of a leader
-      String leaderUrl = null;
-      try {
-        leaderUrl = zkStateReader.getLeaderUrl(collection, shardName, 1000);
-      } catch (Exception exc) {
-        log.warn("Failed to get leader for shard {} due to: {}", shardName, exc);
-      }
-
       List<ReplicaHealth> replicaList = new ArrayList<>();
       for (Replica r : slice.getReplicas()) {
 
@@ -147,7 +140,7 @@ public class HealthcheckTool extends ToolBase {
         long numDocs = -1L;
 
         String coreUrl = r.getCoreUrl();
-        boolean isLeader = coreUrl.equals(leaderUrl);
+        boolean isLeader = r.isLeader();
 
         // if replica's node is not live, its status is DOWN
         String nodeName = r.getNodeName();
@@ -194,7 +187,7 @@ public class HealthcheckTool extends ToolBase {
 
       ShardHealth shardHealth = new ShardHealth(shardName, replicaList);
       if (ShardState.healthy != shardHealth.getShardState()) {
-        collectionIsHealthy = false; // at least one shard is un-healthy
+        collectionIsHealthy = false; // at least one shard is unhealthy
       }
 
       shardList.add(shardHealth.asMap());
@@ -280,10 +273,8 @@ class ReplicaHealth implements Comparable<ReplicaHealth> {
   @Override
   public int compareTo(ReplicaHealth other) {
     if (this == other) return 0;
-    if (other == null) return 1;
 
     int myShardIndex = Integer.parseInt(this.shard.substring("shard".length()));
-
     int otherShardIndex = Integer.parseInt(other.shard.substring("shard".length()));
 
     if (myShardIndex == otherShardIndex) {

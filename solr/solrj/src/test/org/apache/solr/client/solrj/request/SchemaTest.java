@@ -24,13 +24,10 @@ import static org.hamcrest.CoreMatchers.is;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,7 +40,6 @@ import org.apache.solr.client.solrj.response.schema.SchemaRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,8 +53,7 @@ public class SchemaTest extends RestTestBase {
     assertEquals(
         "Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
     assertNull(
-        "Response contained errors: " + schemaResponse.toString(),
-        schemaResponse.getResponse().get("errors"));
+        "Response contained errors: " + schemaResponse, schemaResponse.getResponse().get("errors"));
   }
 
   private static void assertFailedSchemaResponse(
@@ -102,22 +97,15 @@ public class SchemaTest extends RestTestBase {
     Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(getFile("solrj/solr/collection1").getParent(), tmpSolrHome);
 
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml", "/solr", true, extraServlets);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml");
   }
 
   @After
   public void cleanup() throws Exception {
     solrTestRule.reset();
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test
@@ -461,7 +449,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void deletingADynamicFieldThatDoesntExistInTheSchemaShouldFail() throws Exception {
+  public void deletingADynamicFieldThatDoesntExistInTheSchemaShouldFail() {
     String dynamicFieldName = "*_notexists";
     SchemaRequest.DeleteDynamicField deleteDynamicFieldRequest =
         new SchemaRequest.DeleteDynamicField(dynamicFieldName);
@@ -531,14 +519,14 @@ public class SchemaTest extends RestTestBase {
     charFilterAttributes.put("class", "solr.PatternReplaceCharFilterFactory");
     charFilterAttributes.put("replacement", "$1$1");
     charFilterAttributes.put("pattern", "([a-zA-Z])\\\\1+");
-    analyzerDefinition.setCharFilters(Collections.singletonList(charFilterAttributes));
+    analyzerDefinition.setCharFilters(List.of(charFilterAttributes));
     Map<String, Object> tokenizerAttributes = new LinkedHashMap<>();
     tokenizerAttributes.put("class", "solr.WhitespaceTokenizerFactory");
     analyzerDefinition.setTokenizer(tokenizerAttributes);
     Map<String, Object> filterAttributes = new LinkedHashMap<>();
     filterAttributes.put("class", "solr.WordDelimiterGraphFilterFactory");
     filterAttributes.put("preserveOriginal", "0");
-    analyzerDefinition.setFilters(Collections.singletonList(filterAttributes));
+    analyzerDefinition.setFilters(List.of(filterAttributes));
     fieldTypeDefinition.setAnalyzer(analyzerDefinition);
 
     SchemaRequest.AddFieldType addFieldTypeRequest =
@@ -598,7 +586,7 @@ public class SchemaTest extends RestTestBase {
     charFilterAttributes.put("class", "solr.PatternReplaceCharFilterFactory");
     charFilterAttributes.put("replacement", "$1$1");
     charFilterAttributes.put("pattern", "([a-zA-Z])\\\\1+");
-    analyzerDefinition.setCharFilters(Collections.singletonList(charFilterAttributes));
+    analyzerDefinition.setCharFilters(List.of(charFilterAttributes));
     Map<String, Object> tokenizerAttributes = new LinkedHashMap<>();
     tokenizerAttributes.put("class", "solr.WhitespaceTokenizerFactory");
     analyzerDefinition.setTokenizer(tokenizerAttributes);
@@ -723,7 +711,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void deletingAFieldTypeThatDoesntExistInTheSchemaShouldFail() throws Exception {
+  public void deletingAFieldTypeThatDoesntExistInTheSchemaShouldFail() {
     String fieldType = "fieldTypeToBeDeleted";
     SchemaRequest.DeleteFieldType deleteFieldTypeRequest =
         new SchemaRequest.DeleteFieldType(fieldType);
@@ -848,7 +836,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void copyFieldsShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() throws Exception {
+  public void copyFieldsShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() {
     String srcFieldName = "srcnotexist";
     String destFieldName1 = "destNotExist1", destFieldName2 = "destNotExist2";
 
@@ -886,7 +874,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void deleteCopyFieldShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() throws Exception {
+  public void deleteCopyFieldShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() {
     String srcFieldName = "copyfield";
     String destFieldName1 = "destField1", destFieldName2 = "destField2";
     SchemaRequest.DeleteCopyField deleteCopyFieldsRequest =
