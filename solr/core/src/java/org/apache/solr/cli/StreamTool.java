@@ -267,8 +267,8 @@ public class StreamTool extends ToolBase {
    * <p>Running locally means that parallelization support or those expressions requiring access to
    * internal Solr capabilities will not function.
    *
-   * @param expr The streaming expression to be parsed and in the context of the CLI process
-   * @param streamFactory
+   * @param expr The streaming expression to be parsed and run in the context of the CLI process
+   * @param streamFactory The factory used to construct the streaming expression
    * @return A connection to the streaming expression that receives Tuples as they are emitted
    *     locally.
    */
