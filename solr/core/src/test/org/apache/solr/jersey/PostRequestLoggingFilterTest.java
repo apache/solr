@@ -109,6 +109,9 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
       throws Exception {
     final var delegate = new MessageBodyReaders.CachingJsonMessageBodyReader().getDelegate();
 
+    // Mapper SolrJacksonMapper.createObjectMapper creates a mapper wit FAIL_ON_UNKNOWN_PROPERTIES
+    // set to false, hence we expect a json with an unknown field to be deserialized without any
+    // exception
     final var entityStream =
         new ByteArrayInputStream(
             "{\"name\": \"test\", \"unknownField\": \"someValue\"}"
