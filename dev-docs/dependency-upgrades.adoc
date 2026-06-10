@@ -74,16 +74,66 @@ The scans are run on a schedule. New PRs are filed every Sunday, and only depend
 5 days old are suggested, to guard against bad apples. If a new *major* version of a dependency is available,
 that will get its own separate Pull Request, so you can choose.
 
-If an upgrade is decided, simply merge (and backport) the PR. To skip an upgrade, close the PR. If a PR is left open,
-it will be re-used and auto updated whenever a newer patch- or minor version gets available. Thus, one can reduce
-churn from frequently-updated dependencies by delaying merge until a few weeks before a new release. One can also
-choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`.
+=== Separate PRs per branch
 
-Please note that Solr version prior to 10.X use a versions resolution plugin that uses `versions.lock` instead of
-`libs.version.toml`. Therefore, changes cannot be backported via cherry-pick.
+The bot files *independent* PRs for `main` and `branch_9x` — they are not the same PR targeting
+different branches. This is necessary because the two branches use different dependency-management
+systems (Gradle version catalog on `main`; `gradle-consistent-versions` on `branch_9x`) and often
+carry different dependency versions, so the required changes are distinct.
+
+PRs targeting `branch_9x` have `(branch_9x)` appended to their title to distinguish them from the
+corresponding `main` PR. Do not attempt to cherry-pick a `main` renovate PR onto `branch_9x` or vice
+versa — the lockfile formats are incompatible and the cherry-pick will corrupt them.
+
+=== Merging and skipping
+
+If an upgrade is decided, simply merge the PR for the relevant branch. To skip an upgrade, close the
+PR. If a PR is left open, it will be re-used and auto updated whenever a newer patch- or minor version
+becomes available. Thus, one can reduce churn from frequently-updated dependencies by delaying merge
+until a few weeks before a new release. One can also choose to change to a less frequent schedule or
+disable the bot entirely by editing `renovate.json`.
 
 === Configuring renovate.json
 
 While the bot runs on a https://github.com/solrbot/renovate-github-action[GitHub repo external to the project],
 the bot behavior can be tailored by editing `.github/renovate.json` in this project.
 See https://docs.renovatebot.com[Renovatebot docs] for available options.
+
+== Bulk dependency upgrades with AI assistance
+
+A few weeks before a planned release it is beneficial to merge as many of the open renovate PRs as
+possible in one go, to ship with up-to-date dependencies.  Doing this manually — fetching each PR
+branch, resolving TOML / lockfile conflicts, checking version compatibility, updating checksums, and
+running the full test suite — is tedious and error-prone.
+
+An AI coding agent (e.g. https://github.com/anthropics/claude-code[Claude Code]) can automate most
+of this work given a detailed prompt.  The prompt for the *current branch* lives at:
+
+ dev-docs/dependency-upgrade-prompts/bulk-dependency-upgrade.md
+
+This file exists on both `main` and `branch_9x`, with tailored content for each.
+
+The prompt instructs the agent to:
+
+. Fetch all open, non-draft, passing-CI solrbot PRs for the current branch.
+. Attempt major-version upgrades first; fall back to the minor/patch PR if a major causes code conflicts.
+. Merge each eligible PR branch, resolving TOML / `versions.props` conflicts by keeping the highest
+  version, and regenerating lockfiles afterwards.
+. Check cross-library version compatibility (e.g. Jetty ↔ dropwizard-metrics) and adjust as needed.
+. Run `./gradlew updateLicenses` to refresh SHA-1 checksums.
+. Run the full test suite and fix any failures caused by the upgrades.
+. Deduplicate `changelog/unreleased/` entries so only the final version per dependency is recorded.
+. Output a GitHub-Markdown PR description summarising all merged and skipped PRs.
+
+To run it, open a terminal in the Solr repository root and start an interactive Claude Code (or Github copilot CLI) session:
+
+ claude
+
+Then paste the contents of `dev-docs/dependency-upgrade-prompts/bulk-dependency-upgrade.md`
+as your first message.  The agent will handle the rest autonomously, pausing only to report
+irresolvable conflicts or ask for clarification.
+
+As it will only consider PRs that are open and passing CI, you will miss out on any PRs that are still in draft or have CI failures.  You can choose to spend some time up front, trying to get those PRs ready for merging.
+
+NOTE: Review the resulting branch carefully before opening a PR.  The agent may make judgement calls
+(e.g. downgrading a library for compatibility) that should be confirmed by a human committer.
