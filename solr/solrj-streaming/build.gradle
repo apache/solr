@@ -25,6 +25,7 @@ dependencies {
   // declare dependencies we use even though already declared by solrj-core
   implementation libs.slf4j.api
   implementation libs.apache.commons.math3
+  implementation libs.tdunning.tdigest
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
