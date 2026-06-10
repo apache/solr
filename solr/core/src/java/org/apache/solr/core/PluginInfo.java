@@ -195,7 +195,10 @@ public class PluginInfo implements MapWriter {
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void writeMap(EntryWriter ew) throws IOException {
-    attributes.forEach(ew::putNoEx);
+    // Direct forEach(ew::putNoEx) does not work: attributes is declared Map<String, String> but
+    // the PluginInfo(String, Map<String, Object>) constructor assigns it via raw types, so values
+    // may not be Strings. The bridge method generated for forEach would CCE on non-String values.
+    new NamedList<>(attributes).writeMap(ew);
     if (initArgs != null) {
       initArgs.asMap(3).forEach((k, v) -> ew.putNoEx((String) k, v));
     }

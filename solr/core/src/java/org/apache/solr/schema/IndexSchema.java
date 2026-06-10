@@ -1700,7 +1700,9 @@ public class IndexSchema {
                   SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName));
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
-    return Utils.convertToMap(new SchemaProps(name, params, this), new LinkedHashMap<>());
+    // Must remain a SimpleOrderedMap (with SOM-valued entries preserved) — SchemaXmlWriter casts
+    // nested values to SimpleOrderedMap when persisting managed schemas.
+    return new SimpleOrderedMap<>(new SchemaProps(name, params, this));
   }
 
   /**
