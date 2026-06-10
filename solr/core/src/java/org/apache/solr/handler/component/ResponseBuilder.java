@@ -130,6 +130,18 @@ public class ResponseBuilder {
   public static final int STAGE_GET_FIELDS = 3000;
   public static final int STAGE_DONE = Integer.MAX_VALUE;
 
+  protected int getPreDoneStage() {
+    return STAGE_GET_FIELDS;
+  }
+
+  protected int getDoneStage() {
+    return STAGE_DONE;
+  }
+
+  protected String getParameterPrefix() {
+    return "";
+  }
+
   private int stage; // What stage is this current request at?
 
   public int getStage() {
@@ -177,6 +189,10 @@ public class ResponseBuilder {
   /** Force distributed-search / coordinator logic when not a sub-shard request. */
   public void setForcedDistrib(boolean forcedDistrib) {
     this.forcedDistrib = forcedDistrib;
+  }
+
+  public Map<ResponseBuilder, List<ShardRequest>> getFinished() {
+    return Map.of(this, finished);
   }
 
   /** This function will return true if this was a distributed search request. */
