@@ -139,21 +139,6 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertTrue("Should find subdir2/file4.txt", allFiles.contains(dirPath + "subdir2/file4.txt"));
   }
 
-  private void listAllRecursive(String dirPath, Set<String> allFiles) throws AzureBlobException {
-    String[] files = client.listDir(dirPath);
-    for (String file : files) {
-      String fullPath = dirPath + file;
-      if (file.endsWith("/")) {
-        // It's a directory
-        allFiles.add(fullPath);
-        listAllRecursive(fullPath, allFiles);
-      } else {
-        // It's a file
-        allFiles.add(fullPath);
-      }
-    }
-  }
-
   /** Happy path: {@code delete()} of a single existing file removes it. */
   @Test
   public void testDeleteFile() throws Exception {
@@ -293,6 +278,21 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
       String sanitizedPath = client.sanitizedDirPath(dirPath);
       assertNotNull("Sanitized directory path should not be null", sanitizedPath);
       assertTrue("Sanitized directory path should end with slash", sanitizedPath.endsWith("/"));
+    }
+  }
+
+  private void listAllRecursive(String dirPath, Set<String> allFiles) throws AzureBlobException {
+    String[] files = client.listDir(dirPath);
+    for (String file : files) {
+      String fullPath = dirPath + file;
+      if (file.endsWith("/")) {
+        // It's a directory
+        allFiles.add(fullPath);
+        listAllRecursive(fullPath, allFiles);
+      } else {
+        // It's a file
+        allFiles.add(fullPath);
+      }
     }
   }
 }

@@ -29,6 +29,9 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -330,15 +333,28 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       // ignore; write will surface real issues
     }
 
-    try (IndexInput input = sourceDir.openInput(sourceFileName, IOContext.DEFAULT);
-        OutputStream output = client.pushStream(blobPath)) {
-      byte[] buffer = new byte[COPY_BUFFER_SIZE];
-      long remaining = input.length();
-      while (remaining > 0) {
-        int toRead = (int) Math.min(buffer.length, remaining);
-        input.readBytes(buffer, 0, toRead);
-        output.write(buffer, 0, toRead);
-        remaining -= toRead;
+    try (IndexInput input =
+        shouldVerifyChecksum
+            ? sourceDir.openChecksumInput(sourceFileName)
+            : sourceDir.openInput(sourceFileName, IOContext.READONCE)) {
+      if (input.length() <= CodecUtil.footerLength()) {
+        throw new CorruptIndexException("file is too small:" + input.length(), input);
+      }
+
+      try (OutputStream output = client.pushStream(blobPath)) {
+        byte[] buffer = new byte[COPY_BUFFER_SIZE];
+        long remaining =
+            shouldVerifyChecksum ? input.length() - CodecUtil.footerLength() : input.length();
+        while (remaining > 0) {
+          int toRead = (int) Math.min(buffer.length, remaining);
+          input.readBytes(buffer, 0, toRead);
+          output.write(buffer, 0, toRead);
+          remaining -= toRead;
+        }
+        if (shouldVerifyChecksum) {
+          long checksum = CodecUtil.checkFooter((ChecksumIndexInput) input);
+          writeFooter(checksum, output);
+        }
       }
     } catch (AzureBlobException e) {
       throw new IOException("Failed to copy file from " + sourceFileName + " to " + blobPath, e);
@@ -402,5 +418,34 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       throw new IllegalArgumentException("URI must begin with 'blob:' scheme");
     }
     return uri.getPath();
+  }
+
+  private void writeFooter(long checksum, OutputStream outputStream) throws IOException {
+    IndexOutput out =
+        new IndexOutput("", "") {
+          @Override
+          public void writeByte(byte b) throws IOException {
+            outputStream.write(b);
+          }
+
+          @Override
+          public void writeBytes(byte[] b, int offset, int length) throws IOException {
+            outputStream.write(b, offset, length);
+          }
+
+          @Override
+          public void close() {}
+
+          @Override
+          public long getFilePointer() {
+            return 0;
+          }
+
+          @Override
+          public long getChecksum() {
+            return checksum;
+          }
+        };
+    CodecUtil.writeFooter(out);
   }
 }

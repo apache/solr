@@ -16,10 +16,16 @@
  */
 package org.apache.solr.azureblob;
 
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlockList;
+import com.azure.storage.blob.models.BlockListType;
+import com.azure.storage.blob.specialized.BlockBlobClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.junit.Test;
 
 public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
@@ -114,8 +120,8 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     try (OutputStream output = client.pushStream(path)) {
       output.write(content.getBytes(StandardCharsets.UTF_8));
       output.flush();
-      // OutputStream.flush() must not finalize the stream. The block is staged but the block list
-      // is committed only by close(), so the blob is not yet visible.
+      // flush() is a no-op: nothing is staged or committed until close(), so the blob is not yet
+      // visible.
       assertFalse(
           "File should not be visible after flush(); commit happens on close()",
           client.pathExists(path));
@@ -128,6 +134,44 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       String readContent = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
       assertEquals("Content written before flush should be preserved", content, readContent);
     }
+  }
+
+  @Test
+  public void testFlushDoesNotStageBlocks() throws Exception {
+    String path = "output-stream-flush-noop-test.bin";
+
+    // Write several sub-block records, flushing after each. Because flush() is a no-op, all
+    // records accumulate in a single buffer and are staged as ONE block on close() rather than one
+    // tiny block per flush (which could otherwise exhaust Azure's 50,000-committed-block limit).
+    int records = 50;
+    byte[] record = new byte[1024];
+    Arrays.fill(record, (byte) 'x');
+
+    try (OutputStream output = client.pushStream(path)) {
+      for (int i = 0; i < records; i++) {
+        output.write(record);
+        output.flush();
+      }
+    }
+
+    assertTrue("File should exist after close", client.pathExists(path));
+    assertEquals(
+        "Length should match total bytes written",
+        (long) records * record.length,
+        client.length(path));
+
+    BlobServiceClient serviceClient =
+        new BlobServiceClientBuilder().connectionString(getConnectionString()).buildClient();
+    BlockBlobClient blockBlobClient =
+        serviceClient
+            .getBlobContainerClient(containerName)
+            .getBlobClient(path)
+            .getBlockBlobClient();
+    BlockList blockList = blockBlobClient.listBlocks(BlockListType.COMMITTED);
+    assertEquals(
+        "flush() must not stage extra blocks; sub-block writes commit as a single block",
+        1,
+        blockList.getCommittedBlocks().size());
   }
 
   @Test

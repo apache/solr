@@ -235,6 +235,13 @@ public class AzureBlobStorageClient {
     }
   }
 
+  /**
+   * Checks existence by resolving the exact blob (a HEAD request). This module always writes {@code
+   * hdi_isfolder} marker blobs for directories, so it is self-consistent. Note the asymmetry with
+   * {@link #isDirectory(String)}: a marker-less "virtual" directory created by an external tool
+   * (e.g. azcopy) returns {@code false} here even though {@code isDirectory} reports it as a
+   * directory via prefix listing.
+   */
   boolean pathExists(String path) throws AzureBlobException {
     final String blobPath = sanitizedPath(path);
 
@@ -434,7 +441,10 @@ public class AzureBlobStorageClient {
     }
   }
 
-  void close() {}
+  void close() {
+    // No-op: the underlying OkHttp client is SPI-loaded and shared process-wide, so there is
+    // nothing per-instance to release here.
+  }
 
   @VisibleForTesting
   void deleteContainerForTests() {

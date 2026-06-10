@@ -138,9 +138,9 @@ public class AzureBlobOutputStream extends OutputStream {
       throw new IOException("Stream closed");
     }
 
-    if (buffer.position() > 0) {
-      uploadBlock();
-    }
+    // Intentionally a no-op. Full blocks are staged as the buffer fills in write(), and the
+    // partial tail is staged in close(). Staging on every flush() would create tiny blocks and a
+    // frequently-flushing caller could exhaust Azure's 50,000-committed-block limit on small files.
   }
 
   @Override
