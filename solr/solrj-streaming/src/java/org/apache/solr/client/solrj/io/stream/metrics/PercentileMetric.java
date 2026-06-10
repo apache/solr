@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream.metrics;
 
+import com.tdunning.math.stats.AVLTreeDigest;
 import java.io.IOException;
 import java.util.Locale;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -24,27 +25,27 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class PercentileMetric extends Metric {
-  private long longMax = -Long.MIN_VALUE;
-  private double doubleMax = -Double.MAX_VALUE;
+
+  private static final int COMPRESSION = 100;
+
   private String columnName;
+  private double percentile;
+  private AVLTreeDigest digest;
 
-  public PercentileMetric(String columnName, int percentile) {
-
+  public PercentileMetric(String columnName, double percentile) {
     init("per", columnName, percentile);
   }
 
   public PercentileMetric(StreamExpression expression, StreamFactory factory) throws IOException {
-    // grab all parameters out
     String functionName = expression.getFunctionName();
     String columnName = factory.getValueOperand(expression, 0);
-    int percentile = Integer.parseInt(factory.getValueOperand(expression, 1));
+    String percentileStr = factory.getValueOperand(expression, 1);
 
-    // validate expression contains only what we want.
     if (null == columnName) {
       throw new IOException(
           String.format(
               Locale.ROOT,
-              "Invalid expression %s - expected %s(columnName)",
+              "Invalid expression %s - expected %s(columnName, percentile)",
               expression,
               functionName));
     }
@@ -53,22 +54,57 @@ public class PercentileMetric extends Metric {
           String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
 
+    double percentile = Double.parseDouble(percentileStr);
     init(functionName, columnName, percentile);
   }
 
-  private void init(String functionName, String columnName, int percentile) {
+  private void init(String functionName, String columnName, double percentile) {
+    if (percentile < 0 || percentile > 100) {
+      throw new IllegalArgumentException("percentile must be between 0 and 100, got " + percentile);
+    }
     this.columnName = columnName;
+    this.percentile = percentile;
+    this.digest = new AVLTreeDigest(COMPRESSION);
     setFunctionName(functionName);
-    setIdentifier(functionName, "(", columnName, "," + percentile, ")");
+    setIdentifier(functionName, "(", columnName, "," + formatPercentile(percentile), ")");
+  }
+
+  private static String formatPercentile(double percentile) {
+    if (percentile == Math.floor(percentile) && !Double.isInfinite(percentile)) {
+      return Integer.toString((int) percentile);
+    }
+    return String.valueOf(percentile);
+  }
+
+  @Override
+  public void update(Tuple tuple) {
+    Object o = tuple.get(columnName);
+    if (o instanceof Double) {
+      Double d = (Double) o;
+      digest.add(d);
+    } else if (o instanceof Float) {
+      Float f = (Float) o;
+      digest.add(f.doubleValue());
+    } else if (o instanceof Integer) {
+      Integer i = (Integer) o;
+      digest.add(i.doubleValue());
+    } else if (o instanceof Long) {
+      Long l = (Long) o;
+      digest.add(l.doubleValue());
+    }
   }
 
   @Override
   public Number getValue() {
-    if (longMax == Long.MIN_VALUE) {
-      return doubleMax;
-    } else {
-      return longMax;
+    if (digest.size() == 0) {
+      return null;
     }
+    return digest.quantile(percentile / 100.0);
+  }
+
+  @Override
+  public Metric newInstance() {
+    return new PercentileMetric(columnName, percentile);
   }
 
   @Override
@@ -77,15 +113,9 @@ public class PercentileMetric extends Metric {
   }
 
   @Override
-  public void update(Tuple tuple) {}
-
-  @Override
-  public Metric newInstance() {
-    return new MaxMetric(columnName);
-  }
-
-  @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    return new StreamExpression(getFunctionName()).withParameter(columnName);
+    return new StreamExpression(getFunctionName())
+        .withParameter(columnName)
+        .withParameter(formatPercentile(percentile));
   }
 }

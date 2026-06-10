@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
@@ -48,6 +49,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MissingMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -1839,6 +1841,114 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(1, missingBf, 0.01);
       assertEquals(1, countDistI, 0.01);
       assertEquals(0, countDistS, 0.01);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testPercentileRollupStream() throws Exception {
+
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    try {
+      // Test percentile metrics in RollupStream
+      SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc");
+      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+
+      Bucket[] buckets = {new Bucket("a_s")};
+
+      Metric[] metrics = {
+        new PercentileMetric("a_i", 50),
+        new PercentileMetric("a_f", 50),
+        new PercentileMetric("a_i", 0),
+        new PercentileMetric("a_i", 100),
+        new PercentileMetric("a_i", 99.9),
+        new MinMetric("a_i"),
+        new MaxMetric("a_i"),
+      };
+
+      RollupStream rollupStream = new RollupStream(stream, buckets, metrics);
+      rollupStream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(rollupStream);
+
+      assertEquals(3, tuples.size());
+
+      // hello0: a_i = [0, 1, 2, 14], a_f = [1, 2, 5, 10]
+      Tuple tuple = tuples.get(0);
+      assertEquals("hello0", tuple.getString("a_s"));
+      Double peri50 = tuple.getDouble("per(a_i,50)");
+      Double perf50 = tuple.getDouble("per(a_f,50)");
+      Double peri0 = tuple.getDouble("per(a_i,0)");
+      Double peri100 = tuple.getDouble("per(a_i,100)");
+      Double peri999 = tuple.getDouble("per(a_i,99.9)");
+      Double mini = tuple.getDouble("min(a_i)");
+      Double maxi = tuple.getDouble("max(a_i)");
+
+      assertNotNull(peri50);
+      assertNotNull(perf50);
+      // 0th percentile should approximate min
+      assertEquals(mini, peri0, 0.5);
+      // 100th percentile should approximate max
+      assertEquals(maxi, peri100, 0.5);
+      // 99.9th percentile should be close to max
+      assertNotNull(peri999);
+
+      // hello3: a_i = [3, 10, 12, 13], a_f = [3, 6, 8, 9]
+      tuple = tuples.get(1);
+      assertEquals("hello3", tuple.getString("a_s"));
+      peri50 = tuple.getDouble("per(a_i,50)");
+      perf50 = tuple.getDouble("per(a_f,50)");
+      peri0 = tuple.getDouble("per(a_i,0)");
+      peri100 = tuple.getDouble("per(a_i,100)");
+      mini = tuple.getDouble("min(a_i)");
+      maxi = tuple.getDouble("max(a_i)");
+
+      assertNotNull(peri50);
+      assertNotNull(perf50);
+      assertEquals(mini, peri0, 0.5);
+      assertEquals(maxi, peri100, 0.5);
+
+      // hello4: a_i = [4, 11], a_f = [4, 7]
+      tuple = tuples.get(2);
+      assertEquals("hello4", tuple.getString("a_s"));
+      peri50 = tuple.getDouble("per(a_i,50)");
+      perf50 = tuple.getDouble("per(a_f,50)");
+      peri0 = tuple.getDouble("per(a_i,0)");
+      peri100 = tuple.getDouble("per(a_i,100)");
+      mini = tuple.getDouble("min(a_i)");
+      maxi = tuple.getDouble("max(a_i)");
+
+      assertNotNull(peri50);
+      assertNotNull(perf50);
+      assertEquals(mini, peri0, 0.5);
+      assertEquals(maxi, peri100, 0.5);
+
+      // Test toExpression round-trip
+      PercentileMetric pm = new PercentileMetric("a_i", 50);
+      StreamExpressionParameter expr = pm.toExpression(streamFactory);
+      assertEquals("per(a_i,50)", expr.toString());
+
+      pm = new PercentileMetric("a_i", 99.9);
+      expr = pm.toExpression(streamFactory);
+      assertEquals("per(a_i,99.9)", expr.toString());
+
+      // Test HashRollupStream with percentile
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      Metric[] hashMetrics = {new PercentileMetric("a_i", 50), new PercentileMetric("a_f", 50)};
+
+      HashRollupStream hashRollupStream = new HashRollupStream(stream, buckets, hashMetrics);
+      hashRollupStream.setStreamContext(streamContext);
+      tuples = getTuples(hashRollupStream);
+
+      assertEquals(3, tuples.size());
+      for (Tuple t : tuples) {
+        assertNotNull(t.getDouble("per(a_i,50)"));
+        assertNotNull(t.getDouble("per(a_f,50)"));
+      }
     } finally {
       solrClientCache.close();
     }
