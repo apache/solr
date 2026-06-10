@@ -141,6 +141,19 @@ Please note that the `knnAlgorithm` accepted values may change in future release
 +
 Accepted values: `FLOAT32`, `BYTE`.
 
+`useVectorValuesAsStored`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+(advanced) When `true`, Solr preserves `stored="true"` retrieval semantics for the field while deriving the returned vector value from Lucene's vector index instead of writing a redundant stored-field copy at index time.
++
+This can reduce storage overhead for single-valued dense vector fields.
++
+Accepted values: `true`, `false`.
+
 
 `hnswM`::
 +
@@ -175,6 +188,12 @@ Accepted values:
 Any integer.
 
 `DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
+
+If `useVectorValuesAsStored="true"` is enabled, the field must remain `stored="true"` and must be single-valued.
+
+When `useVectorValuesAsStored="true"` is enabled, Solr reconstructs the returned vector from Lucene's vector index at fetch time.
+This is typically a good fit when you do not routinely return the vector field in latency-sensitive traffic, but still want to reduce duplicate stored vector bytes for standard query-time fetches.
+If your application commonly uses `fl=*` or otherwise returns the vector field on high-volume request paths, benchmark carefully before enabling this option.
 
 Here's how a `DenseVectorField` should be indexed when single valued:
 

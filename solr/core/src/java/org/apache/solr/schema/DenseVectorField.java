@@ -78,6 +78,7 @@ public class DenseVectorField extends FloatPointField {
   static final String HNSW_M = "hnswM";
   static final String HNSW_EF_CONSTRUCTION = "hnswEfConstruction";
   static final String VECTOR_ENCODING = "vectorEncoding";
+  static final String USE_VECTOR_VALUES_AS_STORED = "useVectorValuesAsStored";
   static final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
   static final VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
@@ -116,6 +117,8 @@ public class DenseVectorField extends FloatPointField {
    * encoding is FLOAT32
    */
   private VectorEncoding vectorEncoding;
+
+  private boolean useVectorValuesAsStored;
 
   private int cuvsWriterThreads;
   private int cuvsIntGraphDegree;
@@ -186,6 +189,10 @@ public class DenseVectorField extends FloatPointField {
             .map(value -> VectorEncoding.valueOf(value.toUpperCase(Locale.ROOT)))
             .orElse(DEFAULT_VECTOR_ENCODING);
     args.remove(VECTOR_ENCODING);
+
+    this.useVectorValuesAsStored =
+        ofNullable(args.get(USE_VECTOR_VALUES_AS_STORED)).map(Boolean::parseBoolean).orElse(false);
+    args.remove(USE_VECTOR_VALUES_AS_STORED);
 
     this.hnswM =
         ofNullable(args.get(HNSW_M))
@@ -309,6 +316,10 @@ public class DenseVectorField extends FloatPointField {
     return cuvsHnswEfConstruction;
   }
 
+  public boolean useVectorValuesAsStored() {
+    return useVectorValuesAsStored;
+  }
+
   @Override
   protected boolean enableDocValuesByDefault() {
     return false;
@@ -322,6 +333,21 @@ public class DenseVectorField extends FloatPointField {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           getClass().getSimpleName() + " fields can not have docValues: " + field.getName());
+    }
+
+    if (useVectorValuesAsStored) {
+      if (!field.stored()) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            USE_VECTOR_VALUES_AS_STORED + " requires stored=true for field " + field.getName());
+      }
+      if (field.multiValued()) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            USE_VECTOR_VALUES_AS_STORED
+                + " is not supported for multiValued DenseVectorField: "
+                + field.getName());
+      }
     }
 
     switch (vectorEncoding) {
@@ -360,7 +386,7 @@ public class DenseVectorField extends FloatPointField {
       if (field.indexed()) {
         fields.add(createField(field, vectorBuilder));
       }
-      if (field.stored()) {
+      if (field.stored() && !useVectorValuesAsStored) {
         switch (vectorEncoding) {
           case FLOAT32:
             fields.ensureCapacity(vectorBuilder.getFloatVector().length + 1);
