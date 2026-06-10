@@ -916,23 +916,19 @@ The `bin/solr` script allows enabling or disabling Authentication, allowing you 
 
 Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.
 
-For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/src/resources/security.json[user roles and permission mappings], and maps the created user to all roles (`superadmin`, `admin`, `index`, `search`).
+For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/src/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
 
 
 === Enabling Basic Authentication
 
 The command `bin/solr auth enable` configures Solr to use Basic Authentication when accessing the User Interface, using `bin/solr` and any API requests.
 
-NOTE: This command currently requires SolrCloud mode — it uploads the generated `security.json` to ZooKeeper so that all nodes pick it up automatically.
-For user-managed (standalone) clusters, you must create the `security.json` file manually and place it in each node's Solr home directory.
-See xref:basic-authentication-plugin.adoc[] for details.
-
 TIP: For more information about Solr's authentication plugins, see the section xref:securing-solr.adoc[].
 For more information on Basic Authentication support specifically, see the section xref:basic-authentication-plugin.adoc[].
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
-* Takes the base https://github.com/apache/solr/blob/main/solr/core/src/resources/security.json[security.json] template with best-practice roles and permissions, applies `auth` command parameters, and uploads the result to ZooKeeper.
+* Take the base https://github.com/apache/solr/blob/main/solr/core/resources/security.json[security.json] file, evolves it using `auth` command parameters, and uploads the new file to ZooKeeper.
 +
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:
 +
@@ -943,19 +939,6 @@ SOLR_AUTH_TYPE="basic"
 SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-full-version}/server/solr/basicAuth.conf"
 ----
 * Creates the file `server/solr/basicAuth.conf` to store the credential information that is used with `bin/solr` commands.
-
-In addition to the operator-created user, the command also creates three template users with predefined role assignments.
-These users have no password set and cannot log in until passwords are explicitly assigned:
-
-[cols="1,2",options="header"]
-|===
-|Username |Roles
-|`admin` |admin, index, search
-|`index` |index, search
-|`search` |search
-|===
-
-After enabling Basic Authentication, set passwords for these template users using the Admin UI Security page or the xref:basic-authentication-plugin.adoc#add-a-user-or-edit-a-password[authentication API].
 
 Here are some example usages:
 
@@ -998,14 +981,11 @@ Either `--credentials` or `--prompt` *must* be specified.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: use value from `security.json` template (`false`)
+|Optional |Default: `true`
 |===
 +
-Controls whether unauthenticated requests are blocked.
-The default `security.json` template sets `blockUnknown` to `false` because it includes a `RuleBasedAuthorizationPlugin` with fine-grained permissions — unauthenticated users can only access endpoints explicitly granted to the `null` role (by default *health* and *metrics-read*, left open so that load balancers and monitoring tools can operate without credentials).
-All other operations require an authenticated user with the appropriate role.
-+
-If you want to require authentication for _all_ requests (including health checks and metrics), pass `--block-unknown true` explicitly.
+When `true`, this blocks out access to unauthenticated users from accessing Solr.
+When `false`, unauthenticated users will still be able to access Solr, but only for operations not explicitly requiring a user role in the Authorization plugin configuration.
 
 `--solr-include-file <includeFilePath>`::
 +

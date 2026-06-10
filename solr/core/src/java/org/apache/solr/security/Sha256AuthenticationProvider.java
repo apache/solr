@@ -93,7 +93,6 @@ public class Sha256AuthenticationProvider
 
   @Override
   public boolean authenticate(String username, String password) {
-    if (username != null && username.equals(password)) return false;
     String cred = credentials.get(username);
     if (cred == null || cred.isEmpty()) return false;
     cred = cred.trim();
@@ -164,10 +163,6 @@ public class Sha256AuthenticationProvider
         for (Map.Entry<String, Object> e : kv.entrySet()) {
           if (e.getKey() == null || e.getValue() == null) {
             cmd.addError("name and password must be non-null");
-            return null;
-          }
-          if (e.getKey().equals(String.valueOf(e.getValue()))) {
-            cmd.addError("Password must not be the same as the username");
             return null;
           }
           putUser(e.getKey(), String.valueOf(e.getValue()), map);
