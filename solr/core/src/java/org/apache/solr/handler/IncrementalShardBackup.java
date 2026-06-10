@@ -215,7 +215,7 @@ public class IncrementalShardBackup {
             .getCoreContainer()
             .getObjectCache()
             .computeIfAbsent(
-                "RestoreDownloadExecutor",
+                "BackupUploadExecutor",
                 ExecutorService.class,
                 s ->
                     ExecutorUtil.newMDCAwareCachedThreadPool(
