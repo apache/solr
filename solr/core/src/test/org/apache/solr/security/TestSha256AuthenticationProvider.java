@@ -104,6 +104,33 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     }
   }
 
+  public void testAuthenticateRejectsUsernameEqualPassword() {
+    // Simulate a credential store that has the username's own hash as the password
+    // (e.g. set up before this policy was in effect) and verify authenticate() still rejects it.
+    String user = "alice";
+    String hashedValue = Sha256AuthenticationProvider.getSaltedHashedValue(user);
+    Map<String, Object> config = new HashMap<>();
+    Map<String, String> credentials = new HashMap<>();
+    credentials.put(user, hashedValue);
+    config.put("credentials", credentials);
+
+    Sha256AuthenticationProvider provider = new Sha256AuthenticationProvider();
+    provider.init(config);
+    assertFalse(
+        "authenticate() must reject username==password even when hash matches",
+        provider.authenticate(user, user));
+  }
+
+  public void testSetUserRejectsUsernameEqualPassword() {
+    Sha256AuthenticationProvider provider = new Sha256AuthenticationProvider();
+    provider.init(createConfigMap("ignore", "me"));
+    Map<String, Object> latestConf = createConfigMap("ignore", "me");
+    String user = "bob";
+    CommandOperation cmd = new CommandOperation("set-user", Map.of(user, user));
+    provider.edit(latestConf, List.of(cmd));
+    assertTrue("set-user should report an error when username==password", cmd.hasError());
+  }
+
   private Map<String, Object> createConfigMap(String user, String pw) {
     Map<String, Object> config = new HashMap<>();
     Map<String, String> credentials = new HashMap<>();

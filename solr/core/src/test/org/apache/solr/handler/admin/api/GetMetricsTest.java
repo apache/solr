@@ -87,8 +87,14 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    jettyHttpClient.destroy();
-    cluster.shutdown();
+    if (jettyHttpClient != null) {
+      jettyHttpClient.destroy();
+      jettyHttpClient = null;
+    }
+    if (cluster != null) {
+      cluster.shutdown();
+      cluster = null;
+    }
   }
 
   @Before

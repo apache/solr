@@ -1,0 +1,80 @@
+name: Generate Renovate Changelog (Stage 1 - Prepare)
+
+# Stage 1: runs with pull_request (no secrets, no write access).
+# Checks out BASE repo code only, runs the trusted Python script,
+# and saves the generated changelog file + PR metadata as an artifact
+# for Stage 2 to pick up and push to the fork branch.
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+      - 'branch_*'
+    paths-ignore:
+      - '.github/**'
+
+concurrency:
+  group: renovate-changelog-prepare-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    # Only run for Renovate bot PRs from the expected fork
+    if: |
+      github.event.pull_request.user.login == 'solrbot' &&
+      github.event.pull_request.head.repo.full_name == 'solrbot/apache-_-solr'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout BASE repository at base branch (NOT fork code)
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          repository: ${{ github.repository }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: python3 -m pip install --quiet pyyaml
+
+      - name: Generate changelog entry
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          python3 .github/scripts/generate-renovate-changelog.py \
+            --pr-number "$PR_NUMBER" \
+            --pr-title "$PR_TITLE"
+
+      - name: Assemble artifact
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifact
+          if [ -d changelog/unreleased ]; then
+            cp -r changelog/unreleased artifact/changelog-unreleased
+          fi
+          # Use printf + env vars to avoid shell injection from PR metadata values
+          printf 'PR_NUMBER=%s\nHEAD_REF=%s\nHEAD_REPO=%s\n' \
+            "$PR_NUMBER" "$HEAD_REF" "$HEAD_REPO" \
+            > artifact/pr-metadata.env
+          echo "Artifact contents:"; find artifact/ -type f
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: renovate-changelog-artifact
+          path: artifact/
+          retention-days: 1
+          if-no-files-found: error

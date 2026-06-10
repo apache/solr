@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.util.IOUtils;
 
 /**
- * This {@link CloudSolrClient} is a base implementation using a {@link HttpSolrClientBase}. The '2'
- * in the name has no differentiating significance anymore.
+ * This {@link CloudSolrClient} is a base implementation using a {@link HttpSolrClient}. The '2' in
+ * the name has no differentiating significance anymore.
  *
  * @since solr 8.0
  * @lucene.internal
@@ -32,7 +32,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
   private final LBSolrClient lbClient;
-  private final HttpSolrClientBase myClient;
+  private final HttpSolrClient myClient;
   private final boolean clientIsInternal;
 
   /**
@@ -102,7 +102,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     return stateProvider;
   }
 
-  public HttpSolrClientBase getHttpClient() {
+  public HttpSolrClient getHttpClient() {
     return myClient;
   }
 }

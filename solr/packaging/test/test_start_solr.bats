@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop --all >/dev/null 2>&1
+  SOLR_STOP_WAIT=30 solr stop --all >/dev/null 2>&1
 }
 
 @test "SOLR-11740 check 'solr stop' connection" {
@@ -94,6 +94,14 @@ teardown() {
 
   solr start --jettyconfig "--module=server"
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+}
+
+@test "-c flag prints no-op warning and still starts in cloud mode" {
+  run solr start -c
+  assert_output --partial 'WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.'
+
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
 
 @test "bootstrapping a configset" {

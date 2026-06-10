@@ -29,13 +29,13 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.LanguageModelException;
-import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This object wraps a {@link EmbeddingModel} to encode text to vector. It's meant to be used as a
- * managed resource with the {@link ManagedTextToVectorModelStore}
+ * managed resource with the {@link TextToVectorModelStore}
  */
 public class SolrTextToVectorModel extends SolrLanguageModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

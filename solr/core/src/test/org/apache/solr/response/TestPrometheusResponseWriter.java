@@ -193,6 +193,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
+      InputStream stream = (InputStream) res.get("stream");
+      if (stream != null) stream.close();
       // Unknown wt parameter should return a 400 error
       assertEquals(400, res.get("responseStatus"));
     }
