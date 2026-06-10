@@ -50,8 +50,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.index.LatestVersionMergePolicy;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -68,9 +68,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implements the UPGRADECOREINDEX CoreAdmin action, which upgrades an existing core's index
- * in-place by reindexing documents from segments belonging to older Lucene versions, so that they
- * get written into latest version segments.
+ * Implements the UPGRADEINDEX CoreAdmin action, which upgrades an existing core's index in-place by
+ * reindexing documents from segments belonging to older Lucene versions, so that they get written
+ * into latest version segments.
  *
  * <p>The upgrade process:
  *
@@ -95,7 +95,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   public enum CoreIndexUpgradeStatus {
     UPGRADE_SUCCESSFUL,
     ERROR,
-    NO_UPGRADE_NEEDED;
+    NO_UPGRADE_NEEDED
   }
 
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
@@ -149,11 +149,11 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
       RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
       try {
-        // Check for nested documents before processing - we don't support them
-        if (indexContainsNestedDocs(searcherRef.get())) {
+        // Check for child documents before processing - we don't support them
+        if (indexContainsChildDocs(searcherRef.get())) {
           throw new SolrException(
               BAD_REQUEST,
-              "UPGRADECOREINDEX does not support indexes containing nested documents. "
+              "UPGRADEINDEX does not support indexes containing child/nested documents. "
                   + " Consider reindexing your data "
                   + "from the original source.");
         }
@@ -259,26 +259,44 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     return (segmentMinVersion == null || segmentMinVersion.major < Version.LATEST.major);
   }
 
-  private boolean indexContainsNestedDocs(SolrIndexSearcher searcher) throws IOException {
+  private boolean indexContainsChildDocs(SolrIndexSearcher searcher) throws IOException {
     IndexSchema schema = searcher.getSchema();
 
-    // First check if schema supports nested docs
+    // First check if schema supports child docs
     if (!schema.isUsableForChildDocs()) {
       return false;
     }
 
-    // Check if _root_ field has fewer unique values than documents with that field.
-    // This indicates multiple docs share the same _root_ (i.e., child docs exist)
+    String uniqueKeyFieldName = schema.getUniqueKeyField().getName();
+
+    // Compare unique _root_ values against unique id values per segment.
+    // For non-child docs, every document's _root_ equals its own id, so the number of
+    // distinct _root_ values equals the number of distinct id values. For child docs,
+    // children share the parent's _root_ value, so there are fewer distinct _root_ values
+    // than distinct id values.
+    //
+    // We intentionally compare against unique id values rather than Terms.getDocCount()
+    // (the number of documents with the _root_ field) because segment-level term statistics
+    // include deleted documents. Updates (delete + re-add of the same id) can leave multiple
+    // documents with the same _root_ value within a segment, causing getDocCount() to exceed
+    // the unique _root_ count even when no child docs exist.
     IndexReader reader = searcher.getIndexReader();
     for (LeafReaderContext leaf : reader.leaves()) {
-      Terms terms = leaf.reader().terms(IndexSchema.ROOT_FIELD_NAME);
-      if (terms != null) {
-        long uniqueRootValues = terms.size();
-        int docsWithRoot = terms.getDocCount();
+      Terms rootTerms = leaf.reader().terms(IndexSchema.ROOT_FIELD_NAME);
+      if (rootTerms != null) {
+        long uniqueRootValues = rootTerms.size();
+        if (uniqueRootValues == -1) {
+          return true; // Codec doesn't report term count; assume child docs as a safe fallback
+        }
 
-        if (uniqueRootValues == -1 || uniqueRootValues < docsWithRoot) {
-          return true; // Codec doesn't store number of terms (so a safe fallback), or multiple docs
-          // share same _root_ (aka nested docs exist)
+        Terms idTerms = leaf.reader().terms(uniqueKeyFieldName);
+        long uniqueIdValues = (idTerms != null) ? idTerms.size() : -1;
+        if (uniqueIdValues == -1) {
+          return true; // Codec doesn't report term count; assume child docs as a safe fallback
+        }
+
+        if (uniqueRootValues < uniqueIdValues) {
+          return true; // Fewer distinct _root_ values than distinct ids means child docs exist
         }
       }
     }
@@ -377,7 +395,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   }
 
   private void doCommit(SolrCore core) throws IOException {
-    try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+    try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, false); // optimize=false
       core.getUpdateHandler().commit(cmd);
     } catch (IOException ioEx) {
@@ -404,8 +422,8 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     // Exclude copy field targets to avoid duplicating values on reindex
     Set<String> nonStoredDVFields = docFetcher.getNonStoredDVsWithoutCopyTargets();
 
-    try (LocalSolrQueryRequest solrRequest =
-        new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+    try (SolrQueryRequestBase solrRequest =
+        new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       SolrQueryResponse rsp = new SolrQueryResponse();
       UpdateRequestProcessor processor = processorChain.createProcessor(solrRequest, rsp);
       try {

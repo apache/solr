@@ -77,6 +77,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     syncStrategy.close();
   }
 
+  /**
+   * Internally check whether we should abort the election process. This returns true if either this
+   * context was explicitly closed, or Solr server is being shut down.
+   */
+  private boolean shouldAbort() {
+    return isClosed || cc.isShutDown();
+  }
+
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
@@ -154,7 +162,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         waitForReplicasToComeUp(leaderVoteWait);
       }
 
-      if (isClosed) {
+      if (shouldAbort()) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the
         // later, we cannot be sure we are still the leader, so we should bail out. The OnReconnect
         // handler will re-register the cores and handle a new leadership election.
@@ -185,7 +193,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
 
-        if (isClosed) {
+        if (shouldAbort()) {
           return;
         }
 
@@ -205,41 +213,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
 
-        PeerSync.PeerSyncResult result = null;
         boolean success = false;
         try {
-          result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+          PeerSync.PeerSyncResult result =
+              syncStrategy.sync(zkController, core, leaderProps, weAreReplacement, true);
           success = result.isSuccess();
         } catch (Exception e) {
           log.error("Exception while trying to sync", e);
-          result = PeerSync.PeerSyncResult.failure();
-        }
-
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-
-        if (!success) {
-          boolean hasRecentUpdates = false;
-          if (ulog != null) {
-            // TODO: we could optimize this if necessary
-            try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-              hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
-            }
-          }
-
-          if (!hasRecentUpdates) {
-            // we failed sync, but we have no versions - we can't sync in that case
-            // - we were active
-            // before, so become leader anyway if no one else has any versions either
-            if (result.getOtherHasVersions().orElse(false)) {
-              log.info(
-                  "We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
-              success = false;
-            } else {
-              log.info(
-                  "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-              success = true;
-            }
-          }
         }
 
         // solrcloud_debug
@@ -250,7 +230,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             try {
               if (log.isDebugEnabled()) {
                 log.debug(
-                    "{} synched {}",
+                    "{} synced {}",
                     core.getCoreContainer().getZkController().getNodeName(),
                     searcher.count(new MatchAllDocsQuery()));
               }
@@ -267,7 +247,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
       }
 
-      if (!isClosed) {
+      if (!shouldAbort()) {
         try {
           if (replicaType.replicateFromLeader) {
             // stop replicate from old leader
@@ -361,7 +341,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       ZkShardTerms zkShardTerms, String coreNodeName, int timeout) throws InterruptedException {
     long timeoutAt =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (!isClosed && !cc.isShutDown()) {
+    while (!shouldAbort()) {
       if (System.nanoTime() > timeoutAt) {
         log.warn(
             "After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
@@ -446,7 +426,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(collection);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     int cnt = 0;
-    while (!isClosed && !cc.isShutDown()) {
+    while (!shouldAbort()) {
       // wait for everyone to be up
       if (slices != null) {
         int found = 0;
@@ -507,11 +487,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       return;
     }
 
-    log.info("There may be a better leader candidate than us - going back into recovery");
+    log.info("There may be a better leader candidate than us - rejoining the election");
 
     cancelElection();
-
-    core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
 
     leaderElector.joinElection(this, true);
   }

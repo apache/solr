@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
@@ -69,7 +70,7 @@ public class StreamToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testGetOutputFields() {
+  public void testGetOutputFields() throws IOException {
     String[] args =
         new String[] {
           "--fields", "field9, field2, field3, field4",
@@ -234,8 +235,8 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--name",
           "fakeCollection",
           "--verbose",
-          "--zk-host",
-          cluster.getZkClient().getZkServerAddress(),
+          "--solr-connection",
+          getSolrConnection().toString(),
           expression
         };
     assertEquals(1, CLITestHelper.runTool(args, StreamTool.class));
@@ -251,8 +252,10 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--execution",
           "local",
           "-v",
-          "-z",
-          cluster.getZkClient().getZkServerAddress(),
+          "-s",
+          getSolrConnection().toString(),
+          "--credentials",
+          SecurityJson.USER_PASS,
           expression
         };
     assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
@@ -274,8 +277,10 @@ public class StreamToolTest extends SolrCloudTestCase {
       "--execution",
       "local",
       "--verbose",
-      "-zk-host",
-      cluster.getZkClient().getZkServerAddress(),
+      "--solr-connection",
+      getSolrConnection().toString(),
+      "--credentials",
+      SecurityJson.USER_PASS,
       expressionFile.toString()
     };
 
@@ -288,8 +293,10 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--execution",
           "local",
           "--verbose",
-          "--zk-host",
-          cluster.getZkClient().getZkServerAddress(),
+          "--solr-connection",
+          getSolrConnection().toString(),
+          "--credentials",
+          SecurityJson.USER_PASS,
           expression
         };
 
@@ -338,8 +345,8 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--name",
           collectionName,
           "--verbose",
-          "--zk-host",
-          cluster.getZkClient().getZkServerAddress(),
+          "--solr-connection",
+          getSolrConnection().toString(),
           "--credentials",
           SecurityJson.USER_PASS,
           expression

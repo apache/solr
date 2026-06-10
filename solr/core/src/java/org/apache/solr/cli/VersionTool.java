@@ -18,8 +18,18 @@
 package org.apache.solr.cli;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 
+/**
+ * Supports version command in the bin/solr script.
+ *
+ * <p>Prints the client (CLI) version. When a connection target ({@code -s}/{@code
+ * --solr-connection}, {@code --solr-url}, or {@code --zk-host}) is provided, also prints the
+ * version of the remote Solr server.
+ */
 public class VersionTool extends ToolBase {
 
   public VersionTool(ToolRuntime runtime) {
@@ -32,7 +42,23 @@ public class VersionTool extends ToolBase {
   }
 
   @Override
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
-    CLIO.out("Solr version is: " + SolrVersion.LATEST);
+    echo("Client version: " + SolrVersion.LATEST);
+
+    if (CLIUtils.hasConnectionOption(cli)) {
+      String solrUrl = CLIUtils.normalizeSolrUrl(cli);
+      String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
+      try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
+        SystemInfoResponse sysResponse = new SystemInfoRequest().process(solrClient);
+        echo("Server version: " + sysResponse.getSolrImplVersion());
+      }
+    }
   }
 }

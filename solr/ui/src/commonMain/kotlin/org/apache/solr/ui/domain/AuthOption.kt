@@ -51,4 +51,12 @@ sealed interface AuthOption {
         val password: String,
         val realm: String? = null,
     ) : AuthOption
+
+    @Serializable
+    data class OAuthOption(
+        val url: Url,
+        val accessToken: String,
+        val refreshToken: String? = null,
+        val realm: String? = null,
+    ) : AuthOption
 }

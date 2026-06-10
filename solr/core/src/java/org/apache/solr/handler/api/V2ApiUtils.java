@@ -28,7 +28,6 @@ import java.util.Map;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -40,10 +39,6 @@ import org.apache.solr.response.SolrQueryResponse;
 public class V2ApiUtils {
   private V2ApiUtils() {
     /* Private ctor prevents instantiation */
-  }
-
-  public static boolean isEnabled() {
-    return EnvUtils.getPropertyAsBool("solr.api.v2.enabled", true);
   }
 
   public static void flattenMapWithPrefix(

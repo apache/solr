@@ -16,12 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,12 +143,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] peek() throws KeeperException, InterruptedException {
-    Timer.Context time = stats.time(dir + "_peek");
-    try {
-      return firstElement();
-    } finally {
-      time.stop();
-    }
+    return firstElement();
   }
 
   /**
@@ -177,12 +170,6 @@ public class ZkDistributedQueue implements DistributedQueue {
     if (wait < 0) {
       throw new IllegalArgumentException("Wait must be greater than 0. Wait was " + wait);
     }
-    Timer.Context time;
-    if (wait == Long.MAX_VALUE) {
-      time = stats.time(dir + "_peek_wait_forever");
-    } else {
-      time = stats.time(dir + "_peek_wait" + wait);
-    }
     updateLock.lockInterruptibly();
     try {
       long waitNanos = TimeUnit.MILLISECONDS.toNanos(wait);
@@ -196,7 +183,6 @@ public class ZkDistributedQueue implements DistributedQueue {
       return null;
     } finally {
       updateLock.unlock();
-      time.stop();
     }
   }
 
@@ -207,12 +193,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] poll() throws KeeperException, InterruptedException {
-    Timer.Context time = stats.time(dir + "_poll");
-    try {
-      return removeFirst();
-    } finally {
-      time.stop();
-    }
+    return removeFirst();
   }
 
   /**
@@ -222,16 +203,11 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] remove() throws NoSuchElementException, KeeperException, InterruptedException {
-    Timer.Context time = stats.time(dir + "_remove");
-    try {
-      byte[] result = removeFirst();
-      if (result == null) {
-        throw new NoSuchElementException();
-      }
-      return result;
-    } finally {
-      time.stop();
+    byte[] result = removeFirst();
+    if (result == null) {
+      throw new NoSuchElementException();
     }
+    return result;
   }
 
   public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
@@ -275,7 +251,6 @@ public class ZkDistributedQueue implements DistributedQueue {
   @Override
   public byte[] take() throws KeeperException, InterruptedException {
     // Same as for element. Should refactor this.
-    Timer.Context timer = stats.time(dir + "_take");
     updateLock.lockInterruptibly();
     try {
       while (true) {
@@ -287,7 +262,6 @@ public class ZkDistributedQueue implements DistributedQueue {
       }
     } finally {
       updateLock.unlock();
-      timer.stop();
     }
   }
 
@@ -297,44 +271,39 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public void offer(byte[] data) throws KeeperException, InterruptedException {
-    Timer.Context time = stats.time(dir + "_offer");
-    try {
-      while (true) {
-        try {
-          if (maxQueueSize > 0) {
-            if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) {
-              // If a max queue size is set, check it before creating a new queue item.
-              Stat stat = zookeeper.exists(dir, null);
-              if (stat == null) {
-                // jump to the code below, which tries to create dir if it doesn't exist
-                throw new KeeperException.NoNodeException();
-              }
-              int remainingCapacity = maxQueueSize - stat.getNumChildren();
-              if (remainingCapacity <= 0) {
-                throw new IllegalStateException("queue is full");
-              }
-
-              // Allow this client to push up to 1% of the remaining queue capacity without
-              // rechecking.
-              offerPermits.set(remainingCapacity / 100);
+    while (true) {
+      try {
+        if (maxQueueSize > 0) {
+          if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) {
+            // If a max queue size is set, check it before creating a new queue item.
+            Stat stat = zookeeper.exists(dir, null);
+            if (stat == null) {
+              // jump to the code below, which tries to create dir if it doesn't exist
+              throw new KeeperException.NoNodeException();
             }
-          }
+            int remainingCapacity = maxQueueSize - stat.getNumChildren();
+            if (remainingCapacity <= 0) {
+              throw new IllegalStateException("queue is full");
+            }
 
-          // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
-          // This will get set again when the watcher actually fires, but that's ok.
-          zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL);
-          isDirty = true;
-          return;
-        } catch (KeeperException.NoNodeException e) {
-          try {
-            zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT);
-          } catch (KeeperException.NodeExistsException ne) {
-            // someone created it
+            // Allow this client to push up to 1% of the remaining queue capacity without
+            // rechecking.
+            offerPermits.set(remainingCapacity / 100);
           }
         }
+
+        // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
+        // This will get set again when the watcher actually fires, but that's ok.
+        zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL);
+        isDirty = true;
+        return;
+      } catch (KeeperException.NoNodeException e) {
+        try {
+          zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT);
+        } catch (KeeperException.NodeExistsException ne) {
+          // someone created it
+        }
       }
-    } finally {
-      time.stop();
     }
   }
 
@@ -345,7 +314,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   @Override
   public Map<String, Object> getStats() {
     if (stats == null) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     Map<String, Object> res = new HashMap<>();
     res.put("queueLength", stats.getQueueLength());

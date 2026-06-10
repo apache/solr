@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -150,50 +150,31 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     public void run() {
       final TimeOut timeout = new TimeOut(timeToRunSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeout.hasTimedOut() && failure.get() == null) {
-        doWork();
-      }
-    }
-
-    protected void doWork() {
-      createCollection();
-      deleteCollection();
-    }
-
-    protected void addFailure(Exception e) {
-      log.error("Add Failure", e);
-      synchronized (failure) {
-        if (failure.get() != null) {
-          failure.get().addSuppressed(e);
-        } else {
-          failure.set(e);
+        try {
+          doWork();
+        } catch (Exception e) {
+          log.error(e.toString(), e); // nowarn
+          if (!failure.compareAndSet(null, e)) {
+            failure.get().addSuppressed(e);
+          }
         }
       }
     }
 
-    private void createCollection() {
+    protected void doWork() throws Exception {
       try {
-        final CollectionAdminResponse response =
-            CollectionAdminRequest.createCollection(collectionName, configName, 1, 1)
-                .process(solrClient);
-        if (response.getStatus() != 0) {
-          addFailure(new RuntimeException("failed to create collection " + collectionName));
-        }
-      } catch (Exception e) {
-        addFailure(e);
+        createCollection();
+      } finally {
+        deleteCollection();
       }
     }
 
-    private void deleteCollection() {
-      try {
-        final CollectionAdminRequest.Delete deleteCollectionRequest =
-            CollectionAdminRequest.deleteCollection(collectionName);
-        final CollectionAdminResponse response = deleteCollectionRequest.process(solrClient);
-        if (response.getStatus() != 0) {
-          addFailure(new RuntimeException("failed to delete collection " + collectionName));
-        }
-      } catch (Exception e) {
-        addFailure(e);
-      }
+    private void createCollection() throws Exception {
+      CollectionAdminRequest.createCollection(collectionName, configName, 1, 1).process(solrClient);
+    }
+
+    private void deleteCollection() throws Exception {
+      CollectionAdminRequest.deleteCollection(collectionName).process(solrClient);
     }
 
     public void joinAndClose() throws InterruptedException {
@@ -218,17 +199,17 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected void doWork() {
+    protected void doWork() throws Exception {
       super.doWork();
       searchNonExistingCollection();
     }
 
-    private void searchNonExistingCollection() {
+    private void searchNonExistingCollection() throws Exception {
       try {
         solrClient.query(collectionName, new SolrQuery("*"));
-      } catch (Exception e) {
-        if (!e.getMessage().contains("not found") && !e.getMessage().contains("Can not find")) {
-          addFailure(e);
+      } catch (RemoteSolrException e) {
+        if (e.code() != 404) {
+          throw e;
         }
       }
     }

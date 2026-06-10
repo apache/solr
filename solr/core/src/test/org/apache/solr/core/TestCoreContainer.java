@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
+import static org.apache.solr.servlet.CoreContainerProvider.SOLR_INSTALL_DIR;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -43,7 +43,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.util.ModuleUtils;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -429,8 +429,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       jar1.closeEntry();
     }
 
-    System.setProperty(
-        SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE, tmpRoot.toAbsolutePath().toString());
+    System.setProperty(CoreContainerProvider.SOLR_INSTALL_DIR, tmpRoot.toAbsolutePath().toString());
     final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
     try {
       assertThrows(
@@ -466,7 +465,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       jar1.closeEntry();
     }
 
-    System.setProperty(SOLR_INSTALL_DIR_ATTRIBUTE, installDirPath.toString());
+    System.setProperty(SOLR_INSTALL_DIR, installDirPath.toString());
 
     final CoreContainer cores = init(CONFIGSETS_SOLR_XML);
     try {

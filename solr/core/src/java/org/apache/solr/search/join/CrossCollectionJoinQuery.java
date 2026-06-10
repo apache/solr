@@ -38,6 +38,7 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
@@ -48,11 +49,14 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -67,7 +71,7 @@ import org.apache.solr.util.SolrDefaultScorerSupplier;
 public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequirer {
 
   protected final String query;
-  protected final String zkHost;
+  protected final CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected final String solrUrl;
   protected final String collection;
   protected final String fromField;
@@ -82,7 +86,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
   public CrossCollectionJoinQuery(
       String query,
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String solrUrl,
       String collection,
       String fromField,
@@ -92,7 +96,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       SolrParams otherParams) {
 
     this.query = query;
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.solrUrl = solrUrl;
     this.collection = collection;
     this.fromField = fromField;
@@ -219,11 +223,14 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     }
 
     private TupleStream createCloudSolrStream(SolrClientCache solrClientCache) throws IOException {
-      String streamZkHost;
-      if (zkHost != null) {
-        streamZkHost = zkHost;
+      ZkController zkController = searcher.getCore().getCoreContainer().getZkController();
+
+      CloudSolrClient.CloudSolrClientConnection streamingSolrConnection;
+      if (solrConnection != null) {
+        streamingSolrConnection = solrConnection;
       } else {
-        streamZkHost = searcher.getCore().getCoreContainer().getZkController().getZkServerAddress();
+        streamingSolrConnection =
+            CloudSolrClient.CloudSolrClientConnection.parse(zkController.getZkServerAddress());
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams(otherParams);
@@ -239,8 +246,24 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
+      streamContext.setRequestParams(new ModifiableSolrParams(otherParams));
+      if (zkController != null) {
+        RequestReplicaListTransformerGenerator rltg =
+            new RequestReplicaListTransformerGenerator(
+                zkController
+                    .getZkStateReader()
+                    .getClusterProperties()
+                    .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+                    .toString(),
+                zkController.getNodeName(),
+                zkController.getBaseUrl(),
+                zkController.getHostName(),
+                zkController.getSysPropsCacher());
+        streamContext.setRequestReplicaListTransformerGenerator(rltg);
+      }
 
-      TupleStream cloudSolrStream = new CloudSolrStream(streamZkHost, collection, params);
+      TupleStream cloudSolrStream =
+          new CloudSolrStream(streamingSolrConnection, collection, params);
       TupleStream uniqueStream = new UniqueStream(cloudSolrStream, new FieldEqualitor(fromField));
       uniqueStream.setStreamContext(streamContext);
       return uniqueStream;
@@ -280,9 +303,9 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     }
 
     private DocSet getDocSet() throws IOException {
-      SolrClientCache solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
       TupleStream solrStream;
-      if (zkHost != null || solrUrl == null) {
+      if (solrConnection != null || solrUrl == null) {
+        var solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
         solrStream = createCloudSolrStream(solrClientCache);
       } else {
         solrStream = createSolrStream();
@@ -361,7 +384,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     final int prime = 31;
     int result = classHash();
     result = prime * result + Objects.hashCode(query);
-    result = prime * result + Objects.hashCode(zkHost);
+    result = prime * result + Objects.hashCode(solrConnection);
     result = prime * result + Objects.hashCode(solrUrl);
     result = prime * result + Objects.hashCode(collection);
     result = prime * result + Objects.hashCode(fromField);
@@ -379,7 +402,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
   private boolean equalsTo(CrossCollectionJoinQuery other) {
     return Objects.equals(query, other.query)
-        && Objects.equals(zkHost, other.zkHost)
+        && Objects.equals(solrConnection, other.solrConnection)
         && Objects.equals(solrUrl, other.solrUrl)
         && Objects.equals(collection, other.collection)
         && Objects.equals(fromField, other.fromField)

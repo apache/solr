@@ -235,6 +235,7 @@ tasks.register('runDev', JavaExec) {
   jvmArgs = [] // don't use defaults from our build that assume this is a typical build task
   jvmArgs((project.findProperty('jvmArgs') ?: '').split())
 
+  systemProperty 'solr.host.advertise', '127.0.0.1'
   systemProperty 'solr.port.listen', '8983'
   systemProperty 'solr.install.dir', file("$workingDir/..")
   systemProperty 'solr.logs.dir', file("$workingDir/logs")
@@ -280,7 +281,12 @@ task integrationTests(type: BatsTask) {
     }
   }
 
+  if (!Boolean.parseBoolean((String) project.findProperty('solr.bats.nightly'))) {
+    filterTags = '!nightly'
+  }
+
   inputs.dir(distDir)
+  inputs.dir('test')  // Track .bats test files and helper as inputs
   outputs.dir(integrationTestOutput)
 
   doFirst {
@@ -310,11 +316,17 @@ task integrationTests(type: BatsTask) {
 }
 
 class BatsTask extends Exec {
-  @InputDirectory
+  // Note: testDir is marked @Internal because it's a String configuration property, not a trackable input.
+  // The task using BatsTask should explicitly declare inputs.dir(testDir) in its configuration.
+  @Internal
   String testDir = 'test'
 
   @Input
   var testFiles = []
+
+  @Input
+  @Optional
+  String filterTags = null
 
   @Option(option = "tests", description = "Sets test cases to be included")
   public void setTestNamePatterns(List<String> tests) {
@@ -330,6 +342,9 @@ class BatsTask extends Exec {
     def batsArgs = []
     if (logger.isInfoEnabled()) {
       batsArgs << '--verbose-run'
+    }
+    if (filterTags) {
+      batsArgs += ['--filter-tags', filterTags]
     }
     batsArgs += ['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"]
     // Note: tests to run must be listed after all other arguments

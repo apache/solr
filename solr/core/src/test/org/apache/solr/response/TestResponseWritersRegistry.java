@@ -31,34 +31,19 @@ public class TestResponseWritersRegistry extends SolrTestCaseJ4 {
 
   @Test
   public void testBuiltInWriterFallbackBehavior() {
-    QueryResponseWriter standardWriter = ResponseWritersRegistry.getWriter("standard");
+    QueryResponseWriter defaultWriter = ResponseWritersRegistry.getWriter("json");
 
     // Test null fallback
     QueryResponseWriter nullWriter = ResponseWritersRegistry.getWriter(null);
-    assertThat("null writer should not be null", nullWriter, is(not(nullValue())));
-    assertThat("null writer should be same as standard", nullWriter, is(standardWriter));
+    assertThat("null writer should be same as default", nullWriter, is(defaultWriter));
 
     // Test empty string fallback
     QueryResponseWriter emptyWriter = ResponseWritersRegistry.getWriter("");
     assertThat("empty writer should not be null", emptyWriter, is(not(nullValue())));
-    assertThat("empty writer should be same as standard", emptyWriter, is(standardWriter));
+    assertThat("empty writer should be same as default", emptyWriter, is(defaultWriter));
 
     // Test unknown format fallback
     QueryResponseWriter unknownWriter = ResponseWritersRegistry.getWriter("nonexistent");
-    assertThat("unknown writer should not be null", unknownWriter, is(not(nullValue())));
-    assertThat("unknown writer should be same as standard", unknownWriter, is(standardWriter));
-  }
-
-  @Test
-  public void testBuiltInWriterLimitedSet() {
-    QueryResponseWriter standardWriter = ResponseWritersRegistry.getWriter("standard");
-
-    // Built-in writers should NOT include extended format writers (csv, geojson, etc.)
-    // These should all fall back to standard
-    // I think this standard thing is weird...   I think it should throw an exception!
-    assertThat(
-        "geojson should fall back to standard",
-        ResponseWritersRegistry.getWriter("geojson"),
-        is(standardWriter));
+    assertThat("unknown writer should be null", unknownWriter, is(nullValue()));
   }
 }

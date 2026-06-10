@@ -1,0 +1,9 @@
+title: Introduce jersey BOM and align jersey dependencies to 3.1.11
+type: dependency_update
+authors:
+  - name: Christos Malliaridis
+links:
+  - name: PR#4244
+    url: https://github.com/apache/solr/pull/4244
+  - name: SOLR-18082
+    url: https://issues.apache.org/jira/browse/SOLR-18082

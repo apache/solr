@@ -21,6 +21,7 @@
 * xref:property-substitution.adoc[]
 * xref:core-discovery.adoc[]
 * xref:configuring-solr-xml.adoc[]
+* xref:system-info-handler.adoc[]
 * xref:solr-properties.adoc[]
 
 * xref:configuring-solrconfig-xml.adoc[]
@@ -31,6 +32,7 @@
 ** xref:caches-warming.adoc[]
 ** xref:requesthandlers-searchcomponents.adoc[]
 ** xref:implicit-requesthandlers.adoc[]
+** xref:core-info-handler.adoc[]
 ** xref:realtime-get.adoc[]
 ** xref:initparams.adoc[]
 ** xref:requestdispatcher.adoc[]

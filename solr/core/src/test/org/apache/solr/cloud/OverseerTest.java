@@ -28,8 +28,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -1011,7 +1009,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
       updateShardHandlers.add(updateShardHandler);
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+      httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
       Overseer overseer =
           new Overseer(
@@ -1487,17 +1485,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
       // operations
       createCollection("perf_sentinel", 1);
 
-      Timer t = new Timer();
-      Timer.Context context = t.time();
       reader.waitForState(
           "perf_sentinel",
           15000,
           TimeUnit.MILLISECONDS,
           (liveNodes, collectionState) -> collectionState != null);
-      context.stop();
 
-      log.info("Overseer loop finished processing: ");
-      printTimingStats(t);
+      log.info("Overseer loop finished processing");
 
       Overseer overseer = overseers.get(0);
       Stats stats = overseer.getStats();
@@ -1511,8 +1505,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
         if (log.isInfoEnabled()) {
           log.info("op: {}, success: {}, failure: {}", op, stat.success.get(), stat.errors.get());
         }
-        Timer timer = stat.requestTime;
-        printTimingStats(timer);
       }
 
     } finally {
@@ -1520,25 +1512,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       close(mockController);
       close(reader);
     }
-  }
-
-  private void printTimingStats(Timer timer) {
-    Snapshot snapshot = timer.getSnapshot();
-    if (log.isInfoEnabled()) {
-      log.info("\t avgRequestsPerSecond: {}", timer.getMeanRate());
-      log.info("\t 5minRateRequestsPerSecond: {}", timer.getFiveMinuteRate()); // nowarn
-      log.info("\t 15minRateRequestsPerSecond: {}", timer.getFifteenMinuteRate()); // nowarn
-      log.info("\t avgTimePerRequest: {}", nsToMs(snapshot.getMean())); // nowarn
-      log.info("\t medianRequestTime: {}", nsToMs(snapshot.getMedian())); // nowarn
-      log.info("\t 75thPcRequestTime: {}", nsToMs(snapshot.get75thPercentile())); // nowarn
-      log.info("\t 95thPcRequestTime: {}", nsToMs(snapshot.get95thPercentile())); // nowarn
-      log.info("\t 99thPcRequestTime: {}", nsToMs(snapshot.get99thPercentile())); // nowarn
-      log.info("\t 999thPcRequestTime: {}", nsToMs(snapshot.get999thPercentile())); // nowarn
-    }
-  }
-
-  private static long nsToMs(double ns) {
-    return TimeUnit.MILLISECONDS.convert((long) ns, TimeUnit.NANOSECONDS);
   }
 
   private void close(MockZKController mockController) {
@@ -1724,7 +1697,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     updateShardHandlers.add(updateShardHandler);
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
-    httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
+    httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Map.of()));
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
     // Set system property to ensure tests use Overseer mode

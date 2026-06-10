@@ -18,7 +18,6 @@ package org.apache.solr.request;
 
 import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -47,7 +46,6 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** This is the system property for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
   String SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT = "solr.allowPartialResultsDefault";
 
-  // silly getBoolean doesn't take a default.
   /**
    * Users can set {@link SolrQueryRequest#SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT} system property to
    * true, and solr will omit results when any shard fails due query execution limits (time, cpu
@@ -122,13 +120,13 @@ public interface SolrQueryRequest extends AutoCloseable {
   SolrCore getCore();
 
   /** The schema snapshot from core.getLatestSchema() at request creation. */
-  public IndexSchema getSchema();
+  IndexSchema getSchema();
 
   /** Replaces the current schema snapshot with the latest from the core. */
-  public void updateSchemaToLatest();
+  void updateSchemaToLatest();
 
   /** Returns a string representing all the important parameters. Suitable for logging. */
-  public String getParamString();
+  String getParamString();
 
   /**
    * Returns any associated JSON (or null if none) in deserialized generic form. Java classes used
@@ -150,7 +148,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * would contain {segment1:x ,segment2:y}
    */
   default Map<String, String> getPathTemplateValues() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   /**
@@ -160,7 +158,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * @param validateInput , If true it is validated against the json schema spec
    */
   default List<CommandOperation> getCommands(boolean validateInput) {
-    return Collections.emptyList();
+    return List.of();
   }
 
   default String getHttpMethod() {
@@ -188,10 +186,7 @@ public interface SolrQueryRequest extends AutoCloseable {
     return core == null ? null : core.getCoreContainer();
   }
 
-  /**
-   * @deprecated use getCore().getCoreDescriptor().getCloudDescriptor()
-   */
-  @Deprecated
+  /** The CloudDescriptor, which may be different from that of the core on the coordinator. */
   default CloudDescriptor getCloudDescriptor() {
     return getCore().getCoreDescriptor().getCloudDescriptor();
   }
@@ -204,14 +199,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    */
   default QueryResponseWriter getResponseWriter() {
     // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
-    SolrCore core = getCore();
-    String wt = getParams().get(CommonParams.WT);
-    // Use core writers if available, otherwise fall back to built-in writers
-    if (core != null) {
-      return core.getQueryResponseWriter(wt);
-    } else {
-      return ResponseWritersRegistry.getWriter(wt);
-    }
+    return ResponseWritersRegistry.getWriter(getParams().get(CommonParams.WT), getCore());
   }
 
   /**

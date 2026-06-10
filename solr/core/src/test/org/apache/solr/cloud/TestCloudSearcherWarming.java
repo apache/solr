@@ -35,7 +35,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -294,8 +293,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
                 log.info("Checking node: {}", jettySolrRunner.getNodeName());
               }
               if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
-                SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
-                try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
+                try (SolrCore core = jettySolrRunner.getCoreContainer().getCore(coreName)) {
                   assertFalse(
                       "useColdSearcher is enabled! It should not be enabled for this test!",
                       core.getSolrConfig().useColdSearcher);

@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -148,7 +147,7 @@ public class CacheConfig implements MapSerializable {
             if (loadedClass != null) return loadedClass;
             return loadedClass =
                 loader.findClass(
-                    new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
+                    new PluginInfo("cache", Map.of("class", config.cacheImpl)),
                     SolrCache.class,
                     true);
           }

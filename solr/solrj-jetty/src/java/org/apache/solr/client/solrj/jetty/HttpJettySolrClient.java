@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,8 +42,7 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseLis
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
@@ -94,12 +95,8 @@ import org.slf4j.MDC;
 /**
  * An HTTP {@link SolrClient} using Jetty {@link HttpClient}. This is Solr's most mature client for
  * direct HTTP.
- *
- * <p>Despite the name, this client supports HTTP 1.1 and 2 -- toggle with {@link
- * HttpSolrClientBuilderBase#useHttp1_1(boolean)}. In retrospect, the name should have been {@code
- * HttpJettySolrClient}.
  */
-public class HttpJettySolrClient extends HttpSolrClientBase {
+public class HttpJettySolrClient extends HttpSolrClient {
   // formerly known at Http2SolrClient
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -109,6 +106,10 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
    * this client.
    */
   public static final String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.jetty.customizer";
+
+  /** System property to cap the maximum number of outstanding async HTTP requests. Default 1000. */
+  public static final String ASYNC_REQUESTS_MAX_SYSPROP =
+      "solr.solrj.http.jetty.async_requests.max";
 
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
@@ -439,7 +440,17 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
           @Override
           public void onFailure(Response response, Throwable failure) {
             super.onFailure(response, failure);
-            future.completeExceptionally(new SolrServerException(failure.getMessage(), failure));
+            // Dispatch off the IO thread to avoid blocking semaphore.acquire() on retry.
+            // Fall back to IO thread if executor rejects (shutdown/overloaded).
+            SolrServerException ex = new SolrServerException(failure.getMessage(), failure);
+            try {
+              executor.execute(() -> future.completeExceptionally(ex));
+            } catch (RejectedExecutionException ree) {
+              log.warn(
+                  "Failed to complete future exceptionally due to executor rejection, completing on IO thread.",
+                  ree);
+              future.completeExceptionally(ex);
+            }
           }
         });
 
@@ -497,6 +508,10 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
             "IOException occurred when talking to server at: " + url, cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (IllegalStateException e) {
+      // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
+      abortCause = e;
+      throw new SolrServerException("Connection lost at: " + url, new IOException(e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
@@ -540,8 +555,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public HttpSolrClientBuilderBase<?, ?> builder() {
-    return new HttpJettySolrClient.Builder().withHttpClient(this);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJettySolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   // merely exposing for superclass's method visibility to this package
@@ -564,7 +579,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
   // merely exposing for superclass's method visibility to this package
   protected static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
-    return HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
+    return HttpSolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
   }
 
   private NamedList<Object> processErrorsAndResponse(
@@ -606,7 +621,19 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   protected void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    req.headers(h -> h.remove(HttpHeader.ACCEPT_ENCODING));
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      req.headers(h -> customHeaders.forEach(h::add));
+    }
+    // note: if subsequent headers already added, the existing values win (first value considered)
+    req.headers(
+        h -> {
+          h.add(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+          // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+          h.add(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+        });
+
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
@@ -625,11 +652,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     if (isAsync) {
       req.onRequestQueued(asyncTracker.queuedListener);
       req.onComplete(asyncTracker.completeListener);
-    }
-
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      req.headers(h -> headers.forEach(h::add));
     }
   }
 
@@ -834,7 +856,21 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   private static class AsyncTracker {
-    private static final int MAX_OUTSTANDING_REQUESTS = 1000;
+    /**
+     * Read per-instance so that tests can set the sysprop before constructing a client and have it
+     * take effect without relying on class-load ordering across test suites in the same JVM.
+     */
+    private final int maxOutstandingRequests;
+
+    /**
+     * Request attribute key used to guard idempotency across both listeners. Set immediately after
+     * {@code phaser.register()} — before {@code available.acquire()} — so that {@code onComplete}
+     * can never fire between registration and attribute-set and leave a phaser party stranded.
+     * Jetty can re-fire {@code onRequestQueued} for the same exchange (e.g. after a GOAWAY retry);
+     * the attribute makes the second call a no-op. {@code onComplete} always fires exactly once and
+     * uses the attribute to call {@code arriveAndDeregister()} + {@code release()} exactly once.
+     */
+    private static final String PERMIT_ACQUIRED_ATTR = "solr.async_tracker.permit_acquired";
 
     // wait for async requests
     private final Phaser phaser;
@@ -845,37 +881,74 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
     AsyncTracker() {
       // TODO: what about shared instances?
+      maxOutstandingRequests = EnvUtils.getPropertyAsInteger(ASYNC_REQUESTS_MAX_SYSPROP, 1000);
       phaser = new Phaser(1);
-      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
+      available = new Semaphore(maxOutstandingRequests, false);
       queuedListener =
           request -> {
+            if (request.getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
+              return;
+            }
             phaser.register();
+            // Set the attribute before acquire() so onComplete can never race between
+            // phaser.register() and attribute-set, which would strand a phaser party forever.
+            request.attribute(PERMIT_ACQUIRED_ATTR, Boolean.TRUE);
             try {
               available.acquire();
-            } catch (InterruptedException ignored) {
-
+            } catch (InterruptedException e) {
+              // completeListener will call arriveAndDeregister() when onComplete fires.
+              Thread.currentThread().interrupt();
             }
           };
       completeListener =
           result -> {
-            phaser.arriveAndDeregister();
-            available.release();
+            if (result != null
+                && result.getRequest().getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
+              phaser.arriveAndDeregister();
+              available.release();
+            }
           };
     }
 
     int getMaxRequestsQueuedPerDestination() {
       // comfortably above max outstanding requests
-      return MAX_OUTSTANDING_REQUESTS * 3;
+      return maxOutstandingRequests * 3;
+    }
+
+    int maxPermits() {
+      return maxOutstandingRequests;
+    }
+
+    int availablePermits() {
+      return available.availablePermits();
     }
 
     public void waitForComplete() {
-      phaser.arriveAndAwaitAdvance();
+      // Use awaitAdvanceInterruptibly() instead of arriveAndAwaitAdvance() so that
+      // ExecutorUtil.shutdownNow() can unblock this during container shutdown.
+      int phase = phaser.arrive();
+      try {
+        phaser.awaitAdvanceInterruptibly(phase);
+      } catch (InterruptedException e) {
+        // Terminate phaser on interrupt so in-flight onComplete callbacks don't stall.
+        phaser.forceTermination();
+        Thread.currentThread().interrupt();
+      }
       phaser.arriveAndDeregister();
     }
   }
 
-  public static class Builder
-      extends HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient> {
+  /** Returns the configured maximum number of outstanding async requests. */
+  public int asyncTrackerMaxPermits() {
+    return asyncTracker.maxPermits();
+  }
+
+  /** Returns the number of currently available async-request permits. */
+  public int asyncTrackerAvailablePermits() {
+    return asyncTracker.availablePermits();
+  }
+
+  public static class Builder extends BuilderBase<Builder, HttpJettySolrClient> {
 
     private HttpClient httpClient;
 
@@ -937,8 +1010,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    public HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient>
-        withSSLConfig(SSLConfig sslConfig) {
+    public BuilderBase<Builder, HttpJettySolrClient> withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
       return this;
     }
@@ -974,7 +1046,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return null;
     }
 
-    protected <B extends HttpSolrClientBase> B build(Class<B> type) {
+    protected <B extends HttpSolrClient> B build(Class<B> type) {
       return type.cast(build());
     }
 

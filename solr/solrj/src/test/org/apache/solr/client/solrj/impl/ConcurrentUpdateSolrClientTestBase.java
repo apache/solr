@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,9 +46,11 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
@@ -59,10 +63,10 @@ import org.slf4j.LoggerFactory;
 public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public abstract HttpSolrClientBase solrClient(Integer overrideIdleTimeoutMs);
+  public abstract HttpSolrClient solrClient(Integer overrideIdleTimeoutMs);
 
   public abstract ConcurrentUpdateBaseSolrClient concurrentClient(
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       String baseUrl,
       String defaultCollection,
       int queueSize,
@@ -73,7 +77,7 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
       String serverUrl,
       int queueSize,
       int threadCount,
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       AtomicInteger successCounter,
       AtomicInteger failureCounter,
       StringBuilder errors);
@@ -191,7 +195,11 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @AfterClass

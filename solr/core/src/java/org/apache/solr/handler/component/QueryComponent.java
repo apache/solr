@@ -26,7 +26,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -1004,7 +1003,7 @@ public class QueryComponent extends SearchComponent {
               .filter(field -> !field.equals(SolrReturnFields.SCORE))
               .collect(Collectors.toSet());
     } else {
-      scoreDependentFields = Collections.emptySet();
+      scoreDependentFields = Set.of();
     }
 
     IndexSchema schema = rb.req.getSchema();

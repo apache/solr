@@ -43,8 +43,7 @@ public class Aliases {
    * aliases are removed. The -1 version makes it subordinate to any real version, and furthermore
    * we never "set" this EMPTY instance into ZK.
    */
-  public static final Aliases EMPTY =
-      new Aliases(Collections.emptyMap(), Collections.emptyMap(), -1);
+  public static final Aliases EMPTY = new Aliases(Map.of(), Map.of(), -1);
 
   // These two constants correspond to the top level elements in aliases.json. The first one denotes
   // a section containing a list of aliases and their attendant collections, the second contains a
@@ -97,11 +96,11 @@ public class Aliases {
     Map<String, Map> aliasMap = (Map<String, Map>) Utils.fromJSON(bytes);
 
     @SuppressWarnings({"rawtypes"})
-    Map colAliases = aliasMap.getOrDefault(COLLECTION, Collections.emptyMap());
+    Map colAliases = aliasMap.getOrDefault(COLLECTION, Map.of());
     colAliases = convertMapOfCommaDelimitedToMapOfList(colAliases); // also unmodifiable
 
     Map<String, Map<String, String>> colMeta =
-        aliasMap.getOrDefault(COLLECTION_METADATA, Collections.emptyMap());
+        new LinkedHashMap<>(aliasMap.getOrDefault(COLLECTION_METADATA, Map.of()));
     colMeta.replaceAll((k, metaMap) -> Collections.unmodifiableMap(metaMap));
 
     return new Aliases(colAliases, colMeta, zNodeVersion);
@@ -190,7 +189,7 @@ public class Aliases {
    */
   public Map<String, String> getCollectionAliasProperties(String alias) {
     // Note: map is already unmodifiable; it can be shared safely
-    return collectionAliasProperties.getOrDefault(alias, Collections.emptyMap());
+    return collectionAliasProperties.getOrDefault(alias, Map.of());
   }
 
   /**
@@ -277,7 +276,7 @@ public class Aliases {
     // Due to another level of indirection, this is more complicated...
     List<String> level1 = collectionAliasListMap.get(aliasName);
     if (level1 == null) {
-      return Collections.singletonList(aliasName); // is a collection
+      return List.of(aliasName); // is a collection
     }
     // avoid allocating objects if possible
     LinkedHashSet<String> uniqueResult = null;
@@ -411,7 +410,7 @@ public class Aliases {
       }
     }
     if (level1 == null) { // create an alias that points to the collection
-      newColAliases.put(after, Collections.singletonList(before));
+      newColAliases.put(after, List.of(before));
     }
     return new Aliases(newColAliases, newColProperties, zNodeVersion);
   }
@@ -431,8 +430,11 @@ public class Aliases {
    */
   public Aliases cloneWithCollectionAliasProperties(
       String alias, String propertiesKey, String propertiesValue) {
-    return cloneWithCollectionAliasProperties(
-        alias, Collections.singletonMap(propertiesKey, propertiesValue));
+    // Use a HashMap to allow null propertiesValue (null means remove the key in the map-based
+    // overload)
+    Map<String, String> props = new LinkedHashMap<>();
+    props.put(propertiesKey, propertiesValue);
+    return cloneWithCollectionAliasProperties(alias, props);
   }
 
   /**
@@ -460,7 +462,7 @@ public class Aliases {
     Map<String, Map<String, String>> newColProperties =
         new LinkedHashMap<>(this.collectionAliasProperties); // clone to modify
     Map<String, String> newMetaMap =
-        new LinkedHashMap<>(newColProperties.getOrDefault(alias, Collections.emptyMap()));
+        new LinkedHashMap<>(newColProperties.getOrDefault(alias, Map.of()));
     for (Map.Entry<String, String> metaEntry : properties.entrySet()) {
       if (metaEntry.getValue() != null) {
         newMetaMap.put(metaEntry.getKey(), metaEntry.getValue());

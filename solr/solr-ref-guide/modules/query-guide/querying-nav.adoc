@@ -33,6 +33,7 @@
 ** xref:join-query-parser.adoc[]
 ** xref:spatial-search.adoc[]
 ** xref:dense-vector-search.adoc[]
+*** xref:text-to-vector.adoc[]
 ** xref:other-parsers.adoc[]
 ** xref:sql-query.adoc[]
 *** xref:jdbc-dbvisualizer.adoc[]
@@ -53,6 +54,7 @@
 ** xref:terms-component.adoc[]
 ** xref:term-vector-component.adoc[]
 ** xref:stats-component.adoc[]
+** xref:matched-queries-component.adoc[]
 
 * Controlling Results
 ** xref:faceting.adoc[]

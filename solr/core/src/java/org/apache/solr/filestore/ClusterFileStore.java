@@ -18,6 +18,7 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
 
@@ -30,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.JerseyResource;
@@ -43,6 +45,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -207,6 +210,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   }
 
   @SuppressWarnings("fallthrough")
+  @SuppressForbidden(reason = "singletonMap with null value is intentional")
   public static FileStoreDirectoryListingResponse getMetadata(
       FileStore.FileType type, String path, FileStore fileStore) {
     final var dirListingResponse = new FileStoreDirectoryListingResponse();
@@ -225,15 +229,16 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
         String parentPath = path.substring(0, path.lastIndexOf('/'));
         List<FileStore.FileDetails> l = fileStore.list(parentPath, s -> s.equals(fileName));
 
-        dirListingResponse.files =
-            Collections.singletonMap(path, l.isEmpty() ? null : convertToResponse(l.get(0)));
+        FileStoreEntryMetadata entry = l.isEmpty() ? null : convertToResponse(l.get(0));
+        dirListingResponse.files = Collections.singletonMap(path, entry);
         break;
       case DIRECTORY:
         final var directoryContents =
             fileStore.list(path, null).stream()
                 .map(details -> convertToResponse(details))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        dirListingResponse.files = Collections.singletonMap(path, directoryContents);
+        dirListingResponse.files = Map.of(path, directoryContents);
         break;
     }
 
@@ -251,8 +256,18 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       return entryMetadata;
     }
 
-    entryMetadata.size = details.size();
-    entryMetadata.timestamp = details.getTimeStamp();
+    long size = details.size();
+    if (size < 0) {
+      // File was deleted concurrently between listing and reading its attributes.
+      return null;
+    }
+    final var timestamp = details.getTimeStamp();
+    if (timestamp == null) {
+      // File was deleted concurrently between reading its size and timestamp.
+      return null;
+    }
+    entryMetadata.size = size;
+    entryMetadata.timestamp = timestamp;
     if (details.getMetaData() != null) {
       details.getMetaData().toMap(entryMetadata.unknownProperties());
     }
@@ -320,6 +335,19 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     if (path == null) {
       path = "";
     }
+
+    // Ensure 'getFrom' points to a node in this cluster
+    final var zkStateReader = coreContainer.getZkController().getZkStateReader();
+    if (StrUtils.isNotBlank(getFrom)
+        && !getFrom.equals("*")
+        && !zkStateReader.isNodeLive(getFrom)) {
+      throw new SolrException(
+          BAD_REQUEST,
+          "File store cannot fetch from source node ["
+              + getFrom
+              + "] as it does not appear in live-nodes");
+    }
+
     pullFileFromNode(coreContainer, fileStore, path, getFrom);
     return response;
   }

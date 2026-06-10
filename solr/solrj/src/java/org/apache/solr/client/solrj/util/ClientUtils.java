@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -69,7 +70,7 @@ public class ClientUtils {
       SolrRequest<?> solrRequest, String serverRootUrl, String collection)
       throws MalformedURLException {
 
-    String basePath = serverRootUrl;
+    String basePath = Objects.requireNonNull(serverRootUrl);
     if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
       basePath = addNormalV2ApiRoot(basePath);
     }

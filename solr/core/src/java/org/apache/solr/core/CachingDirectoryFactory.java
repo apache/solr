@@ -95,14 +95,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   protected Set<CacheValue> removeEntries = new HashSet<>();
 
-  private Double maxWriteMBPerSecFlush;
-
-  private Double maxWriteMBPerSecMerge;
-
-  private Double maxWriteMBPerSecRead;
-
-  private Double maxWriteMBPerSecDefault;
-
   private boolean closed;
 
   public interface CloseListener {
@@ -471,11 +463,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   @Override
   public void init(NamedList<?> args) {
-    maxWriteMBPerSecFlush = (Double) args.get("maxWriteMBPerSecFlush");
-    maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
-    maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");
-    maxWriteMBPerSecDefault = (Double) args.get("maxWriteMBPerSecDefault");
-
     // override global config
     if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
       dataHomePath =

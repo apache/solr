@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.emptyMap;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -47,7 +45,7 @@ class SecurityNodeWatcher implements Watcher {
           ZkStateReader.ConfigData cd = new ZkStateReader.ConfigData();
           cd.data =
               data.data == null || data.data.length == 0
-                  ? emptyMap()
+                  ? Map.of()
                   : Utils.getDeepCopy((Map) Utils.fromJSON(data.data), 4, false);
           cd.version = data.stat == null ? -1 : data.stat.getVersion();
           securityData = cd;
@@ -101,7 +99,7 @@ class SecurityNodeWatcher implements Watcher {
   @SuppressWarnings("unchecked")
   ZkStateReader.ConfigData getSecurityProps(boolean getFresh) {
     if (!getFresh) {
-      if (securityData == null) return new ZkStateReader.ConfigData(emptyMap(), -1);
+      if (securityData == null) return new ZkStateReader.ConfigData(Map.of(), -1);
       return new ZkStateReader.ConfigData(securityData.data, securityData.version);
     }
     try {

@@ -17,12 +17,17 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
+
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.request.SolrQueryRequest;
 
 public class AdminCmdContext {
   private final CollectionParams.CollectionAction action;
   private final String asyncId;
+  private String lockId;
+  private String callingLockId;
   private ClusterState clusterState;
 
   public AdminCmdContext(CollectionParams.CollectionAction action) {
@@ -34,12 +39,37 @@ public class AdminCmdContext {
     this.asyncId = asyncId;
   }
 
+  public AdminCmdContext(
+      CollectionParams.CollectionAction action, String asyncId, SolrQueryRequest req) {
+    this.action = action;
+    this.asyncId = asyncId;
+    this.withCallingLockId((String) req.getContext().get(CALLING_LOCK_ID_HEADER));
+  }
+
   public CollectionParams.CollectionAction getAction() {
     return action;
   }
 
   public String getAsyncId() {
     return asyncId;
+  }
+
+  public AdminCmdContext withLockId(String lockId) {
+    this.lockId = lockId;
+    return this;
+  }
+
+  public String getLockId() {
+    return lockId;
+  }
+
+  public AdminCmdContext withCallingLockId(String callingLockId) {
+    this.callingLockId = callingLockId;
+    return this;
+  }
+
+  public String getCallingLockId() {
+    return callingLockId;
   }
 
   public ClusterState getClusterState() {
@@ -57,7 +87,9 @@ public class AdminCmdContext {
 
   public AdminCmdContext subRequestContext(
       CollectionParams.CollectionAction action, String asyncId) {
-    AdminCmdContext nextContext = new AdminCmdContext(action, asyncId);
-    return nextContext.withClusterState(clusterState);
+    return new AdminCmdContext(action, asyncId)
+        .withCallingLockId(callingLockId)
+        .withLockId(lockId)
+        .withClusterState(clusterState);
   }
 }

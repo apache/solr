@@ -16,21 +16,10 @@
  */
 package org.apache.solr.servlet;
 
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.util.SolrJettyTestRule;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -38,51 +27,36 @@ public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
-  protected HttpRequestBase getSelectMethod(String method, String... params) {
-    HttpRequestBase m = null;
+  protected String getSelectUrl(String... params) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(solrTestRule.getBaseUrl());
+    sb.append("/");
+    sb.append(DEFAULT_TEST_COLLECTION_NAME);
+    sb.append("/select?");
 
-    ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
     if (params.length == 0) {
-      qparams.add(new BasicNameValuePair("q", "solr"));
-      qparams.add(new BasicNameValuePair("qt", "standard"));
-    }
-    for (int i = 0; i < params.length / 2; i++) {
-      qparams.add(new BasicNameValuePair(params[i * 2], params[i * 2 + 1]));
-    }
-
-    URI uri =
-        URI.create(
-            solrTestRule.getBaseUrl()
-                + "/"
-                + DEFAULT_TEST_COLLECTION_NAME
-                + "/select?"
-                + URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
-
-    if ("GET".equals(method)) {
-      m = new HttpGet(uri);
-    } else if ("HEAD".equals(method)) {
-      m = new HttpHead(uri);
-    } else if ("POST".equals(method)) {
-      m = new HttpPost(uri);
+      sb.append("q=solr&qt=standard");
+    } else {
+      for (int i = 0; i < params.length / 2; i++) {
+        if (i > 0) sb.append("&");
+        sb.append(params[i * 2]);
+        sb.append("=");
+        sb.append(params[i * 2 + 1]);
+      }
     }
 
-    return m;
+    return sb.toString();
   }
 
   protected HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) solrTestRule.getSolrClient();
-    return client.getHttpClient();
+    return solrTestRule.getJetty().getSolrClient().getHttpClient();
   }
 
-  protected void checkResponseBody(String method, HttpResponse resp) throws Exception {
-    String responseBody = "";
-
-    if (resp.getEntity() != null) {
-      responseBody = EntityUtils.toString(resp.getEntity());
-    }
+  protected void checkResponseBody(String method, ContentResponse resp) throws Exception {
+    String responseBody = resp.getContentAsString();
 
     if ("GET".equals(method)) {
-      switch (resp.getStatusLine().getStatusCode()) {
+      switch (resp.getStatus()) {
         case 200:
           assertTrue(
               "Response body was empty for method " + method,
@@ -100,7 +74,7 @@ public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
           break;
         default:
           System.err.println(responseBody);
-          assertEquals("Unknown request response", 0, resp.getStatusLine().getStatusCode());
+          assertEquals("Unknown request response", 0, resp.getStatus());
       }
     }
     if ("HEAD".equals(method)) {
