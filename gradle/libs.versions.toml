@@ -44,7 +44,7 @@ apache-opennlp = "2.5.9"
 apache-rat = "0.15"
 apache-tika = "3.2.3"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.4"
+apache-zookeeper = "3.9.5"
 # @keep for version alignment
 apiguardian = "1.1.2"
 # @keep Asciidoctor mathjax version used in ref-guide
@@ -163,7 +163,7 @@ mockito = "5.23.0"
 morethan-jmhreport = "0.9.6"
 mvikotlin = "4.3.0"
 navsecurity = "0.5.10"
-netty = "4.2.12.Final"
+netty = "4.2.15.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.75.Final"
 nimbusds-josejwt = "10.5"
