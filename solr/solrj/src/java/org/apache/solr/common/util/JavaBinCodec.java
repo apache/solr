@@ -1456,15 +1456,12 @@ public class JavaBinCodec implements PushWriter {
     boolean wantsAllFields();
   }
 
-  public static class StringCache {
-    private final Cache<StringBytes, String> cache;
-
-    public StringCache(Cache<StringBytes, String> cache) {
-      this.cache = cache;
-    }
-
+  /**
+   * @lucene.internal
+   */
+  public abstract static class StringCache {
     public String get(StringBytes b) {
-      String result = cache.get(b);
+      String result = getFromCache(b);
       if (result == null) {
         // make a copy because the buffer received may be changed later by the caller
         StringBytes copy =
@@ -1473,10 +1470,14 @@ public class JavaBinCodec implements PushWriter {
         CharArr arr = new CharArr();
         ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
         result = arr.toString();
-        cache.put(copy, result);
+        putIntoCache(copy, result);
       }
       return result;
     }
+
+    protected abstract String getFromCache(StringBytes b);
+
+    protected abstract void putIntoCache(StringBytes b, String val);
   }
 
   @Override
