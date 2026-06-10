@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.solr.common.SolrCloseable;
@@ -91,8 +92,10 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
       // owns this ObjectCache, which is useful for plugins to register objects
       // which should be closed before being garbage-collected.
       for (Object value : map.values()) {
-        if (value instanceof Closeable) {
-          ((Closeable) value).close();
+        if (value instanceof Closeable closeable) {
+          closeable.close();
+        } else if (value instanceof ExecutorService executor) {
+          ExecutorUtil.shutdownAndAwaitTermination(executor);
         }
       }
       map.clear();
