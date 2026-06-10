@@ -23,9 +23,8 @@ import java.util.Map;
 import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -37,7 +36,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SSLTestConfig;
-import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -47,11 +45,6 @@ import org.junit.Test;
 @SuppressSSL
 @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
-
-  @After
-  public void afterTest() {
-    HttpClientUtil.resetHttpClientBuilder(); // also resets SocketFactoryRegistryProvider
-  }
 
   @Test
   public void test() throws Exception {
@@ -69,8 +62,6 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       runner.stop();
     }
 
-    HttpClientUtil.setSocketFactoryRegistryProvider(
-        sslConfig.buildClientSocketFactoryRegistryProvider()); // we reset in After
     for (int i = 0; i < this.jettys.size(); i++) {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config =
@@ -128,12 +119,14 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String[] urls =
+    LBSolrClient.Endpoint[] urls =
         getReplicas().stream()
             .map(r -> r.getStr(ZkStateReader.BASE_URL_PROP))
-            .toArray(String[]::new);
-    // Create new SolrServer to configure new HttpClient w/ SSL config
-    try (SolrClient client = new LBHttpSolrClient.Builder().withBaseEndpoints(urls).build()) {
+            .map(LBSolrClient.Endpoint::new)
+            .toArray(LBSolrClient.Endpoint[]::new);
+    // Create new HttpClient w/ SSL config
+    try (var client =
+        new LBJettySolrClient.Builder(jettys.getFirst().getSolrClient(), urls).build()) {
       client.request(request);
     }
   }

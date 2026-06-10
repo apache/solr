@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -208,37 +207,9 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
   public void testBuilderImplicitBehavior() throws Exception {
     try (CloudSolrClient client =
-        new CloudLegacySolrClient.Builder(
-                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build()) {
-      assertTrue(client.isUpdatesToLeaders());
-    }
-    try (CloudSolrClient client =
         new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build()) {
       assertTrue(client.isUpdatesToLeaders());
-    }
-  }
-
-  public void testLegacyClientThatDefaultsToLeaders() throws Exception {
-    try (CloudSolrClient client =
-        new CloudLegacySolrClient.Builder(
-                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .sendUpdatesOnlyToShardLeaders()
-            .build()) {
-      checkUpdatesDefaultToLeaders(client);
-      checkUpdatesWithSendToLeadersFalse(client);
-    }
-  }
-
-  public void testLegacyClientThatDoesNotDefaultToLeaders() throws Exception {
-    try (CloudSolrClient client =
-        new CloudLegacySolrClient.Builder(
-                List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .sendUpdatesToAnyReplica()
-            .build()) {
-      checkUpdatesWithShardsPrefPull(client);
-      checkUpdatesWithSendToLeadersFalse(client);
     }
   }
 
