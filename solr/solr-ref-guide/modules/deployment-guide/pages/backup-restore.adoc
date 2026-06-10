@@ -907,3 +907,11 @@ Azure AD application secret for Service Principal authentication.
 |===
 +
 Default path prefix within the container for backup storage.
+
+The target container must already exist; it is not created automatically.
+
+==== Known Limitation: Azure Identity and the Security Manager
+
+Azure Identity authentication (Managed Identity, Service Principal, and `DefaultAzureCredential`) does not work when Solr is started with the Java Security Manager enabled, which is the default (`SOLR_SECURITY_MANAGER_ENABLED=true`).
+To use Azure Identity, set `SOLR_SECURITY_MANAGER_ENABLED=false` before starting Solr.
+The Connection String, Account Key, and SAS Token authentication methods are unaffected and work with the Security Manager enabled.

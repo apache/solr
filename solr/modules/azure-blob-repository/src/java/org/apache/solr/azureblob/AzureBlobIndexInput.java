@@ -143,12 +143,7 @@ class AzureBlobIndexInput extends BufferedIndexInput {
           "read past EOF: pos=" + targetAbsolutePos + " vs end=" + (absoluteOffset + length));
     }
 
-    try {
-      inputStream = client.pullRangeStream(path, targetAbsolutePos, remaining);
-    } catch (AzureBlobException e) {
-      throw new IOException(
-          "Failed to open range stream for " + path + " at offset " + targetAbsolutePos, e);
-    }
+    inputStream = client.pullRangeStream(path, targetAbsolutePos, remaining);
     streamAbsolutePos = targetAbsolutePos;
   }
 

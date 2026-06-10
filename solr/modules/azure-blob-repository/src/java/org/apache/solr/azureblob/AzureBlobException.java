@@ -16,11 +16,17 @@
  */
 package org.apache.solr.azureblob;
 
+import java.io.IOException;
+
 /**
  * Generic exception for Blob Storage related failures. Could originate from the {@link
  * AzureBlobBackupRepository} or from its underlying {@link AzureBlobStorageClient}.
  */
-public class AzureBlobException extends Exception {
+public class AzureBlobException extends IOException {
+  public AzureBlobException(Throwable cause) {
+    super(cause);
+  }
+
   public AzureBlobException(String message) {
     super(message);
   }

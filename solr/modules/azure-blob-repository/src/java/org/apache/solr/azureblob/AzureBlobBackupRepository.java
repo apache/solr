@@ -29,6 +29,9 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -146,11 +149,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Create directory '{}'", blobPath);
     }
 
-    try {
-      client.createDirectory(blobPath);
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to create directory " + blobPath, e);
-    }
+    client.createDirectory(blobPath);
   }
 
   @Override
@@ -163,11 +162,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Delete directory '{}'", blobPath);
     }
 
-    try {
-      client.deleteDirectory(blobPath);
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to delete directory " + blobPath, e);
-    }
+    client.deleteDirectory(blobPath);
   }
 
   @Override
@@ -177,13 +172,9 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
 
     String basePath = getBlobPath(path);
 
-    try {
-      if (!client.isDirectory(basePath)) {
-        int lastSlash = basePath.lastIndexOf('/');
-        basePath = lastSlash >= 0 ? basePath.substring(0, lastSlash) : "";
-      }
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to check path type for " + basePath, e);
+    if (!client.isDirectory(basePath)) {
+      int lastSlash = basePath.lastIndexOf('/');
+      basePath = lastSlash >= 0 ? basePath.substring(0, lastSlash) : "";
     }
 
     final String prefix;
@@ -202,11 +193,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Delete files '{}'", fullPaths);
     }
 
-    try {
-      client.delete(fullPaths);
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to delete files " + fullPaths, e);
-    }
+    client.delete(fullPaths);
   }
 
   @Override
@@ -219,11 +206,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Check existence '{}'", blobPath);
     }
 
-    try {
-      return client.pathExists(blobPath);
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to check existence of " + blobPath, e);
-    }
+    return client.pathExists(blobPath);
   }
 
   @Override
@@ -236,14 +219,10 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Get path type '{}'", blobPath);
     }
 
-    try {
-      if (client.isDirectory(blobPath)) {
-        return BackupRepository.PathType.DIRECTORY;
-      } else {
-        return BackupRepository.PathType.FILE;
-      }
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to get path type for " + blobPath, e);
+    if (client.isDirectory(blobPath)) {
+      return BackupRepository.PathType.DIRECTORY;
+    } else {
+      return BackupRepository.PathType.FILE;
     }
   }
 
@@ -257,11 +236,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("List all '{}'", blobPath);
     }
 
-    try {
-      return client.listDir(blobPath);
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to list directory " + blobPath, e);
-    }
+    return client.listDir(blobPath);
   }
 
   @Override
@@ -276,11 +251,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Open input '{}'", blobPath);
     }
 
-    try {
-      return new AzureBlobIndexInput(client, blobPath, client.length(blobPath));
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to open input stream for " + blobPath, e);
-    }
+    return new AzureBlobIndexInput(client, blobPath, client.length(blobPath));
   }
 
   @Override
@@ -293,11 +264,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Create output '{}'", blobPath);
     }
 
-    try {
-      return client.pushStream(blobPath);
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to create output stream for " + blobPath, e);
-    }
+    return client.pushStream(blobPath);
   }
 
   @Override
@@ -330,18 +297,29 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       // ignore; write will surface real issues
     }
 
-    try (IndexInput input = sourceDir.openInput(sourceFileName, IOContext.DEFAULT);
-        OutputStream output = client.pushStream(blobPath)) {
-      byte[] buffer = new byte[COPY_BUFFER_SIZE];
-      long remaining = input.length();
-      while (remaining > 0) {
-        int toRead = (int) Math.min(buffer.length, remaining);
-        input.readBytes(buffer, 0, toRead);
-        output.write(buffer, 0, toRead);
-        remaining -= toRead;
+    try (IndexInput input =
+        shouldVerifyChecksum
+            ? sourceDir.openChecksumInput(sourceFileName)
+            : sourceDir.openInput(sourceFileName, IOContext.READONCE)) {
+      if (input.length() <= CodecUtil.footerLength()) {
+        throw new CorruptIndexException("file is too small:" + input.length(), input);
       }
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to copy file from " + sourceFileName + " to " + blobPath, e);
+
+      try (OutputStream output = client.pushStream(blobPath)) {
+        byte[] buffer = new byte[COPY_BUFFER_SIZE];
+        long remaining =
+            shouldVerifyChecksum ? input.length() - CodecUtil.footerLength() : input.length();
+        while (remaining > 0) {
+          int toRead = (int) Math.min(buffer.length, remaining);
+          input.readBytes(buffer, 0, toRead);
+          output.write(buffer, 0, toRead);
+          remaining -= toRead;
+        }
+        if (shouldVerifyChecksum) {
+          long checksum = CodecUtil.checkFooter((ChecksumIndexInput) input);
+          writeFooter(checksum, output);
+        }
+      }
     }
   }
 
@@ -379,8 +357,6 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       while ((len = inputStream.read(buffer)) != -1) {
         indexOutput.writeBytes(buffer, 0, len);
       }
-    } catch (AzureBlobException e) {
-      throw new IOException("Failed to copy file from " + blobPath + " to " + destFileName, e);
     }
 
     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
@@ -402,5 +378,34 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       throw new IllegalArgumentException("URI must begin with 'blob:' scheme");
     }
     return uri.getPath();
+  }
+
+  private void writeFooter(long checksum, OutputStream outputStream) throws IOException {
+    IndexOutput out =
+        new IndexOutput("", "") {
+          @Override
+          public void writeByte(byte b) throws IOException {
+            outputStream.write(b);
+          }
+
+          @Override
+          public void writeBytes(byte[] b, int offset, int length) throws IOException {
+            outputStream.write(b, offset, length);
+          }
+
+          @Override
+          public void close() {}
+
+          @Override
+          public long getFilePointer() {
+            return 0;
+          }
+
+          @Override
+          public long getChecksum() {
+            return checksum;
+          }
+        };
+    CodecUtil.writeFooter(out);
   }
 }

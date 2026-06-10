@@ -16,6 +16,7 @@
  */
 package org.apache.solr.azureblob;
 
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -137,21 +138,6 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
     assertTrue("Should find file2.txt", allFiles.contains(dirPath + "file2.txt"));
     assertTrue("Should find subdir1/file3.txt", allFiles.contains(dirPath + "subdir1/file3.txt"));
     assertTrue("Should find subdir2/file4.txt", allFiles.contains(dirPath + "subdir2/file4.txt"));
-  }
-
-  private void listAllRecursive(String dirPath, Set<String> allFiles) throws AzureBlobException {
-    String[] files = client.listDir(dirPath);
-    for (String file : files) {
-      String fullPath = dirPath + file;
-      if (file.endsWith("/")) {
-        // It's a directory
-        allFiles.add(fullPath);
-        listAllRecursive(fullPath, allFiles);
-      } else {
-        // It's a file
-        allFiles.add(fullPath);
-      }
-    }
   }
 
   /** Happy path: {@code delete()} of a single existing file removes it. */
@@ -293,6 +279,82 @@ public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
       String sanitizedPath = client.sanitizedDirPath(dirPath);
       assertNotNull("Sanitized directory path should not be null", sanitizedPath);
       assertTrue("Sanitized directory path should end with slash", sanitizedPath.endsWith("/"));
+    }
+  }
+
+  /** {@code createURI()} normalizes plain, leading-slash, and already-schemed locations alike. */
+  @Test
+  public void testCreateUri() throws Exception {
+    try (AzureBlobBackupRepository repository = new AzureBlobBackupRepository()) {
+      assertEquals("/loc", repository.createURI("loc").getPath());
+      assertEquals("/loc", repository.createURI("/loc").getPath());
+      assertEquals("/loc", repository.createURI("blob:/loc").getPath());
+      assertEquals("blob", repository.createURI("loc").getScheme());
+
+      // createDirectoryURI appends a trailing slash.
+      assertEquals("/loc/", repository.createDirectoryURI("loc").getPath());
+    }
+  }
+
+  /** {@code resolve()} joins nested components in order under the base path. */
+  @Test
+  public void testResolveNestedComponents() throws Exception {
+    try (AzureBlobBackupRepository repository = new AzureBlobBackupRepository()) {
+      URI base = repository.createURI("loc");
+
+      assertEquals("/loc/a/b/c", repository.resolve(base, "a", "b", "c").getPath());
+    }
+  }
+
+  /** Redundant slashes in components are collapsed by {@code resolve()} (no {@code //}). */
+  @Test
+  public void testResolveCollapsesRedundantSlashes() throws Exception {
+    try (AzureBlobBackupRepository repository = new AzureBlobBackupRepository()) {
+      URI base = repository.createURI("loc");
+
+      URI resolved = repository.resolve(base, "a/", "b");
+      assertEquals("/loc/a/b", resolved.getPath());
+      assertFalse("resolved path should not contain '//'", resolved.getPath().contains("//"));
+    }
+  }
+
+  /** {@code resolveDirectory()} guarantees a trailing slash on the final component. */
+  @Test
+  public void testResolveDirectoryAppendsTrailingSlash() throws Exception {
+    try (AzureBlobBackupRepository repository = new AzureBlobBackupRepository()) {
+      URI base = repository.createURI("loc");
+
+      assertEquals("/loc/sub/", repository.resolveDirectory(base, "sub").getPath());
+    }
+  }
+
+  /**
+   * {@code resolveDirectory()} with no components keeps a single trailing slash and never produces
+   * a doubled separator.
+   */
+  @Test
+  public void testResolveDirectoryEmptyComponents() throws Exception {
+    try (AzureBlobBackupRepository repository = new AzureBlobBackupRepository()) {
+      URI base = repository.createDirectoryURI("loc");
+
+      URI resolved = repository.resolveDirectory(base);
+      assertEquals("/loc/", resolved.getPath());
+      assertFalse("resolved path should not contain '//'", resolved.getPath().contains("//"));
+    }
+  }
+
+  private void listAllRecursive(String dirPath, Set<String> allFiles) throws AzureBlobException {
+    String[] files = client.listDir(dirPath);
+    for (String file : files) {
+      String fullPath = dirPath + file;
+      if (file.endsWith("/")) {
+        // It's a directory
+        allFiles.add(fullPath);
+        listAllRecursive(fullPath, allFiles);
+      } else {
+        // It's a file
+        allFiles.add(fullPath);
+      }
     }
   }
 }

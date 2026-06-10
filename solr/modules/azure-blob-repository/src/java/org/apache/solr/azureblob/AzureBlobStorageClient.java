@@ -105,13 +105,6 @@ public class AzureBlobStorageClient {
   AzureBlobStorageClient(BlobServiceClient blobServiceClient, String containerName) {
     this.containerClient = blobServiceClient.getBlobContainerClient(containerName);
     this.batchClient = new BlobBatchClientBuilder(blobServiceClient).buildClient();
-    try {
-      containerClient.create();
-    } catch (BlobStorageException e) {
-      if (e.getStatusCode() != HTTP_CONFLICT) {
-        throw e;
-      }
-    }
   }
 
   private static BlobServiceClient createInternalClient(
@@ -235,6 +228,13 @@ public class AzureBlobStorageClient {
     }
   }
 
+  /**
+   * Checks existence by resolving the exact blob (a HEAD request). This module always writes {@code
+   * hdi_isfolder} marker blobs for directories, so it is self-consistent. Note the asymmetry with
+   * {@link #isDirectory(String)}: a marker-less "virtual" directory created by an external tool
+   * (e.g. azcopy) returns {@code false} here even though {@code isDirectory} reports it as a
+   * directory via prefix listing.
+   */
   boolean pathExists(String path) throws AzureBlobException {
     final String blobPath = sanitizedPath(path);
 
@@ -434,7 +434,21 @@ public class AzureBlobStorageClient {
     }
   }
 
-  void close() {}
+  void close() {
+    // No-op: the underlying OkHttp client is SPI-loaded and shared process-wide, so there is
+    // nothing per-instance to release here.
+  }
+
+  @VisibleForTesting
+  void createContainerForTests() {
+    try {
+      containerClient.create();
+    } catch (BlobStorageException e) {
+      if (e.getStatusCode() != HTTP_CONFLICT) {
+        throw e;
+      }
+    }
+  }
 
   @VisibleForTesting
   void deleteContainerForTests() {

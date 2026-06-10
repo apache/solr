@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -40,7 +39,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
-import reactor.core.scheduler.Schedulers;
 
 /** Abstract class for tests with Azure Blob Storage emulator. */
 @ThreadLeakFilters(
@@ -106,6 +104,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
 
     containerName = "test-" + UUID.randomUUID();
     client = new AzureBlobStorageClient(blobServiceClient, containerName);
+    client.createContainerForTests();
   }
 
   public static void setAzureTestCredentials() {
@@ -146,29 +145,7 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
       }
       azuriteContainer = null;
     }
-
-    if (sharedOkHttpClient != null) {
-      sharedOkHttpClient.dispatcher().executorService().shutdown();
-      sharedOkHttpClient.dispatcher().cancelAll();
-      sharedOkHttpClient.connectionPool().evictAll();
-      try {
-        if (sharedOkHttpClient.cache() != null) {
-          sharedOkHttpClient.cache().close();
-        }
-      } catch (Throwable ignored) {
-      }
-      try {
-        sharedOkHttpClient.dispatcher().executorService().awaitTermination(2, TimeUnit.SECONDS);
-      } catch (Throwable ignored) {
-      }
-      sharedOkHttpClient = null;
-    }
-
-    try {
-      Schedulers.shutdownNow();
-      Thread.sleep(100);
-    } catch (Throwable ignored) {
-    }
+    sharedOkHttpClient = null;
   }
 
   void pushContent(String path, String content) throws AzureBlobException {
@@ -202,7 +179,15 @@ public class AbstractAzureBlobClientTest extends SolrTestCase {
       if (name == null) {
         return false;
       }
-      return name.contains("OkHttp") || name.contains("Okio Watchdog");
+      // OkHttp connection pool / dispatcher and Okio watchdog threads, plus the Reactor scheduler
+      // daemon threads the Azure SDK initializes. These are process-wide and outlive individual
+      // tests, so we filter them instead of force-shutting them down.
+      return name.contains("OkHttp")
+          || name.contains("Okio Watchdog")
+          || name.startsWith("reactor-")
+          || name.startsWith("parallel-")
+          || name.startsWith("boundedElastic-")
+          || name.startsWith("single-");
     }
   }
 }

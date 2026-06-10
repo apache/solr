@@ -18,6 +18,10 @@ package org.apache.solr.azureblob;
 
 import static org.apache.solr.azureblob.AzureBlobBackupRepository.BLOB_SCHEME;
 
+import com.azure.core.util.BinaryData;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -27,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -74,6 +79,14 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
         };
 
     repository.init(config);
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    if (repository != null) {
+      repository.close();
+    }
+    super.tearDown();
   }
 
   @Test
@@ -354,6 +367,106 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     }
   }
 
+  @Test
+  public void testCopyIndexFileFromVerifiesChecksum() throws IOException {
+    Path tempDir = Files.createTempDirectory("blob-verify-checksum");
+    String fileName = "verify-checksum.bin";
+    try (Directory localDir = new MMapDirectory(tempDir)) {
+      writeLuceneFile(localDir, fileName);
+
+      long expectedChecksum;
+      long expectedLength;
+      try (IndexInput in = localDir.openInput(fileName, IOContext.READONCE)) {
+        expectedChecksum = CodecUtil.retrieveChecksum(in);
+        expectedLength = in.length();
+      }
+
+      AzureBlobBackupRepository verifyingRepo = newRepository(true);
+      URI dirUri = getBaseUri().resolve("verify-checksum-dir");
+      verifyingRepo.copyFileFrom(localDir, fileName, dirUri);
+
+      try (IndexInput in = verifyingRepo.openInput(dirUri, fileName, IOContext.READONCE)) {
+        assertEquals(
+            "Length should match original after footer rewrite", expectedLength, in.length());
+        assertEquals(
+            "Checksum should match after verification and footer rewrite",
+            expectedChecksum,
+            CodecUtil.retrieveChecksum(in));
+      }
+    } finally {
+      PathUtils.deleteDirectory(tempDir);
+    }
+  }
+
+  @Test
+  public void testCopyIndexFileFromThrowsOnTooSmallFile() throws IOException {
+    Path tempDir = Files.createTempDirectory("blob-small-file");
+    String fileName = "too-small.bin";
+    try (Directory localDir = new MMapDirectory(tempDir)) {
+      try (IndexOutput out = localDir.createOutput(fileName, IOContext.DEFAULT)) {
+        // Smaller than CodecUtil.footerLength() (16 bytes).
+        out.writeBytes(new byte[] {1, 2, 3, 4, 5}, 5);
+      }
+
+      AzureBlobBackupRepository verifyingRepo = newRepository(true);
+      URI dirUri = getBaseUri().resolve("too-small-dir");
+      expectThrows(
+          CorruptIndexException.class,
+          () -> verifyingRepo.copyFileFrom(localDir, fileName, dirUri));
+    } finally {
+      PathUtils.deleteDirectory(tempDir);
+    }
+  }
+
+  @Test
+  public void testCopyIndexFileFromDetectsCorruption() throws IOException {
+    Path tempDir = Files.createTempDirectory("blob-corrupt-file");
+    String fileName = "corrupt.bin";
+    try (Directory localDir = new MMapDirectory(tempDir)) {
+      writeLuceneFile(localDir, fileName);
+
+      // Corrupt a byte in the data region (not the footer) so the stored CRC no longer matches.
+      Path onDisk = tempDir.resolve(fileName);
+      byte[] bytes = Files.readAllBytes(onDisk);
+      int corruptIndex = bytes.length / 2;
+      bytes[corruptIndex] = (byte) (bytes[corruptIndex] ^ 0xFF);
+      Files.write(onDisk, bytes);
+
+      AzureBlobBackupRepository verifyingRepo = newRepository(true);
+      URI dirUri = getBaseUri().resolve("corrupt-dir");
+      expectThrows(
+          CorruptIndexException.class,
+          () -> verifyingRepo.copyFileFrom(localDir, fileName, dirUri));
+    } finally {
+      PathUtils.deleteDirectory(tempDir);
+    }
+  }
+
+  @Test
+  public void testExistsVsGetPathTypeForExternalVirtualDirectory() throws IOException {
+    // Simulate an external tool (e.g. azcopy) writing a child blob without an hdi_isfolder marker
+    // for its parent "directory", bypassing this module's pushStream parent-marker creation.
+    BlobServiceClient serviceClient =
+        new BlobServiceClientBuilder().connectionString(getConnectionString()).buildClient();
+    BlobContainerClient containerClient = serviceClient.getBlobContainerClient(containerName);
+    containerClient
+        .getBlobClient("external-dir/child.txt")
+        .upload(BinaryData.fromString("external data"), true);
+
+    URI dirUri = getBaseUri().resolve("external-dir/");
+
+    // getPathType uses prefix listing, so the marker-less directory is reported as a DIRECTORY...
+    assertEquals(
+        "Marker-less directory should be detected as a directory",
+        BackupRepository.PathType.DIRECTORY,
+        repository.getPathType(dirUri));
+
+    // ...but exists() resolves the exact (marker-less) blob and therefore returns false. This is
+    // the documented asymmetry; the module is self-consistent because it always writes markers.
+    assertFalse(
+        "exists() returns false for a marker-less external directory", repository.exists(dirUri));
+  }
+
   protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
     NamedList<Object> config = new NamedList<>();
     config.add("azure.blob.container.name", CONTAINER_NAME);
@@ -384,11 +497,28 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     }
   }
 
-  @Override
-  public void tearDown() throws Exception {
-    if (repository != null) {
-      repository.close();
+  /** Builds a repository sharing the test client, with checksum verification explicitly set. */
+  private AzureBlobBackupRepository newRepository(boolean verifyChecksum) {
+    AzureBlobBackupRepository repo =
+        new AzureBlobBackupRepository() {
+          @Override
+          public void init(NamedList<?> args) {
+            this.config = args;
+            this.shouldVerifyChecksum = verifyChecksum;
+            setClient(AzureBlobBackupRepositoryTest.this.client);
+          }
+        };
+    repo.init(getBaseBackupRepositoryConfiguration());
+    return repo;
+  }
+
+  private static void writeLuceneFile(Directory dir, String fileName) throws IOException {
+    try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
+      CodecUtil.writeIndexHeader(out, "azure-blob-test", 1, new byte[16], "suffix");
+      for (int i = 0; i < 10000; i++) {
+        out.writeInt(i);
+      }
+      CodecUtil.writeFooter(out);
     }
-    super.tearDown();
   }
 }

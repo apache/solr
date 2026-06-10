@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * OutputStream implementation for Azure Blob Storage using block blobs. Supports chunked uploads
  * for large files.
  */
-public class AzureBlobOutputStream extends OutputStream {
+class AzureBlobOutputStream extends OutputStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int BLOCK_SIZE = 4 * 1024 * 1024;
@@ -47,7 +47,7 @@ public class AzureBlobOutputStream extends OutputStream {
   private final ByteBuffer buffer;
   private BlockUpload blockUpload;
 
-  public AzureBlobOutputStream(BlobClient blobClient, String blobPath) {
+  AzureBlobOutputStream(BlobClient blobClient, String blobPath) {
     this.blobClient = blobClient;
     this.blobPath = blobPath;
     this.closed = false;
@@ -138,9 +138,9 @@ public class AzureBlobOutputStream extends OutputStream {
       throw new IOException("Stream closed");
     }
 
-    if (buffer.position() > 0) {
-      uploadBlock();
-    }
+    // Intentionally a no-op. Full blocks are staged as the buffer fills in write(), and the
+    // partial tail is staged in close(). Staging on every flush() would create tiny blocks and a
+    // frequently-flushing caller could exhaust Azure's 50,000-committed-block limit on small files.
   }
 
   @Override

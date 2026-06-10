@@ -18,6 +18,10 @@ package org.apache.solr.azureblob;
 
 /** Exception thrown when a blob is not found in Azure Blob Storage. */
 public class AzureBlobNotFoundException extends AzureBlobException {
+  public AzureBlobNotFoundException(Throwable cause) {
+    super(cause);
+  }
+
   public AzureBlobNotFoundException(String message) {
     super(message);
   }

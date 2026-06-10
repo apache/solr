@@ -64,7 +64,6 @@ dependencies {
   
   testImplementation libs.azure.core.http.okhttp
   testImplementation libs.squareup.okhttp3.okhttp
-  testImplementation libs.projectreactor.core
 
   // Testcontainers for Azurite integration testing
   testImplementation libs.testcontainers
