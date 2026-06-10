@@ -32,7 +32,6 @@ import java.util.Map;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.DOMConfigNode;
 import org.w3c.dom.Node;
 
@@ -196,7 +195,7 @@ public class PluginInfo implements MapWriter {
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void writeMap(EntryWriter ew) throws IOException {
-    new NamedList<>(attributes).writeMap(ew);
+    attributes.forEach(ew::putNoEx);
     if (initArgs != null) {
       initArgs.asMap(3).forEach((k, v) -> ew.putNoEx((String) k, v));
     }

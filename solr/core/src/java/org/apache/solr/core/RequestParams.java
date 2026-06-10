@@ -131,7 +131,7 @@ public class RequestParams implements MapWriter {
     if (p == null) deepCopy.put(NAME, p = new LinkedHashMap<>());
     if (paramSet == null) p.remove(name);
     else {
-      p.put(name, Utils.convertToMap(paramSet, new HashMap<>()));
+      p.put(name, Utils.convertToMap(paramSet, new LinkedHashMap<>()));
     }
     return new RequestParams(deepCopy, znodeVersion);
   }
