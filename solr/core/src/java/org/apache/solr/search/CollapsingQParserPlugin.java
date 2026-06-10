@@ -863,7 +863,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
-      this.collapseValues = DocValues.getNumeric(context.reader(), this.field);
+      this.collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), this.field));
     }
 
     @Override
@@ -945,7 +945,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
 
-      collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.field);
+      collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts[currentContext].reader(), this.field));
       int nextDocBase =
           currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
@@ -964,7 +964,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
           leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
           leafDelegate.setScorer(dummy);
-          collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.field);
+          collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts[currentContext].reader(), this.field));
         }
 
         final int contextDoc = globalDoc - currentDocBase;
@@ -1413,7 +1413,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
       this.collapseStrategy.setNextReader(context);
-      this.collapseValues = DocValues.getNumeric(context.reader(), this.collapseField);
+      this.collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), this.collapseField));
     }
 
     @Override
@@ -1448,7 +1448,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
       this.collapseValues =
-          DocValues.getNumeric(contexts[currentContext].reader(), this.collapseField);
+          DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts[currentContext].reader(), this.collapseField));
       int nextDocBase =
           currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
@@ -1474,7 +1474,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
           leafDelegate.setScorer(dummy);
           this.collapseValues =
-              DocValues.getNumeric(contexts[currentContext].reader(), this.collapseField);
+              DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts[currentContext].reader(), this.collapseField));
         }
 
         final int contextDoc = globalDoc - currentDocBase;
@@ -1790,7 +1790,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
-      this.segmentValues = DocValues.getNumeric(context.reader(), collapseField);
+      this.segmentValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), collapseField));
     }
 
     @Override
@@ -2024,7 +2024,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
-      this.segmentValues = DocValues.getNumeric(context.reader(), collapseField);
+      this.segmentValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), collapseField));
     }
 
     @Override
@@ -2400,7 +2400,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), this.field));
     }
 
     @Override
@@ -2477,7 +2477,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), this.field));
     }
 
     @Override
@@ -2556,7 +2556,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxVals = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), this.field));
     }
 
     @Override
@@ -2945,7 +2945,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxVals = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), this.field));
     }
 
     private int advanceAndGetCurrentVal(int contextDoc) throws IOException {
@@ -3039,7 +3039,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+      this.minMaxVals = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), this.field));
     }
 
     private float advanceAndGetCurrentVal(int contextDoc) throws IOException {
