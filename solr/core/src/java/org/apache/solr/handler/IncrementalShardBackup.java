@@ -211,17 +211,17 @@ public class IncrementalShardBackup {
     BackupStats backupStats = new BackupStats();
 
     var executor =
-            solrCore
-                .getCoreContainer()
-                .getObjectCache()
-                .computeIfAbsent(
-                    "RestoreDownloadExecutor",
-                    ExecutorService.class,
-                    s ->
-                        ExecutorUtil.newMDCAwareCachedThreadPool(
-                            MAX_PARALLEL_UPLOADS,
-                            Integer.MAX_VALUE,
-                            new SolrNamedThreadFactory("BackupUploadExecutor")));
+        solrCore
+            .getCoreContainer()
+            .getObjectCache()
+            .computeIfAbsent(
+                "RestoreDownloadExecutor",
+                ExecutorService.class,
+                s ->
+                    ExecutorUtil.newMDCAwareCachedThreadPool(
+                        MAX_PARALLEL_UPLOADS,
+                        Integer.MAX_VALUE,
+                        new SolrNamedThreadFactory("BackupUploadExecutor")));
 
     List<Future<?>> uploadFutures = new ArrayList<>();
     for (String fileName : indexFiles) {
@@ -275,9 +275,8 @@ public class IncrementalShardBackup {
         case Error err -> throw err;
         case IOException ioe -> throw ioe;
         case RuntimeException re -> throw re;
-        default ->
-            throw new SolrException(
-                SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", cause);
+        default -> throw new SolrException(
+            SolrException.ErrorCode.UNKNOWN, "Error during parallel backup upload", cause);
       }
     } catch (InterruptedException e) {
       uploadFutures.forEach(f -> f.cancel(true));
