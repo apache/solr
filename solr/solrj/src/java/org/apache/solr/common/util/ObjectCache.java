@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.solr.common.SolrCloseable;
@@ -93,6 +94,8 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
       for (Object value : map.values()) {
         if (value instanceof Closeable) {
           ((Closeable) value).close();
+        } else if (value instanceof ExecutorService) {
+          ExecutorUtil.shutdownAndAwaitTermination((ExecutorService) value);
         }
       }
       map.clear();
