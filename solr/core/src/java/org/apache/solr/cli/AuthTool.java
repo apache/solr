@@ -227,8 +227,12 @@ public class AuthTool extends ToolBase {
             } while (password.isEmpty());
           }
 
-          boolean blockUnknown =
-              Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION, "true"));
+          if (username.equals(password)) {
+            CLIO.err(
+                "Error: username and password must not be identical."
+                    + " This credential would never authenticate.");
+            runtime.exit(1);
+          }
 
           String resourceName = "security.json";
           final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
@@ -238,7 +242,11 @@ public class AuthTool extends ToolBase {
 
           ObjectMapper mapper = new ObjectMapper();
           JsonNode securityJson1 = mapper.readTree(resource.openStream());
-          ((ObjectNode) securityJson1).put("blockUnknown", blockUnknown);
+          // Only override blockUnknown if explicitly passed; otherwise let the template decide
+          if (cli.hasOption(BLOCK_UNKNOWN_OPTION)) {
+            boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION));
+            ((ObjectNode) securityJson1.get("authentication")).put("blockUnknown", blockUnknown);
+          }
           JsonNode credentialsNode = securityJson1.get("authentication").get("credentials");
           ((ObjectNode) credentialsNode)
               .put(username, Sha256AuthenticationProvider.getSaltedHashedValue(password));
@@ -286,6 +294,16 @@ public class AuthTool extends ToolBase {
               String.format(
                   Locale.ROOT, "Successfully enabled basic auth with username [%s].", username);
           echo(successMessage);
+          if (!updateIncludeFileOnly) {
+            CLIO.out(
+                "\nIMPORTANT: The following template users have been created with NO password set"
+                    + " and cannot log in until passwords are assigned:");
+            CLIO.out("  - admin  (roles: admin, index, search)");
+            CLIO.out("  - index  (roles: index, search)");
+            CLIO.out("  - search (roles: search)");
+            CLIO.out(
+                "Set their passwords using the Admin UI Security page or the authentication API.");
+          }
           return;
         }
       case "disable":
