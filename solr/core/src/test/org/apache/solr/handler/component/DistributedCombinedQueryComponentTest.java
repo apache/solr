@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -94,14 +92,11 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     clients.sort(
         (client1, client2) -> {
           try {
-            if (client2 instanceof HttpJettySolrClient httpClient2
-                && client1 instanceof HttpSolrClient httpClient1)
-              return new URI(httpClient1.getBaseURL()).getPort()
-                  - new URI(httpClient2.getBaseURL()).getPort();
+            return new URI(client1.getBaseURL()).getPort()
+                - new URI(client2.getBaseURL()).getPort();
           } catch (URISyntaxException e) {
             throw new RuntimeException("Unable to get URI from SolrClient", e);
           }
-          return 0;
         });
     for (SolrInputDocument doc : docs) {
       indexDoc(doc);

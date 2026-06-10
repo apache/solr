@@ -62,6 +62,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .build();
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    System.setProperty("solr.http1", "true");
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
@@ -114,6 +115,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
 
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    System.setProperty("solr.http1", "true");
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
