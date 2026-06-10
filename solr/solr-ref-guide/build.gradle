@@ -167,7 +167,10 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
       // The Solr Operator is only aggregated into the official multi-version
       // site. Local builds render just the ref guide; operator contributors
       // preview their component from the apache/solr-operator repo (make docs).
-      'additional_sources': "",
+      'additional_sources': """
+  - url: "https://github.com/apache/solr-operator.git"
+    branches: \"release-*\"
+    start_path: docs""",
   ]
 
   expand(escapeYamlSingleQuotesString(props))
@@ -185,7 +188,7 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
   }
   into project.ext.playbooksDir
 
-  def branches = ["branch_*", "\"!branch_9_11\""]
+  def branches = ["branch_*"]
   def operatorBranches = ["release-*"]
   if (officialSiteIncludePrerelease) {
     branches.add("main")
