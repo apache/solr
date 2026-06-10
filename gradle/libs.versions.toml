@@ -83,7 +83,7 @@ diffplug-spotless = "8.3.0"
 # @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.33"
-eclipse-ecj = "3.39.0"
+eclipse-ecj = "3.46.0"
 eclipse-jetty = "12.0.34"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.6.0.202603022253-r"
