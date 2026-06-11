@@ -151,7 +151,7 @@ kotlinx-serialization = "1.11.0"
 # @keep used by spotless
 ktlint = "1.8.0"
 ktor = "3.4.2"
-langchain4j-bom = "1.9.1"
+langchain4j-bom = "1.16.1"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "1.1.0"
