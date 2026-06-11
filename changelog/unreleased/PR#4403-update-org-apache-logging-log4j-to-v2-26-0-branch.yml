@@ -1,0 +1,7 @@
+title: Update org.apache.logging.log4j:* to v2.26.0 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4403
+  url: https://github.com/apache/solr/pull/4403
