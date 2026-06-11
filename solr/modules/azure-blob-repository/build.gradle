@@ -1,0 +1,75 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+
+description = 'Azure Blob Storage Repository'
+
+ext {
+  // Disable security manager for azure-blob-repository module tests
+  // Required because Testcontainers needs access to Docker socket and system properties
+  useSecurityManager = false
+}
+
+dependencies {
+  implementation platform(project(':platform'))
+  api(project(':solr:core'))
+  implementation project(':solr:solrj')
+
+  implementation libs.apache.lucene.core
+
+  implementation platform(libs.azure.sdk.bom)
+
+  // Azure Storage SDK dependencies
+  implementation(libs.azure.storage.blob) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation(libs.azure.storage.blob.batch) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation(libs.azure.identity) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation(libs.azure.core) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation(libs.azure.storage.common) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+
+  implementation libs.google.guava
+  implementation libs.slf4j.api
+
+  runtimeOnly libs.azure.core.http.okhttp
+  runtimeOnly libs.fasterxml.woodstox.core
+  runtimeOnly libs.codehaus.woodstox.stax2api
+
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.junit.junit
+  testImplementation libs.commonsio.commonsio
+  
+  testImplementation libs.azure.core.http.okhttp
+  testImplementation libs.squareup.okhttp3.okhttp
+  testImplementation libs.projectreactor.core
+
+  // Testcontainers for Azurite integration testing
+  testImplementation libs.testcontainers
+
+  // Explicit transitive test dependencies for dependency analyzer
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.apache.lucene.testframework
+}
