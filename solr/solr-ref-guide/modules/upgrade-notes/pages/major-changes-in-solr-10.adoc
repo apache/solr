@@ -40,6 +40,26 @@ For SSL (https), it's no longer necessary to set the "urlScheme" cluster propert
 These are now honored by CloudSolrClient, as well as scheme detection from the connection string / hosts.
 The "urlScheme" cluster property and httpShardHandlerFactory configuration is likely to be deprecated; feedback welcome.
 
+=== Universal connection string support
+
+Introduced a universal Solr connection string for SolrCloud connections.
+
+Connections can now be configured via HTTP(S) without exposing ZooKeeper details, while the legacy ZooKeeper-based connection method remains fully supported.
+
+Examples:
+`solrConnection=http://solr1:8983/solr,http://solr2:8983/solr`
+`solrConnection=zoo1:2181,zoo2:2181,zoo3:2181/solr`
+
+The universal connection string is now supported in the following components and entry points:
+
+* Added `CloudSolrClient.Builder(String)` constructor in SolrJ for configuring SolrCloud clients using either HTTP(S)-based or ZooKeeper-based connection strings.
+* Added `solrConnection` parameter to all streaming functions in the SolrJ Streaming module. The existing `zkHost` parameter remains supported.
+* Added `withDefaultSolrConnection` and `withCollectionSolrConnection` methods to `StreamFactory` in the SolrJ Streaming module.
+* Solr SQL JDBC driver now supports both HTTP-based (`jdbc:solr:http://solr1.example.com:8983/solr?collection=COLLECTION_NAME`) and ZooKeeper-based (`jdbc:solr://zoo.example.com:2181/solr?collection=COLLECTION_NAME`) JDBC URLs.
+* Added `--solr-connection` option to the CLI tools.
+* Updated Solr CLI `-s` short option to invoke `--solr-connection` instead of `--solr-url`, which is a backwards compatible change.
+* Added `solrConnection` parameter to the Join Query Parser.
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
@@ -52,6 +72,19 @@ Users who deploy a proxy in front of Solr should also review this setup to ensur
 The `blockUnknown` setting in the JWT Authentication plugin now defaults to `true`, meaning requests without a valid JWT token are blocked by default.
 In Solr 10.0, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
 Users upgrading from 10.0 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
+
+=== Security
+
+PKI Authentication v1 support has been removed.
+Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node communication.
+
+Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
+The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
+
+=== SolrJ
+
+HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
+Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
 
 == Solr 10.0
 
@@ -342,10 +375,21 @@ For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_ex
 *Workaround for OTLP consumers depending on the old names:*
 Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
 
-==== Metric `solr_core_indexsearcher_open_warmup_time` removed
+==== Metric that are Removed or Changed
 
-The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`.
-Update your dashboards to use `solr_core_indexsearcher_warmup_time` instead.
+* The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`
+* The metric `solr.zk.cumulative.children_fetched` has been removed
+* The metric `solr.zk.child.fetches` is now `solr.zk.get_children.ops`
+* All CrossDC consumer metrics have been renamed: `crossdc.consumer.*` → `solr.crossdc.consumer.*`
+  (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
+* All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
+  (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
+
+Update your dashboards or other metrics consumers accordingly.
+
+==== Overseer Status Metrics Removed
+
+The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute via OpenTelemetry.
 
 === Lucene Codec Change
 

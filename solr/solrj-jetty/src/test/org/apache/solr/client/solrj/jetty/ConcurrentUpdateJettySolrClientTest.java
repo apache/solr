@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClientTestBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 
 public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrClientTestBase {
 
@@ -31,7 +31,7 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
       String serverUrl,
       int queueSize,
       int threadCount,
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       AtomicInteger successCounter,
       AtomicInteger failureCounter,
       StringBuilder errors) {
@@ -44,7 +44,7 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
   }
 
   @Override
-  public HttpSolrClientBase solrClient(Integer overrideIdleTimeoutMs) {
+  public HttpSolrClient solrClient(Integer overrideIdleTimeoutMs) {
     var builder = new HttpJettySolrClient.Builder();
     if (overrideIdleTimeoutMs != null) {
       builder.withIdleTimeout(overrideIdleTimeoutMs, TimeUnit.MILLISECONDS);
@@ -54,7 +54,7 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
 
   @Override
   public ConcurrentUpdateBaseSolrClient concurrentClient(
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       String baseUrl,
       String defaultCollection,
       int queueSize,

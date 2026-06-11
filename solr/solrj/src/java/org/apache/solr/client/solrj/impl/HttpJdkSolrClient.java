@@ -56,6 +56,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -71,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * This client will connect to solr using Http/2 but can seamlessly downgrade to Http/1.1 when
  * connecting to Solr hosts running on older versions.
  */
-public class HttpJdkSolrClient extends HttpSolrClientBase {
+public class HttpJdkSolrClient extends HttpSolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
@@ -451,14 +452,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
+
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      for (Map.Entry<String, String> entry : headers.entrySet()) {
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      for (Map.Entry<String, String> entry : customHeaders.entrySet()) {
         reqb.header(entry.getKey(), entry.getValue());
       }
     }
+    reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+    // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+    reqb.header(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {
@@ -563,8 +568,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public HttpSolrClientBuilderBase<?, ?> builder() {
-    return new HttpJdkSolrClient.Builder().withHttpClient(this);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJdkSolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   @Override
@@ -572,8 +577,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return new LBSolrClient.Builder<>(this).build();
   }
 
-  public static class Builder
-      extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
+  public static class Builder extends BuilderBase<Builder, HttpJdkSolrClient> {
 
     private SSLContext sslContext;
 
