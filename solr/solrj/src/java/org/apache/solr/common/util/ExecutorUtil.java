@@ -65,6 +65,11 @@ public class ExecutorUtil {
     providers = copy;
   }
 
+  /** Snapshot of currently-registered {@link InheritableThreadLocalProvider}s. */
+  public static List<InheritableThreadLocalProvider> getThreadLocalProviders() {
+    return providers;
+  }
+
   /**
    * Any class which wants to carry forward the thread local values to the threads run by thread
    * pools must implement this interface and the implementation should be registered here
