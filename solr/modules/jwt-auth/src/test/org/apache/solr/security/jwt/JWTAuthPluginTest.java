@@ -25,6 +25,13 @@ import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationRespon
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,10 +44,12 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
@@ -48,14 +57,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.VerifiedUserRoles;
 import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jwk.RsaJwkGenerator;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.NumericDate;
-import org.jose4j.keys.BigEndianBigInteger;
-import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -66,7 +67,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
   private static String slimHeader;
   private JWTAuthPlugin plugin;
-  private static RsaJsonWebKey rsaJsonWebKey;
+  private static RSAKey rsaKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
   private static String trustedPemCert;
@@ -78,87 +79,88 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   static {
-    // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped
-    // in a JWK
     try {
-      rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
-      rsaJsonWebKey.setKeyId("k1");
+      rsaKey = new RSAKeyGenerator(2048).keyID("k1").generate();
 
       testJwk = new HashMap<>();
-      testJwk.put("kty", rsaJsonWebKey.getKeyType());
-      testJwk.put(
-          "e",
-          BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getPublicExponent()));
-      testJwk.put("use", rsaJsonWebKey.getUse());
-      testJwk.put("kid", rsaJsonWebKey.getKeyId());
-      testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
-      testJwk.put(
-          "n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
+      testJwk.put("kty", rsaKey.getKeyType().getValue());
+      testJwk.put("e", rsaKey.getPublicExponent().toString());
+      testJwk.put("use", "sig");
+      testJwk.put("kid", rsaKey.getKeyID());
+      testJwk.put("alg", JWSAlgorithm.RS256.getName());
+      testJwk.put("n", rsaKey.getModulus().toString());
 
       trustedPemCert =
           Files.readString(JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem"));
-    } catch (JoseException | IOException e) {
+    } catch (Exception e) {
       fail("Failed static initialization: " + e.getMessage());
     }
   }
 
   @BeforeClass
   public static void beforeAll() throws Exception {
-    JwtClaims claims = generateClaims();
-    JsonWebSignature jws = new JsonWebSignature();
-    jws.setPayload(claims.toJson());
-    jws.setKey(rsaJsonWebKey.getPrivateKey());
-    jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
-    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+    JWTClaimsSet claims = generateClaims();
+    SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), claims);
+    signedJWT.sign(new RSASSASigner(rsaKey));
+    String testJwt = signedJWT.serialize();
+    testHeader = "Bearer " + testJwt;
 
-    String testJwt = jws.getCompactSerialization();
-    testHeader = "Bearer" + " " + testJwt;
-
-    claims.unsetClaim("iss");
-    claims.unsetClaim("aud");
-    claims.unsetClaim("exp");
-    claims.setSubject(null);
-    jws.setPayload(claims.toJson());
-    String slimJwt = jws.getCompactSerialization();
-    slimHeader = "Bearer" + " " + slimJwt;
+    JWTClaimsSet slimClaims = generateSlimClaims();
+    SignedJWT slimJwt =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), slimClaims);
+    slimJwt.sign(new RSASSASigner(rsaKey));
+    slimHeader = "Bearer " + slimJwt.serialize();
   }
 
-  protected static JwtClaims generateClaims() {
-    JwtClaims claims = new JwtClaims();
-    claims.setIssuer("IDServer"); // who creates the token and signs it
-    claims.setAudience("Solr"); // to whom the token is intended to be sent
-    claims.setExpirationTimeMinutesInTheFuture(
-        10); // time when the token will expire (10 minutes from now)
-    claims.setGeneratedJwtId(); // a unique identifier for the token
-    claims.setIssuedAtToNow(); // when the token was issued/created (now)
-    claims.setNotBeforeMinutesInThePast(
-        2); // time before which the token is not yet valid (2 minutes ago)
-    claims.setSubject("solruser"); // the subject/principal is whom the token is about
-    claims.setStringClaim("scope", "solr:read");
-    claims.setClaim(
-        "name", "Solr User"); // additional claims/attributes about the subject can be added
-    claims.setClaim(
-        "customPrincipal", "custom"); // additional claims/attributes about the subject can be added
-    claims.setClaim("claim1", "foo"); // additional claims/attributes about the subject can be added
-    claims.setClaim("claim2", "bar"); // additional claims/attributes about the subject can be added
-    claims.setClaim("claim3", "foo"); // additional claims/attributes about the subject can be added
-    claims.setClaim("email_verified", true); // boolean claim as per OIDC spec
-    claims.setClaim("admin", false); // another boolean claim
-    List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
-    claims.setStringListClaim(
-        "roles", roles); // multi-valued claims work too and will end up as a JSON array
-
-    // Keycloak Style resource_access roles
+  protected static JWTClaimsSet generateClaims() throws Exception {
+    Date now = new Date();
     HashMap<String, Object> solrMap = new HashMap<>();
     solrMap.put("roles", Arrays.asList("user", "admin"));
     HashMap<String, Object> resourceAccess = new HashMap<>();
     resourceAccess.put("solr", solrMap);
-    claims.setClaim("resource_access", resourceAccess);
 
-    // Special claim with dots in key, should still be addressable non-nested
-    claims.setClaim("roles.with.dot", Arrays.asList("user", "admin"));
+    return new JWTClaimsSet.Builder()
+        .issuer("IDServer")
+        .audience("Solr")
+        .expirationTime(new Date(now.getTime() + 10 * 60 * 1000))
+        .jwtID(UUID.randomUUID().toString())
+        .issueTime(now)
+        .notBeforeTime(new Date(now.getTime() - 2 * 60 * 1000))
+        .subject("solruser")
+        .claim("scope", "solr:read")
+        .claim("name", "Solr User")
+        .claim("customPrincipal", "custom")
+        .claim("claim1", "foo")
+        .claim("claim2", "bar")
+        .claim("claim3", "foo")
+        .claim("email_verified", true)
+        .claim("admin", false)
+        .claim("roles", Arrays.asList("group-one", "other-group", "group-three"))
+        .claim("resource_access", resourceAccess)
+        .claim("roles.with.dot", Arrays.asList("user", "admin"))
+        .build();
+  }
 
-    return claims;
+  /** Slim claims: no iss, aud, exp, or sub */
+  protected static JWTClaimsSet generateSlimClaims() throws Exception {
+    Date now = new Date();
+    return new JWTClaimsSet.Builder()
+        .jwtID(UUID.randomUUID().toString())
+        .issueTime(now)
+        .notBeforeTime(new Date(now.getTime() - 2 * 60 * 1000))
+        .claim("scope", "solr:read")
+        .claim("name", "Solr User")
+        .claim("customPrincipal", "custom")
+        .claim("claim1", "foo")
+        .claim("claim2", "bar")
+        .claim("claim3", "foo")
+        .claim("email_verified", true)
+        .claim("admin", false)
+        .claim("roles", Arrays.asList("group-one", "other-group", "group-three"))
+        .build();
   }
 
   @Override
@@ -751,15 +753,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegisterTokenEndpointForCsp() {
-    testConfig.put("tokenEndpoint", "http://acmepaymentscorp/oauth/oauth20/token");
-    plugin.init(testConfig);
-    assertEquals(
-        "http://acmepaymentscorp/oauth/oauth20/token",
-        EnvUtils.getProperty(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
-  }
-
-  @Test
   public void requireIssuerFalseButIssPresentAndMismatches() {
     // requireIssuer=false controls whether iss must be present, not whether a mismatching value
     // is silently accepted. A token with iss="IDServer" should fail when iss="NA" is configured.
@@ -772,7 +765,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void requireIssuerFalseNoIssInTokenOrConfig() {
+  public void requireIssuerFalseNoIssInTokenOrConfig() throws Exception {
     // requireIssuer=false with no iss claim in token and no iss in config → authenticated
     testConfig.put("requireIss", false);
     testConfig.put("requireExp", false);
@@ -785,14 +778,20 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void scopeClaimAsJsonArray() throws Exception {
     // Verify that a scope claim expressed as a JSON array (not just a whitespace-separated String)
     // is correctly parsed: authentication succeeds and "openid" is filtered out of the roles.
-    JwtClaims claims = generateClaims();
-    claims.setClaim("scope", Arrays.asList("solr:read", "openid"));
-    JsonWebSignature jws = new JsonWebSignature();
-    jws.setPayload(claims.toJson());
-    jws.setKey(rsaJsonWebKey.getPrivateKey());
-    jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
-    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-    String header = "Bearer " + jws.getCompactSerialization();
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("IDServer")
+            .audience("Solr")
+            .expirationTime(new Date(new Date().getTime() + 10 * 60 * 1000))
+            .subject("solruser")
+            .claim("scope", Arrays.asList("solr:read", "openid"))
+            .claim("customPrincipal", "custom")
+            .build();
+    SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), claims);
+    signedJWT.sign(new RSASSASigner(rsaKey));
+    String header = "Bearer " + signedJWT.serialize();
 
     testConfig.put("scope", "solr:read");
     plugin.init(testConfig);
@@ -804,22 +803,42 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void asConfigJwkRoundTrip() {
+    // Verify that re-initialising a plugin from an issuer's asConfig() output still authenticates
+    Map<String, Object> issuerConf = plugin.getIssuerConfigs().get(0).asConfig();
+    JWTAuthPlugin roundTrippedPlugin = new JWTAuthPlugin();
+    HashMap<String, Object> newConfig = new HashMap<>();
+    newConfig.put("class", "org.apache.solr.security.jwt.JWTAuthPlugin");
+    newConfig.put("principalClaim", "customPrincipal");
+    newConfig.put("jwk", issuerConf.get("jwk"));
+    roundTrippedPlugin.init(newConfig);
+    try {
+      JWTAuthPlugin.JWTAuthenticationResponse resp = roundTrippedPlugin.authenticate(testHeader);
+      assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+    } finally {
+      try {
+        roundTrippedPlugin.close();
+      } catch (Exception ignored) {
+      }
+    }
+  }
+
+  @Test
   public void tokenExpiredWithinClockSkewIsAuthenticated() throws Exception {
-    // Token expired 25 seconds ago — within the 30-second clock skew tolerance.
-    // All timestamps must be consistent: iat < exp, so iat is set 90 seconds in the past.
-    NumericDate now = NumericDate.now();
-    JwtClaims claims = new JwtClaims();
-    claims.setIssuer("IDServer");
-    claims.setClaim("customPrincipal", "custom");
-    claims.setIssuedAt(NumericDate.fromSeconds(now.getValue() - 90));
-    claims.setNotBefore(NumericDate.fromSeconds(now.getValue() - 90));
-    claims.setExpirationTime(NumericDate.fromSeconds(now.getValue() - 25));
-    JsonWebSignature jws = new JsonWebSignature();
-    jws.setPayload(claims.toJson());
-    jws.setKey(rsaJsonWebKey.getPrivateKey());
-    jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
-    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-    String header = "Bearer " + jws.getCompactSerialization();
+    // Token expired 25 seconds ago — within the 30-second clock skew tolerance
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("IDServer")
+            .audience("Solr")
+            .expirationTime(new Date(new Date().getTime() - 25 * 1000))
+            .subject("solruser")
+            .claim("customPrincipal", "custom")
+            .build();
+    SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), claims);
+    signedJWT.sign(new RSASSASigner(rsaKey));
+    String header = "Bearer " + signedJWT.serialize();
 
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
     assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
@@ -827,23 +846,32 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void tokenExpiredBeyondClockSkewIsRejected() throws Exception {
-    // Token expired 35 seconds ago — beyond the 30-second clock skew tolerance.
-    NumericDate now = NumericDate.now();
-    JwtClaims claims = new JwtClaims();
-    claims.setIssuer("IDServer");
-    claims.setClaim("customPrincipal", "custom");
-    claims.setIssuedAt(NumericDate.fromSeconds(now.getValue() - 90));
-    claims.setNotBefore(NumericDate.fromSeconds(now.getValue() - 90));
-    claims.setExpirationTime(NumericDate.fromSeconds(now.getValue() - 35));
-    JsonWebSignature jws = new JsonWebSignature();
-    jws.setPayload(claims.toJson());
-    jws.setKey(rsaJsonWebKey.getPrivateKey());
-    jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
-    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-    String header = "Bearer " + jws.getCompactSerialization();
+    // Token expired 35 seconds ago — beyond the 30-second clock skew tolerance
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("IDServer")
+            .audience("Solr")
+            .expirationTime(new Date(new Date().getTime() - 35 * 1000))
+            .subject("solruser")
+            .claim("customPrincipal", "custom")
+            .build();
+    SignedJWT signedJWT =
+        new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(), claims);
+    signedJWT.sign(new RSASSASigner(rsaKey));
+    String header = "Bearer " + signedJWT.serialize();
 
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(header);
     assertFalse(resp.isAuthenticated());
     assertEquals(JWT_EXPIRED, resp.getAuthCode());
+  }
+
+  @Test
+  public void testRegisterTokenEndpointForCsp() {
+    testConfig.put("tokenEndpoint", "http://acmepaymentscorp/oauth/oauth20/token");
+    plugin.init(testConfig);
+    assertEquals(
+        "http://acmepaymentscorp/oauth/oauth20/token",
+        EnvUtils.getProperty(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
   }
 }

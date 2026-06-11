@@ -21,27 +21,26 @@ import static java.util.Arrays.asList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.KeySourceException;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jwt.SignedJWT;
 import java.security.Key;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.security.jwt.JWTIssuerConfig.HttpsJwksFactory;
-import org.jose4j.jwk.EcJwkGenerator;
-import org.jose4j.jwk.EllipticCurveJsonWebKey;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jwk.RsaJwkGenerator;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.keys.EllipticCurves;
-import org.jose4j.lang.JoseException;
-import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,13 +51,13 @@ import org.mockito.junit.MockitoRule;
 
 /** Tests the multi jwks resolver that can fetch keys from multiple JWKs */
 @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
-  private JWTVerificationkeyResolver resolver;
+public class IssuerAwareJWSKeySelectorTest extends SolrTestCaseJ4 {
+  private IssuerAwareJWSKeySelector resolver;
 
   @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
-  @Mock private HttpsJwks firstJwkList;
-  @Mock private HttpsJwks secondJwkList;
+  @Mock private JWTIssuerConfig.JwkSetFetcher firstJwkList;
+  @Mock private JWTIssuerConfig.JwkSetFetcher secondJwkList;
   @Mock private HttpsJwksFactory httpsJwksFactory;
 
   private KeyHolder k1;
@@ -66,8 +65,8 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private KeyHolder k3;
   private KeyHolder k4;
   private KeyHolder k5;
-  private List<JsonWebKey> keysToReturnFromSecondJwk;
-  private Iterator<List<JsonWebKey>> refreshSequenceForSecondJwk;
+  private List<JWK> keysToReturnFromSecondJwk;
+  private Iterator<List<JWK>> refreshSequenceForSecondJwk;
 
   @Override
   @Before
@@ -79,7 +78,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     k4 = new KeyHolder("k4");
     k5 = new KeyHolder("k5");
 
-    when(firstJwkList.getJsonWebKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
+    when(firstJwkList.getKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
     doAnswer(
             invocation -> {
               keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
@@ -88,7 +87,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
             })
         .when(secondJwkList)
         .refresh();
-    when(secondJwkList.getJsonWebKeys())
+    when(secondJwkList.getKeys())
         .then(
             inv -> {
               if (keysToReturnFromSecondJwk == null)
@@ -101,29 +100,29 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     JWTIssuerConfig issuerConfig =
         new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
     JWTIssuerConfig.setHttpsJwksFactory(httpsJwksFactory);
-    resolver = new JWTVerificationkeyResolver(Arrays.asList(issuerConfig), true);
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(issuerConfig), true);
 
     assumeWorkingMockito();
   }
 
   @Test
-  public void findKeyFromFirstList() throws JoseException {
+  public void findKeyFromFirstList() throws Exception {
     refreshSequenceForSecondJwk =
         asList(asList(k3.getJwk(), k4.getJwk()), asList(k5.getJwk())).iterator();
-    resolver.resolveKey(k1.getJws(), null);
-    resolver.resolveKey(k2.getJws(), null);
-    resolver.resolveKey(k3.getJws(), null);
-    resolver.resolveKey(k4.getJws(), null);
-    // Key k5 is not in cache, so a refresh will be done, which
-    resolver.resolveKey(k5.getJws(), null);
+    resolver.selectJWSKeys(k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+    resolver.selectJWSKeys(k2.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+    resolver.selectJWSKeys(k3.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+    resolver.selectJWSKeys(k4.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
+    // Key k5 is not in cache, so a refresh will be done
+    resolver.selectJWSKeys(k5.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
   }
 
-  @Test(expected = UnresolvableKeyException.class)
-  public void notFoundKey() throws JoseException {
+  @Test(expected = KeySourceException.class)
+  public void notFoundKey() throws Exception {
     refreshSequenceForSecondJwk =
         asList(asList(k3.getJwk()), asList(k4.getJwk()), asList(k5.getJwk())).iterator();
     // Will not find key since first refresh returns k4, and we only try one refresh.
-    resolver.resolveKey(k5.getJws(), null);
+    resolver.selectJWSKeys(k5.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("foo"));
   }
 
   @Test
@@ -131,19 +130,21 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     // null iss, requireIssuer=false, single issuer → falls back to that issuer
     when(httpsJwksFactory.createList(ArgumentMatchers.anyList())).thenReturn(asList(firstJwkList));
     JWTIssuerConfig singleIssuerConfig = new JWTIssuerConfig("single").setJwksUrl(asList("url1"));
-    resolver = new JWTVerificationkeyResolver(Arrays.asList(singleIssuerConfig), false);
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(singleIssuerConfig), false);
 
-    Key key = resolver.resolveKey(makeJws(k1, claimsWithNoIss()), null);
-    assertNotNull(key);
+    List<? extends Key> keys =
+        resolver.selectJWSKeys(
+            k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext(null));
+    assertFalse(keys.isEmpty());
   }
 
-  @Test(expected = SolrException.class)
+  @Test(expected = KeySourceException.class)
   public void noIssRequireIssuerFalseMultipleIssuersThrows() throws Exception {
-    // null iss, requireIssuer=false, multiple issuers → SolrException (ambiguous)
+    // null iss, requireIssuer=false, multiple issuers → KeySourceException (ambiguous)
     JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("A").setJwksUrl(asList("url1"));
     JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("B").setJwksUrl(asList("url2"));
-    resolver = new JWTVerificationkeyResolver(Arrays.asList(iss1, iss2), false);
-    resolver.resolveKey(makeJws(k1, claimsWithNoIss()), null);
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(iss1, iss2), false);
+    resolver.selectJWSKeys(k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext(null));
   }
 
   @Test
@@ -152,100 +153,71 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     when(httpsJwksFactory.createList(ArgumentMatchers.anyList())).thenReturn(asList(firstJwkList));
     JWTIssuerConfig singleIssuerConfig =
         new JWTIssuerConfig("single").setIss("A").setJwksUrl(asList("url1"));
-    resolver = new JWTVerificationkeyResolver(Arrays.asList(singleIssuerConfig), true);
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(singleIssuerConfig), true);
 
-    Key key = resolver.resolveKey(makeJws(k1, claimsWithIss("UNKNOWN")), null);
-    assertNotNull(key);
+    List<? extends Key> keys =
+        resolver.selectJWSKeys(
+            k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("UNKNOWN"));
+    assertFalse(keys.isEmpty());
   }
 
-  @Test(expected = UnresolvableKeyException.class)
+  @Test(expected = KeySourceException.class)
   public void issMismatchMultipleIssuersThrows() throws Exception {
-    // iss present but unrecognised, multiple issuers → UnresolvableKeyException
+    // iss present but unrecognised, multiple issuers → KeySourceException
     JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("A").setJwksUrl(asList("url1"));
     JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("B").setJwksUrl(asList("url2"));
-    resolver = new JWTVerificationkeyResolver(Arrays.asList(iss1, iss2), true);
-    resolver.resolveKey(makeJws(k1, claimsWithIss("UNKNOWN")), null);
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(iss1, iss2), true);
+    resolver.selectJWSKeys(
+        k1.getJwsHeader(), new IssuerAwareJWSKeySelector.IssuerContext("UNKNOWN"));
   }
 
   @Test
   public void ecKeyTypeMaterialisedCorrectly() throws Exception {
     // EC key type should be returned as ECPublicKey, not RSAPublicKey
-    EllipticCurveJsonWebKey ecKey = EcJwkGenerator.generateJwk(EllipticCurves.P256);
-    ecKey.setKeyId("ec1");
-    JsonWebKey ecPublicKey = JsonWebKey.Factory.newJwk(ecKey.getECPublicKey());
-    ecPublicKey.setKeyId("ec1");
+    ECKey ecKey = new ECKeyGenerator(Curve.P_256).keyID("ec1").generate();
     JWTIssuerConfig ecIssuerConfig =
         new JWTIssuerConfig("ec-issuer")
             .setIss("ec-iss")
-            .setJsonWebKeySet(new JsonWebKeySet(ecPublicKey));
-    resolver = new JWTVerificationkeyResolver(Arrays.asList(ecIssuerConfig), false);
+            .setJsonWebKeySet(new JWKSet(ecKey.toPublicJWK()));
+    resolver = new IssuerAwareJWSKeySelector(Arrays.asList(ecIssuerConfig), false);
 
-    JsonWebSignature ecJws = new JsonWebSignature();
-    ecJws.setPayload(claimsWithIss("ec-iss").toJson());
-    ecJws.setKey(ecKey.getPrivateKey());
-    ecJws.setKeyIdHeaderValue("ec1");
-    ecJws.setAlgorithmHeaderValue(AlgorithmIdentifiers.ECDSA_USING_P256_CURVE_AND_SHA256);
-
-    Key key = resolver.resolveKey(ecJws, null);
-    assertNotNull(key);
-    assertTrue(key instanceof ECPublicKey);
-  }
-
-  private static JwtClaims claimsWithNoIss() {
-    JwtClaims claims = new JwtClaims();
-    claims.setExpirationTimeMinutesInTheFuture(10);
-    return claims;
-  }
-
-  private static JwtClaims claimsWithIss(String iss) {
-    JwtClaims claims = claimsWithNoIss();
-    claims.setIssuer(iss);
-    return claims;
-  }
-
-  private static JsonWebSignature makeJws(KeyHolder keyHolder, JwtClaims claims)
-      throws JoseException {
-    JsonWebSignature jws = new JsonWebSignature();
-    jws.setPayload(claims.toJson());
-    jws.setKey(keyHolder.getRsaKey().getPrivateKey());
-    jws.setKeyIdHeaderValue(keyHolder.getRsaKey().getKeyId());
-    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-    return jws;
+    JWSHeader ecHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("ec1").build();
+    List<? extends Key> keys =
+        resolver.selectJWSKeys(ecHeader, new IssuerAwareJWSKeySelector.IssuerContext("ec-iss"));
+    assertFalse(keys.isEmpty());
+    assertTrue(keys.get(0) instanceof ECPublicKey);
   }
 
   @SuppressWarnings("NewClassNamingConvention")
   public static class KeyHolder {
-    private final RsaJsonWebKey key;
+    private final RSAKey key;
     private final String kid;
 
-    public KeyHolder(String kid) throws JoseException {
-      key = generateKey(kid);
+    public KeyHolder(String kid) throws JOSEException {
       this.kid = kid;
+      key = new RSAKeyGenerator(2048).keyID(kid).generate();
     }
 
-    public RsaJsonWebKey getRsaKey() {
+    public RSAKey getRsaKey() {
       return key;
     }
 
-    public JsonWebKey getJwk() throws JoseException {
-      JsonWebKey jsonKey = JsonWebKey.Factory.newJwk(key.getRsaPublicKey());
-      jsonKey.setKeyId(kid);
-      return jsonKey;
+    public JWK getJwk() {
+      return key.toPublicJWK();
     }
 
-    public JsonWebSignature getJws() {
-      JsonWebSignature jws = new JsonWebSignature();
-      jws.setPayload(JWTAuthPluginTest.generateClaims().toJson());
-      jws.setKey(getRsaKey().getPrivateKey());
-      jws.setKeyIdHeaderValue(getRsaKey().getKeyId());
-      jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-      return jws;
+    public JWSHeader getJwsHeader() {
+      return new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(kid).build();
     }
 
-    private RsaJsonWebKey generateKey(String kid) throws JoseException {
-      RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
-      rsaJsonWebKey.setKeyId(kid);
-      return rsaJsonWebKey;
+    /** Returns a fully signed JWT for use in integration-style tests. */
+    public SignedJWT getSignedJWT() throws Exception {
+      SignedJWT jwt =
+          new SignedJWT(
+              new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(kid).build(),
+              JWTAuthPluginTest.generateClaims());
+      jwt.sign(new RSASSASigner(key));
+      return jwt;
     }
   }
 }
