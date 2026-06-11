@@ -23,7 +23,7 @@ version: '9_6'
 display_version: '9.6'
 # Marking a version as 'prerelease: false' is only needed for published branches (minor version branches, branch_x_y, that have had a release)
 prerelease: false
-title: Solr Reference Guide
+title: Apache Solr
 nav:
 - modules/getting-started/getting-started-nav.adoc
 - modules/deployment-guide/deployment-nav.adoc
