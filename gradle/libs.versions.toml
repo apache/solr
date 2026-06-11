@@ -145,7 +145,7 @@ kotlin = "2.3.20"
 kotlinx-atomicfu = "0.31.0"
 # @keep for version alignment
 kotlinx-browser = "0.5.0"
-kotlinx-coroutines = "1.10.2"
+kotlinx-coroutines = "1.11.0"
 kotlinx-datetime = "0.7.1"
 kotlinx-serialization = "1.11.0"
 # @keep used by spotless
