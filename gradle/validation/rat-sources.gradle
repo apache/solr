@@ -123,6 +123,8 @@ allprojects {
       // validates input/output overlaps at configuration time before the git
       // filter closure runs, so this must be excluded explicitly.
       exclude project.layout.buildDirectory.get().asFile.name
+      // similarly, at least one subproject writes to .gradle/ for config/setup
+      exclude ".gradle/**"
 
       // Don't check any of the subprojects - they have their own rat tasks.
       exclude subprojects.collect {it.projectDir.name}

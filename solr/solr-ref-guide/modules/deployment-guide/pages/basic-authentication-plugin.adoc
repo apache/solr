@@ -24,11 +24,10 @@ To control user permissions, you may need to configure an authorization plugin a
 
 == Enable Basic Authentication
 
-When running in cloud mode, Basic authentication can be enabled from the command line using the `bin/solr auth enable` command, which applies a best-practice security template with pre-configured roles and permissions.
-See xref:solr-control-script-reference.adoc#enabling-basic-authentication[Enabling Basic Authentication] in the Solr Control Script Reference for details.
-
-Alternatively, you can create the `security.json` file manually.
+To use Basic authentication, you must first create a `security.json` file.
 This file and where to put it is described in detail in the section xref:authentication-and-authorization-plugins.adoc#configuring-security-json[Configuring security.json].
+
+If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
 
 For Basic authentication, `security.json` must have an `authentication` block which defines the class being used for authentication.
 Usernames and passwords could be added when the file is created, or can be added later with the Authentication API, described below.
@@ -186,7 +185,6 @@ If users need to be restricted to a specific collection, that can be done with t
 === Add a User or Edit a Password
 
 The `set-user` command allows you to add users and change their passwords.
-Passwords must not be identical to the username.
 For example, the following defines two users and their passwords:
 
 [tabs#set-user]
