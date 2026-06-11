@@ -83,11 +83,8 @@ import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Utils {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final Random RANDOM;
 
@@ -297,16 +294,10 @@ public class Utils {
     if (utf8 == null || utf8.length == 0 || length == 0) {
       return Map.of();
     }
-    // convert directly from bytes to chars
-    // and parse directly from that instead of going through
-    // intermediate strings or readers
-    CharArr chars = new CharArr();
-    ByteUtils.UTF8toUTF16(utf8, offset, length, chars);
-    JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
-    parser.setFlags(
-        parser.getFlags()
-            | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
-            | JSONParser.OPTIONAL_OUTER_BRACES);
+    // convert from bytes to chars on-the-fly and parse directly
+    // from that instead of going through intermediate buffers
+    Reader reader = new InputStreamReader(new ByteArrayInputStream(utf8, offset, length), UTF_8);
+    JSONParser parser = getJSONParser(reader);
     try {
       return fun.apply(parser).getValStrict();
     } catch (IOException e) {
