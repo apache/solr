@@ -18,12 +18,12 @@ package org.apache.solr.core;
 
 import java.io.InputStream;
 import java.util.Map;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.update.SolrIndexConfig;
