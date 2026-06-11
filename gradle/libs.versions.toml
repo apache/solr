@@ -113,7 +113,7 @@ grpc = "1.80.0"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
 hamcrest = "3.0"
-hk2 = "3.1.1"
+hk2 = "4.0.1"
 hsqldb = "2.7.4"
 ibm-icu = "77.1"
 immutables-valueannotations = "2.12.1"
