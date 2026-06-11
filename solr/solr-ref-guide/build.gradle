@@ -167,10 +167,7 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
       // The Solr Operator is only aggregated into the official multi-version
       // site. Local builds render just the ref guide; operator contributors
       // preview their component from the apache/solr-operator repo (make docs).
-      'additional_sources': """
-  - url: "https://github.com/apache/solr-operator.git"
-    branches: \"release-*\"
-    start_path: docs""",
+      'additional_sources': "",
   ]
 
   expand(escapeYamlSingleQuotesString(props))
