@@ -17,11 +17,11 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import org.apache.solr.client.api.model.NodeSystemInfoType;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 
 /** V2 API definitions to fetch node system info, analogous to the v1 /admin/info/system. */
@@ -37,14 +37,9 @@ public interface NodeSystemInfoApi {
   @GET
   @Operation(
       summary = "Retrieve specific node system info.",
-      tags = {"system"},
-      parameters = {
-        @Parameter(
-            name = "requestedInfo",
-            description = "Allowed values: 'gpu', 'jvm', 'lucene', 'security', 'system'")
-      })
+      tags = {"system"})
   @Path("/{requestedInfo}")
   NodeSystemResponse getSpecificNodeSystemInfo(
-      @PathParam(value = "requestedInfo") String requestedInfo,
+      @PathParam(value = "requestedInfo") NodeSystemInfoType requestedInfo,
       @QueryParam(value = "nodes") String nodes);
 }

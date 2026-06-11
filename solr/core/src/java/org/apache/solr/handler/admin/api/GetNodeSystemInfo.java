@@ -20,6 +20,7 @@ import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
+import org.apache.solr.client.api.model.NodeSystemInfoType;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.SystemApi;
 import org.apache.solr.common.SolrException;
@@ -68,7 +69,8 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
   }
 
   @Override
-  public NodeSystemResponse getSpecificNodeSystemInfo(String requestedInfo, String nodes) {
+  public NodeSystemResponse getSpecificNodeSystemInfo(
+      NodeSystemInfoType requestedInfo, String nodes) {
     NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
     solrQueryResponse.setHttpCaching(false);
 
@@ -79,24 +81,11 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     response.nodeInfo = new NodeSystemResponse.NodeSystemInfo();
     SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
     switch (requestedInfo) {
-      case "gpu":
-        response.nodeInfo.gpu = provider.getGpuInfo();
-        break;
-      case "jvm":
-        response.nodeInfo.jvm = provider.getJvmInfo();
-        break;
-      case "lucene":
-        response.nodeInfo.lucene = provider.getLuceneInfo();
-        break;
-      case "security":
-        response.nodeInfo.security = provider.getSecurityInfo();
-        break;
-      case "system":
-        response.nodeInfo.system = provider.getSystemInfo();
-        break;
-      default:
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Unknown parameter: " + requestedInfo);
+      case GPU -> response.nodeInfo.gpu = provider.getGpuInfo();
+      case JVM -> response.nodeInfo.jvm = provider.getJvmInfo();
+      case LUCENE -> response.nodeInfo.lucene = provider.getLuceneInfo();
+      case SECURITY -> response.nodeInfo.security = provider.getSecurityInfo();
+      case SYSTEM -> response.nodeInfo.system = provider.getSystemInfo();
     }
     return response;
   }
