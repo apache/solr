@@ -70,7 +70,13 @@ public class NestPathField extends SortableTextField {
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (externalVal == null || externalVal.isEmpty() || "/".equals(externalVal)) {
+    if (externalVal == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Field " + field.getName() + " cannot be queried with a null.");
+    }
+
+    if (externalVal.isEmpty() || "/".equals(externalVal)) {
       return new BooleanQuery.Builder()
           .add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST)
           .add(field.getType().getExistenceQuery(parser, field), BooleanClause.Occur.MUST_NOT)
