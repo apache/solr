@@ -23,7 +23,7 @@ version: '10_1'
 display_version: '10.1-beta'
 # Marking a version as 'prerelease: false' is only needed for published branches (minor version branches, branch_x_y, that have had a release)
 prerelease: -beta
-title: Solr Reference Guide
+title: Apache Solr
 nav:
 - modules/getting-started/getting-started-nav.adoc
 - modules/deployment-guide/deployment-nav.adoc
