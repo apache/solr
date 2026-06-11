@@ -72,6 +72,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -1038,15 +1039,47 @@ public abstract class FieldType extends FieldProperties {
    * @return The {@link org.apache.lucene.search.Query} instance.
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
+    Query query;
     if (field.hasDocValues()) {
-      return new FieldExistsQuery(field.getName());
+      query = new FieldExistsQuery(field.getName());
     } else if (!field.omitNorms()
         && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-      return new FieldExistsQuery(field.getName());
+      query = new FieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query
-      return getSpecializedExistenceQuery(parser, field);
+      query = getSpecializedExistenceQuery(parser, field);
     }
+
+    if (query instanceof FieldExistsQuery
+        && parser != null
+        && parser.getReq() != null
+        && parser.getReq().getCore() != null) {
+      try {
+        SolrCore core = parser.getReq().getCore();
+        Query fieldExistsQuery = query;
+        query = core.withSearcher(searcher -> searcher.rewrite(fieldExistsQuery));
+      } catch (IllegalStateException e) {
+        String fieldExistsMessage = getFieldExistsQueryRequiresMessage(e);
+        if (fieldExistsMessage != null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, fieldExistsMessage, e);
+        }
+        throw e;
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
+
+    return query;
+  }
+
+  private static String getFieldExistsQueryRequiresMessage(Throwable throwable) {
+    for (Throwable current = throwable; current != null; current = current.getCause()) {
+      String message = current.getMessage();
+      if (message != null && message.startsWith("FieldExistsQuery requires")) {
+        return message;
+      }
+    }
+    return null;
   }
 
   /**
