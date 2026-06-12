@@ -67,7 +67,7 @@ public class AuthToolTest extends SolrCloudTestCase {
       "--solr-include-file",
       solrIncludeFile.toAbsolutePath().toString(),
       "--credentials",
-      "solr:solr",
+      "solr:solrRocks",
       "--block-unknown",
       "true"
     };
