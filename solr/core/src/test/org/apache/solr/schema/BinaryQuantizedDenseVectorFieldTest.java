@@ -38,6 +38,14 @@ public class BinaryQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     }
   }
 
+  @Test
+  public void fieldDefinition_flatAlgorithm_shouldThrowException() throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-flat-binaryQuantized.xml",
+        "knnAlgorithm 'flat' is not supported for BinaryQuantizedDenseVectorField");
+  }
+
   // there are no major interface differences between BinaryBitQuantizedDenseVectorField and
   // DenseVectorField
   // so we can rely on those tests for validation cases
