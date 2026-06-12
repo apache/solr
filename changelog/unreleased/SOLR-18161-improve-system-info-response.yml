@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Improve /node/system response with a wrapper to separate the system info from the response header, and add a method to return only selected info
+title: Added new `/api/node/system` sub APIs to fetch specific subsets of the normal `/api/node/system` response. e.g. `/api/node/system/jvm`
 type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Isabelle Giguère
