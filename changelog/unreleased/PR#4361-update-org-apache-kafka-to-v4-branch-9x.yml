@@ -1,0 +1,7 @@
+title: Update org.apache.kafka:* to v4 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4361
+  url: https://github.com/apache/solr/pull/4361
