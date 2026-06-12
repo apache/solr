@@ -440,11 +440,13 @@ public class JettySolrRunner {
 
     server.setHandler(gzipHandler);
 
-    // Mimic "graceful.mod"
-    final StatisticsHandler graceful = new StatisticsHandler();
-    graceful.setGracefulShutdownWaitsForRequests(true);
-    server.insertHandler(graceful);
-    server.setStopTimeout(15 * 1000);
+    if (config.enableGracefulShutdown) {
+      // Mimic "graceful.mod"
+      final StatisticsHandler graceful = new StatisticsHandler();
+      graceful.setGracefulShutdownWaitsForRequests(true);
+      server.insertHandler(graceful);
+      server.setStopTimeout(15 * 1000);
+    }
   }
 
   /**
