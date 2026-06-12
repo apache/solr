@@ -453,11 +453,14 @@ ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-
 ktor-server-cio = { module = "io.ktor:ktor-server-cio" }
 ktor-server-core = { module = "io.ktor:ktor-server-core" }
 ktor-server-htmlBuilder = { module = "io.ktor:ktor-server-html-builder" }
+langchain4j-anthropic = { module = "dev.langchain4j:langchain4j-anthropic" }
 langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core" }
+langchain4j-google-ai-gemini = { module = "dev.langchain4j:langchain4j-google-ai-gemini" }
 langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face" }
 langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai" }
+langchain4j-ollama = { module = "dev.langchain4j:langchain4j-ollama" }
 langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai" }
 lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "lmax-disruptor" }
 locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", version.ref = "spatial4j" }
