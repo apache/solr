@@ -17,25 +17,18 @@
 
 package org.apache.solr.util;
 
-import static org.hamcrest.CoreMatchers.containsString;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
@@ -106,15 +99,17 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
                 }
                 CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
                 h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
-                SolrException ex =
-                    expectThrows(
-                        SolrException.class,
-                        () -> {
-                          h.query(req("name:\"john smith\""));
-                        });
+                int expected = (code == -1) ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code;
                 assertEquals(
-                    (code == -1) ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code,
-                    ex.code());
+                    "Configured circuit-breaker error code",
+                    expected,
+                    CircuitBreaker.getExceptionErrorCode().code);
+                List<CircuitBreaker> tripped =
+                    h.getCore()
+                        .getCircuitBreakerRegistry()
+                        .checkTripped(SolrRequest.SolrRequestType.QUERY);
+                assertNotNull("Tripped breaker should be reported by registry", tripped);
+                assertEquals(1, tripped.size());
                 System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
               });
     }
@@ -124,14 +119,13 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     removeAllExistingCircuitBreakers();
 
     CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
-
     CircuitBreakerRegistry.registerGlobal(circuitBreaker);
 
-    expectThrows(
-        SolrException.class,
-        () -> {
-          h.query(req("name:\"john smith\""));
-        });
+    List<CircuitBreaker> tripped =
+        CircuitBreakerRegistry.checkTrippedGlobal(SolrRequest.SolrRequestType.QUERY);
+    assertNotNull("Global breaker should be reported as tripped", tripped);
+    assertEquals(1, tripped.size());
+    assertSame(circuitBreaker, tripped.get(0));
   }
 
   public void testCBsCanBeMarkedAsWarnOnly() throws Exception {
@@ -140,19 +134,21 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     final var warnCircuitBreaker = new MockCircuitBreaker(true);
     CircuitBreakerRegistry.registerGlobal(warnCircuitBreaker);
 
-    // CB is warnOnly=false by default, so error is thrown.
-    expectThrows(
-        SolrException.class,
-        () -> {
-          h.query(req("name:\"john smith\""));
-        });
+    // CB is warnOnly=false by default — registry reports it as tripped.
+    assertNotNull(
+        "Hard-tripped breaker should be returned by checkTrippedGlobal",
+        CircuitBreakerRegistry.checkTrippedGlobal(SolrRequest.SolrRequestType.QUERY));
 
-    // When warnOnly=true is set, CB will trip but requests will not fail
+    // When warnOnly=true is set, checkTripped (per-core) still includes it (legacy behavior),
+    // but checkTrippedGlobal — the admission-control variant — filters it out.
     warnCircuitBreaker.setWarnOnly(true);
     final var tripList =
         h.getCore().getCircuitBreakerRegistry().checkTripped(SolrRequest.SolrRequestType.QUERY);
     assertEquals(1, tripList.size());
     assertEquals(warnCircuitBreaker, tripList.get(0));
+    assertNull(
+        "Warn-only breakers must not be admission-control-tripped",
+        CircuitBreakerRegistry.checkTrippedGlobal(SolrRequest.SolrRequestType.QUERY));
     h.query(req("name:\"john smith\""));
   }
 
@@ -213,34 +209,34 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
 
   public void testCBFakeMemoryPressure() throws Exception {
     removeAllExistingCircuitBreakers();
+    CircuitBreakerRegistry registry = h.getCore().getCircuitBreakerRegistry();
 
-    // Update and query will not trip
-    h.update(
-        "<add><doc><field name=\"id\">1</field><field name=\"name\">john smith</field></doc></add>");
-    h.query(req("name:\"john smith\""));
+    // No breakers registered: registry reports nothing tripped.
+    assertNull(registry.checkTrippedLocal(SolrRequest.SolrRequestType.QUERY));
+    assertNull(registry.checkTrippedLocal(SolrRequest.SolrRequestType.UPDATE));
 
     MemoryCircuitBreaker searchBreaker = new FakeMemoryPressureCircuitBreaker();
     searchBreaker.setThreshold(80);
     // Default request type is "query"
-    // searchBreaker.setRequestTypes(List.of("query"));
-    h.getCore().getCircuitBreakerRegistry().register(searchBreaker);
+    registry.register(searchBreaker);
 
-    // Query will trip, but not update due to defaults
-    expectThrows(SolrException.class, () -> h.query(req("name:\"john smith\"")));
-    h.update(
-        "<add><doc><field name=\"id\">2</field><field name=\"name\">john smith</field></doc></add>");
+    // Query type now reports tripped, update does not (different default request type set).
+    List<CircuitBreaker> queryTripped =
+        registry.checkTrippedLocal(SolrRequest.SolrRequestType.QUERY);
+    assertNotNull(queryTripped);
+    assertEquals(1, queryTripped.size());
+    List<CircuitBreaker> updateTripped =
+        registry.checkTrippedLocal(SolrRequest.SolrRequestType.UPDATE);
+    assertTrue("Update breakers should be empty", updateTripped == null || updateTripped.isEmpty());
 
     MemoryCircuitBreaker updateBreaker = new FakeMemoryPressureCircuitBreaker();
     updateBreaker.setThreshold(75);
     updateBreaker.setRequestTypes(List.of("update"));
-    h.getCore().getCircuitBreakerRegistry().register(updateBreaker);
+    registry.register(updateBreaker);
 
-    // Now also update will trip
-    expectThrows(
-        SolrException.class,
-        () ->
-            h.update(
-                "<add><doc><field name=\"id\">1</field><field name=\"name\">john smith</field></doc></add>"));
+    updateTripped = registry.checkTrippedLocal(SolrRequest.SolrRequestType.UPDATE);
+    assertNotNull(updateTripped);
+    assertEquals(1, updateTripped.size());
   }
 
   public void testBadRequestType() {
@@ -272,51 +268,27 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
   }
 
   /**
-   * Common assert method to be reused in tests
+   * Common assert method to be reused in tests. Verifies that the breaker's {@code isTripped()}
+   * method returns true the expected number of times across {@code numIterations} successive
+   * invocations.
    *
    * @param circuitBreaker the breaker to test
-   * @param numShouldTrip the number of queries that should trip the breaker
+   * @param numShouldTrip the number of {@code isTripped()} calls (out of 5) that should report the
+   *     breaker as tripped
    */
   private void assertThatHighQueryLoadTrips(CircuitBreaker circuitBreaker, int numShouldTrip) {
     removeAllExistingCircuitBreakers();
 
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
-    AtomicInteger failureCount = new AtomicInteger();
-
-    ExecutorService executor =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TestCircuitBreaker"));
-    try {
-      List<Future<?>> futures = new ArrayList<>();
-
-      for (int i = 0; i < 5; i++) {
-        Future<?> future =
-            executor.submit(
-                () -> {
-                  try {
-                    h.query(req("name:\"john smith\""));
-                  } catch (SolrException e) {
-                    assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
-                    failureCount.incrementAndGet();
-                  } catch (Exception e) {
-                    throw new RuntimeException(e.getMessage());
-                  }
-                });
-
-        futures.add(future);
+    int trippedCount = 0;
+    for (int i = 0; i < 5; i++) {
+      if (circuitBreaker.isTripped()) {
+        trippedCount++;
       }
-
-      for (Future<?> future : futures) {
-        try {
-          future.get();
-        } catch (Exception e) {
-          throw new RuntimeException(e.getMessage());
-        }
-      }
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
-      assertEquals("Number of failed queries is not correct", numShouldTrip, failureCount.get());
     }
+    assertEquals(
+        "Number of tripped reports does not match expectation", numShouldTrip, trippedCount);
   }
 
   public void testResponseWithCBTiming() {
@@ -340,6 +312,9 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
         "count(//lst[@name='process']/*)>0",
         "//lst[@name='process']/double[@name='time']");
 
+    // Registering a (non-tripped) circuit breaker no longer adds an entry to the handler-level
+    // timing tree — admission control has been moved to SolrQoSFilter and no longer wraps
+    // SearchHandler.processComponents in an RTimerTree subtree.
     CircuitBreaker circuitBreaker = new MockCircuitBreaker(false);
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
@@ -354,10 +329,8 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
         "//lst[@name='explain']/str[@name='2']",
         "//lst[@name='explain']/str[@name='3']",
         "//str[@name='QParser']",
-        "count(//lst[@name='timing']/*)=4",
+        "count(//lst[@name='timing']/*)=3",
         "//lst[@name='timing']/double[@name='time']",
-        "count(//lst[@name='circuitbreaker']/*)>0",
-        "//lst[@name='circuitbreaker']/double[@name='time']",
         "count(//lst[@name='prepare']/*)>0",
         "//lst[@name='prepare']/double[@name='time']",
         "count(//lst[@name='process']/*)>0",
@@ -388,7 +361,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
     public FakeMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
     }
 
     @Override
@@ -401,7 +374,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     private AtomicInteger count;
 
     public BuildingUpMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
       this.count = new AtomicInteger(0);
     }
 
