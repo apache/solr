@@ -115,9 +115,6 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
     QueryCancellationComponent component = new QueryCancellationComponent();
     components.add(component);
 
-    ActiveTasksListComponent activeTasksListComponent = new ActiveTasksListComponent();
-    components.add(activeTasksListComponent);
-
     return components;
   }
 
