@@ -1,0 +1,7 @@
+title: Migrate CancelTasksAPI to JAX-RS.  Cancel Task API now has OpenAPI and SolrJ support.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+- name: PR#4180
+  url: https://github.com/apache/solr/pull/4180

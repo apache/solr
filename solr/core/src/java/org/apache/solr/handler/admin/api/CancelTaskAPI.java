@@ -17,32 +17,56 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_KEY;
+import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
-import org.apache.solr.api.EndPoint;
+import jakarta.inject.Inject;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.CancelTaskApi;
+import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryCancellationHandler;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.PermissionNameProvider;
 
 /**
  * V2 API for cancelling a currently running "task".
  *
- * <p>This API (GET /v2/collections/collectionName/tasks/cancel) is analogous to the v1
- * /solr/collectionName/tasks/cancel API.
+ * <p>This API (GET /v2/collections/{collectionName}/tasks/cancel and GET
+ * /v2/cores/{coreName}/tasks/cancel) is analogous to the v1
+ * /solr/{collectionName|coreName}/tasks/cancel API.
  */
-public class CancelTaskAPI {
-  private final QueryCancellationHandler cancellationHandler;
+public class CancelTaskAPI extends JerseyResource implements CancelTaskApi {
+  private final SolrCore solrCore;
+  private final SolrQueryRequest solrQueryRequest;
+  private final SolrQueryResponse solrQueryResponse;
 
-  public CancelTaskAPI(QueryCancellationHandler cancellationHandler) {
-    this.cancellationHandler = cancellationHandler;
+  @Inject
+  public CancelTaskAPI(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+    this.solrCore = solrCore;
+    this.solrQueryRequest = req;
+    this.solrQueryResponse = rsp;
   }
 
-  @EndPoint(
-      path = {"/tasks/cancel"},
-      method = GET,
-      permission = PermissionNameProvider.Name.READ_PERM)
-  public void cancelActiveTask(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    cancellationHandler.handleRequestBody(req, rsp);
+  @Override
+  @PermissionName(READ_PERM)
+  public FlexibleSolrJerseyResponse cancelTask(String queryUUID) throws Exception {
+    final FlexibleSolrJerseyResponse response =
+        instantiateJerseyResponse(FlexibleSolrJerseyResponse.class);
+    ensureRequiredParameterProvided("queryUUID", queryUUID);
+    final QueryCancellationHandler cancellationHandler =
+        (QueryCancellationHandler) solrCore.getRequestHandler("/tasks/cancel");
+    cancellationHandler.handleRequestBody(solrQueryRequest, solrQueryResponse);
+    // Copy response data added by the handler into the jersey response object
+    solrQueryResponse
+        .getValues()
+        .forEach(
+            (key, value) -> {
+              if (!RESPONSE_HEADER_KEY.equals(key)) {
+                response.setUnknownProperty(key, value);
+              }
+            });
+    return response;
   }
 }
