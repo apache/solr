@@ -47,6 +47,8 @@ http://localhost:8983/api/node/system
 
 == Node Information Object
 
+The `nodeInfo` object appears only in the V2 API response.  In the V1 API response, the keys listed below are available at the top level.
+
 The keys in the result are:
 
 `mode`::
