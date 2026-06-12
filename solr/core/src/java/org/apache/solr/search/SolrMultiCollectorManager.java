@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.FilterScorable;
@@ -33,28 +33,24 @@ import org.apache.lucene.search.ScoreMode;
 /**
  * A {@link CollectorManager} implements which wrap a set of {@link CollectorManager} as {@link
  * MultiCollector} acts for {@link Collector}.
+ *
+ * <p>Cross-cutting search-chain features (max-hits early termination, segment-terminate-early,
+ * post-filter, cancellation) are handled by {@link SolrCollectorManagers.ChainCM} which wraps this
+ * manager. This class only composes its child managers.
  */
 public class SolrMultiCollectorManager
     implements CollectorManager<SolrMultiCollectorManager.Collectors, Object[]> {
 
   private final CollectorManager<Collector, ?>[] collectorManagers;
-  private LongAdder runningHits = null;
-  private int maxDocsToCollect;
-  private final List<Collectors> reducableCollectors = new ArrayList<>();
 
   @SafeVarargs
   @SuppressWarnings({"varargs", "unchecked"})
   public SolrMultiCollectorManager(
-      QueryCommand queryCommand,
       final CollectorManager<? extends Collector, ?>... collectorManagers) {
     if (collectorManagers.length < 1) {
       throw new IllegalArgumentException("There must be at least one collector");
     }
     this.collectorManagers = (CollectorManager[]) collectorManagers;
-    if (queryCommand.shouldEarlyTerminateSearch()) {
-      runningHits = new LongAdder();
-      maxDocsToCollect = queryCommand.getMaxHitsAllowed();
-    }
   }
 
   // TODO: could Lucene's MultiCollector permit reuse of its logic?
@@ -72,9 +68,7 @@ public class SolrMultiCollectorManager
 
   @Override
   public Collectors newCollector() throws IOException {
-    final Collectors collector = new Collectors();
-    reducableCollectors.add(collector);
-    return collector;
+    return new Collectors();
   }
 
   @Override
@@ -91,10 +85,6 @@ public class SolrMultiCollectorManager
     return results;
   }
 
-  public Object[] reduce() throws IOException {
-    return reduce(reducableCollectors);
-  }
-
   /** Wraps multiple collectors for processing */
   class Collectors implements Collector {
 
@@ -103,11 +93,7 @@ public class SolrMultiCollectorManager
     private Collectors() throws IOException {
       collectors = new Collector[collectorManagers.length];
       for (int i = 0; i < collectors.length; i++) {
-        Collector collector = collectorManagers[i].newCollector();
-        if (runningHits != null) {
-          collector = new EarlyTerminatingCollector(collector, maxDocsToCollect, runningHits);
-        }
-        collectors[i] = collector;
+        collectors[i] = collectorManagers[i].newCollector();
       }
     }
 
@@ -136,17 +122,44 @@ public class SolrMultiCollectorManager
           throws IOException {
         this.skipNonCompetitiveScores = skipNonCompetitiveScores;
         leafCollectors = new LeafCollector[collectors.length];
+        int terminated = 0;
         for (int i = 0; i < collectors.length; i++) {
-          leafCollectors[i] = collectors[i].getLeafCollector(context);
+          try {
+            leafCollectors[i] = collectors[i].getLeafCollector(context);
+          } catch (CollectionTerminatedException e) {
+            // Per-child handling matches Lucene's MultiCollector: drop this child for the
+            // rest of the leaf and continue collecting for the others. Only when ALL children
+            // have terminated do we propagate the exception.
+            leafCollectors[i] = null;
+            terminated++;
+          }
+        }
+        if (terminated == leafCollectors.length && leafCollectors.length > 0) {
+          throw new CollectionTerminatedException();
         }
       }
 
       @Override
       public final void setScorer(final Scorable scorer) throws IOException {
         if (skipNonCompetitiveScores) {
-          for (LeafCollector leafCollector : leafCollectors) {
-            if (leafCollector != null) {
-              leafCollector.setScorer(scorer);
+          // TOP_SCORES: aggregate per-child setMinCompetitiveScore so the underlying scorer
+          // only skips a doc when ALL active children agree it's non-competitive — mirroring
+          // Lucene's MultiCollector.MinCompetitiveScoreAwareScorable. Without this, the last
+          // child to call setMinCompetitiveScore overwrites previous values and can cause
+          // over-aggressive skipping (e.g. ReRankCollector + MaxScoreCollector with
+          // minExactCount tightly bounded).
+          if (leafCollectors.length == 1) {
+            LeafCollector lc = leafCollectors[0];
+            if (lc != null) {
+              lc.setScorer(scorer);
+            }
+          } else {
+            float[] minScores = new float[leafCollectors.length];
+            for (int i = 0; i < leafCollectors.length; i++) {
+              LeafCollector lc = leafCollectors[i];
+              if (lc != null) {
+                lc.setScorer(new MinCompetitiveScoreAwareScorable(scorer, i, minScores));
+              }
             }
           }
         } else {
@@ -169,12 +182,78 @@ public class SolrMultiCollectorManager
 
       @Override
       public final void collect(final int doc) throws IOException {
-        for (LeafCollector leafCollector : leafCollectors) {
+        // Matches Lucene MultiCollector.MultiLeafCollector#collect exactly: keep the per-iteration
+        // body small (load slot, null-check, call) so the JIT can inline the child collect call,
+        // and only walk the array to detect "all terminated" inside the rare catch branch.
+        for (int i = 0; i < leafCollectors.length; i++) {
+          LeafCollector leafCollector = leafCollectors[i];
           if (leafCollector != null) {
-            leafCollector.collect(doc);
+            try {
+              leafCollector.collect(doc);
+            } catch (CollectionTerminatedException e) {
+              leafCollectors[i].finish();
+              leafCollectors[i] = null;
+              if (allLeavesTerminated()) {
+                throw new CollectionTerminatedException();
+              }
+            }
           }
         }
       }
+
+      private boolean allLeavesTerminated() {
+        for (LeafCollector lc : leafCollectors) {
+          if (lc != null) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      @Override
+      public final void finish() throws IOException {
+        // Matches Lucene MultiCollector.MultiLeafCollector#finish: forward end-of-leaf to
+        // every child that hasn't already been finished via per-doc termination above.
+        for (LeafCollector leafCollector : leafCollectors) {
+          if (leafCollector != null) {
+            leafCollector.finish();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Mirrors {@code Lucene MultiCollector.MinCompetitiveScoreAwareScorable}: tracks per-child
+   * minimum competitive scores and propagates the smallest of them to the underlying scorer, so the
+   * scorer only skips a doc when every wrapped collector agrees it's non-competitive.
+   */
+  private static final class MinCompetitiveScoreAwareScorable extends FilterScorable {
+    private final int idx;
+    private final float[] minScores;
+
+    MinCompetitiveScoreAwareScorable(Scorable in, int idx, float[] minScores) {
+      super(in);
+      this.idx = idx;
+      this.minScores = minScores;
+    }
+
+    @Override
+    public void setMinCompetitiveScore(float minScore) throws IOException {
+      if (minScore > minScores[idx]) {
+        minScores[idx] = minScore;
+        in.setMinCompetitiveScore(minScore());
+      }
+    }
+
+    private float minScore() {
+      float min = Float.MAX_VALUE;
+      for (int i = 0; i < minScores.length; i++) {
+        if (minScores[i] < min) {
+          min = minScores[i];
+        }
+      }
+      return min;
     }
   }
 }

@@ -28,18 +28,40 @@ import org.apache.lucene.search.ScoreMode;
 /** Allows a query to be cancelled */
 public class CancellableCollector implements Collector {
 
-  /** Thrown when a query gets cancelled */
-  public static class QueryCancelledException extends RuntimeException {}
+  /**
+   * Thrown when a query gets cancelled. This is a control-flow exception only — it is caught by the
+   * searcher and never inspected, so we skip filling in the stack trace to keep cancellation cheap
+   * (matches Lucene {@code CollectionTerminatedException} and {@code
+   * TimeLimitingBulkScorer.TimeExceededException}).
+   */
+  @SuppressWarnings("serial")
+  public static class QueryCancelledException extends RuntimeException {
+    @Override
+    public Throwable fillInStackTrace() {
+      // never re-thrown so we can save the expensive stacktrace
+      return this;
+    }
+  }
 
   private final Collector collector;
   private final AtomicBoolean isQueryCancelled;
 
   public CancellableCollector(Collector collector) {
+    this(collector, new AtomicBoolean());
+  }
+
+  /**
+   * Creates a {@link CancellableCollector} that polls a caller-supplied cancellation flag. Multiple
+   * per-slice collectors can share the same {@link AtomicBoolean} so that a single {@link
+   * #cancel()} on any instance is observed by all of them — required for cancelling a query that is
+   * fanned out across parallel segment slices.
+   */
+  public CancellableCollector(Collector collector, AtomicBoolean cancellationFlag) {
     Objects.requireNonNull(
         collector, "Internal collector not provided but wrapper collector accessed");
-
+    Objects.requireNonNull(cancellationFlag, "cancellationFlag must not be null");
     this.collector = collector;
-    this.isQueryCancelled = new AtomicBoolean();
+    this.isQueryCancelled = cancellationFlag;
   }
 
   @Override
@@ -50,11 +72,18 @@ public class CancellableCollector implements Collector {
     }
 
     return new FilterLeafCollector(collector.getLeafCollector(context)) {
+      int collectCount = 0;
 
       @Override
       public void collect(int doc) throws IOException {
-        if (isQueryCancelled.get()) {
-          throw new QueryCancelledException();
+        // To avoid polling the AtomicBoolean (volatile read) on every collected document,
+        // which acts as a memory barrier and prevents JIT optimizations,
+        // we check it only every 1024 docs. This keeps the hot loop fast while maintaining
+        // responsive cancellation.
+        if ((collectCount++ & 0x3FF) == 0) {
+          if (isQueryCancelled.get()) {
+            throw new QueryCancelledException();
+          }
         }
         in.collect(doc);
       }
