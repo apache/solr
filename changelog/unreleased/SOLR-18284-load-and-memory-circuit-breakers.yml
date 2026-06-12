@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Load-average and memory circuit breakers no longer stampede or trip on transient pre-GC heap peaks
+type: fixed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18284
+    url: https://issues.apache.org/jira/browse/SOLR-18284

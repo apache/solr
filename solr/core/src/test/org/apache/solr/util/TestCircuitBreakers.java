@@ -388,7 +388,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
     public FakeMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
     }
 
     @Override
@@ -401,7 +401,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     private AtomicInteger count;
 
     public BuildingUpMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
       this.count = new AtomicInteger(0);
     }
 
