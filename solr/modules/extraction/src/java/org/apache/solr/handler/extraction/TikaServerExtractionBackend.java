@@ -36,7 +36,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.tika.sax.BodyContentHandler;
@@ -100,7 +99,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
     this.maxCharsLimit = maxCharsLimit;
     if (initArgs != null) {
-      initArgsMap.putAll(new SimpleOrderedMap<>(initArgs));
+      initArgs.forEach(initArgsMap::put);
     }
     Object metaCompatObh = this.initArgsMap.get(ExtractingParams.TIKASERVER_METADATA_COMPATIBILITY);
     if (metaCompatObh != null) {

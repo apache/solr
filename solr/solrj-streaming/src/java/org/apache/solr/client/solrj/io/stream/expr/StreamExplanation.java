@@ -59,10 +59,6 @@ public class StreamExplanation extends Explanation {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     super.writeMap(ew);
-    if (children != null) {
-      for (Explanation child : children) {
-        child.writeMap(ew);
-      }
-    }
+    ew.putIfNotNull("children", children);
   }
 }
