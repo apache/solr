@@ -30,33 +30,18 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
 
   private final SolrParams params;
 
-  /** Request to "/admin/info/system" by default, without params. */
+  /** Request to "/admin/info/system" without params. */
   public SystemInfoRequest() {
-    this(CommonParams.SYSTEM_INFO_PATH);
+    this(new ModifiableSolrParams());
   }
 
   /**
-   * @param path the HTTP path to use for this request. Defaults to the v1 path,
-   *     "/admin/info/system"
-   */
-  public SystemInfoRequest(String path) {
-    this(path, new ModifiableSolrParams());
-  }
-
-  /**
+   * Request to "/admin/info/system" with params.
+   *
    * @param params the Solr parameters to use for this request.
    */
   public SystemInfoRequest(SolrParams params) {
-    this(CommonParams.SYSTEM_INFO_PATH, params);
-  }
-
-  /**
-   * @param path the HTTP path to use for this request. Defaults to the v1 path,
-   *     "/admin/info/system"
-   * @param params query parameter names and values for making this request.
-   */
-  public SystemInfoRequest(String path, SolrParams params) {
-    super(METHOD.GET, path, SolrRequestType.ADMIN);
+    super(METHOD.GET, CommonParams.SYSTEM_INFO_PATH, SolrRequestType.ADMIN);
     this.params = params;
   }
 

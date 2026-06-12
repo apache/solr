@@ -20,6 +20,7 @@ import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
+import org.apache.solr.client.api.model.NodeSystemInfoType;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.SystemApi;
 import org.apache.solr.common.SolrException;
@@ -62,7 +63,29 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
     provider.getNodeSystemInfo(response);
     if (log.isTraceEnabled()) {
-      log.trace("Node {}, core root: {}", response.node, response.coreRoot);
+      log.trace("Node {}, core root: {}", response.nodeInfo.node, response.nodeInfo.coreRoot);
+    }
+    return response;
+  }
+
+  @Override
+  public NodeSystemResponse getSpecificNodeSystemInfo(
+      NodeSystemInfoType requestedInfo, String nodes) {
+    NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
+    solrQueryResponse.setHttpCaching(false);
+
+    if (proxyToNodes(response, nodes)) {
+      return null; // Request handled via proxying
+    }
+
+    response.nodeInfo = new NodeSystemResponse.NodeSystemInfo();
+    SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
+    switch (requestedInfo) {
+      case GPU -> response.nodeInfo.gpu = provider.getGpuInfo();
+      case JVM -> response.nodeInfo.jvm = provider.getJvmInfo();
+      case LUCENE -> response.nodeInfo.lucene = provider.getLuceneInfo();
+      case SECURITY -> response.nodeInfo.security = provider.getSecurityInfo();
+      case SYSTEM -> response.nodeInfo.system = provider.getSystemInfo();
     }
     return response;
   }
