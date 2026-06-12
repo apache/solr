@@ -424,6 +424,11 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       return provider;
     }
 
+    @Override
+    public HttpSolrClient getHttpClient() {
+      throw new UnsupportedOperationException();
+    }
+
     @FunctionalInterface
     interface Invocation {
       NamedList<Object> invoke(SolrRequest<?> request, List<String> inputCollections)
