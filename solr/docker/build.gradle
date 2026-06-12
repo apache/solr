@@ -253,6 +253,11 @@ task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Test Solr docker image built from the local Dockerfile'
 
+  // Docker containers run as uid 8983 (solr user) and create files that the Gradle runner
+  // (a different uid) cannot read. Disabling state-tracking avoids an AccessDeniedException
+  // when Gradle tries to inspect the output directory for incremental-build purposes.
+  doNotTrackState("Docker containers produce uid-8983 owned files unreadable by the Gradle process")
+
   idFile = tasks.dockerBuild.outputs.files.singleFile
   outputDir = file("$buildDir/test-results")
 

@@ -1,0 +1,106 @@
+= Security Agent Developer Guide
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This document is for Solr developers who need to work with or extend the `solr/agent-sm` security agent.
+
+== Module Overview
+
+`solr/agent-sm` is a standalone Gradle subproject that produces a Java agent JAR.
+The agent must be a standalone JAR (not a Solr module) because it is loaded by the JVM before Solr initializes.
+It intercepts bytecode using ByteBuddy and enforces a policy derived from JDK-style `.policy` files.
+
+Key classes:
+
+* `SolrAgentEntryPoint` — `premain()` and `agentmain()` entry points; wires all ByteBuddy interceptors
+* `PolicyLoader` — parses `.policy` files and performs variable substitution
+* `AgentPolicy` — immutable singleton holding the merged policy
+* `StackCallerClassChainExtractor` — `StackWalker`-based call chain analysis (virtual-thread safe)
+* `SecurityViolationLogger` — emits structured SLF4J log entries for violations
+* `ViolationMetricsReporter` — `LongAdder` counters per violation type; deferred registration with `SolrMetricManager`
+
+== Adding an Approved Exit Caller
+
+To allow a new class to call `System.exit()` or `Runtime.halt()`, add it to the approved callers list in `AgentPolicy`.
+The list is populated from the policy file using `java.lang.RuntimePermission "exitVM"` entries.
+Add an entry to `agent-security.policy`:
+
+[source,text]
+----
+grant codeBase "file:${solr.install.dir}/..." {
+  permission java.lang.RuntimePermission "exitVM";
+};
+----
+
+Alternatively, add the class name to the default approved list in `AgentPolicy` if it is always a trusted Solr internal class.
+
+== Adding an Approved Exec Caller
+
+The default exec allow-list is empty — `ProcessBuilder.start()` and `Runtime.exec()` are blocked for all callers.
+To permit a specific class, add a `java.lang.RuntimePermission "exec"` entry to the policy or the `AgentPolicy` defaults.
+Document the reason in a code comment.
+
+== Adding a Trusted Filesystem Scheme
+
+Paths on certain virtual filesystems (e.g., `jrt:/` for JDK resources) are excluded from file policy checks.
+To add a trusted scheme, extend the `trustedFileSystems` set in `AgentPolicy`.
+Trusted schemes bypass all file access checks.
+
+== Deferred Metrics Registration
+
+The agent starts before Solr and begins counting violations immediately via `ViolationMetricsReporter`.
+Once `CoreContainer` initializes, it calls `ViolationMetricsReporter.registerWithSolrMetrics()` via reflection (so `solr:core` has no compile-time dependency on `solr:agent-sm`).
+Counts accumulated before registration are preserved in the `LongAdder` instances and become visible in metrics after registration.
+
+If you change the `registerWithSolrMetrics` method signature, update the reflective call in `CoreContainer.java` to match.
+
+== Writing Tests Alongside the Agent
+
+Tests for `solr:agent-sm` extend `SolrTestCase` (not `SolrTestCaseJ4`).
+
+The agent-sm test suite runs with `SOLR_SECURITY_AGENT_MODE=enforce` so that blocking behaviour is tested directly.
+The broader Solr test suite runs in `warn` mode — violations are logged but do not fail tests.
+
+To run only the agent-sm tests:
+
+[source,bash]
+----
+./gradlew :solr:agent-sm:test
+----
+
+To reproduce a flaky test with a specific randomization seed:
+
+[source,bash]
+----
+./gradlew :solr:agent-sm:test --tests "org.apache.solr.security.agent.SolrAgentIntegrationTest" -Ptests.seed=HEXSEEDHERE
+----
+
+== Flipping the Broader Test Suite to Enforce Mode
+
+The broader Solr test suite currently runs in warn mode.
+Before flipping to enforce mode:
+
+1. Run the full suite in warn mode and collect all `SECURITY VIOLATION` log entries.
+2. Triage each violation — legitimate Solr operations need policy entries; plugin violations need plugin fixes or policy entries.
+3. Update `agent-security.policy` or test-specific extra-policy files as needed.
+
+== No Compile-Time Dependency from solr:core on solr:agent-sm
+
+`solr:core` must not declare a compile-time dependency on `solr:agent-sm`.
+The agent JAR is loaded by the JVM bootstrap classloader before application classloaders exist.
+All interaction from `solr:core` must go through reflection (`Class.forName` with bootstrap classloader).
+See `CoreContainer.java` for the pattern.

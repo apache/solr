@@ -46,6 +46,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.security.AgentViolationBridge;
+import org.apache.solr.security.AgentViolationMetrics;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,6 +182,8 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
+      AgentViolationMetrics.register(coresInit.getMetricManager(), SolrMetricManager.NODE_REGISTRY);
+      AgentViolationBridge.wire();
 
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
