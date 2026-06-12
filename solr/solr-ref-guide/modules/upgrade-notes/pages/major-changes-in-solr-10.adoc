@@ -86,6 +86,8 @@ The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are n
 HttpSolrClient returns; this time as a base class for HttpJettySolrClient and HttpJdkSolrClient.
 Its builder will dynamically detect if solr-jetty is available and use that, otherwise it will use the JDK client.
 
+CommonParams.QT and SolrQuery.setRequestHandler have been un-deprecated.  Nonetheless, if your code makes explicit reference to "qt" when constructing a standard request, there is usually a better way.
+
 == Solr 10.0
 
 === Solr Jetty parameters

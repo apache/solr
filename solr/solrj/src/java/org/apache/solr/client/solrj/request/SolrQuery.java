@@ -29,6 +29,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 
@@ -1134,22 +1135,22 @@ public class SolrQuery extends ModifiableSolrParams {
   }
 
   /**
-   * The Request Handler to use (see the solrconfig.xml), which is stored in the "qt" parameter.
-   * Normally it starts with a '/' and if so it will be used by {@link
-   * org.apache.solr.client.solrj.request.QueryRequest#getPath()} in the URL instead of the "qt"
-   * parameter. If this is left blank, then the default of "/select" is assumed.
+   * The Request Handler to use (see the solrconfig.xml), starting with a '/'. This isn't passed to
+   * Solr as a parameter; instead {@link QueryRequest} uses it for the path. QueryRequest uses
+   * "/select" if no path or request-handler is provided. Since this isn't <em>really</em> a
+   * parameter in practice, it's preferrable to set this in the constructor of QueryRequest, or the
+   * setter instead.
    *
    * @param qt The Request Handler name corresponding to one in solrconfig.xml on the server.
    * @return this
-   * @deprecated Use {@link SolrRequest#setPath(String)}
+   * @see QueryRequest#QueryRequest(String, SolrParams)
+   * @see SolrRequest#setPath(String)
    */
-  @Deprecated
   public SolrQuery setRequestHandler(String qt) {
     this.set(CommonParams.QT, qt);
     return this;
   }
 
-  @Deprecated
   public String getRequestHandler() {
     return this.get(CommonParams.QT);
   }
