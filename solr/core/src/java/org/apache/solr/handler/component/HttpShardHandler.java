@@ -96,6 +96,18 @@ public class HttpShardHandler extends ShardHandler {
   protected final BlockingQueue<ShardResponse> responses;
   private final AtomicBoolean canceled = new AtomicBoolean(false);
 
+  // Returns the monitor object that guards all cancellation-related state transitions
+  // (the canceled flag, the responseFutureMap, the responses queue's CANCELLATION_NOTIFICATION).
+  // Subclasses that track additional cancellable state must synchronize on this monitor when
+  // reading or transitioning that state so the whole cancellation invariant stays atomic.
+  protected final Object cancellationLock() {
+    return canceled;
+  }
+
+  protected final boolean isCanceled() {
+    return canceled.get();
+  }
+
   private final Map<String, List<String>> shardToURLs;
   protected LBHttp2SolrClient lbClient;
 
@@ -278,25 +290,45 @@ public class HttpShardHandler extends ShardHandler {
     // on the map already having the future.
     future.whenComplete(
         (LBSolrClient.Rsp rsp, Throwable throwable) -> {
-          if (rsp != null) {
-            ssr.nl = rsp.getResponse();
-            srsp.setShardAddress(rsp.getServer());
-          } else if (throwable != null) {
-            srsp.setException(throwable);
-            if (throwable instanceof SolrException) {
-              srsp.setResponseCode(((SolrException) throwable).code());
+          try {
+            if (rsp != null) {
+              ssr.nl = rsp.getResponse();
+              srsp.setShardAddress(rsp.getServer());
+            } else if (throwable != null) {
+              srsp.setException(throwable);
+              if (throwable instanceof SolrException) {
+                srsp.setResponseCode(((SolrException) throwable).code());
+              }
             }
-          }
-          ssr.elapsedTime =
-              TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
-          // Synchronize on cancelled so this code and cancelAll() cannot happen at the same time
-          synchronized (canceled) {
-            // We don't want to add responses after the requests have been canceled
-            if (responseFutureMap.containsKey(srsp)) {
-              responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(
+                    System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+            enqueueIfTracked(srsp, HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+          } catch (Throwable t) {
+            // If anything above throws (subclass transformResponse, malformed Rsp, OOM in the
+            // lambda) the response would never be enqueued — but responseFutureMap still tracks
+            // srsp, so take() would park forever. Record the failure on srsp and enqueue it raw
+            // (bypassing transformResponse, which may be the thrower).
+            srsp.setException(t);
+            if (t instanceof SolrException) {
+              srsp.setResponseCode(((SolrException) t).code());
             }
+            enqueueIfTracked(srsp, srsp);
           }
         });
+  }
+
+  /**
+   * Enqueue {@code value} into the {@link #responses} queue iff {@code key} is still tracked in
+   * {@link #responseFutureMap}, holding the cancellation monitor so this stays atomic with {@link
+   * #cancelAll()}'s clear.
+   */
+  private void enqueueIfTracked(ShardResponse key, ShardResponse value) {
+    synchronized (canceled) {
+      if (responseFutureMap.containsKey(key)) {
+        responses.add(value);
+      }
+    }
   }
 
   /** Subclasses could modify the request based on the shard */
@@ -328,7 +360,12 @@ public class HttpShardHandler extends ShardHandler {
     ShardResponse previousResponse = null;
     try {
       while (responsesPending()) {
-        ShardResponse rsp = responses.take();
+        ShardResponse rsp = awaitNextResponse();
+        if (rsp == null) {
+          // awaitNextResponse() returned without a response — only happens for subclasses that
+          // override with a timed poll. Re-evaluate responsesPending() and either re-wait or exit.
+          continue;
+        }
         if (rsp == CANCELLATION_NOTIFICATION) {
           // This is only queued in cancelAll(), so all outstanding futures have already been
           // canceled.
@@ -374,6 +411,23 @@ public class HttpShardHandler extends ShardHandler {
 
   protected boolean responsesPending() {
     return !responseFutureMap.isEmpty() || !responses.isEmpty();
+  }
+
+  /**
+   * Wait for the next response from the {@link #responses} queue. Defaults to a blocking {@link
+   * BlockingQueue#take()}.
+   *
+   * <p>Subclasses that gate {@link #responsesPending()} on an async tracker outside the {@link
+   * #responses} queue's lifecycle (e.g. {@link ParallelHttpShardHandler#submitFutures}) MUST
+   * override this with a timed poll. The cancellation lock can serialize {@link
+   * #responsesPending()} reads with state mutations, but it cannot signal the queue's internal
+   * {@code Condition}: if the tracker drains without anything being enqueued to {@link #responses},
+   * a thread parked in {@link BlockingQueue#take()} would never wake up. Returning {@code null}
+   * from this method instructs {@link #take(boolean)} to re-check {@link #responsesPending()} and
+   * either re-wait or exit cleanly.
+   */
+  protected ShardResponse awaitNextResponse() throws InterruptedException {
+    return responses.take();
   }
 
   @Override
