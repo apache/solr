@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseLis
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
@@ -620,7 +621,19 @@ public class HttpJettySolrClient extends HttpSolrClient {
   }
 
   protected void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    req.headers(h -> h.remove(HttpHeader.ACCEPT_ENCODING));
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      req.headers(h -> customHeaders.forEach(h::add));
+    }
+    // note: if subsequent headers already added, the existing values win (first value considered)
+    req.headers(
+        h -> {
+          h.add(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+          // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+          h.add(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+        });
+
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
@@ -639,11 +652,6 @@ public class HttpJettySolrClient extends HttpSolrClient {
     if (isAsync) {
       req.onRequestQueued(asyncTracker.queuedListener);
       req.onComplete(asyncTracker.completeListener);
-    }
-
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      req.headers(h -> headers.forEach(h::add));
     }
   }
 

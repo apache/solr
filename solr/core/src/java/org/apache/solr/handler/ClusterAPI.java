@@ -51,6 +51,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
@@ -259,7 +260,7 @@ public class ClusterAPI {
     @Command(name = "add-role")
     public void addRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
-      Map<String, Object> m = info.toMap(new HashMap<>());
+      Map<String, Object> m = new SimpleOrderedMap<>(info);
       m.put("action", ADDROLE.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
@@ -267,7 +268,7 @@ public class ClusterAPI {
     @Command(name = "remove-role")
     public void removeRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
-      Map<String, Object> m = info.toMap(new HashMap<>());
+      Map<String, Object> m = new SimpleOrderedMap<>(info);
       m.put("action", REMOVEROLE.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
