@@ -38,6 +38,7 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -163,16 +164,29 @@ public class StreamTool extends ToolBase {
       }
     }
 
+    // Validate inputs before opening any connection to Solr.
+    boolean local = execution.equalsIgnoreCase("local");
+    if (!local) {
+      if (!cli.hasOption(COLLECTION_OPTION)) {
+        throw new IllegalStateException(
+            "You must provide --name COLLECTION with --execution remote parameter.");
+      }
+      if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
+        throw new IllegalStateException(
+            "The stdin() expression is only usable with --worker local set up.");
+      }
+    }
+
     // a stream needs a context
     StreamContext streamContext = createStreamContext(cli);
     // create the stream
-    PushBackStream pushBackStream;
-    if (execution.equalsIgnoreCase("local")) {
-      pushBackStream = doLocalMode(expr, streamContext.getStreamFactory());
-    } else {
-      pushBackStream = doRemoteMode(expr, cli);
-    }
+    PushBackStream pushBackStream = null;
     try {
+      if (local) {
+        pushBackStream = doLocalMode(expr, streamContext.getStreamFactory());
+      } else {
+        pushBackStream = doRemoteMode(expr, cli);
+      }
       pushBackStream.setStreamContext(streamContext);
       pushBackStream.open();
 
@@ -226,7 +240,9 @@ public class StreamTool extends ToolBase {
         }
       }
     } finally {
-      pushBackStream.close();
+      if (pushBackStream != null) {
+        pushBackStream.close();
+      }
       streamContext.getSolrClientCache().close();
     }
 
@@ -257,7 +273,11 @@ public class StreamTool extends ToolBase {
 
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
-    streamContext.getStreamFactory().withDefaultSolrConnection(solrConnection);
+
+    StreamFactory streamFactory = new StreamFactory();
+    Lang.register(streamFactory);
+    streamFactory.withDefaultSolrConnection(solrConnection);
+    streamContext.setStreamFactory(streamFactory);
     return streamContext;
   }
 
@@ -300,17 +320,7 @@ public class StreamTool extends ToolBase {
   private PushBackStream doRemoteMode(String expr, CommandLine cli) throws Exception {
 
     String solrUrl = CLIUtils.normalizeSolrUrl(cli);
-
-    if (!cli.hasOption(COLLECTION_OPTION)) {
-      throw new IllegalStateException(
-          "You must provide --name COLLECTION with --execution remote parameter.");
-    }
     String collection = cli.getOptionValue(COLLECTION_OPTION);
-
-    if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
-      throw new IllegalStateException(
-          "The stdin() expression is only usable with --worker local set up.");
-    }
 
     return new PushBackStream(
         new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr)));
