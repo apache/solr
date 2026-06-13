@@ -1,0 +1,139 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# ============================================================================
+# DEVELOPER CONVENIENCE ONLY — NOT FOR PRODUCTION USE
+# ============================================================================
+#
+# This docker-compose stack is provided solely to make it easy for contributors
+# to view and test changes to the two monitoring artifacts:
+#
+#   ../grafana-solr-dashboard.json    — Grafana dashboard (main artifact)
+#   ../prometheus-solr-alerts.yml     — Prometheus alert rules (main artifact)
+#
+# It is NOT intended as a reference deployment or a recommended production setup.
+# For integrating these artifacts into your own Prometheus + Grafana installation,
+# see the Solr Reference Guide (monitoring-with-prometheus-and-grafana.adoc).
+#
+# Quick start:
+#   cd solr/monitoring/dev
+#   ./stack.sh                     # Full stack with bundled Solr nodes
+#   ./stack.sh --local-solr        # Monitoring only — point at your locally-running Solr
+#   ./stack.sh --help              # All options
+#
+# Services (full stack):
+#   solr1        http://localhost:8983  (SolrCloud node 1, embedded ZooKeeper)
+#   solr2        http://localhost:8984  (SolrCloud node 2)
+#   Prometheus   http://localhost:9090
+#   Grafana      http://localhost:3000  (admin / admin)
+#   Alertmanager http://localhost:9093
+#   trafficgen   (no port — continuously indexes/searches the 'test' collection)
+#
+# Environment variables (set by start.sh, or override manually):
+#   PROMETHEUS_CONFIG   Path to the prometheus config to mount (default: ./prometheus/prometheus.yml)
+#   SOLR_URL            Solr base URL for trafficgen (default: http://solr1:8983/solr)
+# ============================================================================
+
+services:
+  solr1:
+    image: solr:10
+    profiles: [bundled-solr]
+    ports:
+      - "8983:8983"
+      - "9983:9983"   # embedded ZooKeeper (Solr 10 default: ZK_PORT = SOLR_PORT + 1000)
+    # No ZK_HOST set: Solr 10 defaults to SolrCloud with embedded ZooKeeper on port 9983.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/admin/info/system || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  solr2:
+    image: solr:10
+    profiles: [bundled-solr]
+    ports:
+      - "8984:8983"
+    environment:
+      ZK_HOST: "solr1:9983"
+    depends_on:
+      solr1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/admin/info/system || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${PROMETHEUS_CONFIG:-./prometheus/prometheus.yml}:/etc/prometheus/prometheus.yml:ro
+      - ../prometheus-solr-alerts.yml:/etc/prometheus/rules/solr-alerts.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+    depends_on:
+      solr1:
+        condition: service_healthy
+        required: false
+      solr2:
+        condition: service_healthy
+        required: false
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../grafana-solr-dashboard.json:/var/lib/grafana/dashboards/grafana-solr-dashboard.json:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    restart: unless-stopped
+
+  trafficgen:
+    build: ./trafficgen
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      SOLR_URL: ${SOLR_URL:-http://solr1:8983/solr}
+    depends_on:
+      solr1:
+        condition: service_healthy
+        required: false
+      solr2:
+        condition: service_healthy
+        required: false
+    restart: unless-stopped
