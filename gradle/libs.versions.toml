@@ -167,7 +167,7 @@ netty = "4.2.15.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.75.Final"
 nimbusds-josejwt = "10.5"
-nlopez-compose = "0.5.7"
+nlopez-compose = "0.6.0"
 nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "22.18.0"
