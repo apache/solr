@@ -284,6 +284,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated `solrcore.properties` configuration method has been removed.  The ability to configure a core via a custom properties file using the `core.properties` "property" setting remains.
 
+* The deprecated `VMParamsAllAndReadonlyDigestZkACLProvider` class has been removed. Use a combination of `DigestZkACLProvider` and `VMParamsZkCredentialsInjector` instead. (SOLR-18122)
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
