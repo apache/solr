@@ -99,7 +99,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
     this.maxCharsLimit = maxCharsLimit;
     if (initArgs != null) {
-      initArgs.toMap(this.initArgsMap);
+      initArgs.forEach(initArgsMap::put);
     }
     Object metaCompatObh = this.initArgsMap.get(ExtractingParams.TIKASERVER_METADATA_COMPATIBILITY);
     if (metaCompatObh != null) {
