@@ -200,6 +200,30 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         "solr");
   }
 
+  @Test
+  public void testV2CreateWithoutBaseConfigsetUsesDefault() throws Exception {
+    final String configSetName = "v2ConfigSetNoBase" + System.nanoTime();
+    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    try (final SolrClient solrClient = getHttpSolrClient(baseUrl);
+        SolrZkClient zkClient =
+            new SolrZkClient.Builder()
+                .withUrl(cluster.getZkServer().getZkAddress())
+                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+                .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+                .build()) {
+      assertFalse(getConfigSetService().checkConfigExists(configSetName));
+
+      final var createRequest = new ConfigsetsApi.CloneExistingConfigSet();
+      createRequest.setName(configSetName);
+      final var response = createRequest.process(solrClient);
+
+      assertNotNull(response);
+      assertEquals(0, response.responseHeader.status);
+      assertTrue(getConfigSetService().checkConfigExists(configSetName));
+      assertTrue(zkClient.exists("/configs/" + configSetName + "/solrconfig.xml"));
+    }
+  }
+
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
