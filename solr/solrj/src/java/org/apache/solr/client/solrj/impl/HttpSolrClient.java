@@ -23,11 +23,11 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
-import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -188,11 +188,12 @@ public abstract class HttpSolrClient extends SolrClient {
       String responseMethod,
       final ResponseParser processor,
       InputStream is,
-      String mimeType,
+      String mimeType, // aka contentType
       String encoding,
       final boolean isV2Api,
       String urlExceptionMessage)
       throws SolrServerException {
+    Objects.requireNonNull(processor);
     boolean shouldClose = true;
     try {
       // handle some http level checks before trying to parse the response
@@ -209,7 +210,7 @@ public abstract class HttpSolrClient extends SolrClient {
           }
           break;
         default:
-          if (processor == null || mimeType == null) {
+          if (mimeType == null || mimeType.equals("text/html")) {
             throw new RemoteSolrException(
                 urlExceptionMessage,
                 httpStatus,
@@ -218,14 +219,14 @@ public abstract class HttpSolrClient extends SolrClient {
           }
       }
 
+      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
+
       if (wantStream(processor)) {
         // Only case where stream should not be closed
         shouldClose = false;
         // no processor specified, return raw stream
         return InputStreamResponseParser.createInputStreamNamedList(httpStatus, is);
       }
-
-      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
 
       NamedList<Object> rsp;
       try {
@@ -240,14 +241,11 @@ public abstract class HttpSolrClient extends SolrClient {
       }
       if (httpStatus != 200 && !isV2Api) {
         if (error == null) {
-          StringBuilder msg =
-              new StringBuilder()
-                  .append(responseReason)
-                  .append("\n")
-                  .append("request: ")
-                  .append(responseMethod);
-          String reason = URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
-          throw new RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
+          throw new RemoteSolrException(
+              urlExceptionMessage,
+              httpStatus,
+              "non ok status: " + httpStatus + ", message:" + responseReason,
+              null);
         } else {
           throw new RemoteSolrException(urlExceptionMessage, httpStatus, error);
         }
