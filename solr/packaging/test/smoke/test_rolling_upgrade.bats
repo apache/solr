@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load bats_helper
+load "../bats_helper"
 
-# You can test alternative images via 
+# You can test alternative images via
 # export SOLR_BEGIN_IMAGE="apache/solr-nightly:9.9.0-slim" and then running
-# ./gradlew iTest --tests test_rolling_upgrade.bats
+# ./gradlew :solr:packaging:testSmokeBats
 SOLR_BEGIN_IMAGE="${SOLR_BEGIN_IMAGE:-apache/solr-nightly:9.10.0-SNAPSHOT-slim}"
 SOLR_END_IMAGE="${SOLR_END_IMAGE:-apache/solr-nightly:10.0.0-SNAPSHOT-slim}"
 
