@@ -1,6 +1,12 @@
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
+
 import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.TasksApi;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
@@ -8,12 +14,6 @@ import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
 public class ActiveTask extends JerseyResource implements TasksApi {
 
@@ -57,5 +57,4 @@ public class ActiveTask extends JerseyResource implements TasksApi {
 
     return activeTaskDetails;
   }
-
 }
