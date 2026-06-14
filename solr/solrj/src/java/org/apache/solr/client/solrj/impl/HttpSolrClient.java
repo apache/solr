@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -72,10 +73,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected RequestWriter requestWriter = new JavaBinRequestWriter();
 
-  // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
   protected ResponseParser parser = new JavaBinResponseParser();
-
-  protected Set<String> defaultParserMimeTypes;
 
   protected final String basicAuthAuthorizationStr;
 
@@ -268,12 +266,6 @@ public abstract class HttpSolrClient extends SolrClient {
     return processor == null || processor instanceof InputStreamResponseParser;
   }
 
-  protected abstract boolean processorAcceptsMimeType(
-      Collection<String> processorSupportedContentTypes, String mimeType);
-
-  protected abstract String allProcessorSupportedContentTypesCommaDelimited(
-      Collection<String> processorSupportedContentTypes);
-
   /**
    * Validates that the content type in the response can be processed by the Response Parser. Throws
    * a {@code RemoteSolrException} if not.
@@ -285,19 +277,15 @@ public abstract class HttpSolrClient extends SolrClient {
       String encoding,
       int httpStatus,
       String urlExceptionMessage) {
-    if (mimeType == null
-        || (processor == this.parser && defaultParserMimeTypes.contains(mimeType))) {
-      // Shortcut the default scenario
+    if (mimeType == null) {
       return;
     }
     final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
     if (!processorSupportedContentTypes.isEmpty()) {
-      boolean processorAcceptsMimeType =
-          processorAcceptsMimeType(processorSupportedContentTypes, mimeType);
-      if (!processorAcceptsMimeType) {
+      final String normalizedMimeType = mimeType.toLowerCase(Locale.ROOT).trim();
+      if (!processorSupportedContentTypes.contains(normalizedMimeType)) {
         // unexpected mime type
-        final String allSupportedTypes =
-            allProcessorSupportedContentTypesCommaDelimited(processorSupportedContentTypes);
+        final String allSupportedTypes = String.join(", ", processorSupportedContentTypes);
         String prefix =
             "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
         String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
@@ -324,10 +312,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected void setParser(ResponseParser parser) {
     this.parser = parser;
-    updateDefaultMimeTypeForParser();
   }
-
-  protected abstract void updateDefaultMimeTypeForParser();
 
   /**
    * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently

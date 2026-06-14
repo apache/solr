@@ -281,9 +281,12 @@ public class SolrExampleCborTest extends SolrExampleTests {
         return "cbor";
       }
 
+      private static final Set<String> CONTENT_TYPES =
+          Set.of("application/cbor", "application/octet-stream");
+
       @Override
       public Set<String> getContentTypes() {
-        return Set.of("application/cbor", "application/octet-stream");
+        return CONTENT_TYPES;
       }
 
       @Override
