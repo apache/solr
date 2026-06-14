@@ -97,7 +97,7 @@ google-api-grpc-proto = "2.61.1"
 # @keep for version alignment
 google-autovalue = "1.11.0"
 google-cloud-bom = "0.261.0"
-google-errorprone = "2.41.0"
+google-errorprone = "2.49.0"
 # @keep for version alignment
 google-gson = "2.13.1"
 google-guava = "33.5.0-jre"
