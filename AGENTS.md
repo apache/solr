@@ -72,3 +72,14 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - We use the "logchange" tooling to manage our changelog. See `dev-docs/changelog.adoc` for details and conventions
 - To scaffold a new changelog entry, run `gradlew writeChangelog`, and then edit the new file located in `changelog/unreleased/`.
 - Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.
+
+## Security
+
+For security findings, follow the project's threat model:
+[THREAT_MODEL.md](THREAT_MODEL.md) — the trust boundaries, the load-bearing
+auth+authz / trusted-environment posture, the properties Solr provides vs. those
+left to the operator (notably: never expose an unauthenticated Solr to an
+untrusted network; SSRF via `shards`/streaming is bounded by operator network
+controls; risky features are off by default), and the recurring non-findings.
+Reporting is via [SECURITY.md](SECURITY.md). Route any scanner/AI-generated
+finding through `THREAT_MODEL.md` section 13 before reporting.
