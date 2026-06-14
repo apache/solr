@@ -1,0 +1,7 @@
+title: Update com.github.spotbugs:spotbugs-annotations to v4.10.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4527
+  url: https://github.com/apache/solr/pull/4527
