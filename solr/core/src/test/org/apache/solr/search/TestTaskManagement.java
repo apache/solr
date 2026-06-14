@@ -213,6 +213,46 @@ public class TestTaskManagement extends SolrCloudTestCase {
     assertTrue(result.contains("inactive"));
   }
 
+  @Test
+  public void testCheckSpecificQueryStatus_Active() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      executeQueryAsync(Integer.toString(i));
+    }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("taskUUID", "5");
+
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/tasks/list", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
+    NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
+
+    String result = (String) queryResponse.get("taskStatus");
+
+    assertTrue(result.contains("active"));
+  }
+
+  @Test
+  public void testCheckSpecificQueryStatus_Inactive() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      executeQueryAsync(Integer.toString(i));
+    }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("taskUUID", "15");
+
+    var request =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/tasks/list", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
+    NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
+
+    String result = (String) queryResponse.get("taskStatus");
+
+    assertTrue(result.contains("inactive"));
+  }
+
   private CompletableFuture<Void> cancelQuery(
       final String queryID, Set<Integer> cancelledQueryIdsSet, Set<Integer> notFoundQueryIdSet) {
     return CompletableFuture.runAsync(

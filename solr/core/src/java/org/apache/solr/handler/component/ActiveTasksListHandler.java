@@ -19,49 +19,54 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.handler.admin.api.ListActiveTasksAPI;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.ActiveTaskDetails;
+import org.apache.solr.client.api.model.TaskStatusResponse;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.admin.api.ActiveTask;
+//import org.apache.solr.handler.admin.api.GetTaskStatus;
+//import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
-/** Handles request for listing all active cancellable tasks */
+/** Handles request for listing all active cancellable tasks and get status check of any taskId. */
 public class ActiveTasksListHandler extends TaskManagementHandler {
   // This can be a parent level member but we keep it here to allow future handlers to have
   // a custom list of components
-  private List<SearchComponent> components;
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    Map<String, String> extraParams = null;
-    ResponseBuilder rb = buildResponseBuilder(req, rsp, getComponentsList());
-
-    rb.setIsTaskListRequest(true);
-
     String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
 
     if (taskStatusCheckUUID != null) {
-      if (rb.isDistrib) {
-        extraParams = new HashMap<>();
+      TaskStatusResponse taskStatusResponse =
+          new ActiveTask(req).getTaskStatus(taskStatusCheckUUID);
+      String taskStatus =
+          "id: " + taskStatusCheckUUID + ", status: " + taskStatusResponse.taskStatus.getValue();
+      rsp.add("taskStatus", taskStatus);
 
-        extraParams.put(TASK_CHECK_UUID, taskStatusCheckUUID);
+    } else {
+      NamedList<String> tasks = new NamedList<>();
+      List<ActiveTaskDetails> taskList = new ActiveTask(req).listAllActiveTasks().taskList;
+      if (taskList != null) {
+        for (ActiveTaskDetails task : taskList) {
+          tasks.add(task.taskID, task.taskQuery);
+        }
       }
-
-      rb.setTaskStatusCheckUUID(taskStatusCheckUUID);
+      rsp.add("taskList", tasks);
     }
-
-    processRequest(req, rb, extraParams);
   }
+
+  // ////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
   public String getDescription() {
-    return "activetaskslist";
+    return "Active Tasks List";
   }
 
   @Override
@@ -79,7 +84,6 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
     if (path.startsWith("/tasks/list")) {
       return this;
     }
-
     return null;
   }
 
@@ -90,14 +94,12 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new ListActiveTasksAPI(this));
+    return List.of();
   }
 
-  private List<SearchComponent> getComponentsList() {
-    if (components == null) {
-      components = buildComponentsList();
-    }
-
-    return components;
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+//    return List.of(ListActiveTasks.class, GetTaskStatus.class);
+    return List.of(ActiveTask.class);
   }
 }
