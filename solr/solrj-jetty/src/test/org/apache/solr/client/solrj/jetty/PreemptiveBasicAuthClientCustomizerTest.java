@@ -24,7 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 
 public class PreemptiveBasicAuthClientCustomizerTest extends SolrTestCase {
 
@@ -70,8 +70,10 @@ public class PreemptiveBasicAuthClientCustomizerTest extends SolrTestCase {
         PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
     PreemptiveBasicAuthClientCustomizer.CredentialsResolver credentialsResolver =
         new PreemptiveBasicAuthClientCustomizer.CredentialsResolver();
-    assertEquals("foo", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER));
-    assertEquals("bar", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS));
+    assertEquals(
+        "foo", credentialsResolver.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER));
+    assertEquals(
+        "bar", credentialsResolver.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS));
   }
 
   public void testCredentialsFromConfigFile() throws IOException {
@@ -86,7 +88,9 @@ public class PreemptiveBasicAuthClientCustomizerTest extends SolrTestCase {
         PreemptiveBasicAuthClientCustomizer.SYS_PROP_HTTP_CLIENT_CONFIG, f.toString());
     PreemptiveBasicAuthClientCustomizer.CredentialsResolver credentialsResolver =
         new PreemptiveBasicAuthClientCustomizer.CredentialsResolver();
-    assertEquals("foo", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER));
-    assertEquals("bar", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS));
+    assertEquals(
+        "foo", credentialsResolver.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER));
+    assertEquals(
+        "bar", credentialsResolver.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS));
   }
 }
