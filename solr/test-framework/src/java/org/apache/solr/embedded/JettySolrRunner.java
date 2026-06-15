@@ -368,10 +368,12 @@ public class JettySolrRunner implements SolrBackend {
 
     server.setHandler(chain);
 
-    // Mimic "graceful.mod"
-    GracefulHandler graceful = new GracefulHandler();
-    server.insertHandler(graceful);
-    server.setStopTimeout(15 * 1000);
+    if (config.enableGracefulShutdown) {
+      // Mimic "graceful.mod"
+      GracefulHandler graceful = new GracefulHandler();
+      server.insertHandler(graceful);
+      server.setStopTimeout(15 * 1000);
+    }
   }
 
   /**
