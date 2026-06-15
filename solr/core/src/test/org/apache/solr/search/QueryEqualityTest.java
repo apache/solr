@@ -2000,6 +2000,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!hash_range l='107347968' u='214695935' f='x_id'}");
   }
 
+  @Test
+  public void testNestPathRootShortcut() throws Exception {
+    try (SolrQueryRequest req = req("df", "_nest_path_")) {
+      assertQueryEquals(null, req, "{!field f=_nest_path_ v=''}", "{!field f=_nest_path_}/");
+    }
+  }
+
   // Override req to add df param
   public static SolrQueryRequest req(String... q) {
     return SolrTestCaseJ4.req(q, "df", "text");
