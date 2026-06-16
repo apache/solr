@@ -58,6 +58,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     // force early init
     CustomTestOtelTracerConfigurator.prepareForTest();
+    // HTTP 2 clients can do things more asynchronously, leading to less determinism in what we test
+    System.setProperty("solr.http1", "true");
 
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
