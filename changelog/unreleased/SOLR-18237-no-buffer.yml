@@ -1,4 +1,4 @@
-title: Do not copy full data for UTF8 to Java string conversion for deserializing a collection state
+title: Avoid OOMs when deserializing collection states by not copying full data for UTF8 to Java string conversion.
 type: fixed
 authors:
   - name: Pierre Salagnac
