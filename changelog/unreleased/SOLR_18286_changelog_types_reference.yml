@@ -1,0 +1,8 @@
+title: SOLR_18286_changelog_types_reference
+type: added
+authors:
+  - name: Abhishek Umarjikar
+    nick: abumarjikar
+links:
+  - name: SOLR-18286
+    url: https://issues.apache.org/jira/browse/SOLR-18286

@@ -53,6 +53,37 @@ links:
     url: https://issues.apache.org/jira/browse/SOLR-3333
 ----
 
+=== Changelog Types Reference
+
+[cols="1h,2,3", options="header"]
+|===
+| Type | Description | When to Use (Examples)
+
+| added
+| For completely new features, capabilities, or opt-in functionality.
+| Adding a new API endpoint, a new query shortcut, or a new optional configuration parameter.
+
+| changed
+| For changes to existing functionality that alter current behavior.
+| Modifying an existing default behavior, updating an internal dependency, or refactoring a core algorithm.
+
+| deprecated
+| For features or APIs that are slated for removal in future releases.
+| Marking an old configuration option or an old method as deprecated.
+
+| removed
+| For features or APIs that have been completely removed from the codebase.
+| Deleting a feature that was previously marked as deprecated.
+
+| fixed
+| For any bug fixes or corrections to unintended behavior.
+| Fixing a `NullPointerException`, correcting data corruption issues, or resolving UI glitches.
+
+| security
+| For vulnerabilities, security patches, or hardening improvements.
+| Fixing a dependency vulnerability, adding encryption, or tightening access controls.
+|===
+
 === 3.1 Tool to draft a YAML for your change
 
 We have a gradle task that bootstraps a YAML file in the `changelog/unreleased/` directory. The task will use your current branch name as a file name and also title, and will
