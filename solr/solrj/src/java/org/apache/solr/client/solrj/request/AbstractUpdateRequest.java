@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.util.EnumSet;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -32,65 +31,75 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     super(m, path, SolrRequestType.UPDATE);
   }
 
-  public enum CommitOption {
-    /** Makes the changes visible. True by default. */
-    openSearcher,
-    /** The request should wait for the changes to be visible. True by default. */
-    waitSearcher,
-    /** A faster commit that's slightly less durable, and only affects the leader replica. */
-    softCommit;
-
-    /** Default standard set of commit options: waitSearcher and openSearcher */
-    public static final EnumSet<CommitOption> DEFAULTS = EnumSet.of(waitSearcher, openSearcher);
-  }
-
-  @Deprecated
-  public enum ACTION {
-    COMMIT,
-    OPTIMIZE
-  }
-
   /**
-   * Solr returns early but schedules a (typically soft) commit. When Solr finishes processing the
-   * changes, it will then schedule the next auto soft-commit to occur no later than the provided
-   * time interval. Other commit requests and automatic ones may expedite that commit to occur
-   * sooner.
+   * Solr returns early but schedules a (typically soft) commit to start within the specified time.
+   * Other commit requests and automatic ones may expedite that commit to occur sooner, otherwise
+   * it'll be deferred as late as possible.
    */
   public AbstractUpdateRequest commitWithin(int val, TimeUnit unit) {
     this.commitWithin = Math.toIntExact(unit.toMillis(val));
     return this;
   }
 
+  /**
+   * Commits these changes as well as previously sent changes so that they are visible (searchable).
+   * As long as there is an updateLog (true for nearly every Solr user), all updates are durable no
+   * matter what the commit strategy is.
+   */
+  public AbstractUpdateRequest softCommit() {
+    params.set(UpdateParams.SOFT_COMMIT, true);
+    return this;
+  }
+
+  /**
+   * Commits these changes as well as any previously sent changes so that they are both durable and
+   * visible (searchable). This should be done sparingly for performance reasons; consider {@link
+   * #commitWithin(int, TimeUnit)} or {@link #softCommit()} instead.
+   */
   public AbstractUpdateRequest commit() {
     params.set(UpdateParams.COMMIT, true);
     return this;
   }
 
-  /** Commits with additional options. The absense of an option means to disable the option. */
-  public AbstractUpdateRequest commit(EnumSet<CommitOption> options) {
+  /**
+   * Like {@link #commit()} but the changes won't be visible (i.e., no new searcher). Expert option.
+   */
+  public AbstractUpdateRequest commitFlushOnly() {
     params.set(UpdateParams.COMMIT, true);
-    // only set if varies from default
-    if (options.contains(CommitOption.softCommit) == true) {
-      params.set(UpdateParams.SOFT_COMMIT, true);
-    }
-    if (options.contains(CommitOption.openSearcher) == false) {
-      params.set(UpdateParams.OPEN_SEARCHER, false);
-      // and don't bother considering waitSearcher as it's irrelevant
-    } else if (options.contains(CommitOption.waitSearcher) == false) {
-      params.set(UpdateParams.WAIT_SEARCHER, false);
+    params.set(UpdateParams.OPEN_SEARCHER, false);
+    return this;
+  }
+
+  /**
+   * Like {@link #commit()} but the changes won't be visible (i.e. no new searcher) right away.
+   * Expert option.
+   */
+  public AbstractUpdateRequest commitAsync() {
+    params.set(UpdateParams.COMMIT, true);
+    params.set(UpdateParams.WAIT_SEARCHER, false);
+    return this;
+  }
+
+  /**
+   * Merges segments to {@code maxSegments} or fewer. Passing {@link Integer#MAX_VALUE} is useful to
+   * trigger an incremental merge. This can take a long time.
+   */
+  public AbstractUpdateRequest commitAndOptimize(int maxSegments) {
+    params.set(UpdateParams.OPTIMIZE, true); // implies commit
+    if (maxSegments != Integer.MAX_VALUE) {
+      params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, maxSegments);
     }
     return this;
   }
 
-  public AbstractUpdateRequest commitAndOptimize(EnumSet<CommitOption> options, int maxSegments) {
-    params.set(UpdateParams.OPTIMIZE, true);
-    params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, maxSegments);
-    return commit(options);
-  }
-
-  public AbstractUpdateRequest commitAndExpungeDeletes(EnumSet<CommitOption> options) {
+  /**
+   * Merges segments that have more than 10% deleted docs, expunging the deleted documents in the
+   * process. This can take a long time.
+   */
+  public AbstractUpdateRequest commitAndExpungeDeletes() {
+    params.set(UpdateParams.COMMIT, true); // required for expunging
     params.set(UpdateParams.EXPUNGE_DELETES, true);
-    return commit(options);
+    return this;
   }
 
   /** Sets appropriate parameters for the given ACTION */
@@ -174,14 +183,14 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     params.set(param, value);
   }
 
-  /** Sets the parameters for this update request, overwriting any previous */
-  public void setParams(ModifiableSolrParams params) {
-    this.params = Objects.requireNonNull(params);
-  }
-
   @Override
   public ModifiableSolrParams getParams() {
     return params;
+  }
+
+  /** Sets the parameters for this update request, overwriting any previous */
+  public void setParams(ModifiableSolrParams params) {
+    this.params = Objects.requireNonNull(params);
   }
 
   @Override
@@ -189,19 +198,21 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     return new UpdateResponse();
   }
 
+  @Deprecated
   public boolean isWaitSearcher() {
     return params.getBool(UpdateParams.WAIT_SEARCHER, false);
-  }
-
-  public ACTION getAction() {
-    if (params.getBool(UpdateParams.COMMIT, false)) return ACTION.COMMIT;
-    if (params.getBool(UpdateParams.OPTIMIZE, false)) return ACTION.OPTIMIZE;
-    return null;
   }
 
   @Deprecated
   public void setWaitSearcher(boolean waitSearcher) {
     setParam(UpdateParams.WAIT_SEARCHER, waitSearcher + "");
+  }
+
+  @Deprecated
+  public ACTION getAction() {
+    if (params.getBool(UpdateParams.COMMIT, false)) return ACTION.COMMIT;
+    if (params.getBool(UpdateParams.OPTIMIZE, false)) return ACTION.OPTIMIZE;
+    return null;
   }
 
   public int getCommitWithin() {
@@ -212,5 +223,11 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   public AbstractUpdateRequest setCommitWithin(int commitWithin) {
     this.commitWithin = commitWithin;
     return this;
+  }
+
+  @Deprecated
+  public enum ACTION {
+    COMMIT,
+    OPTIMIZE
   }
 }
