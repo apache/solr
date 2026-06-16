@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
@@ -47,6 +48,7 @@ public class BadClusterTest extends SolrCloudTestCase {
       new StreamFactory().withFunctionName("search", CloudSolrStream.class);
 
   private static String zkHost;
+  private static CloudSolrClient.CloudSolrClientConnection solrConnection;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
@@ -65,7 +67,8 @@ public class BadClusterTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 1, 1);
 
     zkHost = cluster.getZkServer().getZkAddress();
-    streamFactory.withCollectionZkHost(collection, zkHost);
+    solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    streamFactory.withCollectionUseThisConnection(collection, solrConnection);
   }
 
   // test order is important because the cluster progressively gets worse, but it is only created
@@ -122,7 +125,8 @@ public class BadClusterTest extends SolrCloudTestCase {
   }
 
   private List<Replica> getReplicas() throws IOException {
-    return TupleStream.getReplicas(zkHost, collection, null, new MultiMapSolrParams(Map.of()));
+    return TupleStream.getReplicas(
+        solrConnection, collection, null, new MultiMapSolrParams(Map.of()));
   }
 
   private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

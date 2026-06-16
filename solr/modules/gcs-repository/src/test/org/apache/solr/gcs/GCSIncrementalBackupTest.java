@@ -55,6 +55,12 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  </solrcloud>\n"
           + "  \n"
           + "  <backup>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">localfs</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
           + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
           + "      <str name=\"delegateRepoName\">localfs</str>\n"
           + "    </repository>\n"
@@ -70,6 +76,9 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    // Enable parallel backup/restore for cloud storage tests
+    System.setProperty("solr.backup.maxparalleluploads", "2");
+    System.setProperty("solr.backup.maxparalleldownloads", "2");
 
     configureCluster(NUM_NODES) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())

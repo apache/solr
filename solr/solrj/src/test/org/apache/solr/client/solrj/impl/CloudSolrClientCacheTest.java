@@ -47,7 +47,7 @@ import java.util.function.Supplier;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -95,13 +95,16 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     NamedList<Object> okResponse = new NamedList<>();
     okResponse.add("responseHeader", new NamedList<>(Map.of("status", 0)));
 
-    LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
+    LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
     try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
         CloudSolrClient cloudClient =
-            new RandomizingCloudSolrClientBuilder(clusterStateProvider)
-                .withLBHttpSolrClient(mockLbclient)
-                .build()) {
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider) {
+              @Override
+              protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
+                return mockLbclient;
+              }
+            }.build()) {
       livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
           ClusterState.createFromJson(
@@ -297,9 +300,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  private LBHttpSolrClient getMockLbHttpSolrClient(Map<String, Function<?, ?>> responses)
+  private LBJettySolrClient getMockLbHttpSolrClient(Map<String, Function<?, ?>> responses)
       throws Exception {
-    LBHttpSolrClient mockLbclient = mock(LBHttpSolrClient.class);
+    var mockLbclient = mock(LBJettySolrClient.class);
 
     when(mockLbclient.request(any(LBSolrClient.Req.class)))
         .then(

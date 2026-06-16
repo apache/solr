@@ -1,0 +1,10 @@
+title: Parallelize Backup and Restore File Operations
+type: changed
+authors:
+  - name: Samuel Verstraete
+    nick: elangelo
+  - name: David Smiley
+    nick: dsmiley
+links:
+  - name: SOLR-1092
+    url: https://issues.apache.org/jira/browse/SOLR-1092
