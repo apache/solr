@@ -294,7 +294,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertTrue(span.getAttributes().get(TraceUtils.TAG_DB).startsWith(collection + "_"));
   }
 
-
   static List<SpanData> getAndClearSpans() {
     return getAndClearSpans(0);
   }

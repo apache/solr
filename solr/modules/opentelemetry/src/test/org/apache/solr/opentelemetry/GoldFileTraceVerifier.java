@@ -67,9 +67,9 @@ import org.junit.Assert;
  *
  * <h2>Dumping Raw Traces (no normalization, all attributes)</h2>
  *
- * <p>Also requires {@code -Ptests.useSecurityManager=false} (writes to source tree).
- * Dump files are written alongside gold files as {@code {testMethod}-phase{N}-dump.json}.
- * Output paths are logged to stdout (visible in {@code build/test-results/test/outputs/OUTPUT-*.txt}).
+ * <p>Also requires {@code -Ptests.useSecurityManager=false} (writes to source tree). Dump files are
+ * written alongside gold files as {@code {testMethod}-phase{N}-dump.json}. Output paths are logged
+ * to stdout (visible in {@code build/test-results/test/outputs/OUTPUT-*.txt}).
  *
  * <pre>
  * gradlew :solr:modules:opentelemetry:test --tests TestDistributedTracing.testV2Api \
@@ -215,8 +215,7 @@ public class GoldFileTraceVerifier {
       node.put("endEpochNanos", span.getEndEpochNanos());
       // All attributes
       Map<String, Object> attrs = new LinkedHashMap<>();
-      span.getAttributes()
-          .forEach((key, value) -> attrs.put(key.getKey(), value));
+      span.getAttributes().forEach((key, value) -> attrs.put(key.getKey(), value));
       if (!attrs.isEmpty()) {
         node.put("attributes", attrs);
       }
