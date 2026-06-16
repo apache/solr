@@ -814,7 +814,37 @@ Some use cases where `includeTags` and/or `excludeTags` may be more useful then 
 
 
 
-=== Usage in Re-Ranking Query
+[[vector-reranking]]
+== Usage in Re-Ranking Query
+
+Dense vector similarity scores can be used to xref:query-guide:query-re-ranking.adoc[re-rank] first pass query results.
+Possible use cases include:
+
+* Re-ranking approximate results from a quantized vector field using full fidelity float vectors.
+* Re-ranking lexical search results with dense vector similarity scores.
+
+Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
+
+=== Re-Ranking with vectorSimilarity Function Query
+
+The xref:query-guide:function-queries.adoc#vectorsimilarity-function[vectorSimilarity()] function can be used with the `{!func}` query parser to re-rank by vector similarity.
+When used as a function query, `vectorSimilarity()` computes the exact similarity for only the candidate documents selected for re-ranking, without traversing the index graph.
+
+Here is an example of re-ranking a lexical query using a `DenseVectorField` named `vector`:
+
+[source,text]
+?q=title:phone&rq={!rerank reRankQuery=$rqq reRankDocs=100 reRankWeight=1}&rqq={!func}vectorSimilarity(vector,[1.0,2.0,3.0,4.0])
+
+NOTE: The default `reRankOperator` is `add`, which sums the first-pass score and the vector similarity score.
+Since these scores may differ in magnitude, you can adjust `reRankWeight` to control the balance between them, or use `reRankOperator=replace` to score re-ranked documents by vector similarity alone.
+
+When using a quantized vector field type (such as `ScalarQuantizedDenseVectorField`), the KNN first pass scores are computed on the quantized vectors.
+Here is an example of re-ranking those results with exact float similarity scores, where `topK` matches `reRankDocs`:
+
+[source,text]
+?q={!knn f=vector topK=100}[1.0,2.0,3.0,4.0]&rq={!rerank reRankQuery=$rqq reRankDocs=100 reRankWeight=1 reRankOperator=replace}&rqq={!func}vectorSimilarity(vector,[1.0,2.0,3.0,4.0])
+
+=== Re-Ranking with knn Query Parser
 
 Both dense vector search query parsers can be used to rerank first pass query results:
 
@@ -832,8 +862,6 @@ the k-nearest neighbors(*in the whole index*) of the target vector to search.
 This means the second pass `knn` is executed on the whole index anyway, which is a current limitation.
 
 The final ranked list of results will have the first pass score(main query `q`) added to the second pass score(the approximated similarityFunction distance to the target vector to search) multiplied by a multiplicative factor(reRankWeight).
-
-Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
 ====
 
 
