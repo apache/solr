@@ -36,6 +36,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.zookeeper.KeeperException;
@@ -227,7 +228,9 @@ public class AuthTool extends ToolBase {
             } while (password.isEmpty());
           }
 
-          if (username.equals(password)) {
+          if (username.equals(password)
+              && !EnvUtils.getPropertyAsBool(
+                  Sha256AuthenticationProvider.ALLOW_USER_AS_PASSWORD_PROP, false)) {
             CLIO.err(
                 "Error: username and password must not be identical."
                     + " This credential would never authenticate.");
