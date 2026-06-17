@@ -28,8 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -300,12 +302,15 @@ public class AuthTool extends ToolBase {
                   username);
           echo(successMessage);
           if (!updateIncludeFileOnly) {
+            Map<String, String> templateUsers = new LinkedHashMap<>();
+            templateUsers.put("admin", "admin, index, search");
+            templateUsers.put("index", "index, search");
+            templateUsers.put("search", "search");
+            templateUsers.remove(username);
             CLIO.out(
                 "\nIMPORTANT: The following template users have been created with NO password set"
                     + " and cannot log in until passwords are assigned:");
-            CLIO.out("  - admin  (roles: admin, index, search)");
-            CLIO.out("  - index  (roles: index, search)");
-            CLIO.out("  - search (roles: search)");
+            templateUsers.forEach((u, roles) -> CLIO.out("  - " + u + "  (roles: " + roles + ")"));
             CLIO.out(
                 "Set their passwords using the Admin UI Security page or the authentication API.");
           }

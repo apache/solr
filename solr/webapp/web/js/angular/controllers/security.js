@@ -412,12 +412,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       return false;
     }
 
-    var username = $scope.upsertUser.username ? $scope.upsertUser.username.trim() : "";
-    if (password === username) {
-      $scope.validationError = "Password must not be the same as the username";
-      return false;
-    }
-
     return true;
   };
 
