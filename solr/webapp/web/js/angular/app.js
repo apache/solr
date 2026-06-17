@@ -379,6 +379,10 @@ solrAdminApp.config([
     if ($rootScope.exceptions[config.url]) {
       delete $rootScope.exceptions[config.url];
     }
+    if (config.url && config.url.startsWith("/api/cluster/security/")) {
+      // Clear any stale security panel error when a new security request starts
+      $rootScope.$broadcast('securityApiClearError');
+    }
     activeRequests++;
     if (sessionStorage.getItem("auth.header")) {
       config.headers['Authorization'] = sessionStorage.getItem("auth.header");
@@ -420,8 +424,9 @@ solrAdminApp.config([
         return rejection;
     }
 
-    // Schema Designer handles errors internally to provide a better user experience than the global error handler
+    // Schema Designer and Security panels handle errors internally to provide a better user experience than the global error handler
     var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
+    var isHandledBySecurity = rejection.config.url && rejection.config.url.startsWith("/api/cluster/security/");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -453,6 +458,9 @@ solrAdminApp.config([
     } else if (rejection.status === 403 && !isHandledBySchemaDesigner) {
       // No permission
       $rootScope.showAuthzFailures = true;
+    } else if (isHandledBySecurity) {
+      // Let the security panel surface the detailed error in its own dialog
+      $rootScope.$broadcast('securityApiError', rejection);
     } else {
       // schema designer prefers to handle errors itself
       if (!isHandledBySchemaDesigner) {
@@ -464,10 +472,12 @@ solrAdminApp.config([
 
   return {request: started, response: ended, responseError: failed};
 })
-.config(function($httpProvider) {
+.config(function($httpProvider, $qProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
   // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
   $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  // Suppress AngularJS 1.6+ "Possibly unhandled rejection" console noise; errors are handled via callbacks and the security/schema-designer error dialogs
+  $qProvider.errorOnUnhandledRejections(false);
 })
 .directive('fileModel', function ($parse) {
     return {
