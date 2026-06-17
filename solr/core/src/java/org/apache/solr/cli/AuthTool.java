@@ -295,7 +295,9 @@ public class AuthTool extends ToolBase {
           updateIncludeFileEnableAuth(includeFile, basicAuthConfFile);
           final String successMessage =
               String.format(
-                  Locale.ROOT, "Successfully enabled basic auth with username [%s].", username);
+                  Locale.ROOT,
+                  "Successfully enabled basic auth with username [%s] assigned to all roles (superadmin, admin, index, search).",
+                  username);
           echo(successMessage);
           if (!updateIncludeFileOnly) {
             CLIO.out(
