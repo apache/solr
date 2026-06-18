@@ -103,7 +103,6 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testDeprecated() {
     var env = Map.of("SOLR_OVERWRITE", "overwritten");
     Properties defaultProps = new Properties();
-    // Use the already converted version, not the original camelCase.
     defaultProps.setProperty("solr.config.set.forbidden.file.types", "xml,json,jar");
 
     EnvUtils.init(false, env, defaultProps);
@@ -120,14 +119,18 @@ public class EnvUtilsTest extends SolrTestCase {
 
   @Test
   public void deprecatedCamelCaseOldNameInMappingsFileIsTranslated() {
-    // Here the *old* name in the mappings file is itself camelCase (collection.configName), unlike
-    // deprecatedCamelCaseDFlagIsTranslatedToCurrentPropertyName where the file uses a dot-separated
-    // old name. Passing the camelCase old name verbatim as a -D flag must still be migrated. See
-    // SOLR-18167.
     Properties sysprops = new Properties();
     sysprops.setProperty("collection.configName", "techproducts");
     EnvUtils.init(false, Map.of(), sysprops);
     assertEquals("techproducts", EnvUtils.getProperty("solr.configset.bootstrap.config.name"));
+  }
+
+  @Test
+  public void deprecatedCamelCaseInvertedPropertyIsTranslatedAndValueIsFlipped() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("solr.disableFingerprint", "true");
+    EnvUtils.init(true, Map.of(), sysprops);
+    assertFalse(EnvUtils.getPropertyAsBool("solr.index.replication.fingerprint.enabled"));
   }
 
   @Test
