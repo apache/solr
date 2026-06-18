@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -163,17 +165,18 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
             + "                  'method':'POST',"
             + "                  'role': 'admin'\n"
             + "                  }}";
-    req = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
-    req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
-    req.getContext().put("path", "/admin/authorization");
+    final LocalSolrQueryRequest badReq =
+        new LocalSolrQueryRequest(null, new ModifiableSolrParams());
+    badReq.getContext().put("httpMethod", SolrRequest.METHOD.POST);
+    badReq.getContext().put("path", "/admin/authorization");
     o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
-    req.setContentStreams(Collections.singletonList(o));
-    rsp = new SolrQueryResponse();
-    handler.handleRequestBody(req, rsp);
-    @SuppressWarnings({"rawtypes"})
-    List l =
-        (List) ((Map) ((List) rsp.getValues().get("errorMessages")).get(0)).get("errorMessages");
-    assertEquals(1, l.size());
+    badReq.setContentStreams(Collections.singletonList(o));
+    final SolrQueryResponse badRsp = new SolrQueryResponse();
+    ApiBag.ExceptionWithErrObject ex =
+        assertThrows(
+            ApiBag.ExceptionWithErrObject.class, () -> handler.handleRequestBody(badReq, badRsp));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("method is not a valid key for the permission"));
     handler.close();
   }
 
