@@ -119,6 +119,18 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
+  public void deprecatedCamelCaseOldNameInMappingsFileIsTranslated() {
+    // Here the *old* name in the mappings file is itself camelCase (collection.configName), unlike
+    // deprecatedCamelCaseDFlagIsTranslatedToCurrentPropertyName where the file uses a dot-separated
+    // old name. Passing the camelCase old name verbatim as a -D flag must still be migrated. See
+    // SOLR-18167.
+    Properties sysprops = new Properties();
+    sysprops.setProperty("collection.configName", "techproducts");
+    EnvUtils.init(false, Map.of(), sysprops);
+    assertEquals("techproducts", EnvUtils.getProperty("solr.configset.bootstrap.config.name"));
+  }
+
+  @Test
   public void testFlippingDisabledToEnabledPropertyName() {
 
     var env = Map.of("SOLR_ADMIN_UI_DISABLED", "true");

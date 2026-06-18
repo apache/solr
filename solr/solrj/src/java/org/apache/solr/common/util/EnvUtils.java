@@ -75,7 +75,9 @@ public class EnvUtils {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
         for (String key : deprecatedProps.stringPropertyNames()) {
-          DEPRECATED_MAPPINGS.put(deprecatedProps.getProperty(key), key);
+          // The lookup side (findDeprecatedMappingKey) normalises incoming "-D" keys to
+          // dot-separated form, so normalise the old (camelCase) names here too
+          DEPRECATED_MAPPINGS.put(camelCaseToDotSeparated(deprecatedProps.getProperty(key)), key);
         }
         init(false, System.getenv(), System.getProperties());
       }
@@ -224,8 +226,8 @@ public class EnvUtils {
     }
   }
 
-  // "-D" flags land in system properties as typed - often camelCase - but our mapping file uses
-  // dot-separated keys, so normalise before looking up.
+  // "-D" flags land in system properties as typed - often camelCase - so normalise to dot-separated
+  // form before looking up.
   private static String findDeprecatedMappingKey(String sysPropKey) {
     var dotKey = camelCaseToDotSeparated(sysPropKey);
     return isInDeprecatedMappings(dotKey) ? dotKey : null;
