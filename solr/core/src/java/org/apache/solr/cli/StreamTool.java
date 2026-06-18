@@ -38,7 +38,6 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -46,6 +45,7 @@ import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -274,8 +274,7 @@ public class StreamTool extends ToolBase {
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
 
-    StreamFactory streamFactory = new StreamFactory();
-    Lang.register(streamFactory);
+    StreamFactory streamFactory = new DefaultStreamFactory();
     streamFactory.withDefaultSolrConnection(solrConnection);
     streamContext.setStreamFactory(streamFactory);
     return streamContext;
