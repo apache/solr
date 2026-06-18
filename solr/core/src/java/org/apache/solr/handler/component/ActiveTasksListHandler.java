@@ -25,6 +25,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.api.ActiveTask;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -49,7 +50,7 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
       rsp.add("taskStatus", taskStatus);
 
     } else {
-      NamedList<String> tasks = new NamedList<>();
+      NamedList<String> tasks = new SimpleOrderedMap<>();
       List<ActiveTaskDetails> taskList = new ActiveTask(req).listAllActiveTasks().taskList;
       if (taskList != null) {
         for (ActiveTaskDetails task : taskList) {
