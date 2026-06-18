@@ -31,45 +31,45 @@ import org.junit.Test;
 
 public class GetTaskStatusTest extends SolrTestCaseJ4 {
 
-//  private SolrQueryRequest mockQueryRequest;
-//  private SolrCore solrCore;
-//  private CancellableQueryTracker cancellableQueryTracker;
-//
-//  private GetTaskStatus.java getTaskStatus;
-//
-//  @BeforeClass
-//  public static void ensureWorkingMockito() {
-//    assumeWorkingMockito();
-//  }
-//
-//  @Override
-//  @Before
-//  public void setUp() throws Exception {
-//    super.setUp();
-//
-//    mockQueryRequest = mock(SolrQueryRequest.class);
-//    solrCore = mock(SolrCore.class);
-//    cancellableQueryTracker = mock(CancellableQueryTracker.class);
-//
-//    getTaskStatus = new GetTaskStatus.java(mockQueryRequest);
-//  }
-//
-//  @Test
-//  public void testGetTaskStatus() throws Exception {
-//
-//    when(mockQueryRequest.getCore()).thenReturn(solrCore);
-//    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
-//    when(cancellableQueryTracker.isQueryIdActive("taskID_running")).thenReturn(true);
-//    when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
-//
-//    TaskStatusResponse taskStatusResponse;
-//
-//    taskStatusResponse = getTaskStatus.getTaskStatus("taskID_running");
-//    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, taskStatusResponse.taskStatus);
-//    assertNull(taskStatusResponse.error);
-//
-//    taskStatusResponse = getTaskStatus.getTaskStatus("taskID_stopped");
-//    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, taskStatusResponse.taskStatus);
-//    assertNull(taskStatusResponse.error);
-//  }
+  private SolrQueryRequest mockQueryRequest;
+  private SolrCore solrCore;
+  private CancellableQueryTracker cancellableQueryTracker;
+
+  private GetTaskStatus getTaskStatus;
+
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+
+    mockQueryRequest = mock(SolrQueryRequest.class);
+    solrCore = mock(SolrCore.class);
+    cancellableQueryTracker = mock(CancellableQueryTracker.class);
+
+    getTaskStatus = new GetTaskStatus(mockQueryRequest);
+  }
+
+  @Test
+  public void testGetTaskStatus() throws Exception {
+
+    when(mockQueryRequest.getCore()).thenReturn(solrCore);
+    when(solrCore.getCancellableQueryTracker()).thenReturn(cancellableQueryTracker);
+    when(cancellableQueryTracker.isQueryIdActive("taskID_running")).thenReturn(true);
+    when(cancellableQueryTracker.isQueryIdActive("taskID_stopped")).thenReturn(false);
+
+    TaskStatusResponse taskStatusResponse;
+
+    taskStatusResponse = getTaskStatus.getTaskStatus("taskID_running");
+    assertEquals(TaskStatusResponse.TaskStatus.ACTIVE, taskStatusResponse.taskStatus);
+    assertNull(taskStatusResponse.error);
+
+    taskStatusResponse = getTaskStatus.getTaskStatus("taskID_stopped");
+    assertEquals(TaskStatusResponse.TaskStatus.INACTIVE, taskStatusResponse.taskStatus);
+    assertNull(taskStatusResponse.error);
+  }
 }

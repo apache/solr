@@ -27,25 +27,25 @@ import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 
-//public class GetTaskStatus extends JerseyResource implements TasksApi.Status {
-//
-//  private final SolrQueryRequest solrQueryRequest;
-//
-//  @Inject
-//  public GetTaskStatus(SolrQueryRequest solrQueryRequest) {
-//    this.solrQueryRequest = solrQueryRequest;
-//  }
-//
-//  @Override
-//  @PermissionName(READ_PERM)
-//  public TaskStatusResponse getTaskStatus(String taskID) throws Exception {
-//    final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
-//
-//    boolean isTaskActive =
-//        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskID);
-//
-//    response.taskStatus = (isTaskActive) ? TaskStatus.ACTIVE : TaskStatus.INACTIVE;
-//
-//    return response;
-//  }
-//}
+public class GetTaskStatus extends JerseyResource implements TasksApi.Status {
+
+  private final SolrQueryRequest solrQueryRequest;
+
+  @Inject
+  public GetTaskStatus(SolrQueryRequest solrQueryRequest) {
+    this.solrQueryRequest = solrQueryRequest;
+  }
+
+  @Override
+  @PermissionName(READ_PERM)
+  public TaskStatusResponse getTaskStatus(String taskID) throws Exception {
+    final TaskStatusResponse response = instantiateJerseyResponse(TaskStatusResponse.class);
+
+    boolean isTaskActive =
+        solrQueryRequest.getCore().getCancellableQueryTracker().isQueryIdActive(taskID);
+
+    response.taskStatus = (isTaskActive) ? TaskStatus.ACTIVE : TaskStatus.INACTIVE;
+
+    return response;
+  }
+}
