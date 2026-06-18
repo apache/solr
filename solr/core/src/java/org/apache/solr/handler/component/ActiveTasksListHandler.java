@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.client.api.model.TaskStatusResponse.TaskStatus.ACTIVE;
 import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 import java.util.Collection;
@@ -45,8 +46,7 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
     if (taskStatusCheckUUID != null) {
       TaskStatusResponse taskStatusResponse =
           new ActiveTask(req).getTaskStatus(taskStatusCheckUUID);
-      String taskStatus =
-          "id: " + taskStatusCheckUUID + ", status: " + taskStatusResponse.taskStatus.getValue();
+      boolean taskStatus = taskStatusResponse.taskStatus.equals(ACTIVE);
       rsp.add("taskStatus", taskStatus);
 
     } else {
