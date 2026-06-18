@@ -452,7 +452,7 @@ solrAdminApp.config([
         sessionStorage.setItem("auth.location", $location.path());
         $location.path('/login');
       }
-    } else if (rejection.status === 403 && !isHandledBySchemaDesigner) {
+    } else if (rejection.status === 403 && !isHandledBySchemaDesigner && !isHandledBySecurity) {
       // No permission
       $rootScope.showAuthzFailures = true;
     } else if (isHandledBySecurity) {
