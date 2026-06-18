@@ -699,7 +699,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         final String path = parent_path + "/";
         return params(
             "q", "{!parent which=$parent_filt v=$child_q}",
-            "parent_filt", "({!field f='_nest_path_' v='" + path + "'})",
+            "parent_filt", "(*:* -{!prefix f='_nest_path_' v='" + path + "'})",
             "child_q", "(+" + inner_child_query + " +{!prefix f='_nest_path_' v='" + path + "'})");
       } else {
         // '/' has to be escaped otherwise it will be treated as a regex query...

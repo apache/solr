@@ -308,7 +308,7 @@ An example:
 [source,text]
 ?q={!parent which=$allParents score=max v=$children.q}&
 children.q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]&
-allParents=*:* -_nest_path_:*&
+allParents={!field f=_nest_path_ v=''}&
 someParents=color_s:RED&
 fl=id,score,vectors,vector,[child fl=vector childFilter=$children.q]
 
