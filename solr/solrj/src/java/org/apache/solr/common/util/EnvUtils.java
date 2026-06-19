@@ -218,7 +218,8 @@ public class EnvUtils {
 
     for (String deprecatedKey : sysProperties.stringPropertyNames()) {
       var dotKey = camelCaseToDotSeparated(deprecatedKey);
-      if (DEPRECATED_MAPPINGS.containsKey(dotKey) || DEPRECATED_MAPPINGS.containsKey("!" + dotKey)) {
+      if (DEPRECATED_MAPPINGS.containsKey(dotKey)
+          || DEPRECATED_MAPPINGS.containsKey("!" + dotKey)) {
         applyDeprecatedPropertyMapping(deprecatedKey, dotKey, sysProperties);
       }
     }

@@ -110,7 +110,7 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
-  public void deprecatedCamelCaseDFlagIsTranslatedToCurrentPropertyName() {
+  public void deprecatedCamelCaseSystemPropertyIsMigratedToCurrentName() {
     Properties sysprops = new Properties();
     sysprops.setProperty("solr.auth.jwt.allowOutboundHttp", "true");
     EnvUtils.init(false, Map.of(), sysprops);
