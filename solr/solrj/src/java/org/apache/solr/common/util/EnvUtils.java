@@ -80,7 +80,7 @@ public class EnvUtils {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
         for (String key : deprecatedProps.stringPropertyNames()) {
-          DEPRECATED_MAPPINGS.put(deprecatedProps.getProperty(key), key);
+          DEPRECATED_MAPPINGS.put(camelCaseToDotSeparated(deprecatedProps.getProperty(key)), key);
         }
         init(false, System.getenv(), System.getProperties());
       }
@@ -222,9 +222,10 @@ public class EnvUtils {
     }
 
     for (String deprecatedKey : sysProperties.stringPropertyNames()) {
-      String lookupKey = findDeprecatedMappingKey(deprecatedKey);
-      if (lookupKey != null) {
-        applyDeprecatedPropertyMapping(deprecatedKey, lookupKey, sysProperties);
+      var dotKey = camelCaseToDotSeparated(deprecatedKey);
+      if (DEPRECATED_MAPPINGS.containsKey(dotKey)
+          || DEPRECATED_MAPPINGS.containsKey("!" + dotKey)) {
+        applyDeprecatedPropertyMapping(deprecatedKey, dotKey, sysProperties);
       }
     }
 
@@ -238,17 +239,6 @@ public class EnvUtils {
     }
   }
 
-  // "-D" flags land in system properties as typed - often camelCase - but our mapping file uses
-  // dot-separated keys, so normalise before looking up.
-  private static String findDeprecatedMappingKey(String sysPropKey) {
-    var dotKey = camelCaseToDotSeparated(sysPropKey);
-    return isInDeprecatedMappings(dotKey) ? dotKey : null;
-  }
-
-  private static boolean isInDeprecatedMappings(String key) {
-    return DEPRECATED_MAPPINGS.containsKey(key) || DEPRECATED_MAPPINGS.containsKey("!" + key);
-  }
-
   private static void applyDeprecatedPropertyMapping(
       String deprecatedKey, String lookupKey, Properties sysProperties) {
     var newPropName =
@@ -256,7 +246,7 @@ public class EnvUtils {
     var newValue =
         DEPRECATED_MAPPINGS.containsKey(lookupKey)
             ? sysProperties.getProperty(deprecatedKey)
-            : String.valueOf(!Boolean.getBoolean(deprecatedKey));
+            : String.valueOf(!Boolean.parseBoolean(sysProperties.getProperty(deprecatedKey)));
     log.warn(
         "Deprecated system property {} has been replaced by {}. Support for the old property will be removed in a future version of Solr.",
         deprecatedKey,
