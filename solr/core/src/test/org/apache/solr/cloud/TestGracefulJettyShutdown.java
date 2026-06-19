@@ -55,7 +55,8 @@ public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
 
     final ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("client-requests");
     final MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
+        new MiniSolrCloudCluster(
+            1, createTempDir(), JettyConfig.builder().enableGracefulShutdown(true).build());
     try {
       assertTrue(
           CollectionAdminRequest.createCollection(collection, "_default", 1, 1)

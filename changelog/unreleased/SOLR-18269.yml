@@ -1,0 +1,7 @@
+title: Restore -c option as a no-op to bin/solr start script to simplify scripts that interact with both Solr 10 and previous versions of Solr.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18269
+    url: https://issues.apache.org/jira/browse/SOLR-18269

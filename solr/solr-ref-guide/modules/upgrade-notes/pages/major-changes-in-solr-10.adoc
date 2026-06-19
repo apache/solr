@@ -40,6 +40,26 @@ For SSL (https), it's no longer necessary to set the "urlScheme" cluster propert
 These are now honored by CloudSolrClient, as well as scheme detection from the connection string / hosts.
 The "urlScheme" cluster property and httpShardHandlerFactory configuration is likely to be deprecated; feedback welcome.
 
+=== Universal connection string support
+
+Introduced a universal Solr connection string for SolrCloud connections.
+
+Connections can now be configured via HTTP(S) without exposing ZooKeeper details, while the legacy ZooKeeper-based connection method remains fully supported.
+
+Examples:
+`solrConnection=http://solr1:8983/solr,http://solr2:8983/solr`
+`solrConnection=zoo1:2181,zoo2:2181,zoo3:2181/solr`
+
+The universal connection string is now supported in the following components and entry points:
+
+* Added `CloudSolrClient.Builder(String)` constructor in SolrJ for configuring SolrCloud clients using either HTTP(S)-based or ZooKeeper-based connection strings.
+* Added `solrConnection` parameter to all streaming functions in the SolrJ Streaming module. The existing `zkHost` parameter remains supported.
+* Added `withDefaultSolrConnection` and `withCollectionSolrConnection` methods to `StreamFactory` in the SolrJ Streaming module.
+* Solr SQL JDBC driver now supports both HTTP-based (`jdbc:solr:http://solr1.example.com:8983/solr?collection=COLLECTION_NAME`) and ZooKeeper-based (`jdbc:solr://zoo.example.com:2181/solr?collection=COLLECTION_NAME`) JDBC URLs.
+* Added `--solr-connection` option to the CLI tools.
+* Updated Solr CLI `-s` short option to invoke `--solr-connection` instead of `--solr-url`, which is a backwards compatible change.
+* Added `solrConnection` parameter to the Join Query Parser.
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
@@ -207,7 +227,7 @@ Attention:
 ** `analytics` has been removed
 ** `hadoop-auth` (including the `solr.KerberosPlugin` class) has been removed
 
-* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been deprecated, newer versions of the tags have been added to the span data: `http.response.status_code`, `http.request.method`.
+* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been removed from the span data; use `http.response.status_code` and `http.request.method` instead. (SOLR-18110)
 
 * The sysProp `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
 has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.

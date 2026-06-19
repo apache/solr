@@ -18,8 +18,6 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -165,26 +163,20 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals("6", document.getFieldValue("id"));
     assertEquals(true, document.getFieldValue("[elevated]"));
 
-    // Force javabin format
-    final String clientUrl = jettys.get(0).getBaseUrl().toString();
-    try (SolrClient client =
-        new HttpSolrClient.Builder(clientUrl)
-            .withDefaultCollection("collection1")
-            .withResponseParser(new JavaBinResponseParser())
-            .build(); ) {
-      SolrQuery solrQuery =
-          new SolrQuery("XXXX")
-              .setParam("qt", "/elevate")
-              .setParam("shards.qt", "/elevate")
-              .setRows(500)
-              .setFields("id,[elevated]")
-              .setParam("enableElevation", "true")
-              .setParam("forceElevation", "true")
-              .setParam("elevateIds", "6", "wt", "javabin")
-              .setSort("id", SolrQuery.ORDER.desc);
-      setDistributedParams(solrQuery);
-      response = client.query(solrQuery);
-    }
+    var client = jettys.getFirst().getSolrClient();
+    assertTrue(client.getParser() instanceof JavaBinResponseParser);
+    SolrQuery solrQuery =
+        new SolrQuery("XXXX")
+            .setParam("qt", "/elevate")
+            .setParam("shards.qt", "/elevate")
+            .setRows(500)
+            .setFields("id,[elevated]")
+            .setParam("enableElevation", "true")
+            .setParam("forceElevation", "true")
+            .setParam("elevateIds", "6")
+            .setSort("id", SolrQuery.ORDER.desc);
+    setDistributedParams(solrQuery);
+    response = client.query(DEFAULT_TEST_CORENAME, solrQuery);
 
     assertTrue(response.getResults().getNumFound() > 0);
     document = response.getResults().get(0);

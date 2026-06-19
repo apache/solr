@@ -79,19 +79,19 @@ public class PostLogsTool extends ToolBase {
     return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(ROOT_DIR_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url;
-    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+    if (CLIUtils.hasConnectionOption(cli)) {
       url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
-      // Could be required arg, but maybe we want to support --zk-host option too?
-      throw new IllegalArgumentException("Must specify --solr-url.");
+      throw new IllegalArgumentException(
+          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
     }
     String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);
     String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
