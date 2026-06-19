@@ -29,7 +29,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 
@@ -1143,14 +1142,16 @@ public class SolrQuery extends ModifiableSolrParams {
    *
    * @param qt The Request Handler name corresponding to one in solrconfig.xml on the server.
    * @return this
-   * @see QueryRequest#QueryRequest(String, SolrParams)
+   * @deprecated QueryRequest#QueryRequest(String, SolrParams)
    * @see SolrRequest#setPath(String)
    */
+  @Deprecated
   public SolrQuery setRequestHandler(String qt) {
     this.set(CommonParams.QT, qt);
     return this;
   }
 
+  @Deprecated
   public String getRequestHandler() {
     return this.get(CommonParams.QT);
   }
