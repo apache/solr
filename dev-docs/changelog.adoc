@@ -84,7 +84,7 @@ links:
 | Bumping third-party library versions (e.g., Lucene, Jetty, Jackson).
 
 | `other`
-| For anything else, like large/significant refactorings, build changes, test infrastructure, or documentation. Most such changes are too small/minor to bother with a changelog entry.
+| For anything else. Most such changes are too small/minor to bother with a changelog entry.
 | Large/significant refactorings, build changes, test infrastructure, or documentation.
 |===
 
