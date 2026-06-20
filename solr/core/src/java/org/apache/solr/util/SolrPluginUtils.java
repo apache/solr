@@ -596,7 +596,9 @@ public class SolrPluginUtils {
             optionalDismaxClauses++;
           }
         } else {
-          if (!(c.query() instanceof MatchNoDocsQuery)) optionalClauses++;
+          if (!(mmAutoRelax && (c.query() instanceof MatchNoDocsQuery))) {
+            optionalClauses++;
+          }
         }
       }
     }
