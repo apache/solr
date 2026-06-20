@@ -53,6 +53,41 @@ links:
     url: https://issues.apache.org/jira/browse/SOLR-3333
 ----
 
+=== Changelog Types Reference
+
+[cols="1,2,3",options="header"]
+|===
+| Type | Description | When to Use (Examples)
+
+| `added`
+| For changes requiring a user to take action to use (opt-in).
+| Could be completely new features or simply new configuration values on existing features. Typically documented in the Ref Guide.
+
+| `changed`
+| For improvements; not opt-in.
+| Modifying behavior or performance of existing requests/configuration.
+
+| `fixed`
+| For improvements that are deemed to have fixed buggy behavior.
+| Fixing a `NullPointerException`, correcting data corruption issues, or resolving UI glitches.
+
+| `deprecated`
+| For marking things deprecated.
+| Declaring a configuration option, class, or API endpoint as deprecated ahead of a future removal.
+
+| `removed`
+| For code removed.
+| Removing a previously deprecated parameter, class, or legacy module.
+
+| `dependency_update`
+| For updates to dependencies.
+| Bumping third-party library versions (e.g., Lucene, Jetty, Jackson).
+
+| `other`
+| For anything else. Most such changes are too small/minor to bother with a changelog entry.
+| Large/significant refactorings, build changes, test infrastructure, or documentation.
+|===
+
 === 3.1 Tool to draft a YAML for your change
 
 We have a gradle task that bootstraps a YAML file in the `changelog/unreleased/` directory. The task will use your current branch name as a file name and also title, and will
