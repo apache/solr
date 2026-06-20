@@ -171,7 +171,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
     if (parsedChildQuery.clauses().isEmpty()) { // i.e. all children
       // no block-join needed; just return all "parent" docs at this level
-      return wrapWithParentPathConstraint(parentPath, new MatchAllDocsQuery());
+      return wrapWithParentPathConstraint(parentPath, MatchAllDocsQuery.INSTANCE);
     }
 
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
@@ -209,15 +209,16 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * /}): {@code (*:* -_nest_path_:*)}
    */
   protected Query buildAllParentsFilterFromPath(String parentPath) {
-    final Query excludeQuery;
-    if (parentPath.equals("/")) {
-      excludeQuery = newNestPathExistsQuery();
-    } else {
-      excludeQuery = new PrefixQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath + "/"));
+    if (parentPath.equals("/") || parentPath.isEmpty()) {
+      final SchemaField nestPathField = req.getSchema().getField(IndexSchema.NEST_PATH_FIELD_NAME);
+      return nestPathField.getType().getFieldQuery(this, nestPathField, parentPath);
     }
+
     return new BooleanQuery.Builder()
-        .add(new MatchAllDocsQuery(), Occur.MUST)
-        .add(excludeQuery, Occur.MUST_NOT)
+        .add(MatchAllDocsQuery.INSTANCE, Occur.MUST)
+        .add(
+            new PrefixQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath + "/")),
+            Occur.MUST_NOT)
         .build();
   }
 

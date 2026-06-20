@@ -78,7 +78,7 @@ public class NestPathField extends SortableTextField {
 
     if (externalVal.isEmpty() || "/".equals(externalVal)) {
       return new BooleanQuery.Builder()
-          .add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST)
+          .add(MatchAllDocsQuery.INSTANCE, BooleanClause.Occur.MUST)
           .add(field.getType().getExistenceQuery(parser, field), BooleanClause.Occur.MUST_NOT)
           .build();
     }
