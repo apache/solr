@@ -540,6 +540,15 @@ public class SchemaDesigner extends JerseyResource
     requireSchemaVersion(schemaVersion);
     final String mutableId = checkMutable(configSet, schemaVersion);
 
+    // @DefaultValue on the interface only fires through JAX-RS injection; direct Java callers
+    // bypass it, so we resolve here to guard against NPE on unboxing below.
+    final boolean doReloadCollections = Objects.requireNonNullElse(reloadCollections, false);
+    final int shards = Objects.requireNonNullElse(numShards, 1);
+    final int replicas = Objects.requireNonNullElse(replicationFactor, 1);
+    final boolean doIndexToCollection = Objects.requireNonNullElse(indexToCollection, false);
+    final boolean doCleanupTemp = Objects.requireNonNullElse(cleanupTempParam, true);
+    final boolean doDisableDesigner = Objects.requireNonNullElse(disableDesigner, false);
+
     // verify the configSet we're going to apply changes to hasn't been changed since being loaded
     // for
     // editing by the schema designer
@@ -581,7 +590,7 @@ public class SchemaDesigner extends JerseyResource
       copyConfig(mutableId, configSet);
     }
 
-    if (reloadCollections) {
+    if (doReloadCollections) {
       log.debug("Reloading collections after update to configSet: {}", configSet);
       List<String> collectionsForConfig = configSetHelper.listCollectionsForConfig(configSet);
       CloudSolrClient csc = cloudClient();
@@ -593,8 +602,8 @@ public class SchemaDesigner extends JerseyResource
     // create new collection
     Map<Object, Throwable> errorsDuringIndexing = null;
     if (StrUtils.isNotNullOrEmpty(newCollection)) {
-      configSetHelper.createCollection(newCollection, configSet, numShards, replicationFactor);
-      if (indexToCollection) {
+      configSetHelper.createCollection(newCollection, configSet, shards, replicas);
+      if (doIndexToCollection) {
         List<SolrInputDocument> docs = configSetHelper.retrieveSampleDocs(configSet);
         if (!docs.isEmpty()) {
           ManagedIndexSchema schema = loadLatestSchema(mutableId);
@@ -604,7 +613,7 @@ public class SchemaDesigner extends JerseyResource
       }
     }
 
-    if (cleanupTempParam) {
+    if (doCleanupTemp) {
       try {
         doCleanupTemp(configSet);
       } catch (IOException | SolrServerException | SolrException exc) {
@@ -613,7 +622,7 @@ public class SchemaDesigner extends JerseyResource
       }
     }
 
-    settings.setDisabled(disableDesigner);
+    settings.setDisabled(doDisableDesigner);
     settingsDAO.persistIfChanged(configSet, settings);
 
     SchemaDesignerPublishResponse response =
