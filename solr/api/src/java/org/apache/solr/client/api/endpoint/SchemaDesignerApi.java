@@ -101,8 +101,10 @@ public interface SchemaDesignerApi {
       @QueryParam("docId") String docId)
       throws Exception;
 
+  // TODO: this sub-resource belongs in ConfigsetsApi as GET /configsets/{configSetName}/collections;
+  // move it there in a follow-up so it is reusable outside the schema designer.
   @GET
-  @Path("/{configSet}/collectionsForConfig")
+  @Path("/{configSet}/collections")
   @Operation(
       summary = "List collections that use a given configSet.",
       tags = {"schema-designer"})
