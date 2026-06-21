@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.CatStream;
 
 /** Supports stream command in the bin/solr script. */
@@ -277,7 +278,7 @@ public class StreamTool extends ToolBase {
       streamContext.setStreamFactory(streamFactory);
       return streamContext;
     } catch (Exception e) {
-      org.apache.solr.common.util.IOUtils.closeQuietly(solrClientCache);
+      IOUtils.closeQuietly(solrClientCache);
       throw e;
     }
   }
