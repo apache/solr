@@ -90,27 +90,6 @@ Core architectural departures from upstream Apache Solr:
 
 Re-ignoring with a comment is only a temporary holding state, not a resolution.
 
-### Known open test gaps (require production work before tests can pass)
-
-- **`TestTlogReplica`** — multiple StateUpdates-model gaps (HTTP 400 on tlogReplicas=4
-  create, two-leader state, replicas stuck RECOVERING). Also: `SolrCore.initIndex` only
-  creates an empty index when `!coreContainer.isZooKeeperAware() || newCore`, so a cloud
-  core restarting with an empty/lost index dir skips creation → `IndexNotFoundException`.
-  High blast radius; fix cautiously.
-- **`TestLeaderElectionWithEmptyReplica` (SOLR-9504)** — the prescribed fix (delete
-  `setTermEqualsToLeader` in `ZkController.register()`) is correct as a data-safety guard
-  but is not a standalone fix. See the detailed diagnosis section below.
-- **Replica-property / preferred-leader** — `WorkQueueWatcher.processQueueItems` switch
-  only handles `STATE` and `UPDATESHARDSTATE`. All ADDREPLICAPROP/DELETEREPLICAPROP/
-  BALANCESHARDUNIQUE calls poison the overseer queue and cascade timeouts into later tests.
-  Delete tests in this family until the Overseer dispatch is extended.
-- **`PeerSyncTest`** — pre-existing failure on baseline HEAD, not a regression. Do not
-  treat as a gate.
-- **`DeleteReplicaTest.raceConditionOnDeleteAndRegisterReplica`** — pre-existing broken on
-  baseline HEAD, not a regression.
-
----
-
 ## Overseer / StateUpdates architecture — what to know
 
 The classic Overseer queue (`ClusterStateUpdater`) is replaced. Key classes:
@@ -186,19 +165,6 @@ not just `(CoreContainer cc)`. Call-sites: `CollectionWorkQueueWatcher`,
 - `getRawState()` calls `shortStateToState(n, published=false)`. shortState=1 maps to
   `State.LEADER`. `Slice.getLeader()` uses `getRawState()==LEADER` to identify the leader.
 - Both `isActive(liveNodes)` and `isActive()` work correctly for LEADER without any change.
-
----
-
-## SOLR-9504 diagnosis (TestLeaderElectionWithEmptyReplica) — open
-
-Test: index 10 docs on a 1×1 collection, kill leader n1, async-add empty replica n2, restart
-n1, expect both active + all docs. **Bug:** with n1 down, n2 (term 0, `canBecomeLeader=false`)
-wins via the `onlyLiveReplica` bypass in `ShardLeaderElectionContext.runLeaderProcess` and
-becomes an empty leader (`getOtherHasVersions()=false`, "become leader anyway" path ~line 213).
-Deleting `setTermEqualsToLeader` at `ZkController.register()` is a correct data-safety guard but
-does NOT stop the bypass win. A complete fix must make the `onlyLiveReplica` bypass refuse an
-empty candidate (no update-log versions, not the original leader) when the shard previously had
-data — or have `register()` check `canBecomeLeader` before `checkRecovery`. Stays `@Ignore`'d.
 
 ---
 
@@ -385,31 +351,6 @@ re-introduce:
    deletion is order-dependent and deleted replicas can linger.
 
 The correct pattern: two passes — carry over non-remove replicas, drop remove-flagged ones.
-
----
-
-## Unresolved / open production leads
-
-These are diagnosed root causes that have NOT been fixed yet:
-
-- **`ShortClassNames.properties` stale short-names** — `solr.ClassicTokenizerFactory` /
-  `solr.ClassicFilterFactory` still map to Lucene 8 FQCNs; they moved to
-  `org.apache.lucene.analysis.classic.*` in Lucene 9.0.0.
-- **`SolrCore.initIndex` empty-dir cloud startup** — only creates an empty index when
-  `!coreContainer.isZooKeeperAware() || newCore`. A restarting cloud core with an empty/lost
-  index dir skips creation → `IndexNotFoundException`. High blast radius; fix carefully.
-- **`MigrateCmd` stale clusterState** — the StateUpdates overseer hands MigrateCmd a
-  momentarily-stale cluster state snapshot; freshly-created collections may not be visible.
-- **PKI inter-node principal propagation** — `PKIAuthenticationPlugin` does not set the
-  signed principal on inter-node shard sub-requests.
-- **JMX / MBeans not wired** — fork's JMX reporter is not wired to the metrics registry;
-  per-core SolrIndexSearcher MBeans are not registered. (Note: request-handler timer/counter
-  metrics ARE now recorded — see the `RequestHandlerBase.handleRequest` fix above.)
-- **`TestTlogReplica` multi-failure cluster** — see above; `SolrCore.initIndex` cloud
-  path + StateUpdates two-leader state + tlog-replica recovery.
-- **SOLR-9504 empty-replica leadership** — see detailed section above.
-- **`ShardTerms.setTermEqualsToLeader` at `ShardTerms.java:~199`** — calls `registerTerm`
-  but discards its return value (a latent bug; one-line fix but not yet applied).
 
 ---
 
