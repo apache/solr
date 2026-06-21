@@ -79,19 +79,18 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
 
   public static Resolved getResolved(
       String template, Cache<String, Resolved> cache, Pattern pattern) {
-    Resolved r = cache == null ? null : cache.getIfPresent(template);
-    if (r == null) {
-      r = new Resolved();
-      Matcher m = pattern.matcher(template);
-      while (m.find()) {
-        String variable = m.group(1);
-        r.startIndexes.add(m.start(0));
-        r.endOffsets.add(m.end(0));
-        r.variables.add(variable);
-      }
-      if (cache != null) cache.put(template, r);
-    }
-    return r;
+    return cache == null ? null : cache.get(
+        template, t -> {
+          var r = new Resolved();
+          Matcher m = pattern.matcher(t);
+          while (m.find()) {
+            String variable = m.group(1);
+            r.startIndexes.add(m.start(0));
+            r.endOffsets.add(m.end(0));
+            r.variables.add(variable);
+          }
+          return r;
+        });
   }
 
   /** Get a list of variables embedded in the template string. */
