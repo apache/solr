@@ -33,15 +33,23 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -251,6 +259,75 @@ public class TestTaskManagement extends SolrCloudTestCase {
     String result = (String) queryResponse.get("taskStatus");
 
     assertTrue(result.contains("inactive"));
+  }
+
+  /**
+   * Regression test for cross-shard task visibility.
+   *
+   * <p>On {@code main}, {@code ActiveTasksListHandler.handleRequestBody()} delegates to {@code
+   * processRequest()}, which fans the request out to every shard via the distributed query
+   * pipeline. {@code ActiveTasksListComponent.handleResponses()} then aggregates the per-shard
+   * results, so a task running on shard 2 is visible when the status-check request lands on shard
+   * 1.
+   *
+   * <p>If this handler is migrated to JAX-RS and the fan-out is replaced with a direct call to the
+   * handler node's own {@code CancellableQueryTracker}, a task registered only on shard 2 becomes
+   * invisible to a request handled by shard 1, causing a false "inactive" response.
+   */
+  @Test
+  public void testCrossShardTaskStatusVisibility() throws Exception {
+    DocCollection docCollection =
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
+    List<Slice> slices = new ArrayList<>(docCollection.getSlices());
+    assertEquals("test requires exactly 2 shards", 2, slices.size());
+    Replica shard1Leader = slices.get(0).getLeader();
+    Replica shard2Leader = slices.get(1).getLeader();
+    assumeFalse(
+        "Both shard leaders landed on the same node — cross-shard scenario cannot be tested",
+        shard1Leader.getNodeName().equals(shard2Leader.getNodeName()));
+
+    final String taskId = "cross-shard-visibility-test";
+
+    JettySolrRunner shard2Jetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(j -> j.getNodeName().equals(shard2Leader.getNodeName()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No Jetty found for shard 2 leader"));
+    try (SolrCore shard2Core =
+        shard2Jetty.getCoreContainer().getCore(shard2Leader.getCoreName())) {
+      assertNotNull("Could not open shard 2 core", shard2Core);
+      ModifiableSolrParams fakeParams = new ModifiableSolrParams();
+      fakeParams.set(CommonParams.QUERY_UUID, taskId);
+      try (var fakeReq = new SolrQueryRequestBase(shard2Core, fakeParams)) {
+        shard2Core.getCancellableQueryTracker().generateQueryID(fakeReq);
+      }
+
+      try {
+        try (var shard1Client =
+            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl()).build()) {
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CommonParams.TASK_CHECK_UUID, taskId);
+          var statusReq =
+              new GenericSolrRequest(
+                      SolrRequest.METHOD.GET, "/tasks/list", SolrRequestType.ADMIN, params)
+                  .setRequiresCollection(true);
+          NamedList<Object> response = shard1Client.request(statusReq, COLLECTION_NAME);
+
+          Object taskStatus = response.get("taskStatus");
+          assertNotNull("taskStatus missing from response", taskStatus);
+          assertTrue(
+              "Task registered on shard 2 must be visible from shard 1 via cross-shard fan-out. "
+                  + "Got: "
+                  + taskStatus
+                  + " ("
+                  + taskStatus.getClass().getSimpleName()
+                  + ") — if this is Boolean.FALSE the distributed aggregation was dropped.",
+              taskStatus instanceof String && ((String) taskStatus).contains("status: active"));
+        }
+      } finally {
+        shard2Core.getCancellableQueryTracker().releaseQueryID(taskId);
+      }
+    }
   }
 
   private CompletableFuture<Void> cancelQuery(
