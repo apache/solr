@@ -72,7 +72,9 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     assertEquals(configSet, prep.configSet);
     int schemaVersion = prep.schemaVersion;
 
-    // POST /{configSet} — addField — exercises kebab-case @JsonProperty("add-field") / @Schema(name=…)
+    // POST /{configSet} — addField — verifies the dual-annotation pair: @Schema(name="addField")
+    // generates a camelCase SolrJ setter, while @JsonProperty("add-field") serializes it to
+    // kebab-case on the wire. Both must be correct for the round-trip to succeed.
     var addField = new SchemaDesignerApi.AddSchemaObject(configSet);
     addField.setSchemaVersion(schemaVersion);
     addField.setAddField(Map.of("name", "keywords", "type", "string", "stored", true));
