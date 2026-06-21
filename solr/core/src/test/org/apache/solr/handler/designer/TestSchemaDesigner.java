@@ -656,7 +656,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     idFieldMapUpdated.setVal(
         idFieldMapUpdated.indexOf("omitTermFreqAndPositions", 0), Boolean.FALSE);
 
-    Map<String, Object> mapParams = idFieldMapUpdated.toSolrParams().toMap(new HashMap<>());
+    Map<String, Object> mapParams = new SimpleOrderedMap<>(idFieldMapUpdated.toSolrParams());
     mapParams.put("termVectors", Boolean.FALSE);
     schemaVersion = response.schemaVersion;
 

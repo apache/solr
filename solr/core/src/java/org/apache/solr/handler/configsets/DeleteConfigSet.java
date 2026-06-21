@@ -51,7 +51,7 @@ public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.D
   @PermissionName(CONFIG_EDIT_PERM)
   public SolrJerseyResponse deleteConfigSet(String configSetName) throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    if (StrUtils.isNullOrEmpty(configSetName) || configSetName.isBlank()) {
+    if (StrUtils.isNullOrEmpty(configSetName) || StrUtils.isBlank(configSetName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "No configset name provided to delete");
     }

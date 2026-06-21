@@ -42,8 +42,7 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
@@ -51,6 +50,7 @@ import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseLis
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
@@ -95,12 +95,8 @@ import org.slf4j.MDC;
 /**
  * An HTTP {@link SolrClient} using Jetty {@link HttpClient}. This is Solr's most mature client for
  * direct HTTP.
- *
- * <p>Despite the name, this client supports HTTP 1.1 and 2 -- toggle with {@link
- * HttpSolrClientBuilderBase#useHttp1_1(boolean)}. In retrospect, the name should have been {@code
- * HttpJettySolrClient}.
  */
-public class HttpJettySolrClient extends HttpSolrClientBase {
+public class HttpJettySolrClient extends HttpSolrClient {
   // formerly known at Http2SolrClient
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -512,6 +508,10 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
             "IOException occurred when talking to server at: " + url, cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (IllegalStateException e) {
+      // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
+      abortCause = e;
+      throw new SolrServerException("Connection lost at: " + url, new IOException(e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
@@ -555,8 +555,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public HttpSolrClientBuilderBase<?, ?> builder() {
-    return new HttpJettySolrClient.Builder().withHttpClient(this);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJettySolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   // merely exposing for superclass's method visibility to this package
@@ -579,7 +579,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
   // merely exposing for superclass's method visibility to this package
   protected static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
-    return HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
+    return HttpSolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
   }
 
   private NamedList<Object> processErrorsAndResponse(
@@ -621,7 +621,19 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   protected void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    req.headers(h -> h.remove(HttpHeader.ACCEPT_ENCODING));
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      req.headers(h -> customHeaders.forEach(h::add));
+    }
+    // note: if subsequent headers already added, the existing values win (first value considered)
+    req.headers(
+        h -> {
+          h.add(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+          // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+          h.add(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+        });
+
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
@@ -640,11 +652,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     if (isAsync) {
       req.onRequestQueued(asyncTracker.queuedListener);
       req.onComplete(asyncTracker.completeListener);
-    }
-
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      req.headers(h -> headers.forEach(h::add));
     }
   }
 
@@ -941,8 +948,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     return asyncTracker.availablePermits();
   }
 
-  public static class Builder
-      extends HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient> {
+  public static class Builder extends BuilderBase<Builder, HttpJettySolrClient> {
 
     private HttpClient httpClient;
 
@@ -1004,8 +1010,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    public HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient>
-        withSSLConfig(SSLConfig sslConfig) {
+    public BuilderBase<Builder, HttpJettySolrClient> withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
       return this;
     }
@@ -1041,7 +1046,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return null;
     }
 
-    protected <B extends HttpSolrClientBase> B build(Class<B> type) {
+    protected <B extends HttpSolrClient> B build(Class<B> type) {
       return type.cast(build());
     }
 

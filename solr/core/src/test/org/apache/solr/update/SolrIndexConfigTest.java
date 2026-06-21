@@ -17,7 +17,6 @@
 package org.apache.solr.update;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,8 +28,9 @@ import org.apache.lucene.sandbox.index.MergeOnFlushMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.TestMergePolicyConfig;
@@ -253,7 +253,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     assertNotNull(solrIndexConfig.mergeSchedulerInfo);
 
-    Map<String, Object> m = solrIndexConfig.toMap(new LinkedHashMap<>());
+    Map<String, Object> m = new SimpleOrderedMap<>(solrIndexConfig);
     int mSizeExpected = 0;
 
     ++mSizeExpected;
@@ -292,12 +292,12 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
 
     ++mSizeExpected;
-    assertTrue(m.get("mergeScheduler") instanceof MapSerializable);
+    assertTrue(m.get("mergeScheduler") instanceof MapWriter);
     ++mSizeExpected;
-    assertTrue(m.get("mergePolicyFactory") instanceof MapSerializable);
+    assertTrue(m.get("mergePolicyFactory") instanceof MapWriter);
     if (solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
       ++mSizeExpected;
-      assertTrue(m.get("mergedSegmentWarmer") instanceof MapSerializable);
+      assertTrue(m.get("mergedSegmentWarmer") instanceof MapWriter);
     } else {
       assertNull(m.get("mergedSegmentWarmer"));
     }
