@@ -101,7 +101,8 @@ public interface SchemaDesignerApi {
       @QueryParam("docId") String docId)
       throws Exception;
 
-  // TODO: this sub-resource belongs in ConfigsetsApi as GET /configsets/{configSetName}/collections;
+  // TODO: this sub-resource belongs in ConfigsetsApi as GET
+  // /configsets/{configSetName}/collections;
   // move it there in a follow-up so it is reusable outside the schema designer.
   @GET
   @Path("/{configSet}/collections")
@@ -189,6 +190,10 @@ public interface SchemaDesignerApi {
   @Path("/{configSet}/query")
   @Operation(
       summary = "Query the temporary collection used during schema design.",
+      description =
+          "All standard Solr query parameters (q, fq, fl, sort, facet.*, hl.*, etc.) are"
+              + " forwarded directly to the temporary collection. The configSet path parameter"
+              + " identifies which designer session to query; it is not a query parameter itself.",
       tags = {"schema-designer"})
   FlexibleSolrJerseyResponse query(@PathParam("configSet") String configSet) throws Exception;
 
