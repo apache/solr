@@ -33,15 +33,15 @@ public interface TasksApi {
   @GET
   @StoreApiParameters
   @Operation(
-      summary = "Lists all the currently running tasks",
+      summary = "Lists all the active tasks",
       tags = {"tasks"})
   ListActiveTaskResponse listAllActiveTasks() throws Exception;
 
   @GET
-  @Path("/{taskUUID}")
+  @Path("/{taskID}")
   @StoreApiParameters
   @Operation(
-      summary = "Status of a specific taskUUID passed as pathParam",
+      summary = "Status of a specific task",
       tags = {"tasks"})
-  TaskStatusResponse getTaskStatus(@PathParam("taskUUID") String taskUUID) throws Exception;
+  TaskStatusResponse getTaskStatus(@PathParam("taskID") String taskID) throws Exception;
 }

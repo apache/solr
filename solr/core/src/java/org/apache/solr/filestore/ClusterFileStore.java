@@ -46,6 +46,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -269,7 +270,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     entryMetadata.size = size;
     entryMetadata.timestamp = timestamp;
     if (details.getMetaData() != null) {
-      details.getMetaData().toMap(entryMetadata.unknownProperties());
+      Utils.convertToMap(details.getMetaData(), entryMetadata.unknownProperties());
     }
 
     return entryMetadata;

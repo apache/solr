@@ -51,7 +51,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testFillWorkQueue() throws Exception {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
+    try (SolrClient client = createNewSolrClient(getBaseUrl(jettys.get(0)), null)) {
       // This test does not make sense when the Collection API execution is distributed. There is no
       // queue to fill
       if (!new CollectionAdminRequest.RequestApiDistributedProcessing()
@@ -147,7 +147,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   @Test
   public void testParallelCollectionAPICalls() throws IOException, SolrServerException {
     final int ASYNC_SHIFT = 10000;
-    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
+    try (SolrClient client = createNewSolrClient(getBaseUrl(jettys.get(0)), null)) {
       for (int i = 1 + ASYNC_SHIFT; i <= NUM_COLLECTIONS + ASYNC_SHIFT; i++) {
         CollectionAdminRequest.createCollection("ocptest" + i, "conf1", 3, 1)
             .processAsync(String.valueOf(i), client);
@@ -188,7 +188,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testTaskExclusivity() throws Exception, SolrServerException {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
+    try (SolrClient client = createNewSolrClient(getBaseUrl(jettys.get(0)), null)) {
 
       Create createCollectionRequest =
           CollectionAdminRequest.createCollection("ocptest_shardsplit", "conf1", 4, 1);
@@ -246,7 +246,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
+    try (SolrClient client = createNewSolrClient(getBaseUrl(jettys.get(0)), null)) {
       CollectionAdminRequest.createCollection("ocptest_shardsplit2", "conf1", 3, 1).process(client);
 
       SplitShard splitShardRequest =
@@ -300,7 +300,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
           }
         };
     indexThread.start();
-    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
+    try (SolrClient client = createNewSolrClient(getBaseUrl(jettys.get(0)), null)) {
 
       SplitShard splitShardRequest =
           CollectionAdminRequest.splitShard("collection1").setShardName(SHARD1);
@@ -337,6 +337,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
           RequestStatusState.RUNNING,
           state);
 
+      getRequestStateAfterCompletion("2000", REQUEST_STATUS_TIMEOUT, client);
     } finally {
       try {
         indexThread.join();
