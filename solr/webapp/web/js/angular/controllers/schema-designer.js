@@ -656,7 +656,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     delete $scope.addErrors; // no errors!
 
     SchemaDesigner.post({
-      path: "add",
       configSet: $scope.currentSchema,
       schemaVersion: $scope.schemaVersion
     }, addData, function (data) {
@@ -791,7 +790,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     delete $scope.addCopyFieldErrors;
     var data = {"add-copy-field": $scope.copyField};
     SchemaDesigner.post({
-      path: "add",
       configSet: $scope.currentSchema,
       schemaVersion: $scope.schemaVersion
     }, data, function (data) {
@@ -1389,7 +1387,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.updateStatusMessage = "Updating " + $scope.selectedType + " ...";
 
     SchemaDesigner.put({
-      path: "update",
       configSet: $scope.currentSchema,
       schemaVersion: $scope.schemaVersion
     }, putData, function (data) {

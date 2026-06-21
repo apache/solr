@@ -72,7 +72,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     assertEquals(configSet, prep.configSet);
     int schemaVersion = prep.schemaVersion;
 
-    // POST /add — addField — exercises kebab-case @JsonProperty("add-field") / @Schema(name=…)
+    // POST /{configSet} — addField — exercises kebab-case @JsonProperty("add-field") / @Schema(name=…)
     var addField = new SchemaDesignerApi.AddSchemaObject(configSet);
     addField.setSchemaVersion(schemaVersion);
     addField.setAddField(Map.of("name", "keywords", "type", "string", "stored", true));
@@ -80,7 +80,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     assertEquals("keywords", addFieldResp.field);
     schemaVersion = addFieldResp.schemaVersion;
 
-    // POST /add — addFieldType — covers a different wrapper key
+    // POST /{configSet} — addFieldType — covers a different wrapper key
     var addType = new SchemaDesignerApi.AddSchemaObject(configSet);
     addType.setSchemaVersion(schemaVersion);
     addType.setAddFieldType(
@@ -95,7 +95,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     assertEquals("smoke_txt", addTypeResp.fieldType);
     schemaVersion = addTypeResp.schemaVersion;
 
-    // POST /add — addDynamicField
+    // POST /{configSet} — addDynamicField
     var addDyn = new SchemaDesignerApi.AddSchemaObject(configSet);
     addDyn.setSchemaVersion(schemaVersion);
     addDyn.setAddDynamicField(Map.of("name", "*_smoke", "type", "string"));
@@ -103,7 +103,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     assertEquals("*_smoke", addDynResp.dynamicField);
     schemaVersion = addDynResp.schemaVersion;
 
-    // POST /add — addCopyField — verifies the explicit no-op response branch in
+    // POST /{configSet} — addCopyField — verifies the explicit no-op response branch in
     // setSchemaObjectField (no field/type/dynamicField/fieldType is populated)
     var addCopy = new SchemaDesignerApi.AddSchemaObject(configSet);
     addCopy.setSchemaVersion(schemaVersion);
@@ -114,7 +114,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     assertNull(addCopyResp.dynamicField);
     schemaVersion = addCopyResp.schemaVersion;
 
-    // PUT /update — exercises the @JsonAnyGetter/@JsonAnySetter capture for arbitrary attrs
+    // PUT /{configSet} — exercises the @JsonAnyGetter/@JsonAnySetter capture for arbitrary attrs
     var update = new SchemaDesignerApi.UpdateSchemaObject(configSet);
     update.setSchemaVersion(schemaVersion);
     update.setName("keywords");

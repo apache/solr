@@ -449,7 +449,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     // editing suggestions for fields and adding/removing fields / field types as needed
 
     // add a new field
-    // POST /schema-designer/add
+    // POST /schema-designer/{configSet}
     response =
         schemaDesigner.addSchemaObject(
             configSet, schemaVersion, loadAddBody("schema-designer/add-new-field.json"));
@@ -460,7 +460,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     // update an existing field
     // switch a single-valued field to a multivalued field, which triggers a full rebuild of the
     // "temp" collection
-    // PUT /schema-designer/update
+    // PUT /schema-designer/{configSet}
     response =
         schemaDesigner.updateSchemaObject(
             configSet, schemaVersion, loadUpdateBody("schema-designer/update-author-field.json"));
@@ -468,7 +468,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     schemaVersion = response.schemaVersion;
 
     // add a new type
-    // POST /schema-designer/add
+    // POST /schema-designer/{configSet}
     response =
         schemaDesigner.addSchemaObject(
             configSet, schemaVersion, loadAddBody("schema-designer/add-new-type.json"));
@@ -546,7 +546,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     int schemaVersion = response.schemaVersion;
 
     // add our test field that we'll test various updates to
-    // POST /schema-designer/add
+    // POST /schema-designer/{configSet}
     response =
         schemaDesigner.addSchemaObject(
             configSet, schemaVersion, loadAddBody("schema-designer/add-new-field.json"));
@@ -667,7 +667,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
 
     // Add a new field
     schemaVersion = response.schemaVersion;
-    // POST /schema-designer/add
+    // POST /schema-designer/{configSet}
     response =
         schemaDesigner.addSchemaObject(
             configSet, schemaVersion, loadAddBody("schema-designer/add-new-field.json"));
@@ -675,7 +675,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
 
     // Add a new field type
     schemaVersion = response.schemaVersion;
-    // POST /schema-designer/add
+    // POST /schema-designer/{configSet}
     response =
         schemaDesigner.addSchemaObject(
             configSet, schemaVersion, loadAddBody("schema-designer/add-new-type.json"));

@@ -117,7 +117,7 @@ public interface SchemaDesignerApi {
   SchemaDesignerConfigsResponse listConfigs() throws Exception;
 
   @POST
-  @Path("/{configSet}/add")
+  @Path("/{configSet}")
   @Operation(
       summary = "Add a new field, field type, or dynamic field to the schema being designed.",
       tags = {"schema-designer"})
@@ -128,7 +128,7 @@ public interface SchemaDesignerApi {
       throws Exception;
 
   @PUT
-  @Path("/{configSet}/update")
+  @Path("/{configSet}")
   @Operation(
       summary = "Update an existing field or field type in the schema being designed.",
       tags = {"schema-designer"})
