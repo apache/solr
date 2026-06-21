@@ -16,12 +16,10 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
 /** Response body for the Schema Designer get-schema-diff endpoint. */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SchemaDesignerSchemaDiffResponse extends SchemaDesignerSettingsResponse {
 
   /** The list of field-level differences between the designed schema and the source. */

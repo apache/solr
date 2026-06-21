@@ -16,11 +16,9 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** Response body for the Schema Designer publish endpoint. */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SchemaDesignerPublishResponse extends SolrJerseyResponse {
 
   @JsonProperty("configSet")

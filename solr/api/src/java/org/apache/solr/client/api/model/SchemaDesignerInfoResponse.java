@@ -16,12 +16,10 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /** Response body for the Schema Designer get-info endpoint. */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SchemaDesignerInfoResponse extends SchemaDesignerSettingsResponse {
 
   @JsonProperty("configSet")

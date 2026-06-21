@@ -16,12 +16,10 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /** Base response for Schema Designer endpoints that surface the designer settings. */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class SchemaDesignerSettingsResponse extends SolrJerseyResponse {
 
   @JsonProperty("languages")

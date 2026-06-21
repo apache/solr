@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +24,7 @@ import java.util.Map;
  * Response body for Schema Designer endpoints that operate on a full schema: {@code prepNewSchema},
  * {@code updateFileContents}, {@code addSchemaObject}, {@code updateSchemaObject}, and {@code
  * analyze}.
- *
- * <p>All nullable fields are omitted from JSON output when null.
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SchemaDesignerResponse extends SchemaDesignerSettingsResponse {
 
   // --- core schema identification ---
