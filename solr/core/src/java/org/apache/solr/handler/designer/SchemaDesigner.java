@@ -823,6 +823,10 @@ public class SchemaDesigner extends JerseyResource
     }
 
     if (errorsDuringIndexing != null) {
+      // Re-indexing failed, so the temp collection may have partial or no data — running the query
+      // would return misleading results. Return the indexing errors inline instead of proceeding.
+      // FlexibleSolrJerseyResponse is used (rather than throwing) because the UI reads error fields
+      // from the response body rather than relying on HTTP status codes.
       Map<String, Object> errorResponse = new HashMap<>();
       addErrorToResponse(
           mutableId,
