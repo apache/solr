@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :solr:server:dependencies --write-locks
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,solrCore
 com.fasterxml.jackson.core:jackson-annotations:2.21=jarValidation,runtimeClasspath,solrCore
 com.fasterxml.jackson.core:jackson-core:2.21.2=jarValidation,runtimeClasspath,solrCore
@@ -158,4 +159,4 @@ org.slf4j:jcl-over-slf4j:2.0.17=jarValidation,libExt,runtimeClasspath,solrCore
 org.slf4j:jul-to-slf4j:2.0.17=jarValidation,libExt,runtimeClasspath
 org.slf4j:slf4j-api:2.0.17=jarValidation,libExt,runtimeClasspath,serverLib,solrCore
 org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,runtimeClasspath,solrCore
-empty=apiHelper,apiHelperTest,compileClasspath,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,testCompileClasspath,testRuntimeClasspath,webapp
+empty=compileClasspath,missingdoclet,packaging,testCompileClasspath,testRuntimeClasspath,webapp

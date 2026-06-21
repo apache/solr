@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :solr:modules:sql:dependencies --write-locks
 com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.4=jarValidation,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
@@ -169,7 +170,7 @@ org.glassfish.jersey.inject:jersey-hk2:4.0.2=jarValidation,runtimeClasspath,runt
 org.glassfish.jersey.media:jersey-media-json-jackson:4.0.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.glassfish.jersey:jersey-bom:4.0.2=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.hamcrest:hamcrest:3.0=jarValidation,testCompileClasspath,testRuntimeClasspath
-org.immutables:value-annotations:2.12.1=compileClasspath,compileOnlyHelper,jarValidation
+org.immutables:value-annotations:2.12.1=compileClasspath,jarValidation
 org.javassist:javassist:3.30.2-GA=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.jspecify:jspecify:1.0.0=annotationProcessor,compileClasspath,errorprone,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testAnnotationProcessor,testCompileClasspath,testRuntimeClasspath
 org.junit.jupiter:junit-jupiter-api:5.6.2=jarValidation,testRuntimeClasspath
@@ -190,4 +191,4 @@ org.slf4j:jul-to-slf4j:2.0.17=solrPlatformLibs
 org.slf4j:slf4j-api:2.0.17=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 ua.net.nlp:morfologik-ukrainian-search:4.9.1=jarValidation,testRuntimeClasspath
-empty=apiHelper,apiHelperTest,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures
+empty=missingdoclet,packaging
