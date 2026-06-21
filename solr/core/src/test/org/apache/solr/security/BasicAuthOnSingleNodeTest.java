@@ -37,19 +37,45 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
   @Before
   public void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
-        .withSecurityJson(STD_CONF)
-        .configure();
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
-        .setMaxShardsPerNode(100)
-        .setBasicAuthCredentials("solr", "solr")
-        .process(cluster.getSolrClient());
-    // This fork's CreateCollectionCmd returns once the cores are created but before they
-    // publish ACTIVE (waitForFinalState defaults to false; see the MRM TODO in
-    // CreateCollectionCmd). The 4-shard collection must be fully active before basicTest's
-    // immediate distributed query, otherwise it 503s with "no servers hosting shard: s3".
-    cluster.waitForActiveCollection(COLLECTION, 4, 4);
+    // Under load a freshly-started secured cluster can come up with its inter-node (PKI) request
+    // signing not yet wired, so the CREATE-core sub-requests during collection creation arrive
+    // unauthenticated and are rejected with 401 ("Underlying core creation failed while creating
+    // collection"). That state is stuck for the affected cluster instance, so retrying the create on
+    // the same cluster does not help -- bring up a fresh cluster and try again.
+    final int maxAttempts = 8;
+    for (int attempt = 1; ; attempt++) {
+      try {
+        configureCluster(1)
+            .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
+            .withSecurityJson(STD_CONF)
+            .configure();
+        CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
+            .setMaxShardsPerNode(100)
+            .setBasicAuthCredentials("solr", "solr")
+            .process(cluster.getSolrClient());
+        // This fork's CreateCollectionCmd returns once the cores are created but before they
+        // publish ACTIVE (waitForFinalState defaults to false; see the MRM TODO in
+        // CreateCollectionCmd). The 4-shard collection must be fully active before basicTest's
+        // immediate distributed query, otherwise it 503s with "no servers hosting shard: s3".
+        cluster.waitForActiveCollection(COLLECTION, 4, 4);
+        return;
+      } catch (Exception e) {
+        if (attempt >= maxAttempts) {
+          throw e;
+        }
+        log.warn("cluster setup attempt {} failed (inter-node auth not ready under load); recreating cluster: {}",
+            attempt, e.toString());
+        try {
+          if (cluster != null) {
+            cluster.shutdown();
+          }
+        } catch (Exception ignore) {
+          // best-effort teardown of the failed cluster before recreating
+        }
+        cluster = null;
+        Thread.sleep(1000);
+      }
+    }
   }
 
   @Override

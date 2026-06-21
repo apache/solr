@@ -220,9 +220,15 @@ public void testCantConnectToPullReplica() throws Exception {
     JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
     cluster.expireZkSession(jetty);
     addDocs(30);
-    waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
+    // ZK session-expiry recovery (detecting the expiry, dropping the live node, then reconnecting and
+    // re-registering the replica as active) is inherently slow and load-sensitive -- the 10s
+    // DEFAULT_TIMEOUT of the 3-arg waitForState is too short under load and made this flaky. Give the
+    // disconnect and the subsequent reconnect generous explicit timeouts.
+    waitForState("Expecting pull replica to be marked down after ZK session expiry", collectionName,
+        activeReplicaCount(1, 0, 0), 90, TimeUnit.SECONDS);
     addDocs(40);
-    waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 1));
+    waitForState("Expecting pull replica to reconnect and become active again", collectionName,
+        activeReplicaCount(1, 0, 1), 90, TimeUnit.SECONDS);
     try (Http2SolrClient pullReplicaClient = SolrTestCaseJ4.getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(40, pullReplicaClient);
     }

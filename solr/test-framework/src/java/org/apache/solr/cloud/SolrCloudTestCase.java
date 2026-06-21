@@ -60,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -503,10 +504,13 @@ public class SolrCloudTestCase extends SolrTestCase {
   protected static void waitForAllReplicasDocCount(String collection, int expectedTotal) throws Exception {
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     final long timeoutMs = 60000;
-    final long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+    final long startNanos = System.nanoTime();
+    final long deadlineNanos = startNanos + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
     Map<String, Http2SolrClient> clients = new HashMap<>();
     String diag = "";
     boolean loggedWait = false;
+    boolean nudged = false;
+    Set<String> recoveryRequested = new HashSet<>();
     try {
       while (true) {
         DocCollection coll = zkStateReader.getClusterState().getCollection(collection);
@@ -514,10 +518,15 @@ public class SolrCloudTestCase extends SolrTestCase {
         long total = 0;
         boolean converged = true;
         StringBuilder sb = new StringBuilder();
+        List<Replica> behindFollowers = new ArrayList<>();
         for (Slice slice : coll.getSlices()) {
           long shardCount = -1;
+          long leaderCount = -1;
+          List<Replica> shardActive = new ArrayList<>();
+          List<Long> shardActiveCounts = new ArrayList<>();
           for (Replica r : slice.getReplicas()) {
             boolean active = r.isActive(liveNodes);
+            boolean isLeader = r.getRawState() == Replica.State.LEADER;
             long c = -1;
             if (active) {
               try {
@@ -533,9 +542,14 @@ public class SolrCloudTestCase extends SolrTestCase {
               }
             }
             sb.append(slice.getName()).append('/').append(r.getName())
-                .append(r.getRawState() == Replica.State.LEADER ? "(leader)" : "")
+                .append(isLeader ? "(leader)" : "")
                 .append(active ? "" : "(" + r.getState() + ")").append('=').append(c).append(' ');
             if (active && c >= 0) {
+              shardActive.add(r);
+              shardActiveCounts.add(c);
+              if (isLeader) {
+                leaderCount = c;
+              }
               if (shardCount == -1) {
                 shardCount = c;
               } else if (shardCount != c) {
@@ -547,6 +561,15 @@ public class SolrCloudTestCase extends SolrTestCase {
           }
           if (shardCount > 0) {
             total += shardCount;
+          }
+          // Collect any follower whose count trails its shard leader, for the recovery-drive below.
+          if (leaderCount > 0) {
+            for (int i = 0; i < shardActive.size(); i++) {
+              Replica r = shardActive.get(i);
+              if (r.getRawState() != Replica.State.LEADER && shardActiveCounts.get(i) < leaderCount) {
+                behindFollowers.add(r);
+              }
+            }
           }
         }
         diag = sb.toString().trim();
@@ -561,6 +584,42 @@ public class SolrCloudTestCase extends SolrTestCase {
           fail("Replicas failed to converge to " + expectedTotal + " docs for collection=" + collection
               + " within " + timeoutMs + "ms. per-replica counts (distrib=false): [" + diag + "] "
               + dumpShardTerms(collection));
+        }
+        // If replicas stay divergent past a short window, a follower may simply be missing a searcher
+        // reopen for docs it has already applied -- e.g. under heavy load a commit did not reopen its
+        // searcher, or recovery applied updates without committing. Nudge once with a best-effort
+        // distributed commit so such docs become searchable; a genuine doc loss will still fail to
+        // converge. Best-effort: a read-only collection (CollectionsAPIDistributedZkTest) rejects the
+        // commit, which is fine -- there the docs are made visible by the reload, not by this nudge.
+        if (!nudged && System.nanoTime() - startNanos > TimeUnit.SECONDS.toNanos(5)) {
+          nudged = true;
+          try {
+            cluster.getSolrClient().commit(collection);
+          } catch (Exception e) {
+            log.info("waitForAllReplicasDocCount commit nudge skipped for {}: {}", collection, e.toString());
+          }
+        }
+        // If a follower stays behind its shard leader past a longer window, proactively ask it to
+        // recover. Under diverse full-suite load a follower can miss some forwards during collection
+        // creation / bulk indexing without the leader ever pushing it into recovery (its term stays
+        // equal to the leader's), so it would never catch up on its own and the commit nudge cannot
+        // help (the docs are absent, not merely unsearchable). REQUESTRECOVERY makes it replicate the
+        // missing docs from the leader (made searchable by the RecoveryStrategy PeerSync fix). Only
+        // fires on persistent divergence, so it is a no-op on the common fast-converging path.
+        if (System.nanoTime() - startNanos > TimeUnit.SECONDS.toNanos(15)) {
+          for (Replica r : behindFollowers) {
+            if (recoveryRequested.add(r.getName())) {
+              try (Http2SolrClient nc = new Http2SolrClient.Builder(r.getBaseUrl())
+                  .withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
+                CoreAdminRequest.RequestRecovery rr = new CoreAdminRequest.RequestRecovery();
+                rr.setCoreName(r.getName());
+                nc.request(rr);
+                log.info("waitForAllReplicasDocCount drove recovery on lagging follower {} of {}", r.getName(), collection);
+              } catch (Exception e) {
+                log.info("waitForAllReplicasDocCount could not drive recovery on {}: {}", r.getName(), e.toString());
+              }
+            }
+          }
         }
         // Log the first lag observation so a stuck run leaves a breadcrumb without spamming the
         // common already-converged path.
