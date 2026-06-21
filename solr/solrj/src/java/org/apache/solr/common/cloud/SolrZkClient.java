@@ -100,6 +100,14 @@ public class SolrZkClient implements Closeable {
 
   private final ConnectionManager connManager;
 
+  /**
+   * Test-only: when set (via {@link #setFastCloseForTests} before {@link #start()}, by client/reader
+   * paths such as {@link ZkStateReader#ZkStateReader(String, int, int)}), the underlying
+   * {@link SolrZooKeeper} skips ZooKeeper's hardcoded ~100ms cleanup nap on close. The graceful
+   * closeSession is still sent, so behavior is unchanged — only the wasted sleep is avoided.
+   */
+  private volatile boolean fastCloseForTests = false;
+
   private ZkCmdExecutor zkCmdExecutor;
 
   protected final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("coreAdminExecutor", 8, 32, 1000);
@@ -220,6 +228,22 @@ public class SolrZkClient implements Closeable {
 
   public ConnectionManager getConnectionManager() {
     return connManager;
+  }
+
+  /** Test-only: enable fast close (skip ZooKeeper's hardcoded cleanup nap) for this connection. Must be
+   *  called before {@link #start()}. Only set for client/reader connections (graceful closeSession is
+   *  still sent regardless; we restrict it to clients out of caution after server-wide use regressed an
+   *  async audit-event test). */
+  public SolrZkClient setFastCloseForTests(boolean fastClose) {
+    this.fastCloseForTests = fastClose;
+    return this;
+  }
+
+  /** Test-only: whether this connection's {@link SolrZooKeeper} should skip ZooKeeper's hardcoded
+   *  cleanup nap on close (the graceful closeSession is still sent). Set via {@link #setFastCloseForTests}
+   *  by client/reader paths; off in production. */
+  public boolean isFastCloseForTests() {
+    return fastCloseForTests;
   }
 
   public static final String ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkCredentialsProvider";

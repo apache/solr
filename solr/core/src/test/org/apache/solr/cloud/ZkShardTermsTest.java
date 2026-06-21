@@ -352,7 +352,10 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   private static <T> void waitFor(T expected, Supplier<T> supplier) throws InterruptedException {
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
     while (!timeOut.hasTimedOut()) {
-      if (expected == supplier.get()) return;
+      // Value equality (not reference identity) so we return as soon as the awaited value is
+      // observed; reference `==` only happens to work for cached/boxed values and would otherwise
+      // spin the full timeout before the (value-based) assertEquals below. Mirrors that assertion.
+      if (java.util.Objects.equals(expected, supplier.get())) return;
       Thread.sleep(10);
     }
     assertEquals(expected, supplier.get());
@@ -361,7 +364,11 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   private static <T> void waitForCounts(Integer expected, Supplier<Integer> supplier) throws InterruptedException {
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, new TimeSource.CurrentTimeSource());
     while (!timeOut.hasTimedOut()) {
-      if (expected == supplier.get()) return;
+      // The watcher fires asynchronously and the count is monotonic, so by the time we get here it
+      // may already have advanced past `expected`. An exact `==` match would then never be observed
+      // and we'd spin the full 10s before the (already-satisfied) lenient assertion below. Return as
+      // soon as the count has reached at least `expected`, mirroring that final assertion.
+      if (Comparator.<Integer>naturalOrder().compare(expected, supplier.get()) <= 0) return;
       Thread.sleep(10);
     }
     assertTrue(Comparator.<Integer>naturalOrder().compare(expected, supplier.get()) <= 0);

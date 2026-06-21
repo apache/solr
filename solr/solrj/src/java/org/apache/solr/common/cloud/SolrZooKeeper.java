@@ -41,8 +41,23 @@ public class SolrZooKeeper extends ZooKeeperAdmin {
 
   private CloseTracker closeTracker;
 
+  /**
+   * Test-only, client/reader connections only: when true, {@link #close()} interrupts the ZK SendThread
+   * so the hardcoded {@code Thread.sleep(100)} in {@code ClientCnxnSocketNIO.cleanup()} returns
+   * immediately. The graceful closeSession round-trip is still performed (ephemerals release promptly),
+   * so this is behavior-preserving — it only avoids the wasted ~100ms nap per close. Always false in
+   * production. Restricted to client connections after enabling it server-wide regressed an async
+   * audit-event test.
+   */
+  private final boolean fastClose;
+
   public SolrZooKeeper(String connectString, int sessionTimeout, Watcher watcher) throws IOException {
+    this(connectString, sessionTimeout, watcher, false);
+  }
+
+  public SolrZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean fastClose) throws IOException {
     super(connectString, sessionTimeout, watcher);
+    this.fastClose = fastClose;
     assert (closeTracker = new CloseTracker()) != null;
   }
 
@@ -91,28 +106,43 @@ public class SolrZooKeeper extends ZooKeeperAdmin {
   @Override
   public synchronized void close() {
     assert closeTracker != null ? closeTracker.close() : true;
-//    try {
-//      RequestHeader h = new RequestHeader();
-//      h.setType(ZooDefs.OpCode.closeSession);
-//      cnxn.submitRequest(h, null, null, null);
-//    } catch (InterruptedException e) {
-//      // ignore, close the send/event threads
-//    } finally {
-//      ZooKeeperExposed zk = new ZooKeeperExposed(this, cnxn);
-//      try (ParWork work = new ParWork(this, true)) {
-//        work.collect("", () -> {
-//          zk.closeCnxn();
-//        });
-//        work.collect("", () -> {
-//          zk.interruptSendThread();
-//          zk.interruptSendThread();
-//        });
-//      }
-//    }
+    if (fastClose) {
+      // ZooKeeper 3.7.0's ClientCnxnSocketNIO.cleanup() runs a hardcoded Thread.sleep(100) on the
+      // SendThread during shutdown, so close() blocks ~100ms in sendThread.join() per connection. That
+      // sleep catches InterruptedException, so interrupting the SendThread makes it return immediately.
+      // The graceful close (closeSession round-trip) below is otherwise untouched, so ephemerals still
+      // release promptly. Test-only.
+      interruptSendThread();
+    }
     try {
       super.close();
     } catch (InterruptedException e) {
 
+    }
+  }
+
+  /** Interrupts the ZK client SendThread so the hardcoded {@code Thread.sleep(100)} in
+   *  {@code ClientCnxnSocketNIO.cleanup()} returns at once (test fast-close path; see {@link #fastClose}). */
+  private void interruptSendThread() {
+    try {
+      AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+        try {
+          final ClientCnxn c = getConnection();
+          if (c != null) {
+            final Field sendThreadFld = ClientCnxn.class.getDeclaredField("sendThread");
+            sendThreadFld.setAccessible(true);
+            final Object sendThread = sendThreadFld.get(c);
+            if (sendThread instanceof Thread) {
+              ((Thread) sendThread).interrupt();
+            }
+          }
+        } catch (Exception e) {
+          log.debug("fast-close: could not interrupt ZK SendThread; graceful close will proceed", e);
+        }
+        return null;
+      });
+    } catch (Throwable t) {
+      log.debug("fast-close: error interrupting ZK SendThread", t);
     }
   }
 

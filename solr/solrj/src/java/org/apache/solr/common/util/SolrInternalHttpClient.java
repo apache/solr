@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.io.ClientConnector;
 import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +105,25 @@ public class SolrInternalHttpClient extends HttpClient {
       log.debug("Stopping {}", this.getClass().getSimpleName());
     }
     try {
+      // Jetty 10.0.x AB-BA deadlock guard. The HTTP/2 client registers each HTTP2Session as a *managed*
+      // bean (HTTP2ClientConnectionFactory.ConnectionListener.onOpened -> client.addManaged(session)).
+      // When a connection closes, a selector thread runs the EOF cascade *while holding the SslConnection
+      // lock inside fill()*: onClosed -> client.removeBean(session) -> stops the managed session -> needs
+      // the session's AbstractLifeCycle lock. If this (stopping) thread is concurrently stopping that same
+      // session it holds the session lifecycle lock and, via HTTP2Session.disconnect() -> endpoint close ->
+      // graceful TLS close_notify flush, needs the SslConnection lock -> deadlock (confirmed present and
+      // structurally unchanged through jetty 10.0.26). Quiesce the I/O selector threads FIRST by stopping
+      // the ClientConnector: their close cascades then run while this thread holds no session lock, so by
+      // the time super.doStop() stops the (already-closed) sessions there is no SSL flush left to contend
+      // for the lock. AbstractLifeCycle.stop() is idempotent, so super's later stop of the now-STOPPED
+      // connector is a no-op.
+      for (ClientConnector connector : getContainedBeans(ClientConnector.class)) {
+        try {
+          connector.stop();
+        } catch (Exception e) {
+          log.warn("Exception quiescing ClientConnector before HTTP client stop", e);
+        }
+      }
       super.doStop();
       for (HttpDestination destination : dests.values()) {
         destination.close();

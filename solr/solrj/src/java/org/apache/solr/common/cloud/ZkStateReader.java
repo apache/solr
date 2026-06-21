@@ -423,6 +423,9 @@ public class ZkStateReader implements SolrCloseable, Watcher, Replica.NodeNameTo
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
     this.securityNodeListener = null;
+    // Client/reader connection (holds no ephemerals): enable the test fast-close (skips ZooKeeper's
+    // hardcoded ~100ms cleanup nap; graceful closeSession still sent). No-op in production. Before start().
+    this.zkClient.setFastCloseForTests(Boolean.getBoolean("solr.zkClientFastCloseForTests"));
     zkStateReaderQueue = new ZkStateReaderQueue(this);
     try {
       zkClient.start();

@@ -359,6 +359,10 @@ public class SolrTestCase extends Assert {
     System.setProperty("solr.zkclienttimeout", "30000");
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
+    // Tests tear the ZkTestServer down with the test, so the graceful ZK session-close handshake on
+    // client/reader connections (CloudSolrClient's own ZkStateReader, ZkCLI, streaming) is pointless and
+    // costs ~0.5-1s per close. Allow those (and only those — never server/ZkController) to force-close.
+    System.setProperty("solr.zkClientFastCloseForTests", "true");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));

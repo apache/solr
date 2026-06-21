@@ -356,7 +356,7 @@ public class ConnectionManager implements Watcher, Closeable {
       throw new AlreadyClosedException();
     }
 
-    SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkSessionTimeout, watcher);
+    SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkSessionTimeout, watcher, client.isFastCloseForTests());
 
     if (zkCredentialsToAddAutomatically != null) {
       for (ZkCredentialsProvider.ZkCredentials zkCredentials : zkCredentialsToAddAutomatically.getCredentials()) {
