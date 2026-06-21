@@ -15,78 +15,257 @@
  * limitations under the License.
  */
 
-// This adds 'beast' task which clones tests a given number of times (preferably
-// constrained with a filtering pattern passed via '--tests').
+// 'beast' task — hammer ONE selected test class in parallel with itself to surface
+// flaky / concurrency-sensitive failures (the local equivalent of sifdex's flakeHunt).
+//
+// Unlike the historical 'beast' (which created N sequential `test_N` subtasks — Gradle
+// will not run intra-project tasks in parallel, so they ran one after another), this
+// generates N uniquely-named subclasses of the selected test and runs them through a
+// SINGLE `Test` task with `maxParallelForks` workers. The same test therefore really
+// executes concurrently against itself. Because each duplicate is a distinct class,
+// RandomizedRunner derives a distinct suite seed per duplicate (reproducible as a whole
+// via -Ptests.seed), and each writes its own TEST-*.xml — so the duplicates never clobber
+// each other's results the way concurrent `test` tasks would.
+//
+// This deliberately reuses the ordinary `Test` runner rather than introducing a custom
+// queue/scheduler: a beast run inherits the exact same JVM args, security policy,
+// --add-opens, system properties and randomization wiring as a normal `test` run.
+//
+// Per-run logs: the parallel duplicates run concurrently, so their live console streams would
+// interleave, and the shared ErrorReportingTestListener only persists a suite's output to disk
+// when it FAILS. The beast task therefore attaches its own listener that captures EVERY
+// duplicate's full console output to its own file (one suite == one duplicate class == one file,
+// so they never clobber each other):
+//   <module>/build/test-results/beast/OUTPUT-<DuplicateClass>.txt
+// Every run — passing or failing — is retained there for post-mortem debugging.
+//
+// Two dials: tests.beast.iters = N total iterations (one generated subclass per iteration),
+// tests.beast.parallelism = P of them running concurrently. (tests.dups / tests.beast.workers are
+// retained as deprecated aliases.)
+//
+// Usage:
+//   ./gradlew beast \
+//       -Ptests.beast.class=org.apache.solr.core.TestFoo \
+//       -Ptests.beast.iters=50 \
+//       [-Ptests.beast.parallelism=8] \
+//       [-Ptests.beast.method=testBar] \
+//       [-Ptests.seed=DEADBEEF] \
+//       [-Ptests.failfast=true]
+//
+// Run it unqualified (as above) or qualify it with the module that owns the class
+// (e.g. ':solr:core:beast'); the task is only created in the module whose test sources
+// actually contain -Ptests.beast.class.
+//
+// Caveat: a beasted duplicate is a subclass of the target, so only @Inherited class-level
+// annotations carry over. The common randomizedtesting/Lucene suite annotations are
+// @Inherited, but a test relying on a non-inherited class annotation should be beasted by
+// its own concrete name (it still works — you just lose that one annotation's effect).
+//
+// Caveat: because each duplicate `extends` the target, the target must be a concrete,
+// subclassable test class — a `final` or `abstract` class cannot be beasted (we detect the
+// common cases below and fail with a clear message).
+//
+// Note: this generates sources at configuration time (so they can be added to the test
+// source set before compilation), which is intentionally incompatible with Gradle's
+// configuration cache. Beast is an interactive, on-demand flake-hunt task, not part of the
+// normal build, so it is never expected to run under the configuration cache.
 
-// TODO: subtasks are not run in parallel (sigh, gradle removed this capability for intra-project tasks).
-// TODO: maybe it would be better to take a deeper approach and just feed the task
-//       runner duplicated suite names (much like https://github.com/gradle/test-retry-gradle-plugin)
-// TODO: this is a somewhat related issue: https://github.com/gradle/test-retry-gradle-plugin/issues/29
+import org.gradle.api.tasks.testing.TestDescriptor
+import org.gradle.api.tasks.testing.TestListener
+import org.gradle.api.tasks.testing.TestOutputEvent
+import org.gradle.api.tasks.testing.TestOutputListener
+import org.gradle.api.tasks.testing.TestResult
 
-def beastingMode = gradle.startParameter.taskNames.any{ name -> name == 'beast' || name.endsWith(':beast') }
+def beastingMode = gradle.startParameter.taskNames.any { name -> name == 'beast' || name.endsWith(':beast') }
 
 allprojects {
   plugins.withType(JavaPlugin) {
     ext {
       testOptions += [
-          [propName: 'tests.dups', value: 0, description: "Reiterate runs of entire test suites ('beast' task)."]
+          // N: total number of times to run the selected test (one generated subclass per run).
+          [propName: 'tests.beast.iters', value: { -> resolvedTestOption('tests.dups') },
+           description: "Total iterations of the selected test to run ('beast' task)."],
+          // P: how many of those iterations run concurrently (worker JVMs).
+          [propName: 'tests.beast.parallelism', value: { -> resolvedTestOption('tests.beast.workers') },
+           description: "How many iterations run in parallel for the 'beast' task (default: tests.jvms)."],
+          // Legacy aliases retained for back-compat; the canonical knobs above default to these.
+          [propName: 'tests.dups', value: 0,
+           description: "Deprecated alias for tests.beast.iters."],
+          [propName: 'tests.beast.workers', value: { -> resolvedTestOption('tests.jvms') },
+           description: "Deprecated alias for tests.beast.parallelism (default: tests.jvms)."]
       ]
     }
   }
 }
 
 if (beastingMode) {
+  def targetClass = rootProject.propertyOrDefault('tests.beast.class', null)
+  if (!targetClass) {
+    throw new GradleException(
+        "The 'beast' task requires -Ptests.beast.class=<fully.qualified.TestClass> " +
+        "(plus -Ptests.beast.iters=<count>).")
+  }
+  def targetMethod = rootProject.propertyOrDefault('tests.beast.method', null)
+
+  def relSourcePath = targetClass.replace('.', '/') + ".java"
+  def lastDot = targetClass.lastIndexOf('.')
+  def pkg = lastDot >= 0 ? targetClass.substring(0, lastDot) : ""
+  def simpleName = targetClass.substring(lastDot + 1)
+
+  // Tracks whether any module's test sources own the target class. Used to fail with a clear
+  // message (instead of Gradle's generic "Task 'beast' not found") when the FQN is mistyped.
+  def ownerFound = false
+
   if (rootProject.rootSeedUserProvided) {
-    logger.warn("Root randomization seed is externally provided, all duplicated runs will use the same starting seed.")
+    logger.warn("tests.seed is fixed; every beast duplicate derives its suite seed from it deterministically.")
   }
 
   allprojects {
     plugins.withType(JavaPlugin) {
-      task beast(type: BeastTask) {
-        description "Run a test suite (or a set of tests) many times over (duplicate 'test' task)."
+      // Only the module whose test sources own the target class generates duplicates and
+      // gets a 'beast' task.
+      def parentSrc = file("src/test/${relSourcePath}")
+      if (!parentSrc.exists()) {
+        return
+      }
+      ownerFound = true
+
+      // A duplicate subclasses the target, so the target must be concrete and subclassable.
+      // Best-effort detection of the common mistakes (final/abstract) so the failure is a clear
+      // message rather than a cryptic javac error on the generated sources.
+      def decl = (parentSrc.getText("UTF-8") =~ /(?m)^.*\bclass\s+${java.util.regex.Pattern.quote(simpleName)}\b.*$/)
+      if (decl.find() && (decl.group() =~ /\b(?:final|abstract)\b/)) {
+        throw new GradleException(
+            "The 'beast' target '${targetClass}' is declared final or abstract and cannot be " +
+            "subclassed. Choose a concrete, non-final test class.")
+      }
+
+      // N iterations (one generated subclass per iteration) run P at a time.
+      def iters = Integer.parseInt(resolvedTestOption('tests.beast.iters') as String)
+      if (iters <= 0) {
+        throw new GradleException(
+            "Specify -Ptests.beast.iters=[count] (>0) for the beast task (legacy alias: -Ptests.dups).")
+      }
+      def parallelism = Integer.parseInt(resolvedTestOption('tests.beast.parallelism') as String)
+
+      // Generate fresh duplicates on every invocation so a changed class / iteration count is honoured.
+      // This is deliberate configuration-time file I/O (see the configuration-cache note in the
+      // header); the delete+regenerate also means the duplicates always recompile, which is fine
+      // for an on-demand flake-hunt task.
+      def genRoot = file("${buildDir}/generated/beast/java")
+      def pkgDir = pkg ? new File(genRoot, pkg.replace('.', '/')) : genRoot
+      delete genRoot
+      pkgDir.mkdirs()
+
+      def digits = Math.max(3, iters.toString().length())
+      def generated = (1..iters).collect { i ->
+        def name = String.format("${simpleName}_Beast_%0${digits}d", i)
+        def src = new StringBuilder()
+        if (pkg) {
+          src.append("package ").append(pkg).append(";\n")
+        }
+        // Same package as the target so package-private parents and getClass()-relative
+        // test resources both resolve exactly as they do for the real test.
+        src.append("public class ").append(name).append(" extends ").append(simpleName).append(" {}\n")
+        new File(pkgDir, "${name}.java").setText(src.toString(), "UTF-8")
+        return name
+      }
+
+      // Compile the duplicates alongside the real test sources.
+      sourceSets.test.java.srcDir genRoot
+
+      task beast(type: Test) {
+        description "Run -Ptests.beast.class for ${iters} iterations, ${parallelism} in parallel with each other (flaky/concurrency hunt)."
         group "Verification"
-      }
 
-      def dups = Integer.parseInt(resolvedTestOption("tests.dups") as String)
-      if (dups <= 0) {
-        throw new GradleException("Specify -Ptests.dups=[count] for beast task.")
-      }
+        // Each duplicate is its own short-lived JVM, like a flakeHunt worker.
+        forkEvery = 1
+        failFast = resolvedTestOption('tests.failfast').toBoolean()
 
-      // generate N test tasks and attach them to the beasting task for this project;
-      // the test filter will be applied by the beast task once it is received from
-      // command line.
-      def subtasks = (1..dups).collect { value ->
-        return tasks.create(name: "test_${value}", type: Test, {
-          failFast = true
-          doFirst {
-            // If there is a global root seed, use it (all duplicated tasks will run
-            // from the same starting seed). Otherwise pick a sequential derivative.
-            if (!rootProject.rootSeedUserProvided) {
-              systemProperty("tests.seed",
-                  String.format("%08X", new Random(rootProject.rootSeedLong + value).nextLong()))
-            }
+        // The generated dir is added to the whole test source set, so restrict this task to the
+        // generated duplicates by class-file pattern; only narrow to a single method on top of
+        // that when -Ptests.beast.method is given.
+        include "**/${simpleName}_Beast_*.class"
+        if (targetMethod) {
+          filter {
+            includeTestsMatching("*_Beast_*.${targetMethod}")
           }
-        })
+        }
+
+        // Capture each duplicate suite's full console output to its own file so the parallel runs
+        // never clobber each other and every run is available afterwards for debugging (see the
+        // header note). Keyed by class name -> one file per duplicate; writers are opened in
+        // beforeSuite (so even a silent run leaves a file) and closed in afterSuite (which runs
+        // regardless of pass/fail, unlike doLast).
+        def beastLogsDir = file("${buildDir}/test-results/beast")
+        def beastWriters = new java.util.concurrent.ConcurrentHashMap<String, Writer>()
+        def beastWriterFor = { String cls ->
+          beastWriters.computeIfAbsent(cls, { c ->
+            def safe = c.replaceAll(/[^a-zA-Z0-9.\-_]+/, "_")
+            new File(beastLogsDir, "OUTPUT-${safe}.txt").newWriter("UTF-8")
+          })
+        }
+
+        doFirst {
+          project.delete beastLogsDir
+          beastLogsDir.mkdirs()
+        }
+
+        addTestOutputListener({ TestDescriptor d, TestOutputEvent e ->
+          if (d.className == null) {
+            return
+          }
+          def w = beastWriterFor(d.className)
+          synchronized (w) {
+            w.write(e.destination == TestOutputEvent.Destination.StdErr ? "  2> " : "  1> ")
+            w.write(e.message)
+          }
+        } as TestOutputListener)
+
+        addTestListener([
+          beforeSuite: { TestDescriptor d ->
+            if (d.className != null) {
+              beastWriterFor(d.className)
+            }
+          },
+          afterSuite: { TestDescriptor d, TestResult r ->
+            if (d.className == null) {
+              return
+            }
+            def w = beastWriters.remove(d.className)
+            if (w != null) {
+              synchronized (w) {
+                w.write("\n=== ${d.className}: ${r.resultType} (tests=${r.testCount}, " +
+                        "failures=${r.failedTestCount}, skipped=${r.skippedTestCount}) ===\n")
+                w.close()
+              }
+            }
+          },
+          beforeTest: { TestDescriptor d -> },
+          afterTest: { TestDescriptor d, TestResult r -> }
+        ] as TestListener)
       }
 
-      beast.dependsOn subtasks
-    }
-  }
-}
-
-/**
- * We have to declare a dummy task here to be able to reuse the same syntax for 'test' task
- * filter option.
- */
-class BeastTask extends DefaultTask {
-  @Option(option = "tests", description = "Sets test class or method name to be included, '*' is supported.")
-  public void setTestNamePatterns(List<String> patterns) {
-    taskDependencies.getDependencies(this).each { subtask ->
-      subtask.filter.setCommandLineIncludePatterns(patterns)
+      // The shared `tasks.withType(Test)` convention in defaults-tests.gradle is an eager
+      // (apply-at-creation) action that sets maxParallelForks to tests.jvms, so override the
+      // beast parallelism in afterEvaluate to guarantee it wins.
+      //
+      // Note: this intentionally ignores verbose mode's single-fork rule. Running the iterations
+      // in parallel against each other IS the whole point of beast, so it always uses the full
+      // parallelism even under -Ptests.verbose (interleaved console output is the accepted cost).
+      project.afterEvaluate {
+        tasks.beast.maxParallelForks = parallelism
+      }
     }
   }
 
-  @TaskAction
-  void run() {
+  // If -Ptests.beast.class was set but no module's test sources contain it (typically a mistyped
+  // FQN), no 'beast' task is created anywhere. Surface that as a clear error.
+  gradle.projectsEvaluated {
+    if (!ownerFound) {
+      throw new GradleException(
+          "No test source set contains '${targetClass}' (-Ptests.beast.class). " +
+          "Check the fully-qualified class name.")
+    }
   }
 }
