@@ -166,8 +166,7 @@ public class SchemaDesigner extends JerseyResource
   public SchemaDesignerInfoResponse getInfo(String configSet) throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
 
-    SchemaDesignerInfoResponse response =
-        instantiateJerseyResponse(SchemaDesignerInfoResponse.class);
+    final var response = instantiateJerseyResponse(SchemaDesignerInfoResponse.class);
     response.configSet = configSet;
     boolean exists = configExists(configSet);
     response.published = exists;
@@ -269,8 +268,7 @@ public class SchemaDesigner extends JerseyResource
       // solrconfig.xml update failed, but haven't impacted the configSet yet, so just return the
       // error directly
       Throwable causedBy = SolrException.getRootCause(updateFileError);
-      SchemaDesignerResponse errorResponse =
-          instantiateJerseyResponse(SchemaDesignerResponse.class);
+      final var errorResponse = instantiateJerseyResponse(SchemaDesignerResponse.class);
       errorResponse.updateFileError = causedBy.getMessage();
       errorResponse.fileContent = new String(data, StandardCharsets.UTF_8);
       return errorResponse;
@@ -366,7 +364,7 @@ public class SchemaDesigner extends JerseyResource
   @PermissionName(CONFIG_READ_PERM)
   public ListCollectionsResponse listCollectionsForConfig(String configSet) {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
-    ListCollectionsResponse response = instantiateJerseyResponse(ListCollectionsResponse.class);
+    final var response = instantiateJerseyResponse(ListCollectionsResponse.class);
     response.collections = configSetHelper.listCollectionsForConfig(configSet);
     return response;
   }
@@ -376,8 +374,7 @@ public class SchemaDesigner extends JerseyResource
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
   public SchemaDesignerConfigsResponse listDesignerConfigs() throws Exception {
-    SchemaDesignerConfigsResponse response =
-        instantiateJerseyResponse(SchemaDesignerConfigsResponse.class);
+    final var response = instantiateJerseyResponse(SchemaDesignerConfigsResponse.class);
     response.configSets = listEnabledConfigs();
     return response;
   }
@@ -625,8 +622,7 @@ public class SchemaDesigner extends JerseyResource
     settings.setDisabled(doDisableDesigner);
     settingsDAO.persistIfChanged(configSet, settings);
 
-    SchemaDesignerPublishResponse response =
-        instantiateJerseyResponse(SchemaDesignerPublishResponse.class);
+    final var response = instantiateJerseyResponse(SchemaDesignerPublishResponse.class);
     response.configSet = configSet;
     response.schemaVersion = configSetHelper.getCurrentSchemaVersion(configSet);
     if (StrUtils.isNotNullOrEmpty(newCollection)) {
@@ -873,8 +869,7 @@ public class SchemaDesigner extends JerseyResource
     SchemaDesignerSettings settings = getMutableSchemaForConfigSet(configSet, -1, null);
     // diff the published if found, else use the original source schema
     String sourceSchema = configExists(configSet) ? configSet : settings.getCopyFrom();
-    SchemaDesignerSchemaDiffResponse response =
-        instantiateJerseyResponse(SchemaDesignerSchemaDiffResponse.class);
+    final var response = instantiateJerseyResponse(SchemaDesignerSchemaDiffResponse.class);
     response.diff = ManagedSchemaDiff.diff(loadLatestSchema(sourceSchema), settings.getSchema());
     response.diffSource = sourceSchema;
     addSettingsToResponse(settings, response);
@@ -1180,7 +1175,7 @@ public class SchemaDesigner extends JerseyResource
     int currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
     indexedVersion.put(mutableId, currentVersion);
 
-    SchemaDesignerResponse response = instantiateJerseyResponse(SchemaDesignerResponse.class);
+    final var response = instantiateJerseyResponse(SchemaDesignerResponse.class);
 
     DocCollection coll = zkStateReader().getCollection(mutableId);
     Collection<Slice> activeSlices = coll.getActiveSlices();
@@ -1486,8 +1481,7 @@ public class SchemaDesigner extends JerseyResource
   }
 
   protected FlexibleSolrJerseyResponse buildFlexibleResponse(Map<String, Object> responseMap) {
-    FlexibleSolrJerseyResponse response =
-        instantiateJerseyResponse(FlexibleSolrJerseyResponse.class);
+    final var response = instantiateJerseyResponse(FlexibleSolrJerseyResponse.class);
     responseMap.forEach(response::setUnknownProperty);
     return response;
   }
