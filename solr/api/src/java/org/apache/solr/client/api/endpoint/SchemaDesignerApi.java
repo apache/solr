@@ -116,8 +116,13 @@ public interface SchemaDesignerApi {
   @Path("/configs")
   @Operation(
       summary = "List all configSets available for schema design.",
+      description =
+          "Returns a filtered, de-duplicated view of configSets enriched with a per-configSet"
+              + " status: 0 = draft only (no published version yet), 1 = published but schema"
+              + " designer is disabled for it, 2 = published and designer is enabled. Internal"
+              + " mutable copies (._designer_ prefix) and the default configSet are excluded.",
       tags = {"schema-designer"})
-  SchemaDesignerConfigsResponse listConfigs() throws Exception;
+  SchemaDesignerConfigsResponse listDesignerConfigs() throws Exception;
 
   @POST
   @Path("/{configSet}")

@@ -375,7 +375,7 @@ public class SchemaDesigner extends JerseyResource
   // user has access to the Schema Designer UI
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public SchemaDesignerConfigsResponse listConfigs() throws Exception {
+  public SchemaDesignerConfigsResponse listDesignerConfigs() throws Exception {
     SchemaDesignerConfigsResponse response =
         instantiateJerseyResponse(SchemaDesignerConfigsResponse.class);
     response.configSets = listEnabledConfigs();
