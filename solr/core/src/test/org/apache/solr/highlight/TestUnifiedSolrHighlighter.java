@@ -17,6 +17,8 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
@@ -26,7 +28,7 @@ import org.junit.BeforeClass;
 public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestUnifiedSolrHighlighter() throws Exception {
     System.setProperty("filterCache.enabled", "false");
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true"); // this is why we use this particular solrconfig
@@ -35,13 +37,15 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     // test our config is sane, just to be sure:
 
     // 'text' and 'text3' should have offsets, 'text2' should not
-    IndexSchema schema = h.getCore().getLatestSchema();
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());
   }
   @AfterClass
-  public static void afterClass() {
+  public static void afterTestUnifiedSolrHighlighter() {
     System.clearProperty("filterCache.enabled");
     System.clearProperty("queryResultCache.enabled");
     System.clearProperty("documentCache.enabled");
@@ -71,9 +75,8 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   }
 
   public void testImpossibleOffsetSource() {
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-      h.query(req("q", "text2:document", "hl.offsetSource", "postings",
-          "hl.fl", "text2", "sort", "id asc", "hl", "true"));
+    IllegalArgumentException e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+      query(req("q", "text2:document", "hl.offsetSource", "postings", "hl.fl", "text2", "sort", "id asc", "hl", "true"));
     });
     assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
 

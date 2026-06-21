@@ -565,7 +565,8 @@
   <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
              geo="true" distErrPct="0.025" maxDistErr="0.00001" distanceUnits="kilometers"/>
 
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
+  <fieldType name="currency" class="solr.CurrencyFieldType" currencyConfig="currency.xml" multiValued="false"
+             amountLongSuffix="_currency_l" codeStrSuffix="_currency_s"/>
 
   <fieldType name="shingle23" class="solr.TextField" enableGraphQueries="false" multiValued="true">
     <analyzer>
@@ -719,6 +720,8 @@
   <dynamicField name="*_fs_dv" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_f_dvo" type="float" indexed="false" stored="true" docValues="true"/>
   
+  <dynamicField name="*_currency_l" type="long" indexed="true" stored="false" multiValued="false"/>
+  <dynamicField name="*_currency_s" type="string" indexed="true" stored="false" multiValued="false"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_ls" type="long" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_l_dv" type="long" indexed="true" stored="true" docValues="true" multiValued="false"/>

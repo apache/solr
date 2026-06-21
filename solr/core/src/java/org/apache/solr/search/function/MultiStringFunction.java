@@ -44,7 +44,7 @@ public abstract class MultiStringFunction extends ValueSource {
 
   @Override
   public String description() {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     sb.append(name()).append('(');
     boolean firstTime=true;
     for (ValueSource source : sources) {
@@ -78,7 +78,7 @@ public abstract class MultiStringFunction extends ValueSource {
       public boolean exists(int doc) throws IOException {
         boolean exists = true;
         for (FunctionValues val : valsArr) {
-          exists = exists & val.exists(doc);
+          exists = exists && val.exists(doc);
         }
         return exists;
       }
@@ -97,7 +97,7 @@ public abstract class MultiStringFunction extends ValueSource {
       
       @Override
       public String toString(int doc) throws IOException {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(32);
         sb.append(name()).append('(');
         boolean firstTime=true;
         for (FunctionValues vals : valsArr) {

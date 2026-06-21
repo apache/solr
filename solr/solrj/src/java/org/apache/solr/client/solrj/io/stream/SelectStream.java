@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -50,6 +51,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class SelectStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
+  private static final Pattern COMPILE = Pattern.compile("(?i) as ");
 
   private TupleStream stream;
   private StreamContext streamContext;
@@ -77,7 +79,7 @@ public class SelectStream extends TupleStream implements Expressible {
   public SelectStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    List<StreamExpressionParameter> selectAsFieldsExpressions = factory.getOperandsOfType(expression, StreamExpressionValue.class);
+    List<StreamExpressionParameter> selectAsFieldsExpressions = StreamFactory.getOperandsOfType(expression, StreamExpressionValue.class);
     List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, StreamOperation.class);
     List<StreamExpression> evaluatorExpressions = factory.getExpressionOperandsRepresentingTypes(expression, StreamEvaluator.class);
     
@@ -111,7 +113,7 @@ public class SelectStream extends TupleStream implements Expressible {
         value = value.substring(1, value.length() - 1);
       }
       if(value.toLowerCase(Locale.ROOT).contains(" as ")){
-        String[] parts = value.split("(?i) as "); // ensure we are splitting in a case-insensitive way
+        String[] parts = COMPILE.split(value); // ensure we are splitting in a case-insensitive way
         if(2 != parts.length){
           throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting select field of form 'fieldA' or 'fieldA as alias' but found %s",expression, value));
         }

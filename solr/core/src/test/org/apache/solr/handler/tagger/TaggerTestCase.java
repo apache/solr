@@ -30,24 +30,29 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
 
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.lucene.document.Document;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -58,20 +63,15 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Rule
-  public TestWatcher watchman = new TestWatcher() {
-    @Override
-    protected void starting(Description description) {
-      if (log.isInfoEnabled()) {
-        log.info("{} being run...", description.getDisplayName());
-      }
-    }
-  };
-
   protected final ModifiableSolrParams baseParams = new ModifiableSolrParams();
 
   //populated in buildNames; tested in assertTags
-  protected static List<String> NAMES;
+  protected List<String> NAMES;
+
+  @AfterClass
+  public static void afterTaggerTestCase() throws Exception {
+
+  }
 
   @Override
   public void setUp() throws Exception {
@@ -81,6 +81,13 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     baseParams.set(CommonParams.WT, "xml");
   }
 
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    NAMES = null;
+  }
+
+
   protected void assertTags(String doc, String... tags) throws Exception {
     TestTag[] tts = new TestTag[tags.length];
     for (int i = 0; i < tags.length; i++) {
@@ -89,7 +96,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     assertTags(reqDoc(doc), tts);
   }
 
-  protected static void buildNames(String... names) throws Exception {
+  protected void buildNames(String... names) throws Exception {
     deleteByQueryAndGetVersion("*:*", null);
     NAMES = Arrays.asList(names);
     //Collections.sort(NAMES);
@@ -133,6 +140,11 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
       Arrays.sort(eTags);
       assertSortedArrayEquals(message, eTags, aTags);
 
+    } catch (Throwable throwable) {
+      if (throwable instanceof  Exception) {
+        throw (Exception) throwable;
+      }
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, throwable);
     } finally {
       req.close();
     }
@@ -178,11 +190,14 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   /** REMEMBER to close() the result req object. */
   protected SolrQueryRequest reqDoc(String doc, SolrParams moreParams) {
     log.debug("Test doc: {}", doc);
-    SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), params) {};
-    Iterable<ContentStream> stream = Collections.singleton((ContentStream)new ContentStreamBase.StringStream(doc));
-    req.setContentStreams(stream);
-    return req;
+    try (SolrCore core = h.getCore()) {
+      SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
+      SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {
+      };
+      Iterable<ContentStream> stream = Collections.singleton((ContentStream) new ContentStreamBase.StringStream(doc));
+      req.setContentStreams(stream);
+      return req;
+    }
   }
 
   /** Asserts the sorted arrays are equals, with a helpful error message when not.*/
@@ -216,6 +231,17 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
       this.docName = docName;
     }
 
+    @Override public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      TestTag testTag = (TestTag) o;
+      return startOffset == testTag.startOffset && endOffset == testTag.endOffset && docName.equals(testTag.docName);
+    }
+
+    @Override public int hashCode() {
+      return Objects.hash(startOffset, endOffset, docName);
+    }
+
     @Override
     public String toString() {
       return "TestTag{" +
@@ -225,20 +251,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
           '}';
     }
 
-    @Override
-    public boolean equals(Object obj) {
-      TestTag that = (TestTag) obj;
-      return new EqualsBuilder()
-          .append(this.startOffset, that.startOffset)
-          .append(this.endOffset, that.endOffset)
-          .append(this.docName, that.docName)
-          .isEquals();
-    }
 
-    @Override
-    public int hashCode() {
-      return startOffset;//cheesy but acceptable
-    }
 
     @Override
     public int compareTo(Object o) {

@@ -27,9 +27,15 @@ import java.util.Random;
 
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,6 +44,7 @@ import org.junit.Test;
  * Best Practices for using SolrTestCaseJ4
  */
 public class TestFunctionQuery extends SolrTestCaseJ4 {
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-functionquery.xml","schema11.xml");
@@ -49,13 +56,15 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   static long start = System.nanoTime();
   
   void makeExternalFile(String field, String contents) {
-    String dir = h.getCore().getDataDir();
-    String filename = dir + "/external_" + field + "." + (start++);
+    try (SolrCore core = h.getCore()) {
+      String dir = core.getDataDir();
+      String filename = dir + "/external_" + field + "." + (start++);
 
-    try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
-      out.write(contents);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+      try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
+        out.write(contents);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -127,8 +136,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       tests.add(xpath);
     }
 
-    assertQ(req(nargs.toArray(new String[]{}))
-            , tests.toArray(new String[]{})
+    assertQ(req(nargs.toArray(Utils.EMPTY_STRINGS))
+            , tests.toArray(Utils.EMPTY_STRINGS)
     );
   }
 
@@ -230,7 +239,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
     makeExternalFile(field, "0=1");
-    assertU(h.query("/reloadCache",lrf.makeRequest("","")));
+    try (SolrQueryRequest req = lrf.makeRequest("","")) {
+      assertU(TestHarness.query("/reloadCache", req));
+    }
     singleTest(field, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
@@ -266,7 +277,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       makeExternalFile(field, sb.toString());
 
       // make it visible
-      assertU(h.query("/reloadCache",lrf.makeRequest("","")));
+      try (SolrQueryRequest req = lrf.makeRequest("","")) {
+        assertU(TestHarness.query("/reloadCache", req));
+      }
 
       // test it
       float[] answers = new float[ids.length*2];
@@ -314,18 +327,18 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   
   @Test
   public void testOrdAndRordOverPointsField() throws Exception {
-    assumeTrue("Skipping test when points=false", Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
+    LuceneTestCase.assumeTrue("Skipping test when points=false", Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
     clearIndex();
 
     String field = "a_" + new String[] {"i","l","d","f"}[random().nextInt(4)];
     assertU(adoc("id", "1", field, "1"));
     assertU(commit());
 
-    Exception e = expectThrows(SolrException.class, () -> h.query(req("q", "{!func}ord(" + field + ")", "fq", "id:1")));
+    Exception e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req("q", "{!func}ord(" + field + ")", "fq", "id:1")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
     assertTrue(e.getMessage().contains("ord() is not supported over Points based field " + field));
 
-    e = expectThrows(SolrException.class, () -> h.query(req("q", "{!func}rord(" + field + ")", "fq", "id:1")));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req("q", "{!func}rord(" + field + ")", "fq", "id:1")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
     assertTrue(e.getMessage().contains("rord() is not supported over Points based field " + field));
   }
@@ -333,84 +346,79 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   @Test
   public void testGeneral() throws Exception {
     clearIndex();
-    
-    assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
-    assertU(adoc("id","2", "a_t","how now brown cow"));
+
+    assertU(adoc("id", "1", "a_tdt", "2009-08-31T12:10:10.123Z", "b_tdt", "2009-08-31T12:10:10.124Z"));
+    assertU(adoc("id", "2", "a_t", "how now brown cow"));
     assertU(commit()); // create more than one segment
-    assertU(adoc("id","3", "a_t","brown cow"));
-    assertU(adoc("id","4"));
+    assertU(adoc("id", "3", "a_t", "brown cow"));
+    assertU(adoc("id", "4"));
     assertU(commit()); // create more than one segment
-    assertU(adoc("id","5"));
-    assertU(adoc("id","6", "a_t","cow cow cow cow cow"));
+    assertU(adoc("id", "5"));
+    assertU(adoc("id", "6", "a_t", "cow cow cow cow cow"));
     assertU(commit());
 
     // test relevancy functions
-    assertQ(req("fl","*,score","q", "{!func}numdocs()", "fq","id:6"), "//float[@name='score']='6.0'");
-    assertQ(req("fl","*,score","q", "{!func}maxdoc()", "fq","id:6"), "//float[@name='score']='6.0'");
-    assertQ(req("fl","*,score","q", "{!func}docfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='3.0'");
-    assertQ(req("fl","*,score","q", "{!func}docfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='3.0'");
-    assertQ(req("fl","*,score","q", "{!func}docfreq($field,$value)", "fq","id:6", "field","a_t", "value","cow"), "//float[@name='score']='3.0'");
-    assertQ(req("fl","*,score","q", "{!func}termfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='5.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}numdocs()", "fq", "id:6"), "//float[@name='score']='6.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}maxdoc()", "fq", "id:6"), "//float[@name='score']='6.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}docfreq(a_t,cow)", "fq", "id:6"), "//float[@name='score']='3.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}docfreq('a_t','cow')", "fq", "id:6"), "//float[@name='score']='3.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}docfreq($field,$value)", "fq", "id:6", "field", "a_t", "value", "cow"), "//float[@name='score']='3.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}termfreq(a_t,cow)", "fq", "id:6"), "//float[@name='score']='5.0'");
 
     // make sure it doesn't get a NPE if no terms are present in a field.
-    assertQ(req("fl","*,score","q", "{!func}termfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
-    assertQ(req("fl","*,score","q", "{!func}docfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
-    
+    assertQ(req("fl", "*,score", "q", "{!func}termfreq(nofield_t,cow)", "fq", "id:6"), "//float[@name='score']='0.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}docfreq(nofield_t,cow)", "fq", "id:6"), "//float[@name='score']='0.0'");
+
     // test that ord and rord are working on a global index basis, not just
     // at the segment level (since Lucene 2.9 has switched to per-segment searching)
-    assertQ(req("fl","*,score","q", "{!func}ord(id)", "fq","id:6"), "//float[@name='score']='5.0'");
-    assertQ(req("fl","*,score","q", "{!func}top(ord(id))", "fq","id:6"), "//float[@name='score']='5.0'");
-    assertQ(req("fl","*,score","q", "{!func}rord(id)", "fq","id:1"),"//float[@name='score']='5.0'");
-    assertQ(req("fl","*,score","q", "{!func}top(rord(id))", "fq","id:1"),"//float[@name='score']='5.0'");
-
+    assertQ(req("fl", "*,score", "q", "{!func}ord(id)", "fq", "id:6"), "//float[@name='score']='5.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}top(ord(id))", "fq", "id:6"), "//float[@name='score']='5.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}rord(id)", "fq", "id:1"), "//float[@name='score']='5.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}top(rord(id))", "fq", "id:1"), "//float[@name='score']='5.0'");
 
     // test that we can subtract dates to millisecond precision
-    assertQ(req("fl","*,score","q", "{!func}ms(a_tdt,b_tdt)", "fq","id:1"), "//float[@name='score']='0.0'");
-    assertQ(req("fl","*,score","q", "{!func}ms(b_tdt,a_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
-    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z,2009-08-31T12:10:10.124Z)", "fq","id:1"), "//float[@name='score']='1.0'");
-    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.124Z,a_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
-    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z,b_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}ms(a_tdt,b_tdt)", "fq", "id:1"), "//float[@name='score']='0.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}ms(b_tdt,a_tdt)", "fq", "id:1"), "//float[@name='score']='1.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}ms(2009-08-31T12:10:10.125Z,2009-08-31T12:10:10.124Z)", "fq", "id:1"), "//float[@name='score']='1.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}ms(2009-08-31T12:10:10.124Z,a_tdt)", "fq", "id:1"), "//float[@name='score']='1.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}ms(2009-08-31T12:10:10.125Z,b_tdt)", "fq", "id:1"), "//float[@name='score']='1.0'");
 
-    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z/SECOND,2009-08-31T12:10:10.124Z/SECOND)", "fq","id:1"), "//float[@name='score']='0.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}ms(2009-08-31T12:10:10.125Z/SECOND,2009-08-31T12:10:10.124Z/SECOND)", "fq", "id:1"), "//float[@name='score']='0.0'");
 
     // test that we can specify "NOW"
-    assertQ(req("fl","*,score","q", "{!func}ms(NOW)", "NOW","1000"), "//float[@name='score']='1000.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}ms(NOW)", "NOW", "1000"), "//float[@name='score']='1000.0'");
 
-
-    for (int i=100; i<112; i++) {
-      assertU(adoc("id",""+i, "text","batman"));
+    for (int i = 100; i < 112; i++) {
+      assertU(adoc("id", "" + i, "text", "batman"));
     }
     assertU(commit());
-    assertU(adoc("id","120", "text","batman superman"));   // in a smaller segment
-    assertU(adoc("id","121", "text","superman junkterm"));
+    assertU(adoc("id", "120", "text", "batman superman"));   // in a smaller segment
+    assertU(adoc("id", "121", "text", "superman junkterm"));
     assertU(commit());
 
     // superman has a higher df (thus lower idf) in one segment, but reversed in the complete index
-    String q ="{!func}query($qq)";
-    String fq="id:120"; 
-    assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'0.6'");
-    assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'0.6'");
+    String q = "{!func}query($qq)";
+    String fq = "id:120";
+    assertQ(req("fl", "*,score", "q", q, "qq", "text:batman", "fq", fq), "//float[@name='score']<'0.6'");
+    assertQ(req("fl", "*,score", "q", q, "qq", "text:superman", "fq", fq), "//float[@name='score']>'0.6'");
 
     // test weighting through a function range query
-    assertQ(req("fl","*,score", "fq",fq,  "q", "{!frange l=0.6 u=10}query($qq)", "qq","text:superman"), "//*[@numFound='1']");
+    assertQ(req("fl", "*,score", "fq", fq, "q", "{!frange l=0.6 u=10}query($qq)", "qq", "text:superman"), "//*[@numFound='1']");
 
     // test weighting through a complex function
-    q ="{!func}sub(div(sum(0.0,product(1,query($qq))),1),0)";
-    assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'0.6'");
-    assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'0.6'");
-
+    q = "{!func}sub(div(sum(0.0,product(1,query($qq))),1),0)";
+    assertQ(req("fl", "*,score", "q", q, "qq", "text:batman", "fq", fq), "//float[@name='score']<'0.6'");
+    assertQ(req("fl", "*,score", "q", q, "qq", "text:superman", "fq", fq), "//float[@name='score']>'0.6'");
 
     // test full param dereferencing
-    assertQ(req("fl","*,score","q", "{!func}add($v1,$v2)", "v1","add($v3,$v4)", "v2","1", "v3","2", "v4","5"
-        , "fq","id:1"), "//float[@name='score']='8.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}add($v1,$v2)", "v1", "add($v3,$v4)", "v2", "1", "v3", "2", "v4", "5", "fq", "id:1"), "//float[@name='score']='8.0'");
 
     // test ability to parse multiple values
-    assertQ(req("fl","*,score","q", "{!func}dist(2,vector(1,1),$pt)", "pt","3,1"
-        , "fq","id:1"), "//float[@name='score']='2.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}dist(2,vector(1,1),$pt)", "pt", "3,1", "fq", "id:1"), "//float[@name='score']='2.0'");
 
     // test that extra stuff after a function causes an error
     try {
-      assertQ(req("fl","*,score","q", "{!func}10 wow dude ignore_exception"));
+      assertQ(req("fl", "*,score", "q", "{!func}10 wow dude ignore_exception"));
       fail();
     } catch (Exception e) {
       // OK
@@ -418,61 +426,51 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     // test that sorting by function query weights correctly.  superman should sort higher than batman due to idf of the whole index
 
-    assertQ(req("q", "*:*", "fq","id:120 OR id:121", "sort","{!func v=$sortfunc} desc", "sortfunc","query($qq)", "qq","text:(batman OR superman)")
-           ,"*//doc[1]/str[.='120']"
-           ,"*//doc[2]/str[.='121']"
-    );
+    assertQ(req("q", "*:*", "fq", "id:120 OR id:121", "sort", "{!func v=$sortfunc} desc", "sortfunc", "query($qq)", "qq", "text:(batman OR superman)"), "*//doc[1]/str[.='120']",
+        "*//doc[2]/str[.='121']");
 
-    // test a query that doesn't specify nested query val
-    assertQEx("Should fail because of missing qq",
-        "Missing param qq while parsing function 'query($qq)'",
-        req("q", "*:*", "fq","id:120 OR id:121", "defType","edismax", "boost","query($qq)"),
-        SolrException.ErrorCode.BAD_REQUEST
-    );
-    assertQEx("Should fail because of missing sortfunc in sort",
-        "Can't determine a Sort Order (asc or desc) in sort spec '{!func v=$sortfunc} desc'",
-        req("q", "*:*", "fq","id:120 OR id:121", "sort","{!func v=$sortfunc} desc", "sortfunc","query($qq)"),
-        SolrException.ErrorCode.BAD_REQUEST
-    );
-    assertQEx("Should fail because of missing qq in boost",
-        "Nested local params must have value in v parameter.  got 'query({!dismax v=$qq})",
-        req("q", "*:*", "fq","id:120 OR id:121", "defType","edismax", "boost","query({!dismax v=$qq})"),
-        SolrException.ErrorCode.BAD_REQUEST
-    );
-    assertQEx("Should fail as empty value is specified for v",
-        "Nested function query returned null for 'query({!v=})'",
-        req("q", "*:*", "defType","edismax", "boost","query({!v=})"), SolrException.ErrorCode.BAD_REQUEST
-    );
-    assertQEx("Should fail as v's value contains only spaces",
-        "Nested function query returned null for 'query({!v=   })'",
-        req("q", "*:*", "defType","edismax", "boost","query({!v=   })"), SolrException.ErrorCode.BAD_REQUEST
-    );
+    try (SolrQueryRequest req = req("q", "*:*", "fq", "id:120 OR id:121", "defType", "edismax", "boost", "query($qq)")) {
+      // test a query that doesn't specify nested query val
+      assertQEx("Should fail because of missing qq", "Missing param qq while parsing function 'query($qq)'", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
 
-    // no field specified in ord()
-    assertQEx("Should fail as no field is specified in ord func",
-        "Expected identifier instead of 'null' for function 'ord()'",
-        req("q", "*:*", "defType","edismax","boost","ord()"), SolrException.ErrorCode.BAD_REQUEST
-    );
-    assertQEx("Should fail as no field is specified in rord func",
-        "Expected identifier instead of 'null' for function 'rord()'",
-        req("q", "*:*", "defType","edismax","boost","rord()"), SolrException.ErrorCode.BAD_REQUEST
-    );
+    try (SolrQueryRequest req = req("q", "*:*", "fq", "id:120 OR id:121", "sort", "{!func v=$sortfunc} desc", "sortfunc", "query($qq)")) {
+      assertQEx("Should fail because of missing sortfunc in sort", "Can't determine a Sort Order (asc or desc) in sort spec '{!func v=$sortfunc} desc'", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
+    try (SolrQueryRequest req = req("q", "*:*", "fq", "id:120 OR id:121", "defType", "edismax", "boost", "query({!dismax v=$qq})")) {
+      assertQEx("Should fail because of missing qq in boost", "Nested local params must have value in v parameter.  got 'query({!dismax v=$qq})", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
 
-    // test parseFloat
-    assertQEx("Should fail as less args are specified for recip func",
-        "Expected float instead of 'null' for function 'recip(1,2)'",
-        req("q", "*:*","defType","edismax", "boost","recip(1,2)"), SolrException.ErrorCode.BAD_REQUEST
-    );
-    assertQEx("Should fail as invalid value is specified for recip func",
-        "Expected float instead of 'f' for function 'recip(1,2,3,f)'",
-        req("q", "*:*","defType","edismax", "boost","recip(1,2,3,f)"), SolrException.ErrorCode.BAD_REQUEST
-    );
+    try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "query({!v=})")) {
+      assertQEx("Should fail as empty value is specified for v", "Nested function query returned null for 'query({!v=})'", req,
+          SolrException.ErrorCode.BAD_REQUEST);
+    }
+
+    try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "query({!v=   })")) {
+      assertQEx("Should fail as v's value contains only spaces", "Nested function query returned null for 'query({!v=   })'", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
+
+    try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "ord()")) {
+      // no field specified in ord()
+      assertQEx("Should fail as no field is specified in ord func", "Expected identifier instead of 'null' for function 'ord()'", req, SolrException.ErrorCode.BAD_REQUEST);
+    } try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "rord()")) {
+      assertQEx("Should fail as no field is specified in rord func", "Expected identifier instead of 'null' for function 'rord()'", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
+
+    try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "recip(1,2)")) {
+      // test parseFloat
+      assertQEx("Should fail as less args are specified for recip func", "Expected float instead of 'null' for function 'recip(1,2)'", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
+    try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "recip(1,2,3,f)")) {
+      assertQEx("Should fail as invalid value is specified for recip func", "Expected float instead of 'f' for function 'recip(1,2,3,f)'", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
     // this should pass
-    assertQ(req("q", "*:*","defType","edismax", "boost","recip(1, 2, 3, 4)"));
+    assertQ(req("q", "*:*", "defType", "edismax", "boost", "recip(1, 2, 3, 4)"));
 
-    // for undefined field NPE shouldn't be thrown
-    assertQEx("Should Fail as the field is undefined", "undefined field a",
-        req("q", "*:*", "fl", "x:payload(a,b)"), SolrException.ErrorCode.BAD_REQUEST);
+    try (SolrQueryRequest req = req("q", "*:*", "fl", "x:payload(a,b)")) {
+      // for undefined field NPE shouldn't be thrown
+      assertQEx("Should Fail as the field is undefined", "undefined field a", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 
   @Test
@@ -481,11 +479,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     TFIDFSimilarity similarity = null;
     {
-      Similarity sim = h.getCore().getLatestSchema().getFieldType("a_tfidf").getSimilarity();
-      assertNotNull("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config?", sim);
-      assertTrue("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config: " + sim.getClass(),
-                 sim instanceof TFIDFSimilarity);
-      similarity = (TFIDFSimilarity) sim;
+      try (SolrCore core = h.getCore()) {
+        Similarity sim = core.getLatestSchema().getFieldType("a_tfidf").getSimilarity();
+        assertNotNull("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config?", sim);
+        assertTrue("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config: " + sim.getClass(), sim instanceof TFIDFSimilarity);
+        similarity = (TFIDFSimilarity) sim;
+      }
     }
      
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
@@ -573,8 +572,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   public void testRetrievePayloads() throws Exception {
     clearIndex();
 
-    int numDocs = 100 + random().nextInt(100);
-    int numLocations = 1000 + random().nextInt(2000);
+    int numDocs = 100 + random().nextInt(TEST_NIGHTLY ? 10 : 100);
+    int numLocations = 1000 + random().nextInt(TEST_NIGHTLY ? 2000 : 200);
     for (int docNum = 0 ; docNum < numDocs ; ++docNum) {
       StringBuilder amountsBuilder = new StringBuilder();
       for (int location = 1 ; location <= numLocations ; ++location) {

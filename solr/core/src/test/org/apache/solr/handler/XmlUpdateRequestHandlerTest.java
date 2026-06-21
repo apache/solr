@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -26,8 +27,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import javax.xml.stream.XMLInputFactory;
@@ -40,20 +41,19 @@ import java.util.Objects;
 import java.util.Queue;
 
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
-  private static XMLInputFactory inputFactory;
-  protected static UpdateRequestHandler handler;
+  private XMLInputFactory inputFactory;
+  protected UpdateRequestHandler handler;
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     handler = new UpdateRequestHandler();
     inputFactory = XMLInputFactory.newInstance();
   }
 
-  @AfterClass
-  public static void afterTests() {
-    inputFactory = null;
-    handler = null;
+  @After
+  public  void afterTests() {
+    deleteCore();
   }
 
   @Test
@@ -74,7 +74,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     //null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument doc = loader.readDoc( parser );
+    SolrInputDocument doc = XMLLoader.readDoc( parser );
     
     // Read values
     assertEquals( "12345", doc.getField( "id" ).getValue() );
@@ -108,12 +108,13 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals(100, add.commitWithin);
     assertEquals(false, add.overwrite);
     req.close();
+    p.close();
   }
   
   @Test
   public void testExternalEntities() throws Exception
   {
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = SolrTestUtil.getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml = 
       "<?xml version=\"1.0\"?>" +
       // check that external entities are not resolved!
@@ -134,6 +135,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
     req.close();
+    p.close();
   }
 
   public void testNamedEntity() throws Exception {
@@ -189,9 +191,11 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       p.expectDelete("500", null, -1, 42, "shard1");
 
       XMLLoader loader = new XMLLoader().init(null);
-      loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
-
+      SolrQueryRequest req = req();
+      loader.load(req, new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
+      req.close();
       p.assertNoCommandsPending();
+      p.close();
     }
 
     private static class MockUpdateRequestProcessor extends UpdateRequestProcessor {

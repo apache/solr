@@ -28,18 +28,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.queries.spans.SpanQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -48,7 +50,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -72,6 +73,7 @@ import com.google.common.collect.Multimaps;
  */
 public class ExtendedDismaxQParser extends QParser {
 
+  private static final Pattern COMPILE = Pattern.compile("([^\\\\]):");
   /**
    * A field we can't ever find in any schema, so we can safely tell
    * DisjunctionMaxQueryParser to use it as our defaultField, and
@@ -203,7 +205,7 @@ public class ExtendedDismaxQParser extends QParser {
     Query topQuery = QueryUtils.build(query, this);
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size()>1) {
-      ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[boosts.size()]));
+      ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[0]));
       topQuery = FunctionScoreQuery.boostByValue(topQuery, prod.asDoubleValuesSource());
     } else if (boosts.size() == 1) {
       topQuery = FunctionScoreQuery.boostByValue(topQuery, boosts.get(0).asDoubleValuesSource());
@@ -358,7 +360,6 @@ public class ExtendedDismaxQParser extends QParser {
    * @param config Configuration options for this parse request
    * @return the resulting query (flattened if needed) with "min should match" rules applied as specified in the config.
    * @see #parseOriginalQuery
-   * @see SolrPluginUtils#flattenBooleanQuery
    */
   protected Query parseEscapedQuery(ExtendedSolrQueryParser up,
       String escapedUserQuery, ExtendedDismaxConfiguration config) throws SyntaxError {
@@ -383,8 +384,7 @@ public class ExtendedDismaxQParser extends QParser {
    * @return the resulting query with "min should match" rules applied as specified in the config.
    * @see #parseEscapedQuery
    */
-   protected Query parseOriginalQuery(ExtendedSolrQueryParser up,
-      String mainUserQuery, List<Clause> clauses, ExtendedDismaxConfiguration config) {
+   protected static Query parseOriginalQuery(ExtendedSolrQueryParser up, String mainUserQuery, List<Clause> clauses, ExtendedDismaxConfiguration config) {
     
     Query query = null;
     try {
@@ -425,13 +425,12 @@ public class ExtendedDismaxQParser extends QParser {
    * @return true if there are stopwords configured and the parsed query was empty
    *         false in any other case.
    */
-  protected boolean shouldRemoveStopFilter(ExtendedDismaxConfiguration config,
-      Query query) {
+  protected static boolean shouldRemoveStopFilter(ExtendedDismaxConfiguration config, Query query) {
     return config.stopwords && isEmpty(query);
   }
   
   private String escapeUserQuery(List<Clause> clauses) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     for (Clause clause : clauses) {
       
       boolean doQuote = clause.isPhrase;
@@ -469,7 +468,7 @@ public class ExtendedDismaxQParser extends QParser {
   /**
    * Returns true if at least one of the clauses is/has an explicit operator (except for AND)
    */
-  private boolean foundOperators(List<Clause> clauses, boolean lowercaseOperators) {
+  private static boolean foundOperators(List<Clause> clauses, boolean lowercaseOperators) {
     for (Clause clause : clauses) {
       if (clause.must == '+') return true;
       if (clause.must == '-') return true;
@@ -495,8 +494,8 @@ public class ExtendedDismaxQParser extends QParser {
    *        be recognized as operators and uppercased in the final query string.
    * @return the generated query string.
    */
-  protected String rebuildUserQuery(List<Clause> clauses, boolean lowercaseOperators) {
-    StringBuilder sb = new StringBuilder();
+  protected static String rebuildUserQuery(List<Clause> clauses, boolean lowercaseOperators) {
+    StringBuilder sb = new StringBuilder(32);
     for (int i=0; i<clauses.size(); i++) {
       Clause clause = clauses.get(i);
       String s = clause.raw;
@@ -542,7 +541,7 @@ public class ExtendedDismaxQParser extends QParser {
     List<Query> boostFunctions = new LinkedList<>();
     if (config.hasBoostFunctions()) {
       for (String boostFunc : config.boostFuncs) {
-        if(null == boostFunc || "".equals(boostFunc)) continue;
+        if(null == boostFunc || boostFunc.isEmpty()) continue;
         Map<String,Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
         for (Map.Entry<String, Float> entry : ff.entrySet()) {
           Query fq = subQuery(entry.getKey(), FunctionQParserPlugin.NAME).getQuery();
@@ -564,7 +563,7 @@ public class ExtendedDismaxQParser extends QParser {
     List<Query> boostQueries = new LinkedList<>();
     if (config.hasBoostParams()) {
       for (String qs : config.boostParams) {
-        if (qs.trim().length()==0) continue;
+        if (StringUtils.isBlank(qs)) continue;
         Query q = subQuery(qs, null).getQuery();
         boostQueries.add(q);
       }
@@ -618,7 +617,7 @@ public class ExtendedDismaxQParser extends QParser {
     
     final int lastClauseIndex = shingleSize-1;
     
-    StringBuilder userPhraseQuery = new StringBuilder();
+    StringBuilder userPhraseQuery = new StringBuilder(32);
     for (int i=0; i < clauses.size() - lastClauseIndex; i++) {
       userPhraseQuery.append('"');
       for (int j=0; j <= lastClauseIndex; j++) {
@@ -671,7 +670,7 @@ public class ExtendedDismaxQParser extends QParser {
   /**
    * @return a {fieldName, fieldBoost} map for the given fields.
    */
-  private Map<String, Float> getFieldBoosts(Collection<FieldParams> fields) {
+  private static Map<String, Float> getFieldBoosts(Collection<FieldParams> fields) {
     Map<String, Float> fieldBoostMap = new LinkedHashMap<>(fields.size());
 
     for (FieldParams field : fields) {
@@ -723,158 +722,160 @@ public class ExtendedDismaxQParser extends QParser {
   }
   
   public List<Clause> splitIntoClauses(String s, boolean ignoreQuote) {
-    ArrayList<Clause> lst = new ArrayList<>(4);
-    Clause clause;
-    
-    int pos=0;
-    int end=s.length();
-    char ch=0;
-    int start;
-    boolean disallowUserField;
-    while (pos < end) {
-      clause = new Clause();
-      disallowUserField = true;
-      
-      ch = s.charAt(pos);
-      
-      while (Character.isWhitespace(ch)) {
-        if (++pos >= end) break;
-        ch = s.charAt(pos);
-      }
-      
-      start = pos;      
-      
-      if ((ch=='+' || ch=='-') && (pos+1)<end) {
-        clause.must = ch;
-        pos++;
-      }
-      
-      clause.field = getFieldName(s, pos, end);
-      if(clause.field != null && !config.userFields.isAllowed(clause.field)) {
-        clause.field = null;
-      }
-      if (clause.field != null) {
-        disallowUserField = false;
-        int colon = s.indexOf(':',pos);
-        clause.rawField = s.substring(pos, colon);
-        pos += colon - pos; // skip the field name
-        pos++;  // skip the ':'
-      }
-      
-      if (pos>=end) break;
-      
-      
-      char inString=0;
-      
-      ch = s.charAt(pos);
-      if (!ignoreQuote && ch=='"') {
-        clause.isPhrase = true;
-        inString = '"';
-        pos++;
-      }
-      
-      StringBuilder sb = new StringBuilder();
+    splitIntoClauses:
+    while (true) {
+      ArrayList<Clause> lst = new ArrayList<>(4);
+      Clause clause;
+
+      int pos = 0;
+      int end = s.length();
+      char ch = 0;
+      int start;
+      boolean disallowUserField;
       while (pos < end) {
-        ch = s.charAt(pos++);
-        if (ch=='\\') {    // skip escaped chars, but leave escaped
-          sb.append(ch);
-          if (pos >= end) {
-            sb.append(ch); // double backslash if we are at the end of the string
-            break;
-          }
+        clause = new Clause();
+        disallowUserField = true;
+
+        ch = s.charAt(pos);
+
+        while (Character.isWhitespace(ch)) {
+          if (++pos >= end) break;
+          ch = s.charAt(pos);
+        }
+
+        start = pos;
+
+        if ((ch == '+' || ch == '-') && (pos + 1) < end) {
+          clause.must = ch;
+          pos++;
+        }
+
+        clause.field = getFieldName(s, pos, end);
+        if (clause.field != null && !config.userFields.isAllowed(clause.field)) {
+          clause.field = null;
+        }
+        if (clause.field != null) {
+          disallowUserField = false;
+          int colon = s.indexOf(':', pos);
+          clause.rawField = s.substring(pos, colon);
+          pos += colon - pos; // skip the field name
+          pos++;  // skip the ':'
+        }
+
+        if (pos >= end) break;
+
+        char inString = 0;
+
+        ch = s.charAt(pos);
+        if (!ignoreQuote && ch == '"') {
+          clause.isPhrase = true;
+          inString = '"';
+          pos++;
+        }
+
+        StringBuilder sb = new StringBuilder(32);
+        while (pos < end) {
           ch = s.charAt(pos++);
-          sb.append(ch);
-          continue;
-        } else if (inString != 0 && ch == inString) {
-          inString=0;
-          break;
-        } else if (Character.isWhitespace(ch)) {
-          clause.hasWhitespace=true;
-          if (inString == 0) {
-            // end of the token if we aren't in a string, backing
-            // up the position.
-            pos--;
+          if (ch == '\\') {    // skip escaped chars, but leave escaped
+            sb.append(ch);
+            if (pos >= end) {
+              sb.append(ch); // double backslash if we are at the end of the string
+              break;
+            }
+            ch = s.charAt(pos++);
+            sb.append(ch);
+            continue;
+          } else if (inString != 0 && ch == inString) {
+            inString = 0;
             break;
+          } else if (Character.isWhitespace(ch)) {
+            clause.hasWhitespace = true;
+            if (inString == 0) {
+              // end of the token if we aren't in a string, backing
+              // up the position.
+              pos--;
+              break;
+            }
           }
-        }
-        
-        if (inString == 0) {
-          switch (ch) {
-            case '!':
-            case '(':
-            case ')':
-            case ':':
-            case '^':
-            case '[':
-            case ']':
-            case '{':
-            case '}':
-            case '~':
-            case '*':
-            case '?':
-            case '"':
-            case '+':
-            case '-':
-            case '\\':
-            case '|':
-            case '&':
-            case '/':
-              clause.hasSpecialSyntax = true;
-              sb.append('\\');
+
+          if (inString == 0) {
+            switch (ch) {
+              case '!':
+              case '(':
+              case ')':
+              case ':':
+              case '^':
+              case '[':
+              case ']':
+              case '{':
+              case '}':
+              case '~':
+              case '*':
+              case '?':
+              case '"':
+              case '+':
+              case '-':
+              case '\\':
+              case '|':
+              case '&':
+              case '/':
+                clause.hasSpecialSyntax = true;
+                sb.append('\\');
+            }
+          } else if (ch == '"') {
+            // only char we need to escape in a string is double quote
+            sb.append('\\');
           }
-        } else if (ch=='"') {
-          // only char we need to escape in a string is double quote
-          sb.append('\\');
+          sb.append(ch);
         }
-        sb.append(ch);
-      }
-      clause.val = sb.toString();
-      
-      if (clause.isPhrase) {
-        if (inString != 0) {
-          // detected bad quote balancing... retry
-          // parsing with quotes like any other char
-          return splitIntoClauses(s, true);
-        }
-        
-        // special syntax in a string isn't special
-        clause.hasSpecialSyntax = false;        
-      } else {
-        // an empty clause... must be just a + or - on its own
-        if (clause.val.length() == 0) {
-          clause.syntaxError = true;
-          if (clause.must != 0) {
-            clause.val="\\"+clause.must;
-            clause.must = 0;
-            clause.hasSpecialSyntax = true;
-          } else {
-            // uh.. this shouldn't happen.
-            clause=null;
+        clause.val = sb.toString();
+
+        if (clause.isPhrase) {
+          if (inString != 0) {
+            // detected bad quote balancing... retry
+            // parsing with quotes like any other char
+            ignoreQuote = true;
+            continue splitIntoClauses;
           }
-        }
-      }
-      
-      if (clause != null) {
-        if(disallowUserField) {
-          clause.raw = s.substring(start, pos);
-          // escape colons, except for "match all" query
-          if(!"*:*".equals(clause.raw)) {
-            clause.raw = clause.raw.replaceAll("([^\\\\]):", "$1\\\\:");
-          }
+
+          // special syntax in a string isn't special
+          clause.hasSpecialSyntax = false;
         } else {
-          clause.raw = s.substring(start, pos);
-          // Add default userField boost if no explicit boost exists
-          if(config.userFields.isAllowed(clause.field) && !clause.raw.contains("^")) {
-            Float boost = config.userFields.getBoost(clause.field);
-            if(boost != null)
-              clause.raw += "^" + boost;
+          // an empty clause... must be just a + or - on its own
+          if (clause.val.length() == 0) {
+            clause.syntaxError = true;
+            if (clause.must != 0) {
+              clause.val = "\\" + clause.must;
+              clause.must = 0;
+              clause.hasSpecialSyntax = true;
+            } else {
+              // uh.. this shouldn't happen.
+              clause = null;
+            }
           }
         }
-        lst.add(clause);
+
+        if (clause != null) {
+          if (disallowUserField) {
+            clause.raw = s.substring(start, pos);
+            // escape colons, except for "match all" query
+            if (!"*:*".equals(clause.raw)) {
+              clause.raw = COMPILE.matcher(clause.raw).replaceAll("$1\\\\:");
+            }
+          } else {
+            clause.raw = s.substring(start, pos);
+            // Add default userField boost if no explicit boost exists
+            if (config.userFields.isAllowed(clause.field) && !clause.raw.contains("^")) {
+              Float boost = config.userFields.getBoost(clause.field);
+              if (boost != null) clause.raw += "^" + boost;
+            }
+          }
+          lst.add(clause);
+        }
       }
+
+      return lst;
     }
-    
-    return lst;
   }
   
   /** 
@@ -906,38 +907,41 @@ public class ExtendedDismaxQParser extends QParser {
   }
   
   public static List<String> split(String s, boolean ignoreQuote) {
-    ArrayList<String> lst = new ArrayList<>(4);
-    int pos=0, start=0, end=s.length();
-    char inString=0;
-    char ch=0;
-    while (pos < end) {
-      char prevChar=ch;
-      ch = s.charAt(pos++);
-      if (ch=='\\') {    // skip escaped chars
-        pos++;
-      } else if (inString != 0 && ch==inString) {
-        inString=0;
-      } else if (!ignoreQuote && ch=='"') {
-        // If char is directly preceeded by a number or letter
-        // then don't treat it as the start of a string.
-        if (!Character.isLetterOrDigit(prevChar)) {
-          inString=ch;
+    while (true) {
+      ArrayList<String> lst = new ArrayList<>(4);
+      int pos = 0, start = 0, end = s.length();
+      char inString = 0;
+      char ch = 0;
+      while (pos < end) {
+        char prevChar = ch;
+        ch = s.charAt(pos++);
+        if (ch == '\\') {    // skip escaped chars
+          pos++;
+        } else if (inString != 0 && ch == inString) {
+          inString = 0;
+        } else if (!ignoreQuote && ch == '"') {
+          // If char is directly preceeded by a number or letter
+          // then don't treat it as the start of a string.
+          if (!Character.isLetterOrDigit(prevChar)) {
+            inString = ch;
+          }
+        } else if (Character.isWhitespace(ch) && inString == 0) {
+          lst.add(s.substring(start, pos - 1));
+          start = pos;
         }
-      } else if (Character.isWhitespace(ch) && inString==0) {
-        lst.add(s.substring(start,pos-1));
-        start=pos;
       }
+      if (start < end) {
+        lst.add(s.substring(start, end));
+      }
+
+      if (inString != 0) {
+        // unbalanced quote... ignore them
+        ignoreQuote = true;
+        continue;
+      }
+
+      return lst;
     }
-    if (start < end) {
-      lst.add(s.substring(start,end));
-    }
-    
-    if (inString != 0) {
-      // unbalanced quote... ignore them
-      return split(s, true);
-    }
-    
-    return lst;
   }
   
   enum QType {
@@ -974,7 +978,7 @@ public class ExtendedDismaxQParser extends QParser {
     // used when constructing boosting part of query via sloppy phrases
     boolean exceptions;  //  allow exceptions to be thrown (for example on a missing field)
     
-    private Map<String, Analyzer> nonStopFilterAnalyzerPerField;
+    //private Map<String, Analyzer> nonStopFilterAnalyzerPerField;
     private boolean removeStopFilter;
     String minShouldMatch; // for inner boolean queries produced from a single fieldQuery
     
@@ -999,7 +1003,7 @@ public class ExtendedDismaxQParser extends QParser {
       super(parser, defaultField);
       // Respect the q.op parameter before mm will be applied later
       SolrParams defaultParams = SolrParams.wrapDefaults(parser.getLocalParams(), parser.getParams());
-      QueryParser.Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
+      Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
       setDefaultOperator(defaultOp);
     }
     
@@ -1076,7 +1080,7 @@ public class ExtendedDismaxQParser extends QParser {
 
     @Override
     protected Query getPrefixQuery(String field, String val) throws SyntaxError {
-      if (val.equals("") && field.equals("*")) {
+      if (val.isEmpty() && field.equals("*")) {
         return new MatchAllDocsQuery();
       }
       this.type = QType.PREFIX;
@@ -1093,13 +1097,13 @@ public class ExtendedDismaxQParser extends QParser {
         throws SyntaxError {
       Analyzer actualAnalyzer;
       if (removeStopFilter) {
-        if (nonStopFilterAnalyzerPerField == null) {
-          nonStopFilterAnalyzerPerField = new HashMap<>();
-        }
-        actualAnalyzer = nonStopFilterAnalyzerPerField.get(field);
-        if (actualAnalyzer == null) {
+//        if (nonStopFilterAnalyzerPerField == null) {
+//          nonStopFilterAnalyzerPerField = new HashMap<>();
+//        }
+//        actualAnalyzer = nonStopFilterAnalyzerPerField.get(field);
+ //       if (actualAnalyzer == null) {
           actualAnalyzer = noStopwordFilterAnalyzer(field);
-        }
+ //       }
       } else {
         actualAnalyzer = parser.getReq().getSchema().getFieldType(field).getQueryAnalyzer();
       }
@@ -1263,7 +1267,7 @@ public class ExtendedDismaxQParser extends QParser {
      * Recursively examines the given query list for identical structure in all queries.
      * Boosts on BoostQuery-s are ignored, and the contained queries are instead used as the basis for comparison.
      **/
-    private boolean allSameQueryStructure(List<Query> lst) {
+    private static boolean allSameQueryStructure(List<Query> lst) {
       boolean allSame = true;
       Query firstQuery = lst.get(0);
       if (firstQuery instanceof BoostQuery) {
@@ -1365,7 +1369,7 @@ public class ExtendedDismaxQParser extends QParser {
       if (a == null) return null;
       if (a.fields.size()==0) return null;
       List<Query> lst= new ArrayList<>(4);
-      
+
       for (String f : a.fields.keySet()) {
         this.field = f;
         Query sub = getAliasedQuery();
@@ -1543,9 +1547,9 @@ public class ExtendedDismaxQParser extends QParser {
         userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
       Collections.sort(dynUserFields);
-      dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
+      dynamicUserFields = dynUserFields.toArray(new DynamicField[0]);
       Collections.sort(negDynUserFields);
-      negativeDynamicUserFields = negDynUserFields.toArray(new DynamicField[negDynUserFields.size()]);
+      negativeDynamicUserFields = negDynUserFields.toArray(new DynamicField[0]);
     }
     
     /**
@@ -1693,7 +1697,7 @@ public class ExtendedDismaxQParser extends QParser {
       solrParams = SolrParams.wrapDefaults(localParams, params);
       schema = req.getSchema();
       minShouldMatch = DisMaxQParser.parseMinShouldMatch(schema, solrParams); // req.getSearcher() here causes searcher refcount imbalance
-      userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
+      userFields = new UserFields(SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DMP.UF)));
       try {
         queryFields = DisMaxQParser.parseQueryFields(schema, solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {
@@ -1705,9 +1709,9 @@ public class ExtendedDismaxQParser extends QParser {
       pslop[2] = solrParams.getInt(DisMaxParams.PS2, pslop[0]);
       pslop[3] = solrParams.getInt(DisMaxParams.PS3, pslop[0]);
       
-      List<FieldParams> phraseFields = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF),0,pslop[0]);
-      List<FieldParams> phraseFields2 = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF2),2,pslop[2]);
-      List<FieldParams> phraseFields3 = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF3),3,pslop[3]);
+      List<FieldParams> phraseFields = SolrPluginUtils.parseFieldBoostsAndSlop(solrParams.getParams(DisMaxParams.PF), 0, pslop[0]);
+      List<FieldParams> phraseFields2 = SolrPluginUtils.parseFieldBoostsAndSlop(solrParams.getParams(DisMaxParams.PF2), 2, pslop[2]);
+      List<FieldParams> phraseFields3 = SolrPluginUtils.parseFieldBoostsAndSlop(solrParams.getParams(DisMaxParams.PF3), 3, pslop[3]);
       
       allPhraseFields = new ArrayList<>(phraseFields.size() + phraseFields2.size() + phraseFields3.size());
       allPhraseFields.addAll(phraseFields);
@@ -1720,7 +1724,7 @@ public class ExtendedDismaxQParser extends QParser {
       
       stopwords = solrParams.getBool(DMP.STOPWORDS, true);
 
-      mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
+      mmAutoRelax = solrParams.getBool(DisMaxParams.MM_AUTORELAX, false);
       
       altQ = solrParams.get( DisMaxParams.ALTQ );
 
@@ -1733,7 +1737,7 @@ public class ExtendedDismaxQParser extends QParser {
       
       multBoosts = solrParams.getParams(DMP.MULT_BOOST);
 
-      splitOnWhitespace = solrParams.getBool(QueryParsing.SPLIT_ON_WHITESPACE, SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE);
+      splitOnWhitespace = solrParams.getBool(QueryParsing.SPLIT_ON_WHITESPACE, QueryParser.DEFAULT_SPLIT_ON_WHITESPACE);
     }
     /**
      * 

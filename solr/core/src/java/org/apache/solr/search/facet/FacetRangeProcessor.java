@@ -296,7 +296,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Expected Map for range but got " + obj.getClass().getSimpleName() + " = " + obj);
       }
-      @SuppressWarnings({"unchecked"})
       Range range;
       @SuppressWarnings({"unchecked"})
       Map<String, Object> interval = (Map<String, Object>) obj;
@@ -310,7 +309,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     return ranges;
   }
 
-  private boolean getBoolean(Map<String,Object> args, String paramName, boolean defVal) {
+  private static boolean getBoolean(Map<String,Object> args, String paramName, boolean defVal) {
     Object o = args.get(paramName);
     if (o == null) {
       return defVal;
@@ -325,7 +324,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     return (Boolean)o;
   }
 
-  private String getString(Map<String,Object> args, String paramName, boolean required) {
+  private static String getString(Map<String,Object> args, String paramName, boolean required) {
     Object o = args.get(paramName);
     if (o == null) {
       if (required) {
@@ -452,7 +451,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   /* Fill in sb with a string from i to the first unescaped comma, or n.
       Return the index past the unescaped comma, or n if no unescaped comma exists */
-  private int unescape(String s, int i, int n, StringBuilder sb) throws SyntaxError {
+  private static int unescape(String s, int i, int n, StringBuilder sb) throws SyntaxError {
     for (; i < n; ++i) {
       char c = s.charAt(i);
       if (c == '\\') {

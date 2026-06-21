@@ -66,7 +66,7 @@ public class MockSearchableSolrClient extends SolrClient {
       if (docList != null) {
         docList.forEach(doc -> {
           String id = (String) doc.getFieldValue("id");
-          Objects.requireNonNull(id, doc.toString());
+          Objects.requireNonNull(id, doc::toString);
           docs.computeIfAbsent(collection, c -> new LinkedHashMap<>()).put(id, doc);
           numUpdates.incrementAndGet();
         });

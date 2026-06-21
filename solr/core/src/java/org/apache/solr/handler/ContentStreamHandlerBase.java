@@ -24,12 +24,17 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * Shares common code between various handlers that manipulate 
  * {@link org.apache.solr.common.util.ContentStream} objects.
  */
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
@@ -51,8 +56,11 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     UpdateRequestProcessorChain processorChain =
         req.getCore().getUpdateProcessorChain(params);
 
-    UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
+    if (log.isTraceEnabled()) {
+      log.trace("update chain {}", processorChain);
+    }
 
+    UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
     try {
       ContentStreamLoader documentLoader = newLoader(req, processor);
 

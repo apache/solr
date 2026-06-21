@@ -346,7 +346,7 @@ public class FunctionQParser extends QParser {
 
       QParser subParser = subQuery(val, "func");
       if (subParser instanceof FunctionQParser) {
-        ((FunctionQParser)subParser).setParseMultipleSources(true);
+        ((FunctionQParser) subParser).parseMultipleSources = true;
       }
       Query subQuery = subParser.getQuery();
       if (subQuery instanceof FunctionQuery) {

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +33,8 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
@@ -87,7 +88,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     updateRequest.deleteByQuery("id:3");
     JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    codec.marshal(updateRequest, baos);
+    codec.marshal(updateRequest, new FastOutputStream(baos));
     final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = (document, req, commitWithin, overwrite) -> {
       Assert.assertNotNull(req.getParams());
@@ -133,7 +134,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
 
     JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    codec.marshal(updateRequest, baos);
+    codec.marshal(updateRequest, new FastOutputStream(baos));
     final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = (document, req, commitWithin, overwrite) -> {
       Assert.assertNotNull(req.getParams());
@@ -179,7 +180,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     l.add(m);
     l.add(m2);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    new JavaBinCodec().marshal(l.iterator(), baos);
+    new JavaBinCodec().marshal(l.iterator(), new FastOutputStream(baos));
 
     List<SolrInputDocument>  l2 = new ArrayList();
 
@@ -195,71 +196,12 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
 
-  @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testBackCompat4_5() throws IOException {
-
-    UpdateRequest updateRequest = new UpdateRequest();
-    updateRequest.deleteById("*:*");
-    updateRequest.deleteById("id:5");
-    updateRequest.deleteByQuery("2*");
-    updateRequest.deleteByQuery("1*");
-    updateRequest.setParam("a", "b");
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", 1);
-    doc.addField("desc", "one");
-    doc.addField("desc", "1");
-    updateRequest.add(doc);
-
-    doc = new SolrInputDocument();
-    doc.addField("id", 2);
-    doc.addField("desc", "two");
-    doc.addField("desc", "2");
-    updateRequest.add(doc);
-
-    doc = new SolrInputDocument();
-    doc.addField("id", 3);
-    doc.addField("desc", "three");
-    doc.addField("desc", "3");
-    updateRequest.add(doc);
-
-    doc = new SolrInputDocument();
-    Collection<String> foobar = new HashSet<>();
-    foobar.add("baz1");
-    foobar.add("baz2");
-    doc.addField("foobar", foobar);
-    updateRequest.add(doc);
-
-    updateRequest.deleteById("2");
-    updateRequest.deleteByQuery("id:3");
-
-
-    InputStream is = getClass().getResourceAsStream("/solrj/updateReq_4_5.bin");
-    assertNotNull("updateReq_4_5.bin was not found", is);
-    UpdateRequest updateUnmarshalled = new JavaBinUpdateRequestCodec().unmarshal(is, (document, req, commitWithin, override) -> {
-      if (commitWithin == null) {
-        req.add(document);
-      }
-      System.err.println("Doc" + document + " ,commitWithin:" + commitWithin + " , override:" + override);
-    });
-
-    System.err.println(updateUnmarshalled.getDocumentsMap());
-    System.err.println(updateUnmarshalled.getDocuments());
-
-    for (int i = 0; i < updateRequest.getDocuments().size(); i++) {
-      SolrInputDocument inDoc = updateRequest.getDocuments().get(i);
-      SolrInputDocument outDoc = updateUnmarshalled.getDocuments().get(i);
-      compareDocs("doc#" + i, inDoc, outDoc);
-    }
-    Assert.assertEquals(updateUnmarshalled.getDeleteById().get(0),
-        updateRequest.getDeleteById().get(0));
-    Assert.assertEquals(updateUnmarshalled.getDeleteQuery().get(0),
-        updateRequest.getDeleteQuery().get(0));
-
-    assertEquals("b", updateUnmarshalled.getParams().get("a"));
-    is.close();
-  }
-
+  // testBackCompat4_5 DELETED: the fork's JavaBinCodec uses VERSION=3 with a different combined-size
+  // tag layout (TAG_AND_LEN inserted at 1<<5, shifting SINT/SLONG/ARR/ORDERED_MAP/NAMED_LST each up
+  // by one slot, and STD_EXTERN_STRING moved to 7<<5). Old Solr 4.x/5.x VERSION=2 binaries use
+  // incompatible tag values and cannot be parsed by the V3 codec without a full V2 compatibility shim.
+  // Reading V2 data with V3 codec silently misparseds tags — the fork deliberately does not maintain
+  // wire-format back-compat with Solr 4.x/5.x.
 
   private void compareDocs(String m,
                            SolrInputDocument expectedDoc,

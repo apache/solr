@@ -19,7 +19,9 @@ package org.apache.solr.client.solrj.response;
 
 
 import java.util.Collections;
+import java.util.Map;
 
+import org.agrona.collections.Object2ObjectHashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.common.util.NamedList;

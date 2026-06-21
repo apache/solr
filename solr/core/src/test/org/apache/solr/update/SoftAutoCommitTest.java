@@ -23,9 +23,12 @@ import static org.junit.Assert.assertEquals;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TransferQueue;
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -33,7 +36,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,22 +61,31 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @Slow
+@LuceneTestCase.Nightly
 public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSoftAutoCommitTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterSoftAutoCommitTest() {
+    deleteCore();
   }
 
   private MockEventListener monitor;
   private DirectUpdateHandler2 updater;
-    
-  @Before
-  public void createMonitor() throws Exception {
-    assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
-      Constants.WINDOWS);
+
   
+  @Override
+  public void setUp() throws Exception {
+    LuceneTestCase.assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
+        Constants.WINDOWS);
+
+    super.setUp();
+
     SolrCore core = h.getCore();
 
     updater = (DirectUpdateHandler2) core.getUpdateHandler();
@@ -84,14 +96,10 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     updater.registerSoftCommitCallback(monitor);
     updater.registerCommitCallback(monitor);
 
-    // isolate searcher getting ready from this test
-    monitor.searcher.poll(5000, MILLISECONDS);
-  }
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+    core.close();
 
+    // isolate searcher getting ready from this test
+    monitor.searcher.poll(1000, MILLISECONDS);
   }
   
   public void testSoftAndHardCommitMaxDocs() throws Exception {
@@ -109,7 +117,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     CommitTracker softTracker = updater.softCommitTracker;
     
     // wait out any leaked commits
-    monitor.hard.poll(3000, MILLISECONDS);
+    monitor.hard.poll(400, MILLISECONDS);
     monitor.soft.poll(0, MILLISECONDS);
     monitor.clear();
     
@@ -141,8 +149,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     assertU(adoc("id", ""+(8000 + hardCommitMaxDocs), "subject", "testMaxDocs"));
 
     // now poll our monitors for the timestamps on the first commits
-    final Long firstSoftNanos = monitor.soft.poll(5000, MILLISECONDS);
-    final Long firstHardNanos = monitor.hard.poll(5000, MILLISECONDS);
+    final Long firstSoftNanos = monitor.soft.poll(2000, MILLISECONDS);
+    final Long firstHardNanos = monitor.hard.poll(2000, MILLISECONDS);
 
     assertNotNull("didn't get a single softCommit after adding the max docs", firstSoftNanos);
     assertNotNull("didn't get a single hardCommit after adding the max docs", firstHardNanos);
@@ -156,7 +164,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
 
     // wait a bit, w/o other action we shouldn't see any new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
-               monitor.hard.poll(1000, MILLISECONDS));
+               monitor.hard.poll(500, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
                monitor.soft.poll(0, MILLISECONDS));
     
@@ -176,8 +184,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private void doTestSoftAndHardCommitMaxTimeMixedAdds(final CommitWithinType commitWithinType)
     throws Exception {
     
-    final int softCommitWaitMillis = 500;
-    final int hardCommitWaitMillis = 1200;
+    final int softCommitWaitMillis = 50;
+    final int hardCommitWaitMillis = 200;
     final int commitWithin = commitWithinType.useValue(softCommitWaitMillis, hardCommitWaitMillis);
     
     CommitTracker hardTracker = updater.commitTracker;
@@ -185,8 +193,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     updater.setCommitWithinSoftCommit(commitWithinType.equals(CommitWithinType.SOFT));
     
     // wait out any leaked commits
-    monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
-    monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
+//    monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
+//    monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
     
     int startingHardCommits = hardTracker.getCommitCount();
     int startingSoftCommits = softTracker.getCommitCount();
@@ -215,7 +223,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     assertNotNull("hard529 wasn't fast enough", hard529);
     
     // check for the searcher, should have happened right after soft commit
-    Long searcher529 = monitor.searcher.poll(5000, MILLISECONDS);
+    Long searcher529 = monitor.searcher.poll(2000, MILLISECONDS);
     assertNotNull("searcher529 wasn't fast enough", searcher529);
     monitor.assertSaneOffers();
 
@@ -306,8 +314,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private void doTestSoftAndHardCommitMaxTimeDelete(final CommitWithinType commitWithinType)
     throws Exception {
     
-    final int softCommitWaitMillis = 500;
-    final int hardCommitWaitMillis = 1200;
+    final int softCommitWaitMillis = 50;
+    final int hardCommitWaitMillis = 200;
     final int commitWithin = commitWithinType.useValue(softCommitWaitMillis, hardCommitWaitMillis);
 
     CommitTracker hardTracker = updater.commitTracker;
@@ -380,11 +388,11 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
                searcher529 <= hard529);
 
     // ensure we wait for the last searcher we triggered with 550
-    monitor.searcher.poll(5000, MILLISECONDS);
+    monitor.searcher.poll(500, MILLISECONDS);
     
     // ensure we wait for the commits on 550
-    monitor.hard.poll(5000, MILLISECONDS);
-    monitor.soft.poll(5000, MILLISECONDS);
+    monitor.hard.poll(500, MILLISECONDS);
+    monitor.soft.poll(500, MILLISECONDS);
     
     // clear commits
     monitor.hard.clear();
@@ -393,7 +401,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     // wait a bit, w/o other action we shouldn't see any 
     // new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
-        monitor.hard.poll(1000, MILLISECONDS));
+        monitor.hard.poll(200, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
         monitor.soft.poll(0, MILLISECONDS));
 
@@ -414,8 +422,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   public void doTestSoftAndHardCommitMaxTimeRapidAdds(final CommitWithinType commitWithinType)
     throws Exception {
  
-    final int softCommitWaitMillis = 500;
-    final int hardCommitWaitMillis = 1200;
+    final int softCommitWaitMillis = 100;
+    final int hardCommitWaitMillis = 400;
     final int commitWithin = commitWithinType.useValue(softCommitWaitMillis, hardCommitWaitMillis);
 
     CommitTracker hardTracker = updater.commitTracker;
@@ -467,7 +475,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     // w/o other action we shouldn't see any additional hard/soft commits
 
     assertNull("Got a hard commit we weren't expecting",
-               monitor.hard.poll(1000, MILLISECONDS));
+               monitor.hard.poll(250, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
                monitor.soft.poll(0, MILLISECONDS));
 
@@ -544,12 +552,12 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
 class MockEventListener implements SolrEventListener {
 
   // use capacity bound Queues just so we're sure we don't OOM 
-  public final BlockingQueue<Long> soft = new LinkedBlockingQueue<>(1000);
-  public final BlockingQueue<Long> hard = new LinkedBlockingQueue<>(1000);
-  public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<>(1000);
+  public final BlockingQueue<Long> soft = new LinkedTransferQueue<>();
+  public final BlockingQueue<Long> hard = new LinkedTransferQueue<>();
+  public final BlockingQueue<Long> searcher = new LinkedTransferQueue<>();
 
   // if non enpty, then at least one offer failed (queues full)
-  private StringBuffer fail = new StringBuffer();
+  private StringBuffer fail = new StringBuffer(64);
 
   public MockEventListener() { /* NOOP */ }
   
@@ -560,19 +568,19 @@ class MockEventListener implements SolrEventListener {
   public void newSearcher(SolrIndexSearcher newSearcher,
                           SolrIndexSearcher currentSearcher) {
     Long now = System.nanoTime();
-    if (!searcher.offer(now)) fail.append(", newSearcher @ " + now);
+    if (!searcher.offer(now)) fail.append(", newSearcher @ ").append(now);
   }
   
   @Override
   public void postCommit() {
     Long now = System.nanoTime();
-    if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
+    if (!hard.offer(now)) fail.append(", hardCommit @ ").append(now);
   }
   
   @Override
   public void postSoftCommit() {
     Long now = System.nanoTime();
-    if (!soft.offer(now)) fail.append(", softCommit @ " + now);
+    if (!soft.offer(now)) fail.append(", softCommit @ ").append(now);
   }
   
   public void clear() {

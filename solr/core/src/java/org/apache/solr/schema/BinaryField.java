@@ -43,7 +43,7 @@ public class BinaryField extends FieldType  {
     }
   }
 
-  private String toBase64String(ByteBuffer buf) {
+  private static String toBase64String(ByteBuffer buf) {
     return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());
   }
 

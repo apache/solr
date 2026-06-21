@@ -49,17 +49,19 @@ public class JSONResponseWriter implements QueryResponseWriter {
 
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    final SolrParams params = req.getParams();
-    final String wrapperFunction = params.get(JSONWriter.JSON_WRAPPER_FUNCTION);
-    final String namedListStyle = params.get(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_FLAT).intern();
+    String wrapperFunction = "json.wrf";
+    String namedListStyle = JsonTextWriter.JSON_NL_FLAT;
+    if (req != null) {
+      final SolrParams params = req.getParams();
+      wrapperFunction = params.get(JSONWriter.JSON_WRAPPER_FUNCTION);
+      namedListStyle = params.get(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_FLAT).intern();
+    }
 
     final JSONWriter w;
     if (namedListStyle.equals(JsonTextWriter.JSON_NL_ARROFNTV)) {
-      w = new ArrayOfNameTypeValueJSONWriter(
-          writer, req, rsp, wrapperFunction, namedListStyle, true);
+      w = new ArrayOfNameTypeValueJSONWriter(writer, req, rsp, wrapperFunction, namedListStyle, true);
     } else {
-      w = new JSONWriter(
-          writer, req, rsp, wrapperFunction, namedListStyle);
+      w = new JSONWriter(writer, req, rsp, wrapperFunction, namedListStyle);
     }
 
     try {
@@ -92,7 +94,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
  *      {"name":"bar","type":"str","value":"foo"},
  *      {"name":null,"type":"float","value":3.4}]
  */
-class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
+static class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   protected boolean writeTypeAndValueKey = false;
   private final boolean writeNullName;
 

@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,6 +39,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -50,7 +50,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.BitSetIterator;
@@ -74,6 +73,7 @@ import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +126,7 @@ public class SolrIndexSplitter {
       numPieces =  paths != null ? paths.size() : cores.size();
     } else  {
       numPieces = ranges.size();
-      rangesArr = ranges.toArray(new DocRouter.Range[ranges.size()]);
+      rangesArr = ranges.toArray(new DocRouter.Range[0]);
     }
     routeFieldName = cmd.routeFieldName;
     if (routeFieldName == null) {
@@ -231,7 +231,7 @@ public class SolrIndexSplitter {
     }
 
 
-    Map<IndexReader.CacheKey, FixedBitSet[]> docsToDeleteCache = new ConcurrentHashMap<>();
+    Map<IndexReader.CacheKey, FixedBitSet[]> docsToDeleteCache = new NonBlockingHashMap<>();
 
     // would it be more efficient to write segment-at-a-time to each new index?
     // - need to worry about number of open descriptors
@@ -273,8 +273,8 @@ public class SolrIndexSplitter {
             copiedOk = true;
           } finally {
             if (!copiedOk) {
-              subCore.getDirectoryFactory().doneWithDirectory(splitDir);
-              subCore.getDirectoryFactory().remove(splitDir);
+      //        subCore.getDirectoryFactory().doneWithDirectory(splitDir);
+          //    subCore.getDirectoryFactory().remove(splitDir);
             }
           }
           t.pause();
@@ -290,9 +290,8 @@ public class SolrIndexSplitter {
           String path = paths.get(partitionNumber);
           t = timings.sub("createSubIW");
           t.resume();
-          iw = SolrIndexWriter.create(core, partitionName, path,
-              core.getDirectoryFactory(), true, core.getLatestSchema(),
-              core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
+          iw = SolrIndexWriter.buildIndexWriter(core, partitionName, path, core.getDirectoryFactory(), true, core.getLatestSchema(),
+                  core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), true);
           t.pause();
         }
       }
@@ -343,7 +342,7 @@ public class SolrIndexSplitter {
           }
           if (splitMethod == SplitMethod.LINK) {
             SolrCore subCore = cores.get(partitionNumber);
-            subCore.getDirectoryFactory().release(iw.getDirectory());
+         //   subCore.getDirectoryFactory().release(iw.getDirectory());
           }
         }
       }
@@ -382,7 +381,7 @@ public class SolrIndexSplitter {
             dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
           } finally {
             if (dir != null) {
-              subCore.getDirectoryFactory().release(dir);
+          //    subCore.getDirectoryFactory().release(dir);
             }
           }
           // switch back if necessary and remove the hardlinked dir
@@ -390,11 +389,11 @@ public class SolrIndexSplitter {
           try {
             dir = subCore.getDirectoryFactory().get(hardLinkPath, DirectoryFactory.DirContext.DEFAULT,
                 subCore.getSolrConfig().indexConfig.lockType);
-            subCore.getDirectoryFactory().doneWithDirectory(dir);
-            subCore.getDirectoryFactory().remove(dir);
+        //    subCore.getDirectoryFactory().doneWithDirectory(dir);
+       //     subCore.getDirectoryFactory().remove(dir);
           } finally {
             if (dir != null) {
-              subCore.getDirectoryFactory().release(dir);
+      //        subCore.getDirectoryFactory().release(dir);
             }
           }
           subCore.getUpdateHandler().newIndexWriter(false);
@@ -416,11 +415,11 @@ public class SolrIndexSplitter {
           try {
             indexDir = subCore.getDirectoryFactory().get(oldIndexPath,
                 DirectoryFactory.DirContext.DEFAULT, subCore.getSolrConfig().indexConfig.lockType);
-            subCore.getDirectoryFactory().doneWithDirectory(indexDir);
-            subCore.getDirectoryFactory().remove(indexDir);
+          //  subCore.getDirectoryFactory().doneWithDirectory(indexDir);
+         //   subCore.getDirectoryFactory().remove(indexDir);
           } finally {
             if (indexDir != null) {
-              subCore.getDirectoryFactory().release(indexDir);
+      //        subCore.getDirectoryFactory().release(indexDir);
             }
           }
         }
@@ -429,7 +428,7 @@ public class SolrIndexSplitter {
     }
   }
 
-  private void openNewSearcher(SolrCore core) throws Exception {
+  private static void openNewSearcher(SolrCore core) throws Exception {
     @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = new Future[1];
     core.getSearcher(true, false, waitSearcher, true);

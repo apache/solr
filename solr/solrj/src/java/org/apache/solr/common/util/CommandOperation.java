@@ -27,7 +27,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -40,8 +42,8 @@ import static org.apache.solr.common.util.Utils.toJSON;
 
 public class CommandOperation {
   public final String name;
-  private Object commandData;//this is most often a map
-  private List<String> errors = new ArrayList<>();
+  private volatile Object commandData;//this is most often a map
+  private Set<String> errors = ConcurrentHashMap.newKeySet();
 
   public CommandOperation(String operationName, Object metaData) {
     commandData = metaData;
@@ -93,7 +95,7 @@ public class CommandOperation {
   }
 
   private Object getMapVal(String key) {
-    if ("".equals(key)) {
+    if (key != null && key.isEmpty()) {
       if (commandData instanceof Map) {
         addError("value of the command is an object should be primitive");
       }
@@ -104,7 +106,7 @@ public class CommandOperation {
       return metaData.get(key);
     } else {
       String msg = " value has to be an object for operation :" + name;
-      if (!errors.contains(msg)) errors.add(msg);
+      errors.add(msg);
       return null;
     }
   }
@@ -200,7 +202,7 @@ public class CommandOperation {
   }
 
 
-  public List<String> getErrors() {
+  public Set<String> getErrors() {
     return errors;
   }
 
@@ -228,32 +230,34 @@ public class CommandOperation {
    */
   public static List<CommandOperation> parse(InputStream in, Set<String> singletonCommands) throws IOException {
     List<CommandOperation> operations = new ArrayList<>();
-
-    final HashMap map = new HashMap(0) {
-      @Override
-      public Object put(Object key, Object value) {
-        List vals = null;
-        if (value instanceof List && !singletonCommands.contains(key)) {
-          vals = (List) value;
-        } else {
-          vals = Collections.singletonList(value);
+    try {
+      final HashMap map = new HashMap(0) {
+        @Override public Object put(Object key, Object value) {
+          List vals = null;
+          if (value instanceof List && !singletonCommands.contains(key)) {
+            vals = (List) value;
+          } else {
+            vals = Collections.singletonList(value);
+          }
+          for (Object val : vals) {
+            operations.add(new CommandOperation(String.valueOf(key), val));
+          }
+          return null;
         }
-        for (Object val : vals) {
-          operations.add(new CommandOperation(String.valueOf(key), val));
-        }
-        return null;
-      }
-    };
+      };
 
-    try (final JavaBinCodec jbc = new JavaBinCodec() {
-      int level = 0;
-      @Override
-      protected Map<Object, Object> newMap(int size) {
-        level++;
-        return level == 1 ? map : super.newMap(size);
+      try (final JavaBinCodec jbc = new JavaBinCodec() {
+        int level = 0;
+
+        @Override protected Map<Object,Object> newMap(int size) {
+          level++;
+          return level == 1 ? map : super.newMap(size);
+        }
+      }) {
+        jbc.unmarshal(FastInputStream.wrap(in));
       }
-    }) {
-      jbc.unmarshal(in);
+    } finally {
+      //Utils.readFully(in);
     }
     return operations;
   }
@@ -348,7 +352,7 @@ public class CommandOperation {
     for (ContentStream stream : streams) {
 
       if ("application/javabin".equals(stream.getContentType())) {
-        ops.addAll(parse(stream.getStream(), singletonCommands));
+        ops.addAll(parse(new CloseShieldInputStream(stream.getStream()), singletonCommands));
       } else {
         ops.addAll(parse(stream.getReader(), singletonCommands));
       }

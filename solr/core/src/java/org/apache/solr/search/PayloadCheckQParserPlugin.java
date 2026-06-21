@@ -28,8 +28,8 @@ import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.IntegerEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
+import org.apache.lucene.queries.spans.SpanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -47,63 +47,69 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
 
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() throws SyntaxError {
-        String field = localParams.get(QueryParsing.F);
-        String value = localParams.get(QueryParsing.V);
-        String p = localParams.get("payloads");
+    return new PayLoadQParser(qstr, localParams, params, req);
 
-        if (field == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
-        }
 
-        if (value == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "query string missing");
-        }
+  }
 
-        if (p == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'payloads' not specified");
-        }
+  private static class PayLoadQParser extends QParser {
+    public PayLoadQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
 
-        FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
-        Analyzer analyzer = ft.getQueryAnalyzer();
-        SpanQuery query = null;
-        try {
-          query = PayloadUtils.createSpanQuery(field, value, analyzer);
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
+    @Override
+    public Query parse() throws SyntaxError {
+      String field = localParams.get(QueryParsing.F);
+      String value = localParams.get(QueryParsing.V);
+      String p = localParams.get("payloads");
 
-        if (query == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SpanQuery is null");
-        }
-
-        PayloadEncoder encoder = null;
-        String e = PayloadUtils.getPayloadEncoder(ft);
-        if ("float".equals(e)) {    // TODO: centralize this string->PayloadEncoder logic (see DelimitedPayloadTokenFilterFactory)
-          encoder = new FloatEncoder();
-        } else if ("integer".equals(e)) {
-          encoder = new IntegerEncoder();
-        } else if ("identity".equals(e)) {
-          encoder = new IdentityEncoder();
-        }
-
-        if (encoder == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid encoder: " + e + " for field: " + field);
-        }
-
-        List<BytesRef> payloads = new ArrayList<>();
-        String[] rawPayloads = p.split(" ");  // since payloads (most likely) came in whitespace delimited, just split
-        for (String rawPayload : rawPayloads) {
-          if (rawPayload.length() > 0)
-            payloads.add(encoder.encode(rawPayload.toCharArray()));
-        }
-
-        return new SpanPayloadCheckQuery(query, payloads);
+      if (field == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
       }
-    };
 
+      if (value == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "query string missing");
+      }
 
+      if (p == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'payloads' not specified");
+      }
+
+      FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
+      Analyzer analyzer = ft.getQueryAnalyzer();
+      SpanQuery query = null;
+      try {
+        query = PayloadUtils.createSpanQuery(field, value, analyzer);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+
+      if (query == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SpanQuery is null");
+      }
+
+      PayloadEncoder encoder = null;
+      String e = PayloadUtils.getPayloadEncoder(ft);
+      if ("float".equals(e)) {    // TODO: centralize this string->PayloadEncoder logic (see DelimitedPayloadTokenFilterFactory)
+        encoder = new FloatEncoder();
+      } else if ("integer".equals(e)) {
+        encoder = new IntegerEncoder();
+      } else if ("identity".equals(e)) {
+        encoder = new IdentityEncoder();
+      }
+
+      if (encoder == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid encoder: " + e + " for field: " + field);
+      }
+
+      List<BytesRef> payloads = new ArrayList<>();
+      String[] rawPayloads = p.split(" ");  // since payloads (most likely) came in whitespace delimited, just split
+      for (String rawPayload : rawPayloads) {
+        if (rawPayload.length() > 0)
+          payloads.add(encoder.encode(rawPayload.toCharArray()));
+      }
+
+      return new SpanPayloadCheckQuery(query, payloads);
+    }
   }
 }

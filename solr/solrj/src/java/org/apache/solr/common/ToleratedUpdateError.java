@@ -117,8 +117,7 @@ public final class ToleratedUpdateError {
     
     assert null != id;
     this.id = id;
-    
-    assert null != message;
+
     this.message = message;
   }
 
@@ -147,7 +146,7 @@ public final class ToleratedUpdateError {
    * @see #parseMetadataIfToleratedUpdateError
    */
   public String getMetadataValue() {
-    return message.toString();
+    return message;
   }
   
   /** 
@@ -164,7 +163,7 @@ public final class ToleratedUpdateError {
   }
   
   public String toString() {
-    return getMetadataKey() + "=>" + getMetadataValue();
+    return getMetadataKey() + "=>" + message;
   }
   
   public int hashCode() {

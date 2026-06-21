@@ -19,9 +19,11 @@ package org.apache.solr.handler.component;
 import java.io.File;
 import java.util.*;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -42,12 +44,14 @@ import org.junit.Test;
  */
 @Slow
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   static String rh = "/spellCheckCompRH";
 
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
   }
   
@@ -86,12 +90,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
 
-   expectThrows(Exception.class, () -> {
-     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
-         ,"/spellcheck/suggestions/[1]/numFound==1"
-     );
-   });
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      assertJQ(req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q", "lowerfilt:(this OR brwn)", SpellingParams.SPELLCHECK_COUNT, "5",
+          SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6"), "/spellcheck/suggestions/[1]/numFound==1");
+    });
 
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
@@ -100,12 +102,12 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
 
-    expectThrows(Exception.class, () -> {
-      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
-          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80")
-          ,"/spellcheck/suggestions/[1]/numFound==1"
-      );
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      assertJQ(
+          req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q", "lowerfilt:(this OR brwn)", "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq",
+              "lowerfilt:th*", /* returns 8, most selective */
+              SpellingParams.SPELLCHECK_COUNT, "5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80"),
+          "/spellcheck/suggestions/[1]/numFound==1");
     });
     
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
@@ -115,12 +117,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
 
-    expectThrows(Exception.class, () -> {
-      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*",
-          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64")
-          ,"/spellcheck/suggestions/[1]/numFound==1"
-      );
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      assertJQ(req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q", "lowerfilt:(this OR brwn)", "fq", "id:[0 TO 9]",
+          SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*", SpellingParams.SPELLCHECK_COUNT, "5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "false",
+          SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64"), "/spellcheck/suggestions/[1]/numFound==1");
     });
   } 
   
@@ -272,7 +272,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     for (String name : h.getCore().getSearchComponents().keySet()) {
       components.add(h.getCore().getSearchComponent(name));
     }
-    ResponseBuilder rb = new ResponseBuilder(request, new SolrQueryResponse(), components);
+    ResponseBuilder rb = new ResponseBuilder(request, new SolrQueryResponse(), components, null);
     checker.prepare(rb);
 
     try {
@@ -288,14 +288,30 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     @SuppressWarnings("unchecked")
     @Test
   public void testRebuildOnCommit() throws Exception {
-    SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true");
-    String response = h.query(req);
+    String response = h.query(req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true"));
     assertFalse("No suggestions should be returned", response.contains("lucenejava"));
-    
+
     assertU(adoc("id", "11231", "lowerfilt", "lucenejava"));
     assertU("commit", commit());
-    
-    assertQ(req, "//arr[@name='suggestion'][.='lucenejava']");
+
+    // In this fork, the buildOnCommit spell-index rebuild runs asynchronously on the parallel
+    // newSearcher-listener executor, so it becomes visible shortly after commit() returns rather
+    // than synchronously within the commit. Poll until the freshly added term is suggested.
+    final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(30);
+    while (true) {
+      // Each iteration needs a fresh request object (the searcher backing it changes as the
+      // async rebuild swaps in a new searcher).
+      SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true");
+      try {
+        assertQ(req, "//arr[@name='suggestion'][.='lucenejava']");
+        return; // success
+      } catch (AssertionError | RuntimeException e) {
+        if (System.nanoTime() >= deadline) {
+          throw e;
+        }
+        Thread.sleep(100);
+      }
+    }
   }
     
     @Test

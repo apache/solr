@@ -20,6 +20,8 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
@@ -33,11 +35,13 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache=INFO")
+@LuceneTestCase.Nightly // something oddly slow or something
 public class PackageManagerCLITest extends SolrCloudTestCase {
 
   // Note for those who want to modify the jar files used in the packages used in this test:
@@ -54,11 +58,11 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     System.setProperty("enable.packages", "true");
 
     configureCluster(1)
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-    .addConfig("conf2", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("conf2", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
     .configure();
 
-    repositoryServer = new LocalWebServer(TEST_PATH().resolve("question-answer-repository").toString());
+    repositoryServer = new LocalWebServer(SolrTestUtil.TEST_PATH().resolve("question-answer-repository").toString());
     repositoryServer.start();
   }
 

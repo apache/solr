@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
@@ -72,7 +73,6 @@ public final class CryptoKeys {
    * Try with all signatures and return the name of the signature that matched
    */
   public String verify(String sig, ByteBuffer data) {
-    exception = null;
     for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
       boolean verified;
       try {
@@ -80,7 +80,7 @@ public final class CryptoKeys {
         log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
-        exception = e;
+        ParWork.propagateInterrupt(e);
         log.debug("NOT verified  ");
       }
 
@@ -98,6 +98,7 @@ public final class CryptoKeys {
         log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         exception = e;
         log.debug("NOT verified  ");
       }
@@ -134,7 +135,7 @@ public final class CryptoKeys {
   public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
     data = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
     try {
-      Signature signature = Signature.getInstance("SHA1withRSA");
+      Signature signature = Signature.getInstance("SHA512withRSA");
       signature.initVerify(publicKey);
       signature.update(data);
       return signature.verify(sig);
@@ -148,7 +149,7 @@ public final class CryptoKeys {
   public static boolean verify(PublicKey publicKey, byte[] sig, InputStream is)
       throws InvalidKeyException, SignatureException, IOException {
     try {
-      Signature signature = Signature.getInstance("SHA1withRSA");
+      Signature signature = Signature.getInstance("SHA512withRSA");
       signature.initVerify(publicKey);
       byte[] buf = new byte[1024];
       while (true) {
@@ -241,6 +242,7 @@ public final class CryptoKeys {
       try {
         return decodeAES(base64CipherTxt, pwd, strength);
       } catch (Exception exp) {
+        ParWork.propagateInterrupt(e);
         e = exp;
       }
     }
@@ -269,7 +271,7 @@ public final class CryptoKeys {
 
       // --- specify cipher and digest for evpBytesTokey method ---
 
-      Cipher aesCBC = Cipher.getInstance("AES/CBC/PKCS5Padding");
+      Cipher aesCBC = Cipher.getInstance("AES/GCM/NoPadding");
       MessageDigest md5 = MessageDigest.getInstance("MD5");
 
       // --- create key and IV  ---
@@ -310,6 +312,7 @@ public final class CryptoKeys {
       X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Base64.base64ToByteArray(pubKey));
       return keyFactory.generatePublic(publicKeySpec);
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
     }
   }
@@ -319,6 +322,7 @@ public final class CryptoKeys {
     try {
       rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
     }
     rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
@@ -345,7 +349,7 @@ public final class CryptoKeys {
       } catch (NoSuchAlgorithmException e) {
         throw new AssertionError("JVM spec is required to support RSA", e);
       }
-      keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
+      keyGen.initialize(Integer.getInteger("solr.keypair.keypair_length", DEFAULT_KEYPAIR_LENGTH));
       java.security.KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
       publicKey = keyPair.getPublic();
@@ -394,13 +398,14 @@ public final class CryptoKeys {
         rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
         return rsaCipher.doFinal(buffer.array(),buffer.position(), buffer.limit());
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
       }
     }
     public byte[] signSha256(byte[] bytes) throws InvalidKeyException, SignatureException {
       Signature dsa = null;
       try {
-        dsa = Signature.getInstance("SHA256withRSA");
+        dsa = Signature.getInstance("SHA512withRSA");
       } catch (NoSuchAlgorithmException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }

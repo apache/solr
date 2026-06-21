@@ -24,7 +24,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -36,8 +39,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,18 +59,18 @@ public class ExecutorStream extends TupleStream implements Expressible {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private TupleStream stream;
+  private final TupleStream stream;
 
-  private int threads;
+  private final int threads;
 
-  private ExecutorService executorService;
-  private StreamFactory streamFactory;
-  private StreamContext streamContext;
+  private volatile ExecutorService executorService;
+  private final  StreamFactory streamFactory;
+  private volatile StreamContext streamContext;
 
   public ExecutorStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter threadsParam = factory.getNamedOperand(expression, "threads");
+    StreamExpressionNamedParameter threadsParam = StreamFactory.getNamedOperand(expression, "threads");
 
     int threads = 6;
 
@@ -81,12 +83,8 @@ public class ExecutorStream extends TupleStream implements Expressible {
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
-    init(stream, threads, factory);
-  }
-
-  private void init(TupleStream tupleStream, int threads, StreamFactory factory) throws IOException{
     this.threads = threads;
-    this.stream = tupleStream;
+    this.stream = stream;
     this.streamFactory = factory;
   }
 
@@ -138,22 +136,27 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    executorService = ExecutorUtil.newMDCAwareFixedThreadPool(threads, new SolrNamedThreadFactory("ExecutorStream"));
+    executorService = Executors.newFixedThreadPool(threads, new SolrNamedThreadFactory("ExecutorStream", true));
     stream.open();
   }
 
   public void close() throws IOException {
-    stream.close();
+    // We own this executor (created in open()), so shut it down and wait for the submitted
+    // StreamTasks to finish. The previous implementation borrowed the shared root executor and
+    // called awaitTermination on it: a shared executor is never shut down, so awaitTermination
+    // always blocked for the full timeout, stalling the executor() stream for 30s after the work
+    // had already completed and tripping the client's HTTP/2 idle_timeout.
     executorService.shutdown();
     try {
-      executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-    } catch(InterruptedException e) {
-      log.error("Interrupted while waiting for termination", e);
+      executorService.awaitTermination(30, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
     }
+    stream.close();
   }
 
   public Tuple read() throws IOException {
-    ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue(10000);
+    ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue<>(10000);
     while(true) {
       Tuple tuple = stream.read();
       if (!tuple.EOF) {
@@ -197,6 +200,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
       try {
         tuple = queue.take();
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
 
@@ -215,11 +219,13 @@ public class ExecutorStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         log.error("Executor Error: id={} expr_s={}", id, expr, e);
       } finally {
         try {
           stream.close();
         } catch (Exception e1) {
+          ParWork.propagateInterrupt(e1);
           log.error("Executor Error", e1);
         }
       }

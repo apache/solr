@@ -16,12 +16,14 @@
  */
 package org.apache.solr.update.processor;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.util.Date;
@@ -37,8 +39,13 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
   public static final String SCHEMA_XML = "schema15.xml";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeDocExpirationUpdateProcessorFactoryTest() throws Exception {
     initCore(CONFIG_XML, SCHEMA_XML);
+  }
+
+  @AfterClass
+  public static void afterDocExpirationUpdateProcessorFactoryTest() throws Exception {
+    deleteCore();
   }
 
   public void testTTLDefaultsConversion() throws Exception {
@@ -156,6 +163,7 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
 
   }
 
+  @LuceneTestCase.Nightly
   public void testAutomaticDeletes() throws Exception {
 
     // get a handle on our recorder
@@ -179,7 +187,7 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
       recorder.startRecording();
       
       // more then one iter to verify it's recurring
-      final int numItersToCheck = 1 + RANDOM_MULTIPLIER;
+      final int numItersToCheck = 1 + LuceneTestCase.RANDOM_MULTIPLIER;
       
       for (int i = 0; i < numItersToCheck; i++) { 
         UpdateCommand tmp;

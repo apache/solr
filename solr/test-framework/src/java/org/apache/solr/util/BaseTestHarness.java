@@ -15,54 +15,43 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+
+import net.sf.saxon.event.PipelineConfiguration;
+import net.sf.saxon.lib.ParseOptions;
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.trans.XPathException;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XML;
+import org.apache.solr.core.SolrResourceLoader;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XML;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
 abstract public class BaseTestHarness {
-  private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
-  private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<>();
 
-  public static DocumentBuilder getXmlDocumentBuilder() {
-    try {
-      DocumentBuilder builder = builderTL.get();
-      if (builder == null) {
-        builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        builderTL.set(builder);
-      }
-      return builder;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
+  protected final SolrResourceLoader loader;
 
   public static XPath getXpath() {
-    try {
-      XPath xpath = xpathTL.get();
-      if (xpath == null) {
-        xpath = XPathFactory.newInstance().newXPath();
-        xpathTL.set(xpath);
-      }
-      return xpath;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return SolrResourceLoader.getXPath();
   }
 
+  public BaseTestHarness(SolrResourceLoader loader) {
+    this.loader = loader;
+  }
+
+  public static String validateXPath(SolrResourceLoader loader, String xml, String... tests) throws XPathExpressionException, SAXException {
+    return validateXPathWithEntities(loader, xml, tests);
+  }
 
   /**
    * A helper method which validates a String against an array of XPath test
@@ -72,24 +61,16 @@ abstract public class BaseTestHarness {
    * @param tests Array of XPath strings to test (in boolean mode) on the xml
    * @return null if all good, otherwise the first test that fails.
    */
-  public static String validateXPath(String xml, String... tests)
-      throws XPathExpressionException, SAXException {
+  public static String validateXPathWithEntities(SolrResourceLoader loader, String xml, String... tests)
+      throws XPathExpressionException {
 
     if (tests==null || tests.length == 0) return null;
 
-    Document document = null;
-    try {
-      document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
-          (xml.getBytes(StandardCharsets.UTF_8)));
-    } catch (UnsupportedEncodingException e1) {
-      throw new RuntimeException("Totally weird UTF-8 exception", e1);
-    } catch (IOException e2) {
-      throw new RuntimeException("Totally weird io exception", e2);
-    }
+    TinyDocumentImpl docTree = getTinyDocument(xml, loader);
 
     for (String xp : tests) {
       xp=xp.trim();
-      Boolean bool = (Boolean) getXpath().evaluate(xp, document, XPathConstants.BOOLEAN);
+      Boolean bool = (Boolean) SolrResourceLoader.getXPath().evaluate(xp, docTree, XPathConstants.BOOLEAN);
 
       if (!bool) {
         return xp;
@@ -98,22 +79,45 @@ abstract public class BaseTestHarness {
     return null;
   }
 
-  public static Object evaluateXPath(String xml, String xpath, QName returnType)
+  public static TinyDocumentImpl getTinyDocument(String xml, SolrResourceLoader resourceLoader) {
+    TinyDocumentImpl docTree = null;
+    PipelineConfiguration plc = SolrResourceLoader.getConf().makePipelineConfiguration();
+
+ //   SolrTinyBuilder builder = new SolrTinyBuilder(plc, new Properties());
+    try {
+  //    builder.open();
+      SAXSource source = new SAXSource(new InputSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+      //source.setXMLReader(resourceLoader.getXmlReader());
+      //  source.getInputSource().setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+      ParseOptions po = plc.getParseOptions();
+      //po.setEntityResolver(resourceLoader.getSysIdResolver());
+      // Set via conf already
+
+      po.setPleaseCloseAfterUse(true);
+     // Sender.send(source, builder, po);
+      NodeInfo saxTreeInfo = SolrResourceLoader.conf.buildDocumentTree(source, po).getRootNode();
+      docTree = (TinyDocumentImpl) saxTreeInfo.getTreeInfo().getRootNode();//(TinyDocumentImpl) builder.getCurrentRoot();
+    } catch (XPathException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+//      try {
+//        builder.close();
+//        builder.reset();
+//      } catch (XPathException e) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//      }
+    }
+    return docTree;
+  }
+
+  public static Object evaluateXPath(SolrResourceLoader loader, String xml, String xpath, QName returnType)
     throws XPathExpressionException, SAXException {
     if (null == xpath) return null;
 
-    Document document = null;
-    try {
-      document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
-          (xml.getBytes(StandardCharsets.UTF_8)));
-    } catch (UnsupportedEncodingException e1) {
-      throw new RuntimeException("Totally weird UTF-8 exception", e1);
-    } catch (IOException e2) {
-      throw new RuntimeException("Totally weird io exception", e2);
-    }
+    TinyDocumentImpl docTree = getTinyDocument(xml, loader);
 
     xpath = xpath.trim();
-    return getXpath().evaluate(xpath.trim(), document, returnType);
+    return SolrResourceLoader.getXPath().evaluate(xpath, docTree, returnType);
   }
 
   /**
@@ -125,7 +129,7 @@ abstract public class BaseTestHarness {
   public static String makeSimpleDoc(String... fieldsAndValues) {
 
     try {
-      StringWriter w = new StringWriter();
+      StringWriter w = new StringWriter(32);
       w.append("<doc>");
       for (int i = 0; i < fieldsAndValues.length; i+=2) {
         XML.writeXML(w, "field", fieldsAndValues[i + 1], "name",
@@ -146,7 +150,7 @@ abstract public class BaseTestHarness {
    */
   public static String deleteByQuery(String q, String... args) {
     try {
-      StringWriter r = new StringWriter();
+      StringWriter r = new StringWriter(64);
       XML.writeXML(r, "query", q);
       return delete(r.getBuffer().toString(), args);
     } catch(IOException e) {
@@ -272,7 +276,7 @@ abstract public class BaseTestHarness {
   public String checkUpdateStatus(String xml, String code) throws SAXException {
     try {
       String res = update(xml);
-      String valid = validateXPath(res, "//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(loader, res,"//int[@name='status']="+code );
       return (null == valid) ? null : res;
     } catch (XPathExpressionException e) {
       throw new RuntimeException

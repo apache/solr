@@ -53,46 +53,49 @@ public abstract class RecursiveTemporalEvaluator extends RecursiveEvaluator impl
   protected abstract Object getDatePart(TemporalAccessor value);
     
   public Object normalizeInputType(Object value) throws StreamEvaluatorException {
-    if(null == value){
-      return value;
-    }
-    
-    // There is potential for various types to be coming in which are valid temporal values.
-    // The order in which we check these types is actually somewhat critical in how we handle them.
-    
-    if(value instanceof Instant){
-      // Convert to LocalDateTime at UTC
-      return LocalDateTime.ofInstant((Instant)value, ZoneOffset.UTC);
-    }
-    else if(value instanceof TemporalAccessor){
-      // Any other TemporalAccessor can just be returned
-      return value;
-    }
-    else if(value instanceof Long){
-      // Convert to Instant and recurse in
-      return normalizeInputType(Instant.ofEpochMilli((Long)value));
-    }
-    else if(value instanceof Date){
-      // Convert to Instant and recurse in
-      return normalizeInputType(((Date)value).toInstant());
-    }
-    else if(value instanceof String){
-      String valueStr = (String)value;      
-      if (!valueStr.isEmpty()) {
-        try {
-          // Convert to Instant and recurse in
-          return normalizeInputType(Instant.parse(valueStr));
-        } catch (DateTimeParseException e) {
-          throw new UncheckedIOException(new IOException(String.format(Locale.ROOT, "Invalid parameter %s - The String must be formatted in the ISO_INSTANT date format.", valueStr)));
-        }
+    while (true) {
+      if (null == value) {
+        return value;
       }
-    }
-    else if(value instanceof List){
-      // for each list value, recurse in
-      return ((List<?>)value).stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
-    }
 
-    throw new UncheckedIOException(new IOException(String.format(Locale.ROOT, "Invalid parameter %s - The parameter must be a string formatted ISO_INSTANT or of type Long,Instant,Date,LocalDateTime or TemporalAccessor.", String.valueOf(value))));
+      // There is potential for various types to be coming in which are valid temporal values.
+      // The order in which we check these types is actually somewhat critical in how we handle them.
+
+      if (value instanceof Instant) {
+        // Convert to LocalDateTime at UTC
+        return LocalDateTime.ofInstant((Instant) value, ZoneOffset.UTC);
+      } else if (value instanceof TemporalAccessor) {
+        // Any other TemporalAccessor can just be returned
+        return value;
+      } else if (value instanceof Long) {
+        // Convert to Instant and recurse in
+        value = Instant.ofEpochMilli((Long) value);
+        continue;
+      } else if (value instanceof Date) {
+        // Convert to Instant and recurse in
+        value = ((Date) value).toInstant();
+        continue;
+      } else if (value instanceof String) {
+        String valueStr = (String) value;
+        if (!valueStr.isEmpty()) {
+          try {
+            // Convert to Instant and recurse in
+            value = Instant.parse(valueStr);
+            continue;
+          } catch (DateTimeParseException e) {
+            throw new UncheckedIOException(
+                new IOException(String.format(Locale.ROOT, "Invalid parameter %s - The String must be formatted in the ISO_INSTANT date format.", valueStr)));
+          }
+        }
+      } else if (value instanceof List) {
+        // for each list value, recurse in
+        return ((List<?>) value).stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
+      }
+
+      throw new UncheckedIOException(new IOException(String.format(Locale.ROOT,
+          "Invalid parameter %s - The parameter must be a string formatted ISO_INSTANT or of type Long,Instant,Date,LocalDateTime or TemporalAccessor.",
+          String.valueOf(value))));
+    }
   }
   
   public Object doWork(Object value) {
@@ -107,7 +110,8 @@ public abstract class RecursiveTemporalEvaluator extends RecursiveEvaluator impl
       try {
         return getDatePart((TemporalAccessor)value);
       } catch (UnsupportedTemporalTypeException utte) {
-        throw new UncheckedIOException(new IOException(String.format(Locale.ROOT, "It is not possible to call '%s' function on %s", getFunction(), value.getClass().getName())));
+        throw new UncheckedIOException(new IOException(String.format(Locale.ROOT, "It is not possible to call '%s' function on %s",
+            functionName, value.getClass().getName())));
       }
     }
   }

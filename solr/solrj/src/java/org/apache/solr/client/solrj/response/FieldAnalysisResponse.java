@@ -34,22 +34,20 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
   private Map<String, Analysis> analysisByFieldTypeName = new HashMap<>();
   private Map<String, Analysis> analysisByFieldName = new HashMap<>();
 
-  @Override
-  public void setResponse(NamedList<Object> response) {
-    super.setResponse(response);
-
+  public FieldAnalysisResponse(NamedList response) {
+    super(response);
     @SuppressWarnings("unchecked")
     NamedList<NamedList<NamedList<NamedList<Object>>>> analysisNL
-      = (NamedList<NamedList<NamedList<NamedList<Object>>>>) response.get("analysis");
+        = (NamedList<NamedList<NamedList<NamedList<Object>>>>) response.get("analysis");
 
     for (Map.Entry<String, NamedList<NamedList<Object>>> entry
-           : analysisNL.get("field_types")) {
+        : analysisNL.get("field_types")) {
 
       analysisByFieldTypeName.put(entry.getKey(), buildAnalysis(entry.getValue()));
     }
 
     for (Map.Entry<String, NamedList<NamedList<Object>>> entry
-           : analysisNL.get("field_names")) {
+        : analysisNL.get("field_names")) {
 
       analysisByFieldName.put(entry.getKey(), buildAnalysis(entry.getValue()));
     }

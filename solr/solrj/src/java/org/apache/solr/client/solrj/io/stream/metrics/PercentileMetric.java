@@ -37,8 +37,8 @@ public class PercentileMetric extends Metric {
   public PercentileMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
-    String columnName = factory.getValueOperand(expression, 0);
-    int percentile = Integer.parseInt(factory.getValueOperand(expression, 1));
+    String columnName = StreamFactory.getValueOperand(expression, 0);
+    int percentile = Integer.parseInt(StreamFactory.getValueOperand(expression, 1));
 
     // validate expression contains only what we want.
     if(null == columnName){

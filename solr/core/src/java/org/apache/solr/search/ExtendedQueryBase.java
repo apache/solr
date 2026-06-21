@@ -58,7 +58,7 @@ public abstract class ExtendedQueryBase extends Query implements ExtendedQuery {
   }
 
   public static String getOptionsString(ExtendedQuery q) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     if (!q.getCache()) {
       sb.append("{!cache=false");
       int cost = q.getCost();

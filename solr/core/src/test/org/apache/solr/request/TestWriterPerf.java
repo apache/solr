@@ -24,15 +24,21 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
+import org.junit.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +49,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useFactory(null);
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig-functionquery.xml", "schema11.xml");
@@ -95,9 +102,13 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
   /** make sure to close req after you are done using the response */
   public SolrQueryResponse getResponse(SolrQueryRequest req) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
-    h.getCore().execute(h.getCore().getRequestHandler(null),req,rsp);
+    req.getCore().execute(req.getCore().getRequestHandler(null),req,rsp);
     if (rsp.getException() != null) {
-      throw rsp.getException();
+      Throwable e = rsp.getException();
+      if (e instanceof Exception) {
+        throw (Exception) e;
+      }
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
     }
     return rsp;
   }
@@ -105,36 +116,44 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
 
   void doPerf(String writerName, SolrQueryRequest req, int encIter, int decIter) throws Exception {
     SolrQueryResponse rsp = getResponse(req);
-    QueryResponseWriter w = h.getCore().getQueryResponseWriter(writerName);
+    QueryResponseWriter w = req.getCore().getQueryResponseWriter(writerName);
 
+    ByteArrayOutputStream out = null;
+    // Fork: BinaryResponseWriter requires ExpandableDirectBufferOutputStream (Agrona-backed).
+    MutableDirectBuffer agronaBuf = null;
+    ExpandableDirectBufferOutputStream agronaOut = null;
 
-    ByteArrayOutputStream out=null;
-
-    System.gc();
     RTimer timer = new RTimer();
-    for (int i=0; i<encIter; i++) {
-    if (w instanceof BinaryQueryResponseWriter) {
-      BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) w;
-      out = new ByteArrayOutputStream();
-      binWriter.write(out, req, rsp);
-      out.close();
-    } else {
-      out = new ByteArrayOutputStream();
-      // to be fair, from my previous tests, much of the performance will be sucked up
-      // by java's UTF-8 encoding/decoding, not the actual writing
-      Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-      w.write(writer, req, rsp);
-      writer.close();
-    }
+    for (int i = 0; i < encIter; i++) {
+      if (w instanceof BinaryQueryResponseWriter) {
+        BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) w;
+        agronaBuf = new ExpandableArrayBuffer();
+        agronaOut = new ExpandableDirectBufferOutputStream(agronaBuf);
+        binWriter.write(agronaOut, req, rsp);
+        agronaOut.close();
+      } else {
+        out = new ByteArrayOutputStream();
+        // to be fair, from my previous tests, much of the performance will be sucked up
+        // by java's UTF-8 encoding/decoding, not the actual writing
+        Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+        w.write(writer, req, rsp);
+        writer.close();
+      }
     }
 
     double encodeTime = timer.getTime();
 
-    byte[] arr = out.toByteArray();
+    byte[] arr;
+    if (agronaOut != null) {
+      arr = new byte[agronaOut.position()];
+      agronaBuf.getBytes(agronaBuf.wrapAdjustment(), arr, 0, arr.length);
+    } else {
+      arr = out.toByteArray();
+    }
 
     timer = new RTimer();
     writerName = writerName.intern();
-    for (int i=0; i<decIter; i++) {
+    for (int i = 0; i < decIter; i++) {
       ResponseParser rp = null;
       if (writerName == "xml") {
         rp = new XMLResponseParser();
@@ -144,19 +163,18 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
         break;
       }
       ByteArrayInputStream in = new ByteArrayInputStream(arr);
-      rp.processResponse(in, "UTF-8");      
+      rp.processResponse(in, "UTF-8");
     }
 
     double decodeTime = timer.getTime();
 
+    int size = agronaOut != null ? agronaOut.position() : (out != null ? out.size() : 0);
     if (log.isInfoEnabled()) {
-      log.info("writer {}, size={}, encodeRate={} decodeRate={}"
-          , writerName, out.size(), (encIter * 1000L / encodeTime), (decIter * 1000L / decodeTime));
+      log.info("writer {}, size={}, encodeRate={} decodeRate={}", writerName, size, (encIter * 1000L / encodeTime), (decIter * 1000L / decodeTime));
     }
-
-    req.close();
   }
 
+  @Test
   public void testPerf() throws Exception {
     makeIndex();
 
@@ -197,6 +215,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
     // doPerf("json", req, encIter, decIter);
     //doPerf("javabin", req, encIter, decIter);
     // doPerf("javabin", req, 1, decIter);
+    req.close();
   }
 
 }

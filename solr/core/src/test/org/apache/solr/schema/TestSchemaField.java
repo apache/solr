@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -40,7 +41,9 @@ public class TestSchemaField extends SolrTestCaseJ4 {
   }
 
   private void assertFieldTypeFormats(String fieldTypeName, String expectedPostingsFormat, String expectedDocValuesFormat) {
-    FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(fieldTypeName);
+    SolrCore core = h.getCore();
+    FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName);
+    core.close();
     assertNotNull("Field type " + fieldTypeName + " not found  - schema got changed?", ft);
     assertEquals("Field type " + ft.getTypeName() + " wrong " + FieldProperties.POSTINGS_FORMAT
             + "  - schema got changed?",
@@ -72,13 +75,11 @@ public class TestSchemaField extends SolrTestCaseJ4 {
   }
 
     private void assertFieldFormats(String fieldName, String expectedPostingsFormat, String expectedDocValuesFormat) {
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    assertNotNull("Field " + fieldName + " not found  - schema got changed?", f);
-    assertEquals("Field " + f.getName() + " wrong " + FieldProperties.POSTINGS_FORMAT
-            + "  - schema got changed?",
-        expectedPostingsFormat, f.getPostingsFormat());
-    assertEquals("Field " + f.getName() + " wrong " + FieldProperties.DOC_VALUES_FORMAT
-            + "  - schema got changed?",
-        expectedDocValuesFormat, f.getDocValuesFormat());
+    try (SolrCore core = h.getCore()) {
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      assertNotNull("Field " + fieldName + " not found  - schema got changed?", f);
+      assertEquals("Field " + f.getName() + " wrong " + FieldProperties.POSTINGS_FORMAT + "  - schema got changed?", expectedPostingsFormat, f.getPostingsFormat());
+      assertEquals("Field " + f.getName() + " wrong " + FieldProperties.DOC_VALUES_FORMAT + "  - schema got changed?", expectedDocValuesFormat, f.getDocValuesFormat());
+    }
   }
 }

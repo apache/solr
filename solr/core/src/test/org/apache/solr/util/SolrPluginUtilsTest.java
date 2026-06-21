@@ -33,10 +33,12 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,8 +48,13 @@ import org.junit.Test;
 public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSolrPluginUtilsTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterSolrPluginUtilsTest() throws Exception {
+    deleteCore();
   }
 
   @Test
@@ -129,6 +136,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = req("df", "text");
     QParser qparser = QParser.getParser("hi", "dismax", req);
+    req.close();
 
     DisjunctionMaxQueryParser qp =
       new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getParams().get("df"));
@@ -341,20 +349,20 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMinShouldMatchBadQueries() {
-    Exception e = expectThrows(SolrException.class, () -> calcMSM(2, "1<"));
+    Exception e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> calcMSM(2, "1<"));
     assertEquals("Invalid 'mm' spec: '1<'. Expecting values before and after '<'" , e.getMessage());
-    e = expectThrows(SolrException.class, () -> calcMSM(2, "1<x"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> calcMSM(2, "1<x"));
     assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
-    e = expectThrows(SolrException.class, () -> calcMSM(1, "x%"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> calcMSM(1, "x%"));
     assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
-    e = expectThrows(SolrException.class, () -> calcMSM(1, "%%"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> calcMSM(1, "%%"));
     assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
-    e = expectThrows(SolrException.class, () -> calcMSM(1, "x"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> calcMSM(1, "x"));
     assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
     
-    e = expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<X"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<X"));
     assertEquals("Invalid 'mm' spec. Expecting an integer." , e.getMessage());
-    e = expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<"));
     assertEquals("Invalid 'mm' spec: '9<'. Expecting values before and after '<'" , e.getMessage());
   }
 

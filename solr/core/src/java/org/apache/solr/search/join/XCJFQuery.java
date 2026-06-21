@@ -106,7 +106,7 @@ public class XCJFQuery extends Query {
     DocSet getDocSet() throws IOException;
   }
 
-  private class TermsJoinKeyCollector implements JoinKeyCollector {
+  private static class TermsJoinKeyCollector implements JoinKeyCollector {
 
     FieldType fieldType;
     SolrIndexSearcher searcher;
@@ -281,6 +281,7 @@ public class XCJFQuery extends Query {
         collector = new TermsJoinKeyCollector(fieldType, terms, searcher);
       }
 
+      int tupleCount = 0;
       try {
         solrStream.open();
         while (true) {
@@ -294,10 +295,12 @@ public class XCJFQuery extends Query {
 
           Object value = tuple.get(fromField);
           collector.collect(value);
+          tupleCount++;
         }
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } finally {
+        System.err.println("XCJF_DEBUG tupleCount=" + tupleCount + " fromField=" + fromField);
         solrStream.close();
       }
 
@@ -374,6 +377,6 @@ public class XCJFQuery extends Query {
   @Override
   public String toString(String field) {
     return String.format(Locale.ROOT, "{!xcjf collection=%s from=%s to=%s routed=%b ttl=%d}%s",
-            collection, fromField, toField, routedByJoinKey, ttl, query.toString());
+            collection, fromField, toField, routedByJoinKey, ttl, query);
   }
 }

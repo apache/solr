@@ -32,15 +32,21 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
 
   Date now = new Date();
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema.xml");
+  }
+
+  @After
+  public void afterTest() throws Exception {
+    deleteCore();
   }
 
   public void testFallbackToUnique() throws Exception {
@@ -120,17 +126,21 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
   }
 
   public void testProcessorPrefixReqParam() throws Exception {
-    List<UpdateRequestProcessorFactory> processors = UpdateRequestProcessorChain.getReqProcessors("uuid", h.getCore());
+    SolrCore core =  h.getCore();
+    List<UpdateRequestProcessorFactory> processors = UpdateRequestProcessorChain.getReqProcessors("uuid", core);
     UpdateRequestProcessorFactory processorFactory = processors.get(0);
     assertTrue(processorFactory instanceof UUIDUpdateProcessorFactory);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("random_s", "random_val");
 
-    processorFactory.getInstance(req, rsp, null).processAdd(cmd);
+    UpdateRequestProcessor proc = processorFactory.getInstance(req, rsp, null);
+    req.close();
+    proc.processAdd(cmd);
+    proc.close();
     assertNotNull(cmd.solrDoc);
     assertNotNull(cmd.solrDoc.get("id"));
     assertNotNull(cmd.solrDoc.get("id").getValue());
@@ -190,7 +200,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
 
     SolrQueryRequest req = new LocalSolrQueryRequest
-        (core, params);
+        (core, params, true);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -198,7 +208,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
 
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
       processor.processAdd(cmd);
-
+      processor.close();
       return cmd.solrDoc;
     } finally {
       SolrRequestInfo.clearRequestInfo();

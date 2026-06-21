@@ -17,6 +17,39 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.LiveNodesPredicate;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrQueuedThreadPool;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
@@ -29,36 +62,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.LiveNodesPredicate;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.util.NamedList;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base class for SolrCloud tests
@@ -78,11 +88,14 @@ import org.slf4j.LoggerFactory;
  *   </code>
  * </pre>
  */
-public class SolrCloudTestCase extends SolrTestCaseJ4 {
+public class SolrCloudTestCase extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
+  public static final int DEFAULT_TIMEOUT = 10; // this is SECONDS, not MILLIS
+  public static final TimeUnit DEFAULT_TIMEOUT_UNIT = TimeUnit.SECONDS;
+
+  private static volatile SolrQueuedThreadPool qtp;
 
   private static class Config {
     final String name;
@@ -90,6 +103,42 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Config(String name, Path path) {
       this.name = name;
       this.path = path;
+    }
+  }
+
+  @BeforeClass
+  public static void beforeSolrCloudTestCase() throws Exception {
+    //qtp = getQtp();
+    //qtp.start();
+  }
+
+  @AfterClass
+  public static void afterSolrCloudTestCase() throws Exception {
+    if (cluster != null) {
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
+    }
+    if (qtp != null) {
+      IOUtils.closeQuietly(qtp);
+      qtp = null;
+    }
+  }
+
+  public static void shutdownCluster() throws Exception {
+    if (cluster != null) {
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
+    }
+
+    if (qtp != null) {
+      IOUtils.closeQuietly(qtp);
+      qtp = null;
     }
   }
 
@@ -101,13 +150,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private final int nodeCount;
     private final Path baseDir;
     private String solrxml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
-    private JettyConfig.Builder jettyConfigBuilder = JettyConfig.builder().setContext("/solr").withSSLConfig(sslConfig.buildServerSSLConfig());
+    private final JettyConfig.Builder jettyConfigBuilder = JettyConfig.builder().setContext("/solr").withSSLConfig(sslConfig != null ?
+        sslConfig.buildServerSSLConfig() : null);
     private Optional<String> securityJson = Optional.empty();
 
-    private List<Config> configs = new ArrayList<>();
-    private Map<String, Object> clusterProperties = new HashMap<>();
+    private final List<Config> configs = new ArrayList<>();
+    private final Map<String, Object> clusterProperties = new HashMap<>();
 
     private boolean trackJettyMetrics;
+    private boolean formatZk = true;
 
     /**
      * Create a builder
@@ -201,6 +252,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       return this;
     }
 
+    public Builder formatZk(boolean formatZk) {
+      this.formatZk = formatZk;
+      return this;
+    }
+
     /**
      * Configure and run the {@link MiniSolrCloudCluster}
      *
@@ -216,10 +272,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
-      JettyConfig jettyConfig = jettyConfigBuilder.build();
+      JettyConfig jettyConfig = jettyConfigBuilder.build();//null;//jettyConfigBuilder.withExecutor(qtp).build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
-          null, securityJson, trackJettyMetrics);
-      CloudSolrClient client = cluster.getSolrClient();
+          null, securityJson, trackJettyMetrics, formatZk);
+      CloudHttp2SolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
       }
@@ -255,10 +311,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
-    if (reader == null)
-      cluster.getSolrClient().connect();
-    return cluster.getSolrClient().getZkStateReader().getZkClient();
+    return cluster.getZkClient();
   }
 
   /**
@@ -269,23 +322,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param nodeCount the number of nodes
    */
   protected static Builder configureCluster(int nodeCount) {
-    return new Builder(nodeCount, createTempDir());
-  }
-
-  @AfterClass
-  public static void shutdownCluster() throws Exception {
-    if (cluster != null) {
-      try {
-        cluster.shutdown();
-      } finally {
-        cluster = null;
-      }
-    }
-  }
-
-  @Before
-  public void checkClusterConfiguration() {
-
+    return new Builder(nodeCount, SolrTestUtil.createTempDir());
   }
 
   /* Cluster helper methods ************************************/
@@ -294,34 +331,35 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get the collection state for a particular collection
    */
   protected static DocCollection getCollectionState(String collectionName) {
-    return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+    return cluster.getSolrClient().getZkStateReader().getCollection(collectionName);
   }
 
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
-    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT);
   }
 
   /**
    * Wait for a particular collection state to appear in the cluster client's state reader
-   * <p>
-   * This is a convenience method using the {@link #DEFAULT_TIMEOUT}
    *
    * @param message    a message to report on failure
    * @param collection the collection to watch
    * @param predicate  a predicate to match against the collection state
    */
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate, int timeout, TimeUnit timeUnit) {
-    log.info("waitForState ({}): {}", collection, message);
+    log.debug("waitForState {}", collection);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      cluster.getSolrClient().waitForState(collection, timeout, timeUnit, (n, c) -> {
+      cluster.getSolrClient().getZkStateReader().waitForState(collection, timeout, timeUnit, (n, c) -> {
         state.set(c);
         liveNodesLastSeen.set(n);
         return predicate.matches(n, c);
       });
-    } catch (Exception e) {
+    } catch (TimeoutException e) {
       fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
+    } catch (Exception e) {
+      log.error("Exception waiting for state", e);
+      fail(e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
     }
   }
 
@@ -357,19 +395,19 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   public static LiveNodesPredicate containsLiveNode(String node) {
-    return (oldNodes, newNodes) -> {
+    return (newNodes) -> {
       return newNodes.contains(node);
     };
   }
 
   public static LiveNodesPredicate missingLiveNode(String node) {
-    return (oldNodes, newNodes) -> {
+    return (newNodes) -> {
       return !newNodes.contains(node);
     };
   }
 
   public static LiveNodesPredicate missingLiveNodes(List<String> nodes) {
-    return (oldNodes, newNodes) -> {
+    return (newNodes) -> {
       boolean success = true;
       for (String lostNodeName : nodes) {
         if (newNodes.contains(lostNodeName)) {
@@ -401,10 +439,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get a (reproducibly) random shard from a {@link DocCollection}
    */
   protected static Slice getRandomShard(DocCollection collection) {
+    Random random = SolrTestCase.random();
     List<Slice> shards = new ArrayList<>(collection.getActiveSlices());
     if (shards.size() == 0)
       fail("Couldn't get random shard for collection as it has no shards!\n" + collection.toString());
-    Collections.shuffle(shards, random());
+    Collections.shuffle(shards, random);
     return shards.get(0);
   }
 
@@ -412,10 +451,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get a (reproducibly) random replica from a {@link Slice}
    */
   protected static Replica getRandomReplica(Slice slice) {
+    Random random = SolrTestCase.random();
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
       fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
-    Collections.shuffle(replicas, random());
+    Collections.shuffle(replicas, random);
     return replicas.get(0);
   }
 
@@ -423,10 +463,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get a (reproducibly) random replica from a {@link Slice} matching a predicate
    */
   protected static Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
+    Random random = SolrTestCase.random();
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
       fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
-    Collections.shuffle(replicas, random());
+    Collections.shuffle(replicas, random);
     for (Replica replica : replicas) {
       if (matchPredicate.test(replica))
         return replica;
@@ -441,13 +482,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * This assumes that the replica is hosted on a live node.
    */
   protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
-    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
-      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
+    try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
+      return CoreAdminRequest.getCoreStatus(replica.getName(), client);
     }
   }
 
-  protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
+  protected static NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;
     for (; i < numRetries; i++) {
@@ -458,6 +498,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       } catch (RuntimeException rte) {
         throw rte;
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException("error executing request", e);
       }
     }
@@ -492,7 +533,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         cluster.startJettySolrRunner(jettys.get(i));
       }
     }
-    cluster.waitForAllNodes(timeoutSeconds);
   }
 
   public static Map<String, String> mapReplicasToReplicaType(DocCollection collection) {
@@ -511,5 +551,52 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
     return replicaTypeMap;
+  }
+
+  /**
+   * Generates the correct SolrParams from an even list of strings.
+   * A string in an even position will represent the name of a parameter, while the following string
+   * at position (i+1) will be the assigned value.
+   *
+   * @param params an even list of strings
+   * @return the ModifiableSolrParams generated from the given list of strings.
+   */
+  public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i=0; i<params.length; i+=2) {
+      msp.add(params[i], params[i+1]);
+    }
+    return msp;
+  }
+
+  public void clearIndex(String collection) {
+
+//    try {
+//      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
+//          DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString()), collection);
+//    } catch (Exception e) {
+//      log.warn("Error clearing index {}", e.getMessage());
+//    }
+    try {
+      new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), collection);
+    } catch (Exception e) {
+      log.warn("Error clearing index {}", e.getMessage());
+    }
+  }
+
+  public static Long deleteByQueryAndGetVersion(String q, SolrParams params, String collection) throws Exception {
+    if (params==null || params.get("versions") == null) {
+      ModifiableSolrParams mparams = new ModifiableSolrParams(params);
+      mparams.set("versions","true");
+      params = mparams;
+    }
+    SolrQuery query = new SolrQuery(q);
+    query.setParams(params);
+    QueryResponse response = cluster.getSolrClient().query(collection, query);
+
+    List lst = (List)response.getResponse().get("deleteByQuery");
+    if (lst == null || lst.size() == 0) return null;
+    return (Long) lst.get(1);
   }
 }

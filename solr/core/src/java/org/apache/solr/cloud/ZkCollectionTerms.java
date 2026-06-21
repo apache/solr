@@ -17,55 +17,58 @@
 
 package org.apache.solr.cloud;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.core.CoreDescriptor;
+import org.apache.zookeeper.KeeperException;
+import org.jctools.maps.NonBlockingHashMap;
+
+import java.util.Map;
 
 /**
  * Used to manage all ZkShardTerms of a collection
  */
 class ZkCollectionTerms implements AutoCloseable {
   private final String collection;
-  private final Map<String, ZkShardTerms> terms;
+  private final Map<String,ZkShardTerms> terms;
   private final SolrZkClient zkClient;
 
   ZkCollectionTerms(String collection, SolrZkClient client) {
     this.collection = collection;
-    this.terms = new HashMap<>();
+    this.terms = new NonBlockingHashMap<>();
     this.zkClient = client;
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.getInstance().track(this);
   }
 
-
-  public ZkShardTerms getShard(String shardId) {
-    synchronized (terms) {
-      if (!terms.containsKey(shardId)) terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
-      return terms.get(shardId);
-    }
+  ZkShardTerms getShard(String shardId) {
+    return terms.computeIfAbsent(shardId, terms -> new ZkShardTerms(collection, shardId, zkClient));
   }
 
-  public void register(String shardId, String coreNodeName) {
-    synchronized (terms)  {
-      getShard(shardId).registerTerm(coreNodeName);
-    }
+  public ZkShardTerms getShardOrNull(String shardId) {
+    return terms.get(shardId);
   }
 
-  public void remove(String shardId, CoreDescriptor coreDescriptor) {
-    synchronized (terms) {
-      if (getShard(shardId).removeTerm(coreDescriptor)) {
-        terms.remove(shardId).close();
+  public void remove(String shardId, String name) throws KeeperException, InterruptedException {
+    ZkShardTerms zterms = getShardOrNull(shardId);
+    if (zterms != null) {
+      if (zterms.removeTermFor(name)) {
+        IOUtils.closeQuietly(terms.remove(shardId));
       }
     }
   }
 
   public void close() {
-    synchronized (terms) {
-      terms.values().forEach(ZkShardTerms::close);
-    }
-    ObjectReleaseTracker.release(this);
+    terms.values().forEach(ZkShardTerms::close);
+    terms.clear();
+    assert ObjectReleaseTracker.getInstance().release(this);
   }
 
+  public boolean cleanUp() {
+    for (ZkShardTerms zkShardTerms : terms.values()) {
+      if (zkShardTerms.getTerms().size() > 0) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

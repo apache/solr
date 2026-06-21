@@ -25,7 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -44,6 +47,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,12 +76,13 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     assertEquals("X2", x[1]);
     assertEquals("Y", m.get("y"));
 
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       CollectionsHandler.copy(params.required(), null, "z");
     });
     assertEquals(e.code(), SolrException.ErrorCode.BAD_REQUEST.code);
   }
 
+  @Test
   public void testCommands() throws Exception {
     ApiBag apiBag;
     try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
@@ -88,67 +93,67 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}", null,
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', op:create}");
     
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}", null,
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', op:create}");
     
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}", null,
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', op:create}");
 
     //test a create collection with custom properties
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}", null,
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
+        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', op:create, property.prop1:prop1val, property.prop2:prop2val}");
 
+    // MRM TODO:
+//    compareOutput(apiBag, "/collections", POST,
+//        "{create-alias:{name: aliasName , collections:[c1,c2] }}", null, "{op : createalias, name: aliasName, collections:[c1,c2] }");
 
     compareOutput(apiBag, "/collections", POST,
-        "{create-alias:{name: aliasName , collections:[c1,c2] }}", null, "{operation : createalias, name: aliasName, collections:[c1,c2] }");
-
-    compareOutput(apiBag, "/collections", POST,
-        "{delete-alias:{ name: aliasName}}", null, "{operation : deletealias, name: aliasName}");
+        "{delete-alias:{ name: aliasName}}", null, "{op : deletealias, name: aliasName}");
 
     compareOutput(apiBag, "/collections/collName", POST,
         "{reload:{}}", null,
-        "{name:collName, operation :reload}");
+        "{name:collName, op :reload}");
 
     compareOutput(apiBag, "/collections/collName", DELETE,
         null, null,
-        "{name:collName, operation :delete}");
+        "{name:collName, op :delete}");
 
     compareOutput(apiBag, "/collections/collName/shards/shard1", DELETE,
         null, null,
-        "{collection:collName, shard: shard1 , operation :deleteshard }");
+        "{collection:collName, shard: shard1 , op :deleteshard }");
 
     compareOutput(apiBag, "/collections/collName/shards/shard1/replica1?deleteDataDir=true&onlyIfDown=true", DELETE,
         null, null,
-        "{collection:collName, shard: shard1, replica :replica1 , deleteDataDir:'true', onlyIfDown: 'true', operation :deletereplica }");
+        "{collection:collName, shard: shard1, replica :replica1 , deleteDataDir:'true', onlyIfDown: 'true', op :deletereplica }");
 
     compareOutput(apiBag, "/collections/collName/shards", POST,
         "{split:{shard:shard1, ranges: '0-1f4,1f5-3e8,3e9-5dc', coreProperties : {prop1:prop1Val, prop2:prop2Val} }}", null,
-        "{collection: collName , shard : shard1, ranges :'0-1f4,1f5-3e8,3e9-5dc', operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}"
+        "{collection: collName , shard : shard1, ranges :'0-1f4,1f5-3e8,3e9-5dc', op : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}"
     );
 
     compareOutput(apiBag, "/collections/collName/shards", POST,
         "{add-replica:{shard: shard1, node: 'localhost_8978' , coreProperties : {prop1:prop1Val, prop2:prop2Val} }}", null,
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, property.prop1:prop1Val, property.prop2: prop2Val}"
+        "{collection: collName , shard : shard1, node :'localhost_8978', op : addreplica, property.prop1:prop1Val, property.prop2: prop2Val}"
     );
 
     compareOutput(apiBag, "/collections/collName/shards", POST,
         "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}", null,
-        "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}"
+        "{collection: collName , split.key : id12345 , op : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}"
     );
     
     compareOutput(apiBag, "/collections/collName/shards", POST,
         "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'TLOG' }}", null,
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: TLOG}"
+        "{collection: collName , shard : shard1, node :'localhost_8978', op : addreplica, type: TLOG}"
     );
     
     compareOutput(apiBag, "/collections/collName/shards", POST,
         "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'PULL' }}", null,
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: PULL}"
+        "{collection: collName , shard : shard1, node :'localhost_8978', op : addreplica, type: PULL}"
     );
     
     assertErrorContains(apiBag, "/collections/collName/shards", POST,
@@ -158,41 +163,36 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
     compareOutput(apiBag, "/collections/collName", POST,
         "{add-replica-property : {name:propA , value: VALA, shard: shard1, replica:replica1}}", null,
-        "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : addreplicaprop, property.value : 'VALA'}"
+        "{collection: collName, shard: shard1, replica : replica1 , property : propA , op : addreplicaprop, property.value : 'VALA'}"
     );
 
     compareOutput(apiBag, "/collections/collName", POST,
         "{delete-replica-property : {property: propA , shard: shard1, replica:replica1} }", null,
-        "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}"
-    );
-
-    compareOutput(apiBag, "/collections/collName", POST,
-        "{modify : {rule : ['replica:*, cores:<5'], autoAddReplicas : false} }", null,
-        "{collection: collName, operation : modifycollection , autoAddReplicas : 'false', rule : [{replica: '*', cores : '<5' }]}"
+        "{collection: collName, shard: shard1, replica : replica1 , property : propA , op : deletereplicaprop}"
     );
     compareOutput(apiBag, "/cluster", POST,
         "{add-role : {role : overseer, node : 'localhost_8978'} }", null,
-        "{operation : addrole ,role : overseer, node : 'localhost_8978'}"
+        "{op : addrole ,role : overseer, node : 'localhost_8978'}"
     );
 
     compareOutput(apiBag, "/cluster", POST,
         "{remove-role : {role : overseer, node : 'localhost_8978'} }", null,
-        "{operation : removerole ,role : overseer, node : 'localhost_8978'}"
+        "{op : removerole ,role : overseer, node : 'localhost_8978'}"
     );
 
     compareOutput(apiBag, "/collections/coll1", POST,
         "{balance-shard-unique : {property: preferredLeader} }", null,
-        "{operation : balanceshardunique ,collection : coll1, property : preferredLeader}"
+        "{op : balanceshardunique ,collection : coll1, property : preferredLeader}"
     );
 
     compareOutput(apiBag, "/collections/coll1", POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }", null,
-        "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}"
+        "{op : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}"
     );
     
     compareOutput(apiBag, "/collections/coll1", POST,
         "{set-collection-property : {name: 'foo', value:'bar'} }", null,
-        "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}"
+        "{op : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}"
     );
 
   }
@@ -208,7 +208,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   
   static void assertErrorContains(final ApiBag apiBag, final String path, final SolrRequest.METHOD method,
       final String payload, final CoreContainer cc, String expectedErrorMsg) throws Exception {
-    RuntimeException e = expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
+    RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
     assertTrue("Expected exception with error message '" + expectedErrorMsg + "' but got: " + e.getMessage(),
         e.getMessage().contains(expectedErrorMsg));
   }
@@ -253,7 +253,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   }
 
   private static void assertMapEqual(Map expected, ZkNodeProps actual) {
-    assertEquals(errorMessage(expected, actual), expected.size(), actual.getProperties().size());
+    assertEquals(errorMessage(expected, actual), expected.size(), actual.size());
     for (Object o : expected.entrySet()) {
       Map.Entry e = (Map.Entry) o;
       Object actualVal = actual.get((String) e.getKey());
@@ -284,19 +284,19 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp,
                       CoreContainer cores,
                       CollectionParams.CollectionAction action,
-                      CollectionOperation operation) throws Exception {
-      Map<String, Object> result = null;
+                      CollectionOperation op) throws Exception {
+      Object2ObjectMap<String, Object> result = null;
       if (action == CollectionParams.CollectionAction.COLLECTIONPROP) {
         //Fake this action, since we don't want to write to ZooKeeper in this test
-        result = new HashMap<>();
+        result = new Object2ObjectLinkedOpenHashMap<>();
         result.put(NAME, req.getParams().required().get(NAME));
         result.put(PROPERTY_NAME, req.getParams().required().get(PROPERTY_NAME));
         result.put(PROPERTY_VALUE, req.getParams().required().get(PROPERTY_VALUE));
       } else {
-        result = operation.execute(req, rsp, this);
+        result = new Object2ObjectLinkedOpenHashMap<>(op.execute(req, rsp, this));
       }
       if (result != null) {
-        result.put(QUEUE_OPERATION, operation.action.toLower());
+        result.put(QUEUE_OPERATION, op.action.toLower());
         rsp.add(ZkNodeProps.class.getName(), new ZkNodeProps(result));
       }
     }

@@ -916,7 +916,7 @@ private int jjMoveNfa_3(int startState, int curPos)
       catch(java.io.IOException e) { return curPos; }
    }
 }
-private final int jjStopStringLiteralDfa_2(int pos, long active0)
+private static int jjStopStringLiteralDfa_2(int pos, long active0)
 {
    switch (pos)
    {

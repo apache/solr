@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -52,6 +51,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrResourceLoader;
@@ -73,6 +73,7 @@ import org.apache.solr.spelling.SpellingQueryConverter;
 import org.apache.solr.spelling.SpellingResult;
 import org.apache.solr.spelling.Token;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,9 +105,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   /**
    * Key is the dictionary, value is the SpellChecker for that dictionary name
    */
-  protected Map<String, SolrSpellChecker> spellCheckers = new ConcurrentHashMap<>();
+  protected Map<String, SolrSpellChecker> spellCheckers = new NonBlockingHashMap<>();
 
   protected QueryConverter queryConverter;
+  private volatile  SolrCore core;
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
@@ -114,9 +116,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     this.initParams = args;
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public void prepare(ResponseBuilder rb) throws IOException {
+  @Override public void prepare(ResponseBuilder rb) throws IOException {
 
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
@@ -222,7 +222,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
   
-  private Integer maxResultsForSuggest(ResponseBuilder rb) {
+  private static Integer maxResultsForSuggest(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     float maxResultsForSuggestParamValue = params.getFloat(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, 0.0f);
     Integer maxResultsForSuggest = null;
@@ -276,8 +276,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
   
   @SuppressWarnings("unchecked")
-  protected void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
-      @SuppressWarnings({"rawtypes"})NamedList response, boolean suggestionsMayOverlap) {
+  protected static void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
+      @SuppressWarnings({"rawtypes"}) NamedList response, boolean suggestionsMayOverlap) {
     int maxCollations = params.getInt(SPELLCHECK_MAX_COLLATIONS, 1);
     int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
     int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
@@ -326,7 +326,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @SuppressWarnings({"unchecked"})
-  private void addOriginalTermsToResponse(@SuppressWarnings({"rawtypes"})NamedList response, Collection<Token> originalTerms) {
+  private static void addOriginalTermsToResponse(@SuppressWarnings({"rawtypes"}) NamedList response, Collection<Token> originalTerms) {
     List<String> originalTermStr = new ArrayList<String>();
     for(Token t : originalTerms) {
       originalTermStr.add(t.toString());
@@ -340,7 +340,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
    * @param params The original SolrParams
    * @return The new Params
    */
-  protected SolrParams getCustomParams(String dictionary, SolrParams params) {
+  protected static SolrParams getCustomParams(String dictionary, SolrParams params) {
     ModifiableSolrParams result = new ModifiableSolrParams();
     Iterator<String> iter = params.getParameterNamesIterator();
     String prefix = SpellingParams.SPELLCHECK_PREFIX + dictionary + ".";
@@ -371,7 +371,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "deprecation"})
+  @SuppressWarnings({"unchecked"})
   public void finishStage(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false) || rb.stage != ResponseBuilder.STAGE_GET_FIELDS)
@@ -442,7 +442,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     if (collate) {
       SpellCheckCollation[] sortedCollations = mergeData.collations.values()
-          .toArray(new SpellCheckCollation[mergeData.collations.size()]);
+          .toArray(new SpellCheckCollation[0]);
       Arrays.sort(sortedCollations);
 
       @SuppressWarnings({"rawtypes"})
@@ -471,7 +471,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @SuppressWarnings("unchecked")
-  private void collectShardSuggestions(@SuppressWarnings({"rawtypes"})NamedList nl, SpellCheckMergeData mergeData) {
+  private static void collectShardSuggestions(@SuppressWarnings({"rawtypes"}) NamedList nl, SpellCheckMergeData mergeData) {
     SpellCheckResponse spellCheckResp = new SpellCheckResponse(nl);
     Iterable<Object> originalTermStrings = (Iterable<Object>) nl.get("originalTerms");
     if(originalTermStrings!=null) {
@@ -524,7 +524,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @SuppressWarnings("unchecked")
-  private void collectShardCollations(SpellCheckMergeData mergeData, @SuppressWarnings({"rawtypes"})NamedList spellCheckResponse, int maxCollationTries) {
+  private static void collectShardCollations(SpellCheckMergeData mergeData, @SuppressWarnings({"rawtypes"}) NamedList spellCheckResponse, int maxCollationTries) {
     Map<String, SpellCheckCollation> collations = mergeData.collations;
     @SuppressWarnings({"rawtypes"})
     NamedList collationHolder = (NamedList) spellCheckResponse.get("collations");
@@ -575,7 +575,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
+  private static Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
     Collection<Token> result = new ArrayList<>();
     assert analyzer != null;
     try (TokenStream ts = analyzer.tokenStream("", q)) {
@@ -621,8 +621,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  private String getDictionaryNameAsSingleString(String[] dictName) {
-    StringBuilder sb = new StringBuilder();
+  private static String getDictionaryNameAsSingleString(String[] dictName) {
+    StringBuilder sb = new StringBuilder(32);
     for (String dn : dictName) {
       if (sb.length() > 0) {
         sb.append(" ");
@@ -632,7 +632,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     return sb.toString();
   }
 
-  private String[] getDictionaryNames(SolrParams params) {
+  private static String[] getDictionaryNames(SolrParams params) {
     String[] dictName = params.getParams(SPELLCHECK_DICT);
     if (dictName == null) {
       return new String[] {SolrSpellChecker.DEFAULT_DICTIONARY_NAME};
@@ -648,8 +648,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  protected NamedList toNamedList(boolean shardRequest,
-      SpellingResult spellingResult, String origQuery, boolean extendedResults) {
+  protected static NamedList toNamedList(boolean shardRequest, SpellingResult spellingResult, String origQuery, boolean extendedResults) {
     NamedList result = new NamedList();
     Map<Token,LinkedHashMap<String,Integer>> suggestions = spellingResult
         .getSuggestions();
@@ -673,7 +672,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       if (theSuggestions.size() > 0) {
         hasSuggestions = true;
       }
-      if (theSuggestions != null && (theSuggestions.size() > 0 || shardRequest)) {
+      if (theSuggestions.size() > 0 || shardRequest) {
         SimpleOrderedMap suggestionList = new SimpleOrderedMap();
         suggestionList.add("numFound", theSuggestions.size());
         suggestionList.add("startOffset", inputToken.startOffset());
@@ -752,7 +751,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         queryConverter = queryConverters.values().iterator().next();
         IndexSchema schema = core.getLatestSchema();
         String fieldTypeName = (String) initParams.get("queryAnalyzerFieldType");
-        FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
+
+        FieldType fieldType = null;
+        if (fieldTypeName != null) {
+          fieldType = schema.getFieldTypes().get(fieldTypeName);
+        }
         Analyzer analyzer = fieldType == null ? new WhitespaceAnalyzer()
                 : fieldType.getQueryAnalyzer();
         //TODO: There's got to be a better way!  Where's Spring when you need it?
@@ -769,14 +772,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (className == null)
       className = IndexBasedSpellChecker.class.getName();
     SolrResourceLoader loader = core.getResourceLoader();
-    SolrSpellChecker checker = loader.newInstance(className, SolrSpellChecker.class);
+    SolrSpellChecker checker = loader.newInstance(className, SolrSpellChecker.class, Utils.getSolrSubPackage(SolrSpellChecker.class.getPackageName()));
     if (checker != null) {
       String dictionary = checker.init(spellchecker, core);
       if (dictionary != null) {
         boolean isDefault = dictionary.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME);
         if (isDefault && !hasDefault) {
           hasDefault = true;
-        } else if (isDefault && hasDefault) {
+        } else if (isDefault) {
           throw new RuntimeException("More than one dictionary is missing name.");
         }
         spellCheckers.put(dictionary, checker);
@@ -827,8 +830,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       if (currentSearcher == null) {
         // firstSearcher event
         try {
-          if (log.isInfoEnabled()) {
-            log.info("Loading spell index for spellchecker: {}", checker.getDictionaryName());
+          if (log.isDebugEnabled()) {
+            log.debug("Loading spell index for spellchecker: {}", checker.getDictionaryName());
           }
           checker.reload(core, newSearcher);
         } catch (IOException e) {

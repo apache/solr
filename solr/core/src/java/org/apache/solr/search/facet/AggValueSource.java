@@ -34,7 +34,7 @@ public abstract class AggValueSource extends ValueSource {
     return this.name;
   }
 
-  public ValueSource[] getChildren() {
+  public static ValueSource[] getChildren() {
     return null;
   }
 

@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -51,7 +52,7 @@ public class ScaleEvaluator extends RecursiveNumericEvaluator implements TwoValu
     
     double[] scaleOver;
     if(second instanceof Number){
-      scaleOver = Arrays.asList((Number)second).stream().mapToDouble(value -> (value).doubleValue()).toArray();
+      scaleOver = Collections.singletonList((Number) second).stream().mapToDouble(value -> (value).doubleValue()).toArray();
     }
     else{
       scaleOver = ((List<?>)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray();

@@ -123,6 +123,6 @@ public class DistanceUnits {
 
   @Override
   public String toString() {
-    return getStringIdentifier();
+    return stringIdentifier;
   }
 }

@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 
 public class SimpleMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
-  private static final Pattern splitList = Pattern.compile(",| ");
+  private static final Pattern splitList = Pattern.compile("[, ]");
 
   public SimpleMLTQParser(String qstr, SolrParams localParams,
                           SolrParams params, SolrQueryRequest req) {
@@ -77,7 +77,7 @@ public class SimpleMLTQParser extends QParser {
       mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
       mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
       mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
-      Boolean boost = localParams.getBool("boost", false);
+      boolean boost = localParams.getBool("boost", false);
       mlt.setBoost(boost);
 
       String[] fieldNames;
@@ -157,7 +157,7 @@ public class SimpleMLTQParser extends QParser {
         : new Term(defaultField, uniqueValue));
   }
 
-  private Term createNumericTerm(String field, String uniqueValue) {
+  private static Term createNumericTerm(String field, String uniqueValue) {
     BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
     bytesRefBuilder.grow(LegacyNumericUtils.BUF_SIZE_INT);
     LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);

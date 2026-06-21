@@ -70,7 +70,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
 
       String fieldNames = params.get(INPUT_FIELDS_PARAM);// must be a comma separated list of fields
       checkNotNull(INPUT_FIELDS_PARAM, fieldNames);
-      classificationParams.setInputFieldNames(fieldNames.split("\\,"));
+      classificationParams.setInputFieldNames(fieldNames.split(","));
 
       String trainingClassField = (params.get(TRAINING_CLASS_FIELD_PARAM));
       checkNotNull(TRAINING_CLASS_FIELD_PARAM, trainingClassField);
@@ -113,7 +113,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
    * @param defaultValue the param default
    * @return the Int value for the param
    */
-  private int getIntParam(SolrParams params, String name, int defaultValue) {
+  private static int getIntParam(SolrParams params, String name, int defaultValue) {
     String paramString = params.get(name);
     int paramInt;
     if (paramString != null && !paramString.isEmpty()) {
@@ -124,7 +124,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
     return paramInt;
   }
 
-  private void checkNotNull(String paramName, Object param) {
+  private static void checkNotNull(String paramName, Object param) {
     if (param == null) {
       throw new SolrException
           (SolrException.ErrorCode.SERVER_ERROR,
@@ -137,7 +137,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
     String trainingFilterQueryString = (params.get(KNN_FILTER_QUERY));
     try {
       if (trainingFilterQueryString != null && !trainingFilterQueryString.isEmpty()) {
-        Query trainingFilterQuery = this.parseFilterQuery(trainingFilterQueryString, params, req);
+        Query trainingFilterQuery = ClassificationUpdateProcessorFactory.parseFilterQuery(trainingFilterQueryString, params, req);
         classificationParams.setTrainingFilterQuery(trainingFilterQuery);
       }
     } catch (SyntaxError | RuntimeException syntaxError) {
@@ -152,7 +152,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
     return new ClassificationUpdateProcessor(classificationParams, next, indexReader, schema);
   }
 
-  private Query parseFilterQuery(String trainingFilterQueryString, SolrParams params, SolrQueryRequest req) throws SyntaxError {
+  private static Query parseFilterQuery(String trainingFilterQueryString, SolrParams params, SolrQueryRequest req) throws SyntaxError {
     LuceneQParser parser = new LuceneQParser(trainingFilterQueryString, null, params, req);
     return parser.parse();
   }

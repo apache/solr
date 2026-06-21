@@ -54,10 +54,12 @@ import org.apache.solr.uninverting.FieldCache.CacheEntry;
  */
 public class UninvertingReader extends FilterLeafReader {
 
+  public static final FieldInfo[] EMPTY_FIELD_INFOS = new FieldInfo[0];
+
   /**
    * Specifies the type of uninversion to apply for the field. 
    */
-  public static enum Type {
+  public enum Type {
     /** 
      * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.IntPoint})
      * <p>
@@ -284,7 +286,8 @@ public class UninvertingReader extends FilterLeafReader {
         wrap = true;
         newFieldInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
             fi.hasPayloads(), fi.getIndexOptions(), type, fi.getDocValuesGen(), fi.attributes(),
-            fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField()));
+            fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
+            fi.getVectorDimension(), fi.getVectorSimilarityFunction(), fi.isSoftDeletesField()));
       } else {
         newFieldInfos.add(fi);
       }
@@ -292,7 +295,7 @@ public class UninvertingReader extends FilterLeafReader {
     if (!wrap) {
       return in;
     } else {
-      FieldInfos fieldInfos = new FieldInfos(newFieldInfos.toArray(new FieldInfo[newFieldInfos.size()]));
+      FieldInfos fieldInfos = new FieldInfos(newFieldInfos.toArray(UninvertingReader.EMPTY_FIELD_INFOS));
       return new UninvertingReader(in, mapping, fieldInfos);
     }
   }

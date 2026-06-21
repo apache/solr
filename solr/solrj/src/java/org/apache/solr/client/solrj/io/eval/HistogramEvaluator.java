@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -46,10 +47,10 @@ public class HistogramEvaluator extends RecursiveNumericEvaluator implements Man
     }
     
     List<?> sourceValues;
-    Integer bins = 10;
+    int bins = 10;
     
     if(values.length >= 1){
-      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]); 
+      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Collections.singletonList(values[0]);
             
       if(values.length >= 2){
         if(values[1] instanceof Number){
@@ -65,7 +66,7 @@ public class HistogramEvaluator extends RecursiveNumericEvaluator implements Man
     }
 
     EmpiricalDistribution distribution = new EmpiricalDistribution(bins);
-    distribution.load(((List<?>)sourceValues).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray());;
+    distribution.load(sourceValues.stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray());;
 
     List<Tuple> histogramBins = new ArrayList<>();
     for(SummaryStatistics binSummary : distribution.getBinStats()) {

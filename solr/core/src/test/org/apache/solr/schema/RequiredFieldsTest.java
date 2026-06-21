@@ -20,6 +20,7 @@ import java.util.Collection;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 /**
@@ -27,8 +28,13 @@ import org.junit.Test;
  */
 public class RequiredFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeRequiredFieldsTest() throws Exception {
     initCore("solrconfig.xml","schema-required-fields.xml");
+  }
+
+  @AfterClass
+  public static void afterRequiredFieldsTest() {
+    deleteCore();
   }
   
   @Override
@@ -41,6 +47,7 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
   public void testRequiredFieldsConfig() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     SchemaField uniqueKey = schema.getUniqueKeyField();
 
     // Make sure the uniqueKey is required
@@ -84,7 +91,8 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
     assertU(commit());
     
     // Check to make sure this submission did not succeed
-    assertQ("should not find any", req("id:531") ,"//result[@numFound=0]" ); 
+    assertQ("should not find any", req("id:531") ,"//result[@numFound=0]" );
+    core.close();
   }
   
   @Test

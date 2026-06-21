@@ -16,6 +16,8 @@
  */
 package org.apache.solr.internal.csv;
 
+import org.apache.solr.common.util.Utils;
+
 import java.io.StringWriter;
 import java.io.StringReader;
 import java.io.IOException;
@@ -25,7 +27,6 @@ import java.io.IOException;
  */
 public class CSVUtils {
 
-    private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final String[][] EMPTY_DOUBLE_STRING_ARRAY = new String[0][0];
 
     /**
@@ -113,7 +114,7 @@ public class CSVUtils {
     }
     // uh,jh: make sure that parseLine("").length == 0
     if (s.length() == 0) {
-      return EMPTY_STRING_ARRAY;
+      return Utils.EMPTY_STRINGS;
     }
     return (new CSVParser(new StringReader(s))).getLine();
   }

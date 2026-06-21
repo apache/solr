@@ -20,6 +20,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -27,7 +28,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import junit.framework.Assert;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Test SolrPing in Solrj
@@ -35,9 +36,9 @@ import junit.framework.Assert;
 public class SolrPingTest extends EmbeddedSolrServerTestBase {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
+  public static void beforeSolrPingTest() throws Exception {
+    File testHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(SolrTestUtil.getFile("solrj/solr"), testHome);
     initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath(), "collection1");
   }
   
@@ -63,7 +64,7 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.process(getSolrClient());
     ping.removeAction();
     rsp = ping.process(getSolrClient());
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
   
   @Test(expected = SolrException.class)
@@ -79,6 +80,6 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.setActionPing();
     rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
 }

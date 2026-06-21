@@ -39,10 +39,11 @@ public class CollectionProperties {
   private final SolrZkClient client;
 
   /**
-   * Creates a CollectionProperties object using a provided SolrZkClient
+   * Creates a CollectionProperties object using a provided ZkStateReader
+   * @param zkStateReader to use for zk access
    */
-  public CollectionProperties(SolrZkClient client) {
-    this.client = client;
+  public CollectionProperties(ZkStateReader zkStateReader) {
+    this.client = zkStateReader.getZkClient();
   }
 
   /**
@@ -66,7 +67,7 @@ public class CollectionProperties {
   @SuppressWarnings("unchecked")
   public Map<String, String> getCollectionProperties(String collection) throws IOException {
     try {
-      return (Map<String, String>) Utils.fromJSON(client.getData(ZkStateReader.getCollectionPropsPath(collection), null, new Stat(), true));
+      return (Map<String, String>) Utils.fromJSON(client.getData( ZkStateReader.getCollectionPropsPath(collection), null, new Stat()));
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
     } catch (KeeperException | InterruptedException e) {
@@ -88,24 +89,30 @@ public class CollectionProperties {
 
     while (true) {
       Stat s = new Stat();
+      int version = -1;
       try {
-        if (client.exists(znodePath, true)) {
-          Map<String, String> properties = (Map<String, String>) Utils.fromJSON(client.getData(znodePath, null, s, true));
+        byte[] propData = client.getData(znodePath, null, s);
+        if (propData != null) {
+          Map<String, String> properties = (Map<String, String>) Utils.fromJSON(propData);
           if (propertyValue == null) {
             if (properties.remove(propertyName) != null) { // Don't update ZK unless absolutely necessary.
               client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
+              version = s.getVersion();
             }
           } else {
             if (!propertyValue.equals(properties.put(propertyName, propertyValue))) { // Don't update ZK unless absolutely necessary.
               client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
+              version = s.getVersion();
             }
           }
+
         } else {
           Map<String, String> properties = new LinkedHashMap<>();
           properties.put(propertyName, propertyValue);
           client.create(znodePath, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
         }
-      } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
+
+      } catch (KeeperException.BadVersionException e) {
         //race condition
         continue;
       } catch (InterruptedException | KeeperException e) {

@@ -22,11 +22,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -39,7 +42,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsNullQueryString() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().setQuery((String)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -47,7 +50,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsNullQueryMap() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().setQuery((Map<String, Object>)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -55,7 +58,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsNullQueryMapWriter() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().setQuery((MapWriter)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -98,12 +101,12 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidFacetName() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withFacet(null, new HashMap<>());
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
 
-    thrown = expectThrows(IllegalArgumentException.class, () -> {
+    thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withStatFacet(null, "avg(price)");
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -111,7 +114,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidFacetMap() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withFacet("anyFacetName", (Map<String, Object>)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -119,7 +122,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsNullFacetMapWriter() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withFacet("anyFacetName", (MapWriter)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -127,7 +130,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidStatFacetString() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withStatFacet("anyFacetName", (String)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -178,12 +181,27 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     request.withFacet("facet2", facetMap2);
     final String requestBody = writeRequestToJson(request);
 
-    assertThat(requestBody, containsString("\"facet\":{\"facet2\":{\"field\":\"b\",\"type\":\"terms\"},\"facet1\":{\"field\":\"a\",\"type\":\"terms\"}}"));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> json = (Map<String, Object>) Utils.fromJSONString(requestBody);
+    Object facetObj = json.get("facet");
+    assertEquals("Facet section should exist", true, Objects.nonNull(facetObj));
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> facets = (Map<String, Object>) facetObj;
+    @SuppressWarnings("unchecked")
+    Map<String, Object> facet1Obj = (Map<String, Object>) facets.get("facet1");
+    @SuppressWarnings("unchecked")
+    Map<String, Object> facet2Obj = (Map<String, Object>) facets.get("facet2");
+
+    assertEquals("facet1 type mismatch", "terms", facet1Obj.get("type"));
+    assertEquals("facet1 field mismatch", "a", facet1Obj.get("field"));
+    assertEquals("facet2 type mismatch", "terms", facet2Obj.get("type"));
+    assertEquals("facet2 field mismatch", "b", facet2Obj.get("field"));
   }
 
   @Test
   public void testRejectsInvalidLimit() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().setLimit(-1);
     });
     assertThat(thrown.getMessage(),containsString("must be non-negative"));
@@ -198,7 +216,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidOffset() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().setOffset(-1);
     });
     assertThat(thrown.getMessage(),containsString("must be non-negative"));
@@ -214,7 +232,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidSort() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().setSort(null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -230,7 +248,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidFilterString() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withFilter((String)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -238,7 +256,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidFilterMap() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withFilter((Map<String,Object>)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -260,7 +278,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidFieldsIterable() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().returnFields((Iterable<String>)null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -282,7 +300,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidMiscParamName() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withParam(null, "any-value");
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));
@@ -290,7 +308,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   @Test
   public void testRejectsInvalidMiscParamValue() {
-    Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new JsonQueryRequest().withParam("any-name", null);
     });
     assertThat(thrown.getMessage(),containsString("must be non-null"));

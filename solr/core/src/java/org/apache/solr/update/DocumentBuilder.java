@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 /**
@@ -122,6 +123,7 @@ public class DocumentBuilder {
    * @return Built Lucene document
    */
   public static Document toDocument(SolrInputDocument doc, IndexSchema schema, boolean forInPlaceUpdate, boolean ignoreNestedDocs) {
+    if (doc == null) throw new IllegalArgumentException("SolrInputDocument cannot be null");
     if (!ignoreNestedDocs && doc.hasChildDocuments()) {
       throw unexpectedNestedDocException(schema, forInPlaceUpdate);
     }
@@ -169,8 +171,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v,
-                     name.equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+            addField(out, sfield, v, !name.equals(uniqueKeyFieldName) && forInPlaceUpdate);
             // record the field as having a value
             usedFields.add(sfield.getName());
           }
@@ -201,8 +202,7 @@ public class DocumentBuilder {
                     val = cf.getLimitedValue(val.toString());
                 }
 
-                addField(out, destinationField, val,
-                         destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+                addField(out, destinationField, val, !destinationField.getName().equals(uniqueKeyFieldName) && forInPlaceUpdate);
                 // record the field as having a value
                 usedFields.add(destinationField.getName());
               }
@@ -223,7 +223,7 @@ public class DocumentBuilder {
       
       // make sure the field was used somehow...
       if( !used && hasField ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+        throw new ManagedIndexSchema.UnknownFieldException( SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: "+getID(doc, schema)+"unknown field '" +name + "'");
       }
     }
@@ -257,7 +257,7 @@ public class DocumentBuilder {
   }
 
   private static SolrException unexpectedNestedDocException(IndexSchema schema, boolean forInPlaceUpdate) {
-    if (! schema.isUsableForChildDocs()) {
+    if (!schema.isUsableForChildDocs()) {
       return new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Unable to index docs with children: the schema must " +
               "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +

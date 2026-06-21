@@ -66,7 +66,7 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
                d.getFieldValue("timestamp") instanceof Date);
     assertEquals(Arrays.asList("Existing","Values"), 
                    d.getFieldValues("name"));
-    
+
     // defaults already specified
     d = processAdd("default-values",
                    doc(f("id", "1111"),
@@ -134,7 +134,7 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
 
     SolrQueryRequest req = new LocalSolrQueryRequest
-      (core, new ModifiableSolrParams());
+      (core, new ModifiableSolrParams(), true);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -142,7 +142,7 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
 
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
       processor.processAdd(cmd);
-
+      processor.close();
       return cmd.solrDoc;
     } finally {
       SolrRequestInfo.clearRequestInfo();

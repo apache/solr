@@ -78,7 +78,7 @@ public class TestNamedListCodec  extends SolrTestCase {
 
     nl.add("zzz",doc);
     byte[] arr;
-    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
       jbc.marshal(nl, baos);
       arr = baos.toByteArray();
     }
@@ -124,7 +124,7 @@ public class TestNamedListCodec  extends SolrTestCase {
 
     nl.add("zzz",list.iterator());
     byte[] arr;
-    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
       jbc.marshal(nl, baos);
       arr = baos.toByteArray();
     }
@@ -153,7 +153,7 @@ public class TestNamedListCodec  extends SolrTestCase {
     r.add("values", map.values());
     r.add("finally", "the end");
     byte[] arr;
-    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
       jbc.marshal(r,baos);
       arr = baos.toByteArray();
     }

@@ -47,7 +47,7 @@ public class MatrixMultiplyEvaluator extends RecursiveObjectEvaluator implements
 
   }
 
-  private Array2DRowRealMatrix getMatrix(Object o) throws IOException {
+  private static Array2DRowRealMatrix getMatrix(Object o) throws IOException {
     if(o instanceof Matrix) {
       Matrix matrix = (Matrix)o;
       return new Array2DRowRealMatrix(matrix.getData(), false);

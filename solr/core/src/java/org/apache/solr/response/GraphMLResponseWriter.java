@@ -44,7 +44,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
 
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse res) throws IOException {
 
-    Exception e1 = res.getException();
+    Throwable e1 = res.getException();
     if(e1 != null) {
       e1.printStackTrace(new PrintWriter(writer));
       return;
@@ -132,28 +132,29 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
 
       printWriter.write("</graph></graphml>");
     } finally {
-      stream.close();
+      // don't close stream
+      // stream.close();
     }
   }
 
-  private String xmlEscape(String s) {
-    if(s.indexOf(">") > -1) {
+  private static String xmlEscape(String s) {
+    if(s.indexOf('>') > -1) {
       s = s.replace(">", "&gt;");
     }
 
-    if(s.indexOf("<") > -1) {
+    if(s.indexOf('<') > -1) {
       s = s.replace("<", "&lt;");
     }
 
-    if(s.indexOf("\"")> -1) {
+    if(s.indexOf('"')> -1) {
       s = s.replace("\"", "&quot;");
     }
 
-    if(s.indexOf("'") > -1) {
+    if(s.indexOf('\'') > -1) {
       s = s.replace("'", "&apos;");
     }
 
-    if(s.indexOf("&") > -1) {
+    if(s.indexOf('&') > -1) {
       s = s.replace("&", "&amp;");
     }
 

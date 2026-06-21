@@ -18,14 +18,14 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.ToleratedUpdateError;
@@ -93,13 +93,12 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
   private SchemaField uniqueKeyField;
 
   private final SolrQueryRequest req;
-  private ZkController zkController;
 
   /**
    * Known errors that occurred in this batch, in order encountered (may not be the same as the 
    * order the commands were originally executed in due to the async distributed updates).
    */
-  private final List<ToleratedUpdateError> knownErrors = new ArrayList<ToleratedUpdateError>();
+  private final List<ToleratedUpdateError> knownErrors = Collections.synchronizedList(new ArrayList<ToleratedUpdateError>());
 
   // Kludge: Because deleteByQuery updates are forwarded to every leader, we can get identical
   // errors reported by every leader for the same underlying problem.
@@ -119,7 +118,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
   //
   // So as a kludge, we keep track of them for deduping against identical remote failures
   //
-  private Set<ToleratedUpdateError> knownDBQErrors = new HashSet<>();
+  private Set<ToleratedUpdateError> knownDBQErrors = ConcurrentHashMap.newKeySet();
         
   private final FirstErrTracker firstErrTracker = new FirstErrTracker();
   private final DistribPhase distribPhase;
@@ -133,8 +132,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     this.req = req;
     this.distribPhase = distribPhase;
     assert ! DistribPhase.FROMLEADER.equals(distribPhase);
-    
-    this.zkController = this.req.getCore().getCoreContainer().getZkController();
+
     this.uniqueKeyField = this.req.getCore().getLatestSchema().getUniqueKeyField();
     assert null != uniqueKeyField : "Factory didn't enforce uniqueKey field?";
   }
@@ -247,11 +245,11 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         //
         // instead we trust the metadata that the TolerantUpdateProcessor running on the remote node added
         // to the exception when it failed.
-        if ( ! (error.e instanceof SolrException) ) {
-          log.error("async update exception is not SolrException, no metadata to process", error.e);
+        if ( ! (error.t instanceof SolrException) ) {
+          log.error("async update exception is not SolrException, no metadata to process", error.t);
           continue;
         }
-        SolrException remoteErr = (SolrException) error.e;
+        SolrException remoteErr = (SolrException) error.t;
         NamedList<String> remoteErrMetadata = remoteErr.getMetadata();
 
         if (null == remoteErrMetadata) {

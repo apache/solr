@@ -31,6 +31,6 @@ public class Lookup3Signature extends Signature {
 
   @Override
   public byte[] getSignature() {
-    return new byte[]{(byte)(hash>>56),(byte)(hash>>48),(byte)(hash>>40),(byte)(hash>>32),(byte)(hash>>24),(byte)(hash>>16),(byte)(hash>>8),(byte)(hash>>0)};
+    return new byte[]{(byte)(hash>>56),(byte)(hash>>48),(byte)(hash>>40),(byte)(hash>>32),(byte)(hash>>24),(byte)(hash>>16),(byte)(hash>>8),(byte)(hash)};
   }
 }

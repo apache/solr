@@ -166,7 +166,7 @@ public class ObjectBuilder {
     // TODO: test for repeated value?
   }
 
-  public Object objectEnd(Object obj) {
+  public static Object objectEnd(Object obj) {
     return obj;
   }
 
@@ -183,16 +183,16 @@ public class ObjectBuilder {
     }
   }
 
-  public Object newArray() {
+  public static Object newArray() {
     return new ArrayList<Object>();
   }
 
   @SuppressWarnings("unchecked")
-  public void addArrayVal(Object arr, Object val) throws IOException {
+  public static void addArrayVal(Object arr, Object val) throws IOException {
     ((List<Object>) arr).add(val);
   }
 
-  public Object endArray(Object arr) {
+  public static Object endArray(Object arr) {
     return arr;
   }
 

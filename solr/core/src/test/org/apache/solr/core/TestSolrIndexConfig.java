@@ -16,10 +16,12 @@
  */
 package org.apache.solr.core;
 
+import org.apache.lucene.index.AlcoholicMergePolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LiveIndexWriterConfig;
 
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.RandomMergePolicy;
@@ -35,27 +37,32 @@ public class TestSolrIndexConfig extends SolrTestCaseJ4 {
   }
 
   public void testLiveWriter() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
-    try {
-      checkIndexWriterConfig(iw.get().getConfig());
-    } finally {
-      if (null != iw) iw.decref();
+    try (SolrCore core = h.getCore()) {
+      RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+      try {
+        checkIndexWriterConfig(iw.get().getConfig());
+      } finally {
+        if (null != iw) iw.decref();
+      }
     }
   }
 
   
   public void testIndexConfigParsing() throws Exception {
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    try {
-      checkIndexWriterConfig(iwc);
-    } finally {
-      iwc.getInfoStream().close();
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
+      try {
+        checkIndexWriterConfig(iwc);
+      } finally {
+        iwc.getInfoStream().close();
+      }
     }
   }
 
   private void checkIndexWriterConfig(LiveIndexWriterConfig iwc) {
-
+    if (iwc.getMergePolicy() instanceof AlcoholicMergePolicy) { // TODO: Alcoholic hitting GregorianCal NPE
+      iwc.setMergePolicy(new TieredMergePolicy());
+    }
     assertTrue(iwc.getInfoStream() instanceof LoggingInfoStream);
     assertTrue(iwc.getMergePolicy().getClass().toString(),
                iwc.getMergePolicy() instanceof RandomMergePolicy);

@@ -39,34 +39,39 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      ValueSource vs;
-      String funcStr;
-
-      @Override
-      public Query parse() throws SyntaxError {
-        funcStr = localParams.get(QueryParsing.V, null);
-        QParser subParser = subQuery(funcStr, FunctionQParserPlugin.NAME);
-        subParser.setIsFilter(false);  // the range can be based on the relevancy score of embedded queries.
-        Query funcQ = subParser.getQuery();
-        if (funcQ instanceof FunctionQuery) {
-          vs = ((FunctionQuery)funcQ).getValueSource();
-        } else {
-          vs = new QueryValueSource(funcQ, 0.0f);
-        }
-
-        String l = localParams.get("l");
-        String u = localParams.get("u");
-        boolean includeLower = localParams.getBool("incl",true);
-        boolean includeUpper = localParams.getBool("incu",true);
-
-        // TODO: add a score=val option to allow score to be the value
-        ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, l, u, includeLower, includeUpper);
-        FunctionRangeQuery frq = new FunctionRangeQuery(rf);
-        return frq;
-      }
-    };
+    return new MyQParser(qstr, localParams, params, req);
   }
 
+  private static class MyQParser extends QParser {
+    ValueSource vs;
+    String funcStr;
+
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      funcStr = localParams.get(QueryParsing.V, null);
+      QParser subParser = subQuery(funcStr, FunctionQParserPlugin.NAME);
+      subParser.setIsFilter(false);  // the range can be based on the relevancy score of embedded queries.
+      Query funcQ = subParser.getQuery();
+      if (funcQ instanceof FunctionQuery) {
+        vs = ((FunctionQuery)funcQ).getValueSource();
+      } else {
+        vs = new QueryValueSource(funcQ, 0.0f);
+      }
+
+      String l = localParams.get("l");
+      String u = localParams.get("u");
+      boolean includeLower = localParams.getBool("incl",true);
+      boolean includeUpper = localParams.getBool("incu",true);
+
+      // TODO: add a score=val option to allow score to be the value
+      ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, l, u, includeLower, includeUpper);
+      FunctionRangeQuery frq = new FunctionRangeQuery(rf);
+      return frq;
+    }
+  }
 }
 

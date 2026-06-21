@@ -231,7 +231,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
   
-  protected void handlePing(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
+  protected static void handlePing(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     
     SolrParams params = req.getParams();

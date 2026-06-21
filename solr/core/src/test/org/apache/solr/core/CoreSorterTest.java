@@ -16,6 +16,22 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.StateUpdates;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreSorter.CountsForEachShard;
+import org.junit.Test;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,19 +42,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.core.CoreSorter.CountsForEachShard;
-import org.junit.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class CoreSorterTest extends SolrTestCaseJ4 {
 
@@ -103,6 +106,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
 
     Map<String,DocCollection> collToState = new HashMap<>();
     Map<CountsForEachShard, List<CoreDescriptor>> myCountsToDescs = new HashMap<>();
+    long id = 0;
     for (Map.Entry<String, List<CountsForEachShard>> entry : collToCounts.entrySet()) {
       String collection = entry.getKey();
       List<CountsForEachShard> collCounts = entry.getValue();
@@ -122,9 +126,9 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
           addNewReplica(replicas, collection, slice, downNodes);
         }
         Map<String, Replica> replicaMap = replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
-        sliceMap.put(slice, new Slice(slice, replicaMap, map(), collection));
+        sliceMap.put(slice, new Slice(slice, replicaMap, map(), collection, -1));
       }
-      DocCollection col = new DocCollection(collection, sliceMap, map(), DocRouter.DEFAULT);
+      DocCollection col = new DocCollection(collection, sliceMap, map("id", id++), CompositeIdRouter.DEFAULT);
       collToState.put(collection, col);
     }
     // reverse map
@@ -142,18 +146,21 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     {
       when(mockCC.isZooKeeperAware()).thenReturn(true);
 
+      ZkStateReader mockZkReader= mock(ZkStateReader.class);
+      when(mockZkReader.getLiveNodes()).thenReturn(new HashSet<>(liveNodes));
       ZkController mockZKC = mock(ZkController.class);
       when(mockCC.getZkController()).thenReturn(mockZKC);
       {
         ClusterState mockClusterState = mock(ClusterState.class);
         when(mockZKC.getClusterState()).thenReturn(mockClusterState);
         {
-          when(mockClusterState.getLiveNodes()).thenReturn(new HashSet<>(liveNodes));
           for (Map.Entry<String, DocCollection> entry : collToState.entrySet()) {
             when(mockClusterState.getCollectionOrNull(entry.getKey())).thenReturn(entry.getValue());
           }
         }
       }
+      when(mockZKC.getCoreContainer()).thenReturn(mockCC);
+      when(mockZKC.getZkStateReader()).thenReturn(mockZkReader);
 
       NodeConfig mockNodeConfig = mock(NodeConfig.class);
       when(mockNodeConfig.getNodeName()).thenReturn(thisNode);
@@ -186,13 +193,13 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
         CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
     );
-    return new CoreDescriptor(r.getCoreName(), TEST_PATH(), props , null, mock(ZkController.class));
+    return new CoreDescriptor(r.getName(), SolrTestUtil.TEST_PATH(), props , null, mock(ZkController.class));
   }
 
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
     String replica = "r" + replicaList.size();
     String node = possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
-    Replica r = new Replica(replica, map("core", replica, "node_name", node), collection, slice);
+    Replica r = new Replica(replica, map("core", replica, "node_name", node, "id", 1), collection, -1, slice);
     replicaList.add(r);
     return r;
   }

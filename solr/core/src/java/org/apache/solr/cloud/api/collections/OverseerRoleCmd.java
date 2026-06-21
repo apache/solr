@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -45,19 +44,17 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 
   private final OverseerCollectionMessageHandler ocmh;
   private final CollectionAction operation;
-  private final OverseerNodePrioritizer overseerPrioritizer;
 
 
 
-  public OverseerRoleCmd(OverseerCollectionMessageHandler ocmh, CollectionAction operation, OverseerNodePrioritizer prioritizer) {
+  public OverseerRoleCmd(OverseerCollectionMessageHandler ocmh, CollectionAction operation) {
     this.ocmh = ocmh;
     this.operation = operation;
-    this.overseerPrioritizer = prioritizer;
   }
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     SolrZkClient zkClient = zkStateReader.getZkClient();
     Map roles = null;
@@ -65,8 +62,8 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String roleName = message.getStr("role");
     boolean nodeExists = false;
-    if (nodeExists = zkClient.exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+    if (nodeExists = zkClient.exists(ZkStateReader.ROLES)) {
+      roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat()));
     } else {
       roles = new LinkedHashMap<>(1);
     }
@@ -88,15 +85,21 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     //if there are too many nodes this command may time out. And most likely dedicated
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
-    new Thread(() -> {
-      try {
-        overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);
-      } catch (Exception e) {
-        log.error("Error in prioritizing Overseer", e);
-      }
+    // MRM TODO: - we should remove this, but if not it needs fixing
+//    new Thread(() -> {
+//      try {
+//        overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);
+//      } catch (Exception e) {
+//        ParWork.propegateInterrupt(e);
+//        log.error("Error in prioritizing Overseer", e);
+//      }
+//
+//    }).start();
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
-    }).start();
+    response.clusterState = null;
 
+    return response;
   }
 
 }

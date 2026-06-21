@@ -30,13 +30,15 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
-public class TestSuggestSpellingConverter extends BaseTokenStreamTestCase {
+public class TestSuggestSpellingConverter extends SolrTestCase {
   SuggestQueryConverter converter = new SuggestQueryConverter();
   
   public void testSimple() throws Exception {
     // lowercases only!
-    converter.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.KEYWORD, true));
+    converter.setAnalyzer(new MockAnalyzer(SolrTestCase.random(), MockTokenizer.KEYWORD, true));
     assertConvertsTo("This is a test", new String[] { "this is a test" });
   }
   

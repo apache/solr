@@ -18,6 +18,8 @@ package org.apache.solr.handler;
 
 import java.io.ByteArrayOutputStream;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -25,6 +27,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -57,14 +60,17 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       handler.init(new NamedList());
       ContentStreamLoader csl = handler.newLoader(req, p);
       RequestWriter.ContentWriter cw = brw.getContentWriter(ureq);
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      cw.write(baos);
-      ContentStreamBase.ByteArrayStream cs = new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
+      MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(4092);
+
+      ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
+      cw.write(out);
+      ContentStreamBase.ByteArrayStream cs = new ContentStreamBase.ByteArrayStream(expandableBuffer1.byteArray(), null, "application/javabin", out.position() + out.buffer().wrapAdjustment());
       csl.load(req, rsp, cs, p);
       AddUpdateCommand add = p.addCommands.get(0);
-      System.out.println(add.solrDoc);
+
       assertEquals(false, add.overwrite);
       assertEquals(100, add.commitWithin);
     }
+    p.close();
   }
 }

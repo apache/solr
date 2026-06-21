@@ -18,13 +18,33 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.QoSParams;
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.ObjectReleaseTrackerTestImpl;
+import org.jctools.maps.NonBlockingHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient.
@@ -40,12 +60,16 @@ import org.apache.solr.common.SolrException;
  * @since solr 8.0
  */
 @SuppressWarnings("serial")
-public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
+public class CloudHttp2SolrClient extends BaseCloudSolrClient {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ClusterStateProvider stateProvider;
   private final LBHttp2SolrClient lbClient;
   private Http2SolrClient myClient;
   private final boolean clientIsInternal;
+
+  private CloseTracker closeTracker;
 
   /**
    * Create a new client object that connects to Zookeeper and is always aware
@@ -56,43 +80,136 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    * @param builder a {@link Http2SolrClient.Builder} with the options used to create the client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
-    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
+    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly, false);
+    assert (closeTracker = new CloseTracker()) != null;
     this.clientIsInternal = builder.httpClient == null;
-    this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().build() : builder.httpClient;
     if (builder.stateProvider == null) {
-      if (builder.zkHosts != null && builder.solrUrls != null) {
+      if (builder.zkHosts != null && builder.zkHosts.size() > 0 && builder.solrUrls != null && builder.solrUrls.size() > 0) {
+        cleanupAfterInitError();
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
-      if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+      if (builder.zkHosts != null && !builder.zkHosts.isEmpty()) {
+        final String zkHostString;
+        try {
+          zkHostString = ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot);
+        } catch (IllegalArgumentException iae) {
+          cleanupAfterInitError();
+          throw iae;
+        }
+        this.stateProvider = new ZkClientClusterStateProvider(zkHostString, 40000, 15000);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
+          cleanupAfterInitError();
+          ParWork.propagateInterrupt(e);
           throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
               + "Solr server(s), "  + builder.solrUrls + ", down?)", e);
         }
       } else {
+        cleanupAfterInitError();
         throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
       }
     } else {
       this.stateProvider = builder.stateProvider;
     }
+    this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().withHeaders(builder.headers)
+        .idleTimeout(900000).connectionTimeout(5000).build() : builder.httpClient; // MRM TODO hard timeouts and stuff
     this.lbClient = new LBHttp2SolrClient(myClient);
-
+    assert ObjectReleaseTracker.getInstance().track(this);
   }
 
+  // called to clean-up objects created by super if there are errors during initialization
+  private void cleanupAfterInitError() {
+    try {
+      super.close(); // super created a ThreadPool ^
+    } catch (IOException ignore) {
+      // no-op: not much we can do here
+    }
+  }
+
+  @Override
+  protected void doParallelUpdate(Map<String,? extends LBSolrClient.Req> routes,
+      NamedList<Throwable> exceptions, NamedList<NamedList> shardResponses) {
+    Map<String,Throwable> tsExceptions = new NonBlockingHashMap<>();
+    Map<String,NamedList> tsResponses = new NonBlockingHashMap<>();
+    Set<Cancellable> cancels = ConcurrentHashMap.newKeySet();
+    final CountDownLatch latch = new CountDownLatch(routes.size());
+    routes.forEach((url, lbRequest) -> {
+      lbRequest.request.setBasePath(url);
+      try {
+        MDC.put("CloudSolrClient.url", url);
+        cancels.add(myClient.asyncRequest(lbRequest.request, null, new UpdateOnComplete(latch, tsResponses, url, tsExceptions)));
+      } finally {
+        MDC.remove("CloudSolrClient.url");
+      }
+    });
+
+    // wait until the async requests we fired off above are done
+    // we cannot use Http2SolrClient#waitForOutstanding as the client may be shared
+    try {
+      boolean success = latch.await(myClient.getIdleTimeout(), TimeUnit.MILLISECONDS); // eventually the requests will timeout after the socket read timeout is reached.
+      if (!success) {
+        cancels.forEach(cancellable -> cancellable.cancel());
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, new TimeoutException("Timeout waiting for responses"));
+      }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+
+    exceptions.addAll(tsExceptions);
+
+    Set<Map.Entry<String,NamedList>> entries = tsResponses.entrySet();
+    for (Map.Entry<String,NamedList> entry : entries) {
+      NamedList rsp = entry.getValue();
+      Objects.nonNull(rsp);
+      shardResponses.add(entry.getKey(), rsp);
+    }
+
+    if (tsExceptions.isEmpty() && tsResponses.size() < routes.size()) {
+      log.warn("Sent {} requests but only got {} responses", routes.size(), tsResponses.size());
+    }
+
+    if (exceptions.size() > 0) {
+      Throwable firstException = exceptions.getVal(0);
+      if(firstException instanceof SolrException) {
+        SolrException e = (SolrException) firstException;
+        throw getRouteException(SolrException.ErrorCode.getErrorCode(e.code()),
+            exceptions, routes);
+      } else {
+        throw getRouteException(SolrException.ErrorCode.SERVER_ERROR,
+            exceptions, routes);
+      }
+    }
+  }
+
+  public void enableCloseLock() {
+    if (closeTracker != null) {
+      closeTracker.enableCloseLock();
+    }
+  }
+
+  public void disableCloseLock() {
+    if (closeTracker != null) {
+      closeTracker.disableCloseLock();
+    }
+  }
 
   @Override
   public void close() throws IOException {
-    stateProvider.close();
-    lbClient.close();
+    super.close();
 
-    if (clientIsInternal && myClient!=null) {
-      myClient.close();
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.collect(stateProvider);
+      closer.collect(lbClient);
+      if (clientIsInternal && myClient!=null) {
+        closer.collect(myClient);
+      }
     }
 
-    super.close();
+    assert closeTracker != null ? closeTracker.close() : true;
+    assert ObjectReleaseTracker.getInstance().release(this);
   }
 
   public LBHttp2SolrClient getLbClient() {
@@ -118,12 +235,13 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    */
   public static class Builder {
     protected Collection<String> zkHosts = new ArrayList<>();
-    protected List<String> solrUrls = new ArrayList<>();
+    protected List<String> solrUrls;
     protected String zkChroot;
     protected Http2SolrClient httpClient;
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
-    protected boolean parallelUpdates = true;
+    protected Map<String,String> headers = new ConcurrentHashMap<>();
+    protected boolean parallelUpdates = true; // always
     protected ClusterStateProvider stateProvider;
 
     /**
@@ -172,6 +290,10 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
     }
 
+    public Builder(ZkStateReader zkStateReader) {
+      this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);
+    }
+
     /**
      * Tells {@link CloudHttp2SolrClient.Builder} that created clients should send direct updates to shard leaders only.
      *
@@ -179,6 +301,12 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
      */
     public Builder sendDirectUpdatesToShardLeadersOnly() {
       directUpdatesToLeadersOnly = true;
+      return this;
+    }
+
+    //do not set this from an external client
+    public Builder markInternalRequest() {
+      this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
       return this;
     }
 
@@ -193,21 +321,13 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       return this;
     }
 
-    /**
-     * Tells {@link CloudHttp2SolrClient.Builder} whether created clients should send shard updates serially or in parallel
-     *
-     * When an {@link UpdateRequest} affects multiple shards, {@link CloudHttp2SolrClient} splits it up and sends a request
-     * to each affected shard.  This setting chooses whether those sub-requests are sent serially or in parallel.
-     * <p>
-     * If not set, this defaults to 'true' and sends sub-requests in parallel.
-     */
-    public Builder withParallelUpdates(boolean parallelUpdates) {
-      this.parallelUpdates = parallelUpdates;
+    public Builder withHttpClient(Http2SolrClient httpClient) {
+      this.httpClient = httpClient;
       return this;
     }
 
-    public Builder withHttpClient(Http2SolrClient httpClient) {
-      this.httpClient = httpClient;
+    public Builder withClusterStateProvider(ClusterStateProvider clusterStateProvider) {
+      this.stateProvider = clusterStateProvider;
       return this;
     }
 
@@ -215,23 +335,36 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
      * Create a {@link CloudHttp2SolrClient} based on the provided configuration.
      */
     public CloudHttp2SolrClient build() {
-      if (stateProvider == null) {
-        if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
-        }
-        else if (!this.solrUrls.isEmpty()) {
-          try {
-            stateProvider = new Http2ClusterStateProvider(solrUrls, httpClient);
-          } catch (Exception e) {
-            throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
-                + "Solr server(s), "  + solrUrls + ", down?)", e);
-          }
-        } else {
-          throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
-        }
-      }
       return new CloudHttp2SolrClient(this);
     }
 
+  }
+
+  private static class UpdateOnComplete implements AsyncListener<NamedList<Object>> {
+
+    private final CountDownLatch latch;
+    private final Map<String,NamedList> tsResponses;
+    private final String url;
+    private final Map<String,Throwable> tsExceptions;
+
+    public UpdateOnComplete(CountDownLatch latch, Map<String,NamedList> tsResponses, String url, Map<String,Throwable> tsExceptions) {
+      this.latch = latch;
+      this.tsResponses = tsResponses;
+      this.url = url;
+      this.tsExceptions = tsExceptions;
+    }
+
+    @Override
+    public void onSuccess(NamedList result, int status, Object context) {
+
+      tsResponses.put(url, result);
+      latch.countDown();
+    }
+
+    @Override
+    public void onFailure(Throwable t, int code, Object context) {
+      tsExceptions.put(url, t);
+      latch.countDown();
+    }
   }
 }

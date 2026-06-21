@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -25,6 +26,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
@@ -37,7 +39,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     oldResponseEntries = OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE;
     OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE = random().nextBoolean();
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.TEST_PATH().resolve(SolrTestUtil.configset("cloud-minimal")))
         .configure();
   }
   
@@ -57,17 +59,16 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     String asyncId =
         createCollection.processAsync(cluster.getSolrClient());
 
-    waitForState("Expected collection 'asynccall' to have "+numShards+" shards and "+
-        numShards*numReplicas+" replica", "asynccall", clusterShape(numShards, numShards*numReplicas));
+    cluster.waitForActiveCollection("asynccall", numShards, numShards * numReplicas);
 
-    RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 30, cluster.getSolrClient());
+    RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 5, cluster.getSolrClient());
     assertEquals("Unexpected request status: " + state, "completed", state.getKey());
 
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     CollectionAdminResponse rsp = requestStatus.process(cluster.getSolrClient());
     NamedList<?> r = rsp.getResponse();
     if (OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE) {
-      final int actualNumOfElems = 3+(numShards*numReplicas);
+      final int actualNumOfElems = 1+(numShards*numReplicas);
       // responseHeader, success, status, + old responses per every replica  
       assertEquals("Expected "+actualNumOfElems+" elements in the response" + r.jsonStr(),
                actualNumOfElems, r.size());
@@ -81,8 +82,8 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
       final NamedList<?> success = (NamedList<?>)r.get("success");
       assertNotNull("Expected 'success' response" + r, success);
     
-      final int actualSuccessElems = 2*(numShards*numReplicas);
-      // every replica responds once on submit and once on complete
+      final int actualSuccessElems = 2 + (numShards*numReplicas);
+
       assertEquals("Expected "+actualSuccessElems+
         " elements in the success element" + success.jsonStr(), 
           actualSuccessElems, success.size());

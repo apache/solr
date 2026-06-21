@@ -75,7 +75,7 @@ public class UniqueAgg extends StrAggValueSource {
     long shardsMissingMax;
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     public void merge(Object facetResult, Context mcontext) {
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       long unique = ((Number)map.get(UNIQUE)).longValue();
@@ -166,7 +166,7 @@ public class UniqueAgg extends StrAggValueSource {
      * This is used to get non-sharded value
      */
     private long getNonShardValue(int slot) {
-      return (long) getCardinality(slot);
+      return getCardinality(slot);
     }
 
     /**

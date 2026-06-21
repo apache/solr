@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.util.Properties;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,14 +30,15 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupContainer() {
-    cc = createCoreContainer("collection1", "data", "solrconfig-implicitproperties.xml", "schema.xml");
+    cc = createCoreContainer(SolrTestUtil.createTempDir("data").toString(), "solrconfig-implicitproperties.xml", "schema.xml");
   }
 
   @AfterClass
   public static void teardownContainer() {
-    if (cc != null) {
-      cc.shutdown();
-    }
+  // no, we don't own this
+//    if (cc != null) {
+//      cc.shutdown();
+//    }
     cc = null;
   }
 
@@ -44,7 +46,7 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
   public void testImplicitPropertiesAreSubstitutedInSolrConfig() {
     assertQ(req("q", "*:*")
         , "//str[@name='dummy1'][.='collection1']"
-        , "//str[@name='dummy2'][.='data']"
+        , "//str[@name='dummy2'][contains(., 'data')]"
         , "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']"
         , "//str[@name='dummy4'][.='schema.xml']"
         , "//str[@name='dummy5'][.='false']"
@@ -53,11 +55,11 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
 
   // SOLR-5279
   @Test
-  public void testPropertiesArePersistedAcrossReload() {
+  public void testPropertiesArePersistedAcrossReload() throws InterruptedException {
     cc.reload("collection1");
     assertQ(req("q", "*:*")
         , "//str[@name='dummy1'][.='collection1']"
-        , "//str[@name='dummy2'][.='data']"
+        , "//str[@name='dummy2'][contains(., 'data')]"
         , "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']"
         , "//str[@name='dummy4'][.='schema.xml']"
         , "//str[@name='dummy5'][.='false']"

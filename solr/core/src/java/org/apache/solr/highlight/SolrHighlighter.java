@@ -28,10 +28,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public abstract class SolrHighlighter
 {
 
+  private static final Pattern COMPILE = Pattern.compile("\\*");
   public static int DEFAULT_MAX_CHARS = 51200;
   public static int DEFAULT_PHRASE_LIMIT = 5000;
 
@@ -40,7 +42,7 @@ public abstract class SolrHighlighter
    * @param params The params controlling Highlighting
    * @return <code>true</code> if highlighting enabled, <code>false</code> if not.
    */
-  public boolean isHighlightingEnabled(SolrParams params) {
+  public static boolean isHighlightingEnabled(SolrParams params) {
     return params.getBool(HighlightParams.HIGHLIGHT, false);
   }
 
@@ -52,7 +54,7 @@ public abstract class SolrHighlighter
    * @param request The current SolrQueryRequest
    * @param defaultFields Programmatic default highlight fields, used if nothing is specified in the handler config or the request.
    */
-  public String[] getHighlightFields(Query query, SolrQueryRequest request, String[] defaultFields) {
+  public static String[] getHighlightFields(Query query, SolrQueryRequest request, String[] defaultFields) {
     String fields[] = request.getParams().getParams(HighlightParams.FIELDS);
 
     // if no fields specified in the request, or the handler, fall back to programmatic default, or default search field.
@@ -83,7 +85,7 @@ public abstract class SolrHighlighter
     return fields;
   }
 
-  protected boolean emptyArray(String[] arr) {
+  protected static boolean emptyArray(String[] arr) {
     return (arr == null || arr.length == 0 || arr[0] == null || arr[0].trim().length() == 0);
   }
 
@@ -94,7 +96,7 @@ public abstract class SolrHighlighter
     for (String field : fields) {
       if (field.contains("*")) {
         // create a Java regular expression from the wildcard string
-        String fieldRegex = field.replaceAll("\\*", ".*");
+        String fieldRegex = COMPILE.matcher(field).replaceAll(".*");
         for (String storedFieldName : storedHighlightFieldNames) {
           if (storedFieldName.matches(fieldRegex)) {
             expandedFields.add(storedFieldName);
@@ -118,6 +120,5 @@ public abstract class SolrHighlighter
    * @return NamedList containing a NamedList for each document, which in
    * turns contains sets (field, summary) pairs.
    */
-  @SuppressWarnings("unchecked")
   public abstract NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException;
 }

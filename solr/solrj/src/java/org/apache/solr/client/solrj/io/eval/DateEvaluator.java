@@ -28,13 +28,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class DateEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+  private ThreadLocal<SimpleDateFormat> threadLocal = ThreadLocal.withInitial(() -> {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    return sdf;
+
+  });
+
   private SimpleDateFormat parseFormat;
-
-
-  static {
-    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-  }
 
   public DateEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
@@ -65,7 +66,7 @@ public class DateEvaluator extends RecursiveObjectEvaluator implements ManyValue
 
     try {
       Date date = parseFormat.parse(sdate);
-      return dateFormat.format(date);
+      return threadLocal.get().format(date);
     } catch(Exception e) {
       throw new IOException(e);
     }

@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -43,11 +44,11 @@ public class CopyOfRangeEvaluator extends RecursiveNumericEvaluator implements M
     }
     
     List<?> sourceValues;
-    Integer startIdx;
-    Integer endIdx;
+    int startIdx;
+    int endIdx;
     
     if(values.length >= 1){
-      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]); 
+      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Collections.singletonList(values[0]);
       
       // default to full array
       startIdx = 0;

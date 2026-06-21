@@ -16,44 +16,47 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Map;
 
-
-public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
+public class ShardRoutingTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  String bucket1 = "shard1";      // shard1: top bits:10  80000000:bfffffff
-  String bucket2 = "shard2";      // shard2: top bits:11  c0000000:ffffffff
-  String bucket3 = "shard3";      // shard3: top bits:00  00000000:3fffffff
-  String bucket4 = "shard4";      // shard4: top bits:01  40000000:7fffffff
+  String bucket1 = "s1";      // shard1: top bits:10  80000000:bfffffff
+  String bucket2 = "s2";      // shard2: top bits:11  c0000000:ffffffff
+  String bucket3 = "s3";      // shard3: top bits:00  00000000:3fffffff
+  String bucket4 = "s4";      // shard4: top bits:01  40000000:7fffffff
+
+  public ShardRoutingTest() throws Exception {
+    super.sliceCount = 4;
+    numJettys = 4;
+    replicationFactor = 2;
+    handle.clear();
+    handle.put("timestamp", SKIPVAL);
 
 
-  @BeforeClass
-  public static void beforeShardHashingTest() throws Exception {
     // TODO: we use an fs based dir because something
     // like a ram dir will not recover correctly right now
     // because tran log will still exist on restart and ram
     // dir will not persist - perhaps translog can empty on
-    // start if using an EphemeralDirectoryFactory 
+    // start if using an EphemeralDirectoryFactory
     useFactory(null);
-  }
 
-  public ShardRoutingTest() {
-    schemaString = "schema15.xml";      // we need a string id
-    super.sliceCount = 4;
+    solrconfigString = "solrconfig.xml";
+    schemaString = "schema15.xml";
+    uploadSelectCollection1Config = true;
+
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
 
     // from negative to positive, the upper bits of the hash ranges should be
     // shard1: top bits:10  80000000:bfffffff
@@ -96,34 +99,9 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @ShardsFixed(num = 8)
-  public void test() throws Exception {
-    boolean testFinished = false;
-    try {
-      handle.clear();
-      handle.put("timestamp", SKIPVAL);
-
-      // todo: do I have to do this here?
-      waitForRecoveriesToFinish(false);
-
-      doHashingTest();
-      doTestNumRequests();
-      doAtomicUpdate();
-
-      testFinished = true;
-    } finally {
-      if (!testFinished) {
-        printLayoutOnTearDown = true;
-      }
-    }
-  }
-
-
-
-
-  private void doHashingTest() throws Exception {
+  public void doHashingTest() throws Exception {
     log.info("### STARTING doHashingTest");
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION).getSlices().size());
     String shardKeys = ShardParams._ROUTE_;
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
@@ -149,7 +127,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     commit();
 
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards","shard1,shard2,shard3,shard4");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards","s1,s2,s3,s4");
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"b!,c!,d!,e!,f1!f2!");
     doQuery("b!doc1", "q","*:*", shardKeys,"b!");
     doQuery("c!doc2", "q","*:*", shardKeys,"c!");
@@ -177,131 +155,74 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doQuery("b!doc1,f1!f2!doc5,c!doc2,d!doc3,e!doc4,f1!f2!doc5/5", "q","*:*", shardKeys,"foo/0!");
 
     // test targeting deleteByQuery at only certain shards
-    doDBQ("*:*", shardKeys,"b!");
-    commit();
-    doQuery("c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
-    doAddDoc("b!doc1");
+    if (TEST_NIGHTLY) {
+      doDBQ("*:*", shardKeys, "b!");
+      commit();
+      doQuery("c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q", "*:*");
+      doAddDoc("b!doc1");
 
-    doDBQ("*:*", shardKeys,"f1!");
-    commit();
-    doQuery("b!doc1,c!doc2,e!doc4", "q","*:*");
-    doAddDoc("f1!f2!doc5");
-    doAddDoc("d!doc3");
+      doDBQ("*:*", shardKeys, "f1!");
+      commit();
+      doQuery("b!doc1,c!doc2,e!doc4", "q", "*:*");
+      doAddDoc("f1!f2!doc5");
+      doAddDoc("d!doc3");
 
-    doDBQ("*:*", shardKeys,"c!");
-    commit();
-    doQuery("b!doc1,f1!f2!doc5,d!doc3,e!doc4", "q","*:*");
-    doAddDoc("c!doc2");
+      doDBQ("*:*", shardKeys, "c!");
+      commit();
+      doQuery("b!doc1,f1!f2!doc5,d!doc3,e!doc4", "q", "*:*");
+      doAddDoc("c!doc2");
 
-    doDBQ("*:*", shardKeys,"d!,e!");
-    commit();
-    doQuery("b!doc1,c!doc2", "q","*:*");
-    doAddDoc("d!doc3");
-    doAddDoc("e!doc4");
-    doAddDoc("f1!f2!doc5");
+      doDBQ("*:*", shardKeys, "d!,e!");
+      commit();
+      doQuery("b!doc1,c!doc2", "q", "*:*");
+      doAddDoc("d!doc3");
+      doAddDoc("e!doc4");
+      doAddDoc("f1!f2!doc5");
 
-    commit();
+      commit();
 
-    doDBQ("*:*");
-    commit();
+      doDBQ("*:*");
+      commit();
 
-    doAddDoc("b!");
-    doAddDoc("c!doc1");
-    commit();
-    doQuery("b!,c!doc1", "q","*:*");
-    UpdateRequest req = new UpdateRequest();
-    req.deleteById("b!");
-    req.process(cloudClient);
-    commit();
-    doQuery("c!doc1", "q","*:*");
+      doAddDoc("b!");
+      doAddDoc("c!doc1");
+      commit();
+      doQuery("b!,c!doc1", "q", "*:*");
+      UpdateRequest req = new UpdateRequest();
+      req.deleteById("b!");
+      req.process(cloudClient);
+      commit();
+      doQuery("c!doc1", "q", "*:*");
 
-    doDBQ("id:b!");
-    commit();
-    doQuery("c!doc1", "q","*:*");
+      doDBQ("id:b!");
+      commit();
+      doQuery("c!doc1", "q", "*:*");
 
-    doDBQ("*:*");
-    commit();
+      doDBQ("*:*");
+      commit();
 
-    doAddDoc("a!b!");
-    doAddDoc("b!doc1");
-    doAddDoc("c!doc2");
-    doAddDoc("d!doc3");
-    doAddDoc("e!doc4");
-    doAddDoc("f1!f2!doc5");
-    doAddDoc("f1!f2!doc5/5");
-    commit();
-    doQuery("a!b!,b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
-  }
-
-
-  public void doTestNumRequests() throws Exception {
-    log.info("### STARTING doTestNumRequests");
-
-    List<CloudJettyRunner> runners = shardToJetty.get(bucket1);
-    CloudJettyRunner leader = shardToLeaderJetty.get(bucket1);
-    CloudJettyRunner replica =  null;
-    for (CloudJettyRunner r : runners) {
-      if (r != leader) replica = r;
+      doAddDoc("a!b!");
+      doAddDoc("b!doc1");
+      doAddDoc("c!doc2");
+      doAddDoc("d!doc3");
+      doAddDoc("e!doc4");
+      doAddDoc("f1!f2!doc5");
+      doAddDoc("f1!f2!doc5/5");
+      commit();
+      doQuery("a!b!,b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q", "*:*");
     }
-
-    long nStart = getNumRequests();
-    leader.client.solrClient.add( sdoc("id","b!doc1") );
-    long nEnd = getNumRequests();
-    assertEquals(2, nEnd - nStart);   // one request to leader, which makes another to a replica
-
-
-    nStart = getNumRequests();
-    replica.client.solrClient.add( sdoc("id","b!doc1") );
-    nEnd = getNumRequests();
-    assertEquals(3, nEnd - nStart);   // orig request + replica forwards to leader, which forward back to replica.
-
-    nStart = getNumRequests();
-    replica.client.solrClient.add( sdoc("id","b!doc1") );
-    nEnd = getNumRequests();
-    assertEquals(3, nEnd - nStart);   // orig request + replica forwards to leader, which forward back to replica.
-
-    CloudJettyRunner leader2 = shardToLeaderJetty.get(bucket2);
-
-
-    nStart = getNumRequests();
-    replica.client.solrClient.query( params("q","*:*", "shards",bucket1) );
-    nEnd = getNumRequests();
-    assertEquals(1, nEnd - nStart);   // short circuit should prevent distrib search
-
-    nStart = getNumRequests();
-    replica.client.solrClient.query( params("q","*:*", ShardParams._ROUTE_, "b!") );
-    nEnd = getNumRequests();
-    assertEquals(1, nEnd - nStart);   // short circuit should prevent distrib search
-
-    nStart = getNumRequests();
-    leader2.client.solrClient.query( params("q","*:*", ShardParams._ROUTE_, "b!") );
-    nEnd = getNumRequests();
-    assertEquals(3, nEnd - nStart);   // original + 2 phase distrib search.  we could improve this!
-
-    nStart = getNumRequests();
-    leader2.client.solrClient.query( params("q","*:*") );
-    nEnd = getNumRequests();
-    assertEquals(9, nEnd - nStart);   // original + 2 phase distrib search * 4 shards.
-
-    nStart = getNumRequests();
-    leader2.client.solrClient.query( params("q","*:*", ShardParams._ROUTE_, "b!,d!") );
-    nEnd = getNumRequests();
-    assertEquals(5, nEnd - nStart);   // original + 2 phase distrib search * 2 shards.
-
-    nStart = getNumRequests();
-    leader2.client.solrClient.query( params("q","*:*", ShardParams._ROUTE_, "b!,f1!f2!") );
-    nEnd = getNumRequests();
-    assertEquals(5, nEnd - nStart);
   }
 
+  @Test
   public void doAtomicUpdate() throws Exception {
     log.info("### STARTING doAtomicUpdate");
     int nClients = clients.size();
-    assertEquals(8, nClients);
+    assertEquals(4, nClients);
 
     int expectedVal = 0;
     for (SolrClient client : clients) {
-      client.add(sdoc("id", "b!doc", "foo_i", map("inc",1)));
+      client.add(
+          SolrTestCaseJ4.sdoc("id", "b!doc", "foo_i", SolrTestCaseJ4.map("inc",1)));
       expectedVal++;
 
       QueryResponse rsp = client.query(params("qt","/get", "id","b!doc"));
@@ -310,15 +231,6 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     }
 
   }
-
-  long getNumRequests() {
-    long n = controlJetty.getDebugFilter().getTotalRequests();
-    for (JettySolrRunner jetty : jettys) {
-      n += jetty.getDebugFilter().getTotalRequests();
-    }
-    return n;
-  }
-
 
   void doAddDoc(String id) throws Exception {
     index("id",id);

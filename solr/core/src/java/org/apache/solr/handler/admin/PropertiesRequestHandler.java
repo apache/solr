@@ -57,7 +57,7 @@ public class PropertiesRequestHandler extends RequestHandlerBase
     rsp.setHttpCaching(false);
   }
 
-  private String getSecuredPropertyValue(String name) {
+  private static String getSecuredPropertyValue(String name) {
     if(RedactionUtils.isSystemPropertySensitive(name)){
       return REDACT_STRING;
     }

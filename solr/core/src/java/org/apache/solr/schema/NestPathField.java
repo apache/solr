@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
@@ -39,6 +40,7 @@ public class NestPathField extends SortableTextField {
 
   @Override
   public void setArgs(IndexSchema schema, Map<String, String> args) {
+    args = new HashMap<>(args);
     args.putIfAbsent("stored", "false");
     args.putIfAbsent("omitTermFreqAndPositions", "true");
     args.putIfAbsent("omitNorms", "true");

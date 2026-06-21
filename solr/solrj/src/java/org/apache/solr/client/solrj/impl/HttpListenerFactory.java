@@ -17,12 +17,13 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 
 public interface HttpListenerFactory {
-  abstract class RequestResponseListener implements Request.BeginListener, Response.CompleteListener, Request.QueuedListener {
+  abstract class RequestResponseListener implements Request.BeginListener, Response.CompleteListener {
 
     /**
      * Callback method invoked when the request begins being processed in order to be sent.
@@ -40,8 +41,7 @@ public interface HttpListenerFactory {
      *
      * @param request the request being queued
      */
-    @Override
-    public void onQueued(Request request) {}
+    public void onQueued(Request request, SolrRequest solrRequest) {}
 
     @Override
     public void onComplete(Result result) {}

@@ -31,6 +31,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
@@ -68,7 +69,7 @@ public class FiltersQParser extends QParser {
     return new MatchAllDocsQuery();
   }
 
-  protected int addQuery(BooleanQuery.Builder builder, Map<Query,Occur> clauses) {
+  protected static int addQuery(BooleanQuery.Builder builder, Map<Query,Occur> clauses) {
     int cnt=0;
     for (Map.Entry<Query, Occur> clause: clauses.entrySet()) {
       if (clause.getValue() == Occur.MUST) {
@@ -80,7 +81,7 @@ public class FiltersQParser extends QParser {
   }
 
   /** @return number of added clauses */
-  protected int addFilters(BooleanQuery.Builder builder, Map<Query,Occur> clauses) throws SyntaxError {
+  protected static int addFilters(BooleanQuery.Builder builder, Map<Query,Occur> clauses) throws SyntaxError {
     int count=0;
     for (Map.Entry<Query, Occur> clause: clauses.entrySet()) {
       if (clause.getValue() == Occur.FILTER) {
@@ -112,7 +113,7 @@ public class FiltersQParser extends QParser {
     }
     Map<Query,Occur> clauses = new IdentityHashMap<>();
     
-    for (String filter : params==null ? new String[0] : params) {
+    for (String filter : params==null ? Utils.EMPTY_STRINGS : params) {
       if(filter==null || filter.length() == 0) {
         throw new SyntaxError("Filter '"+filter + 
                              "' has been picked in "+stringIncludingLocalParams);
@@ -130,8 +131,7 @@ public class FiltersQParser extends QParser {
     return clauses;
   }
 
-  private Collection<?> excludeSet(@SuppressWarnings("rawtypes") 
-                                     Map tagMap, Set<String> tagsToExclude) {
+  private static Collection<?> excludeSet(@SuppressWarnings("rawtypes") Map tagMap, Set<String> tagsToExclude) {
 
     IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<>();
     for (String excludeTag : tagsToExclude) {

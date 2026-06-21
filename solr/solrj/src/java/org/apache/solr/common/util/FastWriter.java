@@ -40,10 +40,6 @@ public class FastWriter extends Writer {
     this.pos = start;
   }
 
-  public static FastWriter wrap(Writer sink) {
-    return (sink instanceof FastWriter) ? (FastWriter)sink : new FastWriter(sink);
-  }
-
   @Override
   public void write(int c) throws IOException {
     write((char)c); 

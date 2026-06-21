@@ -32,9 +32,10 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
@@ -42,6 +43,7 @@ import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,10 +56,10 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private Path ROOT_DIR = Paths.get(TEST_HOME());
+  private Path ROOT_DIR = Paths.get(SolrTestUtil.TEST_HOME());
   private Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 
-  SecurityConfHandlerLocalForTesting securityConfHandler;
+  volatile SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
   JettySolrRunner jetty;
       
@@ -90,7 +92,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     String authzPrefix = "/admin/authorization";
 
     HttpClient cl = null;
-    HttpSolrClient httpSolrClient = null;
+    Http2SolrClient httpSolrClient = null;
     try {
       cl = HttpClientUtil.createClient(null);
       String baseUrl = buildUrl(jetty.getLocalPort(), "/solr"); 
@@ -156,7 +158,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();
-    Utils.consumeFully(r.getEntity());
+    Utils.readFully(r.getEntity().getContent());
     assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
   }
 
@@ -218,7 +220,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
 
     public void setUp() throws Exception {
-      homeDir = createTempDir(name).toAbsolutePath();
+      homeDir = SolrTestUtil.createTempDir(name).toAbsolutePath();
       dataDir = homeDir.resolve("collection1").resolve("data");
       confDir = homeDir.resolve("collection1").resolve("conf");
 

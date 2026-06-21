@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
@@ -32,6 +33,7 @@ import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
@@ -98,6 +100,11 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
         int currDocId = Integer.parseInt((doc.getFirstValue("id")).toString());
         assertEquals("queried docs are not equal to expected output for id: " + currDocId, fullNestedDocTemplate(currDocId), doc.toString());
       }
+    } catch (Throwable throwable) {
+      if (throwable instanceof  Exception) {
+        throw (Exception) throwable;
+      }
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, throwable);
     }
 
     assertJQ(req("q", "type_s:donut",
@@ -292,15 +299,9 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   @Test
   public void testExceptionThrownWParentFilter() throws Exception {
-    expectThrows(SolrException.class,
-        "Exception was not thrown when parentFilter param was passed to ChildDocTransformer using a nested schema",
-        () -> assertJQ(req("q", "test_s:testing",
-            "sort", "id asc",
-            "fl", "*,[child childFilter='lonely/lonelyGrandChild/test2_s:secondTest' parentFilter='_nest_path_:\"lonely/\"']",
-            "fq", fqToExcludeNonTestedDocs),
-            "/response/docs/[0]/test_s==testing",
-            "/response/docs/[0]/lonelyGrandChild/test2_s==secondTest")
-    );
+    SolrTestCaseUtil.expectThrows(SolrException.class, "Exception was not thrown when parentFilter param was passed to ChildDocTransformer using a nested schema", () -> assertJQ(
+        req("q", "test_s:testing", "sort", "id asc", "fl", "*,[child childFilter='lonely/lonelyGrandChild/test2_s:secondTest' parentFilter='_nest_path_:\"lonely/\"']", "fq", fqToExcludeNonTestedDocs),
+        "/response/docs/[0]/test_s==testing", "/response/docs/[0]/lonelyGrandChild/test2_s==secondTest"));
   }
 
   @Test

@@ -16,21 +16,24 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
 
-import org.xml.sax.InputSource;
+import org.apache.lucene.util.ResourceLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 import org.xml.sax.ext.EntityResolver2;
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import javax.xml.transform.Source;
+
+import javax.xml.stream.XMLResolver;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.URIResolver;
 import javax.xml.transform.sax.SAXSource;
-import javax.xml.stream.XMLResolver;
-import javax.xml.stream.XMLStreamException;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * This is a helper class to support resolving of XIncludes or other hrefs
@@ -51,6 +54,7 @@ import javax.xml.stream.XMLStreamException;
  * </pre>
  */
 public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String RESOURCE_LOADER_URI_SCHEME = "solrres";
   public static final String RESOURCE_LOADER_AUTHORITY_ABSOLUTE = "@";
@@ -66,38 +70,35 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   }
   
   public URIResolver asURIResolver() {
-    return new URIResolver() {
-      @Override
-      public Source resolve(String href, String base) throws TransformerException {
-        try {
-          final InputSource src = SystemIdResolver.this.resolveEntity(null, null, base, href);
-          return (src == null) ? null : new SAXSource(src);
-        } catch (IOException ioe) {
-          throw new TransformerException("Cannot resolve entity", ioe);
-        }
+    return (href, base) -> {
+      try {
+        final InputSource src = SystemIdResolver.this.resolveEntity(null, null, base, href);
+        return (src == null) ? null : new SAXSource(src);
+      } catch (IOException ioe) {
+        throw new TransformerException("Cannot resolve entity", ioe);
       }
     };
   }
   
   public XMLResolver asXMLResolver() {
-    return new XMLResolver() {
-      @Override
-      public Object resolveEntity(String publicId, String systemId, String baseURI, String namespace) throws XMLStreamException {
-        try {
-          final InputSource src = SystemIdResolver.this.resolveEntity(null, publicId, baseURI, systemId);
-          return (src == null) ? null : src.getByteStream();
-        } catch (IOException ioe) {
-          throw new XMLStreamException("Cannot resolve entity", ioe);
-        }
+    return (publicId, systemId, baseURI, namespace) -> {
+      try {
+        final InputSource src = SystemIdResolver.this.resolveEntity(null, publicId, baseURI, systemId);
+        return (src == null) ? null : src.getByteStream();
+      } catch (IOException ioe) {
+        throw new XMLStreamException("Cannot resolve entity", ioe);
       }
     };
   }
   
-  URI resolveRelativeURI(String baseURI, String systemId) throws URISyntaxException {
+  static URI resolveRelativeURI(String baseURI, String systemId) throws URISyntaxException {
+    if (log.isDebugEnabled()) {
+      log.debug("resolve relative uri {} {}", baseURI, systemId);
+    }
     URI uri;
     
     // special case for backwards compatibility: if relative systemId starts with "/" (we convert that to an absolute solrres:-URI)
-    if (systemId.startsWith("/")) {
+    if (!systemId.isEmpty() && systemId.charAt(0) == '/') {
       uri = new URI(RESOURCE_LOADER_URI_SCHEME, RESOURCE_LOADER_AUTHORITY_ABSOLUTE, "/", null, null).resolve(systemId);
     } else {
       // simply parse as URI
@@ -121,6 +122,9 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   
   @Override
   public InputSource resolveEntity(String name, String publicId, String baseURI, String systemId) throws IOException {
+    if (log.isDebugEnabled()) {
+      log.debug("resolve entity {} {}, {}, {}", name, publicId, baseURI, systemId);
+    }
     if (systemId == null) {
       return null;
     }
@@ -133,15 +137,10 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
         if (!RESOURCE_LOADER_AUTHORITY_ABSOLUTE.equals(authority)) {
           path = path.substring(1);
         }
-        try {
-          final InputSource is = new InputSource(loader.openResource(path));
-          is.setSystemId(uri.toASCIIString());
-          is.setPublicId(publicId);
-          return is;
-        } catch (RuntimeException re) {
-          // unfortunately XInclude fallback only works with IOException, but openResource() never throws that one
-          throw new IOException(re.getMessage(), re);
-        }
+        final InputSource is = new InputSource(loader.openResource(path));
+        is.setSystemId(uri.toString());
+        is.setPublicId(publicId);
+        return is;
       } else {
         throw new IOException("Cannot resolve absolute systemIDs / external entities (only relative paths work): " + systemId);
       }
@@ -158,7 +157,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   public static String createSystemIdFromResourceName(String name) {
     name = name.replace(File.separatorChar, '/');
     final String authority;
-    if (name.startsWith("/")) {
+    if (!name.isEmpty() && name.charAt(0) == '/') {
       // a hack to preserve absolute filenames and keep them absolute after resolving, we set the URI's authority to "@" on absolute filenames:
       authority = RESOURCE_LOADER_AUTHORITY_ABSOLUTE;
     } else {
@@ -166,7 +165,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
       name = "/" + name;
     }
     try {
-      return new URI(RESOURCE_LOADER_URI_SCHEME, authority, name, null, null).toASCIIString();
+      return new URI(RESOURCE_LOADER_URI_SCHEME, authority, name, null, null).toString();
     } catch (URISyntaxException use) {
       throw new IllegalArgumentException("Invalid syntax of Solr Resource URI", use);
     }

@@ -26,11 +26,14 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -55,10 +58,13 @@ public class TestPushWriter extends SolrTestCaseJ4 {
     }
     Map m = (Map) Utils.fromJSON(baos.toByteArray());
     checkValues(m);
-    try (JavaBinCodec jbc = new JavaBinCodec(baos= new ByteArrayOutputStream(), null)) {
+    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(4096);
+
+    ExpandableDirectBufferOutputStream os = new ExpandableDirectBufferOutputStream(expandableBuffer1);
+    try (JavaBinCodec jbc = new JavaBinCodec(os, null)) {
       writeData(jbc);
       try (JavaBinCodec jbcUn = new JavaBinCodec()) {
-        m = (Map) jbcUn.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+        m = (Map) jbcUn.unmarshal(new ByteArrayInputStream(expandableBuffer1.byteArray(), 0, os.position() + expandableBuffer1.wrapAdjustment()));
       }
     }
     checkValues(m);

@@ -29,7 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -41,6 +41,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
@@ -57,32 +58,39 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
-
   private IndexSearcher getSearcher(IndexReader r) {
     // 'yes' to maybe wrapping in general
     final boolean maybeWrap = true;
     final boolean wrapWithAssertions = false;
      // 'no' to asserting wrap because lucene AssertingWeight
      // cannot be cast to solr LTRScoringQuery$ModelWeight
-    final IndexSearcher searcher = newSearcher(r, maybeWrap, wrapWithAssertions);
+    final IndexSearcher searcher = LuceneTestCase.newSearcher(r, maybeWrap, wrapWithAssertions);
+
+    // These tests extend SolrTestCase (which does not extend LuceneTestCase), so
+    // LuceneTestCase's class-env rule never runs and LuceneTestCase.classEnvRule.similarity
+    // is null. newSearcher() unconditionally applies that null via setSimilarity(...), leaving
+    // the searcher with no similarity and causing an NPE in TermWeight. Restore a non-null
+    // similarity so scoring works.
+    if (searcher.getSimilarity() == null) {
+      searcher.setSimilarity(IndexSearcher.getDefaultSimilarity());
+    }
 
     return searcher;
   }
 
   private static List<Feature> makeFieldValueFeatures(int[] featureIds,
-      String field) {
+      String field) throws IOException {
     final List<Feature> features = new ArrayList<>();
-    for (final int i : featureIds) {
-      final Map<String,Object> params = new HashMap<String,Object>();
-      params.put("field", field);
-      final Feature f = Feature.getInstance(solrResourceLoader,
-          FieldValueFeature.class.getName(),
-          "f" + i, params);
-      f.setIndex(i);
-      features.add(f);
+    try ( SolrResourceLoader solrResourceLoader = new SolrResourceLoader()) {
+      for (final int i : featureIds) {
+        final Map<String,Object> params = new HashMap<String,Object>();
+        params.put("field", field);
+        final Feature f = Feature.getInstance(solrResourceLoader, FieldValueFeature.class.getName(), "f" + i, params);
+        f.setIndex(i);
+        features.add(f);
+      }
+      return features;
     }
-    return features;
   }
 
   private static class MockModel extends LTRScoringModel {
@@ -109,22 +117,22 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   @Test
   public void testRescorer() throws IOException {
-    final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    final Directory dir = LuceneTestCase.newDirectory();
+    final SolrRandomIndexWriter w = new SolrRandomIndexWriter(random(), dir);
 
     Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz",
+    doc.add(LuceneTestCase.newStringField("id", "0", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard the the the the the oz",
         Field.Store.NO));
-    doc.add(newStringField("final-score", "F", Field.Store.YES)); // TODO: change to numeric field
+    doc.add(LuceneTestCase.newStringField("final-score", "F", Field.Store.YES)); // TODO: change to numeric field
 
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc.add(LuceneTestCase.newStringField("id", "1", Field.Store.YES));
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the",
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz the the the the the the",
         Field.Store.NO));
-    doc.add(newStringField("final-score", "T", Field.Store.YES)); // TODO: change to numeric field
+    doc.add(LuceneTestCase.newStringField("final-score", "T", Field.Store.YES)); // TODO: change to numeric field
     w.addDocument(doc);
 
     final IndexReader r = w.getReader();
@@ -163,37 +171,37 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
   @Test
   public void testDifferentTopN() throws IOException {
-    final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    final Directory dir = LuceneTestCase.newDirectory();
+    final SolrRandomIndexWriter w = new SolrRandomIndexWriter(random(), dir);
 
     Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz oz oz oz", Field.Store.NO));
+    doc.add(LuceneTestCase.newStringField("id", "0", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz oz oz oz", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 1.0f));
     w.addDocument(doc);
 
     doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz oz oz the", Field.Store.NO));
+    doc.add(LuceneTestCase.newStringField("id", "1", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz oz oz the", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 2.0f));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "2", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz oz the the ", Field.Store.NO));
+    doc.add(LuceneTestCase.newStringField("id", "2", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz oz the the ", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 3.0f));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz the the the the ",
+    doc.add(LuceneTestCase.newStringField("id", "3", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz the the the the ",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 4.0f));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "4", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz the the the the the the",
+    doc.add(LuceneTestCase.newStringField("id", "4", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz the the the the the the",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 5.0f));
     w.addDocument(doc);

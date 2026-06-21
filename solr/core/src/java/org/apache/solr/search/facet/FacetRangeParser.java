@@ -17,6 +17,7 @@
 package org.apache.solr.search.facet;
 
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.search.SyntaxError;
 
 import java.util.EnumSet;
@@ -55,7 +56,7 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     List<String> list = getStringList(m, "include", false);
     String[] includeList = null;
     if (list != null) {
-      includeList = list.toArray(new String[list.size()]);
+      includeList = list.toArray(Utils.EMPTY_STRINGS);
     }
     facet.include = FacetParams.FacetRangeInclude.parseParam( includeList );
     facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);

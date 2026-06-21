@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search;
 
+import org.agrona.BufferUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.io.DirectBufferInputStream;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -23,19 +26,17 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-
-import static org.apache.solr.common.params.CursorMarkParams.*;
-
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.common.util.SolrDirectBufferOutputStream;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
+import java.util.List;
+
+import static org.apache.solr.common.params.CursorMarkParams.*;
 
 /**
  * An object that encapsulates the basic information about the current Mark Point of a 
@@ -182,51 +183,56 @@ public final class CursorMark {
     final List<SchemaField> schemaFields = sortSpec.getSchemaFields();
 
     List<Object> pieces = null;
+    final byte[] rawData;
+    UnsafeBuffer buffer;
     try {
-      final byte[] rawData = Base64.base64ToByteArray(serialized);
-      try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream in = new ByteArrayInputStream(rawData)){
-        pieces = (List<Object>) jbc.unmarshal(in);
-        boolean b = false;
-        for (Object o : pieces) {
-          if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
-            b = true; break;
+      try {
+        rawData = Base64.base64ToByteArray(serialized);
+        buffer = new UnsafeBuffer(rawData);
+        DirectBufferInputStream in = new DirectBufferInputStream(buffer);
+        try (JavaBinCodec jbc = new JavaBinCodec()) {
+          pieces = (List<Object>) jbc.unmarshal(in);
+          boolean b = false;
+          for (Object o : pieces) {
+            if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
+              b = true;
+              break;
+            }
+          }
+          if (b) {
+            in = new DirectBufferInputStream(buffer);
+            pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
           }
         }
-        if (b) {
-          in.reset();
-          pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
-        }
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Unable to parse '" + CURSOR_MARK_PARAM + "' after totem: " + "value must either be '" + CURSOR_MARK_START + "' or the " + "'" + CURSOR_MARK_NEXT + "' returned by a previous search: "
+                + serialized, ex);
       }
-    } catch (Exception ex) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              "Unable to parse '"+CURSOR_MARK_PARAM+"' after totem: " + 
-                              "value must either be '"+CURSOR_MARK_START+"' or the " + 
-                              "'"+CURSOR_MARK_NEXT+"' returned by a previous search: "
-                              + serialized, ex);
-    }
-    assert null != pieces : "pieces wasn't parsed?";
+      assert null != pieces : "pieces wasn't parsed?";
 
-    if (sortFields.length != pieces.size()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              CURSOR_MARK_PARAM+" does not work with current sort (wrong size): " + serialized);
-    }
+      if (sortFields.length != pieces.size()) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, CURSOR_MARK_PARAM + " does not work with current sort (wrong size): " + serialized);
+      }
 
+      this.values = new ArrayList<>(sortFields.length);
 
-    this.values = new ArrayList<>(sortFields.length);
+      //final BytesRef tmpBytes = new BytesRef();
+      for (int i = 0; i < sortFields.length; i++) {
 
-    final BytesRef tmpBytes = new BytesRef();
-    for (int i = 0; i < sortFields.length; i++) {
+        SortField curSort = sortFields[i];
+        SchemaField curField = schemaFields.get(i);
+        Object rawValue = pieces.get(i);
 
-      SortField curSort = sortFields[i];
-      SchemaField curField = schemaFields.get(i);
-      Object rawValue = pieces.get(i);
+        if (null != curField) {
+          FieldType curType = curField.getType();
+          rawValue = curType.unmarshalSortValue(rawValue);
+        }
 
-      if (null != curField) {
-        FieldType curType = curField.getType();
-        rawValue = curType.unmarshalSortValue(rawValue);
-      } 
-
-      this.values.add(rawValue);
+        this.values.add(rawValue);
+      }
+    } finally {
+    //  BufferUtil.free(buffer);
     }
   }
   
@@ -256,14 +262,17 @@ public final class CursorMark {
     // TODO: we could also encode info about the SortSpec for error checking:
     // the type/name/dir from the SortFields (or a hashCode to act as a checksum) 
     // could help provide more validation beyond just the number of clauses.
-
-    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
+    UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
+    SolrDirectBufferOutputStream out = new SolrDirectBufferOutputStream(buffer);
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(marshalledValues, out);
-      byte[] rawData = out.toByteArray();
-      return Base64.byteArrayToBase64(rawData, 0, rawData.length);
+
+      return Base64.byteArrayToBase64(out.buffer().byteArray(), out.offset() + buffer.wrapAdjustment(), out.position() + buffer.wrapAdjustment());
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
                               "Unable to format search after totem", ex);
+    } finally {
+      BufferUtil.free(buffer);
     }
   }
 

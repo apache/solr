@@ -22,8 +22,10 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -34,7 +36,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
   // as its home. it could interfere with other tests!
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(TEST_HOME(), "solr/collection1/conf/solrconfig-nocache.xml", null);
+    createAndStartJetty(SolrTestUtil.TEST_HOME(), "solr/collection1/conf/solrconfig-nocache.xml", null);
   }
 
   // The tests

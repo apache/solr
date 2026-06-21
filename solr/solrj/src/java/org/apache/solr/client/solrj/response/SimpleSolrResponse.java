@@ -18,12 +18,17 @@ package org.apache.solr.client.solrj.response;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SynchronizedNamedList;
 
 public class SimpleSolrResponse extends SolrResponse {
 
   public long elapsedTime;
 
   public NamedList<Object> nl;
+
+  public SimpleSolrResponse(NamedList nl) {
+    this.nl = nl;
+  }
 
   @Override
   public long getElapsedTime() {
@@ -35,10 +40,6 @@ public class SimpleSolrResponse extends SolrResponse {
     return nl;
   }
 
-  @Override
-  public void setResponse(NamedList<Object> rsp) {
-    nl = rsp;
-  }
 
   @Override
   public void setElapsedTime(long elapsedTime) {

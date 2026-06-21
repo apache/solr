@@ -19,13 +19,16 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 
 import org.junit.BeforeClass;
 
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +40,7 @@ import org.slf4j.LoggerFactory;
  * @see TestMiniSolrCloudClusterSSL
  */
 @RandomizeSSL(ssl=0.5,reason="frequent SSL usage to make test worth while")
+@LuceneTestCase.Nightly // MRM TODO: check
 public class TestSSLRandomization extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,7 +55,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
   }
   
   public void testBaseUrl() throws Exception {
-    String url = buildUrl(6666, "/foo");
+    String url = SolrTestCaseJ4.buildUrl(6666, "/foo");
     assertEquals(sslConfig.isSSLMode() ? "https://127.0.0.1:6666/foo" : "http://127.0.0.1:6666/foo", url);
   }
   
@@ -208,9 +212,9 @@ public class TestSSLRandomization extends SolrCloudTestCase {
     for (Class c : Arrays.asList(SSLOutOfRangeAnnotated.class,
                                  ClientAuthOutOfRangeAnnotated.class,
                                  InheritedOutOfRangeAnnotated.class)) {
-      expectThrows(IllegalArgumentException.class, () -> {
-          Object trash = SSLRandomizer.getSSLRandomizerForClass(c);
-        });
+      SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+        Object trash = SSLRandomizer.getSSLRandomizerForClass(c);
+      });
     }
     
   }

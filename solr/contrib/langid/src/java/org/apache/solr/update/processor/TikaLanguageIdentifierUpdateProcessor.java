@@ -51,9 +51,9 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
     if (content.length() != 0) {
       LanguageIdentifier identifier = new LanguageIdentifier(content);
       // FIXME: Hack - we get the distance from toString and calculate our own certainty score
-      Double distance = Double.parseDouble(tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
+      double distance = Double.parseDouble(tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
       // This formula gives: 0.02 => 0.8, 0.1 => 0.5 which is a better sweetspot than isReasonablyCertain()
-      Double certainty = 1 - (5 * distance);
+      double certainty = 1 - (5 * distance);
       if (certainty < 0)
         certainty = 0d;
       DetectedLanguage language = new DetectedLanguage(identifier.getLanguage(), certainty);

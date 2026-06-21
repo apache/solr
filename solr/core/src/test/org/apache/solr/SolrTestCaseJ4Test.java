@@ -20,8 +20,9 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.solr.core.SolrCore;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 
@@ -29,15 +30,16 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
 
   private static String tmpSolrHome;
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest configuration sets
     // we can so we don't copy that much junk around.
-    tmpSolrHome = createTempDir().toFile().getAbsolutePath();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
 
     File subHome = new File(new File(tmpSolrHome, "core0"), "conf");
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
@@ -48,19 +50,22 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     FileUtils.touch(new File(tmpSolrHome, "core0/core.properties"));
     FileUtils.touch(new File(tmpSolrHome, "core1/core.properties"));
 
-    FileUtils.copyFile(getFile("solr/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("solr/solr.xml"), new File(tmpSolrHome, "solr.xml"));
 
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }
 
-  @AfterClass
-  public static void AfterClass() throws Exception {
-
+  @After
+  public void tearDown() throws Exception {
+    deleteCore();
+    super.tearDown();
   }
 
   @Test
   public void testCorrectCore() throws Exception {
-    assertEquals("should be core1", "core1", h.getCore().getName());
+    SolrCore core = h.getCore();
+    assertEquals("should be core1", "core1", core.getName());
+    core.close();
   }
 
   @Test
@@ -74,11 +79,11 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     params.add("rows", "42");
     assertEquals(params.toString(), params("q", "*:*", "rows", "42").toString());
 
-    expectThrows(RuntimeException.class, () -> {
+    SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       params("parameterWithoutValue");
     });
 
-    expectThrows(RuntimeException.class, () -> {
+    SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       params("q", "*:*", "rows", "42", "parameterWithoutValue");
     });
   }

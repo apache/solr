@@ -63,8 +63,8 @@ public class RankStream extends TupleStream implements Expressible {
   public RankStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter nParam = factory.getNamedOperand(expression, "n");
-    StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, SORT);
+    StreamExpressionNamedParameter nParam = StreamFactory.getNamedOperand(expression, "n");
+    StreamExpressionNamedParameter sortExpression = StreamFactory.getNamedOperand(expression, SORT);
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 2){
@@ -93,7 +93,7 @@ public class RankStream extends TupleStream implements Expressible {
     }
     
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
-    StreamComparator comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), FieldComparator.class);
+    StreamComparator comp = StreamFactory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), FieldComparator.class);
     
     init(stream,nInt,comp);    
   }

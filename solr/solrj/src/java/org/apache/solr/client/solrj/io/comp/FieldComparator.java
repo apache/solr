@@ -81,12 +81,10 @@ public class FieldComparator implements StreamComparator {
     
     sb.append(leftFieldName);
     if(hasDifferentFieldNames()){
-      sb.append("=");
-      sb.append(rightFieldName);
+      sb.append("=").append(rightFieldName);
     }
-    sb.append(" ");
-    sb.append(order);
-    
+    sb.append(" ").append(order);
+
     return new StreamExpressionValue(sb.toString());
   }
 
@@ -141,21 +139,25 @@ public class FieldComparator implements StreamComparator {
   }
   
   @Override
-  public boolean isDerivedFrom(StreamComparator base){
-    if(null == base){ return false; }
-    if(base instanceof FieldComparator){
-      FieldComparator baseComp = (FieldComparator)base;
-      return (leftFieldName.equals(baseComp.leftFieldName) || rightFieldName.equals(baseComp.rightFieldName)) && order == baseComp.order;
-    }
-    else if(base instanceof MultipleFieldComparator){
-      // must equal the first one
-      MultipleFieldComparator baseComps = (MultipleFieldComparator)base;
-      if(baseComps.getComps().length > 0){
-        return isDerivedFrom(baseComps.getComps()[0]);
+  public boolean isDerivedFrom(StreamComparator base) {
+    while (true) {
+      if (null == base) {
+        return false;
       }
+      if (base instanceof FieldComparator) {
+        FieldComparator baseComp = (FieldComparator) base;
+        return (leftFieldName.equals(baseComp.leftFieldName) || rightFieldName.equals(baseComp.rightFieldName)) && order == baseComp.order;
+      } else if (base instanceof MultipleFieldComparator) {
+        // must equal the first one
+        MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
+        if (baseComps.getComps().length > 0) {
+          base = baseComps.getComps()[0];
+          continue;
+        }
+      }
+
+      return false;
     }
-    
-    return false;
   }
   
   @Override

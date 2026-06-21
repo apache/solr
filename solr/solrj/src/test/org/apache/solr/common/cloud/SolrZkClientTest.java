@@ -26,7 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -43,6 +46,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly // sleepy slow test
 public class SolrZkClientTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -54,7 +58,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   SolrZkClient aclClient;
   SolrZkClient credentialsClient;
   SolrZkClient defaultClient;
-  private CloudSolrClient solrClient;
+  private CloudHttp2SolrClient solrClient;
 
 
   @Override
@@ -63,23 +67,23 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig("_default", new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    solrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress());
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress());
 
     final String SCHEME = "digest";
     final String AUTH = "user:pass";
 
-    Path zkDir = createTempDir();
+    Path zkDir = SolrTestUtil.createTempDir();
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
-    try (SolrZkClient client = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+    try (SolrZkClient client = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT).start()) {
       // Set up chroot
       client.makePath("/solr", false, true);
     }
 
-    defaultClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    defaultClient.makePath(PATH, true);
+    defaultClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT).start();
+    defaultClient.mkdirs(PATH);
 
     aclClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
       @Override
@@ -96,7 +100,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
           }
         };
       }
-    };
+    }.start();
 
     credentialsClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
       @Override
@@ -108,7 +112,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
           }
         };
       }
-    };
+    }.start();
   }
 
   @Override
@@ -118,7 +122,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     defaultClient.close();
     zkServer.shutdown();
     solrClient.close();
-    cluster.shutdown();
+    shutdownCluster();
     super.tearDown();
   }
 
@@ -170,28 +174,28 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     assertFalse(wrapped1A.equals(wrappedB));
     assertEquals(wrapped1A.hashCode(), wrapped2A.hashCode());
 
-    CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)
+    CollectionAdminRequest.createCollection(SolrTestUtil.getTestName(), "_default", 1, 1)
         .setMaxShardsPerNode(2)
         .process(solrClient);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"foo", "bar")
+    CollectionAdminRequest.setCollectionProperty(SolrTestUtil.getTestName(),"foo", "bar")
         .process(solrClient);
 
     //Thread.sleep(600000);
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped2A, null,true);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrapped1A, null);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrapped2A, null);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bam")
+    CollectionAdminRequest.setCollectionProperty(SolrTestUtil.getTestName(),"baz", "bam")
         .process(solrClient);
 
     Thread.sleep(1000); // make sure zk client watch has time to be notified.
     assertEquals(1, calls.get()); // same wrapped watch set twice, only invoked once
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrappedB, null,true);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrapped1A, null);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrappedB, null);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bang")
+    CollectionAdminRequest.setCollectionProperty(SolrTestUtil.getTestName(),"baz", "bang")
         .process(solrClient);
 
     Thread.sleep(1000); // make sure zk client watch has time to be notified.
@@ -200,7 +204,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
   private static boolean canRead(SolrZkClient zkClient, String path) throws KeeperException, InterruptedException {
     try {
-      zkClient.getData(path, null, null, true);
+      zkClient.getData(path, null, null);
       return true;
     } catch (KeeperException.NoAuthException e) {
       return false;

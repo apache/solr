@@ -77,7 +77,7 @@ public interface CollectionParams {
    * <p>Some of these actions are also used over the cluster state update queue at <code>/overseer/queue</code> and have a
    * different (though related) meaning there. These actions are:
    * {@link #CREATE}, {@link #DELETE}, {@link #CREATESHARD}, {@link #DELETESHARD}, {@link #ADDREPLICA}, {@link #ADDREPLICAPROP},
-   * {@link #DELETEREPLICAPROP}, {@link #BALANCESHARDUNIQUE}, {@link #MODIFYCOLLECTION} and {@link #MIGRATESTATEFORMAT}.</p>
+   * {@link #DELETEREPLICAPROP}, {@link #BALANCESHARDUNIQUE} and {@link #MODIFYCOLLECTION}.</p>
    */
   enum CollectionAction {
     CREATE(true, LockLevel.COLLECTION),
@@ -91,34 +91,32 @@ public interface CollectionParams {
     MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION), // internal use only
     DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
     SPLITSHARD(true, LockLevel.SHARD),
-    DELETESHARD(true, LockLevel.SHARD),
+    DELETESHARD(true, LockLevel.NONE),
     CREATESHARD(true, LockLevel.COLLECTION),
-    DELETEREPLICA(true, LockLevel.SHARD),
+    DELETEREPLICA(true, LockLevel.NONE),
     FORCELEADER(true, LockLevel.SHARD),
     MIGRATE(true, LockLevel.COLLECTION),
     ADDROLE(true, LockLevel.NONE),
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
-    COLLECTIONPROP(true, LockLevel.COLLECTION),
+    COLLECTIONPROP(true, LockLevel.NONE),
     REQUESTSTATUS(false, LockLevel.NONE),
     DELETESTATUS(false, LockLevel.NONE),
-    ADDREPLICA(true, LockLevel.SHARD),
+    ADDREPLICA(true, LockLevel.NONE),
     MOVEREPLICA(true, LockLevel.SHARD),
     OVERSEERSTATUS(false, LockLevel.NONE),
     LIST(false, LockLevel.NONE),
     CLUSTERSTATUS(false, LockLevel.NONE),
-    ADDREPLICAPROP(true, LockLevel.REPLICA),
-    DELETEREPLICAPROP(true, LockLevel.REPLICA),
+    ADDREPLICAPROP(true, LockLevel.NONE),
+    DELETEREPLICAPROP(true, LockLevel.NONE),
     BALANCESHARDUNIQUE(true, LockLevel.SHARD),
     REBALANCELEADERS(true, LockLevel.COLLECTION),
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
-    MIGRATESTATEFORMAT(true, LockLevel.CLUSTER),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
-    UTILIZENODE(false, LockLevel.NONE),
     //only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks
@@ -131,7 +129,7 @@ public interface CollectionParams {
     NONE(false, LockLevel.NONE),
     // TODO: not implemented yet
     MERGESHARDS(true, LockLevel.SHARD),
-    COLSTATUS(true, LockLevel.NONE),
+    COLSTATUS(false, LockLevel.NONE),
     // this command implements its own locking
     REINDEXCOLLECTION(true, LockLevel.NONE),
     RENAME(true, LockLevel.COLLECTION)

@@ -81,6 +81,8 @@ public class JSONWriter {
         arr.write(o.toString());
         writeNumber(arr);
       }
+    } else if (o instanceof Writable) {
+      ((Writable) o).write(this);
     } else if (o instanceof Map) {
       write((Map<?, ?>) o);
     } else if (o instanceof Collection) {
@@ -89,8 +91,6 @@ public class JSONWriter {
       write(((Boolean) o).booleanValue());
     } else if (o instanceof CharSequence) {
       writeString((CharSequence) o);
-    } else if (o instanceof Writable) {
-      ((Writable) o).write(this);
     } else if (o instanceof Object[]) {
       write(Arrays.asList((Object[]) o));
     } else if (o instanceof int[]) {
@@ -132,7 +132,7 @@ public class JSONWriter {
         writeValueSeparator();
       }
       if (sz > 1) indent();
-      writeString(entry.getKey().toString());
+      if (entry.getKey() != null) writeString(entry.getKey().toString());
       writeNameSeparator();
       write(entry.getValue());
     }

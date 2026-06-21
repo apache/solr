@@ -56,7 +56,7 @@ public abstract class Metric implements Expressible {
   
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(getMetricNodeId().toString())
+    return new Explanation(metricNodeId.toString())
       .withFunctionName(functionName)
       .withImplementingClass(getClass().getName())
       .withExpression(toExpression(factory).toString())

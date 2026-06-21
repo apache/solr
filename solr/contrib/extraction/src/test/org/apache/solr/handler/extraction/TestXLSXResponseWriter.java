@@ -24,11 +24,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.SolrCore;
@@ -41,22 +43,25 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
+@LuceneTestCase.SuppressCodecs({"Lucene86"})
 public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
 
   private static XLSXResponseWriter writerXlsx;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestXLSXResponseWriter() throws Exception {
     System.setProperty("enable.update.log", "false");
-    initCore("solrconfig.xml","schema.xml",getFile("extraction/solr").getAbsolutePath());
+    initCore("solrconfig.xml","schema.xml", SolrTestUtil.getFile("extraction/solr").getAbsolutePath());
     createIndex();
     //find a reference to the default response writer so we can redirect its output later
-    SolrCore testCore = h.getCore();
-    QueryResponseWriter writer = testCore.getQueryResponseWriter("xlsx");
-    if (writer instanceof XLSXResponseWriter) {
-      writerXlsx = (XLSXResponseWriter) testCore.getQueryResponseWriter("xlsx");
-    } else {
-      throw new Exception("XLSXResponseWriter not registered with solr core");
+    try (SolrCore testCore = h.getCore()) {
+      QueryResponseWriter writer = testCore.getQueryResponseWriter("xlsx");
+      if (writer instanceof XLSXResponseWriter) {
+        writerXlsx = (XLSXResponseWriter) testCore.getQueryResponseWriter("xlsx");
+      } else {
+        throw new Exception("XLSXResponseWriter not registered with solr core");
+      }
     }
   }
 
@@ -71,6 +76,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void cleanupWriter() throws Exception {
+    deleteCore();
     writerXlsx = null;
   }
 
@@ -86,6 +92,8 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
 
     // check Content-Type
     assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", writerXlsx.getContentType(r, rsp));
+
+    r.close();
 
     // test our basic types,and that fields come back in the requested order
     XSSFSheet resultSheet = getWSResultForQuery(req("q","id:1", "wt","xlsx", "fl","id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt1"));

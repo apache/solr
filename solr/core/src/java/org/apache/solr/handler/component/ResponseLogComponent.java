@@ -79,10 +79,9 @@ public class ResponseLogComponent extends SearchComponent {
     }
   }
 
-  protected void processIds(ResponseBuilder rb, DocList dl, IndexSchema schema,
-      SolrIndexSearcher searcher) throws IOException {
+  protected static void processIds(ResponseBuilder rb, DocList dl, IndexSchema schema, SolrIndexSearcher searcher) throws IOException {
     
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(1024);
 
     Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
     for(DocIterator iter = dl.iterator(); iter.hasNext();) {
@@ -95,10 +94,9 @@ public class ResponseLogComponent extends SearchComponent {
     }  
   }
   
-  protected void processScores(ResponseBuilder rb, DocList dl, IndexSchema schema,
-      SolrIndexSearcher searcher) throws IOException {
+  protected static void processScores(ResponseBuilder rb, DocList dl, IndexSchema schema, SolrIndexSearcher searcher) throws IOException {
     
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(1024);
     Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
     for(DocIterator iter = dl.iterator(); iter.hasNext();) {
       sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields)))

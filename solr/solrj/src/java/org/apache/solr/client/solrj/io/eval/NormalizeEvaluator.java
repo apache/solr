@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -39,26 +40,28 @@ public class NormalizeEvaluator extends RecursiveObjectEvaluator implements OneV
   }
 
   @Override
-  public Object doWork(Object value){
-    if(null == value){
-      return null;
-    }
-    else if(value instanceof List){
-      return Arrays.stream(StatUtils.normalize(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).boxed().collect(Collectors.toList());
-    } else if (value instanceof Matrix) {
-      Matrix matrix = (Matrix) value;
-      double[][] data = matrix.getData();
-      double[][] standardized = new double[data.length][];
-      for(int i=0; i<data.length; i++) {
-        double[] row = data[i];
-        standardized[i] = StatUtils.normalize(row);
+  public Object doWork(Object value) {
+    while (true) {
+      if (null == value) {
+        return null;
+      } else if (value instanceof List) {
+        return Arrays.stream(StatUtils.normalize(((List<?>) value).stream().mapToDouble(innerValue -> ((Number) innerValue).doubleValue()).toArray())).boxed()
+            .collect(Collectors.toList());
+      } else if (value instanceof Matrix) {
+        Matrix matrix = (Matrix) value;
+        double[][] data = matrix.getData();
+        double[][] standardized = new double[data.length][];
+        for (int i = 0; i < data.length; i++) {
+          double[] row = data[i];
+          standardized[i] = StatUtils.normalize(row);
+        }
+        Matrix m = new Matrix(standardized);
+        m.setRowLabels(matrix.getRowLabels());
+        m.setColumnLabels(matrix.getColumnLabels());
+        return m;
+      } else {
+        value = Collections.singletonList((BigDecimal) value);
       }
-      Matrix m = new Matrix(standardized);
-      m.setRowLabels(matrix.getRowLabels());
-      m.setColumnLabels(matrix.getColumnLabels());
-      return m;
-    } else {
-      return doWork(Arrays.asList((BigDecimal)value));
     }
   }
 }

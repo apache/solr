@@ -102,7 +102,10 @@ class StringValue implements SortValue {
   public Object getCurrentValue() throws IOException {
     assert present == true;
     if (currentOrd != lastOrd) {
-      lastBytes = docValues.lookupOrd(currentOrd);
+      // currentOrd is a GLOBAL ordinal (mapped via toGlobal in setCurrentValue). It must be looked
+      // up against the global docValues, NOT the per-segment docValues, otherwise the wrong term
+      // bytes (or an out-of-range ord) are returned.
+      lastBytes = globalDocValues.lookupOrd(currentOrd);
       lastOrd = currentOrd;
       lastString = null;
     }

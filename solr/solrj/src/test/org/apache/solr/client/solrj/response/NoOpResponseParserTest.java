@@ -30,8 +30,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -49,19 +48,23 @@ import org.junit.Test;
  */
 public class NoOpResponseParserTest extends SolrJettyTestBase {
 
+
   private static InputStream getResponse() throws IOException {
     return new ReaderInputStream(new StringReader("NO-OP test response"), StandardCharsets.UTF_8);
   }
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+
   }
 
   @Before
-  public void doBefore() throws IOException, SolrServerException {
+  public void setUp() throws Exception {
+    createAndStartJetty(legacyExampleCollection1SolrHome());
+    super.setUp();
+
     //add document and commit, and ensure it's there
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
     client.add(doc);
@@ -74,7 +77,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   @Test
   public void testQueryParse() throws Exception {
 
-    try (HttpSolrClient client = (HttpSolrClient) createNewSolrClient()) {
+    try (Http2SolrClient client = (Http2SolrClient) createNewSolrClient(jetty)) {
       SolrQuery query = new SolrQuery("id:1234");
       QueryRequest req = new QueryRequest(query);
       client.setParser(new NoOpResponseParser());

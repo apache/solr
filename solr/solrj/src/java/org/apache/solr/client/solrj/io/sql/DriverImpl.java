@@ -104,7 +104,7 @@ public class DriverImpl implements Driver {
     return null;
   }
 
-  protected URI processUrl(String url) throws SQLException {
+  protected static URI processUrl(String url) throws SQLException {
     URI uri;
     try {
       uri = new URI(url.replaceFirst("jdbc:", ""));
@@ -119,7 +119,7 @@ public class DriverImpl implements Driver {
     return uri;
   }
 
-  private void loadParams(URI uri, Properties props) throws SQLException {
+  private static void loadParams(URI uri, Properties props) throws SQLException {
     List<NameValuePair> parsedParams = URLEncodedUtils.parse(uri, "UTF-8");
     for (NameValuePair pair : parsedParams) {
       if (pair.getValue() != null) {

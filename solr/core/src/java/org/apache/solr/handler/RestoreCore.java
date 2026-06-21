@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
@@ -57,7 +58,7 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   public boolean doRestore() throws Exception {
-
+    log.info("Running restore");
     URI backupPath = backupRepo.resolve(backupLocation, backupName);
     SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
     String restoreIndexName = "restore." + dateFormat.format(new Date());
@@ -66,6 +67,7 @@ public class RestoreCore implements Callable<Boolean> {
     String indexDirPath = core.getIndexDir();
     Directory restoreIndexDir = null;
     Directory indexDir = null;
+    boolean success = false;
     try {
 
       restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath,
@@ -84,10 +86,11 @@ public class RestoreCore implements Callable<Boolean> {
           try {
             checksum = CodecUtil.retrieveChecksum(indexInput);
           } catch (Exception e) {
+            ParWork.propagateInterrupt(e);
             log.warn("Could not read checksum from index file: {}", filename, e);
           }
           long length = indexInput.length();
-          IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
+          IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum, "restore", "restore");
           if (!compareResult.equal ||
               (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, length, compareResult))) {
             backupRepo.copyFileTo(backupPath, filename, restoreIndexDir);
@@ -96,6 +99,7 @@ public class RestoreCore implements Callable<Boolean> {
             restoreIndexDir.copyFrom(indexDir, filename, filename, IOContext.READONCE);
           }
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           log.warn("Exception while restoring the backup index ", e);
           throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
         }
@@ -103,13 +107,13 @@ public class RestoreCore implements Callable<Boolean> {
       log.debug("Switching directories");
       core.modifyIndexProps(restoreIndexName);
 
-      boolean success;
       try {
         core.getUpdateHandler().newIndexWriter(false);
         openNewSearcher();
         success = true;
         log.info("Successfully restored to the backup index");
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         //Rollback to the old index directory. Delete the restore index directory and mark the restore as failed.
         log.warn("Could not switch to restored index. Rolling back to the current index", e);
         Directory dir = null;
@@ -119,18 +123,15 @@ public class RestoreCore implements Callable<Boolean> {
           dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
         } finally {
           if (dir != null) {
-            core.getDirectoryFactory().release(dir);
+         //   core.getDirectoryFactory().release(dir);
           }
         }
 
-        core.getDirectoryFactory().doneWithDirectory(restoreIndexDir);
-        core.getDirectoryFactory().remove(restoreIndexDir);
         core.getUpdateHandler().newIndexWriter(false);
         openNewSearcher();
         throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
       }
       if (success) {
-        core.getDirectoryFactory().doneWithDirectory(indexDir);
         // Cleanup all index files not associated with any *named* snapshot.
         core.deleteNonSnapshotIndexFiles(indexDirPath);
       }
@@ -138,15 +139,18 @@ public class RestoreCore implements Callable<Boolean> {
       return true;
     } finally {
       if (restoreIndexDir != null) {
-        core.getDirectoryFactory().release(restoreIndexDir);
+        if (!success) {
+      //    core.getDirectoryFactory().doneWithDirectory(restoreIndexDir);
+        }
+      //  core.getDirectoryFactory().release(restoreIndexDir);
       }
       if (indexDir != null) {
-        core.getDirectoryFactory().release(indexDir);
+      //  core.getDirectoryFactory().release(indexDir);
       }
     }
   }
 
-  private void checkInterrupted() throws InterruptedException {
+  private static void checkInterrupted() throws InterruptedException {
     if (Thread.currentThread().isInterrupted()) {
       throw new InterruptedException("Stopping restore process. Thread was interrupted.");
     }

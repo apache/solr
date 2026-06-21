@@ -50,8 +50,8 @@ public class DelegatingCollector extends SimpleCollector {
   /** Sets the last delegate in a chain of DelegatingCollectors */
   public void setLastDelegate(Collector delegate) {
     DelegatingCollector ptr = this;
-    for(; ptr.getDelegate() instanceof DelegatingCollector; ptr = (DelegatingCollector)ptr.getDelegate());
-    ptr.setDelegate(delegate);
+    for(; ptr.delegate instanceof DelegatingCollector; ptr = (DelegatingCollector) ptr.delegate);
+    ptr.delegate = delegate;
     setLastDelegateCount++;
   }
 

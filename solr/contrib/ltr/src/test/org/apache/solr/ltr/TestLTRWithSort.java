@@ -17,6 +17,7 @@
 
 package org.apache.solr.ltr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.model.LinearModel;
@@ -24,28 +25,29 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestLTRWithSort extends TestRerankBase {
 
   @Before
   public void before() throws Exception {
     setuptest(false);
-    assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
+    restTestHarness.update(adoc("id", "1", "title", "a1", "description", "E", "popularity",
         "1"));
-    assertU(adoc("id", "2", "title", "a1 b1", "description",
+    restTestHarness.update(adoc("id", "2", "title", "a1 b1", "description",
         "B", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "a1 b1 c1", "description", "B", "popularity",
+    restTestHarness.update(adoc("id", "3", "title", "a1 b1 c1", "description", "B", "popularity",
         "3"));
-    assertU(adoc("id", "4", "title", "a1 b1 c1 d1", "description", "B", "popularity",
+    restTestHarness.update(adoc("id", "4", "title", "a1 b1 c1 d1", "description", "B", "popularity",
         "4"));
-    assertU(adoc("id", "5", "title", "a1 b1 c1 d1 e1", "description", "E", "popularity",
+    restTestHarness.update(adoc("id", "5", "title", "a1 b1 c1 d1 e1", "description", "E", "popularity",
         "5"));
-    assertU(adoc("id", "6", "title", "a1 b1 c1 d1 e1 f1", "description", "B",
+    restTestHarness.update(adoc("id", "6", "title", "a1 b1 c1 d1 e1 f1", "description", "B",
         "popularity", "6"));
-    assertU(adoc("id", "7", "title", "a1 b1 c1 d1 e1 f1 g1", "description",
+    restTestHarness.update(adoc("id", "7", "title", "a1 b1 c1 d1 e1 f1 g1", "description",
         "C", "popularity", "7"));
-    assertU(adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description",
+    restTestHarness.update(adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description",
         "D", "popularity", "8"));
-    assertU(commit());
+    restTestHarness.update(commit());
   }
   
   @After

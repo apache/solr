@@ -16,43 +16,20 @@
  */
 package org.apache.solr.client.solrj.cloud;
 
-import java.util.Collection;
 import java.util.Map;
-import java.util.function.Predicate;
-
-import org.apache.solr.common.util.Pair;
 
 /**
  * Distributed queue component. Methods largely follow those in {@link java.util.Queue}.
  */
 public interface DistributedQueue {
-  byte[] peek() throws Exception;
-
-  byte[] peek(boolean block) throws Exception;
-
-  byte[] peek(long wait) throws Exception;
-
-  byte[] poll() throws Exception;
-
-  byte[] remove() throws Exception;
-
-  byte[] take() throws Exception;
 
   void offer(byte[] data) throws Exception;
+
+  void offer(byte[] data, boolean retryOnExpiration) throws Exception;
 
   /**
    * Retrieve statistics about the queue size, operations and their timings.
    */
   Map<String, Object> getStats();
-
-  /**
-   * Peek multiple elements from the queue in a single call.
-   * @param max maximum elements to retrieve
-   * @param waitMillis if less than maximum element is in the queue then wait at most this time for at least one new element.
-   * @param acceptFilter peek only elements that pass this filter
-   * @return peeked elements
-   * @throws Exception on errors
-   */
-  Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws Exception;
 
 }

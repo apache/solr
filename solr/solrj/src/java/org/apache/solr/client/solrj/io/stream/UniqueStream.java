@@ -59,7 +59,7 @@ public class UniqueStream extends TupleStream implements Expressible {
   public UniqueStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter overExpression = factory.getNamedOperand(expression, "over");
+    StreamExpressionNamedParameter overExpression = StreamFactory.getNamedOperand(expression, "over");
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 1){
@@ -74,7 +74,8 @@ public class UniqueStream extends TupleStream implements Expressible {
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting single 'over' parameter listing fields to unique over but didn't find one",expression));
     }
     
-    init(factory.constructStream(streamExpressions.get(0)), factory.constructEqualitor(((StreamExpressionValue)overExpression.getParameter()).getValue(), FieldEqualitor.class));
+    init(factory.constructStream(streamExpressions.get(0)), StreamFactory
+        .constructEqualitor(((StreamExpressionValue)overExpression.getParameter()).getValue(), FieldEqualitor.class));
   }
   
   private void init(TupleStream stream, StreamEqualitor eq) throws IOException{
@@ -111,8 +112,8 @@ public class UniqueStream extends TupleStream implements Expressible {
     }
     
     // over
-    if(originalEqualitor instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("over",((Expressible)originalEqualitor).toExpression(factory)));
+    if(originalEqualitor != null){
+      expression.addParameter(new StreamExpressionNamedParameter("over", originalEqualitor.toExpression(factory)));
     }
     else{
       throw new IOException("This UniqueStream contains a non-expressible equalitor - it cannot be converted to an expression");

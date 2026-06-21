@@ -30,7 +30,7 @@ public class ConcatEvaluator extends RecursiveObjectEvaluator implements ManyVal
   public ConcatEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
 
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(namedParam.getName().equals("delim")){
@@ -55,7 +55,7 @@ public class ConcatEvaluator extends RecursiveObjectEvaluator implements ManyVal
         if(s.startsWith("\"") && s.endsWith("\"")) {
           s = s.substring(1, s.length()-1);
         }
-        buff.append(s.toString());
+        buff.append(s);
     }
 
     return buff.toString();

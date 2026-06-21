@@ -22,13 +22,14 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 
 /**
  * Test the REST API for managing stop words, which is pretty basic:
@@ -36,43 +37,35 @@ import org.restlet.ext.servlet.ServerServlet;
  * PUT: add some words to the current list
  */
 public class TestManagedStopFilterFactory extends RestTestBase {
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
+  private File tmpSolrHome;
 
-  private static final String collection = "collection1";
-  private static final String confDir = collection + "/conf";
+  private final String collection = "collection1";
+  private final String confDir = collection + "/conf";
 
   @Before
-  public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+  public void setUp() throws Exception {
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
+
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
                           "/solr", true, extraServlets);
+    super.setUp();
   }
 
   @After
-  private void after() throws Exception {
-    if (null != jetty) {
+  public void tearDown() throws Exception {
+    if (jetty != null) {
       jetty.stop();
-      jetty = null;
     }
+    super.tearDown();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
-    
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
 
@@ -151,8 +144,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
             "count(/response/lst[@name='field']) = 1",
             "/response/lst[@name='responseHeader']/int[@name='status'] = '0'");
 
-    assertU(adoc(newFieldName, "This is the one", "id", "6"));
-    assertU(commit());
+    restTestHarness.update(adoc(newFieldName, "This is the one", "id", "6"));
+    restTestHarness.update(commit());
 
     assertQ("/select?q=" + newFieldName + ":This",
             "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
@@ -167,8 +160,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
     assertJDelete(endpoint + "/the", "/responseHeader/status==0");
 
     // verify that removing 'the' is not yet in effect
-    assertU(adoc(newFieldName, "This is the other one", "id", "7"));
-    assertU(commit());
+    restTestHarness.update(adoc(newFieldName, "This is the other one", "id", "7"));
+    restTestHarness.update(commit());
 
     assertQ("/select?q=%7B%21raw%20f=" + newFieldName + "%7Dthe",
             "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
@@ -177,8 +170,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
     restTestHarness.reload();
 
     // verify that after reloading, removing 'the' has taken effect
-    assertU(adoc(newFieldName, "This is the other other one", "id", "8"));
-    assertU(commit());
+    restTestHarness.update(adoc(newFieldName, "This is the other other one", "id", "8"));
+    restTestHarness.update(commit());
 
     assertQ("/select?q=%7B%21raw%20f=" + newFieldName + "%7Dthe",
             "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",

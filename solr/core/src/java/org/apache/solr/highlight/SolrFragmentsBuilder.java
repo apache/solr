@@ -69,7 +69,7 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
   protected abstract FragmentsBuilder getFragmentsBuilder( SolrParams params,
       String[] preTags, String[] postTags, BoundaryScanner bs );
   
-  protected char getMultiValuedSeparatorChar( SolrParams params ){
+  protected static char getMultiValuedSeparatorChar(SolrParams params){
     String separator = params.get( HighlightParams.MULTI_VALUED_SEPARATOR, " " );
     if( separator.length() > 1 ){
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,

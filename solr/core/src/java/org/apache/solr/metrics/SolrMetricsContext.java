@@ -17,15 +17,18 @@
 
 package org.apache.solr.metrics;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Timer;
 import org.apache.solr.util.stats.MetricUtils;
 
@@ -38,13 +41,15 @@ import org.apache.solr.util.stats.MetricUtils;
 public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
-  private final String tag;
-  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  final String tag;
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet(128);
+  private final boolean enabled;
 
-  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
+  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag, boolean enabled) {
     this.registryName = registryName;
     this.metricManager = metricManager;
     this.tag = tag;
+    this.enabled = enabled;
   }
 
   /**
@@ -93,7 +98,7 @@ public class SolrMetricsContext {
    * @param child child object that produces metrics with a different life-cycle than the parent.
    */
   public SolrMetricsContext getChildContext(Object child) {
-    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName, SolrMetricProducer.getUniqueMetricTag(child, tag));
+    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName, SolrMetricProducer.getUniqueMetricTag(child, tag), enabled);
     return childContext;
   }
 
@@ -117,6 +122,9 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String, String...)}.
    */
   public Meter meter(String metricName, String... metricPath) {
+    if (!enabled) {
+      return new NullMeter();
+    }
     return metricManager.meter(this, registryName, metricName, metricPath);
   }
 
@@ -124,8 +132,10 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#counter(SolrMetricsContext, String, String, String...)}.
    */
   public Counter counter(String metricName, String... metricPath) {
+    if (!enabled) {
+      return new NullCounter();
+    }
     return metricManager.counter(this, registryName, metricName, metricPath);
-
   }
 
   /**
@@ -139,6 +149,10 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String, String...)}.
    */
   public Timer timer(String metricName, String... metricPath) {
+    if (!enabled) {
+      return new NullTimer();
+    }
+
     return metricManager.timer(this, registryName, metricName, metricPath);
   }
 
@@ -146,6 +160,9 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#histogram(SolrMetricsContext, String, String, String...)}.
    */
   public Histogram histogram(String metricName, String... metricPath) {
+    if (!enabled) {
+      return new NullHistogram(null);
+    }
     return metricManager.histogram(this, registryName, metricName, metricPath);
   }
 
@@ -154,5 +171,59 @@ public class SolrMetricsContext {
    */
   public MetricRegistry getMetricRegistry() {
     return metricManager.registry(registryName);
+  }
+
+  private static class NullHistogram extends Histogram {
+
+    public NullHistogram(Reservoir reservoir) {
+      super(null);
+    }
+
+    public void update(int value) {
+    }
+
+    public void update(long value) {
+    }
+
+  }
+
+  private static class NullCounter extends Counter {
+    public void inc() {
+      inc(1);
+    }
+
+    public void inc(long n) {
+
+    }
+
+    public void dec() {
+
+    }
+
+    public void dec(long n) {
+
+    }
+  }
+
+  private static class NullMeter extends Meter {
+
+    public void mark() {
+
+    }
+
+    public void mark(long n) {
+
+    }
+
+  }
+
+  private static class NullTimer extends Timer {
+    public void update(long duration, TimeUnit unit) {
+
+    }
+
+    public void update(Duration duration) {
+
+    }
   }
 }

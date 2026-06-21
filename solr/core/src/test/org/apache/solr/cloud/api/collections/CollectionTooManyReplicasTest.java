@@ -16,11 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -28,93 +26,22 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Slow
+@LuceneTestCase.AwaitsFix(bugUrl = "MRM TODO: - relying on maxshardspernode enforcement, just delete this test")
 public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
-  }
-
-  @Before
-  public void deleteCollections() throws Exception {
-    cluster.deleteAllCollections();
-  }
-
-  @Test
-  public void testAddTooManyReplicas() throws Exception {
-    final String collectionName = "TooManyReplicasInSeveralFlavors";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
-        .setMaxShardsPerNode(1)
-        .process(cluster.getSolrClient());
-
-    // I have two replicas, one for each shard
-
-    // Curiously, I should be able to add a bunch of replicas if I specify the node, even more than maxShardsPerNode
-    // Just get the first node any way we can.
-    // Get a node to use for the "node" parameter.
-    String nodeName = getAllNodeNames(collectionName).get(0);
-
-    // Add a replica using the "node" parameter (no "too many replicas check")
-    // this node should have 2 replicas on it
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-        .setNode(nodeName)
-        .process(cluster.getSolrClient());
-
-    // Three replicas so far, should be able to create another one "normally"
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-        .process(cluster.getSolrClient());
-
-    // This one should fail though, no "node" parameter specified
-    Exception e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-          .process(cluster.getSolrClient());
-    });
-
-    assertTrue("Should have gotten the right error message back",
-          e.getMessage().contains("given the current number of eligible live nodes"));
-
-
-    // Oddly, we should succeed next just because setting property.name will not check for nodes being "full up"
-    // TODO: Isn't this a bug?
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-        .withProperty("name", "bogus2")
-        .setNode(nodeName)
-        .process(cluster.getSolrClient());
-
-    DocCollection collectionState = getCollectionState(collectionName);
-    Slice slice = collectionState.getSlice("shard1");
-    Replica replica = getRandomReplica(slice, r -> r.getCoreName().equals("bogus2"));
-    assertNotNull("Should have found a replica named 'bogus2'", replica);
-    assertEquals("Replica should have been put on correct core", nodeName, replica.getNodeName());
-
-    // Shard1 should have 4 replicas
-    assertEquals("There should be 4 replicas for shard 1", 4, slice.getReplicas().size());
-
-    // And let's fail one more time because to ensure that the math doesn't do weird stuff it we have more replicas
-    // than simple calcs would indicate.
-    Exception e2 = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-          .process(cluster.getSolrClient());
-    });
-
-    assertTrue("Should have gotten the right error message back",
-        e2.getMessage().contains("given the current number of eligible live nodes"));
-
-    // wait for recoveries to finish, for a clean shutdown - see SOLR-9645
-    waitForState("Expected to see all replicas active", collectionName, (n, c) -> {
-      for (Replica r : c.getReplicas()) {
-        if (r.getState() != Replica.State.ACTIVE)
-          return false;
-      }
-      return true;
-    });
   }
 
   @Test
@@ -135,7 +62,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // Now fail to add the third as it should exceed maxShardsPerNode
-    Exception e = expectThrows(Exception.class, () -> {
+    Exception e = LuceneTestCase.expectThrows(Exception.class, () -> {
       CollectionAdminRequest.createShard(collectionName, "shard3")
           .process(cluster.getSolrClient());
     });
@@ -150,7 +77,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // And just for yucks, insure we fail the "regular" one again.
-    Exception e2 = expectThrows(Exception.class, () -> {
+    Exception e2 = LuceneTestCase.expectThrows(Exception.class, () -> {
       CollectionAdminRequest.createShard(collectionName, "shard5")
           .process(cluster.getSolrClient());
     });
@@ -159,9 +86,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
     // And finally, ensure that there are all the replicas we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
-    waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c) -> {
-      return DocCollection.isFullyActive(n, c, 4, 2);
-    });
+    cluster.waitForActiveCollection(collectionName, 4, 8);
     Map<String, Slice> slices = getCollectionState(collectionName).getSlicesMap();
     assertEquals("There should be exaclty four slices", slices.size(), 4);
     assertNotNull("shardstart should exist", slices.get("shardstart"));
@@ -176,6 +101,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.Nightly // TODO: investigate why this can be 15s +
   public void testDownedShards() throws Exception {
     String collectionName = "TooManyReplicasWhenAddingDownedNode";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 1)
@@ -190,7 +116,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     try {
 
       // Adding a replica on a dead node should fail
-      Exception e1 = expectThrows(Exception.class, () -> {
+      Exception e1 = LuceneTestCase.expectThrows(Exception.class, () -> {
         CollectionAdminRequest.addReplicaToShard(collectionName, "shardstart")
             .setNode(deadNode)
             .process(cluster.getSolrClient());
@@ -199,7 +125,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
           e1.toString().contains("At least one of the node(s) specified [" + deadNode + "] are not currently active in"));
 
       // Should also die if we just add a shard
-      Exception e2 = expectThrows(Exception.class, () -> {
+      Exception e2 = LuceneTestCase.expectThrows(Exception.class, () -> {
         CollectionAdminRequest.createShard(collectionName, "shard1")
             .setNodeSet(deadNode)
             .process(cluster.getSolrClient());

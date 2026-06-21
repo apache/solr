@@ -30,6 +30,6 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
   public void testQParserBackwardsCompatibility() {
     assertEquals("significantTerms", SignificantTermsQParserPlugin.NAME);
     assertEquals(SignificantTermsQParserPlugin.class,
-        QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME).getClass());
+        QParserStdPlugins.standardPlugins.get(SignificantTermsQParserPlugin.NAME).getClass());
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 import javax.servlet.Filter;
@@ -28,16 +29,13 @@ public class JettyConfig {
   // by default jetty will start with http2 + http1 support
   public final boolean onlyHttp1;
 
-  public final int port;
+  public Integer port;
 
   public final String context;
 
   public final boolean enableV2;
 
-
   public final boolean stopAtShutdown;
-  
-  public final Long waitForLoadingCoresToFinishMs;
 
   public final Map<ServletHolder, String> extraServlets;
 
@@ -47,19 +45,23 @@ public class JettyConfig {
   
   public final int portRetryTime;
 
-  private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
-                      Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
-                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2) {
+  public final boolean enableProxy;
+
+ // public final SolrQueuedThreadPool qtp;
+
+  private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown, Map<ServletHolder, String> extraServlets,
+                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2, boolean enableProxy, SolrQueuedThreadPool qtp) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
-    this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
     this.extraServlets = extraServlets;
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
     this.portRetryTime = portRetryTime;
     this.enableV2 = enableV2;
+    this.enableProxy = enableProxy;
+    //this.qtp = qtp;
   }
 
   public static Builder builder() {
@@ -74,6 +76,11 @@ public class JettyConfig {
     builder.extraServlets = other.extraServlets;
     builder.extraFilters = other.extraFilters;
     builder.sslConfig = other.sslConfig;
+    builder.enableProxy = other.enableProxy;
+    builder.portRetryTime = other.portRetryTime;
+    builder.onlyHttp1 = other.onlyHttp1;
+    builder.enableV2 = other.enableV2;
+   // builder.qtp = other.qtp;
     return builder;
   }
 
@@ -89,6 +96,8 @@ public class JettyConfig {
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
     SSLConfig sslConfig = null;
     int portRetryTime = 60;
+    boolean enableProxy;
+   // SolrQueuedThreadPool qtp;
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
       this.onlyHttp1 = useOnlyHttp1;
@@ -151,10 +160,20 @@ public class JettyConfig {
       return this;
     }
 
+    public Builder enableProxy(boolean enable) {
+      this.enableProxy = enable;
+      return this;
+    }
+
+//    public Builder withExecutor(SolrQueuedThreadPool qtp) {
+//      this.qtp = qtp;
+//      return this;
+//    }
+
 
     public JettyConfig build() {
       return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown,
-          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2);
+            extraServlets, extraFilters, sslConfig, enableV2, enableProxy, null);
     }
 
   }

@@ -17,7 +17,17 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.jctools.maps.NonBlockingHashMap;
 
 // TODO: make inner?
 // TODO: store the highest possible in the index on a commit (but how to not block adds?)
@@ -29,46 +39,86 @@ import java.util.concurrent.TimeUnit;
  * It uses less memory but ignores the <code>lockTimeoutMs</code>.
  */
 public class VersionBucket {
-  public long highest;
+  public AtomicLong highest = new AtomicLong();
+
+  public ReentrantLock getLock() {
+    return lock;
+  }
+
+  private final ReentrantLock lock = new ReentrantLock(true);
+  private final Condition lockCondition = lock.newCondition();
+
+  private Map<BytesRef,LongAdder> blockedIds = new Object2ObjectLinkedOpenHashMap<>(16, 0.75f);
 
   public void updateHighest(long val) {
-    if (highest != 0) {
-      highest = Math.max(highest, Math.abs(val));
-    }
+    highest.updateAndGet(operand -> Math.max(operand, Math.abs(val)));
   }
-  
+
   @FunctionalInterface
   public interface CheckedFunction<T, R> {
      R apply() throws IOException;
   }
-  
-  /**
-   * This will run the function with the intrinsic object monitor.
-   */
-  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T, R> function) throws IOException {
-    synchronized (this) {
+
+  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function, BytesRef idBytes) throws IOException {
+    lock.lock();
+    try {
+      if (!blockedIds.containsKey(idBytes)) {
+        LongAdder adder = new LongAdder();
+        adder.increment();
+        blockedIds.put(idBytes, adder);
+      } else {
+        LongAdder adder = blockedIds.get(idBytes);
+
+        while (true) {
+          final long longValue = adder.longValue();
+          if (!(longValue > 0)) break;
+          try {
+            lockCondition.awaitNanos(250);
+          } catch (InterruptedException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        }
+        adder = blockedIds.get(idBytes);
+        if (adder == null) {
+          adder = new LongAdder();
+          adder.increment();
+          blockedIds.put(idBytes, adder);
+        }
+      }
       return function.apply();
+    } finally {
+      try {
+        LongAdder adder = blockedIds.get(idBytes);
+        if (adder != null) {
+          adder.decrement();
+          if (adder.longValue() == 0L) {
+            blockedIds.remove(idBytes);
+          }
+        }
+      } finally {
+        lock.unlock();
+      }
     }
   }
 
-  /**
-   * Nothing to do for the intrinsic object monitor.
-   */
-  public void unlock() {
-  }
-
   public void signalAll() {
-    notifyAll();
+    lock.lock();
+    try {
+      lockCondition.signalAll();
+    } finally {
+      lock.unlock();
+    }
   }
 
   public void awaitNanos(long nanosTimeout) {
     try {
-      long millis = TimeUnit.NANOSECONDS.toMillis(nanosTimeout);
-      if (millis > 0) {
-        wait(millis);
+      if (nanosTimeout > 0) {
+        lockCondition.awaitNanos(nanosTimeout);
       }
     } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
+
 }

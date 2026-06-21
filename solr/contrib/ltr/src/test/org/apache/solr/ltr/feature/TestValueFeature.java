@@ -18,6 +18,8 @@ package org.apache.solr.ltr.feature;
 
 import java.util.LinkedHashMap;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -25,21 +27,22 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestValueFeature extends TestRerankBase {
 
   @Before
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1"));
-    assertU(adoc("id", "2", "title", "w2"));
-    assertU(adoc("id", "3", "title", "w3"));
-    assertU(adoc("id", "4", "title", "w4"));
-    assertU(adoc("id", "5", "title", "w5"));
-    assertU(adoc("id", "6", "title", "w1 w2"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2"));
-    assertU(commit());
+    restTestHarness.update(adoc("id", "1", "title", "w1"));
+    restTestHarness.update(adoc("id", "2", "title", "w2"));
+    restTestHarness.update(adoc("id", "3", "title", "w3"));
+    restTestHarness.update(adoc("id", "4", "title", "w4"));
+    restTestHarness.update(adoc("id", "5", "title", "w5"));
+    restTestHarness.update(adoc("id", "6", "title", "w1 w2"));
+    restTestHarness.update(adoc("id", "7", "title", "w1 w2 w3 w4 w5"));
+    restTestHarness.update(adoc("id", "8", "title", "w1 w1 w1 w2 w2"));
+    restTestHarness.update(commit());
   }
 
   @After
@@ -51,7 +54,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testValueFeatureWithEmptyValue() throws Exception {
     final RuntimeException expectedException =
         new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
-    RuntimeException e = expectThrows(RuntimeException.class, () -> {
+    RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\"\"}");
     });
     assertEquals(expectedException.toString(), e.toString());
@@ -61,7 +64,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testValueFeatureWithWhitespaceValue() throws Exception {
     final RuntimeException expectedException =
         new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
-    RuntimeException e = expectThrows(RuntimeException.class, () -> {
+    RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\" \"}");
     });
     assertEquals(expectedException.toString(), e.toString());

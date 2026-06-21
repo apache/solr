@@ -19,8 +19,8 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.util.Map;
 
+import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.MockCharFilter;
-import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
  * Factory for {@link MockCharFilter} for testing purposes.

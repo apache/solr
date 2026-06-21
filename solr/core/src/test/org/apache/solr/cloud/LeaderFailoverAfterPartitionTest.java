@@ -16,18 +16,21 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -39,21 +42,15 @@ import java.util.concurrent.TimeUnit;
  * and one of the replicas is out-of-sync.
  */
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly
 public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public LeaderFailoverAfterPartitionTest() {
-    super();
-  }
-
-
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
     // kill a leader and make sure recovery occurs as expected
     testRf3WithLeaderFailover();
   }
@@ -63,111 +60,132 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // kill the leader ... see what happens
     // create a collection that has 1 shard but 3 replicas
     String testCollectionName = "c8n_1x3_lf"; // _lf is leader fails
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    createCollectionRetry(testCollectionName, "_default", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
-    
+
     sendDoc(1);
-    
-    List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
+
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
+
+    ArrayList<Replica> notLeaders = new ArrayList<>();
+    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica : replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
         + printClusterStateInfo(testCollectionName),
         notLeaders.size() == 2);
-        
+
     // ok, now introduce a network partition between the leader and the replica
-    SocketProxy proxy0 = null;
-    proxy0 = getProxyForReplica(notLeaders.get(0));
-    
+    SocketProxy proxy0 = getProxyForReplica(notLeaders.get(0));
+
     proxy0.close();
-    
+
     // indexing during a partition
     sendDoc(2);
-    
+
     Thread.sleep(sleepMsBeforeHealPartition);
-    
+
     proxy0.reopen();
-    
+
     SocketProxy proxy1 = getProxyForReplica(notLeaders.get(1));
-    
+
     proxy1.close();
-    
+
     sendDoc(3);
-    
+
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy1.reopen();
-    
+
     // sent 4 docs in so far, verify they are on the leader and replica
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive); 
-    
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
+
+    notLeaders = new ArrayList<>();
+    replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica : replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
+
     sendDoc(4);
-    
-    assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);    
-        
-    Replica leader = 
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+
+    assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
+
+    Replica leader =
+        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1");
     String leaderNode = leader.getNodeName();
     assertNotNull("Could not find leader for shard1 of "+
       testCollectionName+"; clusterState: "+printClusterStateInfo(testCollectionName), leader);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
-    
+
     // since maxShardsPerNode is 1, we're safe to kill the leader
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);    
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
+
+    notLeaders = new ArrayList<>();
+    replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica : replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     proxy0 = getProxyForReplica(notLeaders.get(0));
     proxy0.close();
-        
+
     // indexing during a partition
     // doc should be on leader and 1 replica
     sendDoc(5);
-    
-    try (HttpSolrClient server = getHttpSolrClient(leader, testCollectionName)) {
+
+    try (Http2SolrClient server = getHttpSolrClient(leader, testCollectionName)) {
       assertDocExists(server, testCollectionName, "5");
     }
 
-    try (HttpSolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
+    try (Http2SolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
       assertDocExists(server, testCollectionName, "5");
     }
-  
+
     Thread.sleep(sleepMsBeforeHealPartition);
-    
+
     String shouldNotBeNewLeaderNode = notLeaders.get(0).getNodeName();
 
-    //chaosMonkey.expireSession(leaderJetty);
     // kill the leader
     leaderJetty.stop();
     if (leaderJetty.isRunning())
       fail("Failed to stop the leader on "+leaderNode);
-        
+
     SocketProxy oldLeaderProxy = getProxyForReplica(leader);
     if (oldLeaderProxy != null) {
-      oldLeaderProxy.close();      
+      oldLeaderProxy.close();
     } else {
       log.warn("No SocketProxy found for old leader node {}",leaderNode);
     }
 
     Thread.sleep(10000); // give chance for new leader to be elected.
-    
-    Replica newLeader = 
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 60000);
-        
+
+    Replica newLeader =
+        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1", 60000);
+
     assertNotNull("No new leader was elected after 60 seconds; clusterState: "+
       printClusterStateInfo(testCollectionName),newLeader);
-        
+
     assertTrue("Expected node "+shouldNotBeNewLeaderNode+
         " to NOT be the new leader b/c it was out-of-sync with the old leader! ClusterState: "+
         printClusterStateInfo(testCollectionName),
         !shouldNotBeNewLeaderNode.equals(newLeader.getNodeName()));
-    
+
     proxy0.reopen();
-    
+
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(90, TimeUnit.SECONDS);
     while (System.nanoTime() < timeout) {
-      List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
+      List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "s1");
       if (activeReps.size() >= 2) break;
       Thread.sleep(1000);
     }
 
-    List<Replica> participatingReplicas = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
+    List<Replica> participatingReplicas = getActiveOrRecoveringReplicas(testCollectionName, "s1");
     assertTrue("Expected 2 of 3 replicas to be active but only found "+
             participatingReplicas.size()+"; "+participatingReplicas+"; clusterState: "+
             printClusterStateInfo(testCollectionName),
@@ -181,7 +199,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     Set<String> replicasToCheck = new HashSet<>();
     for (Replica stillUp : participatingReplicas)
       replicasToCheck.add(stillUp.getName());
-    waitToSeeReplicasActive(testCollectionName, "shard1", replicasToCheck, 90);
+    waitToSeeReplicasActive(testCollectionName, "s1", replicasToCheck, 90);
     assertDocsExistInAllReplicas(participatingReplicas, testCollectionName, 1, 6);
 
     // try to clean up

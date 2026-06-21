@@ -90,23 +90,7 @@ public class TopLevelJoinQuery extends JoinQuery {
           }
 
           final int docBase = context.docBase;
-          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(toApproximation) {
-            public boolean matches() throws IOException {
-              final boolean hasDoc = topLevelToDocValues.advanceExact(docBase + approximation.docID());
-              if (hasDoc) {
-                for (long ord = topLevelToDocValues.nextOrd(); ord != -1L; ord = topLevelToDocValues.nextOrd()) {
-                  if (toOrdBitSet.get(ord)) {
-                    return true;
-                  }
-                }
-              }
-              return false;
-            }
-
-            public float matchCost() {
-              return 10.0F;
-            }
-          });
+          return new ConstantScoreScorer(this, this.score(), scoreMode, new MyTwoPhaseIterator(toApproximation, topLevelToDocValues, docBase, toOrdBitSet));
 
         }
 
@@ -120,20 +104,10 @@ public class TopLevelJoinQuery extends JoinQuery {
   }
 
   private Weight createNoMatchesWeight(float boost) {
-    return new ConstantScoreWeight(this, boost) {
-      @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        return null;
-      }
-
-      @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return false;
-      }
-    };
+    return new MyConstantScoreWeight(boost);
   }
 
-  private SortedSetDocValues validateAndFetchDocValues(SolrIndexSearcher solrSearcher, String fieldName, String querySide) throws IOException {
+  private static SortedSetDocValues validateAndFetchDocValues(SolrIndexSearcher solrSearcher, String fieldName, String querySide) throws IOException {
     final IndexSchema schema = solrSearcher.getSchema();
     final SchemaField field = schema.getFieldOrNull(fieldName);
     if (field == null) {
@@ -162,8 +136,8 @@ public class TopLevelJoinQuery extends JoinQuery {
     return fromOrdBitSet;
   }
 
-  private BitsetBounds convertFromOrdinalsIntoToField(LongBitSet fromOrdBitSet, SortedSetDocValues fromDocValues,
-                                                      LongBitSet toOrdBitSet, SortedSetDocValues toDocValues) throws IOException {
+  private static BitsetBounds convertFromOrdinalsIntoToField(LongBitSet fromOrdBitSet, SortedSetDocValues fromDocValues, LongBitSet toOrdBitSet,
+      SortedSetDocValues toDocValues) throws IOException {
     long fromOrdinal = 0;
     long firstToOrd = BitsetBounds.NO_MATCHES;
     long lastToOrd = 0;
@@ -187,7 +161,7 @@ public class TopLevelJoinQuery extends JoinQuery {
    * optimization to narrow the search space where possible by providing a startOrd instead of beginning each search
    * at 0.
    */
-  private long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
+  private static long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
     long low = startOrd;
     long high = docValues.getValueCount()-1;
 
@@ -216,6 +190,51 @@ public class TopLevelJoinQuery extends JoinQuery {
     public BitsetBounds(long lower, long upper) {
       this.lower = lower;
       this.upper = upper;
+    }
+  }
+
+  private static class MyTwoPhaseIterator extends TwoPhaseIterator {
+    private final SortedSetDocValues topLevelToDocValues;
+    private final int docBase;
+    private final LongBitSet toOrdBitSet;
+
+    public MyTwoPhaseIterator(DocIdSetIterator toApproximation, SortedSetDocValues topLevelToDocValues, int docBase, LongBitSet toOrdBitSet) {
+      super(toApproximation);
+      this.topLevelToDocValues = topLevelToDocValues;
+      this.docBase = docBase;
+      this.toOrdBitSet = toOrdBitSet;
+    }
+
+    public boolean matches() throws IOException {
+      final boolean hasDoc = topLevelToDocValues.advanceExact(docBase + approximation.docID());
+      if (hasDoc) {
+        for (long ord = topLevelToDocValues.nextOrd(); ord != -1L; ord = topLevelToDocValues.nextOrd()) {
+          if (toOrdBitSet.get(ord)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    public float matchCost() {
+      return 10.0F;
+    }
+  }
+
+  private class MyConstantScoreWeight extends ConstantScoreWeight {
+    public MyConstantScoreWeight(float boost) {
+      super(TopLevelJoinQuery.this, boost);
+    }
+
+    @Override
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      return null;
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
     }
   }
 }

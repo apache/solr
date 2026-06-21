@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -108,7 +109,7 @@ public abstract class RoutedAlias {
         if (props.containsKey("router.routerList")) {
           @SuppressWarnings({"unchecked", "rawtypes"})
           HashMap tmp = new HashMap(props);
-          @SuppressWarnings({"unchecked", "rawtypes"})
+          @SuppressWarnings({"unchecked"})
           List<Map<String, Object>> v2RouterList = (List<Map<String, Object>>) tmp.get("router.routerList");
           Map<String, Object> o = v2RouterList.get(i);
           for (Map.Entry<String, Object> entry : o.entrySet()) {
@@ -264,6 +265,7 @@ public abstract class RoutedAlias {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -279,7 +281,7 @@ public abstract class RoutedAlias {
 
   abstract CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd);
 
-  class CandidateCollection {
+  static class CandidateCollection {
     private final CreationType creationType;
     private final String destinationCollection;
     private final String creationCollection;
@@ -362,6 +364,7 @@ public abstract class RoutedAlias {
         try {
           ensureCollection(targetCollectionDesc.creationCollection, coreContainer);
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           log.error("Async creation of a collection for routed Alias {} failed!", this.getAliasName(), e);
         }
       }, core);
@@ -378,10 +381,10 @@ public abstract class RoutedAlias {
 
   private void preemptiveAsync(Runnable r, SolrCore core) {
     preemptiveCreateOnceAlready = true;
-    core.runAsync(r);
+    SolrCore.runAsync(r);
   }
 
-  private SolrException unknownCreateType() {
+  private static SolrException unknownCreateType() {
     return new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown creation type while adding " +
         "document to a Time Routed Alias! This is a bug caused when a creation type has been added but " +
         "not all code has been updated to handle it.");
@@ -406,6 +409,7 @@ public abstract class RoutedAlias {
     } catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }

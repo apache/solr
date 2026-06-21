@@ -133,7 +133,7 @@ class GroupConverter {
     return result;
   }
   
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   static TopGroups<BytesRef> fromMutable(SchemaField field, TopGroups<MutableValue> values) {
     if (values == null) {
       return null;

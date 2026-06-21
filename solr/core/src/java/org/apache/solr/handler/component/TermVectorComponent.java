@@ -85,7 +85,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   private static final String TV_KEY_WARNINGS = "warnings";
 
   @SuppressWarnings({"rawtypes"})
-  protected NamedList initParams;
+  protected volatile NamedList initParams;
 
   /**
    * Helper method for determining the list of fields that we should 
@@ -104,7 +104,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
    * supported by this component. 
    * </p>
    */
-  private Set<String> getFields(ResponseBuilder rb) {
+  private static Set<String> getFields(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     String[] fldLst = params.getParams(TermVectorParams.FIELDS);
     if (null == fldLst || 0 == fldLst.length || 
@@ -307,7 +307,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  private void mapOneVector(NamedList<Object> docNL, FieldOptions fieldOptions, IndexReader reader, int docID, TermsEnum termsEnum, String field) throws IOException {
+  private static void mapOneVector(NamedList<Object> docNL, FieldOptions fieldOptions, IndexReader reader, int docID, TermsEnum termsEnum, String field) throws IOException {
     NamedList<Object> fieldNL = new NamedList<>();
     docNL.add(field, fieldNL);
 
@@ -388,7 +388,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  private List<Integer> getInts(String[] vals) {
+  private static List<Integer> getInts(String[] vals) {
     List<Integer> result = null;
     if (vals != null && vals.length > 0) {
       result = new ArrayList<>(vals.length);
@@ -414,7 +414,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       
       NamedList<Object> termVectorsNL = new NamedList<>();
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
+      @SuppressWarnings({"unchecked"})
       Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
 
       for (ShardRequest sreq : rb.finished) {

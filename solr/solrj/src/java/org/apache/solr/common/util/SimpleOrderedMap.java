@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.util;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
+
 import java.util.*;
 
 
@@ -58,7 +61,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
    * @param nameValuePairs underlying List which should be used to implement a SimpleOrderedMap; modifying this List will affect the SimpleOrderedMap.
    * @lucene.internal
    */
-  private SimpleOrderedMap(List<Object> nameValuePairs) {
+  protected SimpleOrderedMap(ObjectList<T> nameValuePairs) {
     super(nameValuePairs);
   }
   
@@ -68,8 +71,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
 
   @Override
   public SimpleOrderedMap<T> clone() {
-    ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
+    ObjectList<T> newList = new ObjectArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
-    return new SimpleOrderedMap<>(newList);
+    return new SimpleOrderedMap<T>(newList);
   }
 }

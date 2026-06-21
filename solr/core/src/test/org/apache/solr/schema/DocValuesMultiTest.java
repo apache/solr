@@ -22,10 +22,14 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,21 +40,31 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
     initCore("solrconfig-basic.xml", "schema-docValuesMulti.xml");
     
     // sanity check our schema meets our expectations
-    final IndexSchema schema = h.getCore().getLatestSchema();
-    for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv", "booldv"}) {
-      final SchemaField sf = schema.getField(f);
-      assertTrue(f + " is not multiValued, test is useless, who changed the schema?",
-                 sf.multiValued());
-      assertFalse(f + " is indexed, test is useless, who changed the schema?",
-                  sf.indexed());
-      assertTrue(f + " has no docValues, test is useless, who changed the schema?",
-                 sf.hasDocValues());
+    try (SolrCore core = h.getCore()) {
+      final IndexSchema schema = core.getLatestSchema();
+      for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv", "booldv"}) {
+        final SchemaField sf = schema.getField(f);
+        assertTrue(f + " is not multiValued, test is useless, who changed the schema?", sf.multiValued());
+        assertFalse(f + " is indexed, test is useless, who changed the schema?", sf.indexed());
+        assertTrue(f + " has no docValues, test is useless, who changed the schema?", sf.hasDocValues());
+      }
     }
   }
 
+  @AfterClass
+  public static void afterDocValuesMultiTest() {
+    deleteCore();
+  }
+
+  @Before
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
     assertU(delQ("*:*"));
+    super.tearDown();
   }
 
   @Test
@@ -268,7 +282,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
           "stringdv", "abc", "booldv", "true"));
     }
     for (int i = 0; i < 50; ++i) {
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         assertU(commit()); // to have several segments
       }
       switch (i % 3) {

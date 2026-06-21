@@ -31,9 +31,6 @@ import java.util.List;
  */
 public class DocumentAnalysisResponseTest extends SolrTestCase {
 
-  /**
-   * Tests the {@link DocumentAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)} method
-   */
   @Test
   public void testSetResponse() throws Exception {
 
@@ -44,7 +41,7 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
     phases.add(expectedPhase);
 
     NamedList responseNL = buildResponse();
-    DocumentAnalysisResponse response = new DocumentAnalysisResponse() {
+    DocumentAnalysisResponse response = new DocumentAnalysisResponse(responseNL) {
 
       @Override
       protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
@@ -52,7 +49,7 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
       }
     };
 
-    response.setResponse(responseNL);
+
 
     assertEquals(1, response.getDocumentAnalysesCount());
 

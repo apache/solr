@@ -35,7 +35,7 @@ public class SolrJSONWriter implements JsonTextWriter {
   }
 
   final protected String namedListStyle;
-  final FastWriter writer;
+  final Writer writer;
   protected int level;
   protected boolean doIndent;
 
@@ -44,7 +44,7 @@ public class SolrJSONWriter implements JsonTextWriter {
   }
 
   public SolrJSONWriter(Writer writer, String namedListStyle) {
-    this.writer = writer == null ? null : FastWriter.wrap(writer);
+    this.writer = writer;
     this.namedListStyle = namedListStyle;
   }
 
@@ -57,7 +57,7 @@ public class SolrJSONWriter implements JsonTextWriter {
    * done with all writing
    */
   public void close() throws IOException {
-    if (writer != null) writer.flushBuffer();
+    if (writer != null) writer.flush();
   }
 
 

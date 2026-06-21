@@ -47,7 +47,7 @@ public class GetStream extends TupleStream implements Expressible {
   }
 
   public GetStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    String name = factory.getValueOperand(expression, 0);
+    String name = StreamFactory.getValueOperand(expression, 0);
     init(name);
   }
 

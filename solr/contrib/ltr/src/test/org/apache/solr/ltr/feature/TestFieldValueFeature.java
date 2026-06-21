@@ -18,6 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import java.util.LinkedHashMap;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
@@ -26,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestFieldValueFeature extends TestRerankBase {
 
   private static final float FIELD_VALUE_FEATURE_DEFAULT_VAL = 0.0f;
@@ -34,27 +36,27 @@ public class TestFieldValueFeature extends TestRerankBase {
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
+    restTestHarness.update(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
         "1","isTrendy","true"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
+    restTestHarness.update(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
         "w2 2asd asdd didid", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
+    restTestHarness.update(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
         "3","isTrendy","true"));
-    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
+    restTestHarness.update(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
         "4","isTrendy","false"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
+    restTestHarness.update(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
         "5","isTrendy","true"));
-    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2",
+    restTestHarness.update(adoc("id", "6", "title", "w1 w2", "description", "w1 w2",
         "popularity", "6","isTrendy","false"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
+    restTestHarness.update(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
         "w1 w2 w3 w4 w5 w8", "popularity", "7","isTrendy","true"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
+    restTestHarness.update(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
         "w1 w1 w1 w2 w2", "popularity", "8","isTrendy","false"));
 
     // a document without the popularity field
-    assertU(adoc("id", "42", "title", "NO popularity", "description", "NO popularity"));
+    restTestHarness.update(adoc("id", "42", "title", "NO popularity", "description", "NO popularity"));
 
-    assertU(commit());
+    restTestHarness.update(commit());
 
     loadFeature("popularity", FieldValueFeature.class.getName(),
             "{\"field\":\"popularity\"}");

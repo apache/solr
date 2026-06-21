@@ -25,12 +25,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,6 +55,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -65,7 +66,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -80,6 +80,7 @@ import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoBean {
 
+  public static final int[] DOCS = new int[0];
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
@@ -101,6 +103,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final Map<String,SolrCache> NO_GENERIC_CACHES = Collections.emptyMap();
   @SuppressWarnings({"rawtypes"})
   private static final SolrCache[] NO_CACHES = new SolrCache[0];
+  public static final SolrCache[] SOLR_CACHES = new SolrCache[0];
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -148,11 +151,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
     final Directory dir = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
+    DirectoryReader dr = null;
     try {
-      return core.getIndexReaderFactory().newReader(dir, core);
+      dr = core.getIndexReaderFactory().newReader(dir, core);
+      return dr;
     } catch (Exception e) {
-      directoryFactory.release(dir);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening Reader", e);
+    } finally {
+//      if (dir != null) {
+//        directoryFactory.release(dir);
+//      }
     }
   }
 
@@ -229,8 +238,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // We don't need to reserve the directory because we get it from the factory
     this(core, path, schema, name, getReader(core, config, directoryFactory, path), true, enableCache, false,
         directoryFactory);
-    // Release the directory at close.
-    this.releaseDirectory = true;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -249,7 +256,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
-    log.debug("Opening [{}]", this.name);
+    if (log.isDebugEnabled()) log.debug("Opening [{}]", this.name);
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
@@ -257,14 +264,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       core.getDeletionPolicy().saveCommitPoint(reader.getIndexCommit().getGeneration());
     }
 
-    if (reserveDirectory) {
-      // Keep the directory from being released while we use it.
-      directoryFactory.incRef(getIndexReader().directory());
-      // Make sure to release it when closing.
-      this.releaseDirectory = true;
-    }
+//    if (reserveDirectory) {
+//      // Keep the directory from being released while we use it.
+//      directoryFactory.incRef(getIndexReader().directory());
+//      // Make sure to release it when closing.
+//      this.releaseDirectory = true;
+//    }
 
-    this.closeReader = closeReader;
+    this.closeReader = false;
     setSimilarity(schema.getSimilarity());
 
     final SolrConfig solrConfig = core.getSolrConfig();
@@ -291,17 +298,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
-        cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
-        for (Map.Entry<String,CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache cache = e.getValue().newInstance();
+        cacheMap = new ConcurrentHashMap<>(solrConfig.userCacheConfigs.size());
+        solrConfig.userCacheConfigs.forEach((key, value) -> {
+          SolrCache cache = value.newInstance();
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);
           }
-        }
+        });
       }
 
-      cacheList = clist.toArray(new SolrCache[clist.size()]);
+      cacheList = clist.toArray(SOLR_CACHES);
     } else {
       this.filterCache = null;
       this.queryResultCache = null;
@@ -315,7 +322,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // do this at the end since an exception in the constructor means we won't close
     numOpens.incrementAndGet();
-    assert ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.getInstance().track(this);
   }
 
   public SolrDocumentFetcher getDocFetcher() {
@@ -369,7 +376,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // Could call super.collectionStatistics(field); but we can use a cached MultiTerms
     assert field != null;
     // SlowAtomicReader has a cache of MultiTerms
-    Terms terms = getSlowAtomicReader().terms(field);
+    Terms terms = leafReader.terms(field);
     if (terms == null) {
       return null;
     }
@@ -437,11 +444,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
-    this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
-    for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
-      cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
-    }
-    initializeMetrics(solrMetricsContext, STATISTICS_KEY);
+
+    initializeMetrics(core.getSolrMetricsContext(), STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -454,7 +458,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public void close() throws IOException {
     if (log.isDebugEnabled()) {
       if (cachingEnabled) {
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder(32);
         sb.append("Closing ").append(name);
         for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
           sb.append("\n\t");
@@ -472,38 +476,58 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // can't use super.close() since it just calls reader.close() and that may only be called once
     // per reader (even if incRef() was previously called).
 
-    long cpg = reader.getIndexCommit().getGeneration();
+    boolean releaseCommitPoint = false;
+    long cpg = 0;
+    if (reader.getRefCount() > 0) {
+      releaseCommitPoint = true;
+      cpg = reader.getIndexCommit().getGeneration();
+    }
     try {
       if (closeReader) rawReader.decRef();
     } catch (Exception e) {
       SolrException.log(log, "Problem dec ref'ing reader", e);
     }
 
-    if (directoryFactory.searchersReserveCommitPoints()) {
+    if (releaseCommitPoint && directoryFactory.searchersReserveCommitPoints()) {
       core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
-    for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
-      try {
-        cache.close();
-      } catch (Exception e) {
-        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+    if (!core.getCoreContainer().isShutDown()) {
+      try (ParWork worker = new ParWork(this, true)) {
+        for (SolrCache cache : cacheList) {
+          worker.collect(cache);
+        }
+      } finally {
+        try {
+          ParWork.getRootSharedExecutor().submit(() -> {
+            try {
+              SolrInfoBean.super.close();
+            } catch (IOException e) {
+              log.warn("Exception closing SolrInfoBean", e);
+            }
+          });
+        } catch (RejectedExecutionException e) {
+          try {
+            SolrInfoBean.super.close();
+          } catch (IOException e2) {
+            log.warn("Exception closing SolrInfoBean", e2);
+          }
+        }
       }
     }
 
-    if (releaseDirectory) {
-      directoryFactory.release(getIndexReader().directory());
-    }
 
-    try {
-      SolrInfoBean.super.close();
-    } catch (Exception e) {
-      log.warn("Exception closing", e);
-    }
+// leave our metrics, they will be replaced and we may be doing a reload
+// and would clear the new cores searcher stats
+//    try {
+//      SolrInfoBean.super.close();
+//    } catch (Exception e) {
+//      log.warn("Exception closing", e);
+//    }
 
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
-    assert ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.getInstance().release(this);
   }
 
   /** Direct access to the IndexSchema for use with this searcher */
@@ -520,76 +544,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public SolrCache<Query,DocSet> getFilterCache() {
     return filterCache;
-  }
-
-  //
-  // Set default regenerators on filter and query caches if they don't have any
-  //
-  public static void initRegenerators(SolrConfig solrConfig) {
-    if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
-      solrConfig.fieldValueCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher,
-                                      @SuppressWarnings({"rawtypes"})SolrCache newCache,
-                                      @SuppressWarnings({"rawtypes"})SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          if (oldVal instanceof UnInvertedField) {
-            UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
-          }
-          return true;
-        }
-      });
-    }
-
-    if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
-      solrConfig.filterCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        @SuppressWarnings({"rawtypes"})public boolean regenerateItem(SolrIndexSearcher newSearcher
-                , @SuppressWarnings({"rawtypes"})SolrCache newCache
-                , @SuppressWarnings({"rawtypes"})SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          newSearcher.cacheDocSet((Query) oldKey, null, false);
-          return true;
-        }
-      });
-    }
-
-    if (solrConfig.queryResultCacheConfig != null && solrConfig.queryResultCacheConfig.getRegenerator() == null) {
-      final int queryResultWindowSize = solrConfig.queryResultWindowSize;
-      solrConfig.queryResultCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        @SuppressWarnings({"rawtypes"})
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          QueryResultKey key = (QueryResultKey) oldKey;
-          int nDocs = 1;
-          // request 1 doc and let caching round up to the next window size...
-          // unless the window size is <=1, in which case we will pick
-          // the minimum of the number of documents requested last time and
-          // a reasonable number such as 40.
-          // TODO: make more configurable later...
-
-          if (queryResultWindowSize <= 1) {
-            DocList oldList = (DocList) oldVal;
-            int oldnDocs = oldList.offset() + oldList.size();
-            // 40 has factors of 2,4,5,10,20
-            nDocs = Math.min(oldnDocs, 40);
-          }
-
-          int flags = NO_CHECK_QCACHE | key.nc_flags;
-          QueryCommand qc = new QueryCommand();
-          qc.setQuery(key.query)
-              .setFilterList(key.filters)
-              .setSort(key.sort)
-              .setLen(nDocs)
-              .setSupersetMaxDoc(nDocs)
-              .setFlags(flags);
-          QueryResult qr = new QueryResult();
-          newSearcher.getDocListC(qr, qc);
-          return true;
-        }
-      });
-    }
   }
 
   public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
@@ -634,7 +588,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   @Override
   public final void doc(int docId, StoredFieldVisitor visitor) throws IOException {
-    getDocFetcher().doc(docId, visitor);
+    docFetcher.doc(docId, visitor);
   }
 
   /**
@@ -647,7 +601,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   @Override
   public final Document doc(int i, Set<String> fields) throws IOException {
-    return getDocFetcher().doc(i, fields);
+    return docFetcher.doc(i, fields);
   }
 
   /** expert: internal API, subject to change */
@@ -1292,7 +1246,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * getDocList version that uses+populates query and filter caches. In the event of a timeout, the cache is not
    * populated.
    */
-  private void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
+  public void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
     QueryResultKey key = null;
@@ -1453,7 +1407,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @param topDocs
    *          May or may not be a <code>TopFieldDocs</code>
    */
-  private void populateNextCursorMarkFromTopDocs(QueryResult qr, QueryCommand qc, TopDocs topDocs) {
+  private static void populateNextCursorMarkFromTopDocs(QueryResult qr, QueryCommand qc, TopDocs topDocs) {
     // TODO: would be nice to rename & generalize this method for non-cursor cases...
     // ...would be handy to reuse the ScoreDoc/FieldDoc sort vals directly in distrib sort
     // ...but that has non-trivial queryResultCache implications
@@ -1541,38 +1495,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       Collector collector;
 
       if (!needScores) {
-        collector = new SimpleCollector() {
-          @Override
-          public void collect(int doc) {
-            numHits[0]++;
-          }
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE_NO_SCORES;
-          }
-        };
+        collector = new SimpleCollector(numHits);
       } else {
-        collector = new SimpleCollector() {
-          Scorable scorer;
-
-          @Override
-          public void setScorer(Scorable scorer) {
-            this.scorer = scorer;
-          }
-
-          @Override
-          public void collect(int doc) throws IOException {
-            numHits[0]++;
-            float score = scorer.score();
-            if (score > topscore[0]) topscore[0] = score;
-          }
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE;
-          }
-        };
+        collector = new SimpleCollectorScore(numHits, topscore);
       }
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
@@ -1654,26 +1579,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (!needScores) {
         collector = setCollector;
       } else {
-        final Collector topScoreCollector = new SimpleCollector() {
-
-          Scorable scorer;
-
-          @Override
-          public void setScorer(Scorable scorer) throws IOException {
-            this.scorer = scorer;
-          }
-
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = scorer.score();
-            if (score > topscore[0]) topscore[0] = score;
-          }
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.TOP_SCORES;
-          }
-        };
+        final Collector topScoreCollector = new SimpleCollector2(topscore);
 
         collector = MultiCollector.wrap(setCollector, topScoreCollector);
       }
@@ -2003,7 +1909,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int nDocs = cmd.getSupersetMaxDoc();
     if (nDocs == 0) {
       // SOLR-2923
-      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
+      qr.getDocListAndSet().docList = new DocSlice(0, 0, DOCS, null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
       qr.setNextCursorMark(cmd.getCursorMark());
       return;
     }
@@ -2228,7 +2134,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return searcher.getTopReaderContext().leaves().stream()
           .map(ctx -> {
             try {
-              return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
+              return searcher.core.getIndexFingerprint(searcher, ctx, maxVersion);
             } catch (IOException e) {
               exception.set(e);
               return null;
@@ -2262,6 +2168,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return Category.CORE;
   }
 
+  /**
+   * Implementations should return the context used in
+   * {@link #initializeMetrics(SolrMetricsContext, String)} to ensure pr
+   * at the end of the life-cycle of this component. This should be the initialize context
+   * or null if the parent context was used.
+   */
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
@@ -2269,37 +2181,35 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
+    solrMetricsContext = parentContext.getChildContext(this);
+
+    for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
+      cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+    }
+
+    String fname = name;
+    boolean fcachingEnabled = cachingEnabled;
+    Date fopenTime = openTime;
+    long fwarmupTime = warmupTime;
+    Date fregisterTime = registerTime;
+
+    solrMetricsContext.gauge(() -> fname, true, "searcherName", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(() -> fcachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(() -> fopenTime, true, "openedAt", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(() -> fwarmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(() -> fregisterTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    parentContext.gauge(() -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherNumDocsGauge(), true, "numDocs", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherMaxDocsGauge(), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherDeletedDocsGauge(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherReaderGauge(), true, "reader", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherReaderDirGauge(), true, "readerDir", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherIndexVersionGauge(), true, "indexVersion", Category.SEARCHER.toString(), scope);
     // size of the currently opened commit
-    parentContext.gauge(() -> {
-      try {
-        Collection<String> files = reader.getIndexCommit().getFileNames();
-        long total = 0;
-        for (String file : files) {
-          total += DirectoryFactory.sizeOf(reader.directory(), file);
-        }
-        return total;
-      } catch (Exception e) {
-        return -1;
-      }
-    }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherCommitSizeGauge(), true, "indexCommitSize", Category.SEARCHER.toString(), scope);
     // statsCache metrics
-    parentContext.gauge(
-        new MetricsMap((detailed, map) -> {
-          statsCache.getCacheMetrics().getSnapshot(map::put);
-          map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
-        }), true, "statsCache", Category.CACHE.toString(), scope);
+    solrMetricsContext.gauge(new MySolrIndexSearcherStatsCacheGauge(), true, "statsCache", Category.CACHE.toString(), scope);
+    // we have to cache due to the size stuff, maybe improve granularity
   }
 
   private static class FilterImpl extends Filter {
@@ -2315,7 +2225,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
       final DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context, acceptDocs);
       if (weights.size() == 0) return sub;
-      return new FilterSet(sub, context);
+      return new SolrFilterSet(sub, context, weights);
     }
 
     @Override
@@ -2328,13 +2238,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       visitor.visitLeaf(this);
     }
 
-    private class FilterSet extends DocIdSet {
+    private static class SolrFilterSet extends DocIdSet {
       private final DocIdSet docIdSet;
       private final LeafReaderContext context;
+      private final List<Weight> weights;
 
-      public FilterSet(DocIdSet docIdSet, LeafReaderContext context) {
+      public SolrFilterSet(DocIdSet docIdSet, LeafReaderContext context, List<Weight> weights) {
         this.docIdSet = docIdSet;
         this.context = context;
+        this.weights = weights;
       }
 
       @Override
@@ -2353,7 +2265,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         if (iterators.isEmpty()) return null;
         if (iterators.size() == 1) return iterators.get(0);
         if (iterators.size() == 2) return new DualFilterIterator(iterators.get(0), iterators.get(1));
-        return new FilterIterator(iterators.toArray(new DocIdSetIterator[iterators.size()]));
+        return new FilterIterator(iterators.toArray(new DocIdSetIterator[0]));
       }
 
       @Override
@@ -2477,4 +2389,173 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return warmupTime;
   }
 
+  private static class SimpleCollector extends org.apache.lucene.search.SimpleCollector {
+    private final int[] numHits;
+
+    public SimpleCollector(int[] numHits) {
+      this.numHits = numHits;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      numHits[0]++;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
+    }
+  }
+
+  private static class SimpleCollectorScore extends org.apache.lucene.search.SimpleCollector {
+    private final int[] numHits;
+    private final float[] topscore;
+    Scorable scorer;
+
+    public SimpleCollectorScore(int[] numHits, float[] topscore) {
+      this.topscore = topscore;
+      this.numHits = numHits;
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) {
+      this.scorer = scorer;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      numHits[0]++;
+      float score = scorer.score();
+      if (score > topscore[0]) topscore[0] = score;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
+    }
+  }
+
+  private static class SimpleCollector2 extends org.apache.lucene.search.SimpleCollector {
+
+    private final float[] topscore;
+    Scorable scorer;
+
+    public SimpleCollector2(float[] topscore) {
+      super();
+      this.topscore = topscore;
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
+      this.scorer = scorer;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      float score = scorer.score();
+      if (score > topscore[0]) topscore[0] = score;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.TOP_SCORES;
+    }
+  }
+
+  private class MySolrIndexSearcherNumDocsGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherNumDocsGauge() {
+      super(SolrIndexSearcher.this, 1, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      return solrIndexSearcher.reader.numDocs();
+    }
+  }
+
+  private class MySolrIndexSearcherMaxDocsGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherMaxDocsGauge() {
+      super(SolrIndexSearcher.this, 1, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      return solrIndexSearcher.reader.maxDoc();
+    }
+  }
+
+  private class MySolrIndexSearcherDeletedDocsGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherDeletedDocsGauge() {
+      super(SolrIndexSearcher.this, 1, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      return solrIndexSearcher.reader.maxDoc() - solrIndexSearcher.reader.numDocs();
+    }
+  }
+
+  private class MySolrIndexSearcherIndexVersionGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherIndexVersionGauge() {
+      super(SolrIndexSearcher.this, 1, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      return solrIndexSearcher.reader.maxDoc() - solrIndexSearcher.reader.numDocs();
+    }
+  }
+
+  private class MySolrIndexSearcherReaderGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherReaderGauge() {
+      super(SolrIndexSearcher.this, 1, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      return solrIndexSearcher.reader.maxDoc() - solrIndexSearcher.reader.numDocs();
+    }
+  }
+
+  private class MySolrIndexSearcherReaderDirGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherReaderDirGauge() {
+      super(SolrIndexSearcher.this, 1, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      return solrIndexSearcher.reader.maxDoc() - solrIndexSearcher.reader.numDocs();
+    }
+  }
+
+  private class MySolrIndexSearcherCommitSizeGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherCommitSizeGauge() {
+      super(SolrIndexSearcher.this, 5, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      try {
+        Collection<String> files = solrIndexSearcher.reader.getIndexCommit().getFileNames();
+        long total = 0;
+        // MRM TODO
+        //        for (String file : files) {
+        //          total += DirectoryFactory.sizeOf(reader.directory(), file);
+        //        }
+        return total;
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
+        return -1;
+      }
+    }
+  }
+
+  private class MySolrIndexSearcherStatsCacheGauge extends SolrIndexSearcherGauge.SolrIndexSearcherCachedGauge {
+    public MySolrIndexSearcherStatsCacheGauge() {
+      super(SolrIndexSearcher.this, 3, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrIndexSearcher solrIndexSearcher) {
+      // Return a plain Map so MetricUtils.convertGauge recognizes it as a Map and
+      // produces "CACHE.searcher.statsCache" -> {map} in the /admin/metrics response.
+      // (MetricsMap does not implement java.util.Map, so would be serialized as a String.)
+      @SuppressWarnings("unchecked")
+      Map<String, Object> map = new java.util.LinkedHashMap<>(solrIndexSearcher.statsCache.getCacheMetrics().getSnapshot());
+      map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
+      return map;
+    }
+  }
 }

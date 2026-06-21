@@ -19,9 +19,11 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,9 +34,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -162,7 +164,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.NONE.toString());
     //  Signal this is a distributed search from this URP (see #wrap())
     outParams.set(ALIAS_DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-    outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), core.getName()));
+    outParams.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), core.getName()));
     outParamsToLeader = outParams;
   }
 
@@ -200,7 +202,6 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     final List<SolrCmdDistributor.Node> nodes = lookupShardLeadersOfCollections();
     cmdDistrib.distribCommit(cmd, nodes, new ModifiableSolrParams(outParamsToLeader));
-    cmdDistrib.blockAndDoRetries(); //TODO shouldn't distribCommit do this implicitly?  It doesn't.
   }
 
 // Not supported by SolrCmdDistributor and is sketchy any way
@@ -212,7 +213,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void finish() throws IOException {
     try {
       cmdDistrib.finish();
-      final List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+      final Collection<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors().values();
       if (!errors.isEmpty()) {
         throw new DistributedUpdateProcessor.DistributedUpdatesAsyncException(errors);
       }
@@ -223,6 +224,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   protected void doClose() {
+    super.doClose();
     try {
       cmdDistrib.close();
     } finally {
@@ -236,7 +238,26 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     String idFieldName = uniqueKeyField == null ? null : uniqueKeyField.getName();
     String idValue = uniqueKeyField == null ? null : doc.getFieldValue(idFieldName).toString();
     DocCollection coll = zkController.getClusterState().getCollection(collection);
-    Slice slice = coll.getRouter().getTargetSlice(idValue, doc, null, req.getParams(), coll);
+    Slice slice;
+    try {
+      slice = coll.getRouter().getTargetSlice(idValue, doc, null, req.getParams(), coll);
+    } catch (ImplicitDocRouter.NoShardException e) {
+      try {
+        zkController.getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          if (collectionState == null) {
+            return false;
+          }
+          if (collectionState.getSlice(e.getShard()) != null) {
+            return true;
+          }
+          return false;
+        });
+      } catch (Exception e2) {
+        throw new ImplicitDocRouter.NoShardException(SolrException.ErrorCode.BAD_REQUEST, "No shard found for " + e.getShard(), e.getShard(), e2);
+      }
+      coll = zkController.getClusterState().getCollection(collection);
+      slice = coll.getRouter().getTargetSlice(idValue, doc, null, req.getParams(), coll);
+    }
     return getLeaderNode(collection, slice);
   }
 
@@ -250,23 +271,23 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private SolrCmdDistributor.Node lookupShardLeaderOfCollection(String collection) {
-    final Slice[] activeSlices = zkController.getClusterState().getCollection(collection).getActiveSlicesArr();
-    if (activeSlices.length == 0) {
+    Collection<Slice> activeSlices = zkController.getClusterState().getCollection(collection).getActiveSlices();
+    if (activeSlices.size() == 0) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot route to collection " + collection);
     }
-    final Slice slice = activeSlices[0];
+    final Slice slice = activeSlices.iterator().next();
     return getLeaderNode(collection, slice);
   }
 
   private SolrCmdDistributor.Node getLeaderNode(String collection, Slice slice) {
     //TODO when should we do StdNode vs RetryNode?
-    final Replica leader = slice.getLeader();
+    final Replica leader = slice.getLeader(zkController.zkStateReader.getLiveNodes());
     if (leader == null) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
           "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);
     }
-    return new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
-        collection, slice.getName(), DistributedUpdateProcessor.MAX_RETRIES_ON_FORWARD_DEAULT);
+    return new SolrCmdDistributor.ForwardNode(zkController.zkStateReader, leader,
+        collection, slice.getName());
   }
 
 }

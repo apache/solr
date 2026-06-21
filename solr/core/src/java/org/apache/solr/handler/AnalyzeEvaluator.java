@@ -47,15 +47,15 @@ public class AnalyzeEvaluator extends SourceEvaluator {
   }
 
   public AnalyzeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
-    String _fieldName = factory.getValueOperand(expression, 0);
-    String _analyzerField = factory.getValueOperand(expression, 1);
+    String _fieldName = StreamFactory.getValueOperand(expression, 0);
+    String _analyzerField = StreamFactory.getValueOperand(expression, 1);
     init(_fieldName, _analyzerField);
   }
 
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
     Object solrCoreObj = context.get("solr-core");
-    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
+    if (!(solrCoreObj instanceof SolrCore)) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
     }
 

@@ -27,11 +27,11 @@ import org.junit.Test;
 
 /**
  * Check standard query parsers for class loading problems during initialization (NAME field is final and static).
- * Because every query plugin extend {@link org.apache.solr.search.QParserPlugin} and contains own instance of {@link org.apache.solr.search.QParserPlugin#standardPlugins},
+ * Because every query plugin extend {@link org.apache.solr.search.QParserPlugin} and contains own instance of {@link QParserStdPlugins#standardPlugins},
  * There are a cyclic dependencies of static fields between plugins and order of initialization can be wrong if NAME field is not final.
  * This leads to NPEs during Solr startup.
  * @see <a href="https://issues.apache.org/jira/browse/SOLR-5526">SOLR-5526</a>
- * @see org.apache.solr.search.QParserPlugin#standardPlugins
+ * @see QParserStdPlugins#standardPlugins
  *
  */
 public class TestStandardQParsers extends SolrTestCase {
@@ -41,16 +41,16 @@ public class TestStandardQParsers extends SolrTestCase {
   public static final String FIELD_NAME = "NAME";
 
   /**
-   * Test standard query parsers registered in {@link org.apache.solr.search.QParserPlugin#standardPlugins}
+   * Test standard query parsers registered in {@link QParserStdPlugins#standardPlugins}
    * have NAME field which is final, static, and matches the registered name.
    */
   @Test
   public void testRegisteredName() throws Exception {
-    List<String> notStatic = new ArrayList<>(QParserPlugin.standardPlugins.size());
-    List<String> notFinal = new ArrayList<>(QParserPlugin.standardPlugins.size());
-    List<String> mismatch = new ArrayList<>(QParserPlugin.standardPlugins.size());
+    List<String> notStatic = new ArrayList<>(QParserStdPlugins.standardPlugins.size());
+    List<String> notFinal = new ArrayList<>(QParserStdPlugins.standardPlugins.size());
+    List<String> mismatch = new ArrayList<>(QParserStdPlugins.standardPlugins.size());
 
-    for (Map.Entry<String, QParserPlugin> pair : QParserPlugin.standardPlugins.entrySet()) {
+    for (Map.Entry<String, QParserPlugin> pair : QParserStdPlugins.standardPlugins.entrySet()) {
       String regName = pair.getKey();
       Class<? extends QParserPlugin> clazz = pair.getValue().getClass();;
 
@@ -75,7 +75,7 @@ public class TestStandardQParsers extends SolrTestCase {
 
     assertTrue("DEFAULT_QTYPE is not in the standard set of registered names: " + 
                QParserPlugin.DEFAULT_QTYPE,
-        QParserPlugin.standardPlugins.keySet().contains(QParserPlugin.DEFAULT_QTYPE));
+        QParserStdPlugins.standardPlugins.keySet().contains(QParserPlugin.DEFAULT_QTYPE));
 
   }
 

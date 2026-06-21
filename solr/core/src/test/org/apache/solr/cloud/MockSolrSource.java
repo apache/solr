@@ -21,13 +21,14 @@ import static org.mockito.Mockito.when;
 
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreContainer;
 
 public class MockSolrSource  {
 
   public static ZkController makeSimpleMock(Overseer overseer, ZkStateReader reader, SolrZkClient zkClient) {
     ZkController zkControllerMock = mock(ZkController.class);
     if (overseer == null) overseer = mock(Overseer.class);
-    
+
 
     if (reader != null && zkClient == null) {
       zkClient = reader.getZkClient();
@@ -37,12 +38,16 @@ public class MockSolrSource  {
       reader = mock(ZkStateReader.class);
       when(reader.getZkClient()).thenReturn(zkClient);
     }
-     
-    
+
+    CoreContainer ccMock = mock(CoreContainer.class);
+    when(ccMock.isShutDown()).thenReturn(false);
+
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
     when(zkControllerMock.getZkStateReader()).thenReturn(reader);
     when(zkControllerMock.getZkClient()).thenReturn(zkClient);
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
+    when(zkControllerMock.getCoreContainer()).thenReturn(ccMock);
+    when(zkControllerMock.isDcCalled()).thenReturn(false);
     return (ZkController) zkControllerMock;
   }
 }

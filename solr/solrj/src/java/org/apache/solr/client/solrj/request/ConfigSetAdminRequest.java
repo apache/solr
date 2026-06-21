@@ -26,6 +26,7 @@ import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -67,7 +68,7 @@ public abstract class ConfigSetAdminRequest
 
 
   @Override
-  protected abstract R createResponse(SolrClient client);
+  protected abstract R createResponse(SolrClient client, NamedList<Object> nl);
 
   protected abstract static class ConfigSetSpecificAdminRequest
        <T extends ConfigSetAdminRequest<T,ConfigSetAdminResponse>>
@@ -94,8 +95,8 @@ public abstract class ConfigSetAdminRequest
     }
 
     @Override
-    protected ConfigSetAdminResponse createResponse(SolrClient client) {
-      return new ConfigSetAdminResponse();
+    protected ConfigSetAdminResponse createResponse(SolrClient client, NamedList<Object> nl) {
+      return new ConfigSetAdminResponse(nl);
     }
   }
 
@@ -128,9 +129,9 @@ public abstract class ConfigSetAdminRequest
       return getThis();
     }
 
-    public final Properties getNewConfigSetProperties() {
-      return properties;
-    }
+//    public final Properties getNewConfigSetProperties() {
+//      return properties;
+//    }
 
     @Override
     public SolrParams getParams() {
@@ -172,8 +173,8 @@ public abstract class ConfigSetAdminRequest
     }
 
     @Override
-    protected ConfigSetAdminResponse.List createResponse(SolrClient client) {
-      return new ConfigSetAdminResponse.List();
+    protected ConfigSetAdminResponse.List createResponse(SolrClient client, NamedList<Object> nl) {
+      return new ConfigSetAdminResponse.List(nl);
     }
   }
 }

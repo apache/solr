@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 
 import junit.framework.AssertionFailedError;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -33,20 +35,25 @@ import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // can be a slow test - measure full test time, beforeClass + test + afterClass
 public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCase {
 
   public DistributedFacetPivotSmallTest() {
-    // we need DVs on point fields to compute stats & facets
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
+    // We need docValues on point fields to compute stats & facets. This MUST run AFTER
+    // randomizeNumericTypesProperties(): that call sets NUMERIC_POINTS_SYSPROP and (re)sets a *random*
+    // NUMERIC_DOCVALUES_SYSPROP. Previously this force ran before randomize, so it both read a stale
+    // points flag and was clobbered by the random DV value -> point fields without docValues ->
+    // "Can't calculate stats on a PointField without docValues".
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
   }
   
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-    
-    del("*:*");
 
     // NOTE: we use the literal (4 character) string "null" as a company name
     // to help ensure there isn't any bugs where the literal string is treated as if it 
@@ -1523,6 +1530,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     assertEquals(msg + " stats max", val, stats.getMax());
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<RangeFacet> createExpectedRange(String key, int start, int end,
                                                int gap, int... values) {
     List<RangeFacet> expectedRanges = new ArrayList<>();
@@ -1570,9 +1578,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         if (other.getFacetRanges() != null) return false;
       } else {
         if (getFacetRanges().size() != other.getFacetRanges().size()) return false;
-        for (RangeFacet entry : getFacetRanges()) {
+        for (@SuppressWarnings({"rawtypes"})RangeFacet entry : getFacetRanges()) {
           boolean found = false;
-          for (RangeFacet otherRange : other.getFacetRanges()) {
+          for (@SuppressWarnings({"rawtypes"})RangeFacet otherRange : other.getFacetRanges()) {
             if (otherRange.getName().equals(entry.getName())) {
               found = true;
 
@@ -1580,7 +1588,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
               if (!entry.getStart().equals(otherRange.getStart()))  return false;
               if (!entry.getEnd().equals(otherRange.getEnd()))  return false;
 
+              @SuppressWarnings({"unchecked"})
               List<RangeFacet.Count> myCounts = entry.getCounts();
+              @SuppressWarnings({"unchecked"})
               List<RangeFacet.Count> otherRangeCounts = otherRange.getCounts();
               if ( (myCounts == null && otherRangeCounts != null)
                   || (myCounts != null && otherRangeCounts == null)
@@ -1606,14 +1616,26 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
       }
       return true;
     }
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException("Calling hashCode in ComparablePivotField");
+    }
   }
   
   public static class UnorderedEqualityArrayList<T> extends ArrayList<T> {
-    
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException("Calling hashCode in UnorderedEqualityArrayList");
+    }
+
     @Override
     public boolean equals(Object o) {
       boolean equal = false;
-      if (o instanceof ArrayList) {
+      // The fork's JavaBinCodec deserializes lists as fastutil ObjectArrayList (QueryResponse.readPivots
+      // builds one), which is NOT a java.util.ArrayList. Accept any List so the unordered content compare runs.
+      if (o instanceof List) {
         List<?> otherList = (List<?>) o;
         if (size() == otherList.size()) {
           equal = true;
@@ -1659,9 +1681,9 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         }
       }
       if (compare == 0) {
-        for (RangeFacet entry : o1.getFacetRanges()) {
+        for (@SuppressWarnings({"rawtypes"})RangeFacet entry : o1.getFacetRanges()) {
           boolean found = false;
-          for (RangeFacet otherRangeFacet : o2.getFacetRanges()) {
+          for (@SuppressWarnings({"rawtypes"})RangeFacet otherRangeFacet : o2.getFacetRanges()) {
             if (otherRangeFacet.getName().equals(entry.getName()))  {
               found = true;
             }

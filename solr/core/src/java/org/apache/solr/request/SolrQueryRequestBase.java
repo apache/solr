@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -36,7 +37,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
-
+import org.jctools.maps.NonBlockingHashMap;
 
 /**
  * Base implementation of <code>SolrQueryRequest</code> that provides some
@@ -54,7 +55,7 @@ import org.apache.solr.util.RefCounted;
 public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   protected final SolrCore core;
   protected final SolrParams origParams;
-  protected volatile IndexSchema schema;
+  protected IndexSchema schema;
   protected SolrParams params;
   protected Map<Object,Object> context;
   protected Iterable<ContentStream> streams;
@@ -67,7 +68,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimerTree requestTimer) {
     this.core = core;
     this.schema = null == core ? null : core.getLatestSchema();
-    this.params = this.origParams = params;
+    this.params = this.origParams = (params == null ? new ModifiableSolrParams() : params);
     this.requestTimer = requestTimer;
     this.startTime = System.currentTimeMillis();
   }
@@ -78,7 +79,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   @Override
   public Map<Object,Object> getContext() {
-    // SolrQueryRequest as a whole isn't thread safe, and this isn't either.
+    //if (context==null) context = new NonBlockingHashMap<>();
     if (context==null) context = new HashMap<>();
     return context;
   }
@@ -141,7 +142,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   @Override
   public void updateSchemaToLatest() {
-    schema = core.getLatestSchema();
+    this.schema = core.getLatestSchema();
   }
 
   /**
@@ -207,11 +208,11 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   }
 
-  protected ValidatingJsonMap getSpec() {
+  protected static ValidatingJsonMap getSpec() {
     return null;
   }
 
-  protected Map<String, JsonSchemaValidator> getValidators(){
-    return Collections.EMPTY_MAP;
+  protected Map<Object, JsonSchemaValidator> getValidators(){
+    return Collections.emptyMap();
   }
 }

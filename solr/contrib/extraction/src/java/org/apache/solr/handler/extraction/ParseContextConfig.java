@@ -107,7 +107,7 @@ public class ParseContextConfig {
     }
   }
 
-  private Object getValueFromString(Class<?> targetType, String text) {
+  private static Object getValueFromString(Class<?> targetType, String text) {
     final PropertyEditor editor = PropertyEditorManager.findEditor(targetType);
     if (editor == null) {
       throw new IllegalArgumentException("Cannot set properties of type " + targetType.getName());

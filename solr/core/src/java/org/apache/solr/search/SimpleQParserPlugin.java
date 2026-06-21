@@ -170,8 +170,8 @@ public class SimpleQParserPlugin extends QParserPlugin {
   }
 
   private static class SolrSimpleQueryParser extends SimpleQueryParser {
-    QParser qParser;
-    IndexSchema schema;
+    final QParser qParser;
+    final IndexSchema schema;
 
     public SolrSimpleQueryParser(Analyzer analyzer, Map<String, Float> weights, int flags,
                                  QParser qParser, IndexSchema schema) {

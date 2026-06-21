@@ -27,7 +27,9 @@ import com.google.common.collect.Lists;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -45,6 +47,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly
 public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -64,9 +67,9 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    indexDir1 = createTempDir("_testSplit1").toFile();
-    indexDir2 = createTempDir("_testSplit2").toFile();
-    indexDir3 = createTempDir("_testSplit3").toFile();
+    indexDir1 = SolrTestUtil.createTempDir("_testSplit1").toFile();
+    indexDir2 = SolrTestUtil.createTempDir("_testSplit2").toFile();
+    indexDir3 = SolrTestUtil.createTempDir("_testSplit3").toFile();
   }
 
   @Test
@@ -106,7 +109,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       assertEquals("id:kansas should not be present in split index1", 0, reader.docFreq(new Term("id", "kansas")));
       assertEquals("split index1 should have only one document", 1, reader.numDocs());
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+    //  h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir2.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
@@ -114,7 +117,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       assertEquals("id:kansas should be present in split index2", 1, reader.docFreq(new Term("id", "kansas")));
       assertEquals("split index2 should have only one document", 1, reader.numDocs());
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+    //  h.getCore().getDirectoryFactory().release(directory);
     } finally {
       if (request != null) request.close(); // decrefs the searcher
     }
@@ -166,13 +169,13 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       assertEquals("id:kansas should not be present in split index1", 0, reader.docFreq(new Term("id", "kansas")));
       assertEquals("split index1 should have only one document", 1, reader.numDocs());
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+     // h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir2.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
       assertEquals(0, reader.numDocs()); // should be empty
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+    //  h.getCore().getDirectoryFactory().release(directory);
     } finally {
       if (request != null) request.close(); // decrefs the searcher
     }
@@ -271,19 +274,19 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       DirectoryReader reader = DirectoryReader.open(directory);
       int numDocs1 = reader.numDocs();
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+   //   h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir2.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
       int numDocs2 = reader.numDocs();
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+  //    h.getCore().getDirectoryFactory().release(directory);
       directory = h.getCore().getDirectoryFactory().get(indexDir3.getAbsolutePath(),
           DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
       int numDocs3 = reader.numDocs();
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+    //  h.getCore().getDirectoryFactory().release(directory);
       directory = null;
       assertEquals("split indexes lost some documents!", max, numDocs1 + numDocs2 + numDocs3);
       assertEquals("split index1 has wrong number of documents", max / 3, numDocs1);
@@ -293,7 +296,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       if (request != null) request.close(); // decrefs the searcher
       if (directory != null)  {
         // perhaps an assert failed, release the directory
-        h.getCore().getDirectoryFactory().release(directory);
+      //  h.getCore().getDirectoryFactory().release(directory);
       }
     }
   }
@@ -309,7 +312,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   }
 
   private void doTestSplitByRouteKey(SolrIndexSplitter.SplitMethod splitMethod) throws Exception  {
-    File indexDir = createTempDir().toFile();
+    File indexDir = SolrTestUtil.createTempDir().toFile();
 
     CompositeIdRouter r1 = new CompositeIdRouter();
     String splitKey = "sea-line!";
@@ -350,14 +353,14 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       DirectoryReader reader = DirectoryReader.open(directory);
       assertEquals("split index has wrong number of documents", 10, reader.numDocs());
       reader.close();
-      h.getCore().getDirectoryFactory().release(directory);
+     // h.getCore().getDirectoryFactory().release(directory);
       directory = null;
     } finally {
       if (request != null)  {
         request.close();
       }
       if (directory != null)  {
-        h.getCore().getDirectoryFactory().release(directory);
+       // h.getCore().getDirectoryFactory().release(directory);
       }
     }
   }

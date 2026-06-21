@@ -21,8 +21,8 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.zookeeper.client.ConnectStringParser;
 
@@ -34,39 +34,43 @@ public class SolrClientFactory {
     this.settings = settings;
   }
 
-  public HttpSolrClient createStandaloneSolrClient(String solrHost) {
+  public Http2SolrClient createStandaloneSolrClient(String solrHost) {
     NoOpResponseParser responseParser = new NoOpResponseParser();
     responseParser.setWriterType("json");
 
-    HttpSolrClient.Builder standaloneBuilder = new HttpSolrClient.Builder();
+    Http2SolrClient.Builder standaloneBuilder = new Http2SolrClient.Builder();
 
-    standaloneBuilder.withBaseSolrUrl(solrHost);
+    standaloneBuilder.withBaseUrl(solrHost);
 
-    standaloneBuilder.withConnectionTimeout(settings.getHttpConnectionTimeout())
-        .withSocketTimeout(settings.getHttpReadTimeout());
+    standaloneBuilder.connectionTimeout(settings.getHttpConnectionTimeout())
+        .idleTimeout(settings.getHttpReadTimeout());
 
-    HttpSolrClient httpSolrClient = standaloneBuilder.build();
+    Http2SolrClient httpSolrClient = standaloneBuilder.build();
     httpSolrClient.setParser(responseParser);
 
     return httpSolrClient;
   }
 
-  public CloudSolrClient createCloudSolrClient(String zookeeperConnectionString) {
+  public CloudHttp2SolrClient createCloudSolrClient(String zookeeperConnectionString) {
     NoOpResponseParser responseParser = new NoOpResponseParser();
     responseParser.setWriterType("json");
 
     ConnectStringParser parser = new ConnectStringParser(zookeeperConnectionString);
 
-    CloudSolrClient.Builder cloudBuilder = new CloudSolrClient.Builder(
+    // HTTP/2: timeouts are configured on the underlying Http2SolrClient, not the cloud builder.
+    Http2SolrClient httpClient = new Http2SolrClient.Builder()
+        .connectionTimeout(settings.getHttpConnectionTimeout())
+        .idleTimeout(settings.getHttpReadTimeout())
+        .build();
+
+    CloudHttp2SolrClient.Builder cloudBuilder = new CloudHttp2SolrClient.Builder(
         parser.getServerAddresses().stream()
             .map(address -> String.format(Locale.ROOT, "%s:%s", address.getHostString(), address.getPort()))
             .collect(Collectors.toList()),
-        Optional.ofNullable(parser.getChrootPath()));
+        Optional.ofNullable(parser.getChrootPath()))
+        .withHttpClient(httpClient);
 
-    cloudBuilder.withConnectionTimeout(settings.getHttpConnectionTimeout())
-        .withSocketTimeout(settings.getHttpReadTimeout());
-
-    CloudSolrClient client = cloudBuilder.build();
+    CloudHttp2SolrClient client = cloudBuilder.build();
     client.setParser(responseParser);
 
     client.connect();

@@ -24,13 +24,13 @@ import org.junit.BeforeClass;
 public class TestUnifiedSolrHighlighterWithoutStoredId extends TestUnifiedSolrHighlighter {
 
   @BeforeClass
-  public static void beforeClassProps() {
+  public static void beforeTestUnifiedSolrHighlighterWithoutStoredId() {
     System.setProperty("solr.tests.id.stored", "false");
     System.setProperty("solr.tests.id.docValues", "true");
   }
 
   @AfterClass
-  public static void afterClassProps() {
+  public static void afterTestUnifiedSolrHighlighterWithoutStoredId() {
     System.clearProperty("solr.tests.id.stored");
     System.clearProperty("solr.tests.id.docValues");
   }

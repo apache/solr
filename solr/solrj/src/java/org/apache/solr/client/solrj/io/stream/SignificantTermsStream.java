@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -45,11 +45,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
@@ -96,9 +95,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
   public SignificantTermsStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
 
     // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
     if(expression.getParameters().size() != 1 + namedParams.size()){
@@ -228,12 +227,12 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;
-      cache = new SolrClientCache();
+      cache = new SolrClientCache(zkHost);
     } else {
       isCloseCache = false;
     }
 
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("SignificantTermsStream"));
+    this.executorService = ParWork.getRootSharedExecutor();
   }
 
   public List<TupleStream> children() {
@@ -264,7 +263,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       cache.close();
     }
 
-    executorService.shutdown();
+    // I don't own the executorService anymore, so no shutting it down
+    // executorService.shutdown();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
@@ -382,7 +382,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
     public NamedList<Double> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      Http2SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq","{!significantTerms}");

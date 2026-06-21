@@ -52,14 +52,16 @@ public abstract class HashBasedRouter extends DocRouter {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 
-  protected String getId(SolrInputDocument sdoc, SolrParams params) {
+  protected static String getId(SolrInputDocument sdoc, SolrParams params) {
+    if (sdoc == null) {
+      throw new NullPointerException("sdoc is null, cannot get ID");
+    }
     Object  idObj = sdoc.getFieldValue(ID);  // blech
-    String id = idObj != null ? idObj.toString() : "null";  // should only happen on client side
-    return id;
+    return idObj != null ? idObj.toString() : "null";
   }
 
-  protected Slice hashToSlice(int hash, DocCollection collection) {
-    final Slice[] slices = collection.getActiveSlicesArr();
+  protected static Slice hashToSlice(int hash, DocCollection collection) {
+    Collection<Slice> slices = collection.getActiveSlices();
     for (Slice slice : slices) {
       Range range = slice.getRange();
       if (range != null && range.includes(hash)) return slice;

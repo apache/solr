@@ -16,22 +16,30 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Extend SolrJettyTestBase because the SOLR-2535 bug only manifested itself when
@@ -39,18 +47,38 @@ import org.junit.BeforeClass;
  */
 public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+  private static volatile File tmpSolrHome;
+  protected static volatile JettySolrRunner jetty;
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
+    tmpSolrHome.mkdirs();
+
+
+    FileUtils.copyDirectory(new File(legacyExampleCollection1SolrHome()), tmpSolrHome.getAbsoluteFile());
+    FileUtils.copyFile(new File(legacyExampleCollection1SolrHome(), "solr.xml"), new File(tmpSolrHome, "solr.xml"));
+
+    jetty = createAndStartJetty(tmpSolrHome.getAbsolutePath());
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+      jetty = null;
+    }
+    super.tearDown();
   }
 
   public void test404ViaHttp() throws Exception {
-    SolrClient client = getSolrClient();
-    QueryRequest request = new QueryRequest(params("file",
-                                                   "does-not-exist-404.txt"));
-    request.setPath("/admin/file");
-    SolrException e = expectThrows(SolrException.class, () -> request.process(client));
-    assertEquals(404, e.code());
+    try (SolrClient client = createNewSolrClient(jetty)) {
+      QueryRequest request = new QueryRequest(params("file", "does-not-exist-404.txt"));
+      request.setPath("/admin/file");
+      SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> request.process(client));
+      assertEquals(e.toString(), 404, e.code());
+    }
   }
 
   public void test404Locally() throws Exception {
@@ -63,26 +91,33 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     // response.
     SolrCore core = h.getCore();
     SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = req("file", "does-not-exist-404.txt");
     core.execute(core.getRequestHandler("/admin/file"),
-        req("file", "does-not-exist-404.txt"), rsp);
+            req, rsp);
+    req.close();
     assertNotNull("no exception in response", rsp.getException());
     assertTrue("wrong type of exception: " + rsp.getException().getClass(),
-        rsp.getException() instanceof SolrException);
-    assertEquals(404, ((SolrException)rsp.getException()).code());
+            rsp.getException() instanceof SolrException);
+    assertEquals(404, ((SolrException) rsp.getException()).code());
+    core.close();
+
+    deleteCore();
   }
 
   public void testDirList() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
+    assertNotNull(jetty);
     QueryRequest request = new QueryRequest();
     request.setPath("/admin/file");
-    QueryResponse resp = request.process(client);
-    assertEquals(0,resp.getStatus());
-    assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0);//some files
+    try (SolrClient client = createNewSolrClient(jetty)) {
+      QueryResponse resp = request.process(client);
+
+      assertEquals(0, resp.getStatus());
+      assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0);//some files
+    }
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest(params("file", "managed-schema"));
     request.setPath("/admin/file");
@@ -110,8 +145,11 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
       }
     });
 
-    client.request(request);//runs request
+    try (SolrClient client = createNewSolrClient(jetty)) {
+      client.request(request);//runs request
+    }
     //request.process(client); but we don't have a NamedList response
     assertTrue(readFile.get());
   }
+
 }

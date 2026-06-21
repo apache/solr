@@ -25,6 +25,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,15 +34,23 @@ import org.junit.Test;
  * Test a whole slew of things related to PolyFields
  */
 public class PolyFieldTest extends SolrTestCaseJ4 {
+
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforePolyFieldTest() throws Exception {
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false"); // Poly fields not supported as subtypes, PointType:73
     initCore("solrconfig.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterPolyFieldTest() {
+    deleteCore();
   }
 
   @Test
   public void testSchemaBasics() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
 
     SchemaField home = schema.getField("home");
     assertNotNull(home);
@@ -76,6 +85,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   public void testPointFieldType() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     SchemaField home = schema.getField("home");
     assertNotNull(home);
     assertTrue("home is not a poly field", home.isPolyField());
@@ -166,6 +176,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   public void testSearchDetails() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     double[] xy = new double[]{35.0, -79.34};
     String point = xy[0] + "," + xy[1];
     //How about some queries?

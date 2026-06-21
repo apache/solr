@@ -26,9 +26,9 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.icu.ICUCollationKeyAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.collation.ICUCollationKeyAnalyzer;
+
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -36,6 +36,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -189,7 +190,7 @@ public class ICUCollationField extends FieldType {
    * Create a locale from localeID.
    * Then return the appropriate collator for the locale.
    */
-  private Collator createFromLocale(String localeID) {
+  private static Collator createFromLocale(String localeID) {
     return Collator.getInstance(new ULocale(localeID));
   }
   

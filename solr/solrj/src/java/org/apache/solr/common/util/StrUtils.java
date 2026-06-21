@@ -23,7 +23,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import org.apache.solr.common.SolrException;
 
 /**
@@ -32,6 +35,7 @@ import org.apache.solr.common.SolrException;
 public class StrUtils {
   public static final char[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6',
       '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+  private static final Pattern COMPILE = Pattern.compile("\\\\(?=,)");
 
   public static List<String> splitSmart(String s, char separator) {
     ArrayList<String> lst = new ArrayList<>(4);
@@ -110,15 +114,16 @@ public class StrUtils {
    * @param decode    decode backslash escaping
    * @return not null
    */
-  public static List<String> splitSmart(String s, String separator, boolean decode) {
-    ArrayList<String> lst = new ArrayList<>(2);
+  public static ObjectList<String> splitSmart(String s, String separator, boolean decode) {
+    ObjectList<String> lst = new ObjectArrayList<>(2);
     StringBuilder sb = new StringBuilder();
+
     int pos = 0, end = s.length();
     while (pos < end) {
       if (s.startsWith(separator, pos)) {
         if (sb.length() > 0) {
           lst.add(sb.toString());
-          sb = new StringBuilder();
+          sb.setLength(0);
         }
         pos += separator.length();
         continue;
@@ -173,7 +178,7 @@ public class StrUtils {
 
     List<String> result = new ArrayList<>();
     for (String file : fileNames.split("(?<!\\\\),")) {
-      result.add(file.replaceAll("\\\\(?=,)", ""));
+      result.add(COMPILE.matcher(file).replaceAll(""));
     }
 
     return result;

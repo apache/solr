@@ -19,7 +19,7 @@ package org.apache.solr.spelling.suggest.jaspell;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
+import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;
@@ -37,7 +37,10 @@ public class JaspellLookupFactory extends LookupFactory {
   @Override
   public Lookup create(NamedList params, SolrCore core) {
     log.info("init: {}", params);
-    return new JaspellLookup();
+    // JaspellLookup was removed from Lucene 9.x; delegate to the algorithmically-equivalent
+    // TSTLookup. Use the temp-directory constructor (like TSTLookupFactory) so the offline
+    // sorter used by build() has a Directory to work in (the no-arg ctor leaves it null -> NPE).
+    return new TSTLookup(getTempDir(), "suggester");
   }
 
   @Override

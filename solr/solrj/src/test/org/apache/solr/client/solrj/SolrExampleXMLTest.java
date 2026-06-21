@@ -16,29 +16,25 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the xml codec for
  * communication.
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleXMLTest extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-  
-  @Override
-  public SolrClient createNewSolrClient() {
+
+  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
+      Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+      //client.setUseMultiPartPost(random().nextBoolean());
       client.setParser(new XMLResponseParser());
       client.setRequestWriter(new RequestWriter());
       return client;

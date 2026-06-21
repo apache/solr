@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -45,15 +46,19 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     factory.init(args);
 
     UpdateRequestProcessor processor = factory.getInstance(null, null, null);
-    expectThrows(SolrException.class, () -> processor.processAdd(getUpdate(1024)));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> processor.processAdd(getUpdate(1024)));
 
     args = new NamedList();
     args.add(IgnoreLargeDocumentProcessorFactory.LIMIT_SIZE_PARAM, 2);
     factory = new IgnoreLargeDocumentProcessorFactory();
     factory.init(args);
     UpdateRequestProcessor requestProcessor = factory.getInstance(null, null, null);
-    requestProcessor.processAdd(getUpdate(1024));
-
+    try {
+      requestProcessor.processAdd(getUpdate(1024));
+    } finally {
+      requestProcessor.close();
+    }
+    processor.close();
   }
 
   public AddUpdateCommand getUpdate(int size) {

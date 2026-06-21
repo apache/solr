@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
@@ -23,6 +24,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import javax.xml.xpath.XPathFactoryConfigurationException;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,8 +38,13 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -45,6 +52,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -62,6 +70,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -202,7 +211,7 @@ public class SimplePostTool {
    * Pretty prints the number of milliseconds taken to post the content to Solr
    * @param millis the time in milliseconds
    */
-  private void displayTiming(long millis) {
+  private static void displayTiming(long millis) {
     SimpleDateFormat df = new SimpleDateFormat("H:mm:ss.SSS", Locale.getDefault());
     df.setTimeZone(TimeZone.getTimeZone("UTC"));
     CLIO.out("Time spent: "+df.format(new Date(millis)));
@@ -435,7 +444,7 @@ public class SimplePostTool {
      "The web mode is a simple crawler following links within domain, default delay=10s.");
   }
 
-  private boolean checkIsValidPath(File srcFile) {
+  private static boolean checkIsValidPath(File srcFile) {
     try {
       srcFile.toPath();
       return true;
@@ -524,7 +533,7 @@ public class SimplePostTool {
         if(!srcFile.isFile() || srcFile.isHidden())
           continue;
         postFile(srcFile, out, type);
-        Thread.sleep(delay * 1000);
+        Thread.sleep(delay * 1000L);
         filesPosted++;
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
@@ -584,8 +593,8 @@ public class SimplePostTool {
    * @return the normalized URL string
    */
   protected static String normalizeUrlEnding(String link) {
-    if(link.indexOf("#") > -1)
-      link = link.substring(0,link.indexOf("#"));
+    if(link.indexOf('#') > -1)
+      link = link.substring(0,link.indexOf('#'));
     if(link.endsWith("?"))
       link = link.substring(0,link.length()-1);
     if(link.endsWith("/"))
@@ -620,12 +629,12 @@ public class SimplePostTool {
         if(result.httpStatus == 200) {
           u = (result.redirectUrl != null) ? result.redirectUrl : u;
           URL postUrl = new URL(appendParam(solrUrl.toString(),
-              "literal.id="+URLEncoder.encode(u.toString(),"UTF-8") +
-              "&literal.url="+URLEncoder.encode(u.toString(),"UTF-8")));
+              "literal.id="+URLEncoder.encode(u.toString(), UTF_8) +
+              "&literal.url="+URLEncoder.encode(u.toString(), UTF_8)));
           boolean success = postData(new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(),result.content.limit() ), null, out, result.contentType, postUrl);
           if (success) {
             info("POSTed web resource "+u+" (depth: "+level+")");
-            Thread.sleep(delay * 1000);
+            Thread.sleep(delay * 1000L);
             numPages++;
             // Pull links from HTML pages only
             if(recursive > level && result.contentType.equals("text/html")) {
@@ -688,7 +697,7 @@ public class SimplePostTool {
    * @param link the absolute or relative link
    * @return the string version of the full URL
    */
-  protected String computeFullUrl(URL baseUrl, String link) {
+  protected static String computeFullUrl(URL baseUrl, String link) {
     if(link == null || link.length() == 0) {
       return null;
     }
@@ -701,7 +710,7 @@ public class SimplePostTool {
         }
         String path = baseUrl.getPath();
         if(!path.endsWith("/")) {
-          int sep = path.lastIndexOf("/");
+          int sep = path.lastIndexOf('/');
           String file = path.substring(sep+1);
           if(file.contains(".") || file.contains("?"))
             path = path.substring(0,sep);
@@ -781,7 +790,7 @@ public class SimplePostTool {
   public static String appendParam(String url, String param) {
     String[] pa = param.split("&");
     for(String p : pa) {
-      if(p.trim().length() == 0) continue;
+      if(StringUtils.isBlank(p)) continue;
       String[] kv = p.split("=");
       if(kv.length == 2) {
         url = url + (url.indexOf('?')>0 ? "&" : "?") + kv[0] +"="+ kv[1];
@@ -818,7 +827,7 @@ public class SimplePostTool {
           suffix = "/extract";
           String urlStr = appendUrlPath(solrUrl, suffix).toString();
           if(urlStr.indexOf("resource.name")==-1)
-            urlStr = appendParam(urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
+            urlStr = appendParam(urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
           if(urlStr.indexOf("literal.id")==-1)
             urlStr = appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
           url = new URL(urlStr);
@@ -858,7 +867,7 @@ public class SimplePostTool {
    */
   protected static String guessType(File file) {
     String name = file.getName();
-    String suffix = name.substring(name.lastIndexOf(".")+1);
+    String suffix = name.substring(name.lastIndexOf('.')+1);
     String type = mimeMap.get(suffix.toLowerCase(Locale.ROOT));
     return (type != null) ? type : "application/octet-stream";
   }
@@ -880,14 +889,30 @@ public class SimplePostTool {
   public void doGet(URL url) {
     try {
       if(mockMode) return;
-      HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
-      basicAuth(urlc);
-      urlc.connect();
-      checkResponseCode(urlc);
+//      HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
+//      basicAuth(urlc);
+//      urlc.connect();
+ //     checkResponseCode(urlc);
+      HttpClient client = HttpClient.newBuilder()
+          // just to show off; HTTP/2 is the default
+          .version(HttpClient.Version.HTTP_2)
+          .connectTimeout(Duration.ofSeconds(5))
+          //.followRedirects(SECURE)
+          .build();
+      HttpRequest request = HttpRequest.newBuilder()
+          .GET()
+          .version(HttpClient.Version.HTTP_2)
+          .uri(url.toURI())
+          .header("Accept-Language", "en-US,en;q=0.5")
+          .build();
+      client.send(request, HttpResponse.BodyHandlers.ofString());
+
     } catch (IOException e) {
+      e.printStackTrace();
       warn("An error occurred getting data from "+url+". Please check that Solr is running.");
     } catch (Exception e) {
       warn("An error occurred getting data from "+url+". Message: " + e.getMessage());
+      e.printStackTrace();
     }
   }
 
@@ -901,54 +926,88 @@ public class SimplePostTool {
     boolean success = true;
     if(type == null)
       type = DEFAULT_CONTENT_TYPE;
+
+    HttpClient client = HttpClient.newBuilder()
+        // just to show off; HTTP/2 is the default
+        .version(HttpClient.Version.HTTP_2)
+        .connectTimeout(Duration.ofSeconds(5))
+        //.followRedirects(SECURE)
+        .build();
+
+
     HttpURLConnection urlc = null;
     try {
-      try {
-        urlc = (HttpURLConnection) url.openConnection();
-        try {
-          urlc.setRequestMethod("POST");
-        } catch (ProtocolException e) {
-          fatal("Shouldn't happen: HttpURLConnection doesn't support POST??"+e);
-        }
-        urlc.setDoOutput(true);
-        urlc.setDoInput(true);
-        urlc.setUseCaches(false);
-        urlc.setAllowUserInteraction(false);
-        urlc.setRequestProperty("Content-type", type);
-        basicAuth(urlc);
-        if (null != length) {
-          urlc.setFixedLengthStreamingMode(length);
-        } else {
-          urlc.setChunkedStreamingMode(-1);//use JDK default chunkLen, 4k in Java 8.
-        }
-        urlc.connect();
-      } catch (IOException e) {
-        fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
-        success = false;
-      } catch (Exception e) {
-        fatal("POST failed with error " + e.getMessage());
-      }
+//      try {
+//        urlc = (HttpURLConnection) url.openConnection();
+//        try {
+//          urlc.setRequestMethod("POST");
+//        } catch (ProtocolException e) {
+//          fatal("Shouldn't happen: HttpURLConnection doesn't support POST??"+e);
+//        }
 
-      try (final OutputStream out = urlc.getOutputStream()) {
-        pipe(data, out);
-      } catch (IOException e) {
-        fatal("IOException while posting data: " + e);
-      }
+        HttpRequest.BodyPublisher requestBody = HttpRequest.BodyPublishers
+            .ofInputStream(() -> data);
+        HttpRequest request = HttpRequest.newBuilder()
+            .POST(requestBody)
+            .version(HttpClient.Version.HTTP_2)
+            .uri(url.toURI())
+            .build();
 
-      try {
-        success &= checkResponseCode(urlc);
-        try (final InputStream in = urlc.getInputStream()) {
-          pipe(in, output);
-        }
-      } catch (IOException e) {
-        warn("IOException while reading response: " + e);
-        success = false;
-      } catch (GeneralSecurityException e) {
-        fatal("Looks like Solr is secured and would not let us in. Try with another user in '-u' parameter");
-      }
+        HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+      int rc = response.statusCode();
+        // `HttpResponse<T>.body()` returns a `T`
+
+      //  try (final OutputStream out = urlc.getOutputStream()) {
+          pipe(response.body(), out);
+      //  } catch (IOException e) {
+       //   fatal("IOException while posting data: " + e);
+       // }
+//        urlc.setDoOutput(true);
+//        urlc.setDoInput(true);
+//        urlc.setUseCaches(false);
+//        urlc.setAllowUserInteraction(false);
+//        urlc.setRequestProperty("Content-type", type);
+//        basicAuth(urlc);
+//        if (null != length) {
+//          urlc.setFixedLengthStreamingMode(length);
+//        } else {
+//          urlc.setChunkedStreamingMode(-1);//use JDK default chunkLen, 4k in Java 8.
+//        }
+//        urlc.connect();
+//      } catch (IOException e) {
+//        fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
+//        success = false;
+//      } catch (Exception e) {
+//        fatal("POST failed with error " + e.getMessage());
+//      }
+
+//      try (final OutputStream out = urlc.getOutputStream()) {
+//        pipe(res, out);
+//      } catch (IOException e) {
+//        fatal("IOException while posting data: " + e);
+//      }
+
+ //     try {
+        success = rc == 200;// &= checkResponseCode(urlc);
+//        try (final InputStream in = urlc.getInputStream()) {
+//          pipe(in, output);
+//        }
+//      } catch (IOException e) {
+//        warn("IOException while reading response: " + e);
+//        success = false;
+//      }
+      //    } finally {
+//      if (urlc!=null) urlc.disconnect();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (URISyntaxException e) {
+      e.printStackTrace();
     } finally {
-      if (urlc!=null) urlc.disconnect();
+
     }
+
     return success;
   }
 
@@ -981,13 +1040,14 @@ public class SimplePostTool {
       // Print the response returned by Solr
       try (InputStream errStream = urlc.getErrorStream()) {
         if (errStream != null) {
-          BufferedReader br = new BufferedReader(new InputStreamReader(errStream, charset));
-          final StringBuilder response = new StringBuilder("Response: ");
-          int ch;
-          while ((ch = br.read()) != -1) {
-            response.append((char) ch);
+          try (BufferedReader br = new BufferedReader(new InputStreamReader(errStream, charset))) {
+            final StringBuilder response = new StringBuilder("Response: ");
+            int ch;
+            while ((ch = br.read()) != -1) {
+              response.append((char) ch);
+            }
+            warn(response.toString().trim());
           }
-          warn(response.toString().trim());
         }
       }
       if (urlc.getResponseCode() == 401) {
@@ -1023,7 +1083,7 @@ public class SimplePostTool {
     if (null != dest) dest.flush();
   }
 
-  public FileFilter getFileFilterFromFileTypes(String fileTypes) {
+  public static FileFilter getFileFilterFromFileTypes(String fileTypes) {
     String glob;
     if(fileTypes.equals("*"))
       glob = ".*";
@@ -1039,8 +1099,9 @@ public class SimplePostTool {
   /**
    * Gets all nodes matching an XPath
    */
-  public static NodeList getNodesFromXP(Node n, String xpath) throws XPathExpressionException {
+  public static NodeList getNodesFromXP(Node n, String xpath) throws XPathExpressionException, XPathFactoryConfigurationException {
     XPathFactory factory = XPathFactory.newInstance();
+    factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
     XPath xp = factory.newXPath();
     XPathExpression expr = xp.compile(xpath);
     return (NodeList) expr.evaluate(n, XPathConstants.NODESET);
@@ -1052,8 +1113,7 @@ public class SimplePostTool {
    * @param xpath the xpath string
    * @param concatAll if true, text from all matching nodes will be concatenated, else only the first returned
    */
-  public static String getXP(Node n, String xpath, boolean concatAll)
-      throws XPathExpressionException {
+  public static String getXP(Node n, String xpath, boolean concatAll) throws XPathExpressionException, XPathFactoryConfigurationException {
     NodeList nodes = getNodesFromXP(n, xpath);
     StringBuilder sb = new StringBuilder();
     if (nodes.getLength() > 0) {
@@ -1072,7 +1132,14 @@ public class SimplePostTool {
   public static Document makeDom(byte[] in) throws SAXException, IOException,
   ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(in);
-    Document dom = DocumentBuilderFactory.newInstance()
+    DocumentBuilderFactory newInstance = DocumentBuilderFactory.newInstance();
+    newInstance.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+    newInstance.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+    newInstance.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    newInstance.setXIncludeAware(false);
+    newInstance.setExpandEntityReferences(false);
+    newInstance.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    Document dom = newInstance
         .newDocumentBuilder().parse(is);
     return dom;
   }

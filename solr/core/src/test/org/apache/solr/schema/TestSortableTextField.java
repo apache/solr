@@ -32,15 +32,20 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -51,34 +56,36 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     = StringUtils.repeat("x", SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
   
   @BeforeClass
-  public static void create() throws Exception {
-    initCore("solrconfig-minimal.xml","schema-sorting-text.xml");
-    
-    // sanity check our fields & types...
+  public static void beforeTestSortableTextField() throws Exception {
+    initCore("solrconfig-minimal.xml", "schema-sorting-text.xml");
+    try (SolrCore core = h.getCore()) {
+      // sanity check our fields & types...
 
-    // these should all use docValues (either explicitly or implicitly)...
-    for (String n : Arrays.asList("keyword_stxt", 
-                                  "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
-           
-      FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(n);
-      assertEquals("type " + ft.getTypeName() + " should have docvalues - schema got changed?",
-                   true, ft.getNamedPropertyValues(true).get("docValues")) ;
-    }
-    for (String n : Arrays.asList("keyword_stxt", "keyword_dv_stxt",
-                                  "whitespace_stxt", "whitespace_nois_stxt",
-                                  "whitespace_f_stxt", "whitespace_l_stxt")) {
-                                  
-      SchemaField sf = h.getCore().getLatestSchema().getField(n);
-      assertTrue("field " + sf.getName() + " should have docvalues - schema got changed?",
-                 sf.hasDocValues()) ;
-    }
+      // these should all use docValues (either explicitly or implicitly)...
+      for (String n : Arrays.asList("keyword_stxt", "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
 
-    { // this field should *NOT* have docValues .. should behave like a plain old TextField
-      SchemaField sf = h.getCore().getLatestSchema().getField("whitespace_nodv_stxt");
-      assertFalse("field " + sf.getName() + " should not have docvalues - schema got changed?",
-                  sf.hasDocValues()) ;
+        FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+        assertEquals("type " + ft.getTypeName() + " should have docvalues - schema got changed?", true, ft.getNamedPropertyValues(true).get("docValues"));
+
+      }
+      for (String n : Arrays.asList("keyword_stxt", "keyword_dv_stxt", "whitespace_stxt", "whitespace_nois_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
+
+        SchemaField sf = core.getLatestSchema().getField(n);
+        assertTrue("field " + sf.getName() + " should have docvalues - schema got changed?", sf.hasDocValues());
+      }
+
+      { // this field should *NOT* have docValues .. should behave like a plain old TextField
+
+        SchemaField sf = core.getLatestSchema().getField("whitespace_nodv_stxt");
+        assertFalse("field " + sf.getName() + " should not have docvalues - schema got changed?", sf.hasDocValues());
+
+      }
     }
-    
+  }
+
+  @AfterClass
+  public static void afterTestSortableTextField() {
+    deleteCore();
   }
   
   @Before
@@ -127,12 +134,11 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
               , "//result/doc[2]/str[@name='id'][.=3]"
               );
     }
-    
-    // attempting to sort on docValues="false" field should give an error...
-    assertQEx("attempting to sort on docValues=false field should give an error",
-              "when docValues=\"false\"",
-              req("q","*:*", "sort", "whitespace_nodv_stxt asc"),
-              ErrorCode.BAD_REQUEST);
+
+    try (SolrQueryRequest req = req("q","*:*", "sort", "whitespace_nodv_stxt asc")) {
+      // attempting to sort on docValues="false" field should give an error...
+      assertQEx("attempting to sort on docValues=false field should give an error", "when docValues=\"false\"", req, ErrorCode.BAD_REQUEST);
+    }
 
     // sortMissing - whitespace_f_stxt copyField to whitespace_l_stxt
     assertQ(req("q","*:*", "sort", "whitespace_f_stxt asc")
@@ -212,43 +218,40 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
                  "keyword_stxt", "Blarggghhh!"));
     assertU(commit());
 
-    final RefCounted<SolrIndexSearcher> searcher = h.getCore().getNewestSearcher(false);
-    try {
-      final LeafReader r = searcher.get().getSlowAtomicReader();
+    try (SolrCore core = h.getCore()) {
+      final RefCounted<SolrIndexSearcher> searcher = core.getNewestSearcher(false);
+      try {
+        final LeafReader r = searcher.get().getSlowAtomicReader();
 
-      // common cases...
-      for (String field : Arrays.asList("keyword_stxt", "keyword_dv_stxt",
-                                        "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
-        assertNotNull("FieldInfos: " + field, r.getFieldInfos().fieldInfo(field));
-        assertEquals("DocValuesType: " + field,
-                     DocValuesType.SORTED, r.getFieldInfos().fieldInfo(field).getDocValuesType());
-        assertNotNull("DocValues: " + field, r.getSortedDocValues(field));
-        assertNotNull("Terms: " + field, r.terms(field));
-                      
-      }
-      
-      // special cases...
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nodv_stxt"));
-      assertEquals(DocValuesType.NONE,
-                   r.getFieldInfos().fieldInfo("whitespace_nodv_stxt").getDocValuesType());
-      assertNull(r.getSortedDocValues("whitespace_nodv_stxt"));
-      assertNotNull(r.terms("whitespace_nodv_stxt"));
-      // 
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nois_stxt"));
-      assertEquals(DocValuesType.SORTED,
-                   r.getFieldInfos().fieldInfo("whitespace_nois_stxt").getDocValuesType());
-      assertNotNull(r.getSortedDocValues("whitespace_nois_stxt"));
-      assertNull(r.terms("whitespace_nois_stxt"));
-      //
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_m_stxt"));
-      assertEquals(DocValuesType.SORTED_SET,
-                   r.getFieldInfos().fieldInfo("whitespace_m_stxt").getDocValuesType());
-      assertNotNull(r.getSortedSetDocValues("whitespace_m_stxt"));
-      assertNotNull(r.terms("whitespace_m_stxt"));
-        
-    } finally {
-      if (null != searcher) {
-        searcher.decref();
+        // common cases...
+        for (String field : Arrays.asList("keyword_stxt", "keyword_dv_stxt", "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
+          assertNotNull("FieldInfos: " + field, r.getFieldInfos().fieldInfo(field));
+          assertEquals("DocValuesType: " + field, DocValuesType.SORTED, r.getFieldInfos().fieldInfo(field).getDocValuesType());
+          assertNotNull("DocValues: " + field, r.getSortedDocValues(field));
+          assertNotNull("Terms: " + field, r.terms(field));
+
+        }
+
+        // special cases...
+        assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nodv_stxt"));
+        assertEquals(DocValuesType.NONE, r.getFieldInfos().fieldInfo("whitespace_nodv_stxt").getDocValuesType());
+        assertNull(r.getSortedDocValues("whitespace_nodv_stxt"));
+        assertNotNull(r.terms("whitespace_nodv_stxt"));
+        //
+        assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nois_stxt"));
+        assertEquals(DocValuesType.SORTED, r.getFieldInfos().fieldInfo("whitespace_nois_stxt").getDocValuesType());
+        assertNotNull(r.getSortedDocValues("whitespace_nois_stxt"));
+        assertNull(r.terms("whitespace_nois_stxt"));
+        //
+        assertNotNull(r.getFieldInfos().fieldInfo("whitespace_m_stxt"));
+        assertEquals(DocValuesType.SORTED_SET, r.getFieldInfos().fieldInfo("whitespace_m_stxt").getDocValuesType());
+        assertNotNull(r.getSortedSetDocValues("whitespace_m_stxt"));
+        assertNotNull(r.terms("whitespace_m_stxt"));
+
+      } finally {
+        if (null != searcher) {
+          searcher.decref();
+        }
       }
     }
   }
@@ -280,8 +283,10 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));      
   }
   private List<IndexableField> createIndexableFields(String fieldName) {
-    SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
-    return sf.getType().createFields(sf, "dummy value");
+    try (SolrCore core = h.getCore()) {
+      SchemaField sf = core.getLatestSchema().getField(fieldName);
+      return sf.getType().createFields(sf, "dummy value");
+    }
   }
 
   public void testMaxCharsSort() throws Exception {
@@ -386,88 +391,81 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
    */
   public void testUseDocValuesAsStored() throws Exception {
     ignoreException("when useDocValuesAsStored=true \\(length=");
-    
+    int num_fields_found = 0;
+    List<String> xpaths = new ArrayList<>(42);
     // first things first...
     // unlike most field types, SortableTextField should default to useDocValuesAsStored==false
     // (check a handful that should have the default behavior)
-    for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
-      {
-        FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(n);
-        assertEquals("type " + ft.getTypeName() + " should not default to useDocValuesAsStored",
-                     false, ft.useDocValuesAsStored()) ;
-      }
-      {
-        SchemaField sf = h.getCore().getLatestSchema().getField(n);
-        assertEquals("field " + sf.getName() + " should not default to useDocValuesAsStored",
-                     false, sf.useDocValuesAsStored()) ;
-      }
-    }
-    
-    // but it should be possible to set useDocValuesAsStored=true explicitly on types...
-    int num_types_found = 0;
-    for (Map.Entry<String,FieldType> entry : h.getCore().getLatestSchema().getFieldTypes().entrySet()) {
-      if (entry.getKey().endsWith("_has_usedvs")) {
-        num_types_found++;
-        FieldType ft = entry.getValue();
-        assertEquals("type " + ft.getTypeName() + " has unexpected useDocValuesAsStored value",
-                     true, ft.useDocValuesAsStored()) ;
-      }
-    }
-    assertEquals("sanity check: wrong number of *_has_usedvs types found -- schema changed?",
-                 2, num_types_found);
-
-    
-    // ...and it should be possible to set/override useDocValuesAsStored=true on fields...
-    int num_fields_found = 0;
-    List<String> xpaths = new ArrayList<>(42);
-    for (Map.Entry<String,SchemaField> entry : h.getCore().getLatestSchema().getFields().entrySet()) {
-      if (entry.getKey().endsWith("_usedvs")) {
-        num_fields_found++;
-        final SchemaField sf = entry.getValue();
-        final String name = sf.getName();
-        
-        // some sanity check before we move on with the rest of our testing...
-        assertFalse("schema change? field should not be stored=true: " + name, sf.stored());
-        final boolean usedvs = name.endsWith("_has_usedvs");
-        assertTrue("schema change broke assumptions: field must be '*_has_usedvs' or '*_negates_usedvs': " +
-                   name, usedvs ^ name.endsWith("_negates_usedvs"));
-        final boolean max6 = name.startsWith("max6_");
-        assertTrue("schema change broke assumptions: field must be 'max6_*' or 'max0_*': " +
-                   name, max6 ^ name.startsWith("max0_"));
-        
-        assertEquals("Unexpected useDocValuesAsStored value for field: " + name,
-                     usedvs, sf.useDocValuesAsStored()) ;
-        
-        final String docid = ""+num_fields_found;
-        if (usedvs && max6) {
-          // if useDocValuesAsStored==true and maxCharsForDocValues=N then longer values should fail
-          
-          final String doc = adoc("id", docid, name, "apple pear orange");
-          SolrException ex = expectThrows(SolrException.class, () -> { assertU(doc); });
-          for (String expect : Arrays.asList("field " + name,
-                                             "length=17",
-                                             "useDocValuesAsStored=true",
-                                             "maxCharsForDocValues=6")) {
-            assertTrue("exception must mention " + expect + ": " + ex.getMessage(),
-                       ex.getMessage().contains(expect));
-          }
-        } else {
-          // otherwise (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
-          // should be fine when adding a doc and we should be able to search for it later...
-          final String val = docid + " apple pear orange " + BIG_CONST;
-          assertU(adoc("id", docid, name, val));
-          String doc_xpath = "//result/doc[str[@name='id'][.='"+docid+"']]";
-            
-          if (usedvs) {
-            // ...and if it *does* usedvs, then we should defnitely see our value when searching...
-            doc_xpath = doc_xpath + "[str[@name='"+name+"'][.='"+val+"']]";
-          } else {
-            // ...but if not, then we should definitely not see any value for our field...
-            doc_xpath = doc_xpath + "[not(str[@name='"+name+"'])]";
-          }
-          xpaths.add(doc_xpath);
+    try (SolrCore core = h.getCore()) {
+      for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
+        {
+          FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+          assertEquals("type " + ft.getTypeName() + " should not default to useDocValuesAsStored", false, ft.useDocValuesAsStored());
+        }
+        {
+          SchemaField sf = core.getLatestSchema().getField(n);
+          assertEquals("field " + sf.getName() + " should not default to useDocValuesAsStored", false, sf.useDocValuesAsStored());
         }
       }
+
+      // but it should be possible to set useDocValuesAsStored=true explicitly on types...
+      int num_types_found = 0;
+      for (Map.Entry<String,FieldType> entry : core.getLatestSchema().getFieldTypes().entrySet()) {
+        if (entry.getKey().endsWith("_has_usedvs")) {
+          num_types_found++;
+          FieldType ft = entry.getValue();
+          assertEquals("type " + ft.getTypeName() + " has unexpected useDocValuesAsStored value", true, ft.useDocValuesAsStored());
+        }
+      }
+      assertEquals("sanity check: wrong number of *_has_usedvs types found -- schema changed?", 2, num_types_found);
+
+      // ...and it should be possible to set/override useDocValuesAsStored=true on fields...
+
+      for (Map.Entry<String,SchemaField> entry : core.getLatestSchema().getFields().entrySet()) {
+        if (entry.getKey().endsWith("_usedvs")) {
+          num_fields_found++;
+          final SchemaField sf = entry.getValue();
+          final String name = sf.getName();
+
+          // some sanity check before we move on with the rest of our testing...
+          assertFalse("schema change? field should not be stored=true: " + name, sf.stored());
+          final boolean usedvs = name.endsWith("_has_usedvs");
+          assertTrue("schema change broke assumptions: field must be '*_has_usedvs' or '*_negates_usedvs': " + name, usedvs ^ name.endsWith("_negates_usedvs"));
+          final boolean max6 = name.startsWith("max6_");
+          assertTrue("schema change broke assumptions: field must be 'max6_*' or 'max0_*': " + name, max6 ^ name.startsWith("max0_"));
+
+          assertEquals("Unexpected useDocValuesAsStored value for field: " + name, usedvs, sf.useDocValuesAsStored());
+
+          final String docid = "" + num_fields_found;
+          if (usedvs && max6) {
+            // if useDocValuesAsStored==true and maxCharsForDocValues=N then longer values should fail
+
+            final String doc = adoc("id", docid, name, "apple pear orange");
+            SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+              assertU(doc);
+            });
+            for (String expect : Arrays.asList("field " + name, "length=17", "useDocValuesAsStored=true", "maxCharsForDocValues=6")) {
+              assertTrue("exception must mention " + expect + ": " + ex.getMessage(), ex.getMessage().contains(expect));
+            }
+          } else {
+            // otherwise (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
+            // should be fine when adding a doc and we should be able to search for it later...
+            final String val = docid + " apple pear orange " + BIG_CONST;
+            assertU(adoc("id", docid, name, val));
+            String doc_xpath = "//result/doc[str[@name='id'][.='" + docid + "']]";
+
+            if (usedvs) {
+              // ...and if it *does* usedvs, then we should defnitely see our value when searching...
+              doc_xpath = doc_xpath + "[str[@name='" + name + "'][.='" + val + "']]";
+            } else {
+              // ...but if not, then we should definitely not see any value for our field...
+              doc_xpath = doc_xpath + "[not(str[@name='" + name + "'])]";
+            }
+            xpaths.add(doc_xpath);
+          }
+        }
+      }
+
     }
     assertEquals("sanity check: wrong number of *_usedvs fields found -- schema changed?",
                  6, num_fields_found);
@@ -488,73 +486,63 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     final List<String> test_fields = Arrays.asList("keyword_stxt", "keyword_dv_stxt",
                                                    "keyword_s_dv", "keyword_s");
     // we use embedded client instead of assertQ: we want to compare the responses from multiple requests
-    @SuppressWarnings("resource") final SolrClient client = new EmbeddedSolrServer(h.getCore());
-    
-    final int numDocs = atLeast(100);
-    final int magicIdx = TestUtil.nextInt(random(), 1, numDocs);
-    String magic = null;
-    for (int i = 1; i <= numDocs; i++) {
+    try (SolrCore core = h.getCore()) {
+      @SuppressWarnings("resource") final SolrClient client = new EmbeddedSolrServer(core);
 
-      // ideally we'd test all "realistic" unicode string, but EmbeddedSolrServer uses XML request writer
-      // and has no option to change this so ctrl-characters break the request
-      final String val = TestUtil.randomSimpleString(random(), 100);
-      if (i == magicIdx) {
-        magic = val;
-      }
-      assertEquals(0, client.add(sdoc("id", ""+i, "keyword_stxt", val)).getStatus());
-      
-    }
-    assertNotNull(magic);
-    
-    assertEquals(0, client.commit().getStatus());
+      final int numDocs = SolrTestUtil.atLeast(100);
+      final int magicIdx = TestUtil.nextInt(random(), 1, numDocs);
+      String magic = null;
+      for (int i = 1; i <= numDocs; i++) {
 
-    // query for magic term should match same doc regardless of field (reminder: keyword tokenizer)
-    // (we need the filter in the unlikely event that magic value with randomly picked twice)
-    for (String f : test_fields) {
-      
-      final SolrDocumentList results = client.query(params("q", "{!field f="+f+" v=$v}",
-                                                           "v", magic,
-                                                           "fq", "id:" + magicIdx )).getResults();
-      assertEquals(f + ": Query ("+magic+") filtered by id: " + magicIdx + " ==> " + results,
-                   1L, results.getNumFound());
-      final SolrDocument doc = results.get(0);
-      assertEquals(f + ": Query ("+magic+") filtered by id: " + magicIdx + " ==> " + doc,
-                   ""+magicIdx, doc.getFieldValue("id"));
-      assertEquals(f + ": Query ("+magic+") filtered by id: " + magicIdx + " ==> " + doc,
-                   magic, doc.getFieldValue(f));
-    }
-
-    // do some random id range queries using all 3 fields for sorting.  results should be identical
-    final int numQ = atLeast(10);
-    for (int i = 0; i < numQ; i++) {
-      final int hi = TestUtil.nextInt(random(), 1, numDocs-1);
-      final int lo = TestUtil.nextInt(random(), 1, hi);
-      final boolean fwd = random().nextBoolean();
-      
-      SolrDocumentList previous = null;
-      String prevField = null;
-      for (String f : test_fields) {
-        final SolrDocumentList results = client.query(params("q","id_i:["+lo+" TO "+hi+"]",
-                                                             "sort", f + (fwd ? " asc" : " desc") +
-                                                             // secondary on id for determinism
-                                                             ", id asc")
-                                                      ).getResults();
-        assertEquals(results.toString(), (1L + hi - lo), results.getNumFound());
-        if (null != previous) {
-          assertEquals(prevField + " vs " + f,
-                       previous.getNumFound(), results.getNumFound());
-          for (int d = 0; d < results.size(); d++) {
-            assertEquals(prevField + " vs " + f + ": " + d,
-                         previous.get(d).getFieldValue("id"),
-                         results.get(d).getFieldValue("id"));
-            assertEquals(prevField + " vs " + f + ": " + d,
-                         previous.get(d).getFieldValue(prevField),
-                         results.get(d).getFieldValue(f));
-            
-          }
+        // ideally we'd test all "realistic" unicode string, but EmbeddedSolrServer uses XML request writer
+        // and has no option to change this so ctrl-characters break the request
+        final String val = TestUtil.randomSimpleString(random(), 100);
+        if (i == magicIdx) {
+          magic = val;
         }
-        previous = results;
-        prevField = f;
+        assertEquals(0, client.add(sdoc("id", "" + i, "keyword_stxt", val)).getStatus());
+
+      }
+      assertNotNull(magic);
+
+      assertEquals(0, client.commit().getStatus());
+
+      // query for magic term should match same doc regardless of field (reminder: keyword tokenizer)
+      // (we need the filter in the unlikely event that magic value with randomly picked twice)
+      for (String f : test_fields) {
+
+        final SolrDocumentList results = client.query(params("q", "{!field f=" + f + " v=$v}", "v", magic, "fq", "id:" + magicIdx)).getResults();
+        assertEquals(f + ": Query (" + magic + ") filtered by id: " + magicIdx + " ==> " + results, 1L, results.getNumFound());
+        final SolrDocument doc = results.get(0);
+        assertEquals(f + ": Query (" + magic + ") filtered by id: " + magicIdx + " ==> " + doc, "" + magicIdx, doc.getFieldValue("id"));
+        assertEquals(f + ": Query (" + magic + ") filtered by id: " + magicIdx + " ==> " + doc, magic, doc.getFieldValue(f));
+      }
+
+      // do some random id range queries using all 3 fields for sorting.  results should be identical
+      final int numQ = SolrTestUtil.atLeast(10);
+      for (int i = 0; i < numQ; i++) {
+        final int hi = TestUtil.nextInt(random(), 1, numDocs - 1);
+        final int lo = TestUtil.nextInt(random(), 1, hi);
+        final boolean fwd = random().nextBoolean();
+
+        SolrDocumentList previous = null;
+        String prevField = null;
+        for (String f : test_fields) {
+          final SolrDocumentList results = client.query(params("q", "id_i:[" + lo + " TO " + hi + "]", "sort", f + (fwd ? " asc" : " desc") +
+              // secondary on id for determinism
+              ", id asc")).getResults();
+          assertEquals(results.toString(), (1L + hi - lo), results.getNumFound());
+          if (null != previous) {
+            assertEquals(prevField + " vs " + f, previous.getNumFound(), results.getNumFound());
+            for (int d = 0; d < results.size(); d++) {
+              assertEquals(prevField + " vs " + f + ": " + d, previous.get(d).getFieldValue("id"), results.get(d).getFieldValue("id"));
+              assertEquals(prevField + " vs " + f + ": " + d, previous.get(d).getFieldValue(prevField), results.get(d).getFieldValue(f));
+
+            }
+          }
+          previous = results;
+          prevField = f;
+        }
       }
     }
     

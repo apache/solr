@@ -34,7 +34,7 @@ public class TermStats {
     t = makeTerm(term);
   }
 
-  private Term makeTerm(String s) {
+  private static Term makeTerm(String s) {
     int idx = s.indexOf(':');
     if (idx == -1) {
       return null;

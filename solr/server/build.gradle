@@ -44,7 +44,6 @@ dependencies {
   api 'io.dropwizard.metrics:metrics-jvm'
   api 'io.dropwizard.metrics:metrics-jmx'
 
-  api 'org.eclipse.jetty:jetty-continuation'
   api 'org.eclipse.jetty:jetty-deploy'
   api 'org.eclipse.jetty:jetty-http'
   api 'org.eclipse.jetty:jetty-io'
@@ -55,15 +54,18 @@ dependencies {
   api 'org.eclipse.jetty:jetty-servlet'
   api 'org.eclipse.jetty:jetty-servlets'
   api 'org.eclipse.jetty:jetty-util'
-  api 'org.eclipse.jetty:jetty-webapp'
   api 'org.eclipse.jetty:jetty-xml'
   api 'org.eclipse.jetty:jetty-alpn-server'
+  api 'org.eclipse.jetty:jetty-quickstart'
 
   api 'org.eclipse.jetty.http2:http2-server'
   api 'org.eclipse.jetty.http2:http2-common'
   api 'org.eclipse.jetty.http2:http2-hpack'
 
   api 'javax.servlet:javax.servlet-api'
+
+  api 'com.netflix.concurrency-limits:concurrency-limits-core'
+  api 'com.netflix.concurrency-limits:concurrency-limits-servlet'
 
   libExt 'com.lmax:disruptor'
   libExt 'org.slf4j:jcl-over-slf4j'
@@ -72,8 +74,21 @@ dependencies {
   libExt 'org.apache.logging.log4j:log4j-1.2-api'
   libExt 'org.apache.logging.log4j:log4j-api'
   libExt 'org.apache.logging.log4j:log4j-core'
-  libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
+  libExt 'org.apache.logging.log4j:log4j-slf4j18-impl'
   libExt 'org.apache.logging.log4j:log4j-web'
+  libExt 'com.vlkan.log4j2:log4j2-logstash-layout'
+
+  libExt(project(":solr:core"), {
+    exclude module: "server"
+
+    // Exclude additional deps from core and logging deps to sync up with ant.
+    // This is suspicious that we have to do it though.
+    exclude group: "org.apache.kerby", module: "kerby-config"
+    exclude group: "org.apache.kerby", module: "kerby-util"
+    exclude group: "org.apache.kerby", module: "kerb-crypto"
+    exclude group: "org.slf4j"
+    exclude group: "org.apache.logging.log4j"
+  })
 
   webapp project(path: ":solr:webapp", configuration: "war")
 

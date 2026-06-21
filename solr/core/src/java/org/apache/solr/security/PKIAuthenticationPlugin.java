@@ -20,6 +20,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.security.Principal;
@@ -27,17 +28,14 @@ import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
 import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -51,6 +49,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +57,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
+  private final Map<String, PublicKey> keyCache = new NonBlockingHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
   private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "15000"));
@@ -185,17 +184,16 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   PublicKey getRemotePublicKey(String nodename) {
-    if (!cores.getZkController().getZkStateReader().getClusterState().getLiveNodes().contains(nodename)) return null;
+    if (!cores.getZkController().getZkStateReader().getLiveNodes().contains(nodename)) return null;
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
-    HttpEntity entity = null;
+
     try {
       String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
-      log.debug("Fetching fresh public key from : {}",uri);
-      HttpResponse rsp = cores.getUpdateShardHandler().getDefaultHttpClient()
-          .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
-      entity  = rsp.getEntity();
-      byte[] bytes = EntityUtils.toByteArray(entity);
-      Map m = (Map) Utils.fromJSON(bytes);
+      if (log.isDebugEnabled()) log.debug("Fetching fresh public key from : {}",uri);
+
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(uri, cores.getUpdateShardHandler().getTheSharedHttpClient());
+
+      Map m = (Map) Utils.fromJSON(resp.bytes);
       String key = (String) m.get("key");
       if (key == null) {
         log.error("No key available from {} {}", url, PublicKeyHandler.PATH);
@@ -209,35 +207,13 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     } catch (Exception e) {
       log.error("Exception trying to get public key from : {}", url, e);
       return null;
-    } finally {
-      Utils.consumeFully(entity);
     }
 
   }
 
   @Override
   public void setup(Http2SolrClient client) {
-    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
-      @Override
-      public void onQueued(Request request) {
-        log.trace("onQueued: {}", request);
-        if (cores.getAuthenticationPlugin() == null) {
-          log.trace("no authentication plugin, skipping");
-          return;
-        }
-        if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", this.getClass().getSimpleName());
-          }
-          generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
-        } else {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
-          }
-        }
-      }
-    };
-    client.addListenerFactory(() -> listener);
+    client.addListenerFactory(new MyHttpListenerFactory(this, cores, myNodeName));
   }
 
   @Override
@@ -247,8 +223,26 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     return builder;
   }
 
-  public boolean needsAuthorization(HttpServletRequest req) {
+  public static boolean needsAuthorization(HttpServletRequest req) {
     return req.getUserPrincipal() != SU;
+  }
+
+  private static class MyHttpListenerFactory implements HttpListenerFactory {
+
+    private final PKIAuthenticationPlugin plugin;
+    private final CoreContainer cores;
+    private final String nodeName;
+
+    MyHttpListenerFactory(PKIAuthenticationPlugin plugin, CoreContainer cores, String nodeName) {
+      this.plugin = plugin;
+      this.cores = cores;
+      this.nodeName = nodeName;
+    }
+
+    @Override
+    public RequestResponseListener get() {
+      return new MyRequestResponseListener(plugin, cores, nodeName);
+    }
   }
 
   private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
@@ -274,6 +268,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     }
   }
 
+  // Instance method (not static) so the eligibility decisions route through the overridable
+  // getRequestInfo()/isSolrThread() seams (the unit test mocks both). Runtime behavior is
+  // identical to a static implementation: getRequestInfo() reads the SolrRequestInfo threadlocal
+  // and isSolrThread() delegates to ExecutorUtil.isSolrServerThread(). IndexFetcher relies on the
+  // server-thread path minting the node ("$") token — do not change that.
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
   private Optional<String> generateToken() {
     SolrRequestInfo reqInfo = getRequestInfo();
@@ -316,6 +315,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     return ExecutorUtil.isSolrServerThread();
   }
 
+
   SolrRequestInfo getRequestInfo() {
     return SolrRequestInfo.getRequestInfo();
   }
@@ -334,4 +334,35 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
   private static final Principal SU = new BasicUserPrincipal("$");
+
+  private static class MyRequestResponseListener extends HttpListenerFactory.RequestResponseListener {
+
+    private final PKIAuthenticationPlugin plugin;
+    private final CoreContainer cores;
+    private final String myNodeName;
+
+    MyRequestResponseListener(PKIAuthenticationPlugin plugin, CoreContainer cores, String myNodeName) {
+      this.plugin = plugin;
+      this.cores = cores;
+      this.myNodeName = myNodeName;
+    }
+
+    public void onQueued(Request request, SolrRequest solrRequest) {
+      log.trace("onQueued: {}", request);
+      if (cores.getAuthenticationPlugin() == null) {
+        log.trace("no authentication plugin, skipping");
+        return;
+      }
+      if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
+        if (log.isDebugEnabled()) {
+          log.debug("{} secures this internode request", this.getClass().getSimpleName());
+        }
+        plugin.generateToken().ifPresent(s -> request.headers(httpFields -> httpFields.add(HEADER, myNodeName + " " + s)));
+      } else {
+        if (log.isDebugEnabled()) {
+          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+        }
+      }
+    }
+  }
 }

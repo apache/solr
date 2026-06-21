@@ -16,11 +16,13 @@
  */
 package org.apache.solr.search.similarities;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -32,22 +34,32 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.SolrTestUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
  * Tests {@link SweetSpotSimilarityFactory}
  */
 public class TestSweetSpotSimilarityFactory extends BaseSimilarityTestCase {
+
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-sweetspot.xml");
+  public static void beforeTestSweetSpotSimilarityFactory() throws Exception {
+    File testHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(SolrTestUtil.getFile(SolrTestUtil.TEST_HOME()), testHome);
+    initCore("solrconfig-basic.xml","schema-sweetspot.xml", testHome.getAbsolutePath());
+  }
+
+  @AfterClass
+  public static void afterTestSweetSpotSimilarityFactory() {
+    deleteCore();
   }
 
   private static float computeNorm(Similarity sim, int length) throws IOException {
     String value = IntStream.range(0, length).mapToObj(i -> "a").collect(Collectors.joining(" "));
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(sim));
-    w.addDocument(Collections.singleton(newTextField("foo", value, Store.NO)));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter w = new IndexWriter(dir, SolrTestUtil.newIndexWriterConfig().setSimilarity(sim));
+    w.addDocument(Collections.singleton(SolrTestUtil.newTextField("foo", value, Store.NO)));
     DirectoryReader reader = DirectoryReader.open(w);
     w.close();
     IndexSearcher searcher = new IndexSearcher(reader);

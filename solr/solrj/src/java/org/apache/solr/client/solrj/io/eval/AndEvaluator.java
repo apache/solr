@@ -38,15 +38,16 @@ public class AndEvaluator extends RecursiveBooleanEvaluator implements ManyValue
       throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
     }
     else if(fromValue instanceof Boolean){
-      return new BooleanChecker(){
-        @Override
-        public boolean test(Object left, Object right) {
-          return (Boolean)left && (Boolean)right;
-        }
-      };
+      return new MyBooleanChecker();
     }
     
     throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) for values of type '%s'", constructingFactory.getFunctionName(getClass()), fromValue.getClass().getSimpleName()));
   }
 
+  private static class MyBooleanChecker implements BooleanChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      return (Boolean)left && (Boolean)right;
+    }
+  }
 }

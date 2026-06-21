@@ -189,10 +189,6 @@ public interface CommonParams {
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
   String METRICS_HISTORY_PATH = "/admin/metrics/history";
-  String AUTOSCALING_PATH = "/admin/autoscaling";
-  String AUTOSCALING_HISTORY_PATH = "/admin/autoscaling/history";
-  String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
-  String AUTOSCALING_SUGGESTIONS_PATH = "/admin/autoscaling/suggestions";
 
   String STATUS = "status";
 
@@ -208,12 +204,8 @@ public interface CommonParams {
       AUTHC_PATH,
       AUTHZ_PATH,
       METRICS_PATH,
-      METRICS_HISTORY_PATH,
-      AUTOSCALING_PATH,
-      AUTOSCALING_HISTORY_PATH,
-      AUTOSCALING_DIAGNOSTICS_PATH,
-      AUTOSCALING_SUGGESTIONS_PATH);
-  String APISPEC_LOCATION = "apispec/";
+      METRICS_HISTORY_PATH);
+  String APISPEC_LOCATION = "/apispec/";
   String INTROSPECT = "/_introspect";
 
   /** valid values for: <code>echoParams</code> */
@@ -252,7 +244,7 @@ public interface CommonParams {
   String TRUE = Boolean.TRUE.toString();
   String FALSE = Boolean.FALSE.toString();
 
-  /** document type in {@link CollectionAdminParams#SYSTEM_COLL} collection. **/
+  /** document type field value. **/
   String TYPE = "type";
 
   /** Used as a local parameter on queries.  cache=false means don't check any query or filter caches.

@@ -76,7 +76,7 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     }
   }
   
-  private StreamComparator createIterationComparator(StreamEqualitor eq, StreamComparator comp) throws IOException {
+  private static StreamComparator createIterationComparator(StreamEqualitor eq, StreamComparator comp) throws IOException {
     if (eq instanceof MultipleFieldEqualitor && comp instanceof MultipleFieldComparator) {
       // we know the comp is at least as long as the eq because we've already validated the tuple order
       StreamComparator[] compoundComps = new StreamComparator[((MultipleFieldEqualitor) eq).getEqs().length];
@@ -121,7 +121,7 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     }
   }
   
-  private StreamComparator createSideComparator(StreamEqualitor eq, StreamComparator comp) throws IOException {
+  private static StreamComparator createSideComparator(StreamEqualitor eq, StreamComparator comp) throws IOException {
     if (eq instanceof MultipleFieldEqualitor && comp instanceof MultipleFieldComparator) {
       // we know the comp is at least as long as the eq because we've already validated the tuple order
       StreamComparator[] compoundComps = new StreamComparator[((MultipleFieldEqualitor) eq).getEqs().length];

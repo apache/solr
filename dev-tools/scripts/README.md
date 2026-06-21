@@ -92,30 +92,11 @@ of the other tools in this folder.
     Example usage for a Release Manager:
     python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 6E68DA61 --rc-num 1
 
-### addBackcompatIndexes.py
-
-    usage: addBackcompatIndexes.py [-h] [--force] [--no-cleanup] [--temp-dir DIR]
-                                   version
-    
-    Add backcompat index and test for new version.  See:
-    http://wiki.apache.org/lucene-java/ReleaseTodo#Generate_Backcompat_Indexes
-    
-    positional arguments:
-      version         Version to add, of the form X.Y.Z
-    
-    optional arguments:
-      -h, --help      show this help message and exit
-      --force         Redownload the version and rebuild, even if it already
-                      exists
-      --no-cleanup    Do not cleanup the built indexes, so that they can be reused
-                      for adding to another branch
-      --temp-dir DIR  Temp directory to build backcompat indexes within
-
 ### addVersion.py
 
     usage: addVersion.py [-h] version
     
-    Add a new version to CHANGES, to Version.java, lucene/version.properties and
+    Add a new version to CHANGES, to Version.java, build.gradle and
     solrconfig.xml files
     
     positional arguments:

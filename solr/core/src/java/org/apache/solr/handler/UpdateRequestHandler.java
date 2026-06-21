@@ -103,7 +103,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
         String wt = loader.getDefaultWT();
         // Make sure it is a valid writer
         if(req.getCore().getQueryResponseWriter(wt)!=null) {
-          Map<String,String> map = new HashMap<>(1);
+          Map<String,String> map = new HashMap<>(2);
           map.put(CommonParams.WT, wt);
           req.setParams(SolrParams.wrapDefaults(params,
               new MapSolrParams(map)));
@@ -132,13 +132,13 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
       invariants = params;
     }
   }
-  private Map<String ,ContentStreamLoader> pathVsLoaders = new HashMap<>();
+  private Map<String,ContentStreamLoader> pathVsLoaders = new HashMap<>(4);
   protected Map<String,ContentStreamLoader> createDefaultLoaders(@SuppressWarnings({"rawtypes"})NamedList args) {
     SolrParams p = null;
     if(args!=null) {
       p = args.toSolrParams();
     }
-    Map<String,ContentStreamLoader> registry = new HashMap<>();
+    Map<String,ContentStreamLoader> registry = new HashMap<>(8);
     registry.put("application/xml", new XMLLoader().init(p) );
     registry.put("application/json", new JsonLoader().init(p) );
     registry.put("application/csv", new CSVLoader().init(p) );

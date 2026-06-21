@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -27,15 +28,22 @@ import java.util.TreeMap;
 
 public class TestSerializedLuceneMatchVersion extends RestTestBase {
 
-  @BeforeClass
-  public static void init() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
-    createJettyAndHarness(TEST_HOME(), "solrconfig-minimal.xml", "schema-rest-lucene-match-version.xml",
+    jetty = createJettyAndHarness(SolrTestUtil.TEST_HOME(), "solrconfig-minimal.xml", "schema-rest-lucene-match-version.xml",
                           "/solr", true, extraServlets);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+      jetty = null;
+    }
+    super.tearDown();
   }
 
   @Test

@@ -32,10 +32,13 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -44,8 +47,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.restlet.data.Status;
-import org.restlet.resource.ResourceException;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,14 +63,16 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  * from ZooKeeper.
  */
 public abstract class ManagedResourceStorage {
-  
+
+  public static final byte[] EMPTY_BYTES = new byte[0];
+
   /**
    * Hides the underlying storage implementation for data being managed
    * by a ManagedResource. For instance, a ManagedResource may use JSON as
    * the data format and an instance of this class to persist and load 
    * the JSON bytes to/from some backing store, such as ZooKeeper.
    */
-  public static interface StorageIO {
+  public interface StorageIO {
     String getInfo();
     void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException;
     boolean exists(String storedResourceId) throws IOException;
@@ -84,32 +88,16 @@ public abstract class ManagedResourceStorage {
    * Creates a new StorageIO instance for a Solr core, taking into account
    * whether the core is running in cloud mode as well as initArgs. 
    */
-  public static StorageIO newStorageIO(String collection, SolrResourceLoader resourceLoader, NamedList<String> initArgs) {
+  public static StorageIO newStorageIO(String collection, String configSet, SolrResourceLoader resourceLoader, NamedList<String> initArgs) {
     StorageIO storageIO;
 
-    SolrZkClient zkClient = null;
-    String zkConfigName = null;
-    if (resourceLoader instanceof ZkSolrResourceLoader) {
-      zkClient = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient();
-      try {
-        zkConfigName = ((ZkSolrResourceLoader)resourceLoader).getZkController().
-            getZkStateReader().readConfigName(collection);
-      } catch (Exception e) {
-        log.error("Failed to get config name due to", e);
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Failed to load config name for collection:" + collection  + " due to: ", e);
-      }
-      if (zkConfigName == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, 
-            "Could not find config name for collection:" + collection);
-      }
-    }
-    
     if (initArgs.get(STORAGE_IO_CLASS_INIT_ARG) != null) {
       storageIO = resourceLoader.newInstance(initArgs.get(STORAGE_IO_CLASS_INIT_ARG), StorageIO.class); 
     } else {
+      SolrZkClient zkClient = (resourceLoader instanceof ZkSolrResourceLoader) ?
+        ((ZkSolrResourceLoader)resourceLoader).getZkClient() : null;
       if (zkClient != null) {
-        String znodeBase = "/configs/"+zkConfigName;
+        String znodeBase = "/configs/"+configSet;
         log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: {}", znodeBase);
         storageIO = new ManagedResourceStorage.ZooKeeperStorageIO(zkClient, znodeBase);
       } else {
@@ -149,13 +137,13 @@ public abstract class ManagedResourceStorage {
    */
   public static class FileStorageIO implements StorageIO {
 
-    private String storageDir;
+    private volatile String storageDir;
     
     @Override
     public void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException {
       String storageDirArg = initArgs.get(STORAGE_DIR_INIT_ARG);
       
-      if (storageDirArg == null || storageDirArg.trim().length() == 0)
+      if (storageDirArg == null || StringUtils.isBlank(storageDirArg))
         throw new IllegalArgumentException("Required configuration parameter '"+
            STORAGE_DIR_INIT_ARG+"' not provided!");
       
@@ -164,7 +152,7 @@ public abstract class ManagedResourceStorage {
         dir.mkdirs();
 
       storageDir = dir.getAbsolutePath();      
-      log.info("File-based storage initialized to use dir: {}", storageDir);
+      log.debug("File-based storage initialized to use dir: {}", storageDir);
     }
     
     @Override
@@ -174,12 +162,12 @@ public abstract class ManagedResourceStorage {
     
     @Override
     public InputStream openInputStream(String storedResourceId) throws IOException {
-      return new FileInputStream(storageDir+"/"+storedResourceId);
+      return Files.newInputStream(Paths.get(storageDir+"/"+storedResourceId));
     }
 
     @Override
     public OutputStream openOutputStream(String storedResourceId) throws IOException {
-      return new FileOutputStream(storageDir+"/"+storedResourceId);
+      return Files.newOutputStream(Paths.get(storageDir+"/"+storedResourceId));
     }
 
     @Override
@@ -190,7 +178,7 @@ public abstract class ManagedResourceStorage {
     
     // TODO: this interface should probably be changed, this simulates the old behavior,
     // only throw security exception, just return false otherwise
-    private boolean deleteIfFile(File f) {
+    private static boolean deleteIfFile(File f) {
       if (!f.isFile()) {
         return false;
       }
@@ -214,8 +202,8 @@ public abstract class ManagedResourceStorage {
    */
   public static class ZooKeeperStorageIO implements StorageIO {
     
-    protected SolrZkClient zkClient;
-    protected String znodeBase;
+    protected final SolrZkClient zkClient;
+    protected final String znodeBase;
     protected boolean retryOnConnLoss = true;
     
     public ZooKeeperStorageIO(SolrZkClient zkClient, String znodeBase) {
@@ -226,25 +214,27 @@ public abstract class ManagedResourceStorage {
     @Override
     public void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException {
       // validate connectivity and the configured znode base
-      try {
-        if (!zkClient.exists(znodeBase, retryOnConnLoss)) {
-          zkClient.makePath(znodeBase, retryOnConnLoss);
-        }
-      } catch (Exception exc) {
-        String errMsg = String.format
-            (Locale.ROOT, "Failed to verify znode at %s due to: %s", znodeBase, exc.toString());
-        log.error(errMsg, exc);
-        throw new SolrException(ErrorCode.SERVER_ERROR, errMsg, exc);
-      }
-      
-      log.info("Configured ZooKeeperStorageIO with znodeBase: {}", znodeBase);
+//      try {
+//
+//        zkClient.mkdir(znodeBase);
+//
+//      } catch (KeeperException.NodeExistsException e) {
+//
+//      } catch (Exception exc) {
+//        String errMsg = String.format
+//            (Locale.ROOT, "Failed to verify znode at %s due to: %s", znodeBase, exc.toString());
+//        log.error(errMsg, exc);
+//        throw new SolrException(ErrorCode.SERVER_ERROR, errMsg, exc);
+//      }
+//
+      log.debug("Configured ZooKeeperStorageIO with znodeBase: {}", znodeBase);
     }    
     
     @Override
     public boolean exists(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
       try {
-        return zkClient.exists(znodePath, retryOnConnLoss);
+        return zkClient.exists(znodePath);
       } catch (Exception e) {
         if (e instanceof IOException) {
           throw (IOException)e;
@@ -259,22 +249,18 @@ public abstract class ManagedResourceStorage {
       final String znodePath = getZnodeForResource(storedResourceId);
       byte[] znodeData = null;
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
-          znodeData = zkClient.getData(znodePath, null, null, retryOnConnLoss);
-        }
+        znodeData = zkClient.getData(znodePath, null, null, true, true);
+      } catch (KeeperException.NoNodeException e) {
+
       } catch (Exception e) {
-        if (e instanceof IOException) {
-          throw (IOException)e;
-        } else {
-          throw new IOException("Failed to read data at "+znodePath, e);
-        }
+        throw new IOException("Failed to read data at "+znodePath, e);
       }
       
       if (znodeData != null) {
-        log.debug("Read {} bytes from znode {}", znodeData.length, znodePath);
+        if (log.isDebugEnabled()) log.debug("Read {} bytes from znode {}", znodeData.length, znodePath);
       } else {
-        znodeData = new byte[0];
-        log.debug("No data found for znode {}", znodePath);
+        znodeData = EMPTY_BYTES;
+        if (log.isDebugEnabled()) log.debug("No data found for znode {}", znodePath);
       }
       
       return new ByteArrayInputStream(znodeData);
@@ -284,31 +270,7 @@ public abstract class ManagedResourceStorage {
     public OutputStream openOutputStream(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
       final boolean retryOnConnLoss = this.retryOnConnLoss;
-      ByteArrayOutputStream baos = new ByteArrayOutputStream() {
-        @Override
-        public void close() {
-          byte[] znodeData = toByteArray();
-          try {
-            if (zkClient.exists(znodePath, retryOnConnLoss)) {
-              zkClient.setData(znodePath, znodeData, retryOnConnLoss);
-              log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
-            } else {
-              zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
-              log.info("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
-            }
-          } catch (Exception e) {
-            // have to throw a runtimer here as we're in close, 
-            // which doesn't throw IOException
-            if (e instanceof RuntimeException) {
-              throw (RuntimeException)e;              
-            } else {
-              throw new ResourceException(Status.SERVER_ERROR_INTERNAL, 
-                  "Failed to save data to ZooKeeper znode: "+znodePath+" due to: "+e, e);
-            }
-          }
-        }
-      };
-      return baos;
+      return new MyByteArrayOutputStream(zkClient, znodePath, retryOnConnLoss);
     }
 
     /**
@@ -326,10 +288,10 @@ public abstract class ManagedResourceStorage {
       
       // this might be overkill for a delete operation
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
+        if (zkClient.exists(znodePath)) {
           log.debug("Attempting to delete znode {}", znodePath);
-          zkClient.delete(znodePath, -1, retryOnConnLoss);
-          wasDeleted = zkClient.exists(znodePath, retryOnConnLoss);
+          zkClient.delete(znodePath, -1, true, false);
+          wasDeleted = zkClient.exists(znodePath);
           
           if (wasDeleted) {
             log.info("Deleted znode {}", znodePath);
@@ -340,11 +302,7 @@ public abstract class ManagedResourceStorage {
           log.warn("Znode {} does not exist; delete operation ignored.", znodePath);
         }
       } catch (Exception e) {
-        if (e instanceof IOException) {
-          throw (IOException)e;
-        } else {
-          throw new IOException("Failed to read data at "+znodePath, e);
-        }
+        throw new IOException("Failed to read data at "+znodePath, e);
       }
       
       return wasDeleted;
@@ -353,6 +311,48 @@ public abstract class ManagedResourceStorage {
     @Override
     public String getInfo() {
       return "ZooKeeperStorageIO:path="+znodeBase;
+    }
+
+    private static class MyByteArrayOutputStream extends ByteArrayOutputStream {
+      private final String znodePath;
+      private final boolean retryOnConnLoss;
+      private final SolrZkClient zkClient;
+
+      public MyByteArrayOutputStream(SolrZkClient zkClient, String znodePath, boolean retryOnConnLoss) {
+        this.znodePath = znodePath;
+        this.retryOnConnLoss = retryOnConnLoss;
+        this.zkClient = zkClient;
+      }
+
+      @Override
+      public void close() {
+        byte[] znodeData = toByteArray();
+        try {
+          zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
+          log.debug("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
+
+        } catch (KeeperException.NodeExistsException e) {
+          try {
+            zkClient.setData(znodePath, znodeData, retryOnConnLoss);
+            log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
+          } catch (Exception e1) {
+            // have to throw a runtimer here as we're in close,
+            // which doesn't throw IOException
+
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to save data to ZooKeeper znode: " + znodePath + " due to: " + e1, e1);
+
+          }
+        } catch (Exception e) {
+          // have to throw a runtimer here as we're in close,
+          // which doesn't throw IOException
+          if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+          } else {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to save data to ZooKeeper znode: " + znodePath + " due to: " + e, e);
+          }
+        }
+
+      }
     }
   } // end ZooKeeperStorageIO
   
@@ -379,7 +379,7 @@ public abstract class ManagedResourceStorage {
       
       BytesRef storedVal = storage.get(storedResourceId);
       if (storedVal == null)
-        throw new FileNotFoundException(storedResourceId);
+        throw new NoSuchFileException(storedResourceId);
       
       return new ByteArrayInputStream(storedVal.bytes, storedVal.offset, storedVal.length);            
     }
@@ -436,9 +436,10 @@ public abstract class ManagedResourceStorage {
       String storedResourceId = getStoredResourceId(resourceId);
       OutputStreamWriter writer = null;
       try {
-        writer = new OutputStreamWriter(storageIO.openOutputStream(storedResourceId), UTF_8);
-        writer.write(json);
-        writer.flush();
+        try (OutputStream out = storageIO.openOutputStream(storedResourceId)) {
+          writer = new OutputStreamWriter(out, UTF_8); writer.write(json);
+          writer.flush();
+        }
       } finally {
         if (writer != null) {
           try {
@@ -505,8 +506,8 @@ public abstract class ManagedResourceStorage {
     }
     
     String objectType = (parsed != null) ? parsed.getClass().getSimpleName() : "null";
-    if (log.isInfoEnabled()) {
-      log.info(String.format(Locale.ROOT, "Loaded %s at path %s using %s",
+    if (log.isDebugEnabled()) {
+      log.debug(String.format(Locale.ROOT, "Loaded %s at path %s using %s",
           objectType, storedResourceId, storageIO.getInfo()));
     }
     

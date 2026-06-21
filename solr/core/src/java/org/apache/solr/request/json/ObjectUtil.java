@@ -27,7 +27,7 @@ import org.apache.solr.common.SolrException;
 public class ObjectUtil {
 
   public static class ConflictHandler {
-    protected boolean isList(Map<String,Object> container, List<String> path, String key, Object current, Object previous) {
+    protected static boolean isList(Map<String,Object> container, List<String> path, String key, Object current, Object previous) {
       return key!=null && ("fields".equals(key) || "filter".equals(key));
     }
 
@@ -69,14 +69,14 @@ public class ObjectUtil {
       }
     }
 
-    protected Object makeList(Object current, Object previous) {
+    protected static Object makeList(Object current, Object previous) {
       ArrayList lst = new ArrayList();
       append(lst, previous);   // make the original value(s) come first
       append(lst, current);
       return lst;
     }
 
-    protected void append(List lst, Object current) {
+    protected static void append(List lst, Object current) {
       if (current instanceof Collection) {
         lst.addAll((Collection)current);
       } else {
@@ -91,13 +91,13 @@ public class ObjectUtil {
     for (int i=0; i<path.size()-1; i++) {
       Map<String,Object> sub = (Map<String,Object>)outer.get(path.get(i));
       if (sub == null) {
-        sub = new LinkedHashMap<String,Object>();
+        sub = new LinkedHashMap<>();
         outer.put(path.get(i), sub);
       }
       outer = sub;
     }
 
-    String key = path.size() > 0 ? path.get(path.size()-1) : null;
+    String key = !path.isEmpty() ? path.get(path.size()-1) : null;
 
     if (key != null) {
       Object existingVal = outer.put(key, val);

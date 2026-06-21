@@ -18,7 +18,10 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -26,6 +29,9 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.core.ConfigXpathExpressions;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -50,10 +56,13 @@ public class VersionInfo {
 
   private final UpdateLog ulog;
   private final VersionBucket[] buckets;
-  private SchemaField versionField;
-  final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+  private final SchemaField versionField;
+  private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
-  private int versionBucketLockTimeoutMs;
+  private final ReadWriteLock buckUpdateLock = new ReentrantReadWriteLock(true);
+
+  private final int versionBucketLockTimeoutMs;
+  private volatile long highestVersion;
 
   /**
    * Gets and returns the {@link org.apache.solr.common.params.CommonParams#VERSION_FIELD} from the specified
@@ -94,16 +103,17 @@ public class VersionInfo {
     this.ulog = ulog;
     IndexSchema schema = ulog.uhandler.core.getLatestSchema(); 
     versionField = getAndCheckVersionField(schema);
-    versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().getInt("updateHandler/versionBucketLockTimeoutMs",
+    versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().getInt(SolrResourceLoader.configXpathExpressions
+            .mergeFactorExp, ConfigXpathExpressions.mergeFactorPath,
         Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
-    for (int i=0; i<buckets.length; i++) {
-      if (versionBucketLockTimeoutMs > 0) {
-        buckets[i] = new TimedVersionBucket();
-      } else {
-        buckets[i] = new VersionBucket();
-      }
-    }
+//    for (int i=0; i<buckets.length; i++) {
+//      if (versionBucketLockTimeoutMs > 0) {
+//        buckets[i] = new TimedVersionBucket();
+//      } else {
+//        buckets[i] = new VersionBucket();
+//      }
+//    }
   }
   
   public int getVersionBucketLockTimeoutMs() {
@@ -195,9 +205,34 @@ public class VersionInfo {
     // Make sure high bits are moved down, since only the low bits will matter.
     // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
     // Assume good hash codes for now.
+    int slot;
+    buckUpdateLock.writeLock().lock();
+    try {
+      VersionBucket bucket;
 
-    int slot = hash & (buckets.length-1);
-    return buckets[slot];
+      slot = hash & (buckets.length - 1);
+      bucket = buckets[slot];
+
+      if (bucket == null) {
+
+        bucket = buckets[slot];
+        if (bucket == null) {
+
+          if (versionBucketLockTimeoutMs > 0) {
+            bucket = new TimedVersionBucket();
+          } else {
+            bucket = new VersionBucket();
+          }
+          bucket.updateHighest(highestVersion);
+          buckets[slot] = bucket;
+        }
+
+      }
+
+      return bucket;
+    } finally {
+      buckUpdateLock.writeLock().unlock();
+    }
   }
 
   public Long lookupVersion(BytesRef idBytes) {
@@ -258,25 +293,49 @@ public class VersionInfo {
     @SuppressWarnings({"rawtypes"})
     Map funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
-    // TODO: multi-thread this
-    for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
-      int maxDoc = ctx.reader().maxDoc();
-      FunctionValues fv = vs.getValues(funcContext, ctx);
-      for (int doc = 0; doc < maxDoc; doc++) {
-        long v = fv.longVal(doc);
-        maxVersionInIndex = Math.max(v, maxVersionInIndex);
+    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    Set<Long> maxVersions = ConcurrentHashMap.newKeySet(leaves.size());
+    try (ParWork work = new ParWork("maxVersion", false)) {
+      for (LeafReaderContext ctx : leaves) {
+        work.collect("", () -> {
+          try {
+            int maxDoc = ctx.reader().maxDoc();
+            FunctionValues fv = null;
+
+            fv = vs.getValues(funcContext, ctx);
+            long maxVersion = 0L;
+            for (int doc = 0; doc < maxDoc; doc++) {
+              long v = fv.longVal(doc);
+              maxVersion = Math.max(v, maxVersion);
+            }
+            maxVersions.add(maxVersion);
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        });
       }
     }
+
+    for (long version : maxVersions) {
+      maxVersionInIndex = Math.max(maxVersionInIndex, version);
+    }
+
     return maxVersionInIndex;
   }
 
   public void seedBucketsWithHighestVersion(long highestVersion) {
-    for (int i=0; i<buckets.length; i++) {
-      // should not happen, but in case other threads are calling updateHighest on the version bucket
-      synchronized (buckets[i]) {
-        if (buckets[i].highest < highestVersion)
-          buckets[i].highest = highestVersion;
+    this.highestVersion = highestVersion;
+    buckUpdateLock.readLock().lock();
+    try {
+      int sz = buckets.length;
+      for (int i = 0; i < sz; i++) {
+        VersionBucket bucket = buckets[i];
+        if (bucket != null) {
+          buckets[i].highest.set(highestVersion);
+        }
       }
+    } finally {
+      buckUpdateLock.readLock().unlock();
     }
   }
 
@@ -303,7 +362,7 @@ public class VersionInfo {
       return 0L;
     }
     final Object maxObj = versionField.getType().toObject(versionField, new BytesRef(maxBytes));
-    if (null == maxObj || ! ( maxObj instanceof Number) ) {
+    if (!(maxObj instanceof Number)) {
       // HACK: aparently nothing asserts that the FieldType is numeric (let alone a Long???)
       log.error("Unable to convert MAX byte[] from Points for {} in index", versionFieldName);
       return 0L;

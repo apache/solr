@@ -20,19 +20,22 @@ package org.apache.solr.search;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.RTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
 
 public class TestSolrJ extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testSolrJ() throws Exception {
                           // docs, producers, connections, sleep_time
@@ -56,7 +59,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     final int nConnections = Integer.parseInt(args[i++]);
     final int maxSleep = Integer.parseInt(args[i++]);
 
-    ConcurrentUpdateSolrClient concurrentClient = null;
+    ConcurrentUpdateHttp2SolrClient concurrentClient = null;
 
     // server = concurrentClient = new ConcurrentUpdateSolrServer(addr,32,8);
     client = concurrentClient = getConcurrentUpdateSolrClient(addr,64,nConnections);
@@ -79,8 +82,8 @@ public class TestSolrJ extends SolrTestCaseJ4 {
           try {
             indexDocs(base, docsPerThread, maxSleep);
           } catch (Exception e) {
-            System.out.println("###############################CAUGHT EXCEPTION");
-            e.printStackTrace();
+            //System.out.println("###############################CAUGHT EXCEPTION");
+            log.error("", e);
             ex = e;
           }
         }
@@ -99,7 +102,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     }
 
     double elapsed = timer.getTime();
-    System.out.println("time="+elapsed + " throughput="+(nDocs*1000/elapsed) + " Exception="+ex);
+    //System.out.println("time="+elapsed + " throughput="+(nDocs*1000/elapsed) + " Exception="+ex);
 
     // should server threads be marked as daemon?
     // need a server.close()!!!
@@ -135,13 +138,13 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
     for (int i=base; i<count+base; i++) {
       if ((i & 0xfffff) == 0) {
-        System.out.print("\n% " + new Date()+ "\t" + i + "\t");
-        System.out.flush();
+        //System.out.print("\n% " + new Date()+ "\t" + i + "\t");
+        //System.out.flush();
       }
 
       if ((i & 0xffff) == 0) {
-        System.out.print(".");
-        System.out.flush();
+        //System.out.print(".");
+        //System.out.flush();
       }
 
       SolrInputDocument doc = getDocument(i);
@@ -153,7 +156,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
           Thread.sleep(sleep);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          e.printStackTrace();
+          log.error("", e);
           throw new RuntimeException(e);
         }
       }
@@ -164,7 +167,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
   public void doCommitPerf() throws Exception {
 
-    try (HttpSolrClient client = getHttpSolrClient("http://127.0.0.1:8983/solr")) {
+    try (Http2SolrClient client = getHttpSolrClient("http://127.0.0.1:8983/solr")) {
 
       final RTimer timer = new RTimer();
 
@@ -175,7 +178,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
         client.commit(true, true, true);
       }
 
-      System.out.println("TIME: " + timer.getTime());
+      //System.out.println("TIME: " + timer.getTime());
     }
 
   }

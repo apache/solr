@@ -34,7 +34,7 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... values) throws IOException{
 
     if(values.length < 4) {

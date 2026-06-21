@@ -20,12 +20,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiTerms;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 
 public class TestLegacyTerms extends SolrTestCase {
 
@@ -35,9 +36,9 @@ public class TestLegacyTerms extends SolrTestCase {
   }
   
   public void testIntFieldMinMax() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    int numDocs = atLeast(100);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter w = new SolrRandomIndexWriter(random(), dir, SolrTestUtil.newIndexWriterConfig());
+    int numDocs = SolrTestUtil.atLeast(100);
     int minValue = Integer.MAX_VALUE;
     int maxValue = Integer.MIN_VALUE;
     for(int i=0;i<numDocs;i++ ){
@@ -65,9 +66,9 @@ public class TestLegacyTerms extends SolrTestCase {
   }
   
   public void testLongFieldMinMax() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    int numDocs = atLeast(100);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter w = new SolrRandomIndexWriter(SolrTestCase.random(), dir, SolrTestUtil.newIndexWriterConfig());
+    int numDocs = SolrTestUtil.atLeast(100);
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     for(int i=0;i<numDocs;i++ ){
@@ -91,9 +92,9 @@ public class TestLegacyTerms extends SolrTestCase {
   }
 
   public void testFloatFieldMinMax() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    int numDocs = atLeast(100);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter w = new SolrRandomIndexWriter(random(), dir, SolrTestUtil.newIndexWriterConfig());
+    int numDocs = SolrTestUtil.atLeast(100);
     float minValue = Float.POSITIVE_INFINITY;
     float maxValue = Float.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++ ){
@@ -116,9 +117,9 @@ public class TestLegacyTerms extends SolrTestCase {
   }
 
   public void testDoubleFieldMinMax() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    int numDocs = atLeast(100);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter w = new SolrRandomIndexWriter(random(), dir, SolrTestUtil.newIndexWriterConfig());
+    int numDocs = SolrTestUtil.atLeast(100);
     double minValue = Double.POSITIVE_INFINITY;
     double maxValue = Double.NEGATIVE_INFINITY;
     for(int i=0;i<numDocs;i++ ){

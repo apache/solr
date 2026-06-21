@@ -110,7 +110,7 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
     }
   }
 
-  private Matrix distance(DistanceMeasure distanceMeasure, Matrix matrix) {
+  private static Matrix distance(DistanceMeasure distanceMeasure, Matrix matrix) {
     double[][] data = matrix.getData();
     Array2DRowRealMatrix realMatrix = new Array2DRowRealMatrix(data, false);
     realMatrix = (Array2DRowRealMatrix)realMatrix.transpose();

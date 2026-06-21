@@ -68,13 +68,13 @@ public class ClassifyStream extends TupleStream implements Expressible {
     modelStream = factory.constructStream(streamExpressions.get(0));
     docStream = factory.constructStream(streamExpressions.get(1));
 
-    StreamExpressionNamedParameter fieldParameter = factory.getNamedOperand(expression, "field");
+    StreamExpressionNamedParameter fieldParameter = StreamFactory.getNamedOperand(expression, "field");
     if (fieldParameter == null) {
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - field parameter must be specified",expression, streamExpressions.size()));
     }
     analyzerField = field = fieldParameter.getParameter().toString();
 
-    StreamExpressionNamedParameter analyzerFieldParameter = factory.getNamedOperand(expression, "analyzerField");
+    StreamExpressionNamedParameter analyzerFieldParameter = StreamFactory.getNamedOperand(expression, "analyzerField");
     if (analyzerFieldParameter != null) {
       analyzerField = analyzerFieldParameter.getParameter().toString();
     }
@@ -83,7 +83,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
   @Override
   public void setStreamContext(StreamContext context) {
     Object solrCoreObj = context.get("solr-core");
-    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
+    if (!(solrCoreObj instanceof SolrCore)) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
     }
     analyzer = ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
@@ -178,7 +178,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
     return docTuple;
   }
 
-  private double sigmoid(double in) {
+  private static double sigmoid(double in) {
     double d = 1.0 / (1+Math.exp(-in));
     return d;
   }

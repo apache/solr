@@ -59,7 +59,7 @@ public class SubtractEvaluator extends RecursiveNumericEvaluator implements Many
     return result;
   }
   
-  private List<BigDecimal> flatten(Collection<?> values){
+  private static List<BigDecimal> flatten(Collection<?> values){
     List<BigDecimal> flattened = new ArrayList<>();
     
     for(Object value : values){
@@ -83,7 +83,7 @@ public class SubtractEvaluator extends RecursiveNumericEvaluator implements Many
     return flattened;
   }
     
-  private BigDecimal subtract(BigDecimal left, Object right) throws IOException{
+  private static BigDecimal subtract(BigDecimal left, Object right) throws IOException{
     
     if(null == right){
       return null;

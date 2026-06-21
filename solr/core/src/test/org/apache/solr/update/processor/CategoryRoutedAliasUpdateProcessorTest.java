@@ -25,8 +25,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -62,7 +65,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private static final String intField = "integer_i";
 
   private int lastDocId = 0;
-  private static CloudSolrClient solrClient;
+  private static CloudHttp2SolrClient solrClient;
   private int numDocsDeletedOrFailed = 0;
   // uncomment to create pause for attaching profiler.
 //  static {
@@ -72,7 +75,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   @Before
   public void doBefore() throws Exception {
     configureCluster(1).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
@@ -94,7 +97,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   @Test
-  @Slow
+  @LuceneTestCase.Slow
   public void testNonEnglish() throws Exception {
     // test to document the expected behavior with non-english text for categories
     // the present expectation is that non-latin text and many accented latin characters
@@ -125,7 +128,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     String collectionGreek    = getAlias() + "__CRA__" + FIVE_ + FIVE_ + THREE_;
     // Note Gujarati not listed, because it duplicates hebrew.
 
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
@@ -167,10 +170,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertEquals(expected,aliasNumFound);
   }
 
-  @Slow
+  @LuceneTestCase.Slow
   @Test
   public void test() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
@@ -233,10 +236,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     return ship.replaceAll("\\$", "_");
   }
 
-  @Slow
+  @LuceneTestCase.Slow
   @Test
   public void testMustMatch() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
     final String mustMatchRegex = "HHS\\s.+_solr";
 
@@ -279,10 +282,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertInvariants(colVogon, colHoG);
   }
 
-  @Slow
+  @LuceneTestCase.Slow
   @Test
   public void testInvalidMustMatch() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
     // Not a valid regex
     final String mustMatchRegex = "+_solr";
@@ -297,7 +300,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    SolrException e = expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
             .setMaxShardsPerNode(2))
         .setMustMatch(mustMatchRegex)
@@ -308,10 +311,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         e.getMessage().contains("router.mustMatch must be a valid regular expression"));
   }
 
-  @Slow
+  @LuceneTestCase.Slow
   @Test
   public void testMaxCardinality() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     final int maxCardinality = 2; // max cardinality for current test
@@ -359,11 +362,11 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
    *
    * @throws Exception when it blows up unexpectedly :)
    */
-  @Slow
+  @LuceneTestCase.Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TrackingUpdateProcessorFactory=DEBUG")
   public void testSliceRouting() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     // each collection has 4 shards with 3 replicas for 12 possible destinations
@@ -399,9 +402,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
       ModifiableSolrParams params = params("post-processor", "tracking-" + trackGroupName);
       List<SolrInputDocument> list = Arrays.asList(
-          sdoc("id", "4", categoryField, SHIPS[0]),
-          sdoc("id", "5", categoryField, SHIPS[1]),
-          sdoc("id", "6", categoryField, SHIPS[2]));
+          SolrTestCaseJ4.sdoc("id", "4", categoryField, SHIPS[0]),
+          SolrTestCaseJ4.sdoc("id", "5", categoryField, SHIPS[1]),
+          SolrTestCaseJ4.sdoc("id", "6", categoryField, SHIPS[2]));
       Collections.shuffle(list, random()); // order should not matter here
       assertUpdateResponse(add(getAlias(), list,
           params));
@@ -452,11 +455,11 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
   private SolrInputDocument newDoc(String routedValue) {
     if (routedValue != null) {
-      return sdoc("id", Integer.toString(++lastDocId),
+      return SolrTestCaseJ4.sdoc("id", Integer.toString(++lastDocId),
           categoryField, routedValue,
           intField, "0"); // always 0
     } else {
-      return sdoc("id", Integer.toString(++lastDocId),
+      return SolrTestCaseJ4.sdoc("id", Integer.toString(++lastDocId),
           intField, "0"); // always 0
     }
   }
@@ -467,7 +470,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   @Override
-  public CloudSolrClient getSolrClient() {
+  public CloudHttp2SolrClient getSolrClient() {
     return solrClient;
   }
 

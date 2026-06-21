@@ -93,17 +93,19 @@ class TraversalIterator implements Iterator {
 
   @Override
   public boolean hasNext() {
-    if(levelIterator.hasNext()) {
-      return true;
-    } else {
-      if(graphIterator.hasNext()) {
-        levelIterator = graphIterator.next();
-        outField = fieldIterator.next();
-        outCollection = collectionIterator.next();
-        outLevel = levelNumIterator.next();
-        return hasNext();
+    while (true) {
+      if (levelIterator.hasNext()) {
+        return true;
       } else {
-        return false;
+        if (graphIterator.hasNext()) {
+          levelIterator = graphIterator.next();
+          outField = fieldIterator.next();
+          outCollection = collectionIterator.next();
+          outLevel = levelNumIterator.next();
+
+        } else {
+          return false;
+        }
       }
     }
   }

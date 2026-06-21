@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream.expr;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Expression containing a function and set of parameters
@@ -80,12 +81,12 @@ public class StreamExpression implements StreamExpressionParameter {
   public String toString(){
     StringBuilder sb = new StringBuilder(this.functionName);
     
-    sb.append("(");
+    sb.append('(');
     for(int idx = 0; idx < parameters.size(); ++idx){
-      if(0 != idx){ sb.append(","); }
+      if(0 != idx){ sb.append(','); }
       sb.append(parameters.get(idx));
     }
-    sb.append(")");
+    sb.append(')');
     
     return sb.toString();
   }
@@ -122,5 +123,10 @@ public class StreamExpression implements StreamExpressionParameter {
     }
 
     return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(functionName);
   }
 }

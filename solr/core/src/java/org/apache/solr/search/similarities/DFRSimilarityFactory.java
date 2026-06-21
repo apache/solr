@@ -113,7 +113,7 @@ public class DFRSimilarityFactory extends SimilarityFactory {
         params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
   }
   
-  private BasicModel parseBasicModel(String expr) {
+  private static BasicModel parseBasicModel(String expr) {
     if ("G".equals(expr)) {
       return new BasicModelG();
     } else if ("I(F)".equals(expr)) {
@@ -127,7 +127,7 @@ public class DFRSimilarityFactory extends SimilarityFactory {
     }
   }
   
-  private AfterEffect parseAfterEffect(String expr) {
+  private static AfterEffect parseAfterEffect(String expr) {
     if ("B".equals(expr)) {
       return new AfterEffectB();
     } else if ("L".equals(expr)) {

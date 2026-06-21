@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -27,10 +26,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
@@ -40,12 +41,12 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.common.EmptyEntityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,30 +85,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  private XMLInputFactory inputFactory;
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    super.init(args);
-
-    inputFactory = XMLInputFactory.newInstance();
-    EmptyEntityResolver.configureXMLInputFactory(inputFactory);
-    inputFactory.setXMLReporter(xmllog);
-    try {
-      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
-      // XMLInputFactory, as that implementation tries to cache and reuse the
-      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
-      // prevents this.
-      // All other known open-source stax parsers (and the bea ref impl)
-      // have thread-safe factories.
-      inputFactory.setProperty("reuse-instance", Boolean.FALSE);
-    } catch (IllegalArgumentException ex) {
-      // Other implementations will likely throw this exception since "reuse-instance"
-      // is implementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input factory: {}", inputFactory);
-    }
-  }
-
   @Override
   @SuppressWarnings({"rawtypes"})
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
@@ -133,7 +110,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @throws IOException        Thrown when reading/parsing the content stream of the request fails.
    * @throws XMLStreamException Thrown when reading/parsing the content stream of the request fails.
    */
-  DocumentAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) throws IOException, XMLStreamException {
+  static DocumentAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) throws IOException, XMLStreamException {
 
     DocumentAnalysisRequest request = new DocumentAnalysisRequest();
 
@@ -150,10 +127,9 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     XMLStreamReader parser = null;
     
     try {
-      is = stream.getStream();
+      is = new CloseShieldInputStream(stream.getStream());
       final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-      parser = (charset == null) ?
-        inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
+      parser = (charset == null) ? XMLResponseParser.inputFactory.createXMLStreamReader(is) : XMLResponseParser.inputFactory.createXMLStreamReader(is, charset);
 
       while (true) {
         int event = parser.next();
@@ -176,7 +152,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
     } finally {
       if (parser != null) parser.close();
-      IOUtils.closeQuietly(is);
+      Utils.readFully(is);
     }
   }
 
@@ -188,7 +164,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    *
    * @return The analysis response as a named list.
    */
-  NamedList<Object> handleAnalysisRequest(DocumentAnalysisRequest request, IndexSchema schema) {
+  static NamedList<Object> handleAnalysisRequest(DocumentAnalysisRequest request, IndexSchema schema) {
 
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
     NamedList<Object> result = new SimpleOrderedMap<>();
@@ -218,6 +194,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
             : EMPTY_BYTES_SET;
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           // ignore analysis exceptions since we are applying arbitrary text to all fields
           termsToMatch = EMPTY_BYTES_SET;
         }
@@ -227,6 +204,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), EMPTY_BYTES_SET);
             fieldTokens.add("query", analyzeValue(request.getQuery(), analysisContext));
           } catch (Exception e) {
+            ParWork.propagateInterrupt(e);
             // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
         }
@@ -268,7 +246,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    *
    * @throws XMLStreamException When reading of the document fails.
    */
-  SolrInputDocument readDocument(XMLStreamReader reader, IndexSchema schema) throws XMLStreamException {
+  static SolrInputDocument readDocument(XMLStreamReader reader, IndexSchema schema) throws XMLStreamException {
     SolrInputDocument doc = new SolrInputDocument();
 
     String uniqueKeyField = schema.getUniqueKeyField().getName();
@@ -329,7 +307,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    *
    * @return The single content stream which holds the documents to be analyzed.
    */
-  private ContentStream extractSingleContentStream(SolrQueryRequest req) {
+  private static ContentStream extractSingleContentStream(SolrQueryRequest req) {
     Iterable<ContentStream> streams = req.getContentStreams();
     String exceptionMsg = "DocumentAnalysisRequestHandler expects a single content stream with documents to analyze";
     if (streams == null) {

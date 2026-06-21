@@ -90,7 +90,7 @@ public class PrimUtils {
       array[b++] = array[c];
       array[c--] = temp;
     }
-    length = a - start < b - a ? a - start : b - a;
+    length = Math.min(a - start, b - a);
     int l = start;
     int h = b - length;
     while (length-- > 0) {
@@ -98,7 +98,7 @@ public class PrimUtils {
       array[l++] = array[h];
       array[h++] = temp;
     }
-    length = d - c < end - 1 - d ? d - c : end - 1 - d;
+    length = Math.min(d - c, end - 1 - d);
     l = b;
     h = end - length;
     while (length-- > 0) {

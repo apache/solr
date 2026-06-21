@@ -70,7 +70,7 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
     }
   }
 
-  private List<Integer> getMaxIndexes(double[] values, int k) {
+  private static List<Integer> getMaxIndexes(double[] values, int k) {
     TreeSet<Pair> set = new TreeSet<>();
     for(int i=0; i<values.length; i++) {
       if(values[i] > 0){

@@ -18,10 +18,26 @@
 configure(rootProject) {
   def urlVersion = project.baseVersion.replace('.', '_')
   def refguideUrlVersion = project.baseVersion.replaceFirst(/^(\d+)\.(\d+).*$/, '$1_$2')
-  
+
   ext {
-    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${urlVersion}")
-    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${urlVersion}")
+    // NOTE: The actual dependency version isn't available at configuration time, so we use a lazy property provider to
+    // supply it at execution time.
+    //
+    // In the case of a 'SNAPSHOT' luceneDocVersion this URL won't actually exist, but that shouldn't mater since
+    // we can't release Solr pointed at a Lucene SNAPSHOT, so we won't be publishing in this state...
+    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url',
+        "https://lucene.apache.org/core/${-> getVersion("org.apache.lucene", "lucene-core").replace('.', '_')}")
+
+    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
+      if (project.version != project.baseVersion) {
+        // non-release build does not cross-link between modules.
+        return null
+      } else {
+        // release build
+        "https://solr.apache.org/docs/${urlVersion}"
+      }
+    }())
+
     solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
   }
 
@@ -29,22 +45,27 @@ configure(rootProject) {
     group = 'documentation'
     description = 'Generate all documentation'
 
-    dependsOn ':lucene:documentation'
-    dependsOn ':solr:documentation'
+    dependsOn ':solr:documentation:assemble'
   }
+
+  assemble.dependsOn documentation
 }
 
 // docroot will point to Lucene and Solr relative directory for each sub-project.
-configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+configure(project(':solr:documentation')) {
   ext {
-    docroot = file("${buildDir}/documentation")
+    docroot = file("${buildDir}/site")
+    docrootMinimal = file("${buildDir}/minimalSite")
+
+    markdownSrc = file("src/markdown")
+    assets = file("src/assets")
   }
-  
+
   task documentation() {
     group = 'documentation'
     description = "Generate ${project.name.capitalize()} documentation"
 
-    dependsOn subprojects.collect { prj ->
+    dependsOn project.parent.subprojects.collect { prj ->
       prj.tasks.matching { it.name == 'renderSiteJavadoc' }
     }
     dependsOn 'changesToHtml','copyDocumentationAssets',
@@ -53,26 +74,63 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
 
   task copyDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
-    from('site/html')      // lucene
-    from('site/assets')    // solr
+    from(project.assets)
     into project.docroot
+  }
+  
+  assemble {
+    dependsOn documentation
+  }
+
+  configurations {
+    site
+  }
+  
+  artifacts {
+    site project.docroot, {
+      builtBy documentation
+    }
   }
 }
 
-configure(project(':solr')) {
-  ext {
-    // required for the "simple" Solr docs shipped in tgz/zip files, only referring to online web pages:
-    docrootOnline = file("${buildDir}/docs-online")
+configure(project(':solr:documentation')) {
+  task documentationMinimal() {
+    group = 'documentation'
+    description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
+    dependsOn 'copyMiniDocumentationAssets', 'createMiniDocumentationIndex', 'copyChangesToHtmlForMiniSite'
   }
 
-  documentation {
-    // for Solr we also have a page shipped with zip/tgz that just points to online web pages:
-    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex'
+  task copyChangesToHtmlForMiniSite(type: Copy) {
+    from project.docroot
+    into project.docrootMinimal
+    include 'changes/**'
+    dependsOn 'changesToHtml'
   }
-  
-  task copyOnlineDocumentationAssets(type: Copy) {
+
+  task copyMiniDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
-    from('site/assets')
-    into project.docrootOnline
+    from('src/assets')
+    into project.docrootMinimal
+  }
+
+  assemble {
+    dependsOn documentationMinimal
+  }
+
+  configurations {
+    minimalSite
+  }
+
+  artifacts {
+    minimalSite project.docrootMinimal, {
+      builtBy documentationMinimal
+    }
+  }
+}
+
+configure(project(":solr")) {
+  ext {
+    docroot = project('documentation').docroot
+    docrootMinimal = project('documentation').docrootMinimal
   }
 }

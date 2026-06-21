@@ -47,7 +47,7 @@ public class LTRRescorer extends Rescorer {
     this.scoringQuery = scoringQuery;
   }
 
-  private void heapAdjust(ScoreDoc[] hits, int size, int root) {
+  private static void heapAdjust(ScoreDoc[] hits, int size, int root) {
     final ScoreDoc doc = hits[root];
     final float score = doc.score;
     int i = root;
@@ -82,7 +82,7 @@ public class LTRRescorer extends Rescorer {
     }
   }
 
-  private void heapify(ScoreDoc[] hits, int size) {
+  private static void heapify(ScoreDoc[] hits, int size) {
     for (int i = (size >> 1) - 1; i >= 0; i--) {
       heapAdjust(hits, size, i);
     }
@@ -105,12 +105,7 @@ public class LTRRescorer extends Rescorer {
       return firstPassTopDocs;
     }
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
-    Arrays.sort(hits, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        return a.doc - b.doc;
-      }
-    });
+    Arrays.sort(hits, new ScoreDocComparator());
 
     assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
     topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
@@ -121,21 +116,7 @@ public class LTRRescorer extends Rescorer {
 
     scoreFeatures(searcher, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
-    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        // Sort by score descending, then docID ascending:
-        if (a.score > b.score) {
-          return -1;
-        } else if (a.score < b.score) {
-          return 1;
-        } else {
-          // This subtraction can't overflow int
-          // because docIDs are >= 0:
-          return a.doc - b.doc;
-        }
-      }
-    });
+    Arrays.sort(reranked, new ScoreDocComparatorScoreDescIdAsc());
 
     return new TopDocs(firstPassTopDocs.totalHits, reranked);
   }
@@ -248,4 +229,26 @@ public class LTRRescorer extends Rescorer {
     }
   }
 
+  private static class ScoreDocComparator implements Comparator<ScoreDoc> {
+    @Override
+    public int compare(ScoreDoc a, ScoreDoc b) {
+      return a.doc - b.doc;
+    }
+  }
+
+  private static class ScoreDocComparatorScoreDescIdAsc implements Comparator<ScoreDoc> {
+    @Override
+    public int compare(ScoreDoc a, ScoreDoc b) {
+      // Sort by score descending, then docID ascending:
+      if (a.score > b.score) {
+        return -1;
+      } else if (a.score < b.score) {
+        return 1;
+      } else {
+        // This subtraction can't overflow int
+        // because docIDs are >= 0:
+        return a.doc - b.doc;
+      }
+    }
+  }
 }

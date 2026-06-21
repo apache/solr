@@ -18,10 +18,10 @@ package org.apache.solr.metrics;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.Metric;
+import org.jctools.maps.NonBlockingHashMap;
 
 /**
  * This class is used for keeping several partial named values and providing useful statistics over them.
@@ -53,7 +53,7 @@ public class AggregateMetric implements Metric {
     }
   }
 
-  private final Map<String, Update> values = new ConcurrentHashMap<>();
+  private final Map<String, Update> values = new NonBlockingHashMap<>();
 
   public void set(String name, Object value) {
     final Update existing = values.get(name);

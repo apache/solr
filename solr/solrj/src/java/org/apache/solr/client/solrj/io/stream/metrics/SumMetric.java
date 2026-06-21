@@ -36,7 +36,7 @@ public class SumMetric extends Metric {
   public SumMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
-    String columnName = factory.getValueOperand(expression, 0);
+    String columnName = StreamFactory.getValueOperand(expression, 0);
     
     // validate expression contains only what we want.
     if(null == columnName){

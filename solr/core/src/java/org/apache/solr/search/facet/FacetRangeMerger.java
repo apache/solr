@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -46,7 +47,7 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
   @Override
   public void sortBuckets(final FacetRequest.FacetSort sort) {
     // regardless of sort or mincount, every shard returns a consistent set of buckets which are already in the correct order
-    sortedBuckets = new ArrayList<>( buckets.values() );
+    sortedBuckets = new ObjectArrayList<>( buckets.values() );
   }
 
   @Override
@@ -77,7 +78,8 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
     return refinement;
   }
   
-  private Map<String, Object> getRefinementSpecial(Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial, FacetBucket bucket, String label) {
+  private static Map<String, Object> getRefinementSpecial(Context mcontext, Map<String,Object> refinement, Collection<String> tagsWithPartial,
+      FacetBucket bucket, String label) {
     if (null == bucket) {
       return refinement;
     }

@@ -114,7 +114,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
     abstract Query makeFilter(QParser qparser) throws SyntaxError;
 
-    JoinParams parseJoin(QParser qparser) throws SyntaxError {
+    static JoinParams parseJoin(QParser qparser) throws SyntaxError {
       final String fromField = qparser.getParam("from");
       final String fromIndex = qparser.getParam("fromIndex");
       final String toField = qparser.getParam("to");
@@ -162,24 +162,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-
-      @Override
-      public Query parse() throws SyntaxError {
-        if (localParams != null && localParams.get(METHOD) != null) {
-          // TODO Make sure 'method' is valid value here and give users a nice error
-          final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
-          return explicitMethod.makeFilter(this);
-        }
-
-        // Legacy join behavior before introduction of SOLR-13892
-        if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null) {
-          return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
-        } else {
-          return Method.index.makeFilter(this);
-        }
-      }
-    };
+    return new JoinQParser(qstr, localParams, params, req);
   }
 
   /**
@@ -192,7 +175,29 @@ public class JoinQParserPlugin extends QParserPlugin {
   public static Query createJoinQuery(Query subQuery, String fromField, String toField) {
     return new JoinQuery(fromField, toField, null, subQuery);
   }
-  
+
+  private static class JoinQParser extends QParser {
+
+    public JoinQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      if (localParams != null && localParams.get(METHOD) != null) {
+        // TODO Make sure 'method' is valid value here and give users a nice error
+        final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
+        return explicitMethod.makeFilter(this);
+      }
+
+      // Legacy join behavior before introduction of SOLR-13892
+      if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null) {
+        return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
+      } else {
+        return Method.index.makeFilter(this);
+      }
+    }
+  }
 }
 
 

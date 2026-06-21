@@ -41,7 +41,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   /** The order of these fieldNames should correspond to the order of sort field values retrieved from the shard */
   protected List<String> fieldNames = new ArrayList<>();
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher) {
     super(size);
     final int n = fields.length;
@@ -74,7 +74,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   protected boolean lessThan(ShardDoc docA, ShardDoc docB) {
     // If these docs are from the same shard, then the relative order
     // is how they appeared in the response from that shard.    
-    if (docA.shard == docB.shard) {
+    if (docA.shard.equals(docB.shard)) {
       // if docA has a smaller position, it should be "larger" so it
       // comes before docB.
       // This will handle sorting by docid within the same shard

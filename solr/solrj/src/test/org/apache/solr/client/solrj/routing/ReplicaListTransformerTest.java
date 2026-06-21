@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.routing;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 
 import java.util.ArrayList;
@@ -24,9 +25,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
@@ -41,7 +46,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // A transformer that keeps only matching choices
-  private static class ToyMatchingReplicaListTransformer implements ReplicaListTransformer {
+  private static class ToyMatchingReplicaListTransformer implements ReplicaListTransformer, Closeable {
 
     private final String regex;
 
@@ -73,10 +78,15 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       }
     }
 
+    @Override
+    public void close() {
+
+    }
+
   }
 
   // A transformer that makes no transformation
-  private static class ToyNoOpReplicaListTransformer implements ReplicaListTransformer {
+  private static class ToyNoOpReplicaListTransformer implements ReplicaListTransformer, Closeable {
 
     public ToyNoOpReplicaListTransformer()
     {
@@ -88,77 +98,91 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       log.info("No-Op transform ignoring input: {}", choices);
     }
 
+    @Override
+    public void close() {
+
+    }
+
   }
 
   @Test
   public void testTransform() throws Exception {
 
-    final String regex = ".*" + random().nextInt(10) + ".*";
+    final String regex = ".*?r_n\\d+.*";
 
-    final ReplicaListTransformer transformer;
-    if (random().nextBoolean()) {
-      log.info("Using ToyMatching Transfomer");
-      transformer = new ToyMatchingReplicaListTransformer(regex);
+    AtomicReference<ReplicaListTransformer> transformer = new AtomicReference<>();
+    try {
+      if (random().nextBoolean()) {
+        log.info("Using ToyMatching Transfomer");
+        transformer.set(new ToyMatchingReplicaListTransformer(regex));
 
-    } else {
-      log.info("Using conditional Transfomer");
-      transformer = new HttpShardHandlerFactory() {
+      } else {
+        log.info("Using conditional Transfomer");
+        try (HttpShardHandlerFactory hsh = new HttpShardHandlerFactory() {
+          {
+            transformer.set(getReplicaListTransformer(
+                    new LocalSolrQueryRequest(null,
+                            new ModifiableSolrParams().add("toyRegEx", regex))));
+          }
+          @Override
+          protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
+            final SolrParams params = req.getParams();
 
-        @Override
-        protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
-        {
-          final SolrParams params = req.getParams();
+            if (params.getBool("toyNoTransform", false)) {
+              return new ToyNoOpReplicaListTransformer();
+            }
 
-          if (params.getBool("toyNoTransform", false)) {
-            return new ToyNoOpReplicaListTransformer();
+            final String regex = params.get("toyRegEx");
+            if (regex != null) {
+              return new ToyMatchingReplicaListTransformer(regex);
+            }
+
+            return super.getReplicaListTransformer(req);
           }
 
-          final String regex = params.get("toyRegEx");
-          if (regex != null) {
-            return new ToyMatchingReplicaListTransformer(regex);
-          }
+        };) {
 
-          return super.getReplicaListTransformer(req);
         }
 
-      }.getReplicaListTransformer(
-          new LocalSolrQueryRequest(null,
-              new ModifiableSolrParams().add("toyRegEx", regex)));
-    }
-
-    final List<Replica> inputs = new ArrayList<>();
-    final List<Replica> expectedTransformed = new ArrayList<>();
-
-    final List<String> urls = createRandomUrls();
-    for (int ii=0; ii<urls.size(); ++ii) {
-
-      final String name = "replica"+(ii+1);
-      final String url = urls.get(ii);
-      final Map<String,Object> propMap = new HashMap<String,Object>();
-      propMap.put("base_url", url);
-      propMap.put("core", "test_core");
-      propMap.put("node_name", "test_node");
-      propMap.put("type", "NRT");
-      // a skeleton replica, good enough for this test's purposes
-      final Replica replica = new Replica(name, propMap,"c1","s1");
-
-      inputs.add(replica);
-      final String coreUrl = replica.getCoreUrl();
-      if (coreUrl.matches(regex)) {
-        log.info("adding replica=[{}] to expected due to core url ({}) regex match on {} ",
-                 replica, coreUrl, regex);
-        expectedTransformed.add(replica);
-      } else {
-        log.info("NOT expecting replica=[{}] due to core url ({}) regex mismatch ({})",
-                 replica, coreUrl, regex);
       }
-      
+
+      final List<Replica> inputs = new ArrayList<>();
+      final List<Replica> expectedTransformed = new ArrayList<>();
+
+      final List<String> urls = createRandomUrls();
+      for (int ii = 0; ii < urls.size(); ++ii) {
+
+        final String name = "coll1_s1_r_n" + (ii + 1);
+        final String url = urls.get(ii);
+        final Object2ObjectMap<String, Object> propMap = new Object2ObjectLinkedOpenHashMap<>();
+        propMap.put(ZkStateReader.NODE_NAME_PROP, url);
+        propMap.put("type", "NRT");
+        propMap.put("id", ii);
+        // a skeleton replica, good enough for this test's purposes
+        final Replica replica = new Replica(name, propMap, "c1",-1,"s1");
+
+        inputs.add(replica);
+        final String coreUrl = replica.getCoreUrl();
+        if (coreUrl.matches(regex)) {
+          log.info("adding replica=[{}] to expected due to core url ({}) regex match on {} ",
+                  replica, coreUrl, regex);
+          expectedTransformed.add(replica);
+        } else {
+          log.info("NOT expecting replica=[{}] due to core url ({}) regex mismatch ({})",
+                  replica, coreUrl, regex);
+        }
+
+      }
+
+      final List<Replica> actualTransformed = new ArrayList<>(inputs);
+      transformer.get().transform(actualTransformed);
+
+      assertEquals(expectedTransformed, actualTransformed);
+    } finally {
+      if (transformer != null) {
+        transformer.get().close();
+      }
     }
-
-    final List<Replica> actualTransformed = new ArrayList<>(inputs);
-    transformer.transform(actualTransformed);
-
-    assertEquals(expectedTransformed, actualTransformed);
   }
 
   private final List<String> createRandomUrls() throws Exception {

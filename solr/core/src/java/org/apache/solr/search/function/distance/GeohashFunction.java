@@ -40,7 +40,7 @@ public class GeohashFunction extends ValueSource {
     this.lon = lon;
   }
 
-  protected String name() {
+  protected static String name() {
     return "geohash";
   }
 
@@ -51,22 +51,7 @@ public class GeohashFunction extends ValueSource {
     final FunctionValues lonDV = lon.getValues(context, readerContext);
 
 
-    return new FunctionValues() {
-
-      @Override
-      public String strVal(int doc) throws IOException {
-        return GeohashUtils.encodeLatLon(latDV.doubleVal(doc), lonDV.doubleVal(doc));
-      }
-
-      @Override
-      public String toString(int doc) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(name()).append('(');
-        sb.append(latDV.toString(doc)).append(',').append(lonDV.toString(doc));
-        sb.append(')');
-        return sb.toString();
-      }
-    };
+    return new MyFunctionValues(latDV, lonDV);
   }
 
   @Override
@@ -91,10 +76,35 @@ public class GeohashFunction extends ValueSource {
 
   @Override  
   public String description() {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     sb.append(name()).append('(');
     sb.append(lat).append(',').append(lon);
     sb.append(')');
     return sb.toString();
+  }
+
+  private static class MyFunctionValues extends FunctionValues {
+
+    private final FunctionValues latDV;
+    private final FunctionValues lonDV;
+
+    public MyFunctionValues(FunctionValues latDV, FunctionValues lonDV) {
+      this.latDV = latDV;
+      this.lonDV = lonDV;
+    }
+
+    @Override
+    public String strVal(int doc) throws IOException {
+      return GeohashUtils.encodeLatLon(latDV.doubleVal(doc), lonDV.doubleVal(doc));
+    }
+
+    @Override
+    public String toString(int doc) throws IOException {
+      StringBuilder sb = new StringBuilder(32);
+      sb.append(name()).append('(');
+      sb.append(latDV.toString(doc)).append(',').append(lonDV.toString(doc));
+      sb.append(')');
+      return sb.toString();
+    }
   }
 }

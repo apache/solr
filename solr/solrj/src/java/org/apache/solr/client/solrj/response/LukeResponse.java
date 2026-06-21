@@ -36,6 +36,12 @@ import org.apache.solr.common.util.NamedList;
  */
 public class LukeResponse extends SolrResponseBase {
 
+
+  public LukeResponse(NamedList<Object> nl) {
+    super(nl);
+    setResponse(nl);
+  }
+
   public static class FieldTypeInfo implements Serializable {
     String name;
     String className;
@@ -205,10 +211,9 @@ public class LukeResponse extends SolrResponseBase {
   private Map<String, FieldInfo> dynamicFieldInfo;
   private Map<String, FieldTypeInfo> fieldTypeInfo;
 
-  @Override
+
   @SuppressWarnings("unchecked")
-  public void setResponse(NamedList<Object> res) {
-    super.setResponse(res);
+  private void setResponse(NamedList<Object> res) {
 
     // Parse indexinfo
     indexInfo = (NamedList<Object>) res.get("index");

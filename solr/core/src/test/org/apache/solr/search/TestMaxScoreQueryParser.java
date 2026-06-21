@@ -22,13 +22,14 @@ import org.apache.lucene.search.*;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Collections;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.hamcrest.Matchers.hasItem;
 
 public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
   Query q;
@@ -48,6 +49,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
+    @SuppressWarnings({"rawtypes"})
     Class expected = LegacyNumericRangeQuery.class;
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
       expected = PointRangeQuery.class;
@@ -80,9 +82,12 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(1, clauses.length);
     assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
     assertEquals(0.0, ((DisjunctionMaxQuery) clauses[0].getQuery()).getTieBreakerMultiplier(), 1e-15);
-    List<Query> qa = ((DisjunctionMaxQuery) clauses[0].getQuery()).getDisjuncts();
+    Collection<Query> qa = ((DisjunctionMaxQuery) clauses[0].getQuery()).getDisjuncts();
     assertEquals(2, qa.size());
-    assertEquals("text:foo", qa.get(0).toString());
+    final Collection<String> qaStrings = qa.stream()
+            .map(q -> q.toString())
+            .collect(Collectors.toList());
+    org.hamcrest.MatcherAssert.assertThat(qaStrings, hasItem("text:foo"));
   }
 
   @Test
@@ -118,9 +123,11 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(2, clauses.length);
     assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
     DisjunctionMaxQuery dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
-    Query fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().iterator().next().getQuery();
+    Query fooClause = ((BooleanQuery)dmq.getDisjuncts().stream().filter(q -> q.toString().contains("foo")).findFirst().get())
+            .clauses().iterator().next().getQuery();
     assertEquals(5.0, ((BoostQuery) fooClause).getBoost(), 1e-15);
-    Query barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().iterator().next().getQuery();
+    Query barClause = ((BooleanQuery)dmq.getDisjuncts().stream().filter(q -> q.toString().contains("bar")).findFirst().get())
+            .clauses().iterator().next().getQuery();
     assertEquals(6.0, ((BoostQuery) barClause).getBoost(), 1e-15);
     assertEquals(7.0, ((BoostQuery) clauses[1].getQuery()).getBoost(), 1e-15);
     assertFalse(q instanceof BoostQuery);
@@ -131,9 +138,11 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(1, clauses.length);
     assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
     dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
-    fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().iterator().next().getQuery();
+    fooClause = ((BooleanQuery)dmq.getDisjuncts().stream().filter(q -> q.toString().contains("foo")).findFirst().get())
+            .clauses().iterator().next().getQuery();
     assertEquals(2.0, ((BoostQuery) fooClause).getBoost(), 1e-15);
-    barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().iterator().next().getQuery();
+    barClause = ((BooleanQuery)dmq.getDisjuncts().stream().filter(q -> q.toString().contains("bar")).findFirst().get())
+            .clauses().iterator().next().getQuery();
     assertFalse(barClause instanceof BoostQuery);
     assertEquals(3.0, ((BoostQuery) q).getBoost(), 1e-15);
   }
@@ -149,7 +158,9 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
       while(al.size() >= 2) {
         p.add(al.remove(0), al.remove(0));
       }
-      return new MaxScoreQParser(q, p, new MapSolrParams(Collections.singletonMap("df", "text")), req(q)).parse();
+      try (SolrQueryRequest req = req(q)) {
+        return new MaxScoreQParser(q, p, new MapSolrParams(Collections.singletonMap("df", "text")), req).parse();
+      }
     } catch (SyntaxError syntaxError) {
       fail("Failed with exception "+syntaxError.getMessage());
     }

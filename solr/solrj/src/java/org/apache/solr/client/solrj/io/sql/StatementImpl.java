@@ -27,18 +27,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 class StatementImpl implements Statement {
 
+  private static final Pattern COMPILE = Pattern.compile("\\s+");
   private final ConnectionImpl connection;
   private boolean closed;
   private String currentSQL;
@@ -51,7 +53,7 @@ class StatementImpl implements Statement {
   }
 
   private void checkClosed() throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("Statement is closed.");
     }
   }
@@ -83,9 +85,7 @@ class StatementImpl implements Statement {
       List<Replica> shuffler = new ArrayList<>();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
-        for (Replica replica : replicas) {
-          shuffler.add(replica);
-        }
+        shuffler.addAll(replicas);
       }
 
       Collections.shuffle(shuffler, new Random());
@@ -98,10 +98,10 @@ class StatementImpl implements Statement {
       }
 
       Replica rep = shuffler.get(0);
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-      String url = zkProps.getCoreUrl();
+      String url = rep.getCoreUrl();
       return new SolrStream(url, params);
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -369,8 +369,8 @@ class StatementImpl implements Statement {
     throw new UnsupportedOperationException();
   }
 
-  private boolean containsLimit(String sql) {
-    String[] tokens = sql.split("\\s+");
+  private static boolean containsLimit(String sql) {
+    String[] tokens = COMPILE.split(sql);
     String secondToLastToken = tokens[tokens.length-2];
     return ("limit").equalsIgnoreCase(secondToLastToken);
   }

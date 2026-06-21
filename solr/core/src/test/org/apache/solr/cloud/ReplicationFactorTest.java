@@ -16,32 +16,39 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,70 +58,172 @@ import org.slf4j.LoggerFactory;
  * information back from the cluster after an add or update.
  */
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 // 12-Jun-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6944")
-public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
-  
+@LuceneTestCase.Nightly // MRM TODO: speed up
+public class ReplicationFactorTest extends SolrCloudBridgeTestCase {
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ReplicationFactorTest() {
-    super();
+  @BeforeClass
+  public static void setupReplicationFactorTest() {
+    // Need enough nodes that the 2x2 collection in testRf2NotUsingDirectUpdates places shard1's and
+    // shard2's replicas on distinct nodes; with only 3 nodes the two non-leader replicas co-locate, so
+    // closing shard2's replica proxy also knocks out shard1's replica (Connection refused) and the
+    // expected rf for shard1 can no longer be achieved.
+    numJettys = 5;
     sliceCount = 3;
-    fixShardCount(3);
+    createCollection1 = false; // the test creates its own named collections
+    enableProxy = true;
   }
-  
-  /**
-   * Overrides the parent implementation so that we can configure a socket proxy
-   * to sit infront of each Jetty server, which gives us the ability to simulate
-   * network partitions without having to fuss with IPTables (which is not very
-   * cross platform friendly).
-   */
-  @Override
-  public JettySolrRunner createJetty(File solrHome, String dataDir,
-      String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
-      throws Exception {
 
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
+  // --- helper methods bridging from AbstractFullDistribZkTestBase ---
+
+  protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
+    String replicaBaseUrl = replica.getBaseUrl();
+    assertNotNull(replicaBaseUrl);
+    for (JettySolrRunner j : cluster.getJettySolrRunners()) {
+      if (replicaBaseUrl.replaceAll("/$", "").equals(j.getProxyBaseUrl().replaceAll("/$", ""))) {
+        return j.getProxy();
+      }
+    }
+    fail("No proxy found for " + replicaBaseUrl + "!");
+    return null;
   }
-  
+
+  @SuppressWarnings("rawtypes")
+  protected int sendDocsWithRetry(List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry) throws Exception {
+    UpdateRequest up = new UpdateRequest();
+    up.add(batch);
+    NamedList resp = null;
+    int numRetries = 0;
+    while (true) {
+      try {
+        resp = cloudClient.request(up, cloudClient.getDefaultCollection());
+        return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), resp);
+      } catch (Exception exc) {
+        Throwable rootCause = SolrException.getRootCause(exc);
+        if (++numRetries <= maxRetries) {
+          log.warn("ERROR: {} ... Sleeping for {} seconds before re-try ...", rootCause, waitBeforeRetry);
+          Thread.sleep(waitBeforeRetry * 1000L);
+        } else {
+          log.error("No more retries available! Add batch failed", rootCause);
+          throw exc;
+        }
+      }
+    }
+  }
+
+  protected String printClusterStateInfo() {
+    return cloudClient.getZkStateReader().getClusterState().toString()
+        + "\nLive Nodes:" + cloudClient.getZkStateReader().getLiveNodes();
+  }
+
+  /**
+   * Polls the shard-terms znode until every (non-recovering) replica in the shard has caught its term
+   * up to the leader's max term and no "_recovering" marker remains -- i.e. all replicas that fell
+   * behind during a partition have completed recovery and are eligible to receive forwarded updates
+   * again. Returns quietly on timeout so the subsequent assertion reports the real achieved rf.
+   */
+  protected void waitForReplicasToCatchUp(String collection, String shard, int maxWaitSecs) throws Exception {
+    final String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + shard;
+    final SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
+    final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(maxWaitSecs);
+    while (System.nanoTime() < deadline) {
+      boolean caughtUp = false;
+      try {
+        byte[] data = zkClient.getData(path, null, new org.apache.zookeeper.data.Stat(), true);
+        if (data != null) {
+          @SuppressWarnings("unchecked")
+          Map<String,Object> values = (Map<String,Object>) Utils.fromJSON(data);
+          long max = 0;
+          boolean anyRecovering = false;
+          for (Map.Entry<String,Object> e : values.entrySet()) {
+            if (e.getKey().endsWith("_recovering")) { anyRecovering = true; continue; }
+            max = Math.max(max, ((Number) e.getValue()).longValue());
+          }
+          caughtUp = !anyRecovering;
+          if (caughtUp) {
+            for (Map.Entry<String,Object> e : values.entrySet()) {
+              if (e.getKey().endsWith("_recovering")) continue;
+              if (((Number) e.getValue()).longValue() != max) { caughtUp = false; break; }
+            }
+          }
+        }
+      } catch (Exception e) {
+        // transient zk read issue; retry until deadline
+      }
+      if (caughtUp) {
+        if (log.isInfoEnabled()) log.info("All replicas in {}/{} caught up to leader term", collection, shard);
+        return;
+      }
+      Thread.sleep(200);
+    }
+    log.warn("Timed out after {}s waiting for replicas in {}/{} to catch up", maxWaitSecs, collection, shard);
+  }
+
+  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor, int maxShardsPerNode) throws IOException, SolrServerException, InterruptedException, TimeoutException {
+    CollectionAdminResponse resp = CollectionAdminRequest
+        .createCollection(testCollectionName, "_default", numShards, replicationFactor)
+        .setMaxShardsPerNode(maxShardsPerNode)
+        .process(cluster.getSolrClient());
+
+    if (resp.getResponse().get("failure") != null) {
+      Thread.sleep(5000); // let system settle down. This should be very rare.
+
+      CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
+
+      resp = CollectionAdminRequest
+          .createCollection(testCollectionName, "_default", numShards, replicationFactor)
+          .setMaxShardsPerNode(maxShardsPerNode)
+          .process(cluster.getSolrClient());
+
+      if (resp.getResponse().get("failure") != null) {
+        fail("Could not create " + testCollectionName);
+      }
+    }
+  }
+
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     log.info("replication factor test running");
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // test a 1x3 collection
     log.info("Testing replication factor handling for repfacttest_c8n_1x3");
     testRf3();
 
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
-        
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+
     if (log.isInfoEnabled()) {
       log.info("replication factor testing complete! final clusterState is: {}",
           cloudClient.getZkStateReader().getClusterState());
     }
   }
-  
+
   protected void testRf2NotUsingDirectUpdates() throws Exception {
     int numShards = 2;
     int replicationFactor = 2;
     int maxShardsPerNode = 1;
     String testCollectionName = "repfacttest_c8n_2x2";
-    String shardId = "shard1";
+    String shardId = "s1";
 
     createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
 
     cloudClient.setDefaultCollection(testCollectionName);
-    
-    List<Replica> replicas = 
-        ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
+
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+
+    List<Replica> replicas = new ArrayList<>();
+    for (Replica replica : cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getSlice(shardId).getReplicas()) {
+      if (!replica.getBool("leader", false)) {
+        replicas.add(replica);
+      }
+    }
     assertTrue("Expected active 1 replicas for "+testCollectionName, replicas.size() == 1);
-                
+
     List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
     for (int i=0; i < 15; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -145,9 +254,15 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
         getSomeIds(2), 2, testCollectionName);
 
     // so now kill the replica of shard2 and verify the achieved rf is only 1
-    List<Replica> shard2Replicas =
-        ensureAllReplicasAreActive(testCollectionName, "shard2", numShards, replicationFactor, 30);
-    assertTrue("Expected active 1 replicas for "+testCollectionName, replicas.size() == 1);
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+
+    ArrayList<Replica> shard2Replicas = new ArrayList<>();
+    for (Replica replica : cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getSlice("s2").getReplicas()) {
+      if (!replica.getBool("leader", false)) {
+        shard2Replicas.add(replica);
+      }
+    }
+    assertTrue("Expected active 1 replicas for "+testCollectionName, shard2Replicas.size() == 1);
 
     getProxyForReplica(shard2Replicas.get(0)).close();
 
@@ -163,11 +278,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Set<Integer> byIDs;
     byIDs = getSomeIds(2);
     sendNonDirectDeletesRequestReplicaWithRetry(leader,
-        byIDs, calcByIdRf(byIDs, testCollectionName, "shard2"),
+        byIDs, calcByIdRf(byIDs, testCollectionName, "s2"),
         getSomeIds(2), 1, testCollectionName);
     byIDs = getSomeIds(2);
     sendNonDirectDeletesRequestReplicaWithRetry(replicas.get(0), byIDs,
-        calcByIdRf(byIDs, testCollectionName, "shard2"),
+        calcByIdRf(byIDs, testCollectionName, "s2"),
         getSomeIds(2), 1, testCollectionName);
     // heal the partition
     getProxyForReplica(shard2Replicas.get(0)).reopen();
@@ -178,7 +293,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   // then the replication factor we return will be 1.
   //
   private int calcByIdRf(Set<Integer> byIDs, String testCollectionName, String shardWithOne) {
-    ZkController zkController = jettys.get(0).getCoreContainer().getZkController();
+    ZkController zkController = cluster.getJettySolrRunners().get(0).getCoreContainer().getZkController();
     DocCollection coll = zkController.getClusterState().getCollection(testCollectionName);
     int retval = 2;
     for (int id : byIDs) {
@@ -252,12 +367,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       sendNonDirectUpdateRequestReplica(replica, up, expectedRf, collection);
     }
   }
-  
+
   @SuppressWarnings("rawtypes")
   protected void sendNonDirectUpdateRequestReplica(Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + collection;
-    try (HttpSolrClient solrServer = getHttpSolrClient(url)) {
+    String url = replica.getBaseUrl() + "/" + collection;
+    try (Http2SolrClient solrServer = SolrTestCaseJ4.getHttpSolrClient(url)) {
       NamedList resp = solrServer.request(up);
       NamedList hdr = (NamedList) resp.get("responseHeader");
       Integer batchRf = (Integer)hdr.get(UpdateRequest.REPFACT);
@@ -278,16 +392,23 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     final int replicationFactor = 3;
     final int maxShardsPerNode = 1;
     final String testCollectionName = "repfacttest_c8n_1x3";
-    final String shardId = "shard1";
+    final String shardId = "s1";
     final int minRf = 2;
 
     createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
     cloudClient.setDefaultCollection(testCollectionName);
-    
-    List<Replica> replicas = 
-        ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
+
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+
+    ArrayList<Replica> replicas = new ArrayList<>();
+    List<Replica> reps = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica :reps) {
+      if (!replica.getBool("leader", false)) {
+        replicas.add(replica);
+      }
+    }
     assertTrue("Expected 2 active replicas for "+testCollectionName, replicas.size() == 2);
-                
+
     log.info("Indexing docId=1");
     int rf = sendDoc(1, minRf);
     assertRf(3, "all replicas should be active", rf);
@@ -298,7 +419,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     log.info("Closing one proxy port");
     getProxyForReplica(replicas.get(0)).close();
-    
+
     log.info("Indexing docId=2");
     rf = sendDoc(2, minRf);
     assertRf(2, "one replica should be down", rf);
@@ -319,9 +440,9 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     log.info("Indexing batch of documents (30-45)");
     int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
     assertRf(2, "batch should have succeded, only one replica should be down", batchRf);
-    
+
     log.info("Closing second proxy port");
-    getProxyForReplica(replicas.get(1)).close();    
+    getProxyForReplica(replicas.get(1)).close();
 
     log.info("Indexing docId=3");
     rf = sendDoc(3, minRf);
@@ -332,13 +453,18 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     // heal the partitions
     log.info("Re-opening closed proxy ports");
-    getProxyForReplica(replicas.get(0)).reopen();    
+    getProxyForReplica(replicas.get(0)).reopen();
     getProxyForReplica(replicas.get(1)).reopen();
-    
-    Thread.sleep(2000); // give time for the healed partition to get propagated
-    
-    ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
-    
+
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+
+    // expectedShardsAndActiveReplicas only checks ACTIVE state, but in this fork a replica that fell
+    // behind during the partition stays ACTIVE while it catches up (its shard term is what lags). The
+    // leader skips forwarding to a term-behind replica, so indexing docId=4 immediately after reopening
+    // the proxies would observe rf=1. Wait until the healed replicas have caught their shard terms up to
+    // the leader (recovery completed) before asserting the achieved replication factor.
+    waitForReplicasToCatchUp(testCollectionName, "s1", 60);
+
     log.info("Indexing docId=4");
     rf = sendDoc(4, minRf);
     assertRf(3, "all replicas have been healed", rf);
@@ -354,7 +480,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       doc.addField("a_t", "hello" + i);
       batch.add(doc);
     }
-    
+
     log.info("Indexing batch of documents (5-14)");
     batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
     assertRf(3, "batch add should have succeeded on all replicas", batchRf);
@@ -371,7 +497,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     log.info("Indexing docId=5");
     rf = sendDoc(5, minRf);
     assertRf(2, "doc should have succeded, only one replica should be down", rf);
-    
+
     // now send a batch (again)
     batch = new ArrayList<SolrInputDocument>(10);
     for (int i=15; i < 30; i++) {
@@ -390,7 +516,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // close the 2nd replica, and send a 3rd batch with expected achieved rf=1
     log.info("Closing second proxy port (again)");
     getProxyForReplica(replicas.get(1)).close();
-    
+
     batch = new ArrayList<SolrInputDocument>(10);
     for (int i=30; i < 45; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -405,11 +531,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBQWithRetry(1, 5, "deletes should have propagated to only 1 replica", 15);
     doDBIdWithRetry(1, 5, "deletes should have propagated to only 1 replica", 15);
 
-    getProxyForReplica(replicas.get(0)).reopen();        
+    getProxyForReplica(replicas.get(0)).reopen();
     getProxyForReplica(replicas.get(1)).reopen();
 
-    Thread.sleep(2000); 
-    ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
   }
 
   protected void addDocs(Set<Integer> docIds, int expectedRf, int retries) throws Exception {
@@ -470,7 +595,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     up.add(doc);
     return runAndGetAchievedRf(up, minRfExplicit, minRf);
   }
-  
+
   private int runAndGetAchievedRf(UpdateRequest up, boolean minRfExplicit, int minRf) throws SolrServerException, IOException {
     NamedList<Object> response = cloudClient.request(up);
     if (minRfExplicit) {
@@ -487,35 +612,19 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   private boolean maybeAddMinRfExplicitly(int minRf, UpdateRequest up) {
     boolean minRfExplicit = false;
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       // test back compat behavior. Remove in Solr 9
       up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
       minRfExplicit = true;
     }
     return minRfExplicit;
   }
-  
+
   protected void assertRf(int expected, String explain, int actual) throws Exception {
     if (actual != expected) {
-      String assertionFailedMessage = 
+      String assertionFailedMessage =
           String.format(Locale.ENGLISH, "Expected rf=%d because %s but got %d", expected, explain, actual);
       fail(assertionFailedMessage+"; clusterState: "+printClusterStateInfo());
-    }
-  }
-
-  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor, int maxShardsPerNode) throws IOException, SolrServerException, InterruptedException, TimeoutException {
-    CollectionAdminResponse resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
-
-    if (resp.getResponse().get("failure") != null) {
-      Thread.sleep(5000); // let system settle down. This should be very rare.
-
-      CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
-
-      resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
-
-      if (resp.getResponse().get("failure") != null) {
-        fail("Could not create " + testCollectionName);
-      }
     }
   }
 

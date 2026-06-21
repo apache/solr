@@ -42,6 +42,7 @@ import org.apache.solr.common.util.NamedList;
  */
 public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> implements Iterable<Map.Entry<String, Object>>
 {
+
   protected final Map<String,Object> _fields;
   
   private List<SolrDocument> _childDocuments;
@@ -118,7 +119,22 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
       }
       value = lst;
     }
+
     _fields.put(name, value);
+
+    if (SkyHook.skyHookDoc != null && "id".equals(name)) {
+      if (value instanceof SolrInputField) {
+        SkyHook.register(String.valueOf(((SolrInputField) value).getValue()));
+      } else {
+        try {
+          SkyHook.register(String.valueOf(value));
+        } catch (NumberFormatException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "class=" + value.getClass().getName(), e);
+        }
+
+      }
+
+    }
   }
   
   /**
@@ -140,9 +156,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
     if (existing == null) {
       if( value instanceof Collection ) {
         Collection<Object> c = new ArrayList<>( 3 );
-        for ( Object o : (Collection<Object>)value ) {
-          c.add(o);
-        }
+        c.addAll((Collection<Object>) value);
         this.setField( name, c );
       } else {
         this.setField( name, value );
@@ -166,9 +180,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
       }
     }
     else if( value instanceof Object[] ) {
-      for( Object o : (Object[])value ) {
-        vals.add( o );
-      }
+      vals.addAll(Arrays.asList((Object[]) value));
     }
     else {
       vals.add( value );
@@ -185,7 +197,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
    */
   public Object getFirstValue(String name) {
     Object v = _fields.get( name );
-    if (v == null || !(v instanceof Collection)) return v;
+    if (!(v instanceof Collection)) return v;
     Collection c = (Collection)v;
     if (c.size() > 0 ) {
       return c.iterator().next();

@@ -31,9 +31,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -42,8 +42,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.restlet.data.Status;
-import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +173,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
       } else if (updates instanceof Map) {
         madeChanges = applyMapUpdates((Map<String,Object>)updates, ignoreCase);
       } else {
-        throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+        throw new SolrException(ErrorCode.BAD_REQUEST,
             "Unsupported data format (" + updates.getClass().getName() + "); expected a JSON object (Map or List)!");
       }
       return madeChanges ? getStoredView() : null;
@@ -230,6 +228,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
             madeChanges = true;
           }
         } else if (val instanceof List) {
+          @SuppressWarnings({"unchecked"})
           List<String> vals = (List<String>)val;
 
           if (output == null) {
@@ -244,7 +243,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
           }
 
         } else {
-          throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Unsupported value "+val+
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported value "+val+
               " for "+term+"; expected single value or a JSON array!");
         }
 
@@ -272,7 +271,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
       return storedView;
     }
 
-    protected String applyCaseSetting(boolean ignoreCase, String str) {
+    protected static String applyCaseSetting(boolean ignoreCase, String str) {
       return (ignoreCase && str != null) ? str.toLowerCase(Locale.ROOT) : str;
     }
 
@@ -280,7 +279,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
       return getIgnoreCase(managedInitArgs);
     }
 
-    public boolean getIgnoreCase(NamedList<?> initArgs) {
+    public static boolean getIgnoreCase(NamedList<?> initArgs) {
       Boolean ignoreCase = initArgs.getBooleanArg(IGNORE_CASE_INIT_ARG);
       // ignoreCase = false by default
       return null == ignoreCase ? false : ignoreCase;
@@ -346,7 +345,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
    * mappings from the managed JSON in this class during SynonymMap
    * building.
    */
-  private class ManagedSynonymParser extends SynonymMap.Parser {
+  private static class ManagedSynonymParser extends SynonymMap.Parser {
 
     SynonymManager synonymManager;
 

@@ -153,7 +153,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *     &lt;/lst&gt;
  *     &lt;str name="dest"&gt;people_s&lt;/str&gt;
  *   &lt;/processor&gt;
- *   &lt;processor class="solr.processor.OpenNLPExtractNamedEntitiesUpdateProcessorFactory"&gt;
+ *   &lt;processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory"&gt;
  *     &lt;str name="modelFile"&gt;en-test-ner-person.bin&lt;/str&gt;
  *     &lt;str name="analyzerFieldType"&gt;opennlp-en-tokenization&lt;/str&gt;
  *     &lt;lst name="source"&gt;
@@ -213,7 +213,6 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
     throw new SolrException(SERVER_ERROR, "selector was never initialized, inform(SolrCore) never called???");
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(NamedList args) {
 
@@ -259,7 +258,6 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
    * init helper method that should only be called when we know for certain that both the
    * "source" and "dest" init params do <em>not</em> exist.
    */
-  @SuppressWarnings("unchecked")
   private void initSimpleRegexReplacement(NamedList args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the same pattern
     // is used for the destination pattern...
@@ -559,7 +557,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
 
       private void extractEntitiesFromSentence(String fullText, List<String> terms, List<Integer> startOffsets,
                                                List<Integer> endOffsets, List<Pair<String,String>> entitiesWithType) {
-        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[terms.size()]))) {
+        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[0]))) {
           String text = fullText.substring(startOffsets.get(span.getStart()), endOffsets.get(span.getEnd() - 1));
           entitiesWithType.add(new Pair<>(text, span.getType()));
         }

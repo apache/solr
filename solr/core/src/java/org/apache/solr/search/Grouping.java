@@ -26,6 +26,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -77,13 +79,17 @@ import org.slf4j.LoggerFactory;
  */
 public class Grouping {
 
+  public static final Integer[] TS1 = new Integer[0];
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Collector[] TS = new Collector[0];
+  public static final Float[] TS2 = new Float[0];
+  public static final GroupDocs[] EMPTY_GROUP_DOCS = new GroupDocs[0];
 
   private final SolrIndexSearcher searcher;
   private final QueryResult qr;
   private final QueryCommand cmd;
   @SuppressWarnings({"rawtypes"})
-  private final List<Command> commands = new ArrayList<>();
+  private final ObjectList<Command> commands = new ObjectArrayList<>();
   private final boolean main;
   private final boolean cacheSecondPassSearch;
   private final int maxDocsPercentageToCache;
@@ -381,7 +387,7 @@ public class Grouping {
     }
 
     if (!collectors.isEmpty()) {
-      Collector secondPhaseCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
+      Collector secondPhaseCollectors = MultiCollector.wrap(collectors.toArray(TS));
       if (collectors.size() > 0) {
         if (cachedCollector != null) {
           if (cachedCollector.isCached()) {
@@ -654,7 +660,7 @@ public class Grouping {
     // Flatten the groups and get up offset + rows documents
     protected DocList createSimpleResponse() {
       @SuppressWarnings({"rawtypes"})
-      GroupDocs[] groups = result != null ? result.groups : new GroupDocs[0];
+      GroupDocs[] groups = result != null ? result.groups : EMPTY_GROUP_DOCS;
 
       List<Integer> ids = new ArrayList<>();
       List<Float> scores = new ArrayList<>();
@@ -678,8 +684,8 @@ public class Grouping {
       }
 
       int len = docsGathered > offset ? docsGathered - offset : 0;
-      int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
-      float[] docScores = ArrayUtils.toPrimitive(scores.toArray(new Float[scores.size()]));
+      int[] docs = ArrayUtils.toPrimitive(ids.toArray(TS1));
+      float[] docScores = ArrayUtils.toPrimitive(scores.toArray(TS2));
       DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore, TotalHits.Relation.EQUAL_TO);
 
       if (getDocList) {
@@ -694,7 +700,7 @@ public class Grouping {
   }
 
   /** Differs from {@link Math#max(float, float)} in that if only one side is NaN, we return the other. */
-  private float maxAvoidNaN(float valA, float valB) {
+  private static float maxAvoidNaN(float valA, float valB) {
     if (Float.isNaN(valA) || valB > valA) {
       return valB;
     } else {
@@ -796,7 +802,7 @@ public class Grouping {
       }
 
       @SuppressWarnings({"rawtypes"})
-      List groupList = new ArrayList();
+      ObjectList groupList = new ObjectArrayList();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
 
       if (result == null) {
@@ -1019,7 +1025,7 @@ public class Grouping {
       }
 
       @SuppressWarnings({"rawtypes"})
-      List groupList = new ArrayList();
+      ObjectList groupList = new ObjectArrayList();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
 
       if (result == null) {

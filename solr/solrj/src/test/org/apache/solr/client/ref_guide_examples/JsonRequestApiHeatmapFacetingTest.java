@@ -55,7 +55,7 @@ public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
         .configure();
 
     final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl());
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).process(cluster.getSolrClient());
 
@@ -67,12 +67,7 @@ public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
     final SolrInputDocument doc2 = new SolrInputDocument("id", "1", FIELD, "ENVELOPE(-120, -110, 80, 20)");
     final SolrInputDocument doc3 = new SolrInputDocument("id", "3", FIELD, "POINT(70 60)");
     final SolrInputDocument doc4 = new SolrInputDocument("id", "4", FIELD, "POINT(91 89)");
-    final List<SolrInputDocument> docs = new ArrayList<>();
-    docs.add(doc1);
-    docs.add(doc2);
-    docs.add(doc3);
-    docs.add(doc4);
-
+    final List<SolrInputDocument> docs = Arrays.asList(doc1, doc2, doc3, doc4);
     cluster.getSolrClient().add(COLLECTION_NAME, docs);
     cluster.getSolrClient().commit(COLLECTION_NAME);
   }

@@ -101,7 +101,7 @@ public class JulWatcher extends LogWatcher<LogRecord> {
       map.put(name, new JulInfo(name, logger));
 
       while (true) {
-        int dot = name.lastIndexOf(".");
+        int dot = name.lastIndexOf('.');
         if (dot < 0)
           break;
         name = name.substring(0, dot);
@@ -159,7 +159,7 @@ public class JulWatcher extends LogWatcher<LogRecord> {
     doc.setField("time", new Date(event.getMillis()));
     doc.setField("level", event.getLevel().toString());
     doc.setField("logger", event.getLoggerName());
-    doc.setField("message", event.getMessage().toString());
+    doc.setField("message", event.getMessage());
     Throwable t = event.getThrown();
     if(t!=null) {
       doc.setField("trace", Throwables.getStackTraceAsString(t));

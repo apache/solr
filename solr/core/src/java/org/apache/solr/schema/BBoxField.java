@@ -94,7 +94,14 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     }
 
     //note: this only works for explicit fields, not dynamic fields
-    List<SchemaField> fields = new ArrayList<>(schema.getFields().values());//copy, because we modify during iteration
+    // postReadInform runs SchemaAware.inform() callbacks in parallel (ParWork), and several BBoxField
+    // instances may register sub-fields into the same non-thread-safe schema fields map concurrently.
+    // Snapshot the fields under the map monitor (register() puts under the same monitor) to avoid
+    // concurrent structural modification of the fastutil map during rehash.
+    List<SchemaField> fields;
+    synchronized (schema.getFields()) {
+      fields = new ArrayList<>(schema.getFields().values());//copy, because we modify during iteration
+    }
     for (SchemaField sf : fields) {
       if (sf.getType() == this) {
         String name = sf.getName();
@@ -111,8 +118,8 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     register(schema, name + BBoxStrategy.SUFFIX_XDL, booleanType);
   }
 
-  // note: Registering the field is probably optional; it makes it show up in the schema browser and may have other
-  //  benefits.
+  // note: Registering the field makes it resolvable via schema.getField(...) (needed for queries
+  // referencing the bbox sub-fields, and for the schema browser).
   private void register(IndexSchema schema, String name, FieldType fieldType) {
     int props = fieldType.properties;
     if(storeSubFields) {
@@ -122,7 +129,11 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
       props &= ~STORED;
     }
     SchemaField sf = new SchemaField(name, fieldType, props, null);
-    schema.getFields().put(sf.getName(), sf);
+    // Serialize on the shared fields-map monitor: postReadInform may run multiple BBoxField.inform()
+    // callbacks in parallel, and Object2ObjectOpenHashMap is not thread-safe under concurrent put.
+    synchronized (schema.getFields()) {
+      schema.getFields().put(sf.getName(), sf);
+    }
   }
 
   @Override

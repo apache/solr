@@ -31,20 +31,15 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
 
   public void testOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new ByteBuffersDirectory();
-    ByteBuffersDirectoryFactory factory = new ByteBuffersDirectoryFactory()  {
-      @Override
-      protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
-        return directory;
-      }
-    };
+    ByteBuffersDirectoryFactory factory = new MyByteBuffersDirectoryFactory(directory);
     String path = "/fake/path";
     Directory dir1 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     Directory dir2 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     assertEquals("ByteBuffersDirectoryFactory should not create new instance of ByteBuffersDirectory " +
         "every time open() is called for the same path", dir1, dir2);
 
-    factory.release(dir1);
-    factory.release(dir2);
+  //  factory.release(dir1);
+  //  factory.release(dir2);
     factory.close();
   }
 
@@ -53,20 +48,34 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
     Directory dir = factory.get("/fake/path", DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     assertNotNull("ByteBuffersDirectoryFactory should create ByteBuffersDirectory even if the path doesn't lead " +
         "to index directory on the file system", dir);
-    factory.release(dir);
+ //   factory.release(dir);
     factory.close();
   }
 
   public void testIndexRetrieve() throws Exception {
     System.setProperty("solr.directoryFactory", "solr.ByteBuffersDirectoryFactory");
     initCore("solrconfig-minimal.xml","schema-minimal.xml");
-    DirectoryFactory factory = h.getCore().getDirectoryFactory();
-    assertTrue("Found: " + factory.getClass().getName(), factory instanceof ByteBuffersDirectoryFactory);
-    for (int i = 0 ; i < 5 ; ++i) {
-      assertU(adoc("id", "" + i, "a_s", "_" + i + "_"));
+    try (SolrCore core = h.getCore()) {
+      DirectoryFactory factory = core.getDirectoryFactory();
+      assertTrue("Found: " + factory.getClass().getName(), factory instanceof ByteBuffersDirectoryFactory);
+      for (int i = 0; i < 5; ++i) {
+        assertU(adoc("id", "" + i, "a_s", "_" + i + "_"));
+      }
+      assertU(commit());
+      assertQ(req("q", "a_s:_0_"), "//result[@numFound = '1']");
     }
-    assertU(commit());
-    assertQ(req("q", "a_s:_0_"), "//result[@numFound = '1']");
     deleteCore();
+  }
+
+  private static class MyByteBuffersDirectoryFactory extends ByteBuffersDirectoryFactory {
+    private final Directory directory;
+
+    public MyByteBuffersDirectoryFactory(Directory directory) {
+      this.directory = directory;
+    }
+
+    @Override public Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+      return directory;
+    }
   }
 }

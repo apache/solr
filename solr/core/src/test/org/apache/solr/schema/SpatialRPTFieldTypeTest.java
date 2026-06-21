@@ -21,12 +21,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.core.SolrCore;
 import org.junit.After;
 import org.junit.Before;
 import org.locationtech.spatial4j.shape.Shape;
 
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   
   private static File tmpSolrHome;
@@ -37,9 +42,9 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    File testHomeConfDir = new File(SolrTestUtil.TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
@@ -110,7 +115,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
   
   public void testJunkValuesForDistanceUnits() throws Exception {
-    Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
     assertTrue(ex.getMessage().startsWith("Must specify distanceUnits as one of"));
   }
 
@@ -122,11 +127,13 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
     
     String fieldName = "new_text_field";
-    assertNull("Field '" + fieldName + "' is present in the schema",
-        h.getCore().getLatestSchema().getFieldOrNull(fieldName));
-    
-    IndexSchema oldSchema = h.getCore().getLatestSchema();
-    
+
+    IndexSchema oldSchema;
+    try (SolrCore core = h.getCore()) {
+      assertNull("Field '" + fieldName + "' is present in the schema", core.getLatestSchema().getFieldOrNull(fieldName));
+
+       oldSchema = core.getLatestSchema();
+    }
     SpatialRecursivePrefixTreeFieldType rptFieldType = new SpatialRecursivePrefixTreeFieldType();
     Map<String, String> rptMap = new HashMap<String,String>();
 
@@ -212,7 +219,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     assertEquals(wkt, out);
 
     //assert fails GeoJSON
-    expectThrows(SolrException.class, () -> ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}"));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}"));
 
   }
 
@@ -220,8 +227,10 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     setupRPTField("miles", "true", "GeoJSON", random().nextBoolean()
         ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
 
-    AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
-        h.getCore().getLatestSchema().getField("geo").getType();
+    AbstractSpatialFieldType ftype;
+    try (SolrCore core = h.getCore()) {
+      ftype = (AbstractSpatialFieldType) core.getLatestSchema().getField("geo").getType();
+    }
 
     String json = "{\"type\":\"Point\",\"coordinates\":[1,2]}";
     Shape shape = ftype.parseShape(json);
@@ -237,34 +246,32 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 
-    String fieldName = "new_text_field";
-    assertNull("Field '" + fieldName + "' is present in the schema",
-        h.getCore().getLatestSchema().getFieldOrNull(fieldName));
-    
-    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    try (SolrCore core = h.getCore()) {
+      String fieldName = "new_text_field";
+      assertNull("Field '" + fieldName + "' is present in the schema", core.getLatestSchema().getFieldOrNull(fieldName));
 
-    if (fieldType == null) {
-      fieldType = new SpatialRecursivePrefixTreeFieldType();
-    }
-    Map<String, String> rptMap = new HashMap<String,String>();
-    if(distanceUnits!=null)
-      rptMap.put("distanceUnits", distanceUnits);
-    if(geo!=null)
-      rptMap.put("geo", geo);
-    if(format!=null) {
-      rptMap.put("format", format);
-    }
-    if (random().nextBoolean()) {
-      // use Geo3D sometimes
-      rptMap.put("spatialContextFactory", "Geo3D");
-    }
-    fieldType.init(oldSchema, rptMap);
-    fieldType.setTypeName("location_rpt");
-    SchemaField newField = new SchemaField("geo", fieldType, SchemaField.STORED | SchemaField.INDEXED, null);
-    IndexSchema newSchema = oldSchema.addField(newField);
+      IndexSchema oldSchema = core.getLatestSchema();
 
-    h.getCore().setLatestSchema(newSchema);
+      if (fieldType == null) {
+        fieldType = new SpatialRecursivePrefixTreeFieldType();
+      }
+      Map<String,String> rptMap = new HashMap<String,String>();
+      if (distanceUnits != null) rptMap.put("distanceUnits", distanceUnits);
+      if (geo != null) rptMap.put("geo", geo);
+      if (format != null) {
+        rptMap.put("format", format);
+      }
+      if (random().nextBoolean()) {
+        // use Geo3D sometimes
+        rptMap.put("spatialContextFactory", "Geo3D");
+      }
+      fieldType.init(oldSchema, rptMap);
+      fieldType.setTypeName("location_rpt");
+      SchemaField newField = new SchemaField("geo", fieldType, SchemaField.STORED | SchemaField.INDEXED, null);
+      IndexSchema newSchema = oldSchema.addField(newField);
 
+      core.setLatestSchema(newSchema);
+    }
     assertU(delQ("*:*"));
   }
 

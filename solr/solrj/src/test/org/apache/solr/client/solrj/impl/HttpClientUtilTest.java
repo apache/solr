@@ -36,34 +36,35 @@ import org.junit.Test;
 
 public class HttpClientUtilTest extends SolrTestCase {
 
-  @Rule
-  public TestRule syspropRestore = new TestRuleRestoreSystemProperties
-    (HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-
   @After
   public void resetHttpClientBuilder() {
+    System.clearProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
     HttpClientUtil.resetHttpClientBuilder();
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSSLSystemProperties() throws IOException {
 
+    // Fork divergence: the fork's DefaultSocketFactoryRegistryProvider registers only "http"
+    // (resetHttpClientBuilder() installs it), whereas upstream's default also registered "https".
+    // The https scheme + checkPeerName hostname-verifier selection now lives in
+    // SSLSocketFactoryRegistryProvider, so install it explicitly to exercise the same behavior.
+    HttpClientUtil.setSocketFactoryRegistryProvider(new HttpClientUtil.SSLSocketFactoryRegistryProvider());
     assertNotNull("HTTPS scheme could not be created using system defaults",
                   HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry().lookup("https"));
 
     assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
 
     System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "true");
-    resetHttpClientBuilder();
+    HttpClientUtil.setSocketFactoryRegistryProvider(new HttpClientUtil.SSLSocketFactoryRegistryProvider());
     assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
 
     System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "");
-    resetHttpClientBuilder();
+    HttpClientUtil.setSocketFactoryRegistryProvider(new HttpClientUtil.SSLSocketFactoryRegistryProvider());
     assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
-    
+
     System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "false");
-    resetHttpClientBuilder();
+    HttpClientUtil.setSocketFactoryRegistryProvider(new HttpClientUtil.SSLSocketFactoryRegistryProvider());
     assertSSLHostnameVerifier(NoopHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
   }
 

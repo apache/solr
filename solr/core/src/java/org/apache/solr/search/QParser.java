@@ -29,6 +29,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -234,7 +235,7 @@ public abstract class QParser {
       // if not passed, try and get the defaultType from local params
       defaultType = localParams.get(QueryParsing.DEFTYPE);
     }
-    QParser nestedParser = getParser(q, defaultType, getReq());
+    QParser nestedParser = getParser(q, defaultType, req);
     nestedParser.flags = this.flags;  // TODO: this would be better passed in to the constructor... change to a ParserContext object?
     nestedParser.recurseCount = recurseCount;
     recurseCount--;
@@ -286,7 +287,7 @@ public abstract class QParser {
   }
 
   public String[] getDefaultHighlightFields() {
-    return new String[]{};
+    return Utils.EMPTY_STRINGS;
   }
 
   public Query getHighlightQuery() throws SyntaxError {

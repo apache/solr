@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
 
+import org.apache.solr.common.StringUtils;
 import org.noggit.JSONParser;
 
 import static org.noggit.JSONParser.*;
@@ -103,7 +104,7 @@ public class JsonRecordReader {
       return;//the path is "/"
     }
     // deal with how split behaves when separator starts with an empty string!
-    if ("".equals(paths.get(0).trim()))
+    if (StringUtils.isEmpty(paths.get(0).trim()))
       paths.remove(0);
     rootNode.build(paths, fieldName, multiValued, isRecord, path);
     rootNode.buildOptimize();
@@ -384,7 +385,7 @@ public class JsonRecordReader {
         for (; ; ) {
           int event = parser.nextEvent();
           if (event == OBJECT_END) {
-            if (isRecord()) {
+            if (isRecord) {
               handler.handle(values, splitPath);
             }
             return;
@@ -438,7 +439,7 @@ public class JsonRecordReader {
           }
         }
       } finally {
-        if ((isRecord() || !isRecordStarted)) {
+        if ((isRecord || !isRecordStarted)) {
           for (String fld : valuesAddedinThisFrame) {
             values.remove(fld);
           }
@@ -446,7 +447,7 @@ public class JsonRecordReader {
       }
     }
 
-    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String key) {
+    private static void addChildDoc2ParentDoc(Map<String,Object> record, Map<String,Object> values, String key) {
       record =  Utils.getDeepCopy(record, 2);
       Object oldVal = values.get(key);
       if (oldVal == null) {
@@ -464,7 +465,7 @@ public class JsonRecordReader {
     /**
      * Construct the name as it would appear in the final record
      */
-    private String getNameInRecord(String name, MethodFrameWrapper frameWrapper, Node n) {
+    private static String getNameInRecord(String name, MethodFrameWrapper frameWrapper, Node n) {
       if (frameWrapper == null || !n.useFqn || frameWrapper.node.isChildRecord) return name;
       StringBuilder sb = new StringBuilder();
       frameWrapper.addName(sb);
@@ -476,7 +477,7 @@ public class JsonRecordReader {
     }
 
 
-    private void putValue(Map<String, Object> values, String fieldName, Object o) {
+    private static void putValue(Map<String,Object> values, String fieldName, Object o) {
       if (o == null) return;
       Object val = values.get(fieldName);
       if (val == null) {
@@ -495,8 +496,8 @@ public class JsonRecordReader {
     }
 
     // returns the last key of the path
-    private String getPathSuffix(String path) {
-      int indexOf = path.lastIndexOf("/");
+    private static String getPathSuffix(String path) {
+      int indexOf = path.lastIndexOf('/');
       if (indexOf == -1) return path;
       return path.substring(indexOf + 1);
     }

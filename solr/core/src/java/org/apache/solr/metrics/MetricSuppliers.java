@@ -219,9 +219,9 @@ public class MetricSuppliers {
    */
   public static final class DefaultTimerSupplier implements MetricRegistry.MetricSupplier<Timer>, PluginInfoInitialized {
 
-    public Clock clk = Clock.defaultClock();
-    private PluginInfo info;
-    private SolrResourceLoader loader;
+    public volatile Clock clk = Clock.defaultClock();
+    private volatile PluginInfo info;
+    private final SolrResourceLoader loader;
 
     public DefaultTimerSupplier(SolrResourceLoader loader) {
       this.loader = loader;
@@ -248,8 +248,8 @@ public class MetricSuppliers {
    */
   public static final class DefaultHistogramSupplier implements MetricRegistry.MetricSupplier<Histogram>, PluginInfoInitialized {
 
-    private PluginInfo info;
-    private SolrResourceLoader loader;
+    private volatile PluginInfo info;
+    private final SolrResourceLoader loader;
 
     public DefaultHistogramSupplier(SolrResourceLoader loader) {
       this.loader = loader;

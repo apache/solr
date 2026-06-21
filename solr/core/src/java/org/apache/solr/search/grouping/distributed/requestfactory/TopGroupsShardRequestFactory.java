@@ -24,6 +24,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.schema.FieldType;
@@ -62,7 +63,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
     }
   }
 
-  private ShardRequest[] createRequestForSpecificShards(ResponseBuilder rb) {
+  private static ShardRequest[] createRequestForSpecificShards(ResponseBuilder rb) {
     // Determine all unique shards to query for TopGroups
     Set<String> uniqueShards = new HashSet<>();
     for (Map<SearchGroup<BytesRef>, Set<String>> groupsToShard : rb.searchGroupToShards.values()) {
@@ -71,14 +72,14 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       }
     }
 
-    return createRequest(rb, uniqueShards.toArray(new String[uniqueShards.size()]));
+    return createRequest(rb, uniqueShards.toArray(Utils.EMPTY_STRINGS));
   }
 
-  private ShardRequest[] createRequestForAllShards(ResponseBuilder rb) {
+  private static ShardRequest[] createRequestForAllShards(ResponseBuilder rb) {
     return createRequest(rb, ShardRequest.ALL_SHARDS);
   }
 
-  private ShardRequest[] createRequest(ResponseBuilder rb, String[] shards)
+  private static ShardRequest[] createRequest(ResponseBuilder rb, String[] shards)
   {
     ShardRequest sreq = new ShardRequest();
     sreq.shards = shards;
@@ -110,16 +111,18 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
 
     sreq.params.set(GroupParams.GROUP_DISTRIBUTED_SECOND, "true");
     final IndexSchema schema = rb.req.getSearcher().getSchema();
-    for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
-      for (SearchGroup<BytesRef> searchGroup : entry.getValue()) {
-        String groupValue;
-        if (searchGroup.groupValue != null) {
-          FieldType fieldType = schema.getField(entry.getKey()).getType();
-          groupValue = fieldType.indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString();
-        } else {
-          groupValue = GROUP_NULL_VALUE;
+    if (rb.mergedSearchGroups != null) {
+      for (Map.Entry<String,Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
+        for (SearchGroup<BytesRef> searchGroup : entry.getValue()) {
+          String groupValue;
+          if (searchGroup.groupValue != null) {
+            FieldType fieldType = schema.getField(entry.getKey()).getType();
+            groupValue = fieldType.indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString();
+          } else {
+            groupValue = GROUP_NULL_VALUE;
+          }
+          sreq.params.add(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + entry.getKey(), groupValue);
         }
-        sreq.params.add(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + entry.getKey(), groupValue);
       }
     }
 

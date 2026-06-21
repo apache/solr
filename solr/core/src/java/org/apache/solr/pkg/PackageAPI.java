@@ -26,17 +26,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
@@ -105,29 +108,24 @@ public class PackageAPI {
               return;
             }
             try {
-              synchronized (this) {
                 log.debug("Updating [{}] ... ", path);
 
                 // remake watch
                 final Watcher thisWatch = this;
                 final Stat stat = new Stat();
-                final byte[] data = zkClient.getData(path, thisWatch, stat, true);
+                final byte[] data = zkClient.getData(path, thisWatch, stat);
                 pkgs = readPkgsFromZk(data, stat);
                 packageLoader.refreshPackageConf();
-              }
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
               log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
             } catch (KeeperException e) {
-              log.error("A ZK error has occurred", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+              log.error("A ZK error has occurred in registerListener for PackageAPI", e);
             } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.warn("Interrupted", e);
+              log.info("interrupted");
             }
           }
 
-        }, true);
+        });
   }
 
 
@@ -136,7 +134,7 @@ public class PackageAPI {
     if (data == null || stat == null) {
       stat = new Stat();
       data = coreContainer.getZkController().getZkClient()
-          .getData(SOLR_PKGS_PATH, null, stat, true);
+          .getData(SOLR_PKGS_PATH, null, stat);
 
     }
     Packages packages = null;
@@ -210,6 +208,11 @@ public class PackageAPI {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(version);
+    }
+
+    @Override
     public String toString() {
       try {
         return Utils.writeJson(this, new StringWriter(), false).toString() ;
@@ -240,12 +243,17 @@ public class PackageAPI {
       //first refresh my own
       packageLoader.notifyListeners(p);
       for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
-        Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-            coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p,
-            Utils.JAVABINCONSUMER);
+        try {
+          Http2SolrClient.GET(coreContainer.getZkController().
+              zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+        } catch (ExecutionException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (TimeoutException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       }
-
-
     }
 
 
@@ -319,7 +327,8 @@ public class PackageAPI {
             return null;// no change
           }
           int idxToremove = -1;
-          for (int i = 0; i < versions.size(); i++) {
+          int sz = versions.size();
+          for (int i = 0; i < sz; i++) {
             if (Objects.equals(versions.get(i).version, delVersion.version)) {
               idxToremove = i;
               break;
@@ -395,6 +404,7 @@ public class PackageAPI {
         try {
           Thread.sleep(10);
         } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
         }
         try {
           pkgs = readPkgsFromZk(null, null);
@@ -412,13 +422,21 @@ public class PackageAPI {
 
   void notifyAllNodesToSync(int expected) {
     for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
-      Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-          coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&expectedVersion" + expected,
-          Utils.JAVABINCONSUMER);
+      try {
+        Http2SolrClient.GET(coreContainer.getZkController().zkStateReader.
+            getBaseUrlForNodeName(s).replace("/solr", "/api") +
+            "/cluster/package?wt=javabin&omitHeader=true&expectedVersion" + expected, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      } catch (ExecutionException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (TimeoutException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
     }
   }
 
-  public void handleZkErr(Exception e) {
+  public static void handleZkErr(Exception e) {
     log.error("Error reading package config from zookeeper", SolrZkClient.checkInterrupted(e));
   }
 

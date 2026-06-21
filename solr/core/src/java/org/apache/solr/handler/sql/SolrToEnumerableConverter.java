@@ -62,23 +62,10 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final RelDataType rowType = getRowType();
     final PhysType physType = PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
     final Expression table = list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
-    @SuppressWarnings({"rawtypes"})
     final Expression fields =
         list.append("fields",
             constantArrayList(
-                Pair.zip(generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
-                    new AbstractList<Class>() {
-                      @Override
-                      @SuppressWarnings({"rawtypes"})
-                      public Class get(int index) {
-                        return physType.fieldClass(index);
-                      }
-
-                      @Override
-                      public int size() {
-                        return rowType.getFieldCount();
-                      }
-                    }),
+                Pair.zip(generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings), new ClassAbstractList(physType, rowType)),
                 Pair.class));
     final Expression query = list.append("query", Expressions.constant(solrImplementor.query, String.class));
     final Expression orders = list.append("orders", constantArrayList(solrImplementor.orders, Pair.class));
@@ -94,7 +81,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     return implementor.result(physType, list.toBlock());
   }
 
-  private List<String> generateFields(List<String> queryFields, Map<String, String> fieldMappings) {
+  private static List<String> generateFields(List<String> queryFields, Map<String,String> fieldMappings) {
 
     if(fieldMappings.isEmpty()) {
       return queryFields;
@@ -107,7 +94,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     }
   }
 
-  private String getField(Map<String, String> fieldMappings, String field) {
+  private static String getField(Map<String,String> fieldMappings, String field) {
     String retField = field;
     while(fieldMappings.containsKey(field)) {
       field = fieldMappings.getOrDefault(field, retField);
@@ -135,5 +122,26 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
    */
   private static <T> List<Expression> constantList(List<T> values) {
     return Lists.transform(values, Expressions::constant);
+  }
+
+  private static class ClassAbstractList extends AbstractList<Class> {
+    private final PhysType physType;
+    private final RelDataType rowType;
+
+    public ClassAbstractList(PhysType physType, RelDataType rowType) {
+      this.physType = physType;
+      this.rowType = rowType;
+    }
+
+    @Override
+    @SuppressWarnings({"rawtypes"})
+    public Class get(int index) {
+      return physType.fieldClass(index);
+    }
+
+    @Override
+    public int size() {
+      return rowType.getFieldCount();
+    }
   }
 }

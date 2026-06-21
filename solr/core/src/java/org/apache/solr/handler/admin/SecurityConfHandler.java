@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.ApiBag;
@@ -54,7 +55,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public abstract class SecurityConfHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected CoreContainer cores;
+  protected final CoreContainer cores;
 
   public SecurityConfHandler(CoreContainer coreContainer) {
     this.cores = coreContainer;
@@ -259,60 +260,53 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     } 
   }
 
-  private Collection<Api> apis;
+  private final AtomicReference<Collection<Api> > apis = new AtomicReference<>();
   private AuthenticationPlugin authcPlugin;
   private AuthorizationPlugin authzPlugin;
 
   @Override
   public Collection<Api> getApis() {
-    if (apis == null) {
-      synchronized (this) {
-        if (apis == null) {
-          Collection<Api> apis = new ArrayList<>();
-          final SpecProvider authcCommands = Utils.getSpec("cluster.security.authentication.Commands");
-          final SpecProvider authzCommands = Utils.getSpec("cluster.security.authorization.Commands");
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
-          SpecProvider authcSpecProvider = () -> {
-            AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
-            return authcPlugin != null && authcPlugin instanceof SpecProvider ?
-                ((SpecProvider) authcPlugin).getSpec() :
-                authcCommands.getSpec();
-          };
+    return apis.updateAndGet(apis1 -> {
+      if (apis1 == null) {
+        Collection<Api> apis = new ArrayList<>();
+        final SpecProvider authcCommands = Utils.getSpec("cluster.security.authentication.Commands");
+        final SpecProvider authzCommands = Utils.getSpec("cluster.security.authorization.Commands");
+        apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
+        apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
+        SpecProvider authcSpecProvider = () -> {
+          AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
+          return authcPlugin instanceof SpecProvider ? ((SpecProvider) authcPlugin).getSpec() : authcCommands.getSpec();
+        };
 
-          apis.add(new ReqHandlerToApi(this, authcSpecProvider) {
-            @Override
-            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
-              //it is possible that the Authentication plugin is modified since the last call. invalidate the
-              // the cached commandSchema
-              if(SecurityConfHandler.this.authcPlugin != cores.getAuthenticationPlugin()) commandSchema = null;
-              SecurityConfHandler.this.authcPlugin = cores.getAuthenticationPlugin();
-              return super.getCommandSchema();
-            }
-          });
+        apis.add(new ReqHandlerToApi(this, authcSpecProvider) {
+          @Override public synchronized Map<Object,JsonSchemaValidator> getCommandSchema() {
+            //it is possible that the Authentication plugin is modified since the last call. invalidate the
+            // the cached commandSchema
+            if (SecurityConfHandler.this.authcPlugin != cores.getAuthenticationPlugin()) commandSchema.set(null);
+            SecurityConfHandler.this.authcPlugin = cores.getAuthenticationPlugin();
+            return super.getCommandSchema();
+          }
+        });
 
-          SpecProvider authzSpecProvider = () -> {
-            AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
-            return authzPlugin != null && authzPlugin instanceof SpecProvider ?
-                ((SpecProvider) authzPlugin).getSpec() :
-                authzCommands.getSpec();
-          };
-          apis.add(new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
-            @Override
-            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
-              //it is possible that the Authorization plugin is modified since the last call. invalidate the
-              // the cached commandSchema
-              if(SecurityConfHandler.this.authzPlugin != cores.getAuthorizationPlugin()) commandSchema = null;
-              SecurityConfHandler.this.authzPlugin = cores.getAuthorizationPlugin();
-              return super.getCommandSchema();
-            }
-          });
+        SpecProvider authzSpecProvider = () -> {
+          AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
+          return authzPlugin instanceof SpecProvider ? ((SpecProvider) authzPlugin).getSpec() : authzCommands.getSpec();
+        };
+        apis.add(new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
+          @Override public synchronized Map<Object,JsonSchemaValidator> getCommandSchema() {
+            //it is possible that the Authorization plugin is modified since the last call. invalidate the
+            // the cached commandSchema
+            if (SecurityConfHandler.this.authzPlugin != cores.getAuthorizationPlugin()) commandSchema.set(null);
+            SecurityConfHandler.this.authzPlugin = cores.getAuthorizationPlugin();
+            return super.getCommandSchema();
+          }
+        });
 
-          this.apis = ImmutableList.copyOf(apis);
-        }
+        return ImmutableList.copyOf(apis);
       }
-    }
-    return this.apis;
+
+      return apis1;
+    });
   }
 
   @Override

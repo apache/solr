@@ -28,8 +28,8 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient.Builder;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -42,7 +42,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     this.connectionStatement = connectionStatement;
   }
 
-  private int getVersionPart(String version, int part) {
+  private static int getVersionPart(String version, int part) {
     // TODO Is there a better way to do this? Reuse code from elsewhere?
     // Gets the parts of the Solr version. If fail then just return 0.
     if (version != null) {
@@ -113,13 +113,13 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     SolrQuery sysQuery = new SolrQuery();
     sysQuery.setRequestHandler("/admin/info/system");
 
-    CloudSolrClient cloudSolrClient = this.connection.getClient();
-    Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+    CloudHttp2SolrClient cloudSolrClient = this.connection.getClient();
+    Set<String> liveNodes = cloudSolrClient.getZkStateReader().getLiveNodes();
     SolrClient solrClient = null;
     for (String node : liveNodes) {
       try {
         String nodeURL = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(node);
-        solrClient = new Builder(nodeURL).build();
+        solrClient = new Builder(nodeURL).markInternalRequest().build();
 
         QueryResponse rsp = solrClient.query(sysQuery);
         return String.valueOf(((SimpleOrderedMap) rsp.getResponse().get("lucene")).get("solr-spec-version"));

@@ -43,6 +43,7 @@ import org.apache.lucene.util.mutable.MutableValueInt;
  * 
  * @see Integer
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see IntPointField
  */
 @Deprecated
 public class TrieIntField extends TrieField implements IntValueFieldType {
@@ -57,8 +58,8 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
     try {
       if (val instanceof CharSequence) return Integer.parseInt(val.toString());
     } catch (NumberFormatException e) {
-      Float v = Float.parseFloat(val.toString());
-      return v.intValue();
+      float v = Float.parseFloat(val.toString());
+      return (int) v;
     }
     return super.toNativeType(val);
   }
@@ -68,12 +69,12 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
     
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-        
+
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-        
+
         return new IntDocValues(thisAsSortedSetFieldSource) {
           private int lastDocID;
 
@@ -88,11 +89,11 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
               return docID == view.docID();
             }
           }
-          
+
           @Override
           public int intVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return LegacyNumericUtils.prefixCodedToInt(bytes);
             } else {
@@ -109,17 +110,17 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
           public ValueFiller getValueFiller() {
             return new ValueFiller() {
               private final MutableValueInt mval = new MutableValueInt();
-              
+
               @Override
               public MutableValue getValue() {
                 return mval;
               }
-              
+
               @Override
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.binaryValue());
+                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue()));
                 } else {
                   mval.exists = false;
                   mval.value = 0;

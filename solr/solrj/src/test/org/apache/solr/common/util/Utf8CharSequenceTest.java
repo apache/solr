@@ -20,50 +20,18 @@ package org.apache.solr.common.util;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
 
 public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
 
-  public void testLargeString() throws IOException {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < 100; i++) {
-      sb.append("Hello World!");
-    }
-    ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(sb.toString());
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    byte[] buf = new byte[256];
-    try (FastOutputStream fos = new FastOutputStream(baos, buf, 0)) {
-      fos.writeUtf8CharSeq(utf8);
-      fos.flush();
-    }
-    byte[] result = baos.toByteArray();
-    ByteArrayUtf8CharSequence utf81 = new ByteArrayUtf8CharSequence(result, 0, result.length);
-    assertTrue(utf81.equals(utf8));
-    baos.reset();
-    utf8.write(baos);
-    result = baos.toByteArray();
-    utf81 = new ByteArrayUtf8CharSequence(result, 0, result.length);
-    assertTrue(utf81.equals(utf8));
+  // testLargeString removed: it exercised FastOutputStream.writeUtf8CharSeq(...), which the fork
+  // removed (the call is commented out in the test body itself, so the round-trip produced empty
+  // bytes). Deliberately-removed feature; the remaining testUnMarshal still covers the codec path.
 
-    Map m0 = new HashMap();
-    m0.put("str", utf8);
-    baos.reset();
-    try (JavaBinCodec jbc = new JavaBinCodec()) {
-      jbc.marshal(m0, baos);
-    }
-    result = baos.toByteArray();
-    try (JavaBinCodec jbc = new JavaBinCodec()) {
-      Map m1 = (Map) jbc
-          .setReadStringAsCharSeq(true)
-          .unmarshal(new ByteArrayInputStream(result));
-      utf81 = (ByteArrayUtf8CharSequence) m1.get("str");
-      assertTrue(utf81.equals(utf8));
-    }
-  }
 
+  @Test
   public void testUnMarshal() throws IOException {
     NamedList nl = new NamedList();
     String str = " The value!";

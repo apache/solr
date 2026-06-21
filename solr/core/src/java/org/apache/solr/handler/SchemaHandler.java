@@ -28,8 +28,9 @@ import java.util.Set;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -39,6 +40,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
@@ -60,6 +62,7 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES
 public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
+  private SolrRequestHandler managedResourceRequestHandler;
 
   private static final Map<String, String> level2;
 
@@ -75,7 +78,13 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     level2 = Collections.unmodifiableMap(s);
   }
 
+  private volatile boolean isClosed;
 
+  @Override
+  public void close() {
+    this.isClosed = true;
+  }
+  
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     RequestHandlerUtils.setWt(req, JSON);
@@ -90,10 +99,16 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
       try {
         @SuppressWarnings({"rawtypes"})
-        List errs = new SchemaManager(req).performOperations();
+        List errs = new SchemaManager(req, new ConnectionManager.IsClosed() {
+          @Override
+          public boolean isClosed() {
+            return isClosed;
+          }
+        }).performOperations();
         if (!errs.isEmpty())
           throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
       } catch (IOException e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error reading input String " + e.getMessage(), e);
       }
     } else {
@@ -106,6 +121,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     switch (ctx.getHttpMethod()) {
       case "GET":
         return PermissionNameProvider.Name.SCHEMA_READ_PERM;
+      case "PUT":
+      case "DELETE":
       case "POST":
         return PermissionNameProvider.Name.SCHEMA_EDIT_PERM;
       default:
@@ -113,7 +130,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
-  private void handleGET(SolrQueryRequest req, SolrQueryResponse rsp) {
+  private static void handleGET(SolrQueryRequest req, SolrQueryResponse rsp) {
     try {
       String path = (String) req.getContext().get("path");
       switch (path) {
@@ -142,8 +159,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           int refreshIfBelowVersion = -1;
           Object refreshParam = req.getParams().get("refreshIfBelowVersion");
           if (refreshParam != null)
-            refreshIfBelowVersion = (refreshParam instanceof Number) ? ((Number) refreshParam).intValue()
-                : Integer.parseInt(refreshParam.toString());
+            refreshIfBelowVersion = Integer.parseInt(refreshParam.toString());
           int zkVersion = -1;
           IndexSchema schema = req.getSchema();
           if (schema instanceof ManagedIndexSchema) {
@@ -152,9 +168,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
               log.info("REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!"
                   , refreshIfBelowVersion, zkVersion);
-              ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) req.getCore().getResourceLoader();
-              ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
-              managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
+              ZkIndexSchemaReader zkIndexSchemaReader =  req.getCore().getZkIndexSchemaReader();
+              managed = (ManagedIndexSchema) zkIndexSchemaReader.updateSchema(false);
               zkVersion = managed.getSchemaZkVersion();
             }
           }
@@ -202,6 +217,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       rsp.setException(e);
     }
   }
@@ -225,6 +241,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     String prefix =  parts.get(0);
     if(subPaths.contains(prefix)) return this;
 
+    if(managedResourceRequestHandler != null) return managedResourceRequestHandler;
+
     return null;
   }
 
@@ -241,6 +259,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
+    this.managedResourceRequestHandler =  new ManagedResourceRequestHandler(core.getRestManager());
   }
 
   @Override
@@ -257,5 +276,37 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  private  class ManagedResourceRequestHandler extends RequestHandlerBase implements PermissionNameProvider {
+
+
+    private final RestManager restManager;
+
+    private ManagedResourceRequestHandler(RestManager restManager) {
+      this.restManager = restManager;
+    }
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
+      RestManager.ManagedEndpoint me = new RestManager.ManagedEndpoint(restManager);
+      me.doInit(req, rsp);
+      me.delegateRequestToManagedResource();
+    }
+
+    @Override
+    public Name getPermissionName(AuthorizationContext ctx) {
+      return SchemaHandler.this.getPermissionName(ctx);
+    }
+
+    @Override
+    public String getName() {
+      return null;
+    }
+
+    @Override
+    public String getDescription() {
+      return null;
+    }
   }
 }

@@ -18,7 +18,11 @@ package org.apache.solr.schema;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
+
 import org.junit.Test;
 
 import java.io.File;
@@ -27,10 +31,12 @@ import java.io.IOException;
 public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 
   static void updateExternalFile() throws IOException {
-    final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
+
+    final String testHome = SolrTestUtil.getFile("solr/collection1").getParent();
     String filename = "external_eff";
-    FileUtils.copyFile(new File(testHome + "/" + filename),
-        new File(h.getCore().getDataDir() + "/" + filename));
+    try (SolrCore core = h.getCore()) {
+      FileUtils.copyFile(new File(testHome + "/" + filename), new File(core.getDataDir() + "/" + filename));
+    }
   }
 
   private void addDocuments() {
@@ -44,21 +50,22 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   @Test
   public void testSort() throws Exception {
     initCore("solrconfig-basic.xml", "schema-eff.xml");
-    updateExternalFile();
+    try {
+      updateExternalFile();
 
-    addDocuments();
-    assertQ("query",
-        req("q", "*:*", "sort", "eff asc"),
-        "//result/doc[position()=1]/str[.='3']",
-        "//result/doc[position()=2]/str[.='1']",
-        "//result/doc[position()=10]/str[.='8']");
+      addDocuments();
+      assertQ("query", req("q", "*:*", "sort", "eff asc"), "//result/doc[position()=1]/str[.='3']", "//result/doc[position()=2]/str[.='1']",
+          "//result/doc[position()=10]/str[.='8']");
+    } finally {
+      deleteCore();
+    }
   }
   
   @Test
   public void testPointKeyFieldType() throws Exception {
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
     // This one should fail though, no "node" parameter specified
-    SolrException e = expectThrows(SolrException.class, 
-        () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
-    assertTrue(e.getMessage().contains("has a Point field type, which is not supported."));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
+    assertTrue(e.getMessage(), e.getMessage().contains("Error loading schema resource"));
   }
 }

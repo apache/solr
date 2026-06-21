@@ -16,8 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -73,8 +73,8 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
   private static final String FALSE_VALUES_PARAM = "falseValue";
   private static final String CASE_SENSITIVE_PARAM = "caseSensitive";
   
-  private Set<String> trueValues = new HashSet<>(Arrays.asList(new String[] { "true" }));
-  private Set<String> falseValues = new HashSet<>(Arrays.asList(new String[] { "false" }));
+  private Set<String> trueValues = new HashSet<>(Collections.singletonList("true"));
+  private Set<String> falseValues = new HashSet<>(Collections.singletonList("false"));
   private boolean caseSensitive = false;
 
   @Override

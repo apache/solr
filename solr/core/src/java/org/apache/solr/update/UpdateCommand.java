@@ -18,16 +18,18 @@ package org.apache.solr.update;
 
 import org.apache.solr.request.SolrQueryRequest;
 
+import java.util.concurrent.atomic.AtomicReference;
 
 /** An index update command encapsulated in an object (Command pattern)
  *
  *
  */
 public abstract class UpdateCommand implements Cloneable {
-  protected SolrQueryRequest req;
-  protected long version;
-  protected String route;
-  protected int flags;
+  public AtomicReference<Boolean> isIndexChanged;
+  protected volatile SolrQueryRequest req;
+  protected volatile long version;
+  protected volatile String route;
+  protected volatile int flags;
 
   public static int BUFFERING = 0x00000001;    // update command is being buffered.
   public static int REPLAY    = 0x00000002;    // update command is from replaying a log.
@@ -62,6 +64,7 @@ public abstract class UpdateCommand implements Cloneable {
   public long getVersion() {
     return version;
   }
+
   public void setVersion(long version) {
     this.version = version;
   }

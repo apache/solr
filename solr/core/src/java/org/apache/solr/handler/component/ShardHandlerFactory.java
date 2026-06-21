@@ -16,19 +16,24 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.Closeable;
 import java.util.Collections;
 import java.util.Locale;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.security.HttpClientBuilderPlugin;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
-public abstract class ShardHandlerFactory {
+public abstract class ShardHandlerFactory implements Closeable {
 
   public abstract ShardHandler getShardHandler();
+
+  public abstract ShardHandler getShardHandler(LBHttp2SolrClient lbClient);
 
   public abstract void close();
 
@@ -41,14 +46,17 @@ public abstract class ShardHandlerFactory {
    * @param loader  a SolrResourceLoader used to find the ShardHandlerFactory classes
    * @return a new, initialized ShardHandlerFactory instance
    */
-  public static ShardHandlerFactory newInstance(PluginInfo info, SolrResourceLoader loader) {
+  public static ShardHandlerFactory newInstance(PluginInfo info, SolrResourceLoader loader, UpdateShardHandler ush) {
     if (info == null)
       info = DEFAULT_SHARDHANDLER_INFO;
 
     try {
-      ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class).getConstructor().newInstance();
+      ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class, "handler.component.").getConstructor().newInstance();
+      if (shf instanceof HttpShardHandlerFactory) {
+        ((HttpShardHandlerFactory) shf).setHttp2Client(ush.getSearchOnlyClient());
+      }
       if (PluginInfoInitialized.class.isAssignableFrom(shf.getClass()))
-        PluginInfoInitialized.class.cast(shf).init(info);
+        ((PluginInfoInitialized) shf).init(info);
       return shf;
     }
     catch (Exception e) {
@@ -62,4 +70,6 @@ public abstract class ShardHandlerFactory {
   public static final PluginInfo DEFAULT_SHARDHANDLER_INFO =
       new PluginInfo("shardHandlerFactory", ImmutableMap.of("class", HttpShardHandlerFactory.class.getName()),
           null, Collections.<PluginInfo>emptyList());
+
+  public abstract boolean isClosed();
 }

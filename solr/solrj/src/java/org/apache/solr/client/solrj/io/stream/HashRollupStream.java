@@ -62,7 +62,7 @@ public class HashRollupStream extends TupleStream implements Expressible {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
-    StreamExpressionNamedParameter overExpression = factory.getNamedOperand(expression, "over");
+    StreamExpressionNamedParameter overExpression = StreamFactory.getNamedOperand(expression, "over");
 
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + metricExpressions.size() + 1){
@@ -86,7 +86,7 @@ public class HashRollupStream extends TupleStream implements Expressible {
     // Construct the buckets.
     // Buckets are nothing more than equalitors (I think). We can use equalitors as helpers for creating the buckets, but because
     // I feel I'm missing something wrt buckets I don't want to change the use of buckets in this class to instead be equalitors.
-    StreamEqualitor streamEqualitor = factory.constructEqualitor(((StreamExpressionValue)overExpression.getParameter()).getValue(), FieldEqualitor.class);
+    StreamEqualitor streamEqualitor = StreamFactory.constructEqualitor(((StreamExpressionValue)overExpression.getParameter()).getValue(), FieldEqualitor.class);
     List<FieldEqualitor> flattenedEqualitors = flattenEqualitor(streamEqualitor);
     Bucket[] buckets = new Bucket[flattenedEqualitors.size()];
     for(int idx = 0; idx < flattenedEqualitors.size(); ++idx){
@@ -97,7 +97,7 @@ public class HashRollupStream extends TupleStream implements Expressible {
     init(factory.constructStream(streamExpressions.get(0)), buckets, metrics);
   }
 
-  private List<FieldEqualitor> flattenEqualitor(StreamEqualitor equalitor){
+  private static List<FieldEqualitor> flattenEqualitor(StreamEqualitor equalitor){
     List<FieldEqualitor> flattenedList = new ArrayList<>();
 
     if(equalitor instanceof FieldEqualitor){

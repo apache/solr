@@ -62,7 +62,7 @@ public class ProfileResults {
     if (lineNumbers) {
       builder.append(":");
       if (frame.getLineNumber() == -1) {
-        builder.append("(" + frame.getType() + " code)");
+        builder.append("(").append(frame.getType()).append(" code)");
       } else {
         builder.append(frame.getLineNumber());
       }

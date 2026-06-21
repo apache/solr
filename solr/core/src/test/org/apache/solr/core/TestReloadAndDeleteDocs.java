@@ -17,13 +17,20 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.After;
 
 /** Inspired by SOLR-4858 */
 public class TestReloadAndDeleteDocs extends SolrTestCaseJ4 {
-  
+
+  public void setUp() throws Exception {
+    super.setUp();
+    // initcore happens in test
+  }
+
   @After
-  public void after() throws Exception {
+  public void tearDown() throws Exception {
+    super.tearDown();
     System.clearProperty("enable.update.log");
     deleteCore();
   }
@@ -38,11 +45,11 @@ public class TestReloadAndDeleteDocs extends SolrTestCaseJ4 {
 
   private void doTest(final boolean useUpdateLog) throws Exception {
     System.setProperty("enable.update.log", useUpdateLog ? "true" : "false");
-    initCore("solrconfig.xml", "schema.xml", TEST_HOME());
-    assertEquals("UpdateLog existence doesn't match sys prop (test config changed?)",
-                 useUpdateLog,
-                 null != h.getCore().getUpdateHandler().getUpdateLog());
-    h.reload();
-    assertU("<delete><query>*:*</query></delete>");
+    initCore("solrconfig.xml", "schema.xml", SolrTestUtil.TEST_HOME());
+    try (SolrCore core = h.getCore()) {
+      assertEquals("UpdateLog existence doesn't match sys prop (test config changed?)", useUpdateLog, null != core.getUpdateHandler().getUpdateLog());
+      h.reload();
+      assertU("<delete><query>*:*</query></delete>");
+    }
   }
 }

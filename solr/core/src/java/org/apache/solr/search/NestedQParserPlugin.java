@@ -41,33 +41,38 @@ public class NestedQParserPlugin extends QParserPlugin {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "the 'query' QParser must be invoked with local-params, e.g. {!query defType=...}");
     }
-    return new QParser(qstr, localParams, params, req) {
-      QParser baseParser;
-      ValueSource vs;
-      String b;
-
-      @Override
-      public Query parse() throws SyntaxError {
-        baseParser = subQuery(localParams.get(QueryParsing.V), null);
-        return baseParser.getQuery();
-      }
-
-      @Override
-      public String[] getDefaultHighlightFields() {
-        return baseParser.getDefaultHighlightFields();
-      }
-
-      @Override
-      public Query getHighlightQuery() throws SyntaxError {
-        return baseParser.getHighlightQuery();
-      }
-
-      @Override
-      public void addDebugInfo(NamedList<Object> debugInfo) {
-        // encapsulate base debug info in a sub-list?
-        baseParser.addDebugInfo(debugInfo);
-      }
-    };
+    return new NestedQParser(qstr, localParams, params, req);
   }
 
+  private static class NestedQParser extends QParser {
+    QParser baseParser;
+    ValueSource vs;
+    String b;
+
+    public NestedQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      baseParser = subQuery(localParams.get(QueryParsing.V), null);
+      return baseParser.getQuery();
+    }
+
+    @Override
+    public String[] getDefaultHighlightFields() {
+      return baseParser.getDefaultHighlightFields();
+    }
+
+    @Override
+    public Query getHighlightQuery() throws SyntaxError {
+      return baseParser.getHighlightQuery();
+    }
+
+    @Override
+    public void addDebugInfo(NamedList<Object> debugInfo) {
+      // encapsulate base debug info in a sub-list?
+      baseParser.addDebugInfo(debugInfo);
+    }
+  }
 }

@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -47,7 +48,7 @@ public class SetAliasPropCmd implements Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String aliasName = message.getStr(NAME);
 
     final ZkStateReader.AliasesManager aliasesManager = messageHandler.zkStateReader.aliasesManager;
@@ -67,18 +68,21 @@ public class SetAliasPropCmd implements Cmd {
     // check & cleanup properties.  It's a mutable copy.
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       String key = entry.getKey();
-      if ("".equals(key.trim())) {
+      if (StringUtils.isBlank(key)) {
         throw new SolrException(BAD_REQUEST, "property keys must not be pure whitespace");
       }
       if (!key.equals(key.trim())) {
         throw new SolrException(BAD_REQUEST, "property keys should not begin or end with whitespace");
       }
       String value = entry.getValue();
-      if ("".equals(value)) {
+      if (value != null && value.isEmpty()) {
         entry.setValue(null);
       }
     }
 
     aliasesManager.applyModificationAndExportToZk(aliases1 -> aliases1.cloneWithCollectionAliasProperties(aliasName, properties));
+    // The alias change is exported to ZK above; there is no collection structure change to write, so
+    // return an empty (non-null) response to avoid the dispatcher's "CMD did not return a response" error.
+    return new AddReplicaCmd.Response();
   }
 }

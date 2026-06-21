@@ -22,7 +22,9 @@ import java.security.Principal;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
@@ -37,6 +39,8 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
 
+// The old principal-propagation diagnosis is stale: SolrRequestParsers.buildRequestFrom now builds
+// MySolrQueryRequestBase whose getUserPrincipal() delegates to the (auth-wrapped) HttpServletRequest.
 public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -44,12 +48,16 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
+    // The PKI metric assertions need real (non-Null) meters; SolrTestCase disables metrics by default.
+    System.setProperty("solr.enableMetrics", "true");
+    disableReuseOfCryptoKeys();
     final String SECURITY_CONF = Utils.toJSONString
       (makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
                "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
     
     configureCluster(2)
-      .addConfig("conf", configset("cloud-minimal"))
+      .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
       .withSecurityJson(SECURITY_CONF)
       .configure();
 
@@ -60,7 +68,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testPkiAuth() throws Exception {
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = HttpClientUtil.createClient(null);
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String baseUrl = jetty.getBaseUrl().toString();
       verifySecurityStatus(httpClient, baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);

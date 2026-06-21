@@ -21,16 +21,19 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttributeImpl;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
+import org.junit.Ignore;
 
 @Deprecated
 public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
-  final long lvalue = random().nextLong();
-  final int ivalue = random().nextInt();
+  final long lvalue = SolrTestCase.random().nextLong();
+  final int ivalue = SolrTestCase.random().nextInt();
+
 
   public void testLongStream() throws Exception {
     @SuppressWarnings("resource")

@@ -24,8 +24,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -65,19 +64,19 @@ public class UpdateStream extends TupleStream implements Expressible {
   private long totalDocsIndex;
   private PushBackStream tupleSource;
   private transient SolrClientCache cache;
-  private transient CloudSolrClient cloudSolrClient;
+  private transient CloudHttp2SolrClient cloudSolrClient;
   private List<SolrInputDocument> documentBatch = new ArrayList();
   private String coreName;
 
   public UpdateStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    String collectionName = factory.getValueOperand(expression, 0);
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
     verifyCollectionName(collectionName, expression);
     
     String zkHost = findZkHost(factory, collectionName, expression);
     verifyZkHost(zkHost, collectionName, expression);
     
     int updateBatchSize = extractBatchSize(expression, factory);
-    pruneVersionField = factory.getBooleanOperand(expression, "pruneVersionField", defaultPruneVersionField());
+    pruneVersionField = StreamFactory.getBooleanOperand(expression, "pruneVersionField", defaultPruneVersionField());
 
     //Extract underlying TupleStream.
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
@@ -171,7 +170,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("batchSize", Integer.toString(updateBatchSize)));
     
     if(includeStreams){
-      if(tupleSource instanceof Expressible){
+      if(tupleSource != null){
         expression.addParameter(((Expressible)tupleSource).toExpression(factory));
       } else {
         throw new IOException("This ParallelStream contains a non-expressible TupleStream - it cannot be converted to an expression");
@@ -199,7 +198,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     
     // child is a datastore so add it at this point
     StreamExplanation child = new StreamExplanation(getStreamNodeId().toString());
-    child.setFunctionName(String.format(Locale.ROOT, factory.getFunctionName(getClass())));
+    child.setFunctionName(factory.getFunctionName(getClass()));
     child.setImplementingClass(getClass().getName());
     child.setExpressionType(ExpressionType.STREAM_DECORATOR);
     child.setExpression(toExpression(factory, false).toString());
@@ -217,14 +216,14 @@ public class UpdateStream extends TupleStream implements Expressible {
     this.tupleSource.setStreamContext(context);
   }
   
-  private void verifyCollectionName(String collectionName, StreamExpression expression) throws IOException {
+  private static void verifyCollectionName(String collectionName, StreamExpression expression) throws IOException {
     if(null == collectionName){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
     }
   }
   
-  private String findZkHost(StreamFactory factory, String collectionName, StreamExpression expression) {
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+  private static String findZkHost(StreamFactory factory, String collectionName, StreamExpression expression) {
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
     if(null == zkHostExpression){
       String zkHost = factory.getCollectionZkHost(collectionName);
       if(zkHost == null) {
@@ -239,14 +238,14 @@ public class UpdateStream extends TupleStream implements Expressible {
     return null;
   }
   
-  private void verifyZkHost(String zkHost, String collectionName, StreamExpression expression) throws IOException {
+  private static void verifyZkHost(String zkHost, String collectionName, StreamExpression expression) throws IOException {
     if(null == zkHost){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
     }
   }
   
-  private int extractBatchSize(StreamExpression expression, StreamFactory factory) throws IOException {
-    StreamExpressionNamedParameter batchSizeParam = factory.getNamedOperand(expression, "batchSize");
+  private static int extractBatchSize(StreamExpression expression, StreamFactory factory) throws IOException {
+    StreamExpressionNamedParameter batchSizeParam = StreamFactory.getNamedOperand(expression, "batchSize");
     if(batchSizeParam == null) {
       // Sensible default batch size
       return 250;
@@ -255,7 +254,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     return parseBatchSize(batchSizeStr, expression);
   }
   
-  private int parseBatchSize(String batchSizeStr, StreamExpression expression) throws IOException {
+  private static int parseBatchSize(String batchSizeStr, StreamExpression expression) throws IOException {
     try{
       int batchSize = Integer.parseInt(batchSizeStr);
       if(batchSize <= 0){
@@ -278,18 +277,18 @@ public class UpdateStream extends TupleStream implements Expressible {
   }
   
   /** Only viable after calling {@link #open} */
-  protected CloudSolrClient getCloudSolrClient() {
+  protected CloudHttp2SolrClient getCloudSolrClient() {
     assert null != this.cloudSolrClient;
     return this.cloudSolrClient;
   }
   
   private void setCloudSolrClient() {
     if(this.cache != null) {
-      this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
+      this.cloudSolrClient = this.cache.getCloudSolrClient();
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
-      this.cloudSolrClient = new Builder(hosts, Optional.empty()).build();
+      this.cloudSolrClient = new CloudHttp2SolrClient.Builder(hosts, Optional.empty()).markInternalRequest().build();
       this.cloudSolrClient.connect();
     }
   }
@@ -312,7 +311,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     return doc;
   }
   
-  private void addMultivaluedField(SolrInputDocument doc, String fieldName, List<Object> values) {
+  private static void addMultivaluedField(SolrInputDocument doc, String fieldName, List<Object> values) {
     for (Object value : values) {
       doc.addField(fieldName, value);
     }

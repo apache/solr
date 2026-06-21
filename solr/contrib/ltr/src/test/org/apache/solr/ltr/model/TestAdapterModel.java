@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
@@ -42,6 +43,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestAdapterModel extends TestRerankBase {
 
   private static int numDocs = 0;
@@ -55,9 +57,9 @@ public class TestAdapterModel extends TestRerankBase {
     numDocs = random().nextInt(10);
     for (int ii=1; ii <= numDocs; ++ii) {
       String id = Integer.toString(ii);
-      assertU(adoc("id", id, "popularity", ii+"00"));
+      restTestHarness.update(adoc("id", id, "popularity", ii+"00"));
     }
-    assertU(commit());
+    restTestHarness.update(commit());
 
     loadFeature("popularity", FieldValueFeature.class.getName(), "test", "{\"field\":\"popularity\"}");
 

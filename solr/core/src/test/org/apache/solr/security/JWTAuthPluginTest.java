@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
@@ -42,6 +44,7 @@ import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
@@ -49,6 +52,7 @@ import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.A
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
 @SuppressWarnings("unchecked")
+@LuceneTestCase.Nightly // JWTVerificationkeyResolver.resolveKey when the plugin is inited will make http calls that fail and sleep and retry
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
   private static String slimHeader;
@@ -80,6 +84,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeAll() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
+    disableReuseOfCryptoKeys();
     JwtClaims claims = generateClaims();
     JsonWebSignature jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());
@@ -152,7 +158,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void initFromSecurityJSONLocalJWK() throws Exception {
-    Path securityJson = TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json");
+    Path securityJson = SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json");
     InputStream is = Files.newInputStream(securityJson);
     Map<String,Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
     Map<String, Object> authConf = (Map<String, Object>) securityConf.get("authentication");
@@ -161,7 +167,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void initFromSecurityJSONUrlJwk() throws Exception {
-    Path securityJson = TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_url_security.json");
+    Path securityJson = SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_url_security.json");
     InputStream is = Files.newInputStream(securityJson);
     Map<String,Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
     Map<String, Object> authConf = (Map<String, Object>) securityConf.get("authentication");
@@ -386,7 +392,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   
   @Test
   public void wellKnownConfigNoHeaderPassThrough() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl = SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     plugin.init(testConfig);
@@ -396,7 +402,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void defaultRealm() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl = SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     plugin.init(testConfig);
@@ -405,7 +411,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void configureRealm() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl = SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     testConfig.put("realm", "myRealm");

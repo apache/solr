@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
@@ -35,6 +36,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestDefaultWrapperModel extends TestRerankBase {
 
   final private static String featureStoreName = "test";
@@ -45,12 +47,12 @@ public class TestDefaultWrapperModel extends TestRerankBase {
   @Before
   public void setupBeforeClass() throws Exception {
     setuptest(false);
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity", "1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity", "3"));
-    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity", "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
-    assertU(commit());
+    restTestHarness.update(adoc("id", "1", "title", "w1", "description", "w1", "popularity", "1"));
+    restTestHarness.update(adoc("id", "2", "title", "w2", "description", "w2", "popularity", "2"));
+    restTestHarness.update(adoc("id", "3", "title", "w3", "description", "w3", "popularity", "3"));
+    restTestHarness.update(adoc("id", "4", "title", "w4", "description", "w4", "popularity", "4"));
+    restTestHarness.update(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
+    restTestHarness.update(commit());
 
     loadFeature("popularity", FieldValueFeature.class.getName(), "test", "{\"field\":\"popularity\"}");
     loadFeature("const", ValueFeature.class.getName(), "test", "{\"value\":5}");

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.search.stats.ExactStatsCache;
 import org.apache.solr.util.LogLevel;
+import org.junit.Test;
 
 /**
  *
@@ -32,5 +33,11 @@ public class TestExactStatsCacheCloud extends TestBaseStatsCacheCloud {
   @Override
   protected String getImplementationName() {
     return ExactStatsCache.class.getName();
+  }
+
+  @Override
+  @Test
+  public void testBasicStats() throws Exception {
+    super.testBasicStats();
   }
 }

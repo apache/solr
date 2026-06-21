@@ -60,7 +60,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   protected final Metadata metadata;
   protected final SolrParams params;
-  protected final StringBuilder catchAllBuilder = new StringBuilder(2048);
+  protected final StringBuilder catchAllBuilder = new StringBuilder(256);
   protected final IndexSchema schema;
   protected final Map<String, StringBuilder> fieldBuilders;
   private final Deque<StringBuilder> bldrStack = new ArrayDeque<>();

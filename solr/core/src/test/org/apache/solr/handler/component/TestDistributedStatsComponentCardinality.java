@@ -16,35 +16,35 @@
  */
 package org.apache.solr.handler.component;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.hll.HLL;
+import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-
-import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.response.FieldStatsInfo;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-
-import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.hll.HLL;
-import com.google.common.hash.Hashing;
-import com.google.common.hash.HashFunction;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
 @LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
+@LuceneTestCase.Nightly // this test can take a long time, perhaps due to schema, or maybe numeric fields?
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -53,7 +53,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
   final static long BIG_PRIME = 982451653L;
 
-  final static int MIN_NUM_DOCS = 10000;
+  final static int MIN_NUM_DOCS = TEST_NIGHTLY ? 10000 : 1000;
   final static int MAX_NUM_DOCS = MIN_NUM_DOCS * 2;
 
   final static List<String> STAT_FIELDS = 
@@ -71,7 +71,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(3) + 1);
 
     handle.put("maxScore", SKIPVAL);
-    NUM_DOCS = TestUtil.nextInt(random(), 10000, 15000);
+    NUM_DOCS = TestUtil.nextInt(random(), TEST_NIGHTLY ? 10000 : 300, TEST_NIGHTLY ? 15000 : 450);
     MAX_LONG = TestUtil.nextLong(random(), 0, NUM_DOCS * BIG_PRIME);
     MIN_LONG = MAX_LONG - (((long)NUM_DOCS-1) * BIG_PRIME);
   }
@@ -112,14 +112,14 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       rsp = query(params("rows", "0", "q", "id:42")); 
       assertEquals(1, rsp.getResults().getNumFound());
       
-      rsp = query(params("rows", "0", "q", "*:*", 
+      rsp = query(params("rows", "0", "q", "*:*",
                          "stats","true", "stats.field", "{!min=true max=true}long_l"));
       assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
       assertEquals(MIN_LONG, Math.round((double) rsp.getFieldStatsInfo().get("long_l").getMin()));
       assertEquals(MAX_LONG, Math.round((double) rsp.getFieldStatsInfo().get("long_l").getMax()));
     }
 
-    final int NUM_QUERIES = atLeast(100);
+    final int NUM_QUERIES = SolrTestUtil.atLeast((TEST_NIGHTLY ? 100 : 10));
 
     // Some Randomized queries with randomized log2m and max regwidth
     for (int i = 0; i < NUM_QUERIES; i++) {
@@ -136,8 +136,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       // use max regwidth to try and prevent hash collisions from introducing problems
       final int regwidth = HLL.MAXIMUM_REGWIDTH_PARAM;
 
-      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS-2000);
-      final int highId = TestUtil.nextInt(random(), lowId+1000, NUM_DOCS);
+      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS - (TEST_NIGHTLY ? 2000 : 200));
+      final int highId = TestUtil.nextInt(random(), lowId+(TEST_NIGHTLY ? 1000 : 100), NUM_DOCS);
       final int numMatches = 1+highId-lowId;
 
       SolrParams p = buildCardinalityQ(lowId, highId, log2m, regwidth);
@@ -173,8 +173,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     // Some Randomized queries with both low and high accuracy options
     for (int i = 0; i < NUM_QUERIES; i++) {
 
-      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS-2000);
-      final int highId = TestUtil.nextInt(random(), lowId+1000, NUM_DOCS);
+      final int lowId = TestUtil.nextInt(random(), 1, NUM_DOCS-(TEST_NIGHTLY ? 2000 : 200));
+      final int highId = TestUtil.nextInt(random(), lowId+(TEST_NIGHTLY ? 1000 : 100), NUM_DOCS);
       final int numMatches = 1+highId-lowId;
 
       // WTF? - https://github.com/aggregateknowledge/java-hll/issues/15

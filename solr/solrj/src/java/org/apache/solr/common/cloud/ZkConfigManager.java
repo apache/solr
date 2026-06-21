@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import it.unimi.dsi.fastutil.objects.Object2ByteArrayMap;
+import org.agrona.collections.Object2NullableObjectHashMap;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +28,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -45,12 +49,20 @@ public class ZkConfigManager {
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
 
   private final SolrZkClient zkClient;
-  
+  private final String root;
+
+  public ZkConfigManager(SolrZkClient zkClient) {
+    this(zkClient, "");
+  }
+
   /**
    * Creates a new ZkConfigManager
    * @param zkClient the {@link SolrZkClient} to use
    */
-  public ZkConfigManager(SolrZkClient zkClient) { this.zkClient = zkClient; }
+  public ZkConfigManager(SolrZkClient zkClient, String root) {
+    this.zkClient = zkClient;
+    this.root = root;
+  }
 
 
 
@@ -61,8 +73,8 @@ public class ZkConfigManager {
    * @throws IOException
    *                    if an I/O error occurs or the path does not exist
    */
-  public void uploadConfigDir(Path dir, String configName) throws IOException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
+  public void uploadConfigDir(Path dir, String configName) throws IOException, KeeperException {
+    zkClient.uploadToZK(dir, root + CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   /**
@@ -74,8 +86,8 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the path does not exist
    */
   public void uploadConfigDir(Path dir, String configName,
-      Pattern filenameExclusions) throws IOException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
+      Pattern filenameExclusions) throws IOException, KeeperException {
+    zkClient.uploadToZK(dir, root + CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 
   /**
@@ -86,12 +98,12 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the config does not exist
    */
   public void downloadConfigDir(String configName, Path dir) throws IOException {
-    zkClient.downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
+    zkClient.downloadFromZK(root + CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
   public List<String> listConfigs() throws IOException {
     try {
-      return zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE, null, true);
+      return zkClient.getChildren(root + ZkConfigManager.CONFIGS_ZKNODE, null, true);
     }
     catch (KeeperException.NoNodeException e) {
       return Collections.emptyList();
@@ -110,7 +122,7 @@ public class ZkConfigManager {
    */
   public Boolean configExists(String configName) throws IOException {
     try {
-      return zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+      return zkClient.exists(root + ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
           SolrZkClient.checkInterrupted(e));
@@ -125,26 +137,26 @@ public class ZkConfigManager {
    */
   public void deleteConfigDir(String configName) throws IOException {
     try {
-      zkClient.clean(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
+      zkClient.clean(root + ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
           SolrZkClient.checkInterrupted(e));
     }
   }
 
-  private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
+  private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths,  Map<String,byte[]> dataMap ) throws IOException {
     try {
-      List<String> files = zkClient.getChildren(fromZkPath, null, true);
+      List<String> files = zkClient.getChildren(root + fromZkPath, null, true);
       for (String file : files) {
-        List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
+        List<String> children = zkClient.getChildren(root + fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
           final String toZkFilePath = toZkPath + "/" + file;
-          log.info("Copying zk node {}/{} to {}", fromZkPath, file, toZkFilePath);
-          byte[] data = zkClient.getData(fromZkPath + "/" + file, null, null, true);
-          zkClient.makePath(toZkFilePath, data, true);
+          if (log.isDebugEnabled()) log.debug("Copying zk node {}/{} to {}", fromZkPath, file, toZkFilePath);
+          byte[] data = zkClient.getData(root + fromZkPath + "/" + file, null, null);
+          dataMap.put(toZkFilePath, data);
           if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
         } else {
-          copyConfigDirFromZk(fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
+          copyConfigDirFromZk(root + fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths, dataMap);
         }
       }
     } catch (KeeperException | InterruptedException e) {
@@ -174,7 +186,13 @@ public class ZkConfigManager {
    * @throws IOException if an I/O error occurs
    */
   public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
-    copyConfigDirFromZk(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, copiedToZkPaths);
+    Map<String,byte[]> dataMap = new Object2NullableObjectHashMap<>();
+    copyConfigDirFromZk(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, copiedToZkPaths, dataMap);
+    try {
+      zkClient.mkdirs(dataMap, 1);
+    } catch (KeeperException e) {
+      throw new IOException("Error copying nodes from zookeeper path " + fromConfig + " to " + toConfig, e);
+    }
   }
 
   // This method is used by configSetUploadTool and CreateTool to resolve the configset directory.

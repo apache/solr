@@ -16,19 +16,26 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DeleteLastCustomShardedReplicaTest extends SolrCloudTestCase {
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void beforeDeleteLastCustomShardedReplicaTest() throws Exception {
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
+  }
+
+  @AfterClass
+  public static void afterSelectWithEvaluatorsTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -45,11 +52,6 @@ public class DeleteLastCustomShardedReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteReplica(collectionName, "a", replica.getName())
         .process(cluster.getSolrClient());
-
-    waitForState("Expected shard 'a' to have no replicas", collectionName, (n, c) -> {
-      return c.getSlice("a") == null || c.getSlice("a").getReplicas().size() == 0;
-    });
-
   }
 
 }

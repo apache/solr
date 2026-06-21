@@ -87,27 +87,27 @@ class QuadValueSortDoc extends TripleValueSortDoc {
 
     QuadValueSortDoc sd = (QuadValueSortDoc)o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if(comp < 0) {
       return true;
-    } else if (comp == 1) {
+    } else if (comp > 0) {
       return false;
     } else {
       comp = value2.compareTo(sd.value2);
-      if(comp == -1) {
+      if(comp < 0) {
         return true;
-      } else if (comp == 1) {
+      } else if (comp > 0) {
         return false;
       } else {
         comp = value3.compareTo(sd.value3);
-        if(comp == -1) {
+        if(comp < 0) {
           return true;
-        } else if (comp == 1) {
+        } else if (comp > 0) {
           return false;
         } else {
           comp = value4.compareTo(sd.value4);
-          if(comp == -1) {
+          if(comp < 0) {
             return true;
-          } else if (comp == 1) {
+          } else if (comp > 0) {
             return false;
           } else {
             return docId+docBase > sd.docId+sd.docBase;

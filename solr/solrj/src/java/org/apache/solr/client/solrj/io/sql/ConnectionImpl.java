@@ -37,14 +37,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 
 class ConnectionImpl implements Connection {
 
   private final String url;
-  private final SolrClientCache solrClientCache = new SolrClientCache();
-  private final CloudSolrClient client;
+  private final SolrClientCache solrClientCache;
+  private final CloudHttp2SolrClient client;
   private final Properties properties;
   private final DatabaseMetaData databaseMetaData;
   private final Statement connectionStatement;
@@ -54,7 +54,8 @@ class ConnectionImpl implements Connection {
 
   ConnectionImpl(String url, String zkHost, String collection, Properties properties) throws SQLException {
     this.url = url;
-    this.client = this.solrClientCache.getCloudSolrClient(zkHost);
+    solrClientCache = new SolrClientCache(zkHost);
+    this.client = this.solrClientCache.getCloudSolrClient();
     this.collection = collection;
     this.properties = properties;
     this.connectionStatement = createStatement();
@@ -65,7 +66,7 @@ class ConnectionImpl implements Connection {
     return url;
   }
 
-  CloudSolrClient getClient() {
+  CloudHttp2SolrClient getClient() {
     return client;
   }
 
@@ -181,7 +182,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setTransactionIsolation(int level) throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("Connection is closed.");
     }
     if(Connection.TRANSACTION_NONE == level) {
@@ -201,7 +202,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public int getTransactionIsolation() throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("Connection is closed.");
     }
     return Connection.TRANSACTION_NONE;
@@ -209,7 +210,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("Connection is closed.");
     }
 
@@ -218,7 +219,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void clearWarnings() throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("Connection is closed.");
     }
 
@@ -334,7 +335,7 @@ class ConnectionImpl implements Connection {
   public boolean isValid(int timeout) throws SQLException {
     // check that the connection isn't closed and able to connect within the timeout
     try {
-      if(!isClosed()) {
+      if(!closed) {
         if (timeout == 0) {
           this.client.connect();
         } else {

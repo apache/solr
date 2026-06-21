@@ -86,7 +86,10 @@ public class PointMerger {
             seg = new DateSeg(pv, capacity);
             break;
         }
-        int count = seg.setNextValue();
+        int count = 0;
+        if (seg != null) {
+          count = seg.setNextValue();
+        }
         if (count >= 0) {
           queue.add(seg);
         }

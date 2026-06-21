@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -47,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class CartesianProductStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
+  private static final Pattern COMPILE = Pattern.compile("(?i) as ");
 
   private TupleStream stream;
   private List<NamedEvaluator> evaluators;
@@ -60,8 +62,8 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    List<StreamExpressionParameter> evaluateAsExpressions = factory.getOperandsOfType(expression, StreamExpressionValue.class);
-    StreamExpressionNamedParameter orderByExpression = factory.getNamedOperand(expression, "productSort");
+    List<StreamExpressionParameter> evaluateAsExpressions = StreamFactory.getOperandsOfType(expression, StreamExpressionValue.class);
+    StreamExpressionNamedParameter orderByExpression = StreamFactory.getNamedOperand(expression, "productSort");
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + evaluateAsExpressions.size() + (null == orderByExpression ? 0 : 1)){
       throw new IOException(String.format(Locale.ROOT,"Invalid %s expression %s - unknown operands found", functionName, expression));
@@ -72,7 +74,8 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     }
 
     stream = factory.constructStream(streamExpressions.get(0));
-    orderBy = null == orderByExpression ? null : factory.constructComparator(((StreamExpressionValue)orderByExpression.getParameter()).getValue(), FieldComparator.class);
+    orderBy = null == orderByExpression ? null : StreamFactory
+        .constructComparator(((StreamExpressionValue)orderByExpression.getParameter()).getValue(), FieldComparator.class);
     
     evaluators = new ArrayList<>();
     for(StreamExpressionParameter evaluateAsExpression : evaluateAsExpressions){
@@ -88,7 +91,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
       String asNamePart = null;
       
       if(fullString.toLowerCase(Locale.ROOT).contains(" as ")){
-        String[] parts = fullString.split("(?i) as "); // ensure we are splitting in a case-insensitive way
+        String[] parts = COMPILE.split(fullString); // ensure we are splitting in a case-insensitive way
         if(2 != parts.length){
           throw new IOException(String.format(Locale.ROOT,"Invalid %s expression %s - expecting evaluator of form 'fieldA' or 'fieldA as alias' but found %s", functionName, expression, originalFullString));
         }
@@ -233,7 +236,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return new LinkedList<>(generatedTupleList);
   }
   
-  private boolean iterate(List<NamedEvaluator> evaluators, int[] indexes, Map<String, Object> evaluatedValues){
+  private static boolean iterate(List<NamedEvaluator> evaluators, int[] indexes, Map<String,Object> evaluatedValues){
     // this assumes evaluators and indexes are the same length, which is ok cause we created it so we know it is
     // go right to left and increment, returning true if we're not at the end
     for(int offset = indexes.length - 1; offset >= 0; --offset){
@@ -290,7 +293,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return 0;
   }
   
-  class NamedEvaluator{
+  static class NamedEvaluator{
     private String name;
     private StreamEvaluator evaluator;
     

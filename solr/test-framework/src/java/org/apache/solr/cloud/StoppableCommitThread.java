@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase.StoppableThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,7 @@ public class StoppableCommitThread extends StoppableThread {
   private final AtomicInteger numFails = new AtomicInteger(0);
 
   public StoppableCommitThread(SolrClient cloudClient, long timeBetweenCommitsMs, boolean softCommits) {
-    super("StoppableCommitThread");
+    super();
     this.cloudClient = cloudClient;
     this.timeBetweenCommitsMs = timeBetweenCommitsMs;
     this.softCommits = softCommits;

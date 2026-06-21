@@ -47,14 +47,14 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     return type;
   }
 
-  private static long FLOAT_MINUS_ZERO_BITS = (long)Float.floatToIntBits(-0f);
+  private static long FLOAT_MINUS_ZERO_BITS = Float.floatToIntBits(-0f);
   private static long DOUBLE_MINUS_ZERO_BITS = Double.doubleToLongBits(-0d);
 
   protected Query getDocValuesRangeQuery(QParser parser, SchemaField field, String min, String max,
       boolean minInclusive, boolean maxInclusive) {
     assert field.hasDocValues() && (field.getType().isPointField() || !field.multiValued());
     
-    switch (getNumberType()) {
+    switch (type) {
       case INTEGER:
         return numericDocValuesRangeQuery(field.getName(),
               min == null ? null : (long) parseIntFromUser(field.getName(), min),
@@ -93,7 +93,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     long minBits, maxBits;
     boolean minNegative, maxNegative;
     Number minVal, maxVal;
-    if (getNumberType() == NumberType.FLOAT) {
+    if (type == NumberType.FLOAT) {
       if (min == null) {
         minVal = Float.NEGATIVE_INFINITY;
       } else {
@@ -117,7 +117,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       minNegative = minVal.floatValue() < 0f || minBits == FLOAT_MINUS_ZERO_BITS;
       maxNegative = maxVal.floatValue() < 0f || maxBits == FLOAT_MINUS_ZERO_BITS;
     } else {
-      assert getNumberType() == NumberType.DOUBLE;
+      assert type == NumberType.DOUBLE;
       if (min == null) {
         minVal = Double.NEGATIVE_INFINITY;
       } else {
@@ -155,7 +155,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     return query;
   }
 
-  protected Query getRangeQueryForMultiValuedDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  protected static Query getRangeQueryForMultiValuedDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
     double minVal,maxVal;
     if (min == null) {
       minVal = Double.NEGATIVE_INFINITY;
@@ -180,7 +180,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, true, true, true);
   }
 
-  protected Query getRangeQueryForMultiValuedFloatDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  protected static Query getRangeQueryForMultiValuedFloatDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
     float minVal,maxVal;
     if (min == null) {
       minVal = Float.NEGATIVE_INFINITY;
@@ -320,7 +320,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
    */
   @Override
   protected boolean treatUnboundedRangeAsExistence(SchemaField field) {
-    return !doubleOrFloat.contains(getNumberType());
+    return !doubleOrFloat.contains(type);
   }
 
   /**
@@ -332,7 +332,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
    */
   @Override
   public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
-    if (doubleOrFloat.contains(getNumberType())) {
+    if (doubleOrFloat.contains(type)) {
       return new ConstantScoreQuery(new BooleanQuery.Builder()
           .add(getSpecializedRangeQuery(parser, field, null, null, true, true), BooleanClause.Occur.SHOULD)
           .add(getFieldQuery(parser, field, Float.toString(Float.NaN)), BooleanClause.Occur.SHOULD)

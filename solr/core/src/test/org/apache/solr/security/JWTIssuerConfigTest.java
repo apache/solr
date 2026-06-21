@@ -28,17 +28,19 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 
-import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
 import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@LuceneTestCase.Nightly // JWTVerificationkeyResolver.resolveKey when the plugin is inited will make http calls that fail and sleep and retry
 public class JWTIssuerConfigTest {
   private JWTIssuerConfig testIssuer;
   private Map<String, Object> testIssuerConfigMap;
@@ -127,14 +129,14 @@ public class JWTIssuerConfigTest {
 
   @Test
   public void wellKnownConfigFromInputstream() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
+    Path configJson = SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
   }
 
   @Test
   public void wellKnownConfigFromString() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
+    Path configJson = SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     String configString = StringUtils.join(Files.readAllLines(configJson), "\n");
     JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());

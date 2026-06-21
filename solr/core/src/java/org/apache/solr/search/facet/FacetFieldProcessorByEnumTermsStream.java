@@ -48,6 +48,7 @@ import org.apache.solr.search.facet.SlotAcc.SlotContext;
  * It's able to stream since no data needs to be accumulated so long as it's index order.
  */
 class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implements Closeable {
+  public static final LeafReaderContext[] EMPTY_LEAF_READER_CONTEXTS = new LeafReaderContext[0];
   long bucketsToSkip;
   long bucketsReturned;
 
@@ -196,7 +197,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     }
 
     List<LeafReaderContext> leafList = fcontext.searcher.getTopReaderContext().leaves();
-    leaves = leafList.toArray( new LeafReaderContext[ leafList.size() ]);
+    leaves = leafList.toArray(EMPTY_LEAF_READER_CONTEXTS);
   }
 
   private SimpleOrderedMap<Object> nextBucket() {

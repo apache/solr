@@ -119,9 +119,8 @@ public class FieldStatsInfo implements Serializable {
   @Override
   public String toString()
   {
-    StringBuilder sb = new StringBuilder();
-    sb.append( name );
-    sb.append( ": {" );
+    StringBuilder sb = new StringBuilder(64);
+    sb.append(name).append(": {");
     if( min != null ) {
       sb.append( " min:").append( min );
     }

@@ -29,10 +29,12 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -40,31 +42,36 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
-  private static SolrClient collection1;
-  private static SolrClient collection2;
-  private static String shard1;
-  private static String shard2;
-  private static File solrHome;
+  private SolrClient collection1;
+  private SolrClient collection2;
+  private String shard1;
+  private String shard2;
+  private File solrHome;
   
   private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
+    System.setProperty("solr.test.sys.prop1", "1");
+    System.setProperty("solr.test.sys.prop2", "2");
+    File workDir = SolrTestUtil.createTempDir().toFile();
     setupJettyTestHome(workDir, "collection1");
     FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
     return workDir;
   }
 
   
-  @BeforeClass
-  public static void createThings() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     solrHome = createSolrHome();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    jetty = createAndStartJetty(solrHome.getAbsolutePath());
+
+    super.setUp();
+
     String url = jetty.getBaseUrl().toString();
 
     collection1 = getHttpSolrClient(url + "/collection1");
@@ -76,7 +83,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     shard2 = urlCollection2.replaceAll("https?://", "");
     
     //create second core
-    try (HttpSolrClient nodeClient = getHttpSolrClient(url)) {
+    try (Http2SolrClient nodeClient = getHttpSolrClient(url)) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");
@@ -93,11 +100,12 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     doc.setField("text", "superman");
     collection2.add(doc);
     collection2.commit();
-    
+
   }
   
-  @AfterClass
-  public static void destroyThings() throws Exception {
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     if (null != collection1) {
       collection1.close();
       collection1 = null;
@@ -106,12 +114,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       collection2.close();
       collection2 = null;
     }
-    if (null != jetty) {
-      jetty.stop();
-      jetty=null;
-    }
+    jettys.remove(jetty);
+    jetty.close();
+    jetty = null;
     resetExceptionIgnores();
-    systemClearPropertySolrDisableShardsWhitelist();
   }
   
   @Test
@@ -162,7 +168,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   @Test
   @SuppressWarnings("resource") // Cannot close client in this loop!
   public void testRandom() throws Exception {
-    final int NUM_ITERS = atLeast(50);
+    final int NUM_ITERS = SolrTestUtil.atLeast(50);
 
     for (int i = 0; i < NUM_ITERS; i++) {
       final SolrClient client = random().nextBoolean() ? collection1 : collection2;
@@ -398,7 +404,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
     // verify that the request would fail if shards.tolerant=false
     ignoreException("Server refused connection");
-    expectThrows(SolrException.class, () -> collection1.query(query));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> collection1.query(query));
 
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);

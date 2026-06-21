@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -57,6 +58,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
   private static final String DEFAULT_TOPLEVEL_FIELDNAME = "url_toplevel";
   private static final String DEFAULT_LANDINGPAGE_FIELDNAME = "url_landingpage";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Pattern TOP_LEVEL = Pattern.compile("/+$");
   private boolean enabled = true;
   private String urlFieldname = DEFAULT_URL_FIELDNAME;
   private String lengthFieldname = DEFAULT_LENGTH_FIELDNAME;
@@ -96,7 +98,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
 
   private void initParameters(SolrParams parameters) {
     if (parameters != null) {
-      this.setEnabled(parameters.getBool("enabled", true));
+      this.enabled = parameters.getBool("enabled", true);
       this.urlFieldname = parameters.get(INPUT_FIELD_PARAM, DEFAULT_URL_FIELDNAME);
       this.lengthFieldname = parameters.get(OUTPUT_LENGTH_FIELD_PARAM, DEFAULT_LENGTH_FIELDNAME);
       this.levelsFieldname = parameters.get(OUTPUT_LEVELS_FIELD_PARAM, DEFAULT_LEVELS_FIELDNAME);
@@ -109,7 +111,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand command) throws IOException {
-    if (isEnabled()) {
+    if (enabled) {
       SolrInputDocument document = command.getSolrInputDocument();
       if (document.containsKey(urlFieldname)) {
         String url = (String) document.getFieldValue(urlFieldname);
@@ -139,7 +141,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
    * @param url The input url
    * @return The URL object representing the canonical URL
    */
-  public URL getCanonicalUrl(URL url) throws MalformedURLException {
+  public static URL getCanonicalUrl(URL url) throws MalformedURLException {
     // NOTE: Do we want to make sure this URL is normalized? (Christian thinks we should)
     String urlString = url.toString();
     String lps = landingPageSuffix(url);
@@ -151,7 +153,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
    * @param url The input URL
    * @return the length of the URL
    */
-  public int length(URL url) {
+  public static int length(URL url) {
     return url.toString().length();
   }
 
@@ -160,9 +162,9 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
    * @param url The input URL
    * @return the number of levels, where a top-level URL is 0
    */
-  public int levels(URL url) {
+  public static int levels(URL url) {
     // Remove any trailing slashes for the purpose of level counting
-    String path = getPathWithoutSuffix(url).replaceAll("/+$", "");
+    String path = TOP_LEVEL.matcher(getPathWithoutSuffix(url)).replaceAll("");
     int levels = 0;
     for (int i = 0; i < path.length(); i++) {
       if (path.charAt(i) == '/') {
@@ -177,9 +179,9 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
    * @param url The input URL
    * @return true if page is a top level page
    */
-  public boolean isTopLevelPage(URL url) {
+  public static boolean isTopLevelPage(URL url) {
     // Remove any trailing slashes for the purpose of level counting
-    String path = getPathWithoutSuffix(url).replaceAll("/+$", "");
+    String path = TOP_LEVEL.matcher(getPathWithoutSuffix(url)).replaceAll("");
     return path.length() == 0 && url.getQuery() == null;
   }
 
@@ -188,7 +190,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
    * @param url The input URL
    * @return true if URL represents a landing page (index page)
    */
-  public boolean isLandingPage(URL url) {
+  public static boolean isLandingPage(URL url) {
     if (url.getQuery() != null) {
       return false;
     } else {
@@ -196,7 +198,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
     }
   }
 
-  public URL getNormalizedURL(String url) throws MalformedURLException, URISyntaxException {
+  public static URL getNormalizedURL(String url) throws MalformedURLException, URISyntaxException {
     return new URI(url).normalize().toURL();
   }
 
@@ -208,7 +210,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
     this.enabled = enabled;
   }
 
-  private String landingPageSuffix(URL url) {
+  private static String landingPageSuffix(URL url) {
     String path = url.getPath().toLowerCase(Locale.ROOT);
     for(String suffix : landingPageSuffixes) {
       if(path.endsWith(suffix)) {
@@ -218,7 +220,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
     return "";
   }
 
-  private String getPathWithoutSuffix(URL url) {
+  private static String getPathWithoutSuffix(URL url) {
     return url.getPath().toLowerCase(Locale.ROOT).replaceFirst(landingPageSuffix(url)+"$", "");
   }
 }

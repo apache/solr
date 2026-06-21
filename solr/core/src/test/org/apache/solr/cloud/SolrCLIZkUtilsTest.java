@@ -32,6 +32,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.SolrCLI;
@@ -39,26 +41,25 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // slow test
 public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(1)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .formatZk(true).configure();
     zkAddr = cluster.getZkServer().getZkAddress();
-    zkClient = new SolrZkClient(zkAddr, 30000);
-
+    zkClient = cluster.getZkClient();
   }
 
   @AfterClass
   public static void closeConn() {
-    if (null != zkClient) {
-      zkClient.close();
-      zkClient = null;
-    }
+    zkClient = null;
     zkAddr = null;
   }
 
@@ -69,14 +70,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   public void testUpconfig() throws Exception {
     // Use a full, explicit path for configset.
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig1");
 
     // Now just use a name in the configsets directory, do we find it?
-    configSet = TEST_PATH().resolve("configsets");
+    configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
 
     String[] args = new String[]{
         "-confname", "upconfig2",
@@ -103,18 +104,18 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertTrue("tool should have returned non-zero for failure ", 0 != res);
 
-    String content = new String(zkClient.getData("/configs/upconfig2/schema.xml", null, null, true), StandardCharsets.UTF_8);
+    String content = new String(zkClient.getData("/configs/upconfig2/schema.xml", null, null), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("Apache Software Foundation"));
 
   }
 
   @Test
   public void testDownconfig() throws Exception {
-    Path tmp = Paths.get(createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
+    Path tmp = Paths.get(SolrTestUtil.createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
 
     // First we need a configset on ZK to bring down. 
     
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "downconfig1", zkAddr);
     // Now do we have that config up on ZK?
@@ -138,7 +139,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     // Now copy it up and back and insure it's still a file in the new place
     AbstractDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
-    Path tmp2 = createTempDir("downConfigNewPlace2");
+    Path tmp2 = SolrTestUtil.createTempDir("downConfigNewPlace2");
     downTool = new SolrCLI.ConfigSetDownloadTool();
     args = new String[]{
         "-confname", "downconfig2",
@@ -159,7 +160,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   public void testCp() throws Exception {
     // First get something up on ZK
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
@@ -180,7 +181,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
 
     // try with zk->local
-    Path tmp = createTempDir("tmpNewPlace2");
+    Path tmp = SolrTestUtil.createTempDir("tmpNewPlace2");
     args = new String[]{
         "-src", "zk:/configs/cp1",
         "-dst", "file:" + tmp.toAbsolutePath().toString(),
@@ -194,7 +195,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
 
     // try with zk->local  no file: prefix
-    tmp = createTempDir("tmpNewPlace3");
+    tmp = SolrTestUtil.createTempDir("tmpNewPlace3");
     args = new String[]{
         "-src", "zk:/configs/cp1",
         "-dst", tmp.toAbsolutePath().toString(),
@@ -281,7 +282,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy up to intermediate file should have succeeded.", 0, res);
-    assertTrue("Should have created an intermediate node on ZK", zkClient.exists("/powerup/solrconfig.xml", true));
+    assertTrue("Should have created an intermediate node on ZK", zkClient.exists("/powerup/solrconfig.xml"));
 
     // copy individual file up
     //src and cp3 are valid
@@ -294,7 +295,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy up to named file should have succeeded.", 0, res);
-    assertTrue("Should NOT have created an intermediate node on ZK", zkClient.exists("/copyUpFile.xml", true));
+    assertTrue("Should NOT have created an intermediate node on ZK", zkClient.exists("/copyUpFile.xml"));
 
     // copy individual file down
     //src and cp3 are valid
@@ -333,7 +334,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy from somewhere in ZK to ZK root should have succeeded.", 0, res);
-    assertTrue("Should have found znode /solrconfig.xml: ", zkClient.exists("/solrconfig.xml", true));
+    assertTrue("Should have found znode /solrconfig.xml: ", zkClient.exists("/solrconfig.xml"));
 
     // Check that the form path/ works for copying files up. Should append the last bit of the source path to the dst
     args = new String[]{
@@ -348,7 +349,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(srcPathCheck, "/cp7/" + srcPathCheck.getFileName().toString());
 
     // Check for an intermediate ZNODE having content. You know cp7/stopwords is a parent node.
-    tmp = createTempDir("dirdata");
+    tmp = SolrTestUtil.createTempDir("dirdata");
     Path file = Paths.get(tmp.toAbsolutePath().toString(), "zknode.data");
     List<String> lines = new ArrayList<>();
     lines.add("{Some Arbitrary Data}");
@@ -364,14 +365,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    String content = new String(zkClient.getData("/cp7/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
+    String content = new String(zkClient.getData("/cp7/conf/stopwords", null, null), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    tmp = createTempDir("cp8");
+    tmp = SolrTestUtil.createTempDir("cp8");
     args = new String[]{
         "-src", "zk:/cp7",
         "-dst", "file:" + tmp.toAbsolutePath().toString(),
@@ -396,7 +397,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    content = new String(zkClient.getData("/cp9/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
+    content = new String(zkClient.getData("/cp9/conf/stopwords", null, null), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
     // Copy an individual empty file up and back down and insure it's still a file
@@ -413,7 +414,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    Path tmp2 = createTempDir("cp9");
+    Path tmp2 = SolrTestUtil.createTempDir("cp9");
     Path emptyDest = Paths.get(tmp2.toAbsolutePath().toString(), "emptyfile");
     args = new String[]{
         "-src", "zk:/cp7/conf/stopwords/emptyfile",
@@ -439,7 +440,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Now copy it all back and make sure empty file is still a file when recursively copying.
-    tmp2 = createTempDir("cp10");
+    tmp2 = SolrTestUtil.createTempDir("cp10");
     args = new String[]{
         "-src", "zk:/cp10",
         "-dst", "file:" + tmp2.toAbsolutePath().toString(),
@@ -458,7 +459,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     // First get something up on ZK
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
@@ -478,7 +479,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Now does the moved directory match the original on disk?
     verifyZkLocalPathsMatch(srcPathCheck, "/mv2");
     // And are we sure the old path is gone?
-    assertFalse("/configs/mv1 Znode should not be there: ", zkClient.exists("/configs/mv1", true));
+    assertFalse("/configs/mv1 Znode should not be there: ", zkClient.exists("/configs/mv1"));
 
     // Files are in mv2
     // Now fail if we specify "file:". Everything should still be in /mv2
@@ -502,7 +503,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res = mvTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
     assertEquals("Move should have succeeded.", 0, res);
 
-    assertFalse("Znode /mv3 really should be gone", zkClient.exists("/mv3", true));
+    assertFalse("Znode /mv3 really should be gone", zkClient.exists("/mv3"));
 
     // Now does the moved directory match the original on disk?
     verifyZkLocalPathsMatch(srcPathCheck, "/mv4");
@@ -515,9 +516,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = mvTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
     assertEquals("Move should have succeeded.", 0, res);
-    assertTrue("Should be able to move a single file", zkClient.exists("/testmvsingle/solrconfig.xml", true));
+    assertTrue("Should be able to move a single file", zkClient.exists("/testmvsingle/solrconfig.xml"));
 
-    zkClient.makePath("/parentNode", true);
+    zkClient.mkdir("/parentNode");
 
     // what happens if the destination ends with a slash?
     args = new String[]{
@@ -528,15 +529,15 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = mvTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
     assertEquals("Move should have succeeded.", 0, res);
-    assertTrue("Should be able to move a single file to a parent znode", zkClient.exists("/parentnode/schema.xml", true));
-    String content = new String(zkClient.getData("/parentnode/schema.xml", null, null, true), StandardCharsets.UTF_8);
+    assertTrue("Should be able to move a single file to a parent znode", zkClient.exists("/parentnode/schema.xml"));
+    String content = new String(zkClient.getData("/parentnode/schema.xml", null, null), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("Apache Software Foundation"));
   }
 
   @Test
   public void testLs() throws Exception {
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
 
@@ -634,7 +635,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   @Test
   public void testRm() throws Exception {
     
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);
@@ -673,7 +674,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertEquals("Should have removed node /configs/rm1", res, 0);
-    assertFalse("Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1", true));
+    assertFalse("Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1"));
 
     // Check that zk prefix also works.
     args = new String[]{
@@ -685,7 +686,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     
     res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertEquals("Should have removed node /configs/rm2", res, 0);
-    assertFalse("Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2", true));
+    assertFalse("Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2"));
     
     // This should silently just refuse to do anything to the / or /zookeeper
     args = new String[]{
@@ -706,7 +707,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   }
 
   private static boolean isEphemeral(String zkPath) throws KeeperException, InterruptedException {
-    Stat znodeStat = zkClient.exists(zkPath, null, true);
+    Stat znodeStat = zkClient.exists(zkPath, null);
     return znodeStat.getEphemeralOwner() != 0;
   }
 
@@ -725,30 +726,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   }
 
   void verifyAllFilesAreZNodes(Path fileRoot, String zkRoot) throws IOException {
-    Files.walkFileTree(fileRoot, new SimpleFileVisitor<Path>() {
-      void checkPathOnZk(Path path) {
-        String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
-        try { // It's easier to catch this exception and fail than catch it everywher eles.
-          assertTrue("Should have found " + znode + " on Zookeeper", zkClient.exists(znode, true));
-        } catch (Exception e) {
-          fail("Caught unexpected exception " + e.getMessage() + " Znode we were checking " + znode);
-        }
-      }
-
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        assertTrue("Path should start at proper place!", file.startsWith(fileRoot));
-        checkPathOnZk(file);
-        return FileVisitResult.CONTINUE;
-      }
-
-      @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-
-        checkPathOnZk(dir);
-        return FileVisitResult.CONTINUE;
-      }
-    });
+    Files.walkFileTree(fileRoot, new PathSimpleFileVisitor(zkRoot, fileRoot));
   }
 
   // Insure that all znodes in first are in second and vice-versa
@@ -762,8 +740,41 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     for (String node : zkClient.getChildren(first, null, true)) {
       String fNode = first + "/" + node;
       String sNode = second + "/" + node;
-      assertTrue("Node " + sNode + " not found. Exists on " + fNode, zkClient.exists(sNode, true));
+      assertTrue("Node " + sNode + " not found. Exists on " + fNode, zkClient.exists(sNode));
       verifyFirstZNodesInSecond(fNode, sNode);
+    }
+  }
+
+  private static class PathSimpleFileVisitor extends SimpleFileVisitor<Path> {
+    private final String zkRoot;
+    private final Path fileRoot;
+
+    public PathSimpleFileVisitor(String zkRoot, Path fileRoot) {
+      this.zkRoot = zkRoot;
+      this.fileRoot = fileRoot;
+    }
+
+    void checkPathOnZk(Path path) {
+      String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
+      try { // It's easier to catch this exception and fail than catch it everywher eles.
+        assertTrue("Should have found " + znode + " on Zookeeper", zkClient.exists(znode));
+      } catch (Exception e) {
+        fail("Caught unexpected exception " + e.getMessage() + " Znode we were checking " + znode);
+      }
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+      assertTrue("Path should start at proper place!", file.startsWith(fileRoot));
+      checkPathOnZk(file);
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+
+      checkPathOnZk(dir);
+      return FileVisitResult.CONTINUE;
     }
   }
 }

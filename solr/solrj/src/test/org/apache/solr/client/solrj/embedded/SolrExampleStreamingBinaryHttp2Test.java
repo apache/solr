@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -38,8 +39,7 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHttp2Test {
 
-  @Override
-  public SolrClient createNewSolrClient() {
+  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     // setup the server...
     String url = jetty.getBaseUrl().toString() + "/collection1";
     // smaller queue size hits locks more often
@@ -57,7 +57,7 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
   @Test
   public void testQueryAndStreamResponse() throws Exception {
     // index a simple document with one child
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     client.deleteByQuery("*:*");
 
     SolrInputDocument child = new SolrInputDocument();
@@ -84,7 +84,7 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
     assertEquals(1, parentDoc.getChildDocumentCount());
 
     // test streaming
-    final List<SolrDocument> docs = new ArrayList<>();
+    final List<SolrDocument> docs = Collections.synchronizedList(new ArrayList<>());
     client.queryAndStreamResponse(query, new StreamingResponseCallback() {
       @Override
       public void streamSolrDocument(SolrDocument doc) {

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.security.JWTIssuerConfig.HttpsJwksFactory;
 import org.jose4j.jwk.HttpsJwks;
@@ -46,6 +47,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests the multi jwks resolver that can fetch keys from multiple JWKs
  */
+@LuceneTestCase.Nightly // JWT stuff is slow
 public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private JWTVerificationkeyResolver resolver;
 
@@ -79,7 +81,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     when(firstJwkList.getJsonWebKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
     doAnswer(invocation -> {
       keysToReturnFromSecondJwk = (List<JsonWebKey>) refreshSequenceForSecondJwk.next();
-      System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
+      //System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
       return null;
     }).when(secondJwkList).refresh();
     when(secondJwkList.getJsonWebKeys()).then(inv -> {

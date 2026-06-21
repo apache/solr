@@ -26,9 +26,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.solr.common.ParWork;
 
 
 /**
@@ -42,7 +44,7 @@ public class VersionedFile
    * Older versions of the file are deleted (and queued for deletion if
    * that fails).
    */
-  public static InputStream getLatestFile(String dirName, String fileName) throws FileNotFoundException 
+  public static InputStream getLatestFile(String dirName, String fileName) throws IOException
   {
     Collection<File> oldFiles=null;
     final String prefix = fileName+'.';
@@ -70,15 +72,16 @@ public class VersionedFile
           }
         }
 
-        is = new FileInputStream(f);
+        is = Files.newInputStream(f.toPath());
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         // swallow exception for now
       }
     }
 
     // allow exception to be thrown from the final try.
     if (is == null) {
-      is = new FileInputStream(f);
+      is = Files.newInputStream(f.toPath());
     }
 
     // delete old files only after we have successfully opened the newest
@@ -89,28 +92,26 @@ public class VersionedFile
     return is;
   }
 
-  private static final Set<File> deleteList = new HashSet<>();
-  private static synchronized void delete(Collection<File> files) {
-    synchronized (deleteList) {
-      deleteList.addAll(files);
-      List<File> deleted = new ArrayList<>();
-      for (File df : deleteList) {
+  private static final Set<File> deleteList = ConcurrentHashMap.newKeySet();
+  private static void delete(Collection<File> files) {
+    deleteList.addAll(files);
+    List<File> deleted = new ArrayList<>();
+    for (File df : deleteList) {
+      try {
         try {
-          try {
-            Files.deleteIfExists(df.toPath());
-          } catch (IOException cause) {
-            // TODO: should this class care if a file couldn't be deleted?
-            // this just emulates previous behavior, where only SecurityException would be handled.
-          }
-          // deleteList.remove(df);
+          Files.deleteIfExists(df.toPath());
+        } catch (IOException cause) {
+          // TODO: should this class care if a file couldn't be deleted?
+          // this just emulates previous behavior, where only SecurityException would be handled.
+        }
+        // deleteList.remove(df);
+        deleted.add(df);
+      } catch (SecurityException e) {
+        if (!df.exists()) {
           deleted.add(df);
-        } catch (SecurityException e) {
-          if (!df.exists()) {
-            deleted.add(df);
-          }
         }
       }
-      deleteList.removeAll(deleted);
     }
+    deleted.forEach(deleteList::remove);
   }
 }

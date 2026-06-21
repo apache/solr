@@ -72,7 +72,8 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
           continue;
         }
         // check its state
-        String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        // Replica name IS the core name in this fork; CORE_NAME_PROP is always null.
+        String coreName = replica.getName();
         if (targetCore != null && !targetCore.equals(coreName)) {
           continue;
         }

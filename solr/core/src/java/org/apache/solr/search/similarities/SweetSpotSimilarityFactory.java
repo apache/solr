@@ -105,7 +105,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  *      each function behaves with various settings/inputs.
  */
 public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
-  private SweetSpotSimilarity sim = null;
+  private volatile SweetSpotSimilarity sim = null;
 
   @Override
   public void init(SolrParams params) {

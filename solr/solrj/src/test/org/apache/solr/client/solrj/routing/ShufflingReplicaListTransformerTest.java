@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.Test;
@@ -37,12 +39,13 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
     final List<Replica> replicas = new ArrayList<>();
     int counter = 0;
     for (final String url : createRandomUrls()) {
-      Map<String, Object> propMap = new HashMap<>();
+      Object2ObjectMap<String, Object> propMap = new Object2ObjectLinkedOpenHashMap<>();
       propMap.put("core", "core" + counter);
       propMap.put("type", "NRT");
       propMap.put("node_name", "node" + counter);
+      propMap.put("id", -1);
       counter++;
-      replicas.add(new Replica(url, propMap, "c1", "s1"));
+      replicas.add(new Replica(url, propMap, "c1", -1, "s1"));
     }
     implTestTransform(replicas);
   }

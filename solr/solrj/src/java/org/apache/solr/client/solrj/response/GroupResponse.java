@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,7 @@ import java.util.List;
  */
 public class GroupResponse implements Serializable {
 
-  private final List<GroupCommand> _values = new ArrayList<>();
+  private final ObjectList<GroupCommand> _values = new ObjectArrayList<>();
 
   /**
    * Adds a grouping command to the response.
@@ -49,7 +52,7 @@ public class GroupResponse implements Serializable {
    *
    * @return all grouping commands
    */
-  public List<GroupCommand> getValues() {
+  public ObjectList<GroupCommand> getValues() {
     return _values;
   }
 }

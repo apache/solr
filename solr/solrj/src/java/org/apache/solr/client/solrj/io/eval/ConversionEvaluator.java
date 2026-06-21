@@ -73,7 +73,7 @@ public class ConversionEvaluator extends RecursiveNumericEvaluator implements On
     return converter.convert(((Number)value).doubleValue());
   }
   
-  private Converter constructConverter(LENGTH_CONSTANT from, LENGTH_CONSTANT to) throws IOException {
+  private static Converter constructConverter(LENGTH_CONSTANT from, LENGTH_CONSTANT to) throws IOException {
     switch(from) {
       case INCHES:
         switch(to) {
@@ -87,12 +87,10 @@ public class ConversionEvaluator extends RecursiveNumericEvaluator implements On
             throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case FEET:
-        switch(to) {
-          case METERS:
-            return (double value) -> value * .30;
-          default:
-            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
+        if (to == LENGTH_CONSTANT.METERS) {
+          return (double value) -> value * .30;
         }
+        throw new EvaluatorException(String.format(Locale.ROOT, "No conversion available from %s to %s", from, to));
       case YARDS:
         switch(to) {
           case METERS:
@@ -103,33 +101,25 @@ public class ConversionEvaluator extends RecursiveNumericEvaluator implements On
             throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case MILES:
-        switch(to) {
-          case KILOMETERS:
-            return (double value) -> value * 1.61;
-          default:
-            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
+        if (to == LENGTH_CONSTANT.KILOMETERS) {
+          return (double value) -> value * 1.61;
         }
+        throw new EvaluatorException(String.format(Locale.ROOT, "No conversion available from %s to %s", from, to));
       case MILLIMETERS:
-        switch (to) {
-          case INCHES:
-            return (double value) -> value * 0.039;
-          default:
-            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
+        if (to == LENGTH_CONSTANT.INCHES) {
+          return (double value) -> value * 0.039;
         }
+        throw new EvaluatorException(String.format(Locale.ROOT, "No conversion available from %s to %s", from, to));
       case CENTIMETERS:
-        switch(to) {
-          case INCHES:
-            return (double value) -> value * 0.39;
-          default:
-            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
+        if (to == LENGTH_CONSTANT.INCHES) {
+          return (double value) -> value * 0.39;
         }
+        throw new EvaluatorException(String.format(Locale.ROOT, "No conversion available from %s to %s", from, to));
       case METERS:
-        switch(to) {
-          case FEET:
-            return (double value) -> value * 3.28;
-          default:
-            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
+        if (to == LENGTH_CONSTANT.FEET) {
+          return (double value) -> value * 3.28;
         }
+        throw new EvaluatorException(String.format(Locale.ROOT, "No conversion available from %s to %s", from, to));
       case KILOMETERS:
         switch(to) {
           case MILES:

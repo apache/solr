@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -216,6 +217,10 @@ public class CustomTermsComponentTest extends ShardsWhitelistTest {
         assertNotNull("unexpectedly caught exception "+sse, solrServerExceptionMessagePrefix);
         assertTrue(sse.getMessage().startsWith(solrServerExceptionMessagePrefix));
         assertThat(sse.getCause().getMessage(), containsString("not on the shards whitelist"));
+        return null;
+      } catch (BaseHttpSolrClient.RemoteSolrException rse) {
+        assertNotNull("unexpectedly caught exception "+rse, solrServerExceptionMessagePrefix);
+        assertThat(rse.getMessage(), containsString("not on the shards whitelist"));
         return null;
       }
 

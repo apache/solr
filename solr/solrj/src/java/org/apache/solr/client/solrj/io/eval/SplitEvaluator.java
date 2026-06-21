@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,9 +45,7 @@ public class SplitEvaluator extends RecursiveObjectEvaluator implements TwoValue
     String p = value2.toString();
     String[] tokens = s.split(p, -1);
     List<String> strings = new ArrayList<>(tokens.length);
-    for(String tok : tokens) {
-      strings.add(tok);
-    }
+    strings.addAll(Arrays.asList(tokens));
 
     return strings;
   }

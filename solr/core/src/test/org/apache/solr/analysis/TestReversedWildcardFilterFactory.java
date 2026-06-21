@@ -41,6 +41,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SyntaxError;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,6 +56,11 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
     initCore("solrconfig.xml","schema-reversed.xml");
+  }
+
+  @AfterClass
+  public static void afterTestReversedWildcardFilterFactory() {
+    deleteCore();
   }
   
   @Override
@@ -170,7 +176,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     }
     Automaton automaton = ((AutomatonQuery) q).getAutomaton();
     String prefix = Operations.getCommonPrefix(Operations.determinize(automaton,
-      Operations.DEFAULT_MAX_DETERMINIZED_STATES));
+      Operations.DEFAULT_DETERMINIZE_WORK_LIMIT));
     return prefix.length() > 0 && prefix.charAt(0) == '\u0001';
   }
 
@@ -237,5 +243,6 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     parser.getReversedWildcardFilterFactory(typeSpy);
     // but it should reach only once 
     verify(typeSpy, times(1)).getIndexAnalyzer();
+    req.close();
   }
 }

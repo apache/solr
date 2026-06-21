@@ -30,6 +30,8 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
@@ -41,14 +43,15 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
   public void testSolrTimerGetSnapshot() {
     // create a timer with up to 100 data points
     final Timer timer = new Timer();
-    final int iterations = random().nextInt(100);
+
+    final int iterations = SolrTestCase.random().nextInt(100);
     for (int i = 0; i < iterations; ++i) {
-      timer.update(Math.abs(random().nextInt()) + 1, TimeUnit.NANOSECONDS);
+      timer.update(Math.abs(SolrTestCase.random().nextInt()) + 1, TimeUnit.NANOSECONDS);
     }
     // obtain timer metrics
     Map<String,Object> map = new HashMap<>();
     MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, ".", (k, v) -> {
-      map.putAll((Map<String,Object>)v);
+      map.putAll((Map<String,Object>) v);
     });
     NamedList lst = new NamedList(map);
     // check that expected metrics were obtained
@@ -64,6 +67,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     assertEquals(MetricUtils.nsToMs(snapshot.get95thPercentile()), lst.get("p95_ms"));
     assertEquals(MetricUtils.nsToMs(snapshot.get99thPercentile()), lst.get("p99_ms"));
     assertEquals(MetricUtils.nsToMs(snapshot.get999thPercentile()), lst.get("p999_ms"));
+
   }
 
   @Test

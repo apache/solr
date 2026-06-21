@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -205,64 +206,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() throws SyntaxError {
-        final String fromField = localParams.get("from");
-        final String fromIndex = localParams.get("fromIndex");
-        final String toField = localParams.get("to");
-        final ScoreMode scoreMode = ScoreModeParser.parse(getParam(SCORE));
-
-        final String v = localParams.get(CommonParams.VALUE);
-
-        final Query q = createQuery(fromField, v, fromIndex, toField, scoreMode,
-            CommonParams.TRUE.equals(localParams.get("TESTenforceSameCoreAsAnotherOne")));
-
-        return q;
-      }
-
-      private Query createQuery(final String fromField, final String fromQueryStr,
-                                String fromIndex, final String toField, final ScoreMode scoreMode,
-                                boolean byPassShortCircutCheck) throws SyntaxError {
-
-        final String myCore = req.getCore().getCoreDescriptor().getName();
-
-        if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
-          CoreContainer container = req.getCore().getCoreContainer();
-
-          final String coreName = getCoreName(fromIndex, container);
-          final SolrCore fromCore = container.getCore(coreName);
-          RefCounted<SolrIndexSearcher> fromHolder = null;
-
-          if (fromCore == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + coreName);
-          }
-
-          long fromCoreOpenTime = 0;
-          LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
-
-          try {
-            QParser fromQueryParser = QParser.getParser(fromQueryStr, otherReq);
-            Query fromQuery = fromQueryParser.getQuery();
-
-            fromHolder = fromCore.getRegisteredSearcher();
-            if (fromHolder != null) {
-              fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
-            }
-            return new OtherCoreJoinQuery(fromQuery, fromField, coreName, fromCoreOpenTime,
-                scoreMode, toField);
-          } finally {
-            otherReq.close();
-            fromCore.close();
-            if (fromHolder != null) fromHolder.decref();
-          }
-        } else {
-          QParser fromQueryParser = subQuery(fromQueryStr, null);
-          final Query fromQuery = fromQueryParser.getQuery();
-          return new SameCoreJoinQuery(fromQuery, fromField, toField, scoreMode);
-        }
-      }
-    };
+    return new MyQParser(qstr, localParams, params, req);
   }
 
   /**
@@ -306,14 +250,16 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     String fromReplica = null;
 
     String nodeName = zkController.getNodeName();
-    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlicesArr()) {
+    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlices()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: multiple shards not yet supported " + fromIndex);
 
       for (Replica replica : slice.getReplicas()) {
         if (replica.getNodeName().equals(nodeName)) {
-          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          // This fork unifies replica name and core name; CORE_NAME_PROP is always null, so the
+          // core to join against is the replica's name.
+          fromReplica = replica.getName();
           // found local replica, but is it Active?
           if (replica.getState() != Replica.State.ACTIVE)
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -331,6 +277,74 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
               " found in node " + nodeName);
 
     return fromReplica;
+  }
+
+  private static class MyQParser extends QParser {
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      final String fromField = localParams.get("from");
+      final String fromIndex = localParams.get("fromIndex");
+      final String toField = localParams.get("to");
+      final ScoreMode scoreMode = ScoreModeParser.parse(getParam(SCORE));
+
+      final String v = localParams.get(CommonParams.VALUE);
+
+      final Query q = createQuery(fromField, v, fromIndex, toField, scoreMode,
+          CommonParams.TRUE.equals(localParams.get("TESTenforceSameCoreAsAnotherOne")));
+
+      String boostStr = localParams.get("b");
+      if (boostStr != null) {
+        float boost = Float.parseFloat(boostStr);
+        return new BoostQuery(q, boost);
+      }
+      return q;
+    }
+
+    private Query createQuery(final String fromField, final String fromQueryStr,
+                              String fromIndex, final String toField, final ScoreMode scoreMode,
+                              boolean byPassShortCircutCheck) throws SyntaxError {
+
+      final String myCore = req.getCore().getCoreDescriptor().getName();
+
+      if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
+        CoreContainer container = req.getCore().getCoreContainer();
+
+        final String coreName = getCoreName(fromIndex, container);
+        final SolrCore fromCore = container.getCore(coreName);
+        RefCounted<SolrIndexSearcher> fromHolder = null;
+
+        if (fromCore == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + coreName);
+        }
+
+        long fromCoreOpenTime = 0;
+        LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
+
+        try {
+          QParser fromQueryParser = QParser.getParser(fromQueryStr, otherReq);
+          Query fromQuery = fromQueryParser.getQuery();
+
+          fromHolder = fromCore.getRegisteredSearcher();
+          if (fromHolder != null) {
+            fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
+          }
+          return new OtherCoreJoinQuery(fromQuery, fromField, coreName, fromCoreOpenTime,
+              scoreMode, toField);
+        } finally {
+          otherReq.close();
+          fromCore.close();
+          if (fromHolder != null) fromHolder.decref();
+        }
+      } else {
+        QParser fromQueryParser = subQuery(fromQueryStr, null);
+        final Query fromQuery = fromQueryParser.getQuery();
+        return new SameCoreJoinQuery(fromQuery, fromField, toField, scoreMode);
+      }
+    }
   }
 }
 

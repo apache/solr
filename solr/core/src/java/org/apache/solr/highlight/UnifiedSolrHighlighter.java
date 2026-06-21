@@ -166,7 +166,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param snippets   map from field name to snippet array for the docs
    * @return encoded namedlist of summaries
    */
-  protected NamedList<Object> encodeSnippets(String[] keys, String[] fieldNames, Map<String, String[]> snippets) {
+  protected static NamedList<Object> encodeSnippets(String[] keys, String[] fieldNames, Map<String,String[]> snippets) {
     NamedList<Object> list = new SimpleOrderedMap<>();
     for (int i = 0; i < keys.length; i++) {
       NamedList<Object> summary = new SimpleOrderedMap<>();
@@ -188,7 +188,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
   /**
    * Converts solr's DocList to the int[] docIDs
    */
-  protected int[] toDocIDs(DocList docs) {
+  protected static int[] toDocIDs(DocList docs) {
     int[] docIDs = new int[docs.size()];
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docIDs.length; i++) {
@@ -206,7 +206,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
   /**
    * Retrieves the unique keys for the topdocs to key the results
    */
-  protected String[] getUniqueKeys(SolrIndexSearcher searcher, int[] docIDs) throws IOException {
+  protected static String[] getUniqueKeys(SolrIndexSearcher searcher, int[] docIDs) throws IOException {
     IndexSchema schema = searcher.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
     if (keyField != null) {
@@ -335,7 +335,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     /**
      * parse custom separator char for {@link CustomSeparatorBreakIterator}
      */
-    protected char parseBiSepChar(String sepChar) {
+    protected static char parseBiSepChar(String sepChar) {
       if (sepChar == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, HighlightParams.BS_SEP + " not passed");
       }
@@ -349,7 +349,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     /**
      * parse a break iterator type for the specified locale
      */
-    protected BreakIterator parseBreakIterator(String type, Locale locale) {
+    protected static BreakIterator parseBreakIterator(String type, Locale locale) {
       if (type == null || "SENTENCE".equals(type)) {
         return BreakIterator.getSentenceInstance(locale);
       } else if ("LINE".equals(type)) {
@@ -366,7 +366,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     /**
      * parse a locale from a language+country+variant spec
      */
-    protected Locale parseLocale(String language, String country, String variant) {
+    protected static Locale parseLocale(String language, String country, String variant) {
       if (language == null && country == null && variant == null) {
         return Locale.ROOT;
       } else if (language == null) {

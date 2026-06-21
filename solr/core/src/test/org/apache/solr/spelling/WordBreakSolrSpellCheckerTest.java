@@ -21,21 +21,25 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
-  
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+
+  @Before
+  public void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
     assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "pain table paintablepine pi ne in able")));
     assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt", "paint able pineapple goodness in")));
@@ -53,107 +57,113 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     //docfreq=2:  table
     //docfreq=1:  {all others}
   }
+
+  @After
+  public void after() {
+    deleteCore();
+  }
   
   @Test
   public void testStandAlone() throws Exception {
-    SolrCore core = h.getCore();
-    WordBreakSolrSpellChecker checker = new WordBreakSolrSpellChecker();
-    NamedList<String> params = new NamedList<>();
-    params.add("field", "lowerfilt");
-    params.add(WordBreakSolrSpellChecker.PARAM_BREAK_WORDS, "true");
-    params.add(WordBreakSolrSpellChecker.PARAM_COMBINE_WORDS, "true");
-    params.add(WordBreakSolrSpellChecker.PARAM_MAX_CHANGES, "10");
-    checker.init(params, core);
+    try (SolrCore core = h.getCore()) {
+      WordBreakSolrSpellChecker checker = new WordBreakSolrSpellChecker();
+      NamedList<String> params = new NamedList<>();
+      params.add("field", "lowerfilt");
+      params.add(WordBreakSolrSpellChecker.PARAM_BREAK_WORDS, "true");
+      params.add(WordBreakSolrSpellChecker.PARAM_COMBINE_WORDS, "true");
+      params.add(WordBreakSolrSpellChecker.PARAM_MAX_CHANGES, "10");
+      checker.init(params, core);
 
-    //TODO can we use core.withSearcher ? refcounting here is confusing; not sure if intentional
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    QueryConverter qc = new SpellingQueryConverter();
-    qc.setAnalyzer(new MockAnalyzer(random()));
-    
-    {
-      //Prior to SOLR-8175, the required term would cause an AIOOBE.
-      Collection<Token> tokens = qc.convert("+pine apple good ness");
+      //TODO can we use core.withSearcher ? refcounting here is confusing; not sure if intentional
+      RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+      QueryConverter qc = new SpellingQueryConverter();
+      qc.setAnalyzer(new MockAnalyzer(SolrTestCase.random()));
+
+      {
+        //Prior to SOLR-8175, the required term would cause an AIOOBE.
+        Collection<Token> tokens = qc.convert("+pine apple good ness");
+        SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
+        SpellingResult result = checker.getSuggestions(spellOpts);
+        searcher.decref();
+        assertTrue(result != null && result.getSuggestions() != null);
+        assertTrue(result.getSuggestions().size() == 5);
+      }
+
+      Collection<Token> tokens = qc.convert("paintable pine apple good ness");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
       SpellingResult result = checker.getSuggestions(spellOpts);
-      searcher.decref();      
+      searcher.decref();
+
       assertTrue(result != null && result.getSuggestions() != null);
-      assertTrue(result.getSuggestions().size()==5);
+      assertTrue(result.getSuggestions().size() == 9);
+
+      for (Map.Entry<Token,LinkedHashMap<String,Integer>> s : result.getSuggestions().entrySet()) {
+        Token orig = s.getKey();
+        String[] corr = s.getValue().keySet().toArray(Utils.EMPTY_STRINGS);
+        if (orig.toString().equals("paintable")) {
+          assertTrue(orig.startOffset() == 0);
+          assertTrue(orig.endOffset() == 9);
+          assertTrue(orig.length() == 9);
+          assertTrue(corr.length == 3);
+          assertTrue(corr[0].equals("paint able"));  //1 op ; max doc freq=5
+          assertTrue(corr[1].equals("pain table"));  //1 op ; max doc freq=2
+          assertTrue(corr[2].equals("pa in table")); //2 ops
+        } else if (orig.toString().equals("pine apple")) {
+          assertTrue(orig.startOffset() == 10);
+          assertTrue(orig.endOffset() == 20);
+          assertTrue(orig.length() == 10);
+          assertTrue(corr.length == 1);
+          assertTrue(corr[0].equals("pineapple"));
+        } else if (orig.toString().equals("paintable pine")) {
+          assertTrue(orig.startOffset() == 0);
+          assertTrue(orig.endOffset() == 14);
+          assertTrue(orig.length() == 14);
+          assertTrue(corr.length == 1);
+          assertTrue(corr[0].equals("paintablepine"));
+        } else if (orig.toString().equals("good ness")) {
+          assertTrue(orig.startOffset() == 21);
+          assertTrue(orig.endOffset() == 30);
+          assertTrue(orig.length() == 9);
+          assertTrue(corr.length == 1);
+          assertTrue(corr[0].equals("goodness"));
+        } else if (orig.toString().equals("pine apple good ness")) {
+          assertTrue(orig.startOffset() == 10);
+          assertTrue(orig.endOffset() == 30);
+          assertTrue(orig.length() == 20);
+          assertTrue(corr.length == 1);
+          assertTrue(corr[0].equals("pineapplegoodness"));
+        } else if (orig.toString().equals("pine")) {
+          assertTrue(orig.startOffset() == 10);
+          assertTrue(orig.endOffset() == 14);
+          assertTrue(orig.length() == 4);
+          assertTrue(corr.length == 1);
+          assertTrue(corr[0].equals("pi ne"));
+        } else if (orig.toString().equals("pine")) {
+          assertTrue(orig.startOffset() == 10);
+          assertTrue(orig.endOffset() == 14);
+          assertTrue(orig.length() == 4);
+          assertTrue(corr.length == 1);
+          assertTrue(corr[0].equals("pi ne"));
+        } else if (orig.toString().equals("apple")) {
+          assertTrue(orig.startOffset() == 15);
+          assertTrue(orig.endOffset() == 20);
+          assertTrue(orig.length() == 5);
+          assertTrue(corr.length == 0);
+        } else if (orig.toString().equals("good")) {
+          assertTrue(orig.startOffset() == 21);
+          assertTrue(orig.endOffset() == 25);
+          assertTrue(orig.length() == 4);
+          assertTrue(corr.length == 0);
+        } else if (orig.toString().equals("ness")) {
+          assertTrue(orig.startOffset() == 26);
+          assertTrue(orig.endOffset() == 30);
+          assertTrue(orig.length() == 4);
+          assertTrue(corr.length == 0);
+        } else {
+          fail("Unexpected original result: " + orig);
+        }
+      }
     }
-    
-    Collection<Token> tokens = qc.convert("paintable pine apple good ness");
-    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
-    SpellingResult result = checker.getSuggestions(spellOpts);
-    searcher.decref();
-    
-    assertTrue(result != null && result.getSuggestions() != null);
-    assertTrue(result.getSuggestions().size()==9);
-    
-    for(Map.Entry<Token, LinkedHashMap<String, Integer>> s : result.getSuggestions().entrySet()) {
-      Token orig = s.getKey();
-      String[] corr = s.getValue().keySet().toArray(new String[0]);
-      if(orig.toString().equals("paintable")) {        
-        assertTrue(orig.startOffset()==0);
-        assertTrue(orig.endOffset()==9);
-        assertTrue(orig.length()==9);
-        assertTrue(corr.length==3);
-        assertTrue(corr[0].equals("paint able"));  //1 op ; max doc freq=5
-        assertTrue(corr[1].equals("pain table"));  //1 op ; max doc freq=2      
-        assertTrue(corr[2].equals("pa in table")); //2 ops
-      } else if(orig.toString().equals("pine apple")) {
-        assertTrue(orig.startOffset()==10);
-        assertTrue(orig.endOffset()==20);
-        assertTrue(orig.length()==10);
-        assertTrue(corr.length==1);
-        assertTrue(corr[0].equals("pineapple"));
-      } else if(orig.toString().equals("paintable pine")) {
-        assertTrue(orig.startOffset()==0);
-        assertTrue(orig.endOffset()==14);
-        assertTrue(orig.length()==14);
-        assertTrue(corr.length==1);
-        assertTrue(corr[0].equals("paintablepine"));
-      } else if(orig.toString().equals("good ness")) {
-        assertTrue(orig.startOffset()==21);
-        assertTrue(orig.endOffset()==30);
-        assertTrue(orig.length()==9);
-        assertTrue(corr.length==1);
-        assertTrue(corr[0].equals("goodness"));
-      } else if(orig.toString().equals("pine apple good ness")) {
-        assertTrue(orig.startOffset()==10);
-        assertTrue(orig.endOffset()==30);
-        assertTrue(orig.length()==20);
-        assertTrue(corr.length==1);
-        assertTrue(corr[0].equals("pineapplegoodness"));
-      } else if(orig.toString().equals("pine")) {
-        assertTrue(orig.startOffset()==10);
-        assertTrue(orig.endOffset()==14);
-        assertTrue(orig.length()==4);
-        assertTrue(corr.length==1);
-        assertTrue(corr[0].equals("pi ne"));
-      } else if(orig.toString().equals("pine")) {
-        assertTrue(orig.startOffset()==10);
-        assertTrue(orig.endOffset()==14);
-        assertTrue(orig.length()==4);
-        assertTrue(corr.length==1);
-        assertTrue(corr[0].equals("pi ne"));
-      } else if(orig.toString().equals("apple")) {
-        assertTrue(orig.startOffset()==15);
-        assertTrue(orig.endOffset()==20);
-        assertTrue(orig.length()==5);
-        assertTrue(corr.length==0);
-      } else if(orig.toString().equals("good")) {
-        assertTrue(orig.startOffset()==21);
-        assertTrue(orig.endOffset()==25);
-        assertTrue(orig.length()==4);
-        assertTrue(corr.length==0);
-      } else if(orig.toString().equals("ness")) {
-        assertTrue(orig.startOffset()==26);
-        assertTrue(orig.endOffset()==30);
-        assertTrue(orig.length()==4);
-        assertTrue(corr.length==0);
-      }else {
-        fail("Unexpected original result: " + orig);
-      }        
-    }  
   }
   @Test
   public void testInConjunction() throws Exception {

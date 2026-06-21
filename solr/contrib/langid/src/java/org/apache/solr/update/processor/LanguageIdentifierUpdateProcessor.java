@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestProcessor implements LangIdParams {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Pattern COMPILE = Pattern.compile("[, ]");
 
   protected boolean enabled;
 
@@ -82,7 +83,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
 
   // Regex patterns
   protected final Pattern tikaSimilarityPattern = Pattern.compile(".*\\((.*?)\\)");
-  protected final Pattern langPattern = Pattern.compile("\\{lang\\}");
+  protected final Pattern langPattern = Pattern.compile("\\{lang}");
 
   public LanguageIdentifierUpdateProcessor(SolrQueryRequest req,
                                            SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -95,7 +96,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   private void initParams(SolrParams params) {
     if (params != null) {
       // Document-centric langId params
-      setEnabled(params.getBool(LANGUAGE_ID, true));
+      enabled = params.getBool(LANGUAGE_ID, true);
       if(params.get(FIELDS_PARAM, "").length() > 0) {
         inputFields = params.get(FIELDS_PARAM, "").split(",");
       }
@@ -111,9 +112,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       langWhitelist = new HashSet<>();
       threshold = params.getDouble(THRESHOLD, DOCID_THRESHOLD_DEFAULT);
       if(params.get(LANG_WHITELIST, "").length() > 0) {
-        for(String lang : params.get(LANG_WHITELIST, "").split(",")) {
-          langWhitelist.add(lang);
-        }
+        langWhitelist.addAll(Arrays.asList(params.get(LANG_WHITELIST, "").split(",")));
       }
 
       // Mapping params (field centric)
@@ -144,7 +143,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       // Normalize detected langcode onto normalized langcode
       lcMap = new HashMap<>();
       if(params.get(LCMAP) != null) {
-        for(String mapping : params.get(LCMAP).split("[, ]")) {
+        for(String mapping : COMPILE.split(params.get(LCMAP))) {
           String[] keyVal = mapping.split(":");
           if(keyVal.length == 2) {
             lcMap.put(keyVal[0], keyVal[1]);
@@ -200,7 +199,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    if (isEnabled()) {
+    if (enabled) {
       process(cmd.getSolrInputDocument());
     } else {
       log.debug("Processor not enabled, not running");
@@ -266,7 +265,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
               doc.removeField(fieldName);
             }
           } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid output field mapping for "
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid output field mapping for "
                     + fieldName + " field and language: " + fieldLang);
           }
         }
@@ -285,7 +284,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * @param fallbackFields an array of strings with field names containing fallback language codes
    * @param fallbackValue a language code to use in case no fallbackFields are found
    */
-  private String getFallbackLang(SolrInputDocument doc, String[] fallbackFields, String fallbackValue) {
+  private static String getFallbackLang(SolrInputDocument doc, String[] fallbackFields, String fallbackValue) {
     String lang = null;
     for(String field : fallbackFields) {
       if(doc.containsKey(field)) {

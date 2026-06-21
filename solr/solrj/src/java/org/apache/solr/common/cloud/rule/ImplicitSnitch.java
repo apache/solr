@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
@@ -74,6 +75,7 @@ public class ImplicitSnitch extends Snitch {
 
       getRemoteInfo(solrNode, requestedTags, ctx);
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -87,7 +89,7 @@ public class ImplicitSnitch extends Snitch {
     }
 
     if (params.size() > 0) {
-      Map<String, Object> vals = ctx.getNodeValues(solrNode, params.keySet());
+      Map<String, Object> vals = SnitchContext.getNodeValues(solrNode, params.keySet());
       for (Map.Entry<String, Object> e : vals.entrySet()) {
         if(e.getValue() != null) params.put(e.getKey(), e.getValue());
       }
@@ -95,7 +97,7 @@ public class ImplicitSnitch extends Snitch {
     ctx.getTags().putAll(params);
   }
 
-  private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
+  private static void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
     Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
     try {
@@ -106,7 +108,7 @@ public class ImplicitSnitch extends Snitch {
     }
   }
 
-  private void cacheRoles(String solrNode, SnitchContext ctx, String key, Map roles) {
+  private static void cacheRoles(String solrNode, SnitchContext ctx, String key, Map roles) {
     ctx.store(ZkStateReader.ROLES, roles);
     if (roles != null) {
       for (Object o : roles.entrySet()) {
@@ -129,7 +131,7 @@ public class ImplicitSnitch extends Snitch {
         tag.startsWith(SYSPROP);
   }
 
-  private void addIpTags(String solrNode, Set<String> requestedTags, SnitchContext context) {
+  private static void addIpTags(String solrNode, Set<String> requestedTags, SnitchContext context) {
 
     List<String> requestedHostTags = new ArrayList<>();
     for (String tag : requestedTags) {
@@ -161,7 +163,7 @@ public class ImplicitSnitch extends Snitch {
 
   }
 
-  private String[] getIpFragments(String solrNode) {
+  private static String[] getIpFragments(String solrNode) {
     Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
     if (hostAndPortMatcher.find()) {
       String host = hostAndPortMatcher.group(1);
@@ -177,12 +179,13 @@ public class ImplicitSnitch extends Snitch {
     return null;
   }
 
-  public String getHostIp(String host) {
+  public static String getHostIp(String host) {
     try {
       InetAddress address = InetAddress.getByName(host);
       return address.getHostAddress();
     } catch (Exception e) {
-      log.warn("Failed to get IP address from host [{}], with exception [{}] ", host, e);
+      ParWork.propagateInterrupt(e);
+      log.warn("Failed to get IP address from host [{}]", host, e);
       return null;
     }
   }

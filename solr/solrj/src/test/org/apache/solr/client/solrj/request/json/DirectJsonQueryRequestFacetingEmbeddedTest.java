@@ -26,7 +26,8 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -39,7 +40,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressSSL
+@SolrTestCase.SuppressSSL
 public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServerTestBase {
 
   private static final String COLLECTION_NAME = "techproducts";
@@ -53,10 +54,10 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
   private static final int NUM_CANON = 2;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeDirectJsonQueryRequestFacetingEmbeddedTest() throws Exception {
     final String sourceHome = ExternalPaths.SOURCE_HOME;
 
-    final File tempSolrHome = LuceneTestCase.createTempDir().toFile();
+    final File tempSolrHome = SolrTestUtil.createTempDir().toFile();
     FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
     final File collectionDir = new File(tempSolrHome, COLLECTION_NAME);
     FileUtils.forceMkdir(collectionDir);
@@ -84,7 +85,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
-    up.addFile(getFile("solrj/techproducts.xml"), "application/xml");
+    up.addFile(SolrTestUtil.getFile("solrj/techproducts.xml"), "application/xml");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     UpdateResponse updateResponse = up.process(client);
     assertEquals(0, updateResponse.getStatus());

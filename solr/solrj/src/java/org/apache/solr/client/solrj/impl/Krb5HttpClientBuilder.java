@@ -86,17 +86,12 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     return builder.isPresent() ? getBuilder(builder.get()) : getBuilder();
   }
 
-  private SPNEGOAuthentication createSPNEGOAuthentication() {
-    SPNEGOAuthentication authentication = new SPNEGOAuthentication(null){
-
-      public boolean matches(String type, URI uri, String realm) {
-        return this.getType().equals(type);
-      }
-    };
+  private static SPNEGOAuthentication createSPNEGOAuthentication() {
+    SPNEGOAuthentication authentication = new MySPNEGOAuthentication();
     String clientAppName = System.getProperty("solr.kerberos.jaas.appname", "Client");
     AppConfigurationEntry[] entries = jaasConfig.getAppConfigurationEntry(clientAppName);
     if (entries == null) {
-      log.warn("Could not find login configuration entry for {}. SPNego authentication may not be successful.", (Object)clientAppName);
+      log.warn("Could not find login configuration entry for {}. SPNego authentication may not be successful.", clientAppName);
       return authentication;
     }
     if (entries.length != 1) {
@@ -106,7 +101,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     Map<String, ?> options = entries[0].getOptions();
     String keyTab = (String)options.get("keyTab");
     if (keyTab != null) {
-      authentication.setUserKeyTabPath(Paths.get(keyTab, new String[0]));
+      authentication.setUserKeyTabPath(Paths.get(keyTab));
     }
     authentication.setServiceName("HTTP");
     authentication.setUserName((String)options.get("principal"));
@@ -142,7 +137,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         // authentication mechanism can load the credentials from the JAAS configuration.
         if (useSubjectCredsVal == null) {
           System.setProperty(useSubjectCredsProp, "false");
-        } else if (!useSubjectCredsVal.toLowerCase(Locale.ROOT).equals("false")) {
+        } else if (!useSubjectCredsVal.toLowerCase(Locale.ROOT).equalsIgnoreCase("false")) {
           // Don't overwrite the prop value if it's already been written to something else,
           // but log because it is likely the Credentials won't be loaded correctly.
           log.warn("System Property: {} set to: {} not false.  SPNego authentication may not be successful."
@@ -159,14 +154,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
           return authProviders;
         });
         // Get the credentials from the JAAS configuration rather than here
-        Credentials useJaasCreds = new Credentials() {
-          public String getPassword() {
-            return null;
-          }
-          public Principal getUserPrincipal() {
-            return null;
-          }
-        };
+        Credentials useJaasCreds = new MyCredentials();
 
         HttpClientUtil.setCookiePolicy(SolrPortAwareCookieSpecFactory.POLICY_NAME);
 
@@ -234,6 +222,27 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         return baseConfig.getAppConfigurationEntry(clientAppName);
       }
       return baseConfig.getAppConfigurationEntry(appName);
+    }
+  }
+
+  private static class MySPNEGOAuthentication extends SPNEGOAuthentication {
+
+    public MySPNEGOAuthentication() {
+      super(null);
+    }
+
+    public boolean matches(String type, URI uri, String realm) {
+      return this.getType().equals(type);
+    }
+  }
+
+  private static class MyCredentials implements Credentials {
+    public String getPassword() {
+      return null;
+    }
+
+    public Principal getUserPrincipal() {
+      return null;
     }
   }
 }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,12 +44,18 @@ import org.junit.Test;
  *
  * @since solr 1.5
  */
+@LuceneTestCase.Nightly // slow test
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
+
+  public DistributedTermsComponentTest() {
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
+  }
 
   @Test
   public void test() throws Exception {
     Random random = random();
-    del("*:*");
 
     index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i_p", "1");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i_p");
@@ -95,7 +102,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     if (Stream.of(q).noneMatch(s->s.equals("terms.list"))) { 
       // SOLR-9243 doesn't support max/min count
       for (int i = 0; i < q.length; i+=2) {
-        if (q[i].equals("terms.sort") && q[i+1].equals("index") || rarely()) {
+        if (q[i].equals("terms.sort") && q[i+1].equals("index") || LuceneTestCase.rarely()) {
           List<Object> params = new ArrayList<Object>(Arrays.asList(q));
           if (usually()) {
             params.add("terms.mincount");

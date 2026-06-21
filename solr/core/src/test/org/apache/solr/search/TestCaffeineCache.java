@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -50,12 +51,7 @@ public class TestCaffeineCache extends SolrTestCase {
   @Test
   public void testSimple() throws IOException {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
-
-    CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
-    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
-
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo", true);
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
@@ -63,6 +59,15 @@ public class TestCaffeineCache extends SolrTestCase {
 
     NoOpRegenerator regenerator = new NoOpRegenerator();
     Object initObj = lfuCache.init(params, null, regenerator);
+
+    lfuCache.init(params, null, regenerator);
+    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
+
+    CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
+    newLFUCache.init(params, null, regenerator);
+    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
+
+
     lfuCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       lfuCache.put(i + 1, Integer.toString(i + 1));
@@ -71,7 +76,7 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals("75", lfuCache.get(75));
     assertEquals(null, lfuCache.get(110));
     Map<String, Object> nl = lfuCache.getMetricsMap().getValue();
-    assertEquals(3L, nl.get("lookups"));
+    assertEquals(nl.toString(), 3L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
 
@@ -147,8 +152,9 @@ public class TestCaffeineCache extends SolrTestCase {
   }
 
   @Test
+  @LuceneTestCase.Nightly // sleepy test
   public void testMaxIdleTime() throws Exception {
-    int IDLE_TIME_SEC = 5;
+    int IDLE_TIME_SEC = 1;
     CountDownLatch removed = new CountDownLatch(1);
     AtomicReference<RemovalCause> removalCause = new AtomicReference<>();
     CaffeineCache<String, String> cache = new CaffeineCache<>() {
@@ -170,7 +176,7 @@ public class TestCaffeineCache extends SolrTestCase {
     // the eviction is piggy-backed on put()
     Thread.sleep(TimeUnit.SECONDS.toMillis(IDLE_TIME_SEC * 2));
     cache.put("abc", "xyz");
-    boolean await = removed.await(30, TimeUnit.SECONDS);
+    boolean await = removed.await(10, TimeUnit.SECONDS);
     assertTrue("did not expire entry in in time", await);
     assertEquals(RemovalCause.EXPIRED, removalCause.get());
     assertNull(cache.get("foo"));

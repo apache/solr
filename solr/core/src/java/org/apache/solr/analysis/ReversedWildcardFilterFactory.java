@@ -17,9 +17,9 @@
 package org.apache.solr.analysis;
 import java.util.Map;
 
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link ReversedWildcardFilter}-s. When this factory is

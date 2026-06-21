@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.comp;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -67,7 +68,7 @@ public class MultipleFieldComparator implements StreamComparator {
     for(StreamComparator comp : comps){
       if(comp instanceof Expressible){
         if(sb.length() > 0){ sb.append(","); }
-        sb.append(((Expressible)comp).toExpression(factory));
+        sb.append(comp.toExpression(factory));
       }
       else{
         throw new IOException("This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");
@@ -118,21 +119,16 @@ public class MultipleFieldComparator implements StreamComparator {
   
   @Override
   public StreamComparator append(StreamComparator other){
-    List<StreamComparator> newComps = new ArrayList<>();
-    
-    for(StreamComparator comp : comps){
-      newComps.add(comp);
-    }
+
+    List<StreamComparator> newComps = new ArrayList<>(Arrays.asList(comps));
     
     if(other instanceof FieldComparator){
       newComps.add(other);
     }
     else if(other instanceof MultipleFieldComparator){
-      for(StreamComparator comp : ((MultipleFieldComparator)other).comps){
-        newComps.add(comp);
-      }
+      newComps.addAll(Arrays.asList(((MultipleFieldComparator) other).comps));
     }
     
-    return new MultipleFieldComparator(newComps.toArray(new StreamComparator[newComps.size()]));
+    return new MultipleFieldComparator(newComps.toArray(new StreamComparator[0]));
   }
 }

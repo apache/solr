@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  */
 public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeDisMaxRequestHandlerTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     lrf = h.getRequestFactory
       ("/dismax", 0, 20,
@@ -198,7 +198,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     // surrounded by ()'s in the debug output
     Pattern p = Pattern.compile("subject:hell\\s*subject:cool");
     Pattern p_bool = Pattern.compile("\\(subject:hell\\s*subject:cool\\)");
-    String resp = h.query(req("q", "cool stuff"
+    String resp = query(req("q", "cool stuff"
                 ,"qt", "/dismax"
                 ,CommonParams.VERSION, "2.2"
                 ,"bq", "subject:hell OR subject:cool"
@@ -207,7 +207,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(p.matcher(resp).find());
     assertFalse(p_bool.matcher(resp).find());
 
-    resp = h.query(req("q", "cool stuff"
+    resp = query(req("q", "cool stuff"
                 ,"qt", "/dismax"
                 ,CommonParams.VERSION, "2.2"
                 ,"bq", "subject:hell OR subject:cool"

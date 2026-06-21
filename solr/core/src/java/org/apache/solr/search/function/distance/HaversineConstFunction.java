@@ -51,7 +51,7 @@ public class HaversineConstFunction extends ValueSource {
     this.latCenterRad_cos = Math.cos(latCenter * DEGREES_TO_RADIANS);
   }
 
-  protected String name() {
+  protected static String name() {
     return "geodist";
   }
 

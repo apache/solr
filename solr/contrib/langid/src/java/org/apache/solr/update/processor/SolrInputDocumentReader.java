@@ -139,7 +139,7 @@ public class SolrInputDocumentReader extends Reader {
         startFieldValueIdx = 0;
         if (sb.length() > 0) {
           if (maxChunkLength - sb.length() < fieldValueSep.length()) {
-            sb.append(fieldValueSep.substring(0,maxChunkLength - sb.length()));
+            sb.append(fieldValueSep, 0, maxChunkLength - sb.length());
           } else {
             sb.append(fieldValueSep);
           }
@@ -154,7 +154,7 @@ public class SolrInputDocumentReader extends Reader {
         if (endOffset - currentFieldValueOffset > maxCharsPerFieldValue) {
           endOffset = maxCharsPerFieldValue - currentFieldValueOffset;
         }
-        sb.append(fvStr.substring(currentFieldValueOffset, endOffset));
+        sb.append(fvStr, currentFieldValueOffset, endOffset);
         currentFieldValueOffset = endOffset == fvStr.length() ? 0 : endOffset;
       }
       if (sb.length() >= maxChunkLength) {

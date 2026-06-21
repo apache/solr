@@ -56,12 +56,12 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
 
   static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
 
-  private boolean isCloud = false;
+  private volatile boolean isCloud = false;
 
   public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreContainer();
 
-    if(coreContainer.isZooKeeperAware()) {
+    if (coreContainer.isZooKeeperAware()) {
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
       isCloud = true;
@@ -88,7 +88,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     TupleStream tupleStream = null;
     try {
 
-      if(!isCloud) {
+      if (!isCloud) {
+        log.error(sqlNonCloudErrorMsg);
         throw new IllegalStateException(sqlNonCloudErrorMsg);
       }
 
@@ -133,7 +134,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     return "SQLHandler";
   }
 
-  public String getSource() {
+  public static String getSource() {
     return null;
   }
 
@@ -192,7 +193,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     }
   }
 
-  private ModifiableSolrParams adjustParams(SolrParams params) {
+  private static ModifiableSolrParams adjustParams(SolrParams params) {
     ModifiableSolrParams adjustedParams = new ModifiableSolrParams();
     adjustedParams.add(params);
     adjustedParams.add(CommonParams.OMIT_HEADER, "true");

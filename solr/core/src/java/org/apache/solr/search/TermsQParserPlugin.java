@@ -27,6 +27,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -38,7 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.PointField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,50 +119,7 @@ public class TermsQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() throws SyntaxError {
-        String fname = localParams.get(QueryParsing.F);
-        FieldType ft = req.getSchema().getFieldType(fname);
-        String separator = localParams.get(SEPARATOR, ",");
-        String qstr = localParams.get(QueryParsing.V);//never null
-        Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
-        //TODO pick the default method based on various heuristics from benchmarks
-        //TODO pick the default using FieldType.getSetQuery
-
-        //if space then split on all whitespace & trim, otherwise strictly interpret
-        final boolean sepIsSpace = separator.equals(" ");
-        if (sepIsSpace)
-          qstr = qstr.trim();
-        if (qstr.length() == 0)
-          return new MatchNoDocsQuery();
-        final String[] splitVals = sepIsSpace ? qstr.split("\\s+") : qstr.split(Pattern.quote(separator), -1);
-        assert splitVals.length > 0;
-        
-        if (ft.isPointField()) {
-          if (localParams.get(METHOD) != null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                String.format(Locale.ROOT, "Method '%s' not supported in TermsQParser when using PointFields", localParams.get(METHOD)));
-          }
-          return ((PointField)ft).getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
-        }
-
-        BytesRef[] bytesRefs = new BytesRef[splitVals.length];
-        BytesRefBuilder term = new BytesRefBuilder();
-        for (int i = 0; i < splitVals.length; i++) {
-          String stringVal = splitVals[i];
-          //logic same as TermQParserPlugin
-          if (ft != null) {
-            ft.readableToIndexed(stringVal, term);
-          } else {
-            term.copyChars(stringVal);
-          }
-          bytesRefs[i] = term.toBytesRef();
-        }
-
-        return method.makeFilter(fname, bytesRefs);
-      }
-    };
+    return new MyQParser(qstr, localParams, params, req);
   }
 
   private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery {
@@ -229,7 +186,7 @@ public class TermsQParserPlugin extends QParserPlugin {
         }
 
         public boolean isCacheable(LeafReaderContext ctx) {
-          return DocValues.isCacheable(ctx, new String[]{fieldName});
+          return DocValues.isCacheable(ctx, fieldName);
         }
       };
     }
@@ -239,7 +196,7 @@ public class TermsQParserPlugin extends QParserPlugin {
      * optimization to narrow the search space where possible by providing a startOrd instead of begining each search
      * at 0.
      */
-    private long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
+    private static long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
       long low = startOrd;
       long high = docValues.getValueCount()-1;
 
@@ -258,6 +215,57 @@ public class TermsQParserPlugin extends QParserPlugin {
       }
 
       return -(low + 1);  // key not found.
+    }
+  }
+
+  private static class MyQParser extends QParser {
+    private static final Pattern COMPILE = Pattern.compile("\\s+");
+
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      String fname = localParams.get(QueryParsing.F);
+      FieldType ft = req.getSchema().getFieldType(fname);
+      String separator = localParams.get(SEPARATOR, ",");
+      String qstr = localParams.get(QueryParsing.V);//never null
+      Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
+      //TODO pick the default method based on various heuristics from benchmarks
+      //TODO pick the default using FieldType.getSetQuery
+
+      //if space then split on all whitespace & trim, otherwise strictly interpret
+      final boolean sepIsSpace = separator.equals(" ");
+      if (sepIsSpace)
+        qstr = qstr.trim();
+      if (qstr.length() == 0)
+        return new MatchNoDocsQuery();
+      final String[] splitVals = sepIsSpace ? COMPILE.split(qstr) : qstr.split(Pattern.quote(separator), -1);
+      assert splitVals.length > 0;
+
+      if (ft.isPointField()) {
+        if (localParams.get(METHOD) != null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              String.format(Locale.ROOT, "Method '%s' not supported in TermsQParser when using PointFields", localParams.get(METHOD)));
+        }
+        return ft.getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+      }
+
+      BytesRef[] bytesRefs = new BytesRef[splitVals.length];
+      BytesRefBuilder term = new BytesRefBuilder();
+      for (int i = 0; i < splitVals.length; i++) {
+        String stringVal = splitVals[i];
+        //logic same as TermQParserPlugin
+        if (ft != null) {
+          ft.readableToIndexed(stringVal, term);
+        } else {
+          term.copyChars(stringVal);
+        }
+        bytesRefs[i] = term.toBytesRef();
+      }
+
+      return method.makeFilter(fname, bytesRefs);
     }
   }
 }

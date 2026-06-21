@@ -21,7 +21,6 @@ import java.net.URL;
 import java.util.Locale;
 import java.util.Random;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -31,6 +30,8 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
+import org.junit.Test;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
@@ -39,9 +40,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 /**
  *
@@ -52,9 +50,9 @@ public class JettyWebappTest extends SolrTestCaseJ4
   int port = 0;
   static final String context = "/test";
 
-  @Rule
-  public TestRule solrTestRules =
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+//  @Rule
+//  public TestRule solrTestRules =
+//    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   Server server;
 
@@ -66,7 +64,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 
-    File dataDir = createTempDir().toFile();
+    File dataDir = SolrTestUtil.createTempDir().toFile();
     dataDir.mkdirs();
 
     System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
@@ -99,6 +97,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
     super.tearDown();
   }
 
+  @Test
   public void testAdminUI() throws Exception
   {
     // Currently not an extensive test, but it does fire up the JSP pages and make

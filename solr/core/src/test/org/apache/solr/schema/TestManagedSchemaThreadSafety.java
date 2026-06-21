@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,12 +28,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
@@ -49,9 +51,11 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final class SuspendingZkClient extends SolrZkClient {
     AtomicReference<Thread> slowpoke = new AtomicReference<>();
 
@@ -60,6 +64,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     }
 
     boolean isSlowpoke(){
+      if (!TEST_NIGHTLY) return false;
       Thread youKnow;
       if ((youKnow = slowpoke.get())!=null) {
         return youKnow == Thread.currentThread();
@@ -69,11 +74,11 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     }
 
     @Override
-    public byte[] getData(String path, Watcher watcher, Stat stat, boolean retryOnConnLoss)
+    public byte[] getData(String path, Watcher watcher, Stat stat)
         throws KeeperException, InterruptedException {
       byte[] data;
       try {
-        data = super.getData(path, watcher, stat, retryOnConnLoss);
+        data = super.getData(path, watcher, stat);
       } catch (NoNodeException e) {
         if (isSlowpoke()) {
           //System.out.println("suspending "+Thread.currentThread()+" on " + path);
@@ -90,9 +95,9 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startZkServer() throws Exception {
-    zkServer = new ZkTestServer(createTempDir());
+    zkServer = new ZkTestServer(SolrTestUtil.createTempDir());
     zkServer.run();
-    loaderPath = createTempDir();
+    loaderPath = SolrTestUtil.createTempDir();
   }
 
   @AfterClass
@@ -110,14 +115,14 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
     final String configsetName = "managed-config";//
 
-    try (SolrZkClient client = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
-      // we can pick any to load configs, I suppose, but here we check
-      client.upConfig(configset("cloud-managed-upgrade"), configsetName);
-    }
+    SolrZkClient client = zkServer.getZkClient();
+    // we can pick any to load configs, I suppose, but here we check
+    client.upConfig(SolrTestUtil.configset("cloud-managed-upgrade"), configsetName);
 
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
+
+    ExecutorService executor = getTestExecutor();
     
-    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000).start()) {
 
       ZkController zkController = createZkController(raceJudge);
 
@@ -130,9 +135,6 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
         future.get();
       }
     }
-    finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
-    }
   }
 
   private ZkController createZkController(SolrZkClient client) throws KeeperException, InterruptedException {
@@ -141,8 +143,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class, 
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
     when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(Boolean.FALSE);  // Allow retry on session expiry
-    
-    
+
     ZkController zkController = mock(ZkController.class,
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
 
@@ -156,13 +157,13 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
       public Boolean answer(InvocationOnMock invocation) throws Throwable {
         String path = (String) invocation.getArguments()[0];
         perhapsExpired();
-        Boolean exists = client.exists(path, true);
+        Boolean exists = client.exists(path);
         perhapsExpired();
         return exists;
       }
 
       private void perhapsExpired() throws SessionExpiredException {
-        if (!sessionExpired && rarely()) {
+        if (!sessionExpired && LuceneTestCase.rarely()) {
           sessionExpired = true;
           throw new KeeperException.SessionExpiredException();
         }
@@ -182,6 +183,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
         factory.create("schema.xml", solrConfig);
       }
       catch (Exception e) {
+        log.error("", e);
         throw new RuntimeException(e);
       }
     };

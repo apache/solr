@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -29,22 +32,33 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
+@SolrTestCase.SuppressObjectReleaseTracker(object = "Http2SolrClient")
 public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
 
   private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
+    File workDir = SolrTestUtil.createTempDir().toFile();
     setupJettyTestHome(workDir, DEFAULT_TEST_COLLECTION_NAME);
     return workDir;
   }
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    System.setProperty("solr.test.sys.prop1", "1");
+    System.setProperty("solr.test.sys.prop2", "2");
     File solrHome = createSolrHome();
     solrHome.deleteOnExit();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    jetty = createAndStartJetty(
+        solrHome.getAbsolutePath());
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 
   @Test
@@ -54,8 +68,8 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
     String url = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
-    IOException ex = expectThrows(IOException.class,  () -> getTuples(solrStream));
-    assertTrue(ex.getMessage().contains(SQLHandler.sqlNonCloudErrorMsg));
+    IOException ex = SolrTestCaseUtil.expectThrows(IOException.class, () -> getTuples(solrStream));
+    assertTrue(ex.getMessage(), ex.getMessage().contains(SQLHandler.sqlNonCloudErrorMsg));
   }
 
   private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

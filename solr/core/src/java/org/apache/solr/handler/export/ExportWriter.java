@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -58,6 +59,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -123,6 +125,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   FixedBitSet[] sets = null;
   PushWriter writer;
   private String wt;
+  private boolean closeWriter;
+  private boolean closeRespWriter;
 
   private static class TupleEntryWriter implements EntryWriter {
     Tuple tuple;
@@ -139,6 +143,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public static class ExportWriterStream extends TupleStream implements Expressible {
+    private static final Pattern COMPILE = Pattern.compile("\\s+");
     StreamContext context;
     StreamComparator streamComparator;
     int pos = -1;
@@ -166,14 +171,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return null;
     }
 
-    private StreamComparator parseComp(String sort) throws IOException {
+    private static StreamComparator parseComp(String sort) throws IOException {
 
       String[] sorts = sort.split(",");
       StreamComparator[] comps = new StreamComparator[sorts.length];
       for(int i=0; i<sorts.length; i++) {
         String s = sorts[i];
 
-        String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+        String[] spec = COMPILE.split(s.trim()); //This should take into account spaces in the sort spec.
 
         if (spec.length != 2) {
           throw new IOException("Invalid sort spec:" + s);
@@ -270,15 +275,17 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   @Override
   public void close() throws IOException {
-    if (writer != null) writer.close();
-    if (respWriter != null) {
-      respWriter.flush();
+    if (closeWriter) {
+      if (writer != null) writer.close();
+      writer = null;
+    }
+    if (respWriter != null && closeRespWriter) {
       respWriter.close();
     }
 
   }
 
-  protected void writeException(Exception e, PushWriter w, boolean logException) throws IOException {
+  protected static void writeException(Throwable e, PushWriter w, boolean logException) throws IOException {
     w.writeMap(mw -> {
       mw.put("responseHeader", singletonMap("status", 400))
           .put("response", makeMap(
@@ -294,12 +301,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
     if (rw instanceof BinaryResponseWriter) {
       //todo add support for other writers after testing
-      writer = new JavaBinCodec(os, null);
+      writer = new JavaBinCodec((ExpandableDirectBufferOutputStream) os, null);
+      closeWriter = true;
     } else {
       respWriter = new OutputStreamWriter(os, StandardCharsets.UTF_8);
       writer = JSONResponseWriter.getPushWriter(respWriter, req, res);
+      closeRespWriter = true;
+      closeWriter = true;
     }
-    Exception exception = res.getException();
+    Throwable exception = res.getException();
     if (exception != null) {
       if (!(exception instanceof IgnoreException)) {
         writeException(exception, writer, false);
@@ -442,7 +452,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  protected int transferBatchToArrayForOutput(SortQueue queue, SortDoc[] destinationArr) {
+  protected static int transferBatchToArrayForOutput(SortQueue queue, SortDoc[] destinationArr) {
     int outDocsIndex = -1;
     for (int i = 0; i < queue.maxSize; i++) {
       SortDoc s = queue.pop();
@@ -540,7 +550,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  protected FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
+  protected static FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
     IndexSchema schema = searcher.getSchema();
     FieldWriter[] writers = new FieldWriter[fields.length];
     for (int i = 0; i < fields.length; i++) {
@@ -612,7 +622,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return writers;
   }
 
-  private SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
+  private static SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
     SortValue[] sortValues = new SortValue[sortFields.length];
     IndexSchema schema = searcher.getSchema();
     for (int i = 0; i < sortFields.length; ++i) {

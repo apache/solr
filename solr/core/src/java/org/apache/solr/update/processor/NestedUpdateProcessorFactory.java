@@ -115,6 +115,10 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
 
     private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
+      if (sdoc == parent) {
+        throw new IllegalArgumentException("Parent and child must be different instances");
+      }
+
       if(storePath) {
         setPathField(sdoc, fullPath);
       }
@@ -124,7 +128,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       processDocChildren(sdoc, fullPath);
     }
 
-    private String generateChildUniqueId(String parentId, String childKey, String childNum) {
+    private static String generateChildUniqueId(String parentId, String childKey, String childNum) {
       // combines parentId with the child's key and childNum. e.g. "10/footnote#1"
       return parentId + PATH_SEP_CHAR + childKey + NUM_SEP_CHAR + childNum;
     }
@@ -133,7 +137,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       sdoc.setField(IndexSchema.NEST_PARENT_FIELD_NAME, parent.getFieldValue(uniqueKeyFieldName));
     }
 
-    private void setPathField(SolrInputDocument sdoc, String fullPath) {
+    private static void setPathField(SolrInputDocument sdoc, String fullPath) {
       sdoc.setField(IndexSchema.NEST_PATH_FIELD_NAME, fullPath);
     }
 

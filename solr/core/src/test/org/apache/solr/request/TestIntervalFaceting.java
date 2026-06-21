@@ -26,7 +26,10 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -34,6 +37,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.request.IntervalFacets.IntervalCompareResult;
 import org.apache.solr.response.SolrQueryResponse;
@@ -42,6 +46,7 @@ import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SyntaxError;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -52,13 +57,19 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;
+  public static final long[] EMPTY_LONGS = {};
   private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
   
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestIntervalFaceting() throws Exception {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig-basic.xml", "schema-docValuesFaceting.xml");
+  }
+
+  @AfterClass
+  public static void afterTestIntervalFaceting() {
+    deleteCore();
   }
 
   @Override
@@ -66,7 +77,6 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
     assertU(commit());
     assertU(optimize());
-    assertQ(req("*:*"), "//*[@numFound='0']");
     super.tearDown();
   }
 
@@ -155,8 +165,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   private int getNumberOfReaders() {
-    try {
-      return h.getCore().withSearcher(searcher -> searcher.getTopReaderContext().leaves().size());
+    try (SolrCore core = h.getCore()) {
+      return core.withSearcher(searcher -> searcher.getTopReaderContext().leaves().size());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -180,25 +190,25 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQueriesString("test_s_dv");
 
     // error cases
-    assertQEx("missing beginning of range",
+    assertQEx("Invalid start character b in facet interval",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "bird,bird]"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
-    assertQEx("only separator is escaped",
+    assertQEx("Missing unescaped comma separating interval ends in",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "(bird\\,turtle]"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
-    assertQEx("missing separator",
+    assertQEx("Missing unescaped comma separating interval ends in",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "(bird]"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
-    assertQEx("missing end of range",
+    assertQEx("Invalid end character e in facet interval",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "(bird,turtle"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
   }
 
@@ -251,10 +261,11 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
-  public void testRandom() throws Exception {
+  @LuceneTestCase.Slow
+  @LuceneTestCase.Nightly
+  public void testRandom() throws Throwable {
     // All field values will be a number between 0 and cardinality
-    int cardinality = 10000;
+    int cardinality = TEST_NIGHTLY ? 3000 : 100;
     // Fields to use for interval faceting
     String[] fields = new String[]{
         "test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv", "test_dt_dv",
@@ -262,14 +273,15 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         "test_l", "test_f", "test_d", "test_dt", "test_ss", "test_is", "test_fs", "test_ls", "test_ds", "test_dts",
         "test_i_p", "test_is_p", "test_l_p", "test_ls_p", "test_f_p", "test_fs_p", "test_d_p", "test_ds_p", "test_dts_p"
         };
-    for (int i = 0; i < atLeast(500); i++) {
+    final int atLeast = SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 10);
+    for (int i = 0; i < atLeast; i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         assertU(adoc("id", String.valueOf(i)));
         continue;
       }
 
-      if (random().nextInt(100) == 0 && i > 0) {
+      if (random().nextInt(TEST_NIGHTLY ? 100 : 10) == 0 && i > 0) {
         //delete some docs
         assertU(delI(String.valueOf(i - 1)));
       }
@@ -309,7 +321,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    for (int i = 0; i < atLeast(10000); i++) {
+    final int atLeast1 = SolrTestUtil.atLeast(TEST_NIGHTLY ? 1713 : 100);
+    for (int i = 0; i < atLeast1; i++) {
       doTestQuery(cardinality, fields);
     }
 
@@ -320,7 +333,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   double raondomDouble(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(4);
       if (num == 0) return Double.NEGATIVE_INFINITY;
       if (num == 1) return Double.POSITIVE_INFINITY;
@@ -335,7 +348,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   float randomFloat(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(4);
       if (num == 0) return Float.NEGATIVE_INFINITY;
       if (num == 1) return Float.POSITIVE_INFINITY;
@@ -350,7 +363,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   int randomInt(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(2);
       if (num == 0) return Integer.MAX_VALUE;
       if (num == 1) return Integer.MIN_VALUE;
@@ -359,7 +372,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
   
   long randomLong(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(2);
       if (num == 0) return Long.MAX_VALUE;
       if (num == 1) return Long.MIN_VALUE;
@@ -372,11 +385,11 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
    * facet query with the same range
    */
   @SuppressWarnings("unchecked")
-  private void doTestQuery(int cardinality, String[] fields) throws Exception {
+  private void doTestQuery(int cardinality, String[] fields) throws Throwable {
     String[] startOptions = new String[]{"(", "["};
     String[] endOptions = new String[]{")", "]"};
     ModifiableSolrParams params = new ModifiableSolrParams();
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       params.set("q", "*:*");
     } else {
       // the query should match some documents in most cases
@@ -384,13 +397,13 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
       params.set("q", "id:[" + qRange[0] + " TO " + qRange[1] + "]");
     }
     params.set("facet", "true");
-    String field = pickRandom(fields); //choose from any of the fields
+    String field = SolrTestCaseUtil.pickRandom(fields); //choose from any of the fields
     params.set("facet.interval", field);
     // number of intervals
     for (int i = 0; i < 1 + random().nextInt(20); i++) {
       String[] interval = getRandomRange(cardinality, field);
-      String open = pickRandom(startOptions);
-      String close = pickRandom(endOptions);
+      String open = SolrTestCaseUtil.pickRandom(startOptions);
+      String close = SolrTestCaseUtil.pickRandom(endOptions);
       params.add("f." + field + ".facet.interval.set", open + interval[0] + "," + interval[1] + close);
       params.add("facet.query", field + ":" + open.replace('(', '{') + interval[0] + " TO " + interval[1] + close.replace(')', '}'));
     }
@@ -432,61 +445,63 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
    * The range could also contain "*" as beginning and/or end of the range
    */
   private String[] getRandomRange(int max, String fieldName) {
-    Number[] values = new Number[2];
-    FieldType ft = h.getCore().getLatestSchema().getField(fieldName).getType();
-    if (ft.getNumberType() == null) {
-      assert ft instanceof StrField;
-      values[0] = randomInt(max);
-      values[1] = randomInt(max);
-      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
-    } else {
-      switch (ft.getNumberType()) {
-        case DOUBLE:
-          values[0] = raondomDouble(max);
-          values[1] = raondomDouble(max);
-          break;
-        case FLOAT:
-          values[0] = randomFloat(max);
-          values[1] = randomFloat(max);
-          break;
-        case INTEGER:
-          values[0] = randomInt(max);
-          values[1] = randomInt(max);
-          break;
-        case LONG:
-          values[0] = randomLong(max);
-          values[1] = randomLong(max);
-          break;
-        case DATE:
-          values[0] = randomMs(max);
-          values[1] = randomMs(max);
-          break;
-        default:
-          throw new AssertionError("Unexpected number type");
-        
-      }
-      Arrays.sort(values);
-    }
-    String[] stringValues = new String[2];
-    if (rarely()) {
-      stringValues[0] = "*";
-    } else {
-      if (ft.getNumberType() == NumberType.DATE) {
-        stringValues[0] = dateFormat.format(values[0]);
+    try (SolrCore core = h.getCore()) {
+      Number[] values = new Number[2];
+      FieldType ft = core.getLatestSchema().getField(fieldName).getType();
+      if (ft.getNumberType() == null) {
+        assert ft instanceof StrField;
+        values[0] = randomInt(max);
+        values[1] = randomInt(max);
+        Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
       } else {
-        stringValues[0] = String.valueOf(values[0]);
+        switch (ft.getNumberType()) {
+          case DOUBLE:
+            values[0] = raondomDouble(max);
+            values[1] = raondomDouble(max);
+            break;
+          case FLOAT:
+            values[0] = randomFloat(max);
+            values[1] = randomFloat(max);
+            break;
+          case INTEGER:
+            values[0] = randomInt(max);
+            values[1] = randomInt(max);
+            break;
+          case LONG:
+            values[0] = randomLong(max);
+            values[1] = randomLong(max);
+            break;
+          case DATE:
+            values[0] = randomMs(max);
+            values[1] = randomMs(max);
+            break;
+          default:
+            throw new AssertionError("Unexpected number type");
+
+        }
+        Arrays.sort(values);
       }
-    }
-    if (rarely()) {
-      stringValues[1] = "*";
-    } else {
-      if (ft.getNumberType() == NumberType.DATE) {
-        stringValues[1] = dateFormat.format(values[1]);
+      String[] stringValues = new String[2];
+      if (LuceneTestCase.rarely()) {
+        stringValues[0] = "*";
       } else {
-        stringValues[1] = String.valueOf(values[1]);
+        if (ft.getNumberType() == NumberType.DATE) {
+          stringValues[0] = dateFormat.format(values[0]);
+        } else {
+          stringValues[0] = String.valueOf(values[0]);
+        }
       }
+      if (LuceneTestCase.rarely()) {
+        stringValues[1] = "*";
+      } else {
+        if (ft.getNumberType() == NumberType.DATE) {
+          stringValues[1] = dateFormat.format(values[1]);
+        } else {
+          stringValues[1] = String.valueOf(values[1]);
+        }
+      }
+      return stringValues;
     }
-    return stringValues;
   }
 
   @Test
@@ -496,22 +511,29 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertInterval("test_l_dv", "[0,2]", new long[]{0, 1, 2}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
     assertInterval("test_l_dv", "[0,2)", new long[]{0, 1}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
 
-    assertInterval("test_l_dv", "(0,*)", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, 0, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{});
-    assertInterval("test_l_dv", "(*,2)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1}, new long[]{}, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "(*,*)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{}, new long[]{});
+    assertInterval("test_l_dv", "(0,*)", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, 0, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS);
+    assertInterval("test_l_dv", "(*,2)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1}, EMPTY_LONGS, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "(*,*)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, EMPTY_LONGS,
+        EMPTY_LONGS);
 
-    assertInterval("test_l_dv", "[0,*]", new long[]{0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{});
-    assertInterval("test_l_dv", "[*,2]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2}, new long[]{}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "[*,*]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{}, new long[]{});
+    assertInterval("test_l_dv", "[0,*]", new long[]{0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS);
+    assertInterval("test_l_dv", "[*,2]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2}, EMPTY_LONGS, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "[*,*]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, EMPTY_LONGS,
+        EMPTY_LONGS);
 
-    assertInterval("test_l_dv", "(2,2)", new long[]{}, new long[]{2, 1, 0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "(0,0)", new long[]{}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "(2,2)", EMPTY_LONGS, new long[]{2, 1, 0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "(0,0)", EMPTY_LONGS, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
 
-    assertInterval("test_l_dv", "(0," + Long.MAX_VALUE + "]", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{});
+    assertInterval("test_l_dv", "(0," + Long.MAX_VALUE + "]", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS);
     assertInterval("test_l_dv", "(0," + Long.MAX_VALUE + ")", new long[]{1, 2, 3, Integer.MAX_VALUE}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{Long.MAX_VALUE});
     assertInterval("test_l_dv", "(" + Long.MIN_VALUE + ",0)", new long[]{-1, Integer.MIN_VALUE}, new long[]{Long.MIN_VALUE}, new long[]{1, 2, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + ",0)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{}, new long[]{1, 2, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + "," + Long.MAX_VALUE + "]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 1, 2, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{}, new long[]{});
+    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + ",0)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS, new long[]{1, 2, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + "," + Long.MAX_VALUE + "]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 1, 2, Integer.MAX_VALUE, Long.MAX_VALUE},
+        EMPTY_LONGS, EMPTY_LONGS);
     assertInterval("test_l_dv", "(" + Long.MIN_VALUE + "," + Long.MAX_VALUE + ")", new long[]{-1, Integer.MIN_VALUE, 1, 2, Integer.MAX_VALUE}, new long[]{Long.MIN_VALUE}, new long[]{Long.MAX_VALUE});
 
     assertInterval("test_l_dv", "( 0,2)", new long[]{1}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
@@ -608,7 +630,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         "facet.interval", "test_s_dv",
         "facet.interval", "test_l_dv",
         "f.test_s_dv.facet.interval.set", "[cat,dog]"),
-        SolrException.ErrorCode.BAD_REQUEST);
+        SolrException.ErrorCode.BAD_REQUEST, true);
     
     // use of facet.interval.set
     assertQ(req("q", "*:*", "facet", "true",
@@ -672,60 +694,60 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         req("q", "*:*", "facet", "true",
         "facet.interval", "test_l_dv",
         "f.test_l_dv.facet.interval.set", "[cat,dog]"),
-        SolrException.ErrorCode.BAD_REQUEST);
+        SolrException.ErrorCode.BAD_REQUEST, true);
 
   }
 
   private void assertStringInterval(String fieldName, String intervalStr,
                                     String expectedStart, String expectedEnd) throws SyntaxError {
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
+    try (SolrCore core = h.getCore()) {
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
 
-    assertEquals("Expected start " + expectedStart + " but found " + f.getType().toObject(f, interval.start),
-        interval.start, new BytesRef(f.getType().toInternal(expectedStart)));
+      assertEquals("Expected start " + expectedStart + " but found " + f.getType().toObject(f, interval.start), interval.start, new BytesRef(f.getType().toInternal(expectedStart)));
 
-    assertEquals("Expected end " + expectedEnd + " but found " + f.getType().toObject(f, interval.end),
-        interval.end, new BytesRef(f.getType().toInternal(expectedEnd)));
+      assertEquals("Expected end " + expectedEnd + " but found " + f.getType().toObject(f, interval.end), interval.end, new BytesRef(f.getType().toInternal(expectedEnd)));
+    }
   }
 
   private void assertBadInterval(String fieldName, String intervalStr, String errorMsg) {
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    SyntaxError e = expectThrows(SyntaxError.class,  () -> new FacetInterval(f, intervalStr, new ModifiableSolrParams()));
-    assertTrue("Unexpected error message for interval String: " + intervalStr + ": " +
-        e.getMessage(), e.getMessage().contains(errorMsg));
+    try (SolrCore core = h.getCore()) {
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      SyntaxError e = SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> new FacetInterval(f, intervalStr, new ModifiableSolrParams()));
+      assertTrue("Unexpected error message for interval String: " + intervalStr + ": " + e.getMessage(), e.getMessage().contains(errorMsg));
+    }
   }
 
   private void assertInterval(String fieldName, String intervalStr, long[] included, long[] lowerThanStart, long[] graterThanEnd) throws SyntaxError {
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
-    for (long l : included) {
-      assertEquals("Value " + l + " should be INCLUDED for interval" + interval,
-          IntervalCompareResult.INCLUDED, interval.includes(l));
+    try (SolrCore core = h.getCore()) {
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
+      for (long l : included) {
+        assertEquals("Value " + l + " should be INCLUDED for interval" + interval, IntervalCompareResult.INCLUDED, interval.includes(l));
+      }
+      for (long l : lowerThanStart) {
+        assertEquals("Value " + l + " should be LOWER_THAN_START for inteval " + interval, IntervalCompareResult.LOWER_THAN_START, interval.includes(l));
+      }
+      for (long l : graterThanEnd) {
+        assertEquals("Value " + l + " should be GRATER_THAN_END for inteval " + interval, IntervalCompareResult.GREATER_THAN_END, interval.includes(l));
+      }
     }
-    for (long l : lowerThanStart) {
-      assertEquals("Value " + l + " should be LOWER_THAN_START for inteval " + interval,
-          IntervalCompareResult.LOWER_THAN_START, interval.includes(l));
-    }
-    for (long l : graterThanEnd) {
-      assertEquals("Value " + l + " should be GRATER_THAN_END for inteval " + interval,
-          IntervalCompareResult.GREATER_THAN_END, interval.includes(l));
-    }
-
   }
   
   private void assertIntervalKey(String fieldName, String intervalStr,
       String expectedKey, String...params) throws SyntaxError {
-    assert (params.length&1)==0:"Params must have an even number of elements";
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    for (int i = 0; i < params.length - 1;) {
-      solrParams.set(params[i], params[i+1]);
-      i+=2;
+    try (SolrCore core = h.getCore()) {
+      assert (params.length & 1) == 0 : "Params must have an even number of elements";
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      for (int i = 0; i < params.length - 1; ) {
+        solrParams.set(params[i], params[i + 1]);
+        i += 2;
+      }
+      FacetInterval interval = new FacetInterval(f, intervalStr, solrParams);
+
+      assertEquals("Expected key " + expectedKey + " but found " + interval.getKey(), expectedKey, interval.getKey());
     }
-    FacetInterval interval = new FacetInterval(f, intervalStr, solrParams);
-    
-    assertEquals("Expected key " + expectedKey + " but found " + interval.getKey(), 
-        expectedKey, interval.getKey());
   }
   
   public void testChangeKey() {

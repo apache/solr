@@ -17,8 +17,7 @@
 package org.apache.solr.servlet;
 
 import java.io.PrintWriter;
-import java.io.StringWriter;
-
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -56,17 +55,24 @@ public class ResponseUtils {
       }
     }
     
+    String msg = null;
     for (Throwable th = ex; th != null; th = th.getCause()) {
-      String msg = th.getMessage();
+      msg = th.getMessage();
       if (msg != null) {
         info.add("msg", msg);
         break;
       }
     }
+    // Never emit a message-less error response: a 500 whose entire cause chain has null messages is
+    // undiagnosable from the client (it surfaces as "(500) ... : null"). Fall back to the root cause's
+    // class name so the client always receives something actionable.
+    if (msg == null) {
+      info.add("msg", SolrException.getRootCause(ex).getClass().getName());
+    }
     
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      StringWriter sw = new StringWriter();
+      StringBuilderWriter sw = new StringBuilderWriter(1000);
       ex.printStackTrace(new PrintWriter(sw));
       SolrException.log(log, null, ex);
       info.add("trace", sw.toString());
@@ -74,7 +80,7 @@ public class ResponseUtils {
       // non standard codes have undefined results with various servers
       if (code < 100) {
         log.warn("invalid return code: {}", code);
-        code = 500;
+        code = 501;
       }
     }
     

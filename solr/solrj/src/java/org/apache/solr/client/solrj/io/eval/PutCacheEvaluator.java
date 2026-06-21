@@ -19,11 +19,12 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 
 import java.util.Locale;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.jctools.maps.NonBlockingHashMap;
 
 public class PutCacheEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -46,9 +47,9 @@ public class PutCacheEvaluator extends RecursiveObjectEvaluator implements ManyV
       space = space.replace("\"", "");
       key = key.replace("\"", "");
       Object value = values[2];
-      ConcurrentMap spaceCache = (ConcurrentMap)objectCache.get(space);
+      Map spaceCache = (ConcurrentMap)objectCache.get(space);
       if(spaceCache == null) {
-        spaceCache = new ConcurrentHashMap();
+        spaceCache = new NonBlockingHashMap();
         objectCache.put(space, spaceCache);
       }
 

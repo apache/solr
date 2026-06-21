@@ -55,7 +55,7 @@ public class SortStream extends TupleStream implements Expressible {
   public SortStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter byExpression = factory.getNamedOperand(expression, "by");
+    StreamExpressionNamedParameter byExpression = StreamFactory.getNamedOperand(expression, "by");
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 1){
@@ -72,7 +72,7 @@ public class SortStream extends TupleStream implements Expressible {
     
     init(
           factory.constructStream(streamExpressions.get(0)),
-          factory.constructComparator(((StreamExpressionValue)byExpression.getParameter()).getValue(), FieldComparator.class)
+          StreamFactory.constructComparator(((StreamExpressionValue)byExpression.getParameter()).getValue(), FieldComparator.class)
         );
   }
   
@@ -132,8 +132,8 @@ public class SortStream extends TupleStream implements Expressible {
     }
     
     // by
-    if(comparator instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("by",((Expressible)comparator).toExpression(factory)));
+    if(comparator != null){
+      expression.addParameter(new StreamExpressionNamedParameter("by", comparator.toExpression(factory)));
     }
     else{
       throw new IOException("This SortStream contains a non-expressible equalitor - it cannot be converted to an expression");

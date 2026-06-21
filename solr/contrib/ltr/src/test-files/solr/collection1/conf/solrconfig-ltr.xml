@@ -19,6 +19,11 @@
  <!-- for use with the DefaultWrapperModel class -->
  <lib dir="${solr.solr.home:.}/models" />
 
+ <indexConfig>
+  <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  <lockType>${solr.tests.lockType:single}</lockType>
+ </indexConfig>
+
  <schemaFactory class="ClassicIndexSchemaFactory" />
 
  <requestDispatcher>
@@ -32,8 +37,8 @@
  <query>
   <filterCache class="solr.CaffeineCache" size="4096"
    initialSize="2048" autowarmCount="0" />
-  <cache name="QUERY_DOC_FV" class="solr.search.CaffeineCache" size="4096"
-   initialSize="2048" autowarmCount="4096" regenerator="solr.search.NoOpRegenerator" />
+  <cache name="QUERY_DOC_FV" class="solr.CaffeineCache" size="4096"
+   initialSize="2048" autowarmCount="4096" regenerator="solr.NoOpRegenerator" />
  </query>
 
  <!-- add a transformer that will encode the document features in the response.

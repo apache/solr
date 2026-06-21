@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
-import java.net.InetAddress;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Date;
@@ -32,7 +31,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.codahale.metrics.Gauge;
-import org.apache.lucene.LucenePackage;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -105,16 +104,17 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
     
     RTimer timer = new RTimer();
-    try {
-      InetAddress addr = InetAddress.getLocalHost();
-      hostname = addr.getCanonicalHostName();
-    } catch (Exception e) {
-      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}"
-          , PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP
-          , " sysprop to true on startup to prevent future lookups if DNS can not be fixed.", e);
-      hostname = null;
-      return;
-    }
+    // MRM TODO: - this is bad for tests, blocks a lot
+//    try {
+//      InetAddress addr = InetAddress.getLocalHost();
+//      hostname = addr.getCanonicalHostName();
+//    } catch (Exception e) {
+//      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}"
+//          , PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP
+//          , " sysprop to true on startup to prevent future lookups if DNS can not be fixed.", e);
+//      hostname = null;
+//      return;
+//    }
     timer.stop();
     
     if (15000D < timer.getTime()) {
@@ -339,7 +339,6 @@ public class SystemInfoHandler extends RequestHandlerBase
       info.add("username", username);
 
       // Mapped roles for this principal
-      @SuppressWarnings("resource")
       AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
       if (auth != null) {
         RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
@@ -360,7 +359,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     info.add( "solr-spec-version", p.getSpecificationVersion() );
     info.add( "solr-impl-version", p.getImplementationVersion() );
   
-    p = LucenePackage.class.getPackage();
+    p = Version.class.getPackage();
 
     info.add( "lucene-spec-version", p.getSpecificationVersion() );
     info.add( "lucene-impl-version", p.getImplementationVersion() );
@@ -391,13 +390,13 @@ public class SystemInfoHandler extends RequestHandlerBase
     String newSizeAndUnits;
 
     if (bytes / ONE_GB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float)bytes / ONE_GB)) + " GB";
+      newSizeAndUnits = (df.format((float)bytes / ONE_GB)) + " GB";
     } else if (bytes / ONE_MB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float)bytes / ONE_MB)) + " MB";
+      newSizeAndUnits = df.format((float) bytes / ONE_MB) + " MB";
     } else if (bytes / ONE_KB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float)bytes / ONE_KB)) + " KB";
+      newSizeAndUnits = df.format((float) bytes / ONE_KB) + " KB";
     } else {
-      newSizeAndUnits = String.valueOf(bytes) + " bytes";
+      newSizeAndUnits = bytes + " bytes";
     }
 
     return newSizeAndUnits;
@@ -406,8 +405,8 @@ public class SystemInfoHandler extends RequestHandlerBase
   private static List<String> getInputArgumentsRedacted(RuntimeMXBean mx) {
     List<String> list = new LinkedList<>();
     for (String arg : mx.getInputArguments()) {
-      if (arg.startsWith("-D") && arg.contains("=") && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf("=")))) {
-        list.add(String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf("=")), REDACT_STRING));
+      if (arg.startsWith("-D") && arg.contains("=") && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf('=')))) {
+        list.add(String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf('=')), REDACT_STRING));
       } else {
         list.add(arg);
       }

@@ -71,11 +71,11 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     for (Command command : data) {
       NamedList commandResult;
-      if (TopGroupsFieldCommand.class.isInstance(command)) {
+      if (command instanceof TopGroupsFieldCommand) {
         TopGroupsFieldCommand fieldCommand = (TopGroupsFieldCommand) command;
         SchemaField groupField = schema.getField(fieldCommand.getKey());
         commandResult = serializeTopGroups(fieldCommand.result(), groupField);
-      } else if (QueryCommand.class.isInstance(command)) {
+      } else if (command instanceof QueryCommand) {
         QueryCommand queryCommand = (QueryCommand) command;
         commandResult = serializeTopDocs(queryCommand.result());
       } else {
@@ -140,7 +140,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       }
 
       @SuppressWarnings({"unchecked"})
-      GroupDocs<BytesRef>[] groupDocsArr = groupDocs.toArray(new GroupDocs[groupDocs.size()]);
+      GroupDocs<BytesRef>[] groupDocsArr = groupDocs.toArray(new GroupDocs[0]);
       TopGroups<BytesRef> topGroups = new TopGroups<>(
            groupSort.getSort(), withinGroupSort.getSort(), totalHitCount, totalGroupedHitCount, groupDocsArr, Float.NaN
       );
@@ -151,8 +151,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     return result;
   }
 
-  protected ScoreDoc[] transformToNativeShardDoc(List<NamedList<Object>> documents, Sort groupSort, String shard,
-                                                 IndexSchema schema) {
+  protected static ScoreDoc[] transformToNativeShardDoc(List<NamedList<Object>> documents, Sort groupSort, String shard, IndexSchema schema) {
     ScoreDoc[] scoreDocs = new ScoreDoc[documents.size()];
     int j = 0;
     for (NamedList<Object> document : documents) {
@@ -264,7 +263,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       if (!Float.isNaN(scoreDoc.score))  {
         document.add("score", scoreDoc.score);
       }
-      if (!FieldDoc.class.isInstance(scoreDoc)) {
+      if (!(scoreDoc instanceof FieldDoc)) {
         continue; // thus don't add sortValues below
       }
 

@@ -32,12 +32,14 @@ import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
  */
 public class SearchGroupsRequestFactory implements ShardRequestFactory {
 
+  public static final ShardRequest[] EMPTY_SHARD_REQUESTS = new ShardRequest[0];
+
   @Override
   public ShardRequest[] constructRequest(ResponseBuilder rb) {
     ShardRequest sreq = new ShardRequest();
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     if (groupingSpecification.getFields().length == 0) {
-      return new ShardRequest[0];
+      return EMPTY_SHARD_REQUESTS;
     }
 
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_GROUPS;

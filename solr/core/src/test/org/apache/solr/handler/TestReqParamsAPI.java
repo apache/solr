@@ -22,15 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RestTestHarness;
@@ -40,6 +40,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
+@LuceneTestCase.Nightly // slow
 public class TestReqParamsAPI extends SolrCloudTestCase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
@@ -47,7 +48,9 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   private void setupHarnesses() {
     for (final JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      RestTestHarness harness = new RestTestHarness(() -> jettySolrRunner.getBaseUrl().toString() + "/" + COLL_NAME);
+      RestTestHarness harness = new RestTestHarness(() -> jettySolrRunner.getBaseUrl().toString() + "/" + COLL_NAME, cluster.getSolrClient().getHttpClient(),
+          cluster.getJettySolrRunners().get(0).getCoreContainer()
+          .getResourceLoader());
       if (random().nextBoolean()) {
         harness.setServerProvider(() -> jettySolrRunner.getBaseUrl().toString() + "/____v2/c/" + COLL_NAME);
       }
@@ -57,13 +60,13 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createCluster() throws Exception {
+
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2).setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLL_NAME, 1, 2);
   }
 
   @Test
@@ -79,12 +82,12 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
   }
 
   private void testReqParams() throws Exception {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add("" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add("" + replica.getCoreUrl());
     }
 
     RestTestHarness writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
@@ -99,8 +102,6 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
         "'create-requesthandler' : { 'name' : '/dump1', 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
         "}";
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config", payload);
-
-    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(COLL_NAME, cloudClient.getZkStateReader(), false, true, 90);
 
     payload = " {\n" +
         "  'set' : {'x': {" +

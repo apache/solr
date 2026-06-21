@@ -16,35 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.WeakHashMap;
-import java.util.function.Consumer;
-
-import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Collections2;
@@ -54,6 +25,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMapIndex;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import net.sf.saxon.om.NodeInfo;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -79,8 +54,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
@@ -96,10 +72,36 @@ import org.apache.solr.util.VersionedFile;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.WeakHashMap;
+import java.util.function.Consumer;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -133,15 +135,15 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private static final String DEFAULT_EXCLUDE_MARKER_FIELD_NAME = "excluded";
   private static final String DEFAULT_EDITORIAL_MARKER_FIELD_NAME = "elevated";
 
-  protected SolrParams initArgs;
-  protected Analyzer queryAnalyzer;
-  protected SchemaField uniqueKeyField;
+  private volatile SolrParams initArgs;
+  protected volatile Analyzer queryAnalyzer;
+  protected volatile SchemaField uniqueKeyField;
   /** @see QueryElevationParams#FORCE_ELEVATION */
-  protected boolean forceElevation;
+  protected volatile boolean forceElevation;
   /** @see QueryElevationParams#USE_CONFIGURED_ELEVATED_ORDER */
-  protected boolean useConfiguredElevatedOrder;
+  protected volatile boolean useConfiguredElevatedOrder;
 
-  protected boolean initialized;
+  protected volatile boolean initialized;
 
   /**
    * For each IndexReader, keep an ElevationProvider when the configuration is loaded from the data directory.
@@ -218,6 +220,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @return The number of elevation rules parsed.
    */
   protected int loadElevationConfiguration(SolrCore core) throws Exception {
+    ElevationProvider noOplevationProvider = NO_OP_ELEVATION_PROVIDER;
+
+    ElevationProvider elevationProvider = noOplevationProvider;
     synchronized (elevationProviderCache) {
       elevationProviderCache.clear();
       String configFileName = initArgs.get(CONFIG_FILE);
@@ -227,7 +232,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         throw new InitializationException("Missing component parameter " + CONFIG_FILE + " - it has to define the path to the elevation configuration file", InitializationExceptionCause.NO_CONFIG_FILE_DEFINED);
       }
       boolean configFileExists = false;
-      ElevationProvider elevationProvider = NO_OP_ELEVATION_PROVIDER;
+
 
       // check if using ZooKeeper
       ZkController zkController = core.getCoreContainer().getZkController();
@@ -250,7 +255,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             if (log.isInfoEnabled()) {
               log.info("Loading QueryElevation from: {}", fC.getAbsolutePath());
             }
-            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
+            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null);
             elevationProvider = loadElevationProvider(cfg);
           }
           elevationProviderCache.put(null, elevationProvider);
@@ -263,7 +268,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         try {
           searchHolder = core.getNewestSearcher(false);
           if (searchHolder == null) {
-            elevationProvider = NO_OP_ELEVATION_PROVIDER;
+            elevationProvider = noOplevationProvider;
           } else {
             IndexReader reader = searchHolder.get().getIndexReader();
             elevationProvider = getElevationProvider(reader, core);
@@ -281,7 +286,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * If this method does not throw an exception, this component silently fails to initialize
    * and is muted with field {@link #initialized} which becomes {@code false}.
    */
-  protected void handleInitializationException(Exception exception, InitializationExceptionCause cause) {
+  protected static void handleInitializationException(Exception exception, InitializationExceptionCause cause) {
     if (cause != InitializationExceptionCause.NO_CONFIG_FILE_DEFINED) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error initializing " + QueryElevationComponent.class.getSimpleName(), exception);
@@ -302,7 +307,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *         the {@link ElevationProvider} cache.
    * @throws E If the exception is not absorbed.
    */
-  protected <E extends Exception> ElevationProvider handleConfigLoadingException(E e, boolean resourceAccessIssue) throws E {
+  protected static <E extends Exception> ElevationProvider handleConfigLoadingException(E e, boolean resourceAccessIssue) throws E {
     throw e;
   }
 
@@ -318,6 +323,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   @VisibleForTesting
   ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) throws Exception {
+    ElevationProvider noOplevationProvider = NO_OP_ELEVATION_PROVIDER;
     synchronized (elevationProviderCache) {
       ElevationProvider elevationProvider;
       elevationProvider = elevationProviderCache.get(null);
@@ -339,7 +345,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         if (loadingException != null) {
           elevationProvider = handleConfigLoadingException(loadingException, resourceAccessIssue);
           if (elevationProvider == null) {
-            elevationProvider = NO_OP_ELEVATION_PROVIDER;
+            elevationProvider = noOplevationProvider;
             shouldCache = false;
           }
         }
@@ -362,7 +368,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @throws RuntimeException             If the configuration resource is not an XML content of the expected format
    *                                      (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException, ParserConfigurationException {
+  private ElevationProvider loadElevationProvider(SolrCore core)
+      throws IOException, SAXException, ParserConfigurationException,
+      XMLStreamException {
     String configFileName = initArgs.get(CONFIG_FILE);
     if (configFileName == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -373,10 +381,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     XmlConfigFile cfg;
     ZkController zkController = core.getCoreContainer().getZkController();
     if (zkController != null) {
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null);
     } else {
       InputStream is = VersionedFile.getLatestFile(core.getDataDir(), configFileName);
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null, null);
     }
     ElevationProvider elevationProvider = loadElevationProvider(cfg);
     assert elevationProvider != null;
@@ -391,28 +399,28 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    XPath xpath = XPathFactory.newInstance().newXPath();
-    NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
+    XPath xpath = SolrResourceLoader.getXPath();
+    ArrayList<NodeInfo> nodes = (ArrayList) config.evaluate(config.getTree(), "elevate/query", XPathConstants.NODESET);
+    for (int i = 0; i < nodes.size(); i++) {
+      NodeInfo node = nodes.get(i);
       String queryString = DOMUtil.getAttr(node, "text", "missing query 'text'");
       String matchString = DOMUtil.getAttr(node, "match");
       ElevatingQuery elevatingQuery = new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
 
-      NodeList children;
+      ArrayList<NodeInfo> children;
       try {
-        children = (NodeList) xpath.evaluate("doc", node, XPathConstants.NODESET);
+        children = (ArrayList) xpath.evaluate("doc", node, XPathConstants.NODESET);
       } catch (XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "query requires '<doc .../>' child");
       }
 
-      if (children.getLength() == 0) { // weird
+      if (children.size() == 0) { // weird
         continue;
       }
       ElevationBuilder elevationBuilder = new ElevationBuilder();
-      for (int j = 0; j < children.getLength(); j++) {
-        Node child = children.item(j);
+      for (int j = 0; j < children.size(); j++) {
+        NodeInfo child = children.get(j);
         String id = DOMUtil.getAttr(child, "id", "missing 'id'");
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
@@ -436,7 +444,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     return createElevationProvider(elevationBuilderMap);
   }
 
-  protected boolean isSubsetMatchPolicy(String matchString) {
+  protected static boolean isSubsetMatchPolicy(String matchString) {
     if (matchString == null) {
       return DEFAULT_SUBSET_MATCH;
     } else if (matchString.equalsIgnoreCase("exact")) {
@@ -499,7 +507,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
   }
 
-  private void setQuery(ResponseBuilder rb, Elevation elevation) {
+  private static void setQuery(ResponseBuilder rb, Elevation elevation) {
     rb.req.getContext().put(BOOSTED, elevation.elevatedIds);
 
     // Change the query to insert forced documents
@@ -532,13 +540,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     boolean forceElevation = rb.req.getParams().getBool(QueryElevationParams.FORCE_ELEVATION, this.forceElevation);
     boolean useConfigured = rb.req.getParams().getBool(QueryElevationParams.USE_CONFIGURED_ELEVATED_ORDER, this.useConfiguredElevatedOrder);
-    final IntIntHashMap elevatedWithPriority = getBoostDocs(rb.req.getSearcher(), elevation.elevatedIds, rb.req.getContext());
+    final Int2IntOpenHashMapIndex elevatedWithPriority = getBoostDocs(rb.req.getSearcher(), elevation.elevatedIds, rb.req.getContext());
     ElevationComparatorSource comparator = new ElevationComparatorSource(elevatedWithPriority, useConfigured);
     setSortSpec(rb, forceElevation, comparator);
     setGroupingSpec(rb, forceElevation, comparator);
   }
 
-  private void setSortSpec(ResponseBuilder rb, boolean forceElevation, ElevationComparatorSource comparator) {
+  private static void setSortSpec(ResponseBuilder rb, boolean forceElevation, ElevationComparatorSource comparator) {
     // if the sort is 'score desc' use a custom sorting method to
     // insert documents in their proper place
     SortSpec sortSpec = rb.getSortSpec();
@@ -550,31 +558,31 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
               Arrays.asList(new SchemaField[2]));
     } else {
       // Check if the sort is based on score
-      SortSpec modSortSpec = this.modifySortSpec(sortSpec, forceElevation, comparator);
+      SortSpec modSortSpec = QueryElevationComponent.modifySortSpec(sortSpec, forceElevation, comparator);
       if (null != modSortSpec) {
         rb.setSortSpec(modSortSpec);
       }
     }
   }
 
-  private void setGroupingSpec(ResponseBuilder rb, boolean forceElevation, ElevationComparatorSource comparator) {
+  private static void setGroupingSpec(ResponseBuilder rb, boolean forceElevation, ElevationComparatorSource comparator) {
     // alter the sorting in the grouping specification if there is one
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     if(groupingSpec != null) {
       SortSpec groupSortSpec = groupingSpec.getGroupSortSpec();
-      SortSpec modGroupSortSpec = this.modifySortSpec(groupSortSpec, forceElevation, comparator);
+      SortSpec modGroupSortSpec = QueryElevationComponent.modifySortSpec(groupSortSpec, forceElevation, comparator);
       if (modGroupSortSpec != null) {
         groupingSpec.setGroupSortSpec(modGroupSortSpec);
       }
       SortSpec withinGroupSortSpec = groupingSpec.getWithinGroupSortSpec();
-      SortSpec modWithinGroupSortSpec = this.modifySortSpec(withinGroupSortSpec, forceElevation, comparator);
+      SortSpec modWithinGroupSortSpec = QueryElevationComponent.modifySortSpec(withinGroupSortSpec, forceElevation, comparator);
       if (modWithinGroupSortSpec != null) {
         groupingSpec.setWithinGroupSortSpec(modWithinGroupSortSpec);
       }
     }
   }
 
-  private SortSpec modifySortSpec(SortSpec current, boolean forceElevation, ElevationComparatorSource comparator) {
+  private static SortSpec modifySortSpec(SortSpec current, boolean forceElevation, ElevationComparatorSource comparator) {
     boolean modify = false;
     SortField[] currentSorts = current.getSort().getSort();
     List<SchemaField> currentFields = current.getSchemaFields();
@@ -606,7 +614,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             : null;
   }
 
-  private void addDebugInfo(ResponseBuilder rb, Elevation elevation) {
+  private static void addDebugInfo(ResponseBuilder rb, Elevation elevation) {
     List<String> match = null;
     if (elevation != null) {
       // Extract the elevated terms into a list
@@ -634,23 +642,23 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   //TODO consider simplifying to remove "boosted" arg which can be looked up in context via BOOSTED key?
   @SuppressWarnings({"unchecked"})
-  public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Set<BytesRef> boosted,
-                                           @SuppressWarnings({"rawtypes"})Map context) throws IOException {
+  public static Int2IntOpenHashMapIndex getBoostDocs(SolrIndexSearcher indexSearcher, Set<BytesRef> boosted,
+                                                     @SuppressWarnings({"rawtypes"})Map context) throws IOException {
 
-    IntIntHashMap boostDocs = null;
+    Int2IntOpenHashMapIndex boostDocs = null;
 
     if (boosted != null) {
 
       //First see if it's already in the request context. Could have been put there by another caller.
       if (context != null) {
-        boostDocs = (IntIntHashMap) context.get(BOOSTED_DOCIDS);
+        boostDocs = (Int2IntOpenHashMapIndex) context.get(BOOSTED_DOCIDS);
         if (boostDocs != null) {
           return boostDocs;
         }
       }
 
       //Not in the context yet so load it.
-      boostDocs = new IntIntHashMap(boosted.size()); // docId to boost
+      boostDocs = new Int2IntOpenHashMapIndex(boosted.size()); // docId to boost
       int priority = boosted.size() + 1; // the corresponding priority for each boosted key (starts at this; decrements down)
       for (BytesRef uniqueKey : boosted) {
         priority--; // therefore first == bosted.size(); last will be 1
@@ -667,7 +675,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       assert priority == 1; // the last priority (lowest)
     }
 
-    if (context != null) {
+    if (context != null && boostDocs != null) {
       //noinspection unchecked
       context.put(BOOSTED_DOCIDS, boostDocs);
     }
@@ -1128,22 +1136,22 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   /** Elevates certain docs to the top. */
-  private class ElevationComparatorSource extends FieldComparatorSource {
+  private static class ElevationComparatorSource extends FieldComparatorSource {
 
-    private final IntIntHashMap elevatedWithPriority;
+    private final Int2IntOpenHashMapIndex elevatedWithPriority;
     private final boolean useConfiguredElevatedOrder;
     private final int[] sortedElevatedDocIds;
 
-    private ElevationComparatorSource(IntIntHashMap elevatedWithPriority, boolean useConfiguredElevatedOrder) {
+    private ElevationComparatorSource(Int2IntOpenHashMapIndex elevatedWithPriority, boolean useConfiguredElevatedOrder) {
       this.elevatedWithPriority = elevatedWithPriority;
       this.useConfiguredElevatedOrder = useConfiguredElevatedOrder;
 
       // copy elevatedWithPriority keys (doc IDs) into sortedElevatedDocIds, sorted
       sortedElevatedDocIds = new int[elevatedWithPriority.size()];
-      final Iterator<IntIntCursor> iterator = elevatedWithPriority.iterator();
+      ObjectIterator<Int2IntMap.Entry> iterator = elevatedWithPriority.int2IntEntrySet().fastIterator();
       for (int i = 0; i < sortedElevatedDocIds.length; i++) {
-        IntIntCursor next = iterator.next();
-        sortedElevatedDocIds[i] = next.key;
+        Int2IntMap.Entry next = iterator.next();
+        sortedElevatedDocIds[i] = next.getIntKey();
       }
       assert iterator.hasNext() == false;
       Arrays.sort(sortedElevatedDocIds);

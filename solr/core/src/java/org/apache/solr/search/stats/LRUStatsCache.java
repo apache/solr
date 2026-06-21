@@ -36,6 +36,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,9 +62,9 @@ public class LRUStatsCache extends ExactStatsCache {
 
   // local stats obtained from shard servers
   // map of <shardName, <term, termStats>>
-  private final Map<String,SolrCache<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
+  private final Map<String,SolrCache<String,TermStats>> perShardTermStats = new NonBlockingHashMap<>();
   // map of <shardName, <field, collStats>>
-  private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
+  private final Map<String,Map<String,CollectionStats>> perShardColStats = new NonBlockingHashMap<>();
   
   // global stats synchronized from the master
 
@@ -126,7 +127,7 @@ public class LRUStatsCache extends ExactStatsCache {
     // force-fetched on next request and cached.
 
     // check for missing stats from previous requests
-    if (!missingColStats.isEmpty() || !missingColStats.isEmpty()) {
+    if (missingColStats.size() != 0) {
       // needs to fetch anyway, so get the full query stats + the missing stats for caching
       ShardRequest sreq = super.doRetrieveStatsRequest(rb);
       if (!missingColStats.isEmpty()) {

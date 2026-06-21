@@ -39,7 +39,7 @@ public class CountMetric extends Metric {
   public CountMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
-    String columnName = factory.getValueOperand(expression, 0);
+    String columnName = StreamFactory.getValueOperand(expression, 0);
 
     if(1 != expression.getParameters().size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
@@ -49,7 +49,7 @@ public class CountMetric extends Metric {
   }
 
   public String[] getColumns() {
-    if(isAllColumns()) {
+    if(isAllColumns) {
       return new String[0];
     }
     return new String[]{columnName};
@@ -67,7 +67,7 @@ public class CountMetric extends Metric {
   }
 
   public void update(Tuple tuple) {
-    if(isAllColumns() || tuple.get(columnName) != null) {
+    if(isAllColumns || tuple.get(columnName) != null) {
       ++count;
     }
   }

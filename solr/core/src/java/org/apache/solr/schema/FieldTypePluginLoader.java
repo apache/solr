@@ -16,51 +16,48 @@
  */
 package org.apache.solr.schema;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
-
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.tree.tiny.TinyElementImpl;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
 
-public final class FieldTypePluginLoader 
+public final class FieldTypePluginLoader
   extends AbstractPluginLoader<FieldType> {
 
   private static final String LUCENE_MATCH_VERSION_PARAM
     = IndexSchema.LUCENE_MATCH_VERSION_PARAM;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private final XPath xpath = XPathFactory.newInstance().newXPath();
+  public static final CharFilterFactory[] EMPTY_CHAR_FILTER_FACTORIES = new CharFilterFactory[0];
+  public static final TokenFilterFactory[] EMPTY_TOKEN_FILTER_FACTORIES = new TokenFilterFactory[0];
 
   /**
    * @param schema The schema that will be used to initialize the FieldTypes
-   * @param fieldTypes All FieldTypes that are instantiated by 
+   * @param fieldTypes All FieldTypes that are instantiated by
    *        this Plugin Loader will be added to this Map
-   * @param schemaAware Any SchemaAware objects that are instantiated by 
+   * @param schemaAware Any SchemaAware objects that are instantiated by
    *        this Plugin Loader will be added to this collection.
    */
   public FieldTypePluginLoader(final IndexSchema schema,
@@ -78,31 +75,39 @@ public final class FieldTypePluginLoader
 
 
   @Override
-  protected FieldType create( SolrResourceLoader loader, 
-                              String name, 
+  protected FieldType create( SolrResourceLoader loader,
+                              String name,
                               String className,
-                              Node node ) throws Exception {
+                              NodeInfo node, XPath xpath) throws Exception {
 
-    FieldType ft = loader.newInstance(className, FieldType.class);
+    FieldType ft = loader.newInstance(className, FieldType.class, "schema.");
     ft.setTypeName(name);
-    
-    String expression = "./analyzer[@type='query']";
-    Node anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+
+    TinyElementImpl anode = (TinyElementImpl) SolrResourceLoader.configXpathExpressions.analyzerQueryExp.evaluate(node, XPathConstants.NODE);
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
-    expression = "./analyzer[@type='multiterm']";
-    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+    anode = (TinyElementImpl) SolrResourceLoader.configXpathExpressions.analyzerMultiTermExp.evaluate(node, XPathConstants.NODE);
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
-    expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
-    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-    Analyzer analyzer = readAnalyzer(anode);
+    Analyzer analyzer;
+    Object object = SolrResourceLoader.configXpathExpressions.analyzerIndexExp
+        .evaluate(node, XPathConstants.NODE);
+
+    anode = (TinyElementImpl) object;
+    analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
-    expression = "./similarity";
-    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-    SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
+    object = SolrResourceLoader.configXpathExpressions.similarityExp.evaluate(node, XPathConstants.NODE);
+    SimilarityFactory simFactory;
+    if (object instanceof TinyElementImpl) {
+      anode = (TinyElementImpl) object;
+      simFactory = IndexSchema.readSimilarity(loader, anode);
+    } else {
+      simFactory = IndexSchema.readSimilarity(loader, (NodeInfo) object);
+    }
+
+
     if (null != simFactory) {
       ft.setSimilarity(simFactory);
     }
@@ -131,7 +136,7 @@ public final class FieldTypePluginLoader
       } else {
         ft.setIsExplicitAnalyzer(true);
       }
-  
+
       if (null != analyzer) {
         ft.setIndexAnalyzer(analyzer);
         ft.setQueryAnalyzer(queryAnalyzer);
@@ -151,17 +156,15 @@ public final class FieldTypePluginLoader
     }
     return ft;
   }
-  
-  @Override
-  protected void init(FieldType plugin, Node node) throws Exception {
 
-    Map<String, String> params = DOMUtil.toMapExcept(node.getAttributes(), NAME);
+  @Override
+  protected void init(FieldType plugin, Map<String, String> params) throws Exception {
     plugin.setArgs(schema, params);
   }
 
   @Override
-  protected FieldType register(String name, 
-                               FieldType plugin) throws Exception {
+  protected FieldType register(String name,
+      FieldType plugin) throws Exception {
 
     log.trace("fieldtype defined: {}", plugin);
     return fieldTypes.put( name, plugin );
@@ -173,7 +176,7 @@ public final class FieldTypePluginLoader
   // 2> If legacyMultiTerm == true just construct the analyzer from a KeywordTokenizer. That should mimic current behavior.
   //    Do the same if they've specified that the old behavior is required (legacyMultiTerm="true")
 
-  private Analyzer constructMultiTermAnalyzer(Analyzer queryAnalyzer) {
+  private static Analyzer constructMultiTermAnalyzer(Analyzer queryAnalyzer) {
     if (queryAnalyzer == null) return null;
 
     if (!(queryAnalyzer instanceof TokenizerChain)) {
@@ -187,35 +190,34 @@ public final class FieldTypePluginLoader
   // <analyzer><tokenizer class="...."/><tokenizer class="...." arg="....">
   //
   //
-  private Analyzer readAnalyzer(Node node) throws XPathExpressionException {
-                                
+  private Analyzer readAnalyzer(TinyElementImpl node) throws XPathExpressionException {
+
     final SolrResourceLoader loader = schema.getResourceLoader();
 
     // parent node used to be passed in as "fieldtype"
     // if (!fieldtype.hasChildNodes()) return null;
     // Node node = DOMUtil.getChild(fieldtype,"analyzer");
-    
-    if (node == null) return null;
-    NamedNodeMap attrs = node.getAttributes();
-    String analyzerName = DOMUtil.getAttr(attrs,"class");
 
-    // check for all of these up front, so we can error if used in 
+    if (node == null) return null;
+    String analyzerName = node.getAttributeValue("", "class");
+
+    // check for all of these up front, so we can error if used in
     // conjunction with an explicit analyzer class.
-    NodeList charFilterNodes = (NodeList)xpath.evaluate
-      ("./charFilter",  node, XPathConstants.NODESET);
-    NodeList tokenizerNodes = (NodeList)xpath.evaluate
-      ("./tokenizer", node, XPathConstants.NODESET);
-    NodeList tokenFilterNodes = (NodeList)xpath.evaluate
-      ("./filter", node, XPathConstants.NODESET);
-      
+    ArrayList<NodeInfo> charFilterNodes = (ArrayList) SolrResourceLoader.configXpathExpressions.charFilterExp.evaluate
+      (node, XPathConstants.NODESET);
+    ArrayList<NodeInfo> tokenizerNodes = (ArrayList) SolrResourceLoader.configXpathExpressions.tokenizerExp.evaluate
+      (node, XPathConstants.NODESET);
+    ArrayList<NodeInfo> tokenFilterNodes = (ArrayList) SolrResourceLoader.configXpathExpressions.filterExp.evaluate
+      (node, XPathConstants.NODESET);
+
     if (analyzerName != null) {
 
       // explicitly check for child analysis factories instead of
       // just any child nodes, because the user might have their
       // own custom nodes (ie: <description> or something like that)
-      if (0 != charFilterNodes.getLength() ||
-          0 != tokenizerNodes.getLength() ||
-          0 != tokenFilterNodes.getLength()) {
+      if (0 != charFilterNodes.size() ||
+          0 != tokenizerNodes.size() ||
+          0 != tokenFilterNodes.size()) {
         throw new SolrException
         ( SolrException.ErrorCode.SERVER_ERROR,
           "Configuration Error: Analyzer class='" + analyzerName +
@@ -227,7 +229,7 @@ public final class FieldTypePluginLoader
         final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
         Analyzer analyzer = clazz.getConstructor().newInstance();
 
-        final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
+        final String matchVersionStr = node.getAttributeValue("", LUCENE_MATCH_VERSION_PARAM);
         final Version luceneMatchVersion = (matchVersionStr == null) ?
           schema.getDefaultLuceneMatchVersion() :
           SolrConfig.parseLuceneVersionString(matchVersionStr);
@@ -236,7 +238,9 @@ public final class FieldTypePluginLoader
               "Configuration Error: Analyzer '" + clazz.getName() +
                   "' needs a '" + IndexSchema.LUCENE_MATCH_VERSION_PARAM + "' parameter");
         }
-        analyzer.setVersion(luceneMatchVersion);
+        // Lucene 9 removed Analyzer#setVersion/#getVersion, so a custom Analyzer class cannot
+        // carry the configured luceneMatchVersion on the instance. We validate it above (it must
+        // parse) but the version cannot round-trip through the schema API for a raw Analyzer class.
         return analyzer;
       } catch (Exception e) {
         log.error("Cannot load analyzer: {}", analyzerName, e);
@@ -247,15 +251,15 @@ public final class FieldTypePluginLoader
 
     // Load the CharFilters
 
-    final ArrayList<CharFilterFactory> charFilters 
+    final ArrayList<CharFilterFactory> charFilters
       = new ArrayList<>();
     AbstractPluginLoader<CharFilterFactory> charFilterLoader =
       new AbstractPluginLoader<CharFilterFactory>
       ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
 
       @Override
-      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
+      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, NodeInfo node, XPath xpath) throws Exception {
+        final Map<String,String> params = DOMUtil.toMap(node.attributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, CharFilterFactory.class.getSimpleName()).toString());
         CharFilterFactory factory;
@@ -267,7 +271,7 @@ public final class FieldTypePluginLoader
                 "Cannot create charFilter: Both of name and className are specified.");
           }
         } else if (Objects.nonNull(className)) {
-          factory = loader.newInstance(className, CharFilterFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
+          factory = loader.newInstance(className, CharFilterFactory.class, Utils.getSolrSubPackage(CharFilterFactory.class.getPackageName()), new Class[]{Map.class}, new Object[]{params});
         } else {
           log.error("Neither of name or className is specified for charFilter.");
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -278,14 +282,14 @@ public final class FieldTypePluginLoader
       }
 
       @Override
-      protected void init(CharFilterFactory plugin, Node node) throws Exception {
+      protected void init(CharFilterFactory plugin, Map<String,String> params) throws Exception {
         if( plugin != null ) {
           charFilters.add( plugin );
         }
       }
 
       @Override
-      protected CharFilterFactory register(String name, 
+      protected CharFilterFactory register(String name,
                                            CharFilterFactory plugin) {
         return null; // used for map registration
       }
@@ -297,15 +301,15 @@ public final class FieldTypePluginLoader
     // Although an analyzer only allows a single Tokenizer, we load a list to make sure
     // the configuration is ok
 
-    final ArrayList<TokenizerFactory> tokenizers 
+    final ArrayList<TokenizerFactory> tokenizers
       = new ArrayList<>(1);
     AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
       new AbstractPluginLoader<TokenizerFactory>
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
-      
+
       @Override
-      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
+      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, NodeInfo node, XPath xpath) throws Exception {
+        final Map<String,String> params = DOMUtil.toMap(node.attributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenizerFactory.class.getSimpleName()).toString());
         TokenizerFactory factory;
@@ -317,7 +321,7 @@ public final class FieldTypePluginLoader
                 "Cannot create tokenizer: Both of name and className are specified.");
           }
         } else if (Objects.nonNull(className)) {
-          factory = loader.newInstance(className, TokenizerFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
+          factory = loader.newInstance(className, TokenizerFactory.class, new String[]{"analysis."}, new Class[]{Map.class}, new Object[]{params});
         } else {
           log.error("Neither of name or className is specified for tokenizer.");
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -326,9 +330,9 @@ public final class FieldTypePluginLoader
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
         return factory;
       }
-      
+
       @Override
-      protected void init(TokenizerFactory plugin, Node node) throws Exception {
+      protected void init(TokenizerFactory plugin, Map<String,String> params) throws Exception {
         if( !tokenizers.isEmpty() ) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
               "The schema defines multiple tokenizers for: "+node );
@@ -343,7 +347,7 @@ public final class FieldTypePluginLoader
     };
 
     tokenizerLoader.load( loader, tokenizerNodes );
-    
+
     // Make sure something was loaded
     if( tokenizers.isEmpty() ) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer");
@@ -351,15 +355,15 @@ public final class FieldTypePluginLoader
 
     // Load the Filters
 
-    final ArrayList<TokenFilterFactory> filters 
-      = new ArrayList<>();
+    final ArrayList<TokenFilterFactory> filters
+      = new ArrayList<>(64);
 
-    AbstractPluginLoader<TokenFilterFactory> filterLoader = 
+    AbstractPluginLoader<TokenFilterFactory> filterLoader =
       new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
     {
       @Override
-      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
+      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, NodeInfo node, XPath xpath) throws Exception {
+        final Map<String,String> params = DOMUtil.toMap(node.attributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenFilterFactory.class.getSimpleName()).toString());
         TokenFilterFactory factory;
@@ -371,7 +375,7 @@ public final class FieldTypePluginLoader
                 "Cannot create tokenFilter: Both of name and className are specified.");
           }
         } else if (Objects.nonNull(className)) {
-          factory = loader.newInstance(className, TokenFilterFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
+          factory = loader.newInstance(className, TokenFilterFactory.class, new String[]{"schema."}, new Class[]{Map.class}, new Object[]{params});
         } else {
           log.error("Neither of name or className is specified for tokenFilter.");
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -380,9 +384,9 @@ public final class FieldTypePluginLoader
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
         return factory;
       }
-      
+
       @Override
-      protected void init(TokenFilterFactory plugin, Node node) throws Exception {
+      protected void init(TokenFilterFactory plugin, Map<String,String> paramse) throws Exception {
         if( plugin != null ) {
           filters.add( plugin );
         }
@@ -394,9 +398,9 @@ public final class FieldTypePluginLoader
       }
     };
     filterLoader.load( loader, tokenFilterNodes );
-    
-    return new TokenizerChain(charFilters.toArray(new CharFilterFactory[charFilters.size()]),
-                              tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
+
+    return new TokenizerChain(charFilters.toArray(EMPTY_CHAR_FILTER_FACTORIES),
+                              tokenizers.get(0), filters.toArray(EMPTY_TOKEN_FILTER_FACTORIES));
   }
 
   private Version parseConfiguredVersion(String configuredVersion, String pluginClassName) {
@@ -412,5 +416,5 @@ public final class FieldTypePluginLoader
     }
     return version;
   }
-    
+
 }

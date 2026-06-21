@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,15 +36,18 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
   }
 
   @BeforeClass
-  public static void setUpBeforeClass() throws Exception {
+  public static void beforeDistributedQueryComponentCustomSortTest() throws Exception {
     initCore("solrconfig.xml", "schema-custom-field.xml");
+  }
+
+  @AfterClass
+  public static void afterDistributedQueryComponentCustomSortTest() throws Exception {
+    deleteCore();
   }
 
   @Test
   @ShardsFixed(num = 3)
   public void test() throws Exception {
-    del("*:*");
-
     index(id, "1", "text", "a", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }),                     //  2 
           // quick check to prove "*" dynamicField hasn't been broken by somebody mucking with schema
           "asdfasdf_field_should_match_catchall_dynamic_field_adsfasdf", "value");

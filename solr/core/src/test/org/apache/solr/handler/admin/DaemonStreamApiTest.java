@@ -21,9 +21,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -36,9 +39,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.TestSQLHandler;
 import org.apache.solr.util.TimeOut;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
@@ -57,20 +58,43 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   final int numDaemons = random().nextInt(3) + 2;
   String daemonOfInterest;
 
-  List<String> daemonNames = new ArrayList<>();
+  Set<String> daemonNames = ConcurrentHashMap.newKeySet();
 
   private String url;
 
+  @BeforeClass
+  public static void beforeDaemonStreamApiTest() throws Exception {
+    interruptThreadsOnTearDown(false, "DaemonStream-");
+    DAEMON_DEF =
+            "  daemon(id=\"DAEMON_NAME\"," +
+                    "    runInterval=\"1000\"," +
+                    "    terminate=\"false\"," +
+                    "    update(targetColl," +
+                    "      batchSize=100," +
+                    "      topic(checkpointColl," +
+                    "        sourceColl," +
+                    "        q=\"*:*\"," +
+                    "        fl=\"id\"," +
+                    "        id=\"topic1\"," +
+                    "        initialCheckpoint=0)" +
+                    "))";
+  }
+
+  @AfterClass
+  public static void afterDaemonStreamApiTest() throws Exception {
+    DAEMON_DEF = null;
+  }
 
   @Override
   @Before
   public void setUp() throws Exception {
+
     super.setUp();
-    cluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    cluster = new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
 
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + CHECKPOINT_COLL;
 
-    cluster.uploadConfigSet(configset("cloud-minimal"), CONF_NAME);
+    cluster.uploadConfigSet(SolrTestUtil.configset("cloud-minimal"), CONF_NAME);
     // create a single shard, single replica collection. This is necessary until SOLR-13245 since the commands
     // don't look in all replicas.
     CollectionAdminRequest.createCollection(SOURCE_COLL, CONF_NAME, 1, 1)
@@ -89,7 +113,8 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
       String name = DAEMON_ROOT + idx;
       daemonNames.add(name);
     }
-    daemonOfInterest = daemonNames.get(random().nextInt(numDaemons));
+    List<String> daemonList = new ArrayList<>(daemonNames);
+    daemonOfInterest = daemonList.get(random().nextInt(numDaemons));
   }
 
   @Override
@@ -115,14 +140,18 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     List<Tuple> tuples = getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "list"));
     assertEquals("Should have all daemons listed", numDaemons, tuples.size());
 
+    List<String> ids = new ArrayList<>(numDaemons);
     for (int idx = 0; idx < numDaemons; ++idx) {
-      assertEquals("Daemon should be running ", tuples.get(idx).getString("id"), daemonNames.get(idx));
+      ids.add(tuples.get(idx).getString("id"));
     }
+
+    daemonNames.forEach(s ->  assertTrue("Daemon should be running ", ids.contains(s)));
 
     // Are all the daemons in a good state?
     for (String daemon : daemonNames) {
       checkAlive(daemon);
     }
+
 
     // We shouldn't be able to open a daemon twice without closing., leads to thread leeks.
     Tuple tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonOfInterest)
@@ -138,11 +167,13 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     checkStopped();
 
     // Are all the daemons alive? NOTE: a stopped daemon is still there, but in a TERMINATED state
+
     for (String daemon : daemonNames) {
       if (daemon.equals(daemonOfInterest) == false) {
         checkAlive(daemon);
       }
     }
+
 
     // Try starting and check return.
     tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonOfInterest),
@@ -151,9 +182,11 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " started"));
 
     // Are all the daemons alive?
+
     for (String daemon : daemonNames) {
       checkAlive(daemon);
     }
+
 
     // Try killing a daemon, it should be removed from lists.
     tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemonOfInterest),
@@ -189,10 +222,12 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     checkAlive(daemonOfInterest);
 
     // Now kill them all so the threads disappear.
+
     for (String daemon : daemonNames) {
-        getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemon));
-        checkDaemonKilled(daemon);
+      getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemon));
+      checkDaemonKilled(daemon);
     }
+
   }
 
   // There can be some delay while threads stabilize, so we need to loop;
@@ -306,17 +341,5 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     return tuples.get(0);
   }
 
-  private static String DAEMON_DEF =
-      "  daemon(id=\"DAEMON_NAME\"," +
-          "    runInterval=\"1000\"," +
-          "    terminate=\"false\"," +
-          "    update(targetColl," +
-          "      batchSize=100," +
-          "      topic(checkpointColl," +
-          "        sourceColl," +
-          "        q=\"*:*\"," +
-          "        fl=\"id\"," +
-          "        id=\"topic1\"," +
-          "        initialCheckpoint=0)" +
-          "))";
+  private static String DAEMON_DEF;
 }

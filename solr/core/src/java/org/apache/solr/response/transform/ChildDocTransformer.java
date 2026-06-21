@@ -180,7 +180,7 @@ class ChildDocTransformer extends DocTransformer {
     } catch (IOException e) {
       //TODO DWS: reconsider this unusual error handling approach; shouldn't we rethrow?
       log.warn("Could not fetch child documents", e);
-      rootDoc.put(getName(), "Could not fetch child documents");
+      rootDoc.put(name, "Could not fetch child documents");
     }
   }
 
@@ -254,6 +254,6 @@ class ChildDocTransformer extends DocTransformer {
     int numToAdvance = segPathDocValues.docID() == -1 ? segDocId : segDocId - (segPathDocValues.docID());
     assert numToAdvance >= 0;
     boolean advanced = segPathDocValues.advanceExact(segDocId);
-    return advanced ? segPathDocValues.binaryValue().utf8ToString(): "";
+    return advanced ? segPathDocValues.lookupOrd(segPathDocValues.ordValue()).utf8ToString(): "";
   }
 }

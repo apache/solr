@@ -55,7 +55,8 @@ public class SolrFieldCacheBean implements SolrInfoBean {
         String[] entries = fieldCacheStats.info;
         map.put("entries_count", entries.length);
         map.put("total_size", fieldCacheStats.totalSize);
-        for (int i = 0; i < entries.length; i++) {
+        int sz = entries.length;
+        for (int i = 0; i < sz; i++) {
           final String entry = entries[i];
           map.put("entry#" + i, entry);
         }

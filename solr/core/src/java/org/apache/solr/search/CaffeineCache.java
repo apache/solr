@@ -16,6 +16,22 @@
  */
 package org.apache.solr.search;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Policy.Eviction;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricsContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
@@ -24,30 +40,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
-
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricsContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Policy.Eviction;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * A SolrCache backed by the Caffeine caching library [1]. By default it uses the Window TinyLFU (W-TinyLFU)
@@ -78,20 +74,19 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private long priorInserts;
 
   private String description = "Caffeine Cache";
-  private LongAdder inserts;
-  private Cache<K,V> cache;
-  private long warmupTime;
-  private int maxSize;
-  private long maxRamBytes;
-  private int initialSize;
-  private int maxIdleTimeSec;
-  private boolean cleanupThread;
+  private volatile LongAdder inserts;
+  private volatile Cache<K,V> cache;
+  private volatile long warmupTime;
+  private volatile int maxSize;
+  private volatile long maxRamBytes;
+  private volatile int initialSize;
+  private volatile int maxIdleTimeSec;
+  private volatile boolean cleanupThread;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricsMap cacheMap;
-  private SolrMetricsContext solrMetricsContext;
+  private volatile  MetricsMap cacheMap;
+  private volatile SolrMetricsContext solrMetricsContext;
 
-  private long initialRamBytes = 0;
+  private volatile long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
 
   public CaffeineCache() {
@@ -118,7 +113,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     str = (String) args.get(CLEANUP_THREAD_PARAM);
     cleanupThread = str != null && Boolean.parseBoolean(str);
     if (cleanupThread) {
-      executor = ForkJoinPool.commonPool();
+      executor = ParWork.getRootSharedExecutor();
     } else {
       executor = Runnable::run;
     }
@@ -233,11 +228,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   @Override
   public void close() throws IOException {
     SolrCache.super.close();
-    cache.invalidateAll();
-    cache.cleanUp();
-    if (executor instanceof ExecutorService) {
-      ((ExecutorService)executor).shutdownNow();
-    }
+    ParWork.getRootSharedExecutor().submit(()->{
+      cache.invalidateAll();
+      cache.cleanUp();
+    });
+
     ramBytes.reset();
   }
 
@@ -386,7 +381,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put("cumulative_inserts", priorInserts + insertCount);
         map.put("cumulative_evictions", cumulativeStats.evictionCount());
       }
-    });
+    }, false);
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 }

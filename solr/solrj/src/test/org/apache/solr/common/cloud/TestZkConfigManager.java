@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import com.google.common.base.Throwables;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -26,6 +27,7 @@ import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -43,7 +45,8 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startZkServer() throws Exception {
-    zkServer = new ZkTestServer(createTempDir("zkData"));
+    System.setProperty("zookeeper.skipACL", "false");
+    zkServer = new ZkTestServer(SolrTestUtil.createTempDir("zkData"));
     zkServer.run();
   }
 
@@ -62,18 +65,18 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadConfig() throws IOException {
+  public void testUploadConfig() throws IOException, KeeperException, InterruptedException {
 
-    zkServer.ensurePathExists("/solr");
+    zkServer.getZkClient().mkdir("/solr");
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000).start()) {
 
       ZkConfigManager configManager = new ZkConfigManager(zkClient);
       assertEquals(0, configManager.listConfigs().size());
 
       byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
 
-      Path tempConfig = createTempDir("config");
+      Path tempConfig = SolrTestUtil.createTempDir("config");
       Files.createFile(tempConfig.resolve("file1"));
       Files.write(tempConfig.resolve("file1"), testdata);
       Files.createFile(tempConfig.resolve("file2"));
@@ -91,7 +94,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       assertEquals("testconfig", configs.get(0));
 
       // check downloading
-      Path downloadPath = createTempDir("download");
+      Path downloadPath = SolrTestUtil.createTempDir("download");
       configManager.downloadConfigDir("testconfig", downloadPath);
       assertTrue(Files.exists(downloadPath.resolve("file1")));
       assertTrue(Files.exists(downloadPath.resolve("file2")));
@@ -105,11 +108,11 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
       // uploading to the same config overwrites
       byte[] overwritten = "new test data".getBytes(StandardCharsets.UTF_8);
-      Files.write(tempConfig.resolve("file1"), overwritten);
+      Path updated = Files.write(tempConfig.resolve("file1"), overwritten);
       configManager.uploadConfigDir(tempConfig, "testconfig");
 
       assertEquals(1, configManager.listConfigs().size());
-      Path download2 = createTempDir("download2");
+      Path download2 = SolrTestUtil.createTempDir("download2");
       configManager.downloadConfigDir("testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
       assertArrayEquals(overwritten, checkdata2);
@@ -128,9 +131,9 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadWithACL() throws IOException {
+  public void testUploadWithACL() throws IOException, KeeperException, InterruptedException {
 
-    zkServer.ensurePathExists("/acl");
+    zkServer.getZkClient().mkdir("/acl");
 
     final String readOnlyUsername = "readonly";
     final String readOnlyPassword = "readonly";
@@ -170,29 +173,29 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       }
     };
 
-    Path configPath = createTempDir("acl-config");
+    Path configPath = SolrTestUtil.createTempDir("acl-config");
     Files.createFile(configPath.resolve("file1"));
 
     // Start with all-access client
-    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
+    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable).start()) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       configManager.uploadConfigDir(configPath, "acltest");
       assertEquals(1, configManager.listConfigs().size());
     }
 
     // Readonly access client can get the list of configs, but can't upload
-    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
+    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly).start()) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       assertEquals(1, configManager.listConfigs().size());
       configManager.uploadConfigDir(configPath, "acltest2");
       fail ("Should have thrown an ACL exception");
     }
-    catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+    catch (KeeperException.NoAuthException noAuthException) {
+      // expected ...
     }
 
     // Client with no auth whatsoever can't even get the list of configs
-    try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000)) {
+    try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000).start()) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       configManager.listConfigs();
       fail("Should have thrown an ACL exception");

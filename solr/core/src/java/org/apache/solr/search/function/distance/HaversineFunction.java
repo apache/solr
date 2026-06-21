@@ -59,7 +59,7 @@ public class HaversineFunction extends ValueSource {
     this.convertToRadians = convertToRads;
   }
 
-  protected String name() {
+  protected static String name() {
     return "hsin";
   }
 
@@ -105,11 +105,8 @@ public class HaversineFunction extends ValueSource {
       }
       @Override
       public String toString(int doc) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(name()).append('(');
-        sb.append(vals1.toString(doc)).append(',').append(vals2.toString(doc));
-        sb.append(')');
-        return sb.toString();
+        String sb = name() + '(' + vals1.toString(doc) + ',' + vals2.toString(doc) + ')';
+        return sb;
       }
     };
   }
@@ -126,8 +123,7 @@ public class HaversineFunction extends ValueSource {
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     HaversineFunction other = (HaversineFunction) o;
-    return this.name().equals(other.name())
-            && p1.equals(other.p1) &&
+    return p1.equals(other.p1) &&
             p2.equals(other.p2) && radius == other.radius;
   }
 
@@ -145,10 +141,7 @@ public class HaversineFunction extends ValueSource {
 
   @Override
   public String description() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(name()).append('(');
-    sb.append(p1).append(',').append(p2);
-    sb.append(')');
-    return sb.toString();
+    String sb = name() + '(' + p1 + ',' + p2 + ')';
+    return sb;
   }
 }

@@ -55,8 +55,7 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
     return requestContinues.get();
   }
 
-  protected void forward(String user, HttpServletRequest req, ServletResponse rsp,
-                                    FilterChain chain) throws IOException, ServletException {
+  protected static void forward(String user, HttpServletRequest req, ServletResponse rsp, FilterChain chain) throws IOException, ServletException {
     if(user != null) {
       final Principal p = new BasicUserPrincipal(user);
       req = wrapWithPrincipal(req, p);

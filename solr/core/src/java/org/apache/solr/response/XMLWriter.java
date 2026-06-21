@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.SolrQueryRequest;
@@ -68,7 +69,7 @@ public class XMLWriter extends TextResponseWriter {
       xmlWriter = new XMLWriter(writer, req, rsp);
       xmlWriter.writeResponse();
     } finally {
-      xmlWriter.close();
+      IOUtils.closeQuietly(xmlWriter);
     }
   }
 

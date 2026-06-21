@@ -21,14 +21,16 @@ import java.io.Serializable;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SynchronizedNamedList;
 
 /**
  * 
@@ -38,6 +40,7 @@ import org.apache.solr.common.util.ContentStream;
 public abstract class SolrRequest<T extends SolrResponse> implements Serializable {
   // This user principal is typically used by Auth plugins during distributed/sharded search
   private Principal userPrincipal;
+  private volatile boolean retried;
 
   public void setUserPrincipal(Principal userPrincipal) {
     this.userPrincipal = userPrincipal;
@@ -45,6 +48,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public Principal getUserPrincipal() {
     return userPrincipal;
+  }
+
+  public void setRetried(boolean retried) {
+    this.retried = retried;
+  }
+
+  public boolean isRetried() {
+    return retried;
   }
 
   public enum METHOD {
@@ -88,7 +99,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private String basicAuthUser, basicAuthPwd;
 
-  private String basePath;
+  private volatile String basePath;
 
   public SolrRequest setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
@@ -188,7 +199,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    * Create a new SolrResponse to hold the response from the server
    * @param client the {@link SolrClient} the request will be sent to
    */
-  protected abstract T createResponse(SolrClient client);
+  protected abstract T createResponse(SolrClient client, NamedList<Object> nl);
 
   /**
    * Send this request to a {@link SolrClient} and return the response
@@ -203,8 +214,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    */
   public final T process(SolrClient client, String collection) throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
-    T res = createResponse(client);
-    res.setResponse(client.request(this, collection));
+    T res = createResponse(client, client.request(this, collection));
+
     long endNanos = System.nanoTime();
     res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
@@ -229,7 +240,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   public void setBasePath(String path) {
-    if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
+    if (path != null && !path.isEmpty() && path.charAt(path.length() - 1) == '/') path = path.substring(0, path.length() - 1);
 
     this.basePath = path;
   }
@@ -240,7 +251,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public void addHeader(String key, String value) {
     if (headers == null) {
-      headers = new HashMap<>();
+      headers = new Object2ObjectArrayMap<>(8);
     }
     headers.put(key, value);
   }

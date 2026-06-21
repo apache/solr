@@ -25,7 +25,6 @@ import java.util.Locale;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
-import org.apache.solr.util.configuration.providers.HadoopSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +39,7 @@ public class SSLCredentialProviderFactory {
 
   private final static ImmutableMap<String, Class> defaultProviders = ImmutableMap.of(
       "env", EnvSSLCredentialProvider.class,
-      "sysprop", SysPropSSLCredentialProvider.class,
-      "hadoop", HadoopSSLCredentialProvider.class
+      "sysprop", SysPropSSLCredentialProvider.class
   );
 
   private String providerChain;
@@ -72,7 +70,7 @@ public class SSLCredentialProviderFactory {
     return providers;
   }
 
-  private SSLCredentialProvider getProviderByClassName(String clazzName) {
+  private static SSLCredentialProvider getProviderByClassName(String clazzName) {
     try {
       return (SSLCredentialProvider) Class.forName(clazzName).getConstructor().newInstance();
     } catch (InstantiationException | ClassNotFoundException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -82,7 +80,7 @@ public class SSLCredentialProviderFactory {
     }
   }
 
-  private SSLCredentialProvider getDefaultProvider(Class aClass) {
+  private static SSLCredentialProvider getDefaultProvider(Class aClass) {
     try {
       return (SSLCredentialProvider) aClass.getConstructor().newInstance();
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {

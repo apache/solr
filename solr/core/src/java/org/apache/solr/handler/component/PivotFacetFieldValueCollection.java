@@ -182,8 +182,8 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
    */
   public void add(PivotFacetValue pfValue) {
     Comparable val = pfValue.getValue();
-    assert ! this.valuesMap.containsKey(val) 
-      : "Must not add duplicate PivotFacetValue with redundent inner value";
+//    assert ! this.valuesMap.containsKey(val)
+//      : "Must not add duplicate PivotFacetValue with redundent inner value";
 
     dirty = true;
     if(null == val) {

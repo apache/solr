@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWr
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Send arbitrary XML to a request handler
@@ -45,8 +46,8 @@ public class DirectXmlRequest extends SolrRequest<UpdateResponse> implements IsU
   }
 
   @Override
-  protected UpdateResponse createResponse(SolrClient client) {
-    return new UpdateResponse();
+  protected UpdateResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new UpdateResponse(nl);
   }
 
   @Override

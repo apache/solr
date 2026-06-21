@@ -17,6 +17,11 @@
 
 package org.apache.solr.client.solrj.response;
 
+import org.apache.solr.common.util.NamedList;
+
 public class V2Response extends SolrResponseBase {
 
+  public V2Response(NamedList response) {
+    super(response);
+  }
 }

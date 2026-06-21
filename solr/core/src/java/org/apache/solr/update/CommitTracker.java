@@ -16,25 +16,28 @@
  */
 package org.apache.solr.update;
 
-import java.lang.invoke.MethodHandles;
-
-import java.util.Locale;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.Locale;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Helper class for tracking autoCommit state.
@@ -46,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * 
  * Public for tests.
  */
-public final class CommitTracker implements Runnable {
+public final class CommitTracker implements Runnable, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // scheduler delay for maxDoc-triggered autocommits
@@ -59,12 +62,14 @@ public final class CommitTracker implements Runnable {
   private long timeUpperBound;
   private long tLogFileSizeUpperBound;
 
+  private ReentrantLock lock = new ReentrantLock(false);
+
   // note: can't use ExecutorsUtil because it doesn't have a *scheduled* ExecutorService.
   //  Not a big deal but it means we must take care of MDC logging here.
-  private final ScheduledExecutorService scheduler =
-      Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
+  private final ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
+      new SolrNamedThreadFactory("commitScheduler", true));
   @SuppressWarnings({"rawtypes"})
-  private ScheduledFuture pending;
+  private volatile ScheduledFuture pending;
   
   // state
   private AtomicLong docsSinceCommit = new AtomicLong(0);
@@ -77,7 +82,8 @@ public final class CommitTracker implements Runnable {
   private static final boolean WAIT_SEARCHER = true;
 
   private String name;
-  
+  private volatile boolean closed;
+
   public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, long tLogFileSizeUpperBound,
                        boolean openSearcher, boolean softCommit) {
     this.core = core;
@@ -91,19 +97,34 @@ public final class CommitTracker implements Runnable {
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
 
-    log.info("{} AutoCommit: {}", name, this);
+    scheduler.setRemoveOnCancelPolicy(true);
+    scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+    log.debug("{} AutoCommit: {}", name, this);
+    assert ObjectReleaseTracker.getInstance().track(this);
   }
 
   public boolean getOpenSearcher() {
     return openSearcher;
   }
   
-  public synchronized void close() {
-    if (pending != null) {
-      pending.cancel(false);
+  public void close() {
+    lock.lock();
+    try {
+      this.closed = true;
+      try {
+        if (pending != null) {
+          pending.cancel(false);
+        }
+      } catch (NullPointerException e) {
+        // okay
+      }
       pending = null;
+      scheduler.shutdown();
+    } finally {
+      lock.unlock();
     }
-    scheduler.shutdown();
+    assert ObjectReleaseTracker.getInstance().release(this);
   }
   
   /** schedule individual commits */
@@ -112,13 +133,16 @@ public final class CommitTracker implements Runnable {
   }
 
   public void cancelPendingCommit() {
-    synchronized (this) {
+    lock.lock();
+    try {
       if (pending != null) {
         boolean canceled = pending.cancel(false);
         if (canceled) {
           pending = null;
         }
       }
+    } finally {
+      lock.unlock();
     }
   }
   
@@ -132,7 +156,8 @@ public final class CommitTracker implements Runnable {
 
   private void _scheduleCommitWithin(long commitMaxTime) {
     if (commitMaxTime <= 0) return;
-    synchronized (this) {
+    lock.lock();
+    try {
       if (pending != null && pending.getDelay(TimeUnit.MILLISECONDS) <= commitMaxTime) {
         // There is already a pending commit that will happen first, so
         // nothing else to do here.
@@ -158,7 +183,11 @@ public final class CommitTracker implements Runnable {
       // log.info("###scheduling for " + commitMaxTime);
 
       // schedule our new commit
-      pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
+      if (!closed) {
+        pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
+      }
+    } finally {
+      lock.unlock();
     }
   }
   
@@ -235,33 +264,45 @@ public final class CommitTracker implements Runnable {
   
   /** Inform tracker that a rollback has occurred, cancel any pending commits */
   public void didRollback() {
-    synchronized (this) {
+    lock.lock();
+    try {
       if (pending != null) {
         pending.cancel(false);
         pending = null; // let it start another one
       }
       docsSinceCommit.set(0);
+    } finally {
+      lock.unlock();
     }
   }
   
   /** This is the worker part for the ScheduledFuture **/
   @Override
   public void run() {
-    synchronized (this) {
+    lock.lock();
+    try {
       // log.info("###start commit. pending=null");
       pending = null;  // allow a new commit to be scheduled
+    } finally {
+      lock.unlock();
     }
 
-    MDCLoggingContext.setCore(core);
+    MDCLoggingContext.setCoreName(core.getName());
     try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
       command.openSearcher = openSearcher;
       command.waitSearcher = WAIT_SEARCHER;
       command.softCommit = softCommit;
-      if (core.getCoreDescriptor().getCloudDescriptor() != null
-          && core.getCoreDescriptor().getCloudDescriptor().isLeader()
-          && !softCommit) {
-        command.version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
+      boolean isLeader = false;
+      if (core.getCoreContainer().isZooKeeperAware()) {
+        LeaderElector elector = core.getCoreContainer().getZkController().getLeaderElector(core.getName());
+        if (elector != null && elector.isLeader()) {
+          isLeader = true;
+        }
+
+        if (core.getCoreDescriptor().getCloudDescriptor() != null && isLeader) {
+          command.version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
+        }
       }
       // no need for command.maxOptimizeSegments = 1; since it is not optimizing
 

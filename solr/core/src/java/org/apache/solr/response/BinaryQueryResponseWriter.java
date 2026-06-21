@@ -29,9 +29,9 @@ import org.apache.solr.request.SolrQueryRequest;
  * method  
  *
  */
-public interface BinaryQueryResponseWriter extends QueryResponseWriter{
+public interface BinaryQueryResponseWriter extends QueryResponseWriter {
 
     /**Use it to write the response in a binary format
      */
-    public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException;
+    void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException;
 }

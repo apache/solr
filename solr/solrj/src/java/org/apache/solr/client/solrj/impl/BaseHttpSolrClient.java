@@ -40,7 +40,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
      * @param th Throwable to wrap with this Exception
      */
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
+      super(code, "(" + code + ")  Error from server at " + remoteHost + ": " + msg, th);
     }
   }
 
@@ -63,7 +63,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
         Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
         String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
         return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
-            msg == null ? "Unknown Error" : msg, errResponse);
+            msg == null ? errObj.toString() : msg, errResponse);
 
       } else {
         throw new RuntimeException("No error");

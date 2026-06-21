@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,27 +39,26 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
   /**
    * 
    */
-  private final HttpClient httpClient;
   private volatile boolean stop = false;
   int clientIndex = 0;
-  private ConcurrentUpdateSolrClient cusc;
+  private ConcurrentUpdateHttp2SolrClient cusc;
   private List<SolrClient> clients;
   private AtomicInteger fails = new AtomicInteger();
-  
-  public FullThrottleStoppableIndexingThread(HttpClient httpClient, SolrClient controlClient, CloudSolrClient cloudClient, List<SolrClient> clients,
+
+  public FullThrottleStoppableIndexingThread(SolrClient controlClient, CloudHttp2SolrClient cloudClient, List<SolrClient> clients,
                                              String id, boolean doDeletes, int clientSoTimeout) {
     super(controlClient, cloudClient, id, doDeletes);
-    setName("FullThrottleStopableIndexingThread");
-    setDaemon(true);
     this.clients = clients;
-    this.httpClient = httpClient;
 
-    cusc = new ErrorLoggingConcurrentUpdateSolrClient.Builder(((HttpSolrClient) clients.get(0)).getBaseURL())
-        .withHttpClient(httpClient)
+    // HTTP/2: timeouts are configured on the underlying Http2SolrClient (the HTTP/1 client was removed).
+    Http2SolrClient http2Client = new Http2SolrClient.Builder()
+        .connectionTimeout(10000)
+        .idleTimeout(clientSoTimeout)
+        .build();
+    cusc = new ErrorLoggingConcurrentUpdateSolrClient.Builder(
+        ((Http2SolrClient) clients.get(0)).getBaseURL(), http2Client)
         .withQueueSize(8)
         .withThreadCount(2)
-        .withConnectionTimeout(10000)
-        .withSocketTimeout(clientSoTimeout)
         .build();
   }
   
@@ -73,7 +72,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       String id = this.id + "-" + i;
       ++i;
       
-      if (doDeletes && LuceneTestCase.random().nextBoolean() && deletes.size() > 0) {
+      if (doDeletes && SolrTestCase.random().nextBoolean() && deletes.size() > 0) {
         String delete = deletes.remove(0);
         try {
           numDeletes++;
@@ -101,7 +100,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
         fails.incrementAndGet();
       }
       
-      if (doDeletes && LuceneTestCase.random().nextBoolean()) {
+      if (doDeletes && SolrTestCase.random().nextBoolean()) {
         deletes.add(id);
       }
       
@@ -117,8 +116,9 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
         clientIndex = 0;
       }
       cusc.shutdownNow();
-      cusc = new ErrorLoggingConcurrentUpdateSolrClient.Builder(((HttpSolrClient) clients.get(clientIndex)).getBaseURL())
-          .withHttpClient(httpClient)
+      Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+      cusc = new ErrorLoggingConcurrentUpdateSolrClient.Builder(
+          ((Http2SolrClient) clients.get(clientIndex)).getBaseURL(), http2Client)
           .withQueueSize(30)
           .withThreadCount(3)
           .build();
@@ -153,22 +153,22 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     throw new UnsupportedOperationException();
   }
   
-  static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+  static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
     public ErrorLoggingConcurrentUpdateSolrClient(Builder builder) {
       super(builder);
     }
-    
+
     @Override
     public void handleError(Throwable ex) {
       log.warn("cusc error", ex);
     }
-    
-    static class Builder extends ConcurrentUpdateSolrClient.Builder {
 
-      public Builder(String baseSolrUrl) {
-        super(baseSolrUrl);
+    static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
+
+      public Builder(String baseSolrUrl, Http2SolrClient client) {
+        super(baseSolrUrl, client);
       }
-      
+
       public ErrorLoggingConcurrentUpdateSolrClient build() {
         return new ErrorLoggingConcurrentUpdateSolrClient(this);
       }

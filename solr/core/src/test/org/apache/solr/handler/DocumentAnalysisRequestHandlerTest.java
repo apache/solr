@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -24,6 +24,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.Before;
@@ -80,7 +81,8 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("analysis.query", "The Query String");
     params.add("analysis.showmatch", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params) {
+    SolrCore core = h.getCore();
+    SolrQueryRequest req = new SolrQueryRequestBase(core, params) {
       @Override
       public Iterable<ContentStream> getContentStreams() {
         return Collections.singleton(cs);
@@ -106,7 +108,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     field = document.getField("text");
     assertNotNull(field);
     assertEquals("The Text", field.getFirstValue());
-
+    core.close();
     req.close();
   }
 
@@ -151,7 +153,8 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     final ContentStream cs = new ByteStream(xmlBytes, "application/xml");
     
     ModifiableSolrParams params = new ModifiableSolrParams();
-    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params) {
+    SolrCore core = h.getCore();
+    SolrQueryRequest req = new SolrQueryRequestBase(core, params) {
       @Override
       public Iterable<ContentStream> getContentStreams() {
         return Collections.singleton(cs);
@@ -165,6 +168,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertEquals(1, documents.size());
     SolrInputDocument doc = documents.get(0);
     assertEquals("Müller", doc.getField("id").getValue());
+    core.close();
   }
 
   // This test should also test charset detection in UpdateRequestHandler,
@@ -183,7 +187,8 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     final ContentStream cs = new ByteStream(xmlBytes, "application/xml; charset=ISO-8859-1");
     
     ModifiableSolrParams params = new ModifiableSolrParams();
-    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params) {
+    SolrCore core = h.getCore();
+    SolrQueryRequest req = new SolrQueryRequestBase(core, params) {
       @Override
       public Iterable<ContentStream> getContentStreams() {
         return Collections.singleton(cs);
@@ -197,6 +202,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertEquals(1, documents.size());
     SolrInputDocument doc = documents.get(0);
     assertEquals("Müller", doc.getField("id").getValue());
+    core.close();
   }
 
   /**
@@ -216,8 +222,9 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
             .setQuery("JUMPING")
             .setShowMatch(true)
             .addDocument(document);
-
-    NamedList<Object> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    NamedList<Object> result = handler.handleAnalysisRequest(request, core.getLatestSchema());
+    core.close();
     assertNotNull("result is null and it shouldn't be", result);
     NamedList<NamedList<NamedList<Object>>> documentResult = (NamedList<NamedList<NamedList<Object>>>) result.get("1");
     assertNotNull("An analysis for document with key '1' should be returned", documentResult);
@@ -265,8 +272,8 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     NamedList<NamedList<Object>> whitetokResult = documentResult.get("whitetok");
     assertNotNull("an analysis for the 'whitetok' field should be returned", whitetokResult);
     queryResult = whitetokResult.get("query");
-    tokenList = (List<NamedList>) queryResult.get(MockTokenizer.class.getName());
-    assertNotNull("Expecting the 'MockTokenizer' to be applied on the query for the 'whitetok' field", tokenList);
+    tokenList = (List<NamedList>) queryResult.get(WhitespaceTokenizer.class.getName());
+    assertNotNull("Expecting the 'WhitespaceTokenizer' to be applied on the query for the 'whitetok' field", tokenList);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("JUMPING", null, "word", 0, 7, 1, new int[]{1}, null, false));
     indexResult = whitetokResult.get("index");

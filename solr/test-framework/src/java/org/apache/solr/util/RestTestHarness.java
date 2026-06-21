@@ -19,32 +19,40 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.SolrResourceLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
  */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private RESTfulServerProvider serverProvider;
-  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new
-      ModifiableSolrParams());
+  private Http2SolrClient sorlClient;
   
-  public RestTestHarness(RESTfulServerProvider serverProvider) {
+  public RestTestHarness(RESTfulServerProvider serverProvider, Http2SolrClient sorlClient, SolrResourceLoader loader) {
+    super(loader);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 5000);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 10000);
+    this.sorlClient = sorlClient;
     this.serverProvider = serverProvider;
+    assert ObjectReleaseTracker.getInstance().track(this);
   }
   
   public String getBaseURL() {
@@ -74,7 +82,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String validateQuery(String request, String... tests) throws Exception {
 
     String res = query(request);
-    return validateXPath(res, tests);
+    return validateXPathWithEntities(loader, res, tests);
   }
 
 
@@ -91,7 +99,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String validatePut(String request, String content, String... tests) throws Exception {
 
     String res = put(request, content);
-    return validateXPath(res, tests);
+    return validateXPathWithEntities(loader, res, tests);
   }
 
 
@@ -104,11 +112,15 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @exception Exception any exception in the response.
    */
   public String query(String request) throws Exception {
-    return getResponse(new HttpGet(getBaseURL() + request));
+    String url = getBaseURL() + request;
+    if (!url.contains("wt=")) {
+      url = url + (url.contains("?") ? "&" : "?") + "wt=json";
+    }
+    return Http2SolrClient.GET(url, sorlClient).asString;
   }
 
   public String adminQuery(String request) throws Exception {
-    return getResponse(new HttpGet(getAdminURL() + request));
+    return Http2SolrClient.GET(getAdminURL()  + request, sorlClient).asString;
   }
 
   /**
@@ -120,11 +132,19 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the PUT request
    */
   public String put(String request, String content) throws IOException {
-    HttpPut httpPut = new HttpPut(getBaseURL() + request);
-    httpPut.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", StandardCharsets.UTF_8)));
-    
-    return getResponse(httpPut);
+    String resp;
+    try {
+      resp = Http2SolrClient.PUT(getBaseURL() + request, sorlClient, content.getBytes("UTF-8"), "application/json",
+          Collections.emptyMap()).asString;
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (ExecutionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    return resp;
   }
 
   /**
@@ -135,8 +155,16 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the DELETE request
    */
   public String delete(String request) throws IOException {
-    HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
-    return getResponse(httpDelete);
+    try {
+      return Http2SolrClient.DELETE(getBaseURL() + request).asString;
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (ExecutionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   /**
@@ -148,18 +176,29 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the POST request
    */
   public String post(String request, String content) throws IOException {
-    HttpPost httpPost = new HttpPost(getBaseURL() + request);
-    httpPost.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", StandardCharsets.UTF_8)));
-    
-    return getResponse(httpPost);
+    String resp = null;
+    try (Http2SolrClient http2SolrClient =  new Http2SolrClient.Builder().build()) {
+      // Append wt=json so the response is always parseable as JSON (the config/schema handlers
+      // default to XML when no wt param is present).
+      String url = getBaseURL() + request;
+      if (!url.contains("wt=")) {
+        url = url + (url.contains("?") ? "&" : "?") + "wt=json";
+      }
+      resp = Http2SolrClient.POST(url, http2SolrClient, content.getBytes(StandardCharsets.UTF_8), "application/json").asString;
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (ExecutionException | TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    return resp;
   }
 
 
   public String checkResponseStatus(String xml, String code) throws Exception {
     try {
       String response = query(xml);
-      String valid = validateXPath(response, "//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(loader, response,"//int[@name='status']="+code );
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);
@@ -169,7 +208,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String checkAdminResponseStatus(String xml, String code) throws Exception {
     try {
       String response = adminQuery(xml);
-      String valid = validateXPath(response, "//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(loader, response,"//int[@name='status']="+code );
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);
@@ -181,12 +220,18 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public void reload() throws Exception {
     String coreName = (String)evaluateXPath
-        (adminQuery("/admin/cores?wt=xml&action=STATUS"),
+        (loader, adminQuery("/admin/cores?wt=xml&action=STATUS"),
          "//lst[@name='status']/lst[1]/str[@name='name']",
          XPathConstants.STRING);
-    String xml = checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");
-    if (null != xml) {
-      throw new RuntimeException("RELOAD failed:\n" + xml);
+
+    if (coreName.length() > 0) {
+
+      String xml = checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");
+      if (null != xml) {
+        throw new RuntimeException("RELOAD failed:\n" + xml);
+      }
+    } else {
+      log.warn("Core name came back from status call as empty string");
     }
   }
 
@@ -202,25 +247,13 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     try {
       return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Executes the given request and returns the response.
-   */
-  private String getResponse(HttpUriRequest request) throws IOException {
-    HttpEntity entity = null;
-    try {
-      entity = httpClient.execute(request, HttpClientUtil.createNewHttpClientRequestContext()).getEntity();
-      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
-    } finally {
-      EntityUtils.consumeQuietly(entity);
     }
   }
 
   @Override
   public void close() throws IOException {
-    HttpClientUtil.close(httpClient);
+    assert ObjectReleaseTracker.getInstance().release(this);
   }
 }

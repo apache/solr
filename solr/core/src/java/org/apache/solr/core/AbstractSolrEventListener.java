@@ -70,7 +70,7 @@ public class AbstractSolrEventListener implements SolrEventListener {
    * @param nlst The named list to add the EVENT value to
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  protected NamedList addEventParms(SolrIndexSearcher currentSearcher, NamedList nlst) {
+  protected static NamedList addEventParms(SolrIndexSearcher currentSearcher, NamedList nlst) {
     NamedList result = new NamedList();
     result.addAll(nlst);
     if (currentSearcher != null) {

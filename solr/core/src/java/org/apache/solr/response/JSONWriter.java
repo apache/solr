@@ -191,7 +191,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     incLevel();
   } 
 
-  protected int headerSize(Float maxScore, Boolean numFoundExact) {
+  protected static int headerSize(Float maxScore, Boolean numFoundExact) {
     int headerSize = 3;
     if (maxScore != null) headerSize++;
     if (numFoundExact != null) headerSize++;

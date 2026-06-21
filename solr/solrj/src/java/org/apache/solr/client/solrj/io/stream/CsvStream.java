@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -33,6 +34,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class CsvStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
+  private static final Pattern COMPILE = Pattern.compile(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
   private String[] headers;
   private String currentFile;
   private int lineNumber;
@@ -117,36 +119,38 @@ public class CsvStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    Tuple tuple = originalStream.read();
-    ++lineNumber;
-    if(tuple.EOF) {
-      return tuple;
-    } else {
-      String file = formatFile(tuple.getString("file"));
-      String line = tuple.getString("line");
-      if (file.equals(currentFile)) {
-        String[] fields = split(line);
-        if(fields.length != headers.length) {
-          throw new IOException("Headers and lines must have the same number of fields [file:"+file+" line number:"+lineNumber+"]");
-        }
-        Tuple out = new Tuple();
-        out.put("id", file+"_"+lineNumber);
-        for(int i=0; i<headers.length; i++) {
-          if(fields[i] != null && fields[i].length() > 0) {
-            out.put(headers[i], fields[i]);
-          }
-        }
-        return out;
+    while (true) {
+      Tuple tuple = originalStream.read();
+      ++lineNumber;
+      if (tuple.EOF) {
+        return tuple;
       } else {
-        this.currentFile = file;
-        this.headers = split(line);
-        this.lineNumber = 1; //New file so reset the lineNumber
-        return read();
+        String file = formatFile(tuple.getString("file"));
+        String line = tuple.getString("line");
+        if (file.equals(currentFile)) {
+          String[] fields = split(line);
+          if (fields.length != headers.length) {
+            throw new IOException("Headers and lines must have the same number of fields [file:" + file + " line number:" + lineNumber + "]");
+          }
+          Tuple out = new Tuple();
+          out.put("id", file + "_" + lineNumber);
+          for (int i = 0; i < headers.length; i++) {
+            if (fields[i] != null && fields[i].length() > 0) {
+              out.put(headers[i], fields[i]);
+            }
+          }
+          return out;
+        } else {
+          this.currentFile = file;
+          this.headers = split(line);
+          this.lineNumber = 1; //New file so reset the lineNumber
+
+        }
       }
     }
   }
 
-  private String formatFile(String file) {
+  private static String formatFile(String file) {
     //We don't want the ./ which carries no information but can lead to problems in creating the id for the field.
     if(file.startsWith("./")) {
       return file.substring(2);
@@ -156,7 +160,7 @@ public class CsvStream extends TupleStream implements Expressible {
   }
 
   protected String[] split(String line) {
-    String[] fields = line.split(",(?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)",-1);
+    String[] fields = COMPILE.split(line, -1);
     for(int i=0; i<fields.length; i++) {
       String f = fields[i];
       if(f.startsWith("\"") && f.endsWith("\"")) {

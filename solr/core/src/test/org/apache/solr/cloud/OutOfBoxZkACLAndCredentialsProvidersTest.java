@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
@@ -47,6 +48,10 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() {
+    // this ZooKeeper thread can be in its wait loop a short bit before stopping  TODO: why is this test more prone to it? Seems to be ony in solrj module?
+    // I bet it's ZkSolrResourceLoader in XML Configuration causing an issue being accessed from solrj to core.
+    interruptThreadsOnTearDown(false, "SessionTracker");
+
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   
@@ -59,22 +64,24 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
+      log.info("####SETUP_START {}", SolrTestUtil.getTestName());
     }
-    createTempDir();
+    SolrTestUtil.createTempDir();
 
-    zkDir = createTempDir().resolve("zookeeper/server1/data");
+    zkDir = SolrTestUtil.createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
     System.setProperty("zkHost", zkServer.getZkAddress());
     
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient = zkServer.getZkClient();
+
     zkClient.makePath("/solr", false, true);
-    zkClient.close();
+
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient.start();
     zkClient.create("/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.create("/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
@@ -83,14 +90,13 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.close();
 
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
+      log.info("####SETUP_END {}", SolrTestUtil.getTestName());
     }
   }
 
   @Override
   public void tearDown() throws Exception {
     zkServer.shutdown();
-    
     super.tearDown();
   }
 
@@ -98,6 +104,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void testOutOfBoxSolrZkClient() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
+      zkClient.start();
       VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
           true, true, true, true, true,
           true, true, true, true, true);
@@ -110,6 +117,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void testOpenACLUnsafeAllover() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
     try {
+      zkClient.start();
       List<String> verifiedList = new ArrayList<String>();
       assertOpenACLUnsafeAllover(zkClient, "/", verifiedList);
       assertTrue(verifiedList.contains("/solr"));
@@ -125,7 +133,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   
   protected void assertOpenACLUnsafeAllover(SolrZkClient zkClient, String path, List<String> verifiedList) throws Exception {
-    List<ACL> acls = zkClient.getSolrZooKeeper().getACL(path, new Stat());
+    List<ACL> acls = zkClient.getConnectionManager().getKeeper().getACL(path, new Stat());
     if (log.isInfoEnabled()) {
       log.info("Verifying {}", path);
     }

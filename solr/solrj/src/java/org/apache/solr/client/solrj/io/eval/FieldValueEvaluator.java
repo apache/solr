@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -68,9 +69,7 @@ public class FieldValueEvaluator extends SourceEvaluator {
       if(value instanceof Object[]){
         Object[] array = (Object[])value;
         List<Object> list = new ArrayList<Object>(array.length);
-        for(Object obj : array){
-          list.add(obj);
-        }
+        list.addAll(Arrays.asList(array));
         return list;
       } else if(value instanceof Matrix) {
         return value;

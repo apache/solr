@@ -19,11 +19,13 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,41 +33,22 @@ import org.junit.Test;
 
 @Slow
 @Nightly
-public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
+public class RestartWhileUpdatingTest extends SolrCloudBridgeTestCase {
 
-  //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private List<StoppableIndexingThread> threads;
-  
+
   private volatile boolean stopExpire = false;
 
-  public RestartWhileUpdatingTest() throws Exception {
-    super();
-    sliceCount = 1;
-    fixShardCount(3);
-    schemaString = "schema15.xml";      // we need a string id
-    useFactory("solr.StandardDirectoryFactory");
-  }
-  
-  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
-  
-  protected String[] getFieldNames() {
-    return fieldNames;
-  }
-
-  protected RandVal[] getRandValues() {
-    return randVals;
-  }
-  
   @BeforeClass
   public static void beforeRestartWhileUpdatingTest() {
+    sliceCount = 1;
+    numJettys = 3;
+    schemaString = "schema15.xml";
     System.setProperty("leaderVoteWait", "300000");
     System.setProperty("solr.autoCommit.maxTime", "30000");
     System.setProperty("solr.autoSoftCommit.maxTime", "3000");
-    // SOLR-13212 // TestInjection.nonGracefullClose = "true:60";
-    // SOLR-13189 // TestInjection.failReplicaRequests = "true:03";
   }
-  
+
   @AfterClass
   public static void afterRestartWhileUpdatingTest() {
     System.clearProperty("leaderVoteWait");
@@ -77,124 +60,77 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    
-    // start a couple indexing threads
-    
-    int[] maxDocList = new int[] {5000, 10000};
- 
-    
-    int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
-    
-    int numThreads = random().nextInt(4) + 1;
-    
-    threads = new ArrayList<>(numThreads);
-    
-    Thread expireThread = new Thread() {
-      public void run() {
-        while (!stopExpire) {
-          try {
-            Thread.sleep(random().nextInt(15000));
-          } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-          }
-        
-//          try {
-//            chaosMonkey.expireRandomSession();
-//          } catch (KeeperException e) {
-//            throw new RuntimeException(e);
-//          } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//          }
-        }
-      }
-    };
 
-//  Currently unused
-//  expireThread.start();
-    
+    int[] maxDocList = new int[] {5000, 10000};
+    int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
+
+    int numThreads = random().nextInt(4) + 1;
+
+    threads = new ArrayList<>(numThreads);
+
     StoppableIndexingThread indexThread;
+    ArrayList<Future> indexThreads = new ArrayList<>();
     for (int i = 0; i < numThreads; i++) {
-      indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, maxDoc, 1, true);
+      indexThread = new StoppableIndexingThread(null, cloudClient, Integer.toString(i), true, maxDoc, 1, true);
       threads.add(indexThread);
-      indexThread.start();
+      Future<?> future = ParWork.submit("StoppableSearchThread", indexThread);
+      indexThreads.add(future);
     }
 
     Thread.sleep(2000);
-    
-    int restartTimes = 1;//random().nextInt(4) + 1;;
+
+    int restartTimes = 1;
     for (int i = 0; i < restartTimes; i++) {
       Thread.sleep(random().nextInt(30000));
       stopAndStartAllReplicas();
       Thread.sleep(random().nextInt(30000));
     }
-    
+
     Thread.sleep(2000);
-    
+
     // stop indexing threads
     for (StoppableIndexingThread thread : threads) {
       thread.safeStop();
     }
     stopExpire = true;
-    expireThread.join();
-    
-    Thread.sleep(1000);
-  
-    waitForThingsToLevelOut(320, TimeUnit.SECONDS);
-    
-    Thread.sleep(2000);
-    
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-    
-    Thread.sleep(5000);
-    
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
 
-    for (StoppableIndexingThread thread : threads) {
-      thread.join();
+    Thread.sleep(1000);
+
+    waitForRecoveriesToFinish(COLLECTION);
+
+    for (Future thread : indexThreads) {
+      thread.get();
     }
-    
+
     checkShardConsistency(false, false);
   }
 
-  public void stopAndStartAllReplicas() throws Exception, InterruptedException {
-    chaosMonkey.stopAll(random().nextInt(1));
-    
+  public void stopAndStartAllReplicas() throws Exception {
+    List<JettySolrRunner> runners = new ArrayList<>(cluster.getJettySolrRunners());
+    for (JettySolrRunner jetty : runners) {
+      jetty.stop();
+    }
+
     if (random().nextBoolean()) {
       for (StoppableIndexingThread thread : threads) {
         thread.safeStop();
       }
     }
     Thread.sleep(1000);
-    
-    chaosMonkey.startAll();
-  }
-  
-  @Override
-  protected void indexDoc(SolrInputDocument doc) throws IOException,
-      SolrServerException {
-    cloudClient.add(doc);
+
+    for (JettySolrRunner jetty : runners) {
+      jetty.start();
+    }
   }
 
-  
   @Override
-  public void distribTearDown() throws Exception {
+  public void tearDown() throws Exception {
     // make sure threads have been stopped...
     if (threads != null) {
       for (StoppableIndexingThread thread : threads) {
         thread.safeStop();
-        thread.safeStop();
       }
     }
-
-    super.distribTearDown();
-  }
-  
-  // skip the randoms - they can deadlock...
-  @Override
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
-    indexDoc(doc);
+    super.tearDown();
   }
 }

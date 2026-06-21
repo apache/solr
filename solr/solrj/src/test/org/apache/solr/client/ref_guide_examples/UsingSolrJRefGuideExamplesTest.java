@@ -26,12 +26,13 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -53,12 +54,13 @@ import org.junit.Test;
  *
  * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
  */
+@LuceneTestCase.Nightly
 public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private static final int NUM_INDEXED_DOCUMENTS = 3;
   private static final int NUM_LIVE_NODES = 1;
   
-  private Queue<String> expectedLines = new ArrayDeque();
+  private final Queue<String> expectedLines = new ArrayDeque<>();
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
@@ -68,7 +70,6 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
     CollectionAdminResponse response = CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection("techproducts", 1, 1);
   }
 
   @Before
@@ -93,9 +94,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     super.tearDown();
     ensureNoLeftoverOutputExpectations();
 
-    final SolrClient client = getSolrClient();
-    client.deleteByQuery("techproducts", "*:*");
-    client.commit("techproducts");
+    cluster.getSolrClient().deleteByQuery("techproducts", "*:*");
   }
 
   @Test
@@ -213,13 +212,14 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void otherSolrApisExample() throws Exception {
     expectLine("Found "+NUM_LIVE_NODES+" live nodes");
     // tag::solrj-other-apis[]
     final SolrClient client = getSolrClient();
 
-    final SolrRequest request = new CollectionAdminRequest.ClusterStatus();
+    final SolrRequest<CollectionAdminResponse> request = new CollectionAdminRequest.ClusterStatus();
 
     final NamedList<Object> response = client.request(request);
     final NamedList<Object> cluster = (NamedList<Object>) response.get("cluster");
@@ -236,9 +236,9 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   private SolrClient getTechProductSolrClient() {
     // tag::solrj-solrclient-timeouts[]
     final String solrUrl = "http://localhost:8983/solr";
-    return new HttpSolrClient.Builder(solrUrl)
-        .withConnectionTimeout(10000)
-        .withSocketTimeout(60000)
+    return new Http2SolrClient.Builder(solrUrl)
+        .connectionTimeout(10000)
+        .idleTimeout(60000)
         .build();
     // end::solrj-solrclient-timeouts[]
   }

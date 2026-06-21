@@ -18,6 +18,7 @@ package org.apache.solr.spelling.suggest.fst;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.solr.common.util.NamedList;
@@ -94,10 +95,10 @@ public class FuzzyLookupFactory extends LookupFactory {
         
     int options = 0;
     if (exactMatchFirst) {
-      options |= FuzzySuggester.EXACT_FIRST;
+      options |= AnalyzingSuggester.EXACT_FIRST;
     }
     if (preserveSep) {
-      options |= FuzzySuggester.PRESERVE_SEP;
+      options |= AnalyzingSuggester.PRESERVE_SEP;
     }
     
     int maxSurfaceFormsPerAnalyzedForm = (params.get(AnalyzingLookupFactory.MAX_SURFACE_FORMS) != null)

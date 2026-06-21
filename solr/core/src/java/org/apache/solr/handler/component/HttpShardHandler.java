@@ -16,31 +16,57 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
+import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.annotation.SolrSingleThreaded;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SynchronizedNamedList;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.tracing.GlobalTracer;
+import org.apache.solr.util.tracing.SolrRequestCarrier;
+import org.jctools.maps.NonBlockingHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@SolrSingleThreaded
 public class HttpShardHandler extends ShardHandler {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String[] TS = new String[0];
+  public static final String[] TS1 = new String[0];
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value,
    * {@link #prepDistributed(ResponseBuilder)} will only include {@link org.apache.solr.common.cloud.Replica.Type#NRT} replicas as possible
@@ -49,47 +75,219 @@ public class HttpShardHandler extends ShardHandler {
    */
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
-  final HttpShardHandlerFactory httpShardHandlerFactory;
-  private CompletionService<ShardResponse> completionService;
-  private Set<Future<ShardResponse>> pending;
-  private Http2SolrClient httpClient;
+  private final HttpShardHandlerFactory httpShardHandlerFactory;
+  private final Map<ShardRequest,Cancellable> responseCancellableMap;
+  private final LinkedTransferQueue<ShardResponse> responses;
+  private final AtomicInteger pending;
+  private final Map<String, ObjectList<String>> shardToURLs;
+  private final LBHttp2SolrClient lbClient;
+ // private volatile Runnable finish;
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient httpClient) {
-    this.httpClient = httpClient;
+
+  //SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
-    completionService = httpShardHandlerFactory.newCompletionService();
-    pending = new HashSet<>();
+    this.lbClient = httpShardHandlerFactory.loadbalancer;
+    this.pending = new AtomicInteger(0);
+    this.responses = new LinkedTransferQueue<>();
+    this.responseCancellableMap = new NonBlockingHashMap<>(32);
+
+    // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
+    // This is primarily to keep track of what order we should use to query the replicas of a shard
+    // so that we use the same replica for all phases of a distributed request.
+    shardToURLs = new NonBlockingHashMap<>();
+  }
+
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Runnable finish) {
+    this.httpShardHandlerFactory = httpShardHandlerFactory;
+    this.lbClient = httpShardHandlerFactory.loadbalancer;
+    this.pending = new AtomicInteger(0);
+    this.responses = new LinkedTransferQueue<>();
+    this.responseCancellableMap = new NonBlockingHashMap<>(32);
+
+    // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
+    // This is primarily to keep track of what order we should use to query the replicas of a shard
+    // so that we use the same replica for all phases of a distributed request.
+    shardToURLs = new NonBlockingHashMap<>();
   }
 
 
-  @Override
-  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
-    ShardRequestor shardRequestor = new ShardRequestor(sreq, shard, params, this);
-    try {
-      shardRequestor.init();
-      pending.add(completionService.submit(shardRequestor));
-    } finally {
-      shardRequestor.end();
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, LBHttp2SolrClient lb) {
+    this.httpShardHandlerFactory = httpShardHandlerFactory;
+    this.lbClient = lb;
+    this.pending = new AtomicInteger(0);
+    this.responses = new LinkedTransferQueue<>();
+    this.responseCancellableMap = new NonBlockingHashMap<>();
+
+    // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
+    // This is primarily to keep track of what order we should use to query the replicas of a shard
+    // so that we use the same replica for all phases of a distributed request.
+    shardToURLs = new NonBlockingHashMap<>();
+  }
+
+
+  private static class SimpleSolrResponse extends SolrResponse {
+
+    long elapsedTime;
+
+    final SynchronizedNamedList<Object> nl;
+
+    SimpleSolrResponse(SynchronizedNamedList nl) {
+      this.nl = nl;
+    }
+
+
+    @Override
+    public long getElapsedTime() {
+      return elapsedTime;
+    }
+
+    @Override
+    public NamedList<Object> getResponse() {
+      return nl;
+    }
+
+
+    @Override
+    public void setElapsedTime(long elapsedTime) {
+      this.elapsedTime = elapsedTime;
     }
   }
 
-  protected NamedList<Object> request(String url, @SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException, SolrServerException {
-    req.setBasePath(url);
-    return httpClient.request(req);
+  // Not thread safe... don't use in Callable.
+  // Don't modify the returned URL list.
+  private ObjectList<String> getURLs(String shard) {
+    if (shard == null) {
+      return ObjectLists.emptyList();
+    }
+    ObjectList<String> urls = shardToURLs.get(shard);
+    if (urls == null) {
+      urls = httpShardHandlerFactory.buildURLList(shard);
+      shardToURLs.put(shard, urls);
+    }
+    return urls;
+  }
+
+  @Override
+  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
+    // do this outside of the callable for thread safety reasons
+    final ObjectList<String> urls = getURLs(shard);
+    final Tracer tracer = GlobalTracer.getTracer();
+    final Span span = tracer != null ? tracer.activeSpan() : null;
+
+    params.remove(CommonParams.WT); // use default (currently javabin)
+    params.remove(CommonParams.VERSION);
+    QueryRequest req = makeQueryRequest(sreq, params, shard);
+    req.setMethod(SolrRequest.METHOD.POST);
+
+    // Carry the authenticated principal on the outbound request object (submit runs on the
+    // request thread, but the HTTP send may happen on an async thread without SolrRequestInfo).
+    // Auth plugins relay it inter-node: JWT re-sends the bearer token via REQ_PRINCIPAL_KEY,
+    // PKI signs the principal name into the SolrAuth header. Same pattern as SolrCmdDistributor.
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null) {
+      req.setUserPrincipal(requestInfo.getUserPrincipal());
+    }
+
+    LBSolrClient.Req lbReq = httpShardHandlerFactory.newLBHttpSolrClientReq(req, urls);
+
+    pending.incrementAndGet();
+    // if there are no shards available for a slice, urls.size()==0 asyncTracker.register();
+    if (urls.size() == 0 && shard != null && !shard.isEmpty()) {
+      // TODO: what's the right error code here? We should use the same thing when
+      // all of the servers for a shard are down.
+      SolrException exception = new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
+      ShardResponse srsp = new ShardResponse(new SolrResponseBase(new NamedList()));
+      if (sreq.nodeName != null) {
+        srsp.setNodeName(sreq.nodeName);
+      }
+      srsp.setShardRequest(sreq);
+      srsp.setShard(shard);
+      srsp.setException(exception);
+      srsp.setResponseCode(exception.code());
+      Objects.nonNull(srsp);
+      responses.add(srsp);
+      return;
+    }
+
+
+    // all variables that set inside this listener must be at least volatile
+    responseCancellableMap.put(sreq, this.lbClient.asyncReq(lbReq, new AsyncListener<>() {
+      volatile long startTime = System.nanoTime();
+
+      @Override
+      public void onStart() {
+        if (tracer != null && span != null) {
+          tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req));
+        }
+      }
+
+      @Override
+      public void onSuccess(LBSolrClient.Rsp rsp, int code, Object context) {
+        SimpleSolrResponse ssr = new SimpleSolrResponse(rsp.getResponse());
+        ShardResponse srsp = new ShardResponse(ssr);
+        if (sreq.nodeName != null) {
+          srsp.setNodeName(sreq.nodeName);
+        }
+        srsp.setShardRequest(sreq);
+        srsp.setShard(shard);
+
+        srsp.setShardAddress(rsp.getServer());
+
+
+        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+        Objects.nonNull(srsp);
+        responses.add(srsp);
+//        if (finish != null) {
+//          pending.getAndUpdate(operand -> {
+//            int newOperand = operand - 1;
+//            if (newOperand == 0) {
+//              ParWork.submitIO("HttpShardHandlerDone", finish);
+//            }
+//            return newOperand;
+//          });
+//        }
+      }
+
+      public void onFailure(Throwable throwable, int code, Object context) {
+        SimpleSolrResponse ssr = new SimpleSolrResponse(null);
+        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+        ShardResponse srsp = new ShardResponse(ssr);
+        if (sreq.nodeName != null) {
+          srsp.setNodeName(sreq.nodeName);
+        }
+        srsp.setShardRequest(sreq);
+        srsp.setShard(shard);
+        srsp.setException(throwable);
+        srsp.setResponseCode(code);
+        Objects.nonNull(srsp);
+        responses.add(srsp);
+//        if (finish != null) {
+//          pending.getAndUpdate(operand -> {
+//            int newOperand = operand - 1;
+//            if (newOperand == 0) {
+//              ParWork.submitIO("HttpShardHandlerDone", finish);
+//            }
+//            return newOperand;
+//          });
+//        }
+      }
+    }));
   }
 
   /**
    * Subclasses could modify the request based on the shard
    */
-  protected QueryRequest makeQueryRequest(final ShardRequest sreq, ModifiableSolrParams params, String shard) {
+  protected static QueryRequest makeQueryRequest(final ShardRequest sreq, ModifiableSolrParams params, String shard) {
     // use generic request to avoid extra processing of queries
     return new QueryRequest(params);
   }
 
   /**
-   * Subclasses could modify the Response based on the the shard
+   * Subclasses could modify the Response based on the shard
    */
-  protected ShardResponse transfomResponse(final ShardRequest sreq, ShardResponse rsp, String shard) {
+  protected static ShardResponse transfomResponse(final ShardRequest sreq, ShardResponse rsp, String shard) {
     return rsp;
   }
 
@@ -113,28 +311,44 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   private ShardResponse take(boolean bailOnError) {
+    try {
+      while (pending.get() > 0) {
+        //log.info("loop ing in httpshardhandler pending {}", pending.get());
 
-    while (pending.size() > 0) {
-      try {
-        Future<ShardResponse> future = completionService.take();
-        pending.remove(future);
-        ShardResponse rsp = future.get();
-        if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
+
+//        ShardResponse rsp = responses.poll(5, TimeUnit.SECONDS);
+//////
+//        if (rsp == null) {
+//          if (pending.get() > 0 && httpShardHandlerFactory.isClosed()) {
+//            cancelAll();
+//            pending.set(0);
+//            throw new AlreadyClosedException();
+//          }
+//          continue;
+//        }
+        ShardResponse rsp = responses.take();
+        responseCancellableMap.remove(rsp.getShardRequest());
+
+        pending.decrementAndGet();
+
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same
         // request more than once.
+        Objects.nonNull(rsp);
         rsp.getShardRequest().responses.add(rsp);
+
+        if (bailOnError && rsp.getException() != null) {
+          return rsp; // if exception, return immediately
+        }
+
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception", e);
       }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     return null;
   }
@@ -142,9 +356,12 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void cancelAll() {
-    for (Future<ShardResponse> future : pending) {
-      future.cancel(false);
-    }
+    responseCancellableMap.values().forEach(cancellable -> {
+      cancellable.cancel();
+      pending.decrementAndGet();
+    });
+
+    responseCancellableMap.clear();
   }
 
   @Override
@@ -173,6 +390,7 @@ public class HttpShardHandler extends ShardHandler {
       replicaSource = new CloudReplicaSource.Builder()
           .params(params)
           .zkStateReader(zkController.getZkStateReader())
+          .zkController(zkController)
           .whitelistHostChecker(hostChecker)
           .replicaListTransformer(replicaListTransformer)
           .collection(cloudDescriptor.getCollectionName())
@@ -182,13 +400,14 @@ public class HttpShardHandler extends ShardHandler {
 
       if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
         rb.isDistrib = false;
-        rb.shortCircuitedURL = ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
+        rb.shortCircuitedURL = Replica.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
         return;
         // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
       }
 
       for (int i = 0; i < rb.slices.length; i++) {
-        if (!ShardParams.getShardsTolerantAsBool(params) && replicaSource.getReplicasBySlice(i).isEmpty()) {
+        boolean noReplicas = replicaSource.getReplicasBySlice(i).isEmpty();
+        if (!ShardParams.getShardsTolerantAsBool(params) && noReplicas) {
           // stop the check when there are no replicas available for a shard
           // todo fix use of slices[i] which can be null if user specified urls in shards param
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
@@ -219,7 +438,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   private static String createSliceShardsStr(final List<String> shardUrls) {
-    final StringBuilder sliceShardsStr = new StringBuilder();
+    final StringBuilder sliceShardsStr = new StringBuilder(64);
     boolean first = true;
     for (String shardUrl : shardUrls) {
       if (first) {
@@ -232,14 +451,14 @@ public class HttpShardHandler extends ShardHandler {
     return sliceShardsStr.toString();
   }
 
-  private boolean canShortCircuit(String[] slices, boolean onlyNrtReplicas, SolrParams params, CloudDescriptor cloudDescriptor) {
+  private static boolean canShortCircuit(String[] slices, boolean onlyNrtReplicas, SolrParams params, CloudDescriptor cloudDescriptor) {
     // Are we hosting the shard that this request is for, and are we active? If so, then handle it ourselves
     // and make it a non-distributed request.
     String ourSlice = cloudDescriptor.getShardId();
     String ourCollection = cloudDescriptor.getCollectionName();
     // Some requests may only be fulfilled by replicas of type Replica.Type.NRT
     if (slices.length == 1 && slices[0] != null
-        && (slices[0].equals(ourSlice) || slices[0].equals(ourCollection + "_" + ourSlice))  // handle the <collection>_<slice> format
+        && (slices[0].equals(ourSlice) || slices[0].equals(ourCollection + '_' + ourSlice))  // handle the <collection>_<slice> format
         && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
         && (!onlyNrtReplicas || cloudDescriptor.getReplicaType() == Replica.Type.NRT)) {
       boolean shortCircuit = params.getBool("shortCircuit", true);       // currently just a debugging parameter to check distrib search on a single node
@@ -255,5 +474,13 @@ public class HttpShardHandler extends ShardHandler {
   public ShardHandlerFactory getShardHandlerFactory() {
     return httpShardHandlerFactory;
   }
+
+  public void clearPending() {
+    pending.set(0);
+  }
+
+//  public void setFinish(Runnable runnable) {
+//    this.finish = runnable;
+//  }
 
 }

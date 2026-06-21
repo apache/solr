@@ -72,7 +72,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
       this.realm = "solr";
     }
     
-    promptHeader = Collections.unmodifiableMap(Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
+    promptHeader = Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\"");
     credentials = new LinkedHashMap<>();
     Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
     if (users == null || users.isEmpty()) {

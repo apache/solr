@@ -62,7 +62,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCase
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
 
     if (commitEndPoint != null) {
       ((ModifiableSolrParams)req.getParams()).set(
@@ -75,6 +75,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCase
       cmd.optimize = optimize;
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
       processor.processCommit(cmd);
+      processor.close();
     } finally {
       SolrRequestInfo.clearRequestInfo();
       req.close();

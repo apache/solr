@@ -33,7 +33,11 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
@@ -46,6 +50,7 @@ import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,21 +58,23 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 
+@LuceneTestCase.Nightly // expensive test, uses 100
 public class TestBulkSchemaAPI extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   private static File tmpSolrHome;
+  private JettySolrRunner jetty;
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, null);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
@@ -82,10 +89,6 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -152,7 +155,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     Map error = (Map)map.get("error");
     assertNotNull("No errors", error);
     List details = (List)error.get("details");
-    assertNotNull("No details", details);
+    assertNotNull("No details:" + details, details);
     assertEquals("Wrong number of details", 1, details.size());
     List errorList = (List)((Map)details.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
@@ -193,7 +196,10 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull(map);
     Map analyzer = (Map)map.get("analyzer");
     assertEquals("org.apache.lucene.analysis.core.WhitespaceAnalyzer", String.valueOf(analyzer.get("class")));
-    assertEquals("5.0.0", String.valueOf(analyzer.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM)));
+    // Lucene 9 removed Analyzer#getVersion/#setVersion, so a raw Analyzer-class (as opposed to a
+    // tokenizer chain) cannot carry/round-trip its configured luceneMatchVersion through the schema
+    // API. The version is still validated on add (see FieldTypePluginLoader.readAnalyzer). This matches
+    // upstream branch_9x, which dropped the corresponding round-trip assertion.
   }
 
   public void testAnalyzerByName() throws Exception {
@@ -249,7 +255,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     List errorList = (List)((Map)details.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue (((String)errorList.get(0)).contains
-        ("A SPI class of type org.apache.lucene.analysis.util.TokenizerFactory with name 'bogus' does not exist."));
+        ("A SPI class of type org.apache.lucene.analysis.TokenizerFactory with name 'bogus' does not exist."));
   }
 
   public void testAddFieldMatchingExistingDynamicField() throws Exception {
@@ -637,7 +643,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     m = getObj(harness, "a4", "fields");
     assertNotNull("field a4 not created", m);
     assertEquals("mySimField", m.get("type"));
-    assertFieldSimilarity("a4", SweetSpotSimilarity.class);
+    assertFieldSimilarity("a4", SweetSpotSimilarity.class, jetty);
     
     m = getObj(harness, "myWhitespaceTxtField", "fieldTypes");
     assertNotNull(m);
@@ -648,7 +654,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull("field a5 not created", m);
     assertEquals("myWhitespaceTxtField", m.get("type"));
     assertNull(m.get("uninvertible")); // inherited, but API shouldn't return w/o explicit showDefaults
-    assertFieldSimilarity("a5", BM25Similarity.class); // unspecified, expect default
+    assertFieldSimilarity("a5", BM25Similarity.class, jetty); // unspecified, expect default
 
     m = getObj(harness, "wdf_nocase", "fields");
     assertNull("field 'wdf_nocase' not deleted", m);
@@ -746,6 +752,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
   }
 
+  @LuceneTestCase.Nightly // TODO: sometimes this can be very slow it looks
   public void testDeleteAndReplace() throws Exception {
     RestTestHarness harness = restTestHarness;
 
@@ -978,21 +985,10 @@ public class TestBulkSchemaAPI extends RestTestBase {
   public void testSortableTextFieldWithAnalyzer() throws Exception {
     String fieldTypeName = "sort_text_type";
     String fieldName = "sort_text";
-    String payload = "{\n" +
-        "  'add-field-type' : {" +
-        "    'name' : '" + fieldTypeName + "',\n" +
-        "    'stored':true,\n" +
-        "    'indexed':true\n" +
-        "    'maxCharsForDocValues':6\n" +
-        "    'class':'solr.SortableTextField',\n" +
-        "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" +
-        "  },\n"+
-        "  'add-field' : {\n" +
-        "    'name':'" + fieldName + "',\n" +
-        "    'type': '"+fieldTypeName+"',\n" +
-        "  }\n" +
-        "}\n";
-
+    String payload = "{\n" + "  'add-field-type' : {" + "    'name' : '" + fieldTypeName + "',\n" + "    'stored':true,\n" + "    'indexed':true\n" + "    'maxCharsForDocValues':6\n"
+        + "    'class':'solr.SortableTextField',\n" + "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" + "  },\n" + "  'add-field' : {\n" + "    'name':'" + fieldName
+        + "',\n" + "    'type': '" + fieldTypeName + "',\n" + "  }\n" + "}\n";
+    SolrClient client = getSolrClient(jetty);
     String response = restTestHarness.post("/schema", json(payload));
 
     Map map = (Map) fromJSONString(response);
@@ -1001,16 +997,12 @@ public class TestBulkSchemaAPI extends RestTestBase {
     Map fields = getObj(restTestHarness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
 
-    assertEquals(0,
-                 getSolrClient().add(Arrays.asList(sdoc("id","1",fieldName,"xxx aaa"),
-                                                   sdoc("id","2",fieldName,"xxx bbb aaa"),
-                                                   sdoc("id","3",fieldName,"xxx bbb zzz"))).getStatus());
-                                                   
-    assertEquals(0, getSolrClient().commit().getStatus());
+    assertEquals(0, client.add(Arrays.asList(sdoc("id", "1", fieldName, "xxx aaa"), sdoc("id", "2", fieldName, "xxx bbb aaa"), sdoc("id", "3", fieldName, "xxx bbb zzz"))).getStatus());
+
+    assertEquals(0, client.commit().getStatus());
     {
-      SolrDocumentList docs = getSolrClient().query
-        (params("q",fieldName+":xxx","sort", fieldName + " asc, id desc")).getResults();
-         
+      SolrDocumentList docs = client.query(params("q", fieldName + ":xxx", "sort", fieldName + " asc, id desc")).getResults();
+
       assertEquals(3L, docs.getNumFound());
       assertEquals(3L, docs.size());
       assertEquals("1", docs.get(0).getFieldValue("id"));
@@ -1018,33 +1010,31 @@ public class TestBulkSchemaAPI extends RestTestBase {
       assertEquals("2", docs.get(2).getFieldValue("id"));
     }
     {
-      SolrDocumentList docs = getSolrClient().query
-        (params("q",fieldName+":xxx", "sort", fieldName + " desc, id asc")).getResults();
-                                                           
+      SolrDocumentList docs = client.query(params("q", fieldName + ":xxx", "sort", fieldName + " desc, id asc")).getResults();
+
       assertEquals(3L, docs.getNumFound());
       assertEquals(3L, docs.size());
       assertEquals("2", docs.get(0).getFieldValue("id"));
       assertEquals("3", docs.get(1).getFieldValue("id"));
       assertEquals("1", docs.get(2).getFieldValue("id"));
     }
-    
   }
 
   @Test
   public void testAddNewFieldAndQuery() throws Exception {
-    getSolrClient().add(Arrays.asList(
-        sdoc("id", "1", "term_s", "tux")));
+    SolrClient client = getSolrClient(jetty);
+    client.add(Arrays.asList(sdoc("id", "1", "term_s", "tux")));
 
-    getSolrClient().commit(true, true);
+    client.commit(true, true);
     Map<String,Object> attrs = new HashMap<>();
     attrs.put("name", "newstringtestfield");
     attrs.put("type", "string");
 
-    new SchemaRequest.AddField(attrs).process(getSolrClient());
+    new SchemaRequest.AddField(attrs).process(client);
 
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField("newstringtestfield");
-    int size = getSolrClient().query(query).getResults().size();
+    int size = client.query(query).getResults().size();
     assertEquals(1, size);
   }
 
@@ -1079,7 +1069,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     Map fields = getObj(harness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
     
-    assertFieldSimilarity(fieldName, BM25Similarity.class,
+    assertFieldSimilarity(fieldName, BM25Similarity.class, jetty,
        sim -> assertEquals("Unexpected k1", k1, sim.getK1(), .001),
        sim -> assertEquals("Unexpected b", b, sim.getB(), .001));
 
@@ -1105,7 +1095,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     fields = getObj(harness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
 
-    assertFieldSimilarity(fieldName, DFISimilarity.class,
+    assertFieldSimilarity(fieldName, DFISimilarity.class, jetty,
         sim -> assertEquals("Unexpected independenceMeasure", independenceMeasure, sim.getIndependence().toString()),
         sim -> assertEquals("Unexpected discountedOverlaps", discountOverlaps, sim.getDiscountOverlaps()));
   }
@@ -1158,7 +1148,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
    * Executes each of the specified Similarity-accepting validators.
    */
   @SafeVarargs
-  private static <T extends Similarity> void assertFieldSimilarity(String fieldname, Class<T> expected, Consumer<T>... validators) {
+  private static <T extends Similarity> void assertFieldSimilarity(String fieldname, Class<T> expected, JettySolrRunner jetty, Consumer<T>... validators) {
     CoreContainer cc = jetty.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {
       SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();

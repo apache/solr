@@ -93,7 +93,7 @@ public class UUIDField extends StrField {
     }
   }
 
-  public String toInternal(UUID uuid) {
+  public static String toInternal(UUID uuid) {
     return uuid.toString().toLowerCase(Locale.ROOT);
   }
 

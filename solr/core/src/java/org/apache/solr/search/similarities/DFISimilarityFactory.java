@@ -60,7 +60,7 @@ public class DFISimilarityFactory extends SimilarityFactory {
     return sim;
   }
   
-  private Independence parseIndependenceMeasure(String expr) {
+  private static Independence parseIndependenceMeasure(String expr) {
     if ("ChiSquared".equals(expr)) {
       return new IndependenceChiSquared();
     } else if ("Standardized".equals(expr)) {

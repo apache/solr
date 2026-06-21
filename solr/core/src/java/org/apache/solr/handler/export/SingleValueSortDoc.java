@@ -73,9 +73,9 @@ class SingleValueSortDoc extends SortDoc {
   public boolean lessThan(Object o) {
     SingleValueSortDoc sd = (SingleValueSortDoc)o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if(comp < 0) {
       return true;
-    } else if (comp == 1) {
+    } else if (comp > 0) {
       return false;
     } else {
       return docId+docBase > sd.docId+sd.docBase;

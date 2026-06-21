@@ -17,94 +17,113 @@
 
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Map;
 
-final class OverseerElectionContext extends ElectionContext {
+final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final SolrZkClient zkClient;
   private final Overseer overseer;
-  private volatile boolean isClosed = false;
+  private volatile boolean hasBeenOverseer;
 
-  public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
-    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", null, zkClient);
+  public OverseerElectionContext(LeaderElector leaderElector, final Integer zkNodeName, SolrZkClient zkClient, Overseer overseer) {
+    super(leaderElector, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica("overseer:" + overseer.getZkController().getNodeName(), getIDMap(zkNodeName, overseer),
+        "overseer", -1, null), null, zkClient);
     this.overseer = overseer;
-    this.zkClient = zkClient;
+  }
+
+  private static Object2ObjectMap<String,Object> getIDMap(Integer zkNodeName, Overseer overseer) {
+    Object2ObjectMap<String,Object> idMap = new Object2ObjectLinkedOpenHashMap<>(2);
+    idMap.put("id", zkNodeName);
+    idMap.put(ZkStateReader.NODE_NAME_PROP, overseer.getZkController().getNodeName());
+    return idMap;
+  }
+
+  @Override
+  boolean runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) {
+    log.info("Running the leader process for Overseer");
+
+    if (overseer.isDone()) {
+      log.info("Already closed, bailing ...");
+      if (hasBeenOverseer) {
+        cancelElection();
+      }
+      return true;
+    }
+
     try {
-      new ZkCmdExecutor(zkClient.getZkClientTimeout()).ensureExists(Overseer.OVERSEER_ELECT, zkClient);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
-      InterruptedException {
-    if (isClosed) {
-      return;
-    }
-    log.info("I am going to be the leader {}", id);
-    final String id = leaderSeqPath
-        .substring(leaderSeqPath.lastIndexOf("/") + 1);
-    ZkNodeProps myProps = new ZkNodeProps(ID, id);
-
-    zkClient.makePath(leaderPath, Utils.toJSON(myProps),
-        CreateMode.EPHEMERAL, true);
-    if (pauseBeforeStartMs > 0) {
-      try {
-        Thread.sleep(pauseBeforeStartMs);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        log.warn("Wait interrupted ", e);
+      boolean success = super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
+      if (!success) {
+        // Do NOT cancelElection() here. super.runLeaderProcess returns false when the previous
+        // overseer's leader_lock ephemeral is still held by its not-yet-reaped ZK session -- the
+        // common case when the node that hosted BOTH the Overseer and a shard leader is killed: the
+        // shard election node is reaped first and a new shard leader is elected, but the overseer
+        // leader_lock lingers until the dead session fully expires. That failure is TRANSIENT and
+        // recoverable: the lock is released automatically on session expiry. Deleting our OWN election
+        // node here (cancelElection removes getLeaderSeqPath()) drops us out of the election entirely
+        // -- LeaderElector.checkIfIamLeader's step-aside then sees freshSeqs without our node and
+        // returns false, exiting the retry loop. The Overseer is then left VACANT until some unrelated
+        // event (e.g. the old node restarting) triggers a new election -- a multi-second window in
+        // which no StateUpdates are written, so a freshly-elected shard leader's LEADER state never
+        // propagates and the shard looks leaderless (TestTlogReplica.testBasicLeaderElection:
+        // "Expect new leader" {1=A,2=D} s1[leader=]). Instead, leave our election node in place and
+        // return false: the elector's sole-candidate backoff loop re-runs checkIfIamLeader (~250ms)
+        // and we win as soon as the dead session's leader_lock is reaped. Genuine "we are shutting
+        // down" cases are handled by the overseer.isDone()/isShutDown() branches above and below,
+        // which DO cancelElection.
+        return false;
       }
+
+    if (!overseer.getZkController().getCoreContainer().isShutDown() && !overseer.getZkController().isShutdownCalled()
+        && !overseer.isDone()) {
+      log.info("Starting overseer after winning Overseer election {}", replica.getInternalId());
+      overseer.start(replica.getInternalId(), context, weAreReplacement);
+    } else {
+      log.info("Will not start Overseer because we are closed");
+      cancelElection();
+      return false;
     }
-    synchronized (this) {
-      if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown()) {
-        overseer.start(id);
-      }
+
+    hasBeenOverseer = true;
+    return true;
+    } catch (Exception e) {
+      log.error("Exception becoming overseer", e);
+      cancelElection();
+      return false;
     }
   }
 
-  @Override
-  public void cancelElection() throws InterruptedException, KeeperException {
-    super.cancelElection();
-    overseer.close();
+  public Overseer getOverseer() {
+    return  overseer;
   }
 
   @Override
-  public synchronized void close() {
-    this.isClosed = true;
-    overseer.close();
-  }
-
-  @Override
-  public ElectionContext copy() {
-    return new OverseerElectionContext(zkClient, overseer, id);
+  public void cancelElection() {
+    try {
+      super.cancelElection();
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      log.error("Exception closing Overseer", e);
+    }
   }
 
   @Override
   public void joinedElectionFired() {
-    overseer.close();
+
   }
 
   @Override
   public void checkIfIamLeaderFired() {
-    // leader changed - close the overseer
-    overseer.close();
-  }
 
+  }
 }
+

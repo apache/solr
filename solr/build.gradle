@@ -15,8 +15,56 @@
  * limitations under the License.
  */
 
+apply plugin: "com.github.ben-manes.versions"
+
+buildscript {
+  repositories {
+    gradlePluginPortal()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.github.ben-manes:gradle-versions-plugin:0.38.0"
+  }
+}
+
 description = 'Parent project for Apache Solr'
 
 subprojects {
   group "org.apache.solr"
 }
+
+tasks.named("dependencyUpdates").configure {
+  checkConstraints = true
+}
+
+def isNonStable = { String version ->
+
+  return false
+}
+
+tasks.named("dependencyUpdates").configure {
+  checkConstraints = true
+  // Example 1: reject all non stable versions
+  rejectVersionIf {
+    isNonStable(it.candidate.version)
+  }
+
+  // Example 2: disallow release candidates as upgradable versions from stable versions
+  rejectVersionIf {
+    isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
+  }
+
+  // Example 3: using the full syntax
+  resolutionStrategy {
+    componentSelection {
+      all {
+        if (isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)) {
+          reject('Release candidate')
+        }
+      }
+    }
+  }
+}
+
+

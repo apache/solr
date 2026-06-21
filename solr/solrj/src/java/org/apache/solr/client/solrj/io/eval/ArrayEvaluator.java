@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -36,9 +37,9 @@ public class ArrayEvaluator extends RecursiveObjectEvaluator implements ManyValu
   
   @SuppressWarnings({"unchecked"})
   public ArrayEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
-    super(expression, factory, Arrays.asList("sort"));
+    super(expression, factory, Collections.singletonList("sort"));
     
-    StreamExpressionNamedParameter sortParam = factory.getNamedOperand(expression, "sort");
+    StreamExpressionNamedParameter sortParam = StreamFactory.getNamedOperand(expression, "sort");
     if(null != sortParam && sortParam.getParameter() instanceof StreamExpressionValue){
       String sortOrder = ((StreamExpressionValue)sortParam.getParameter()).getValue().trim().toLowerCase(Locale.ROOT);
       if("asc".equals(sortOrder) || "desc".equals(sortOrder)){

@@ -33,6 +33,7 @@ import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -40,14 +41,21 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+// NOTE: Lucene 9.0.0's DisjunctionMaxQuery stores its disjuncts in an unordered Multiset, so
+// toString() disjunct order follows Query.hashCode(), not the qf/insertion order. Tests that
+// assert the exact toString() of a DisMax query (the "|"-joined disjunct list) are therefore
+// seed-dependent and have been adapted here to be order-insensitive (see assertDisjunctsEqual /
+// order-insensitive assertions in the affected methods). Do not re-introduce exact "|"-order
+// string assertions.
 public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestExtendedDismaxParser() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml", "schema12.xml");
+    initCore("solrconfig.xml", "schema_syn.xml");
     index();
   }
   
@@ -713,12 +721,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void testUfDynamicField() throws Exception {
     try {
       ignoreException("dynamic field");
-
-      SolrException exception = expectThrows(SolrException.class,
-          () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-      assertEquals("dynamic field name must start or end with *",
-          exception.getMessage());
+      try (SolrQueryRequest req = req("uf", "fl=trait*,id", "defType", "edismax")) {
+        SolrException exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+        assertEquals("dynamic field name must start or end with *", exception.getMessage());
+      }
     } finally {
       resetExceptionIgnores();
     }
@@ -730,26 +737,31 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void testCyclicAliasing() throws Exception {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
+      SolrException e;
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","who")) {
+        e = SolrTestCaseUtil.expectThrows(SolrException.class, "Simple cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
 
-      SolrException e = expectThrows(SolrException.class, "Simple cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","who")));
-      assertCyclicDetectionErrorMessage(e);
-
-      e = expectThrows(SolrException.class, "Cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")));
-      assertCyclicDetectionErrorMessage(e);
-
-      e = expectThrows(SolrException.class, "Cyclic aliasing not detected", () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6")));
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")) {
+        e = SolrTestCaseUtil.expectThrows(SolrException.class, "Cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6")) {
+        e = SolrTestCaseUtil.expectThrows(SolrException.class, "Cyclic aliasing not detected", () -> h.query(req));
+      }
       assertFalse("This is not cyclic aliasing", e.getCause().getMessage().contains("Field aliases lead to a cycle"));
       assertTrue("Should throw exception due to invalid field name", e.getCause().getMessage().contains("not a valid field name"));
 
-      e = expectThrows(SolrException.class, "Cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4")));
-      assertCyclicDetectionErrorMessage(e);
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4")) {
+        e = SolrTestCaseUtil.expectThrows(SolrException.class, "Cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
 
-      e = expectThrows(SolrException.class, "Cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","who:(Zapp Pig)", "qf","text", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")));
-      assertCyclicDetectionErrorMessage(e);
+      try (SolrQueryRequest req = req("defType","edismax", "q","who:(Zapp Pig)", "qf","text", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")) {
+        e = SolrTestCaseUtil.expectThrows(SolrException.class, "Cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
     } finally {
       resetExceptionIgnores();
     }
@@ -826,7 +838,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
   
   // test phrase fields including pf2 pf3 and phrase slop
-  public void testPfPs() {
+  public void testPfPs() throws Exception {
     assertU(adoc("id", "s0", "phrase_sw", "foo bar a b c", "boost_d", "1.0"));    
     assertU(adoc("id", "s1", "phrase_sw", "foo a bar b c", "boost_d", "2.0"));    
     assertU(adoc("id", "s2", "phrase_sw", "foo a b bar c", "boost_d", "3.0"));    
@@ -951,16 +963,17 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx\"~2)^22.0')]"
      );
 
-    assertQ("phrase field queries spanning multiple fields should be within their own dismax queries",
+    // phrase field queries spanning multiple fields should be within their own dismax queries
+    assertParsedQueryContains(
         req("q", "aaaa bbbb cccc",
             "qf", "phrase_sw phrase1_sw",
             "pf2", "phrase_sw phrase1_sw",
             "pf3", "phrase_sw phrase1_sw",
             "defType", "edismax",
             "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"aaaa bbbb\" | phrase1_sw:\"aaaa bbbb\")')]",
-        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"bbbb cccc\" | phrase1_sw:\"bbbb cccc\")')]",
-        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"aaaa bbbb cccc\" | phrase1_sw:\"aaaa bbbb cccc\")')]"
+        "(phrase_sw:\"aaaa bbbb\" | phrase1_sw:\"aaaa bbbb\")",
+        "(phrase_sw:\"bbbb cccc\" | phrase1_sw:\"bbbb cccc\")",
+        "(phrase_sw:\"aaaa bbbb cccc\" | phrase1_sw:\"aaaa bbbb cccc\")"
     );
   }
 
@@ -1518,8 +1531,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.set("qf_fr", "subject_fr title_fr^5");
     params.set("qf_en", "subject_en title_en^5");
     params.set("qf_es", "subject_es title_es^5");
-    
-    MultilanguageQueryParser parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req(params));
+    SolrQueryRequest req = req(params);
+    MultilanguageQueryParser parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req);
     Query query = parser.parse();
     assertNotNull(query);
     assertTrue(containsClause(query, "title", "foo", 5, false));
@@ -1528,21 +1541,25 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertTrue(containsClause(query, "subject", "bar", 1, false));
     
     params.set("language", "es");
-    parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req(params));
+    req.close();
+    req = req(params);
+    parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req);
     query = parser.parse();
     assertNotNull(query);
     assertTrue(containsClause(query, "title_es", "foo", 5, false));
     assertTrue(containsClause(query, "title_es", "bar", 5, false));
     assertTrue(containsClause(query, "subject_es", "foo", 1, false));
     assertTrue(containsClause(query, "subject_es", "bar", 1, false));
-    
-    FuzzyDismaxQParser parser2 = new FuzzyDismaxQParser("foo bar absence", new ModifiableSolrParams(), params, req(params));
+
+    req.close();
+    req = req(params);
+    FuzzyDismaxQParser parser2 = new FuzzyDismaxQParser("foo bar absence", new ModifiableSolrParams(), params, req);
     query = parser2.parse();
     assertNotNull(query);
     assertTrue(containsClause(query, "title", "foo", 5, false));
     assertTrue(containsClause(query, "title", "bar", 5, false));
     assertTrue(containsClause(query, "title", "absence", 5, true));
-    
+    req.close();
   }
 
   @Test
@@ -1580,34 +1597,34 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/docs/[0]/id=='72'"
     );
 
-    assertQ(req("qf", "name title", 
+    assertParsedQueryContains(req("qf", "name title",
                 "q", "barking curds of stigma",
                 "defType", "edismax",
                 "sow", "false",
                 "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:barking | title:barking))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:curds | title:curds))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:of | title:of))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:stigma | title:stigma))')]"
+        "DisjunctionMaxQuery((name:barking | title:barking))",
+        "DisjunctionMaxQuery((name:curds | title:curds))",
+        "DisjunctionMaxQuery((name:of | title:of))",
+        "DisjunctionMaxQuery((name:stigma | title:stigma))"
     );
-    assertQ(req("qf", "name title",
+    assertParsedQueryContains(req("qf", "name title",
         "q", "barking curds of stigma",
         "defType", "edismax",
         "sow", "true",
         "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:barking | title:barking))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:curds | title:curds))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:of | title:of))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:stigma | title:stigma))')]"
+        "DisjunctionMaxQuery((name:barking | title:barking))",
+        "DisjunctionMaxQuery((name:curds | title:curds))",
+        "DisjunctionMaxQuery((name:of | title:of))",
+        "DisjunctionMaxQuery((name:stigma | title:stigma))"
     );
-    assertQ(req("qf", "name title",
+    assertParsedQueryContains(req("qf", "name title",
         "q", "barking curds of stigma",
         "defType", "edismax",
         "debugQuery", "true"), // Default sow=false
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:barking | title:barking))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:curds | title:curds))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:of | title:of))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:stigma | title:stigma))')]"
+        "DisjunctionMaxQuery((name:barking | title:barking))",
+        "DisjunctionMaxQuery((name:curds | title:curds))",
+        "DisjunctionMaxQuery((name:of | title:of))",
+        "DisjunctionMaxQuery((name:stigma | title:stigma))"
     );
   }
   
@@ -1615,56 +1632,55 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     // When the *structure* of produced queries is different in each field, 
     // sow=true produces boolean-of-dismax query structure,
     // and sow=false produces dismax-of-boolean query structure.
-    assertQ(req("qf", "text_sw title",
+    assertParsedQueryContains(req("qf", "text_sw title",
         "q", "olive the other",
         "defType", "edismax",
         "sow", "true",
         "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((text_sw:oliv | title:olive))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((title:the))')]",
-        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((text_sw:other | title:other))')]"
+        "DisjunctionMaxQuery((text_sw:oliv | title:olive))",
+        "DisjunctionMaxQuery((title:the))",
+        "DisjunctionMaxQuery((text_sw:other | title:other))"
     );
-    assertQ(req("qf", "text_sw title",
+    assertParsedQueryContains(req("qf", "text_sw title",
         "q", "olive the other",
         "defType", "edismax",
         "sow", "false",
         "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'+DisjunctionMaxQuery(((text_sw:oliv text_sw:other) | (title:olive title:the title:other)))')]"
+        "+DisjunctionMaxQuery(((text_sw:oliv text_sw:other) | (title:olive title:the title:other)))"
     );
 
     // When field's analysis produce different query structures, mm processing is always done on the boolean query.
     // sow=true produces (boolean-of-dismax)~<mm> query structure,
     // and sow=false produces dismax-of-(boolean)~<mm> query structure.
-    assertQ(req("qf", "text_sw title",
+    assertParsedQueryContains(req("qf", "text_sw title",
         "q", "olive the other",
         "defType", "edismax",
         "sow", "true",
         "mm", "100%",
         "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'+(DisjunctionMaxQuery((text_sw:oliv | title:olive)) DisjunctionMaxQuery((title:the)) DisjunctionMaxQuery((text_sw:other | title:other)))~3')]"
+        "+(DisjunctionMaxQuery((text_sw:oliv | title:olive)) DisjunctionMaxQuery((title:the)) DisjunctionMaxQuery((text_sw:other | title:other)))~3"
     );
-    assertQ(req("qf", "text_sw title",
+    assertParsedQueryContains(req("qf", "text_sw title",
         "q", "olive the other",
         "defType", "edismax",
         "sow", "false",
         "mm", "100%",
         "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'+DisjunctionMaxQuery((((text_sw:oliv text_sw:other)~2) | ((title:olive title:the title:other)~3)))')]"
+        "+DisjunctionMaxQuery((((text_sw:oliv text_sw:other)~2) | ((title:olive title:the title:other)~3)))"
     );
 
 
-    // When the *structure* of produced queries is the same in each field, 
-    // sow=false/true produce the same boolean-of-dismax query structure 
+    // When the *structure* of produced queries is the same in each field,
+    // sow=false/true produce the same boolean-of-dismax query structure
     for (String sow : Arrays.asList("true", "false")) {
-      assertQ(req("qf", "text_sw title",
+      assertParsedQueryContains(req("qf", "text_sw title",
           "q", "olive blah other",
           "defType", "edismax",
           "sow", sow,
           "debugQuery", "true"),
-          "//str[@name='parsedquery'][contains(.,'"
-              + "+(DisjunctionMaxQuery((text_sw:oliv | title:olive))"
+          "+(DisjunctionMaxQuery((text_sw:oliv | title:olive))"
               + " DisjunctionMaxQuery((text_sw:blah | title:blah))"
-              + " DisjunctionMaxQuery((text_sw:other | title:other)))')]"
+              + " DisjunctionMaxQuery((text_sw:other | title:other)))"
       );
     }
   }
@@ -1818,8 +1834,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","+(wi fi)", "sow","false")
         , "/response/numFound==1"
     );
-
-    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all;
+    try (SolrQueryRequest req = req("q", "*:*", "rows", "0", "wt", "json")) {
+       all = (Map) Utils.fromJSONString(h.query(req));
+    }
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 
@@ -1939,7 +1957,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       try (SolrQueryRequest req = req(params)) {
         QParser qParser = QParser.getParser("text_sw:grackle", "edismax", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
         Query q = qParser.getQuery();
-        assertEquals("+(((+text_sw:crow +text_sw:blackbird) text_sw:grackl))", q.toString());
+        assertQueryEquals("+(((+text_sw:crow +text_sw:blackbird) text_sw:grackl))", q.toString());
       }
     }
 
@@ -1949,13 +1967,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       try (SolrQueryRequest req = req(params)) {
         QParser qParser = QParser.getParser("grackle", "edismax", req);
         Query q = qParser.getQuery();
-        assertEquals("+(((text:\"crow blackbird\" text:grackl))"
+        assertQueryEquals("+(((text:\"crow blackbird\" text:grackl))"
                 + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl)))",
             q.toString());
 
         qParser = QParser.getParser("grackle wi fi", "edismax", req);
         q = qParser.getQuery();
-        assertEquals("+(((text:\"crow blackbird\" text:grackl) text:wifi)"
+        assertQueryEquals("+(((text:\"crow blackbird\" text:grackl) text:wifi)"
                 + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl) text_sw:wifi))",
             q.toString());
       }
@@ -1964,13 +1982,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req(sowTrueParams)) {
       QParser qParser = QParser.getParser("grackle", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+((text:\"crow blackbird\" text:grackl)"
+      assertQueryEquals("+((text:\"crow blackbird\" text:grackl)"
               + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl)))",
           q.toString());
 
       qParser = QParser.getParser("grackle wi fi", "edismax", req);
       q = qParser.getQuery();
-      assertEquals("+(((text:\"crow blackbird\" text:grackl)"
+      assertQueryEquals("+(((text:\"crow blackbird\" text:grackl)"
               + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl))) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
           q.toString());
     }
@@ -1980,25 +1998,141 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject title")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+((title:one | subject:on) (title:two | subject:two))", q.toString());
+      assertQueryEquals("+((title:one | subject:on) (title:two | subject:two))", q.toString());
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject title^5")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+(((title:one)^5.0 | subject:on) ((title:two)^5.0 | subject:two))", q.toString());
+      assertQueryEquals("+(((title:one)^5.0 | subject:on) ((title:two)^5.0 | subject:two))", q.toString());
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^3 title")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+((title:one | (subject:on)^3.0) (title:two | (subject:two)^3.0))", q.toString());
+      assertQueryEquals("+((title:one | (subject:on)^3.0) (title:two | (subject:two)^3.0))", q.toString());
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^10 title^20")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+(((title:one)^20.0 | (subject:on)^10.0) ((title:two)^20.0 | (subject:two)^10.0))", q.toString());
+      assertQueryEquals("+(((title:one)^20.0 | (subject:on)^10.0) ((title:two)^20.0 | (subject:two)^10.0))", q.toString());
     }
   }
 
+
+  // ---------------------------------------------------------------------------
+  // DisjunctionMaxQuery disjunct-order normalization helpers.
+  //
+  // Lucene 9.0.0's DisjunctionMaxQuery keeps its disjuncts in an unordered Multiset,
+  // so toString() emits the "|"-joined disjuncts in a non-deterministic (hashCode-driven)
+  // order. The assertions below normalize a query string so that, within every balanced
+  // paren group, any top-level "|"-separated alternatives are sorted into a canonical order
+  // before comparison. This makes the assertions order-insensitive without changing what
+  // they actually verify.
+  // ---------------------------------------------------------------------------
+
+  /** Recursively sorts top-level " | "-separated alternatives within every balanced-paren group. */
+  static String normalizeDisjuncts(String s) {
+    StringBuilder out = new StringBuilder(s.length());
+    int i = 0;
+    while (i < s.length()) {
+      char c = s.charAt(i);
+      if (c == '(') {
+        int end = matchingParen(s, i);
+        String inner = s.substring(i + 1, end);
+        out.append('(').append(normalizeGroup(inner)).append(')');
+        i = end + 1;
+      } else {
+        out.append(c);
+        i++;
+      }
+    }
+    return out.toString();
+  }
+
+  /** Normalizes the contents of one paren group: recurse into children, then sort top-level " | " parts. */
+  private static String normalizeGroup(String inner) {
+    java.util.List<String> parts = splitTopLevel(inner, " | ");
+    java.util.List<String> normalized = new java.util.ArrayList<>(parts.size());
+    for (String p : parts) {
+      normalized.add(normalizeDisjuncts(p));
+    }
+    if (normalized.size() > 1) {
+      java.util.Collections.sort(normalized);
+    }
+    return String.join(" | ", normalized);
+  }
+
+  /** Splits on the given separator, but only at the top paren/bracket nesting level. */
+  private static java.util.List<String> splitTopLevel(String s, String sep) {
+    java.util.List<String> result = new java.util.ArrayList<>();
+    int depth = 0;
+    int start = 0;
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == '(' || c == '[') {
+        depth++;
+      } else if (c == ')' || c == ']') {
+        depth--;
+      } else if (depth == 0 && s.startsWith(sep, i)) {
+        result.add(s.substring(start, i));
+        i += sep.length() - 1;
+        start = i + 1;
+      }
+    }
+    result.add(s.substring(start));
+    return result;
+  }
+
+  /** Returns the index of the ')' matching the '(' at openIdx. */
+  private static int matchingParen(String s, int openIdx) {
+    int depth = 0;
+    for (int i = openIdx; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+        if (depth == 0) {
+          return i;
+        }
+      }
+    }
+    return s.length() - 1;
+  }
+
+  /** assertEquals on query strings, ignoring DisjunctionMaxQuery disjunct ordering. */
+  static void assertQueryEquals(String expected, String actual) {
+    assertEquals(normalizeDisjuncts(expected), normalizeDisjuncts(actual));
+  }
+
+  /**
+   * Runs the request, extracts the parsedquery from the debug response, and asserts that the
+   * normalized parsedquery contains each (normalized) expected fragment - order-insensitive
+   * w.r.t. DisjunctionMaxQuery disjunct ordering.
+   */
+  void assertParsedQueryContains(SolrQueryRequest req, String... expectedFragments) throws Exception {
+    final String response;
+    try {
+      response = h.query(req);
+    } finally {
+      req.close();
+    }
+    // Extract the parsedquery string field value from the XML debug response.
+    String marker = "name=\"parsedquery\">";
+    int idx = response.indexOf(marker);
+    assertTrue("no parsedquery in response: " + response, idx >= 0);
+    int valStart = idx + marker.length();
+    int valEnd = response.indexOf("</str>", valStart);
+    String parsed = response.substring(valStart, valEnd);
+    // Un-escape the few XML entities that appear in parsed query strings.
+    parsed = parsed.replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
+    String normParsed = normalizeDisjuncts(parsed);
+    for (String frag : expectedFragments) {
+      String normFrag = normalizeDisjuncts(frag);
+      assertTrue("parsedquery did not contain expected fragment.\n expected (normalized): " + normFrag
+              + "\n parsed (normalized): " + normParsed + "\n raw parsed: " + parsed,
+          normParsed.contains(normFrag));
+    }
+  }
 
   private boolean containsClause(Query query, String field, String value,
                                  int boost, boolean fuzzy) {
@@ -2183,11 +2317,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   /** SOLR-11512 */
   @Test
   public void killInfiniteRecursionParse() throws Exception {
-    SolrException exception = expectThrows(SolrException.class, () -> {
-      h.query(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
-    });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertTrue(exception.getMessage().contains("Infinite Recursion detected parsing query"));
+    try (SolrQueryRequest req = req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}")) {
+      SolrException exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+        h.query(req);
+      });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertTrue(exception.getMessage().contains("Infinite Recursion detected parsing query"));
+    }
   }
 
   /** SOLR-5163 */
@@ -2202,16 +2338,19 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.add("debugQuery", "true");
 
     // test valid field names
-    String response = h.query(req(params));
-    assertTrue(response.contains("+DisjunctionMaxQuery((title:olive | " +
-        "(subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))"));
+    try (SolrQueryRequest req = req(params)) {
+      String response = h.query(req);
+      assertTrue(normalizeDisjuncts(response).contains(normalizeDisjuncts(
+          "+DisjunctionMaxQuery((title:olive | (subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))")));
+    }
 
     // test invalid field name
     params.set("qf", "subject^3 nosuchfield");
-    SolrException exception = expectThrows(SolrException.class, () -> h.query(req(params)));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
-        exception.getMessage());
+    try (SolrQueryRequest req = req(params)) {
+      SolrException exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name", exception.getMessage());
+    }
   }
 
 }

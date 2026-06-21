@@ -21,20 +21,21 @@
     <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout>
         <Pattern>
-          %maxLen{%-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %c{1.} %m%notEmpty{
+          %maxLen{%-4r %-5p (%-5t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{
           =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
     </Console>
   </Appenders>
   <Loggers>
+    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
     <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
     <AsyncLogger name="org.apache.hadoop" level="WARN"/>
     <AsyncLogger name="org.apache.directory" level="WARN"/>
-    <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
-    <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
+    <AsyncLogger name="org.apache.solr.hadoop" level="WARN"/>
+    <AsyncLogger name="org.eclipse.jetty" level="WARN"/>
 
-    <AsyncRoot level="INFO">
+    <AsyncRoot level="WARN">
       <AppenderRef ref="STDERR"/>
     </AsyncRoot>
   </Loggers>

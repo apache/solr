@@ -19,6 +19,8 @@ package org.apache.solr.handler.admin;
 
 import java.util.concurrent.Future;
 
+import org.apache.solr.cloud.LeaderElector;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -32,7 +34,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.NAME);
-    CoreAdminOperation.log().info("Applying buffered updates on core: " + cname);
+    CoreAdminOperation.log().info("Applying buffered updates on core: {}", cname);
     CoreContainer coreContainer = it.handler.coreContainer;
     try (SolrCore core = coreContainer.getCore(cname)) {
       if (core == null)
@@ -43,7 +45,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       }
       Future<UpdateLog.RecoveryInfo> future = updateLog.applyBufferedUpdates();
       if (future == null) {
-        CoreAdminOperation.log().info("No buffered updates available. core=" + cname);
+        CoreAdminOperation.log().info("No buffered updates available. core={}", cname);
         it.rsp.add("core", cname);
         it.rsp.add("status", "EMPTY_BUFFER");
         return;
@@ -53,15 +55,25 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
         SolrException.log(CoreAdminOperation.log(), "Replay failed");
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Replay failed");
       }
-      coreContainer.getZkController().publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+      // Publish LEADER state if this core currently holds leadership, otherwise ACTIVE.
+      // Without this check, a sub-shard that won leader election before applyBufferedUpdates
+      // would have its LEADER state overwritten with ACTIVE, making getLeaderRetry() time out.
+      Replica.State publishState = Replica.State.ACTIVE;
+      try {
+        LeaderElector le = coreContainer.getZkController().getLeaderElector(core.getName());
+        if (le != null && le.isLeader()) {
+          publishState = Replica.State.LEADER;
+        }
+      } catch (Exception ignored) {}
+      coreContainer.getZkController().publish(core.getCoreDescriptor(), publishState);
       it.rsp.add("core", cname);
       it.rsp.add("status", "BUFFER_APPLIED");
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propagateInterrupt(e);
       CoreAdminOperation.log().warn("Recovery was interrupted", e);
     } catch (Exception e) {
       if (e instanceof SolrException)
-        throw (SolrException) e;
+        throw e;
       else
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);
     } finally {

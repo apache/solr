@@ -19,6 +19,7 @@ package org.apache.solr.search.stats;
 import java.lang.invoke.MethodHandles;
 
 import java.util.List;
+import java.util.Set;
 
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
@@ -52,7 +53,7 @@ public class LocalStatsCache extends StatsCache {
 
   @Override
   protected void doMergeToGlobalStats(SolrQueryRequest req,
-          List<ShardResponse> responses) {
+          Set<ShardResponse> responses) {
     if (log.isDebugEnabled()) {
       log.debug("## MTGS {}", req);
       for (ShardResponse r : responses) {

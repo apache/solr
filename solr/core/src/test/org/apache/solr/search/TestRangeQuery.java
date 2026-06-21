@@ -25,30 +25,43 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 
 import com.carrotsearch.hppc.IntHashSet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.StrField;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // MRM TODO: slow
 public class TestRangeQuery extends SolrTestCaseJ4 {
   
   private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;
   private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
+  private Random random;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestRangeQuery() throws Exception {
     initCore("solrconfig.xml", "schema11.xml");
+  }
+
+  @AfterClass
+  public static void afterTestRangeQuery() throws Exception {
+    deleteCore();
   }
 
   @Override
@@ -59,14 +72,15 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
+    random = random();
   }
 
   void addInt(SolrInputDocument doc, int l, int u, String... fields) {
     int v=0;
     if (0==l && l==u) {
-      v=random().nextInt();
+      v=random.nextInt();
     } else {
-      v=random().nextInt(u-l)+l;
+      v=random.nextInt(u-l)+l;
     }
     for (String field : fields) {
       doc.addField(field, v);
@@ -143,7 +157,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         fields.add(entry.getKey());
         fields.add(entry.getValue()[j]);
       }
-      assertU(adoc(fields.toArray(new String[fields.size()])));
+      assertU(adoc(fields.toArray(new String[0])));
     }
 
     assertU(commit());
@@ -210,11 +224,11 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // now pick a random range to use to delete (some of) the docs...
     
-    final boolean incl = random().nextBoolean();
-    final boolean incu = random().nextBoolean();
+    final boolean incl = random.nextBoolean();
+    final boolean incu = random.nextBoolean();
     final int expected = 0 + (incl ? 0 : 1) + (incu ? 0 : 1);
     String dbq = null;
-    if (random().nextBoolean()) { // regular range
+    if (random.nextBoolean()) { // regular range
       String field = randomKey(norm_fields);
       String[] values = norm_fields.get(field);
       dbq = field + ":" + (incl ? "[" : "{") + values[0] + " TO " + values[2] + (incu ? "]" : "}");
@@ -223,7 +237,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       String[] values = frange_fields.get(field);
       dbq = "{!frange incl=" + incl + " incu=" + incu + " l=" + values[0] + " u=" + values[2] + "}" + field;
     }
-    if (random().nextBoolean()) {
+    if (random.nextBoolean()) {
       // wrap in a BQ
       String field = randomKey(norm_fields);
       String value = norm_fields.get(field)[1];
@@ -255,27 +269,27 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // fields that a value source range query should work on
     String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d"};
 
-    final int l= -1 * atLeast(50);
-    final int u= atLeast(250);
+    final int l= -1 * SolrTestUtil.atLeast(TEST_NIGHTLY ? 50 : 5);
+    final int u= SolrTestUtil.atLeast(TEST_NIGHTLY ? 250 : 15);
 
     // sometimes a very small index, sometimes a very large index
-    final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
+    final int numDocs = random.nextBoolean() ? random.nextInt(TEST_NIGHTLY ? 1000 : 5) : SolrTestUtil.atLeast(TEST_NIGHTLY ? 1000 : 10);
     createIndex(numDocs, new DocProcessor() {
       @Override
       public void process(SolrInputDocument doc) {
         // 10% of the docs have missing values
-        if (random().nextInt(10)!=0) addInt(doc, l,u, fields);
+        if (random.nextInt(10)!=0) addInt(doc, l,u, fields);
       }
     });
     assertU(commit());
 
-    final int numIters = atLeast(1000);
+    final int numIters = SolrTestUtil.atLeast(513);
     for (int i=0; i < numIters; i++) {
-      int lower = TestUtil.nextInt(random(), 2 * l, u);
-      int upper = TestUtil.nextInt(random(), lower, 2 * u);
-      boolean lowerMissing = random().nextInt(10)==1;
-      boolean upperMissing = random().nextInt(10)==1;
-      boolean inclusive = lowerMissing || upperMissing || random().nextBoolean();
+      int lower = TestUtil.nextInt(random, 2 * l, u);
+      int upper = TestUtil.nextInt(random, lower, 2 * u);
+      boolean lowerMissing = random.nextInt(10)==1;
+      boolean upperMissing = random.nextInt(10)==1;
+      boolean inclusive = lowerMissing || upperMissing || random.nextBoolean();
 
       // lower=2; upper=2; inclusive=true;      
       // inclusive=true; lowerMissing=true; upperMissing=true;    
@@ -319,24 +333,24 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // now build some random queries (against *any* field) and validate that using it in a DBQ changes
     // the index by the expected number of docs
     long numDocsLeftInIndex = numDocs;
-    final int numDBQs= atLeast(10);
+    final int numDBQs= SolrTestUtil.atLeast(TEST_NIGHTLY ? 10 : 1);
     for (int i=0; i < numDBQs; i++) {
-      int lower = TestUtil.nextInt(random(), 2 * l, u);
-      int upper = TestUtil.nextInt(random(), lower, 2 * u);
-      boolean lowerMissing = random().nextInt(10)==1;
-      boolean upperMissing = random().nextInt(10)==1;
-      boolean inclusive = lowerMissing || upperMissing || random().nextBoolean();
+      int lower = TestUtil.nextInt(random, 2 * l, u);
+      int upper = TestUtil.nextInt(random, lower, 2 * u);
+      boolean lowerMissing = random.nextInt(10)==1;
+      boolean upperMissing = random.nextInt(10)==1;
+      boolean inclusive = lowerMissing || upperMissing || random.nextBoolean();
       
       String dbq = null;
-      if (random().nextBoolean()) { // regular range
-        String field = fields[random().nextInt(fields.length)];
+      if (random.nextBoolean()) { // regular range
+        String field = fields[random.nextInt(fields.length)];
         dbq = field + ':' + (inclusive?'[':'{')
           + (lowerMissing?"*":lower)
           + " TO "
           + (upperMissing?"*":upper)
           + (inclusive?']':'}');
        } else { // frange
-        String field = frange_fields[random().nextInt(frange_fields.length)];
+        String field = frange_fields[random.nextInt(frange_fields.length)];
         dbq = "{!frange v="+field
           + (lowerMissing?"":(" l="+lower))
           + (upperMissing?"":(" u="+upper))
@@ -384,24 +398,24 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     assertEquals("[a TO b]", QParser.getParser("[A TO B]", req("df", "text")).getQuery().toString("text"));
 
     // " TO " is required between range endpoints
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{A B}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[A B}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{A B]", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[A B]", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("{A B}", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("[A B}", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("{A B]", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("[A B]", req("df", "text")).getQuery());
 
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B]", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B]", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B}", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B}", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B]", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B]", req("df", "text")).getQuery());
 
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO]", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO]", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO}", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO}", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO]", req("df", "text")).getQuery());
+    SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO]", req("df", "text")).getQuery());
   }
 
   public void testCompareTypesRandomRangeQueries() throws Exception {
-    int cardinality = 10000;
+    int cardinality = TEST_NIGHTLY ? 1703 : 100;
     Map<NumberType,String[]> types = new HashMap<>(); //single and multivalued field types
     Map<NumberType,String[]> typesMv = new HashMap<>(); // multivalued field types only
     types.put(NumberType.INTEGER, new String[]{"ti", "ti_dv", "ti_ni_dv", "i_p", "i_ni_p", "i_ndv_p", "tis", "tis_dv", "tis_ni_dv", "is_p", "is_ni_p", "is_ndv_p"});
@@ -415,62 +429,63 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     typesMv.put(NumberType.DOUBLE, new String[]{"tds", "tds_dv", "tds_ni_dv", "ds_p", "ds_ni_p", "ds_ndv_p"});
     typesMv.put(NumberType.DATE, new String[]{"tdts", "tdts_dv", "tdts_ni_dv", "dts_p", "dts_ni_p", "dts_ndv_p"});
 
-    for (int i = 0; i < atLeast(500); i++) {
-      if (random().nextInt(50) == 0) {
+    final int atLeast = SolrTestUtil.atLeast(TEST_NIGHTLY ? 313 : 50);
+    SolrInputDocument document = new SolrInputDocument();
+    for (int i = 0; i < atLeast; i++) {
+      if (random.nextInt(50) == 0) {
         //have some empty docs
         assertU(adoc("id", String.valueOf(i)));
         continue;
       }
 
-      if (random().nextInt(100) == 0 && i > 0) {
+      if (random.nextInt(100) == 0 && i > 0) {
         //delete some docs
         assertU(delI(String.valueOf(i - 1)));
       }
-      SolrInputDocument document = new SolrInputDocument();
+      document.clear();
       document.setField("id", i);
-      for (Map.Entry<NumberType,String[]> entry:types.entrySet()) {
-        NumberType type = entry.getKey();
+      types.forEach((type, value1) -> {
         String val = null;
         List<String> vals = null;
         switch (type) {
           case DATE:
             val = randomDate(cardinality);
-            vals = getRandomDates(random().nextInt(10), cardinality);
+            vals = getRandomDates(random.nextInt(10), cardinality);
             break;
           case DOUBLE:
             val = String.valueOf(randomDouble(cardinality));
-            vals = toStringList(getRandomDoubles(random().nextInt(10), cardinality));
+            vals = toStringList(getRandomDoubles(random.nextInt(10), cardinality));
             break;
           case FLOAT:
             val = String.valueOf(randomFloat(cardinality));
-            vals = toStringList(getRandomFloats(random().nextInt(10), cardinality));
+            vals = toStringList(getRandomFloats(random.nextInt(10), cardinality));
             break;
           case INTEGER:
             val = String.valueOf(randomInt(cardinality));
-            vals = toStringList(getRandomInts(random().nextInt(10), cardinality));
+            vals = toStringList(getRandomInts(random.nextInt(10), cardinality));
             break;
           case LONG:
             val = String.valueOf(randomLong(cardinality));
-            vals = toStringList(getRandomLongs(random().nextInt(10), cardinality));
+            vals = toStringList(getRandomLongs(random.nextInt(10), cardinality));
             break;
           default:
             throw new AssertionError();
 
         }
         // SingleValue
-        for (String fieldSuffix:entry.getValue()) {
+        for (String fieldSuffix : value1) {
           document.setField("field_sv_" + fieldSuffix, val);
         }
         //  MultiValue
-        for (String fieldSuffix:typesMv.get(type)) {
-          for (String value:vals) {
+        for (String fieldSuffix : typesMv.get(type)) {
+          for (String value : vals) {
             document.addField("field_mv_" + fieldSuffix, value);
           }
         }
-      }
+      });
 
       assertU(adoc(document));
-      if (random().nextInt(50) == 0) {
+      if (random.nextInt(50) == 0) {
         assertU(commit());
       }
     }
@@ -480,9 +495,9 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     types.values().toArray(possibleTypes);
     String[][] possibleTypesMv = new String[typesMv.size()][];
     typesMv.values().toArray(possibleTypesMv);
-    for (int i = 0; i < atLeast(1000); i++) {
-      doTestQuery(cardinality, false, pickRandom(possibleTypes));
-      doTestQuery(cardinality, true, pickRandom(possibleTypesMv));
+    for (int i = 0; i < SolrTestUtil.atLeast(513); i++) {
+      doTestQuery(cardinality, false, SolrTestCaseUtil.pickRandom(possibleTypes));
+      doTestQuery(cardinality, true, SolrTestCaseUtil.pickRandom(possibleTypesMv));
     }
   }
 
@@ -490,8 +505,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     String[] startOptions = new String[]{"{", "["};
     String[] endOptions = new String[]{"}", "]"};
     String[] qRange = getRandomRange(cardinality, types[0]);
-    String start = pickRandom(startOptions);
-    String end = pickRandom(endOptions);
+    String start = SolrTestCaseUtil.pickRandom(startOptions);
+    String end = SolrTestCaseUtil.pickRandom(endOptions);
     long expectedHits = doRangeQuery(mv, start, end, types[0], qRange);
     for (int i = 1; i < types.length; i++) {
       assertEquals("Unexpected results from query when comparing " + types[0] + " with " + types[i] + " and query: " +
@@ -514,7 +529,10 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   private String[] getRandomRange(int max, String fieldName) {
     Number[] values = new Number[2];
-    FieldType ft = h.getCore().getLatestSchema().getField("field_" + fieldName).getType();
+    FieldType ft;
+    try (SolrCore core = h.getCore()) {
+      ft = core.getLatestSchema().getField("field_" + fieldName).getType();
+    }
     if (ft.getNumberType() == null) {
       assert ft instanceof StrField;
       values[0] = randomInt(max);
@@ -546,12 +564,12 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
           throw new AssertionError("Unexpected number type");
 
       }
-      if (random().nextInt(100) >= 1) {// sometimes don't sort the values. Should result in 0 hits
+      if (random.nextInt(100) >= 1) {// sometimes don't sort the values. Should result in 0 hits
         Arrays.sort(values);
       }
     }
     String[] stringValues = new String[2];
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       stringValues[0] = "*";
     } else {
       if (ft.getNumberType() == NumberType.DATE) {
@@ -560,7 +578,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         stringValues[0] = String.valueOf(values[0]);
       }
     }
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       stringValues[1] = "*";
     } else {
       if (ft.getNumberType() == NumberType.DATE) {
@@ -627,12 +645,12 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   long randomMs(int cardinality) {
-    return DATE_START_TIME_RANDOM_TEST + random().nextInt(cardinality) * 1000 * (random().nextBoolean()?1:-1);
+    return DATE_START_TIME_RANDOM_TEST + random.nextInt(cardinality) * 1000 * (random.nextBoolean()?1:-1);
   }
 
   double randomDouble(int cardinality) {
-    if (rarely()) {
-      int num = random().nextInt(8);
+    if (LuceneTestCase.rarely()) {
+      int num = random.nextInt(8);
       if (num == 0) return Double.NEGATIVE_INFINITY;
       if (num == 1) return Double.POSITIVE_INFINITY;
       if (num == 2) return Double.MIN_VALUE;
@@ -644,14 +662,14 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     }
     Double d = Double.NaN;
     while (d.isNaN()) {
-      d = random().nextDouble();
+      d = random.nextDouble();
     }
-    return d * cardinality * (random().nextBoolean()?1:-1);
+    return d * cardinality * (random.nextBoolean()?1:-1);
   }
 
   float randomFloat(int cardinality) {
-    if (rarely()) {
-      int num = random().nextInt(8);
+    if (LuceneTestCase.rarely()) {
+      int num = random.nextInt(8);
       if (num == 0) return Float.NEGATIVE_INFINITY;
       if (num == 1) return Float.POSITIVE_INFINITY;
       if (num == 2) return Float.MIN_VALUE;
@@ -663,23 +681,23 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     }
     Float f = Float.NaN;
     while (f.isNaN()) {
-      f = random().nextFloat();
+      f = random.nextFloat();
     }
-    return f * cardinality * (random().nextBoolean()?1:-1);
+    return f * cardinality * (random.nextBoolean()?1:-1);
   }
 
   int randomInt(int cardinality) {
-    if (rarely()) {
-      int num = random().nextInt(2);
+    if (LuceneTestCase.rarely()) {
+      int num = random.nextInt(2);
       if (num == 0) return Integer.MAX_VALUE;
       if (num == 1) return Integer.MIN_VALUE;
     }
-    return random().nextInt(cardinality) * (random().nextBoolean()?1:-1);
+    return random.nextInt(cardinality) * (random.nextBoolean()?1:-1);
   }
 
   long randomLong(int cardinality) {
-    if (rarely()) {
-      int num = random().nextInt(2);
+    if (LuceneTestCase.rarely()) {
+      int num = random.nextInt(2);
       if (num == 0) return Long.MAX_VALUE;
       if (num == 1) return Long.MIN_VALUE;
     }

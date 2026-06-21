@@ -17,9 +17,8 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.spelling.suggest.SuggesterParams;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
@@ -28,16 +27,13 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   static String rh = "/suggest";
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-suggestercomponent-context-filter-query.xml", "schema.xml");
-  }
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    assertU(delQ("*:*"));
+    useFactory(null);
+    initCore("solrconfig-suggestercomponent-context-filter-query.xml", "schema.xml");
+
     // id, cat, price, weight, contexts
     assertU(adoc("id", "0", "cat", "This is a title", "price", "5", "weight", "10", "my_contexts_t", "ctx1"));
     assertU(adoc("id", "1", "cat", "This is another title", "price", "10", "weight", "10", "my_contexts_t", "ctx1"));
@@ -46,6 +42,12 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "9", "cat", "example with ctx4 at 50 using my_contexts_s", "price", "50", "weight", "40", "my_contexts_s", "ctx4"));
     assertU((commit()));
     waitForWarming();
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    deleteCore();
+    super.tearDown();
   }
 
   @Test
@@ -78,10 +80,8 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildThrowsIllegalArgumentExceptionWhenContextIsConfiguredButNotImplemented() throws Exception {
-    IllegalArgumentException ex = expectThrows(IllegalArgumentException.class, () -> {
-      h.query(req("qt", rh, SuggesterParams.SUGGEST_BUILD, "true",
-          SuggesterParams.SUGGEST_DICT, "suggest_context_filtering_not_implemented",
-          SuggesterParams.SUGGEST_Q, "examp"));
+    IllegalArgumentException ex = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+      query(req("qt", rh, SuggesterParams.SUGGEST_BUILD, "true", SuggesterParams.SUGGEST_DICT, "suggest_context_filtering_not_implemented", SuggesterParams.SUGGEST_Q, "examp"));
     });
     assertThat(ex.getMessage(), is("this suggester doesn't support contexts"));
 
@@ -230,17 +230,17 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester']/lst[@name='examp']/int[@name='numFound'][.='0']");
   }
 
-  @Ignore// TODO: SOLR-7964
   @Test
+  @org.junit.Ignore // ROOT-CAUSED: BlendedInfixLookupFactory's Boolean.getBoolean(config) bug (which read a sysprop named "true"/"false" instead of parsing the value, so highlight was always off) is FIXED here (now Boolean.parseBoolean) and the test points at a dedicated highlight=true suggester. BUT the term still comes back un-highlighted ("example with ctx1 at 40", no <b>): with doHighlight=true reaching MyBlendedInfixSuggester.lookup, Lucene 9.0.0 AnalyzingInfixSuggester.highlight() returns plain text (highlightKey has no <b> markup). Remaining gap is in the Lucene 9.0.0 suggester highlight path itself, not Solr config — needs a deeper suggester-highlight fix.
   public void testContextFilterWithHighlight() throws Exception {
     assertQ(req("qt", rh,
             SuggesterParams.SUGGEST_BUILD, "true",
-            SuggesterParams.SUGGEST_DICT, "suggest_blended_infix_suggester",
+            SuggesterParams.SUGGEST_DICT, "suggest_blended_infix_suggester_highlight",
             SuggesterParams.SUGGEST_CONTEXT_FILTER_QUERY, "ctx1",
             SuggesterParams.SUGGEST_HIGHLIGHT, "true",
             SuggesterParams.SUGGEST_Q, "example"),
-        "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester']/lst[@name='example']/int[@name='numFound'][.='1']",
-        "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester']/lst[@name='example']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='<b>example</b> data']"
+        "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester_highlight']/lst[@name='example']/int[@name='numFound'][.='1']",
+        "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester_highlight']/lst[@name='example']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='<b>example</b> with ctx1 at 40']"
     );
   }
 

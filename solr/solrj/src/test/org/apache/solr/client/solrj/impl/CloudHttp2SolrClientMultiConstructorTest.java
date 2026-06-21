@@ -37,7 +37,6 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
   Collection<String> hosts;
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testZkConnectionStringConstructorWithValidChroot() throws IOException {
     boolean setOrList = random().nextBoolean();
     int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
@@ -76,7 +75,6 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
   }
   
   @Test(expected = IllegalArgumentException.class)
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testBadChroot() {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");

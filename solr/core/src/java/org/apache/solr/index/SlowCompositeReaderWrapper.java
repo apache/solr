@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 
@@ -57,7 +58,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   // TODO: consider ConcurrentHashMap ?
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
-  final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
+  final Map<String,OrdinalMap> cachedOrdMaps = new ConcurrentHashMap<>();
 
   /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
@@ -88,7 +89,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           minVersion = leafVersion;
         }
       }
-      metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
+      int createdVersionMajor = reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor();
+      metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
@@ -123,7 +125,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
         }
       });
     } catch (RuntimeException e) {
-      if (e.getMessage().equals("unwrapMe") && e.getCause() instanceof IOException) {
+      if (e.getMessage() != null && e.getCause() != null && e.getMessage().equals("unwrapMe") && e.getCause() instanceof IOException) {
         throw (IOException) e.getCause();
       }
       throw e;
@@ -272,6 +274,19 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public PointValues getPointValues(String field) {
+    ensureOpen();
+    return null; // because not supported.  Throw UOE?
+  }
+
+  @Override
+  public VectorValues getVectorValues(String field) {
+    ensureOpen();
+    return null; // because not supported.  Throw UOE?
+  }
+
+  @Override
+  public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs)
+      throws IOException {
     ensureOpen();
     return null; // because not supported.  Throw UOE?
   }

@@ -27,6 +27,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MapSolrParams;
@@ -62,7 +63,7 @@ public class RequestParams implements MapSerializable {
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof Map) {
           Map value = (Map) e.getValue();
-          this.paramsets.put((String) e.getKey(), createParamSet(value, 0l));
+          this.paramsets.put((String) e.getKey(), createParamSet(value, 0L));
         }
       }
     }
@@ -157,17 +158,17 @@ public class RequestParams implements MapSerializable {
     if (loader instanceof ZkSolrResourceLoader) {
       ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
       try {
-        Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
+        Stat stat = resourceLoader.getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true, true);
         if (log.isDebugEnabled()) {
           log.debug("latest version of {}/{} in ZK  is : {}", resourceLoader.getConfigSetZkPath(), RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
         }
         if (stat == null) {
           requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
-        } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
+        } else if (requestParams == null || stat.getVersion() > requestParams.znodeVersion) {
           Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
           requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
           if (log.isInfoEnabled()) {
-            log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
+            log.info("request params refreshed to version {}", requestParams.znodeVersion);
           }
         }
       } catch (KeeperException | InterruptedException e) {
@@ -197,6 +198,7 @@ public class RequestParams implements MapSerializable {
         Map m = (Map) fromJSON (in);
         return new Object[]{m, version};
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
       }
 
@@ -218,7 +220,6 @@ public class RequestParams implements MapSerializable {
   public static final String INVARIANTS = "_invariants_";
 
   public static class ParamSet implements MapSerializable {
-    @SuppressWarnings({"rawtypes"})
     private final Map defaults, appends, invariants;
     Map<String, VersionedParams> paramsMap;
     @SuppressWarnings({"rawtypes"})
@@ -238,7 +239,7 @@ public class RequestParams implements MapSerializable {
     }
 
     public Long getVersion() {
-      return meta == null ? Long.valueOf(0l) : (Long) meta.get("v");
+      return meta == null ? Long.valueOf(0L) : (Long) meta.get("v");
     }
 
     @Override

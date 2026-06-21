@@ -58,7 +58,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
     // Don't auto-quote graph-aware field queries 
-    boolean treatAsQuoted = getSplitOnWhitespace()
+    boolean treatAsQuoted = splitOnWhitespace
         ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
     return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false,
     fieldEnableGraphQueries, synonymQueryStyle);
@@ -618,7 +618,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     finally { jj_save(2, xla); }
   }
 
-  private boolean jj_3R_6() {
+  private static boolean jj_3R_6() {
     return false;
   }
 
@@ -831,9 +831,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       jj_lasttokens[jj_endpos++] = kind;
     } else if (jj_endpos != 0) {
       jj_expentry = new int[jj_endpos];
-      for (int i = 0; i < jj_endpos; i++) {
-        jj_expentry[i] = jj_lasttokens[i];
-      }
+      System.arraycopy(jj_lasttokens, 0, jj_expentry, 0, jj_endpos);
       jj_entries_loop: for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
         int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {

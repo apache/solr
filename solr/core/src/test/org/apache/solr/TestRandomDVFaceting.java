@@ -23,14 +23,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.IntPointField;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,32 +49,34 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    System.setProperty("enable.update.log", "false");
     // This tests explicitly compares Trie DV with non-DV Trie with DV Points
     // so we don't want randomized DocValues on all Trie fields
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "false");
     
     initCore("solrconfig-basic.xml","schema-docValuesFaceting.xml");
 
-    assertEquals("DocValues: Schema assumptions are broken",
-                 false, h.getCore().getLatestSchema().getField("foo_i").hasDocValues());
-    assertEquals("DocValues: Schema assumptions are broken",
-                 true, h.getCore().getLatestSchema().getField("foo_i_dv").hasDocValues());
-    assertEquals("DocValues: Schema assumptions are broken",
-                 true, h.getCore().getLatestSchema().getField("foo_i_p").hasDocValues());
-    
-    assertEquals("Type: Schema assumptions are broken",
-                 TrieIntField.class,
-                 h.getCore().getLatestSchema().getField("foo_i").getType().getClass());
-    assertEquals("Type: Schema assumptions are broken",
-                 TrieIntField.class,
-                 h.getCore().getLatestSchema().getField("foo_i_dv").getType().getClass());
-    assertEquals("Type: Schema assumptions are broken",
-                 IntPointField.class,
-                 h.getCore().getLatestSchema().getField("foo_i_p").getType().getClass());
+    try (SolrCore core = h.getCore()) {
+      assertEquals("DocValues: Schema assumptions are broken", false, core.getLatestSchema().getField("foo_i").hasDocValues());
+      assertEquals("DocValues: Schema assumptions are broken", true, core.getLatestSchema().getField("foo_i_dv").hasDocValues());
+      assertEquals("DocValues: Schema assumptions are broken", true, core.getLatestSchema().getField("foo_i_p").hasDocValues());
+
+      assertEquals("Type: Schema assumptions are broken", TrieIntField.class, core.getLatestSchema().getField("foo_i").getType().getClass());
+      assertEquals("Type: Schema assumptions are broken", TrieIntField.class, core.getLatestSchema().getField("foo_i_dv").getType().getClass());
+      assertEquals("Type: Schema assumptions are broken", IntPointField.class, core.getLatestSchema().getField("foo_i_p").getType().getClass());
+    }
     
   }
+
+  @After
+  public void tearDown() throws Exception {
+    deleteCore();
+    super.tearDown();
+  }
+
 
   int indexSize;
   List<FldType> types;
@@ -82,7 +87,11 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     Random rand = random();
     clearIndex();
     model = null;
-    indexSize = rand.nextBoolean() ? (rand.nextInt(10) + 1) : (rand.nextInt(100) + 10);
+    if (TEST_NIGHTLY) {
+      indexSize = rand.nextBoolean() ? (rand.nextInt(10) + 1) : (rand.nextInt(100) + 10);
+    } else {
+      indexSize = rand.nextBoolean() ? (rand.nextInt(3) + 1) : (rand.nextInt(5) + 10);
+    }
 
     types = new ArrayList<>();
     types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
@@ -120,7 +129,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   void deleteSomeDocs() {
     Random rand = random();
-    int percent = rand.nextInt(100);
+    int percent = rand.nextInt(TEST_NIGHTLY ? 100 : 10);
     if (model == null) return;
     ArrayList<String> ids = new ArrayList<>(model.size());
     for (Comparable id : model.keySet()) {
@@ -149,7 +158,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
   @Test
   public void testRandomFaceting() throws Exception {
     Random rand = random();
-    int iter = atLeast(100);
+    int iter = SolrTestUtil.atLeast(TEST_NIGHTLY ? 25 : 10); // don't go to high on nightly, only 512 ram for test
     init();
     addMoreDocs(0);
     
@@ -204,10 +213,10 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       }
 
       if (rand.nextInt(100) < 20) {
-        if(rarely()) {
+        if(LuceneTestCase.rarely()) {
           params.add("facet.limit", "-1");
         } else {
-          int limit = 100;
+          int limit = TEST_NIGHTLY ? 100 : 10;
           if (rand.nextBoolean()) {
             limit = rand.nextInt(100) < 10 ? rand.nextInt(indexSize/2+1) : rand.nextInt(indexSize*2);
           }
@@ -261,7 +270,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
         // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test that validation fails
 
-        String strResponse = h.query(req(params));
+        String strResponse = query(req(params));
         // Object realResponse = ObjectBuilder.fromJSON(strResponse);
         // System.out.println(strResponse);
 
@@ -269,16 +278,16 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       }
       // If there is a PointField option for this test, also test it
       // Don't check points if facet.mincount=0
-      if (h.getCore().getLatestSchema().getFieldOrNull(facet_field + "_p") != null
-          && params.get("facet.mincount") != null
-          && params.getInt("facet.mincount").intValue() > 0) {
-        params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_p");
-        String strResponse = h.query(req(params));
-        responses.add(strResponse);
+      try (SolrCore core = h.getCore()) {
+        if (core.getLatestSchema().getFieldOrNull(facet_field + "_p") != null && params.get("facet.mincount") != null && params.getInt("facet.mincount").intValue() > 0) {
+          params.set("facet.field", "{!key=" + facet_field + "}" + facet_field + "_p");
+          String strResponse = query(req(params));
+          responses.add(strResponse);
+        }
       }
 
       /**
-      String strResponse = h.query(req(params));
+      String strResponse = query(req(params));
       Object realResponse = ObjectBuilder.fromJSON(strResponse);
       **/
 

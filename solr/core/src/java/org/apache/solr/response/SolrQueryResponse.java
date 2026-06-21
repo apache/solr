@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -78,7 +79,7 @@ public class SolrQueryResponse {
    * @see #setAllValues
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
-  protected NamedList<Object> values = new SimpleOrderedMap<>();
+  protected final NamedList<Object> values = new SimpleOrderedMap<>();
   
   
 /**
@@ -104,6 +105,11 @@ public class SolrQueryResponse {
    * Should this response be tagged with HTTP caching headers?
    */
   protected boolean httpCaching=true;
+
+  private CompletableFuture<Void> future = null;
+
+  private volatile boolean async;
+  private volatile Runnable finished = () -> {};
   
   /***
    // another way of returning an error
@@ -126,7 +132,8 @@ public class SolrQueryResponse {
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
   public void setAllValues(NamedList<Object> nameValuePairs) {
-    values=nameValuePairs;
+    values.clear();
+    values.addAll(nameValuePairs);
   }
 
   /**
@@ -224,7 +231,8 @@ public class SolrQueryResponse {
 
   /** Returns a string of the form "logid name1=value1 name2=value2 ..." */
   public String getToLogAsString(String logid) {
-    StringBuilder sb = new StringBuilder(logid);
+    StringBuilder sb = new StringBuilder(logid.length() + 256);
+    sb.append(logid);
     for (int i=0; i<toLog.size(); i++) {
       if (sb.length() > 0) {
         sb.append(' ');
@@ -359,5 +367,48 @@ public class SolrQueryResponse {
    */
   public Iterator<Entry<String, String>> httpHeaders() {
     return headers.iterator();
+  }
+
+  public NamedList<String> getHeaders() {
+    return headers;
+  }
+
+  public void onFinished(Runnable finished) {
+    if (this.finished == null) {
+      this.finished = finished;
+    } else {
+      this.finished = new Finished(this.finished, finished);
+    }
+  }
+
+  public void startAsync() {
+    this.async = true;
+  }
+
+  public void asyncDone() {
+    if (this.finished != null) {
+      this.finished.run();
+    }
+  }
+
+  public boolean isAsync() {
+    return async && finished != null;
+  }
+
+  private static class Finished implements Runnable {
+
+    private final Runnable finish1;
+    private final Runnable finish2;
+
+    Finished(Runnable finish1, Runnable finish2) {
+      this.finish1 = finish1;
+      this.finish2 = finish2;
+    }
+
+    @Override
+    public void run() {
+       finish1.run();
+       finish2.run();
+    }
   }
 }

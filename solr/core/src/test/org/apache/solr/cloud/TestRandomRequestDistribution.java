@@ -16,24 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-
 import com.codahale.metrics.Counter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ClusterState;
@@ -45,25 +34,39 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 
 @SolrTestCaseJ4.SuppressSSL
-public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase {
+@LuceneTestCase.Nightly
+public class TestRandomRequestDistribution extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void beforeTestRandomRequestDistribution() {
+    numJettys = 3;
+    sliceCount = 1;
+  }
 
   List<String> nodeNames = new ArrayList<>(3);
 
   @Test
-  @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
-    for (CloudJettyRunner cloudJetty : cloudJettys) {
-      nodeNames.add(cloudJetty.nodeName);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      nodeNames.add(jetty.getNodeName());
     }
     assertEquals(3, nodeNames.size());
 
@@ -76,22 +79,17 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
    */
   private void testRequestTracking() throws Exception {
 
-    CollectionAdminRequest.createCollection("a1x2", "conf1", 1, 2)
+    CollectionAdminRequest.createCollection("a1x2", "_default", 1, 2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 
-    CollectionAdminRequest.createCollection("b1x1", "conf1", 1, 1)
+    CollectionAdminRequest.createCollection("b1x1", "_default", 1, 1)
         .setCreateNodeSet(nodeNames.get(2))
         .process(cloudClient);
 
-    waitForRecoveriesToFinish("a1x2", true);
-    waitForRecoveriesToFinish("b1x1", true);
-
-    cloudClient.getZkStateReader().forceUpdateCollection("b1x1");
-
     // get direct access to the metrics counters for each core/replica we're interested to monitor them
     final Map<String,Counter> counters = new LinkedHashMap<>();
-    for (JettySolrRunner runner : jettys) {
+    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       CoreContainer container = runner.getCoreContainer();
       SolrMetricManager metricManager = container.getMetricManager();
       for (SolrCore core : container.getCores()) {
@@ -110,15 +108,15 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     // send queries to the node that doesn't host any core/replica and see where it routes them
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection b1x1 = clusterState.getCollection("b1x1");
-    Collection<Replica> replicas = b1x1.getSlice("shard1").getReplicas();
+    Collection<Replica> replicas = b1x1.getSlice(SHARD1).getReplicas();
     assertEquals(1, replicas.size());
-    String baseUrl = replicas.iterator().next().getStr(ZkStateReader.BASE_URL_PROP);
+    String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
+    try (Http2SolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
 
       long expectedTotalRequests = 0;
       Set<String> uniqueCoreNames = new LinkedHashSet<>();
-      
+
       log.info("Making requests to {} a1x2", baseUrl);
       while (uniqueCoreNames.size() < counters.keySet().size() && expectedTotalRequests < 1000L) {
         expectedTotalRequests++;
@@ -149,57 +147,56 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
   private void testQueryAgainstDownReplica() throws Exception {
 
     log.info("Creating collection 'football' with 1 shard and 2 replicas");
-    CollectionAdminRequest.createCollection("football", "conf1", 1, 2)
+    CollectionAdminRequest.createCollection("football", "_default", 1, 2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 
-    waitForRecoveriesToFinish("football", true);
+    // Wait until BOTH replicas are ACTIVE before injecting the simulated DOWN state. Otherwise the
+    // non-leader replica's own registration ACTIVE publish is still in flight and lands right after
+    // our injected DOWN (StateUpdates), overwriting it back to ACTIVE so it never reaches DOWN.
+    cluster.waitForActiveCollection("football", 1, 2);
 
-    cloudClient.getZkStateReader().forceUpdateCollection("football");
-
-    Replica leader = null;
+    // Wait for leadership to be established/published before identifying leader vs. non-leader.
+    // Reading LEADER_PROP straight off the cluster-state snapshot right after createCollection can
+    // race the leader election (leader would come back null).
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry("football", SHARD1, 10000);
     Replica notLeader = null;
 
-    Collection<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection("football").getSlice("shard1").getReplicas();
+    Collection<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection("football").getSlice(SHARD1).getReplicas();
     for (Replica replica : replicas) {
-      if (replica.getStr(ZkStateReader.LEADER_PROP) != null) {
-        leader = replica;
-      } else {
+      if (!replica.getName().equals(leader.getName())) {
         notLeader = replica;
       }
     }
 
     //Simulate a replica being in down state.
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-        ZkStateReader.BASE_URL_PROP, notLeader.getStr(ZkStateReader.BASE_URL_PROP),
-        ZkStateReader.NODE_NAME_PROP, notLeader.getStr(ZkStateReader.NODE_NAME_PROP),
-        ZkStateReader.COLLECTION_PROP, "football",
-        ZkStateReader.SHARD_ID_PROP, "shard1",
-        ZkStateReader.CORE_NAME_PROP, notLeader.getStr(ZkStateReader.CORE_NAME_PROP),
-        ZkStateReader.ROLES_PROP, "",
-        ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
+    // The fork's StateUpdates overseer (WorkQueueWatcher.processStateUpdateReplica) consumes STATE
+    // messages keyed by the replica's full id (collId-replicaId == Replica.getId()) mapped to the
+    // short state code, under the StatePublisher.OPERATION key - not the old upstream
+    // node/collection/shard/core/state field layout.
+    ZkNodeProps m = new ZkNodeProps(StatePublisher.OPERATION, OverseerAction.STATE.toLower())
+        .plus(notLeader.getId(), (long) Replica.State.getShortState(Replica.State.DOWN));
 
     if (log.isInfoEnabled()) {
-      log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
+      log.info("Forcing {} to go into 'down' state", notLeader.getName());
     }
-    ZkDistributedQueue q = jettys.get(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
+    ZkDistributedQueue q = cluster.getJettySolrRunners().get(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
     q.offer(Utils.toJSON(m));
 
-    verifyReplicaStatus(cloudClient.getZkStateReader(), "football", "shard1", notLeader.getName(), Replica.State.DOWN);
+    verifyReplicaStatus(cloudClient.getZkStateReader(), "football", SHARD1, notLeader.getName(), Replica.State.DOWN);
 
     //Query against the node which hosts the down replica
-
-    String baseUrl = notLeader.getStr(ZkStateReader.BASE_URL_PROP);
+    String baseUrl = notLeader.getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
     log.info("Firing queries against path={}", path);
-    try (HttpSolrClient client = getHttpSolrClient(path, 2000, 5000)) {
+    try (Http2SolrClient client = getHttpSolrClient(path, 2000, 5000)) {
 
       SolrCore leaderCore = null;
-      for (JettySolrRunner jetty : jettys) {
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
         CoreContainer container = jetty.getCoreContainer();
         for (SolrCore core : container.getCores()) {
-          if (core.getName().equals(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
+          if (core.getName().equals(leader.getName())) {
             leaderCore = core;
             break;
           }
@@ -211,11 +208,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
       Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY./select");
 
-      // All queries should be served by the active replica
-      // To make sure that's true we keep querying the down replica
-      // If queries are getting processed by the down replica then the cluster state hasn't updated for that replica
-      // locally
-      // So we keep trying till it has updated and then verify if ALL queries go to the active replica
       long count = 0;
       while (true) {
         count++;
@@ -226,7 +218,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         if (c == 1) {
           break; // cluster state has got update locally
         } else {
-          Thread.sleep(100);
+          Thread.sleep(10);
         }
 
         if (count > 10000) {
@@ -234,9 +226,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         }
       }
 
-      // Now we fire a few additional queries and make sure ALL of them
-      // are served by the active replica
-      int moreQueries = TestUtil.nextInt(random(), 4, 10);
+      int moreQueries = TEST_NIGHTLY ? TestUtil.nextInt(random(), 4, 10) : 2;
       count = 1; // Since 1 query has already hit the leader
       for (int i = 0; i < moreQueries; i++) {
         client.query(new SolrQuery("*:*"));

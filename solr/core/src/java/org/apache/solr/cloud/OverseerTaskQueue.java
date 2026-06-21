@@ -16,23 +16,15 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Predicate;
-
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -40,6 +32,19 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A {@link ZkDistributedQueue} augmented with helper methods specific to the overseer task queues.
@@ -49,7 +54,8 @@ import org.slf4j.LoggerFactory;
 public class OverseerTaskQueue extends ZkDistributedQueue {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String RESPONSE_PREFIX = "qnr-" ;
+  public static final String RESPONSE_PREFIX = "qnr-" ;
+  public static final byte[] BYTES = new byte[0];
 
   private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
   private final AtomicInteger pendingResponses = new AtomicInteger(0);
@@ -60,17 +66,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   public OverseerTaskQueue(SolrZkClient zookeeper, String dir, Stats stats) {
     super(zookeeper, dir, stats);
-  }
-
-  public void allowOverseerPendingTasksToComplete() {
-    shuttingDown.set(true);
-    while (pendingResponses.get() > 0) {
-      try {
-        Thread.sleep(50);
-      } catch (InterruptedException e) {
-        log.error("Interrupted while waiting for overseer queue to drain before shutdown!");
-      }
-    }
   }
 
   /**
@@ -84,7 +79,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     for (String childName : childNames) {
       if (childName != null && childName.startsWith(PREFIX)) {
         try {
-          byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
+          byte[] data = zookeeper.getData(dir + '/' + childName, null, (Stat) null, true);
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
@@ -112,7 +107,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     try {
       String path = event.getId();
       String responsePath = dir + "/" + RESPONSE_PREFIX
-          + path.substring(path.lastIndexOf("-") + 1);
+          + path.substring(path.lastIndexOf('-') + 1);
 
       try {
         zookeeper.setData(responsePath, event.getBytes(), true);
@@ -132,53 +127,78 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   /**
    * Watcher that blocks until a WatchedEvent occurs for a znode.
    */
-  static final class LatchWatcher implements Watcher {
+  static final class LatchWatcher implements Watcher, Closeable {
 
     private final Lock lock;
-    private final Condition eventReceived;
-    private WatchedEvent event;
-    private Event.EventType latchEventType;
+    private final Condition bytesRecieved;
+    private final String path;
+    private final SolrZkClient zkClient;
+    private volatile WatchedEvent event;
+    private volatile byte[] bytes;
 
-    LatchWatcher() {
-      this(null);
-    }
-
-    LatchWatcher(Event.EventType eventType) {
-      this.lock = new ReentrantLock();
-      this.eventReceived = lock.newCondition();
-      this.latchEventType = eventType;
+    LatchWatcher(String path, SolrZkClient zkClient) {
+      this.lock = new ReentrantLock(false);
+      this.bytesRecieved = lock.newCondition();
+      this.path = path;
+      this.zkClient = zkClient;
     }
 
 
     @Override
     public void process(WatchedEvent event) {
-      // session events are not change events, and do not remove the watcher
-      if (Event.EventType.None.equals(event.getType())) {
+      if (Event.EventType.None.equals(event.getType()) || Event.EventType.DataWatchRemoved.equals(event.getType()) ) {
         return;
       }
-      // If latchEventType is not null, only fire if the type matches
-      if (log.isDebugEnabled()) {
-        log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
-      }
-      if (latchEventType == null || event.getType() == latchEventType) {
-        lock.lock();
+      ParWork.submitIO("getRespData", () -> {
         try {
-          this.event = event;
-          eventReceived.signalAll();
-        } finally {
-          lock.unlock();
+          byte[] foundBytes = zkClient.getData(path, this, (Stat) null, true);
+          if (foundBytes != null) {
+            lock.lock();
+            try {
+              this.bytes = foundBytes;
+              this.event = event;
+              bytesRecieved.signalAll();
+            } finally {
+              lock.unlock();
+            }
+          }
+        } catch (KeeperException.NoNodeException e) {
+
+        } catch (Exception e) {
+          log.error("Unexpected exception", e);
         }
-      }
+
+      });
+
     }
 
-    public void await(long timeoutMs) throws InterruptedException {
-      assert timeoutMs > 0;
+    public void await(long timeoutMs) throws KeeperException, InterruptedException {
+
+      try {
+        zkClient.exists(path, this, true);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+
+
+      TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+
       lock.lock();
       try {
-        if (this.event != null) {
-          return;
+        while (!timeout.hasTimedOut()) {
+          try {
+            bytesRecieved.awaitNanos(1000000000);
+
+            if (bytes != null) {
+              return;
+            }
+          } catch (InterruptedException e) {
+
+          }
         }
-        eventReceived.await(timeoutMs, TimeUnit.MILLISECONDS);
+        if (timeout.hasTimedOut()) {
+          log.error("Timeout waiting for response after {}ms", timeout.timeElapsed(TimeUnit.MILLISECONDS));
+        }
       } finally {
         lock.unlock();
       }
@@ -186,6 +206,23 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
     public WatchedEvent getWatchedEvent() {
       return event;
+    }
+
+    @Override
+    public void close() {
+      // the watch may still fire, but we are using unique node id's, so save the cost of the remove
+
+//      try {
+//        zkClient.removeWatches(path, this, Watcher.WatcherType.Any, true);
+//      }  catch (KeeperException.NoWatcherException | AlreadyClosedException e) {
+//
+//      } catch (Exception e) {
+//        log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
+//      }
+    }
+
+    public byte[] getData() {
+      return bytes;
     }
   }
 
@@ -196,17 +233,27 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   private String createData(String path, byte[] data, CreateMode mode)
       throws KeeperException, InterruptedException {
-    for (;;) {
+
       try {
         return zookeeper.create(path, data, mode, true);
-      } catch (KeeperException.NoNodeException e) {
-        try {
-          zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT, true);
-        } catch (KeeperException.NodeExistsException ne) {
-          // someone created it
-        }
+      } catch (KeeperException.NodeExistsException e) {
+        log.warn("Found request node already, waiting to see if it frees up ...");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-    }
+  }
+
+  private void createDataAsync(String path, byte[] data, CreateMode mode)
+      throws KeeperException, InterruptedException {
+
+    zookeeper.create(path, data, mode, (rc, path1, ctx, name, stat) -> {
+
+      if (rc != 0) {
+        KeeperException e = KeeperException.create(KeeperException.Code.get(rc), path1);
+        log.error("Exception createDataAsync path={}", path1, e);
+      }
+    });
+
+
   }
 
   /**
@@ -215,69 +262,72 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public QueueEvent offer(byte[] data, long timeout) throws KeeperException,
       InterruptedException {
-    if (shuttingDown.get()) {
-      throw new SolrException(SolrException.ErrorCode.CONFLICT,"Solr is shutting down, no more overseer tasks may be offered");
-    }
-    Timer.Context time = stats.time(dir + "_offer");
-    try {
-      // Create and watch the response node before creating the request node;
-      // otherwise we may miss the response.
-      String watchID = createResponseNode();
+    if (log.isDebugEnabled()) log.debug("offer operation to the Overseer queue {}", Utils.fromJSON(data));
 
-      LatchWatcher watcher = new LatchWatcher();
-      Stat stat = zookeeper.exists(watchID, watcher, true);
+   // Timer.Context time = stats.time(dir + "_offer");
+    LatchWatcher watcher = null;
+    try {
+
+
+     // if (log.isDebugEnabled()) log.debug("watchId for response node {}, setting a watch ... ", watchID);
 
       // create the request node
-      createRequestNode(data, watchID);
+      CreatePath requestNodeCreate = createRequestNode(data);
 
-      if (stat != null) {
-        pendingResponses.incrementAndGet();
-        watcher.await(timeout);
+      String requestNode = requestNodeCreate.path;
+
+      String responsePath = Overseer.OVERSEER_COLLECTION_MAP_COMPLETED + "/" + OverseerTaskQueue.RESPONSE_PREFIX + requestNode.substring(requestNode.lastIndexOf(
+          '-') + 1);
+
+      watcher = new LatchWatcher(responsePath, zookeeper);
+
+      if (log.isDebugEnabled()) log.debug("created request node");
+
+      pendingResponses.incrementAndGet();
+      if (log.isDebugEnabled()) log.debug("wait on latch {}", timeout);
+      watcher.await(timeout);
+
+      QueueEvent event =  new QueueEvent(responsePath, watcher.getData(), watcher.getWatchedEvent());
+
+      log.debug("deleting request and response node and returning {}", requestNode);
+
+
+      try {
+        Set<String> paths = new HashSet<>(2);
+        paths.add(requestNode);
+        paths.add(responsePath);
+        zookeeper.delete(paths, false, true);
+      } catch (KeeperException.NoNodeException e) {
+        log.info("request / response node is already missing for {}", requestNode);
+      } catch (Exception e) {
+        log.warn("Exception trying to delete request / response node " + "requestNode" + " responsePath", e);
       }
-      byte[] bytes = zookeeper.getData(watchID, null, null, true);
-      // create the event before deleting the node, otherwise we can get the deleted
-      // event from the watcher.
-      QueueEvent event =  new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
-      zookeeper.delete(watchID, -1, true);
+
       return event;
     } finally {
-      time.stop();
+     // time.stop();
       pendingResponses.decrementAndGet();
+      IOUtils.closeQuietly(watcher);
     }
   }
 
-  void createRequestNode(byte[] data, String watchID) throws KeeperException, InterruptedException {
-    createData(dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf("-") + 1),
-        data, CreateMode.PERSISTENT);
+  public static class CreatePath {
+    String path;
   }
 
-  String createResponseNode() throws KeeperException, InterruptedException {
-    return createData(
-            dir + "/" + RESPONSE_PREFIX,
-            null, CreateMode.EPHEMERAL_SEQUENTIAL);
+  CreatePath createRequestNode(byte[] data) throws KeeperException, InterruptedException {
+    CreatePath createPath = new CreatePath();
+
+    createPath.path = zookeeper.create(dir + "/" + PREFIX, data, CreateMode.EPHEMERAL_SEQUENTIAL, true, true);
+
+    return createPath;
   }
 
-
-  public List<QueueEvent> peekTopN(int n, Predicate<String> excludeSet, long waitMillis)
-      throws KeeperException, InterruptedException {
-    ArrayList<QueueEvent> topN = new ArrayList<>();
-
-    log.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
-    Timer.Context time;
-    if (waitMillis == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
-    else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
-
-    try {
-      for (Pair<String, byte[]> element : peekElements(n, waitMillis, child -> !excludeSet.test(dir + "/" + child))) {
-        topN.add(new QueueEvent(dir + "/" + element.first(),
-            element.second(), null));
-      }
-      printQueueEventsListElementIds(topN);
-      return topN;
-    } finally {
-      time.stop();
-    }
-  }
+//  String createResponseNode() throws KeeperException, InterruptedException {
+//    return createData(
+//        Overseer.OVERSEER_COLLECTION_MAP_COMPLETED + "/" + RESPONSE_PREFIX,
+//        null, CreateMode.PERSISTENT_SEQUENTIAL);
+//  }
 
   private static void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {
     if (log.isDebugEnabled() && !topN.isEmpty()) {
@@ -288,28 +338,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       sb.append("]");
       log.debug("Returning topN elements: {}", sb);
     }
-  }
-
-
-  /**
-   *
-   * Gets last element of the Queue without removing it.
-   */
-  public String getTailId() throws KeeperException, InterruptedException {
-    // TODO: could we use getChildren here?  Unsure what freshness guarantee the caller needs.
-    TreeSet<String> orderedChildren = fetchZkChildren(null);
-
-    for (String headNode : orderedChildren.descendingSet())
-      if (headNode != null) {
-        try {
-          QueueEvent queueEvent = new QueueEvent(dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode,
-              null, null, true), null);
-          return queueEvent.getId();
-        } catch (KeeperException.NoNodeException e) {
-          // Another client removed the node first, try next
-        }
-      }
-    return null;
   }
 
   public static class QueueEvent {
@@ -333,18 +361,14 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       return true;
     }
 
-    private WatchedEvent event = null;
-    private String id;
-    private byte[] bytes;
+    private final WatchedEvent event;
+    private final String id;
+    private volatile byte[] bytes;
 
     QueueEvent(String id, byte[] bytes, WatchedEvent event) {
       this.id = id;
       this.bytes = bytes;
       this.event = event;
-    }
-
-    public void setId(String id) {
-      this.id = id;
     }
 
     public String getId() {
@@ -362,6 +386,5 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     public WatchedEvent getWatchedEvent() {
       return event;
     }
-
   }
 }

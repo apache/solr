@@ -33,7 +33,7 @@
     <str name="shardsWhitelist">${solr.tests.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
-  <tracerConfig name="tracerConfig" class="MockTracerConfigurator">
+  <tracerConfig name="tracerConfig" class="org.apache.solr.core.MockTracerConfigurator">
   </tracerConfig>
 
   <solrcloud>

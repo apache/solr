@@ -16,7 +16,7 @@
  */
 package org.apache.solr.update;
 
-import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -46,6 +46,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
@@ -54,19 +56,24 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
+import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -92,7 +99,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private final static AtomicInteger counter = new AtomicInteger();
   private static ExecutorService exe;
-  private static boolean cachedMode;
 
   private static XMLInputFactory inputFactory;
 
@@ -103,19 +109,17 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   public ExpectedException thrown = ExpectedException.none();
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeAddBlockUpdateTest() throws Exception {
     String oldCacheNamePropValue = System
         .getProperty("blockJoinParentFilterCache");
-    System.setProperty("blockJoinParentFilterCache", (cachedMode = random()
+    System.setProperty("blockJoinParentFilterCache", (random()
         .nextBoolean()) ? "blockJoinParentFilterCache" : "don't cache");
     if (oldCacheNamePropValue != null) {
       System.setProperty("blockJoinParentFilterCache", oldCacheNamePropValue);
     }
     inputFactory = XMLInputFactory.newInstance();
 
-    exe = // Executors.newSingleThreadExecutor();
-    rarely() ? ExecutorUtil.newMDCAwareFixedThreadPool(atLeast(2), new SolrNamedThreadFactory("AddBlockUpdateTest")) : ExecutorUtil
-        .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("AddBlockUpdateTest"));
+    exe = getTestExecutor();
 
     counter.set(0);
     initCore("solrconfig.xml", "schema15.xml");
@@ -129,14 +133,15 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private Document getDocument() throws ParserConfigurationException {
-    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-    javax.xml.parsers.DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+    javax.xml.parsers.DocumentBuilder docBuilder = FieldTypeXmlAdapter.getDocumentBuilder();
     return docBuilder.newDocument();
   }
 
   private SolrIndexSearcher getSearcher() {
     if (_searcher == null) {
-      searcherRef = h.getCore().getSearcher();
+      try (SolrCore core = h.getCore()) {
+        searcherRef = core.getSearcher();
+      }
       _searcher = searcherRef.get();
     }
     return _searcher;
@@ -152,12 +157,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
-    if (null != exe) {
-      exe.shutdownNow();
-      exe = null;
-    }
+  public static void afterAddBlockUpdateTest() throws Exception {
     inputFactory = null;
+    exe = null;
   }
 
   @Test
@@ -433,7 +435,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     RequestWriter requestWriter = new RequestWriter();
     OutputStream os = new ByteArrayOutputStream();
-    requestWriter.write(req, os);
+    requestWriter.write(req, new FastOutputStream(os));
     assertBlockU(os.toString());
     assertU(commit());
 
@@ -488,14 +490,16 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     //null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument document1 = loader.readDoc( parser );
+    SolrInputDocument document1 = XMLLoader.readDoc( parser );
+    parser.close();
 
     XMLStreamReader parser2 =
         inputFactory.createXMLStreamReader( new StringReader( xml_doc2 ) );
       parser2.next(); // read the START document...
       //null for the processor is all right here
       //XMLLoader loader = new XMLLoader();
-      SolrInputDocument document2 = loader.readDoc( parser2 );
+      SolrInputDocument document2 = XMLLoader.readDoc( parser2 );
+    parser.close();
 
     docs.add(document1);
     docs.add(document2);
@@ -505,9 +509,10 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     RequestWriter requestWriter = new RequestWriter();
     OutputStream os = new ByteArrayOutputStream();
-    requestWriter.write(req, os);
+    requestWriter.write(req, new FastOutputStream(os));
     assertBlockU(os.toString());
     assertU(commit());
+
 
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("yz"), "X");
@@ -562,14 +567,14 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     //null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument document1 = loader.readDoc(parser);
+    SolrInputDocument document1 = XMLLoader.readDoc(parser);
 
     XMLStreamReader parser2 =
         inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
     parser2.next(); // read the START document...
     //null for the processor is all right here
     //XMLLoader loader = new XMLLoader();
-    SolrInputDocument document2 = loader.readDoc(parser2);
+    SolrInputDocument document2 = XMLLoader.readDoc(parser2);
 
     assertFalse(document1.hasChildDocuments());
     assertEquals(document1.toString(), sdoc("id", "1", "empty_s", "", "parent_s", "X", "test",
@@ -627,14 +632,14 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     //null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument document1 = loader.readDoc( parser );
+    SolrInputDocument document1 = XMLLoader.readDoc( parser );
 
     XMLStreamReader parser2 =
         inputFactory.createXMLStreamReader( new StringReader( xml_doc2 ) );
     parser2.next(); // read the START document...
     //null for the processor is all right here
     //XMLLoader loader = new XMLLoader();
-    SolrInputDocument document2 = loader.readDoc( parser2 );
+    SolrInputDocument document2 = XMLLoader.readDoc( parser2 );
 
     assertFalse(document1.hasChildDocuments());
     assertEquals(document1.toString(), sdoc("id", "1", "empty_s", "", "parent_s", "X", "test",
@@ -652,7 +657,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     RequestWriter requestWriter = new RequestWriter();
     OutputStream os = new ByteArrayOutputStream();
-    requestWriter.write(req, os);
+    requestWriter.write(req, new FastOutputStream(os));
     assertBlockU(os.toString());
     assertU(commit());
 
@@ -667,24 +672,26 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     topDocument.addField("parent_f1", "v1");
     topDocument.addField("parent_f2", "v2");
 
-    int childsNum = atLeast(10);
+    int childsNum = SolrTestUtil.atLeast(10);
     Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
     for(int i = 0; i < childsNum; ++i) {
       SolrInputDocument child = new SolrInputDocument();
-      child.addField("key", (i + 5) * atLeast(4));
+      child.addField("key", (i + 5) * SolrTestUtil.atLeast(4));
       String childKey = String.format(Locale.ROOT, "child%d", i);
       topDocument.addField(childKey, child);
       children.put(childKey, child);
     }
 
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(4096);
+
+    ExpandableDirectBufferOutputStream os = new ExpandableDirectBufferOutputStream(expandableBuffer1);
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(topDocument, os);
     }
-    byte[] buffer = os.toByteArray();
+    byte[] buffer = expandableBuffer1.byteArray();
     //now read the Object back
     SolrInputDocument result;
-    try (JavaBinCodec jbc = new JavaBinCodec(); InputStream is = new ByteArrayInputStream(buffer)) {
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream is = new ByteArrayInputStream(buffer, 0, os.position() + expandableBuffer1.wrapAdjustment())) {
       result = (SolrInputDocument) jbc.unmarshal(is);
     }
 
@@ -698,19 +705,21 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     topDocument.addField("parent_f1", "v1");
     topDocument.addField("parent_f2", "v2");
 
-    int childsNum = atLeast(10);
+    int childsNum = SolrTestUtil.atLeast(10);
     for (int index = 0; index < childsNum; ++index) {
       addChildren("child", topDocument, index, false);
     }
 
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(4096);
+
+    ExpandableDirectBufferOutputStream os = new ExpandableDirectBufferOutputStream(expandableBuffer1);
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(topDocument, os);
     }
-    byte[] buffer = os.toByteArray();
+    byte[] buffer = expandableBuffer1.byteArray();
     //now read the Object back
     SolrInputDocument result;
-    try (JavaBinCodec jbc = new JavaBinCodec(); InputStream is = new ByteArrayInputStream(buffer)) {
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream is = new ByteArrayInputStream(buffer, 0, os.position() + expandableBuffer1.wrapAdjustment())) {
       result = (SolrInputDocument) jbc.unmarshal(is);
     }
     assertEquals(2, result.size());
@@ -818,14 +827,16 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private void indexSolrInputDocumentsDirectly(SolrInputDocument ... docs) throws IOException {
-    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
-    AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
-    for (SolrInputDocument doc: docs) {
-      updateCmd.solrDoc = doc;
-      h.getCore().getUpdateHandler().addDoc(updateCmd);
-      updateCmd.clear();
+    try (SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true)) {
+      AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
+      for (SolrInputDocument doc : docs) {
+        updateCmd.solrDoc = doc;
+        coreReq.getCore().getUpdateHandler().addDoc(updateCmd);
+        updateCmd.clear();
+        updateCmd.setReq(coreReq);
+      }
+      assertU(commit());
     }
-    assertU(commit());
   }
 
   /**
@@ -890,7 +901,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
           assertBlockU(msg);
           return null;
         });
-        if (rarely()) {
+        if (LuceneTestCase.rarely()) {
           rez.add(() -> {
             assertBlockU(commit());
             return null;
@@ -906,7 +917,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private void assertFailedBlockU(final String msg) {
-    expectThrows(Exception.class, () -> assertBlockU(msg, "1"));
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> assertBlockU(msg, "1"));
   }
 
   private void assertBlockU(final String msg, String expected) {
@@ -923,6 +934,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   public static String getStringFromDocument(Document doc) {
     try (StringWriter writer = new StringWriter()){
       TransformerFactory tf = TransformerFactory.newInstance();
+      tf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
       Transformer transformer = tf.newTransformer();
       transformer.transform(new DOMSource(doc), new StreamResult(writer));
       return writer.toString();

@@ -24,6 +24,8 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.codahale.metrics.Meter;
 import org.apache.lucene.document.Document;
@@ -41,17 +43,20 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,7 +79,7 @@ import org.slf4j.LoggerFactory;
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
-public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser, SolrMetricProducer {
+public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser {
 
   private static final int NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER = -1;
 
@@ -116,7 +121,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   
   public DirectUpdateHandler2(SolrCore core) {
     super(core);
-   
+    CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     solrCoreState = core.getSolrCoreState();
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
@@ -134,15 +139,15 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     ZkController zkController = core.getCoreContainer().getZkController();
-    if (zkController != null && core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
+    if (zkController != null && coreDescriptor != null && coreDescriptor.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }
-
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
     super(core, updateHandler.getUpdateLog());
+
     solrCoreState = core.getSolrCoreState();
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
@@ -159,12 +164,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
-    UpdateLog existingLog = updateHandler.getUpdateLog();
-    if (this.ulog != null && this.ulog == existingLog) {
+    if (this.ulog != null && updateHandler != null) {
       // If we are reusing the existing update log, inform the log that its update handler has changed.
       // We do this as late as possible.
       this.ulog.init(this, core);
     }
+    IOUtils.closeQuietly(updateHandler); // must cast to DirectUpdateHandler2 to ensure it's close is called
+
+    assert ObjectReleaseTracker.getInstance().track(this);
   }
 
   @Override
@@ -246,9 +253,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
               ". Perhaps the document has an indexed string field (solr.StrField) which is too large" : ""),
               cmd.getPrintableId()), iae);
     } catch (RuntimeException t) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "Exception writing document id %s to the index; possible analysis error.",
-          cmd.getPrintableId()), t);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Exception writing document to the index; possible analysis error, id=" +
+          cmd.getPrintableId(), t);
     }
   }
 
@@ -268,12 +274,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     if (idField == null) {
       cmd.overwrite = false;
     }
-    try {
-      if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
-        if (ulog != null) ulog.add(cmd);
-        return 1;
-      }
+    if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
+      // TLOG non-leader replica: write to tlog only, do not touch the IndexWriter.
+      // numDocsPending tracks uncommitted IW writes, so must NOT be incremented here.
+      if (ulog != null) ulog.add(cmd);
+      return 1;
+    }
 
+    try {
       if (cmd.overwrite) {
         // Check for delete by query commands newer (i.e. reordered). This
         // should always be null on a leader
@@ -374,7 +382,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       IndexWriter writer = iw.get();
 
       // see comment in deleteByQuery
-      synchronized (solrCoreState.getUpdateLock()) {
+      ReentrantLock ulock = solrCoreState.getUpdateLock();
+      ulock.lock();
+      try {
         updateDocOrDocValues(cmd, writer);
 
         if (cmd.isInPlaceUpdate() && ulog != null) {
@@ -384,6 +394,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           writer.deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));
         }
         if (ulog != null) ulog.add(cmd, true); // this needs to be protected by update lock
+      } finally {
+        ulock.unlock();
       }
     } finally {
       iw.decref();
@@ -496,10 +508,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // currently for testing purposes.  Do a delete of complete index w/o worrying about versions, don't log, clean up most state in update log, etc
       if (delAll && cmd.getVersion() == -Long.MAX_VALUE) {
-        synchronized (solrCoreState.getUpdateLock()) {
+        ReentrantLock lock = solrCoreState.getUpdateLock();
+        lock.lock();
+        try {
           deleteAll();
           ulog.deleteAll();
           return;
+        } finally {
+          lock.unlock();
         }
       }
 
@@ -512,7 +528,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       // preSoftCommit/postSoftCommit and thus we use the updateLock to prevent this (just
       // as we use around ulog.preCommit... also see comments in ulog.postSoftCommit)
       //
-      synchronized (solrCoreState.getUpdateLock()) {
+      ReentrantLock ulock = solrCoreState.getUpdateLock();
+      ulock.lock();
+      try {
 
         // We are reopening a searcher before applying the deletes to overcome LUCENE-7344.
         // Once LUCENE-7344 is resolved, we can consider removing this.
@@ -530,6 +548,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
 
         if (ulog != null) ulog.deleteByQuery(cmd);  // this needs to be protected by the update lock
+      } finally {
+        ulock.unlock();
       }
 
       madeIt = true;
@@ -562,7 +582,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[mergeReaders.size()]));
+        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[0]));
       } finally {
         iw.decref();
       }
@@ -587,7 +607,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     boolean error=true;
 
     try {
-      log.debug("start {}", cmd);
+      if (log.isDebugEnabled()) {
+        log.debug("start {}", cmd);
+      }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
         SolrIndexWriter.setCommitData(iw.get(), cmd.getVersion());
@@ -596,7 +618,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         iw.decref();
       }
 
-      log.debug("end_prepareCommit");
+      if (log.isDebugEnabled()) {
+        log.debug("end_prepareCommit");
+      }
 
       error=false;
     }
@@ -661,10 +685,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
         
         if (!cmd.softCommit) {
-          synchronized (solrCoreState.getUpdateLock()) { // sync is currently needed to prevent preCommit
+          ReentrantLock ulock = solrCoreState.getUpdateLock();
+          ulock.lock();
+          try { // sync is currently needed to prevent preCommit
                                 // from being called between preSoft and
                                 // postSoft... see postSoft comments.
             if (ulog != null) ulog.preCommit(cmd);
+          } finally {
+            ulock.unlock();
           }
           
           // SolrCore.verbose("writer.commit() start writer=",writer);
@@ -692,23 +720,34 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       if (cmd.softCommit) {
         // ulog.preSoftCommit();
-        synchronized (solrCoreState.getUpdateLock()) {
+        ReentrantLock ulock = solrCoreState.getUpdateLock();
+        ulock.lock();
+        try {
           if (ulog != null) ulog.preSoftCommit(cmd);
           core.getSearcher(true, false, waitSearcher, true);
           if (ulog != null) ulog.postSoftCommit(cmd);
+        } finally {
+          ulock.unlock();
         }
         callPostSoftCommitCallbacks();
       } else {
-        synchronized (solrCoreState.getUpdateLock()) {
+        ReentrantLock ulock = solrCoreState.getUpdateLock();
+        ulock.lock();
+        try {
           if (ulog != null) ulog.preSoftCommit(cmd);
           if (cmd.openSearcher) {
+            if (core.getCoreContainer().isShutDown()) {
+              throw new AlreadyClosedException();
+            }
             core.getSearcher(true, false, waitSearcher);
-          } else {
+          } else if (!cmd.closing) {
             // force open a new realtime searcher so realtime-get and versioning code can see the latest
             RefCounted<SolrIndexSearcher> searchHolder = core.openNewSearcher(true, true);
             searchHolder.decref();
           }
           if (ulog != null) ulog.postSoftCommit(cmd);
+        } finally {
+          ulock.unlock();
         }
         if (ulog != null) ulog.postCommit(cmd); // postCommit currently means new searcher has
                               // also been opened
@@ -746,14 +785,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
        try {
         waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {
-        SolrException.log(log,e);
+         ParWork.propagateInterrupt(e);
       }
     }
   }
 
   @Override
   public void newIndexWriter(boolean rollback) throws IOException {
-    solrCoreState.newIndexWriter(core, rollback);
+    solrCoreState.newIndexWriter(core, rollback, false);
   }
   
   /**
@@ -803,17 +842,17 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void close() throws IOException {
-    log.debug("closing {}", this);
+    if (log.isDebugEnabled()) {
+      log.debug("closing {}", this);
+    }
 
-    commitTracker.close();
-    softCommitTracker.close();
+    super.close();
+
+    IOUtils.closeQuietly(commitTracker);
+    IOUtils.closeQuietly(softCommitTracker);
+
 
     numDocsPending.reset();
-    try {
-      super.close();
-    } catch (Exception e) {
-      throw new IOException("Error closing", e);
-    }
   }
 
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)
@@ -833,10 +872,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
     try {
 
-      if (TestInjection.injectSkipIndexWriterCommitOnClose(writer)) {
+      if (TestInjection.injectSkipIndexWriterCommitOnClose(writer) || Boolean.getBoolean("solr.skipCommitOnClose")) {
         // if this TestInjection triggers, we do some simple rollback()
         // (which closes the underlying IndexWriter) and then return immediately
-        log.warn("Skipping commit for IndexWriter.close() due to TestInjection");
+        log.warn("Skipping commit for IndexWriter.close() due to TestInjection or system property dueToInjection={}", TestInjection.skipIndexWriterCommitOnClose);
         if (writer != null) {
           writer.rollback();
         }
@@ -852,33 +891,41 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           && ulog.getState() == UpdateLog.State.ACTIVE;
 
       // be tactical with this lock! closing the updatelog can deadlock when it tries to commit
-      solrCoreState.getCommitLock().lock();
+      // Lock commitLock = solrCoreState.getCommitLock();
+     // commitLock.lock();
       try {
         try {
-          if (log.isInfoEnabled()) {
-            log.info("Committing on IndexWriter.close() {}.",
-                (tryToCommit ? "" : " ... SKIPPED (unnecessary)"));
+          if (log.isDebugEnabled()) {
+            log.debug("Committing on IndexWriter.close() {}.", (tryToCommit ? "" : " ... SKIPPED (unnecessary)"));
           }
           if (tryToCommit) {
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
             cmd.openSearcher = false;
             cmd.waitSearcher = false;
             cmd.softCommit = false;
+            cmd.closing = true;
 
-            // TODO: keep other commit callbacks from being called?
-            // this.commit(cmd); // too many test failures using this method... is it because of callbacks?
+            this.commit(cmd);
 
-            synchronized (solrCoreState.getUpdateLock()) {
-              ulog.preCommit(cmd);
-            }
-
-            // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
-            writer.commit();
-
-            synchronized (solrCoreState.getUpdateLock()) {
-              ulog.postCommit(cmd);
-            }
+//            ReentrantLock ulock = solrCoreState.getUpdateLock();
+//            ulock.lock();
+//            try {
+//              ulog.preCommit(cmd);
+//            } finally {
+//              ulock.unlock();
+//            }
+//
+//            // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
+//            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+//            writer.commit();
+//
+//            ulock = solrCoreState.getUpdateLock();
+//            ulock.lock();
+//            try {
+//              ulog.postCommit(cmd);
+//            } finally {
+//              ulock.unlock();
+//            }
           }
         } catch (Throwable th) {
           log.error("Error in final commit", th);
@@ -888,8 +935,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
 
       } finally {
-        solrCoreState.getCommitLock().unlock();
-
+       // commitLock.unlock();
       }
     } finally {
       if (clearRequestInfo) SolrRequestInfo.clearRequestInfo();
@@ -960,7 +1006,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
       }
       log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
+      writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[0]));
 
     } else { // more normal path
 
@@ -1013,7 +1059,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private long getCurrentTLogSize() {
-    return ulog != null && ulog.hasUncommittedChanges() ? ulog.getCurrentLogSizeFromStream() : -1;
+    UpdateLog fulog = ulog;
+    return fulog != null && fulog.hasUncommittedChanges() ? fulog.getCurrentLogSizeFromStream() : -1;
   }
 
   // allow access for tests

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -32,8 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.ParWork;
 
 public class ParallelListStream extends TupleStream implements Expressible {
 
@@ -98,10 +98,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
-    for(TupleStream stream : streams) {
-      l.add(stream);
-    }
+    List<TupleStream> l = new ArrayList<TupleStream>(Arrays.asList(streams));
     return l;
   }
 
@@ -134,32 +131,29 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("ParallelListStream"));
-    try {
-      List<Future<StreamIndex>> futures = new ArrayList();
-      int i=0;
-      for (TupleStream tupleStream : streams) {
-        StreamOpener so = new StreamOpener(new StreamIndex(tupleStream, i++));
-        Future<StreamIndex> future = service.submit(so);
-        futures.add(future);
-      }
+    ExecutorService service = ParWork.getRootSharedExecutor();
+    List<Future<StreamIndex>> futures = new ArrayList();
+    int i=0;
+    for (TupleStream tupleStream : streams) {
+      StreamOpener so = new StreamOpener(new StreamIndex(tupleStream, i++));
+      Future<StreamIndex> future = service.submit(so);
+      futures.add(future);
+    }
 
-      try {
-        for (Future<StreamIndex> f : futures) {
-          StreamIndex streamIndex = f.get();
-          this.streams[streamIndex.getIndex()] = streamIndex.getTupleStream();
-        }
-      } catch (Exception e) {
-        throw new IOException(e);
+    try {
+      for (Future<StreamIndex> f : futures) {
+        StreamIndex streamIndex = f.get();
+        this.streams[streamIndex.getIndex()] = streamIndex.getTupleStream();
       }
-    } finally {
-      service.shutdown();
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      throw new IOException(e);
     }
   }
 
-  protected class StreamOpener implements Callable<StreamIndex> {
+  protected static class StreamOpener implements Callable<StreamIndex> {
 
-    private StreamIndex streamIndex;
+    private final StreamIndex streamIndex;
 
     public StreamOpener(StreamIndex streamIndex) {
       this.streamIndex = streamIndex;
@@ -171,7 +165,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class StreamIndex {
+  protected static class StreamIndex {
     private TupleStream tupleStream;
     private int index;
 

@@ -16,16 +16,15 @@
  */
 package org.apache.solr.core;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.RegexReplaceProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assume;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-/** 
+/**
  * Test both XInclude as well as more old school "entity includes"
  */
 public class TestXIncludeConfig extends SolrTestCaseJ4 {
@@ -35,17 +34,9 @@ public class TestXIncludeConfig extends SolrTestCaseJ4 {
     initCore("solrconfig-xinclude.xml", "schema-xinclude.xml");
   }
 
-  @Override
-  public void setUp() throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-    try {
-      //see whether it even makes sense to run this test
-      dbf.setXIncludeAware(true);
-      dbf.setNamespaceAware(true);
-    } catch (UnsupportedOperationException e) {
-      Assume.assumeTrue(false);
-    }
-    super.setUp();
+  @AfterClass
+  public static void afterClass() throws Exception {
+    deleteCore();
   }
 
   public void testXInclude() throws Exception {

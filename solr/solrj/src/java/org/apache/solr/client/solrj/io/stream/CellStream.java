@@ -46,7 +46,7 @@ public class CellStream extends TupleStream implements Expressible {
   }
 
   public CellStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    String name = factory.getValueOperand(expression, 0);
+    String name = StreamFactory.getValueOperand(expression, 0);
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
 
     if(streamExpressions.size() != 1){

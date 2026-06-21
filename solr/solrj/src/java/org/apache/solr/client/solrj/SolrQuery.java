@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -28,6 +29,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 
@@ -715,7 +717,7 @@ public class SolrQuery extends ModifiableSolrParams
     if (sortClauses == null || sortClauses.isEmpty()) {
       remove(CommonParams.SORT);
     } else {
-      StringBuilder sb = new StringBuilder();
+      StringBuilder sb = new StringBuilder(32);
       for (SortClause sortClause : sortClauses) {
         if (sb.length() > 0) sb.append(",");
         sb.append(sortClause.getItem());
@@ -822,7 +824,7 @@ public class SolrQuery extends ModifiableSolrParams
       return this;
     }
 
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     sb.append(fields[0]);
     for (int i = 1; i < fields.length; i++) {
       sb.append(',');
@@ -1054,7 +1056,7 @@ public class SolrQuery extends ModifiableSolrParams
       this.remove( CommonParams.FL );
       return this;
     }
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     sb.append( fields[0] );
     for( int i=1; i<fields.length; i++ ) {
       sb.append( ',' );
@@ -1175,6 +1177,18 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
+  public SolrQuery setParams(SolrParams params) {
+    Iterator<String> it = params.getParameterNamesIterator();
+    String value;
+    while (it.hasNext()) {
+      String name = it.next();
+      value = params.get(name);
+      this.set(name, value);
+    }
+
+    return this;
+  }
+
   /** get a deep copy of this object **/
   public SolrQuery getCopy() {
     SolrQuery q = new SolrQuery();
@@ -1213,12 +1227,12 @@ public class SolrQuery extends ModifiableSolrParams
   //  Utility functions
   ///////////////////////
   
-  private String toSortString(String field, ORDER order) {
+  private static String toSortString(String field, ORDER order) {
     return field.trim() + ' ' + String.valueOf(order).trim();
   }
   
-  private String join(String a, String b, String sep) {
-    StringBuilder sb = new StringBuilder();
+  private static String join(String a, String b, String sep) {
+    StringBuilder sb = new StringBuilder(32);
     if (a!=null && a.length()>0) {
       sb.append(a);
       sb.append(sep);
@@ -1234,19 +1248,6 @@ public class SolrQuery extends ModifiableSolrParams
     tmp = join(tmp, value, ",");
     this.set(name, tmp);
     return this;
-  }
-   
-  private String join(String[] vals, String sep, String removeVal) {
-    StringBuilder sb = new StringBuilder();
-    for (int i=0; i<vals.length; i++) {
-      if (!vals[i].equals(removeVal)) {
-        if (sb.length() > 0) {
-          sb.append(sep);
-        }
-        sb.append(vals[i]);
-      }
-    }
-    return sb.toString().trim();
   }
 
   /**
@@ -1343,11 +1344,11 @@ public class SolrQuery extends ModifiableSolrParams
       if (this == other) return true;
       if (!(other instanceof SortClause)) return false;
       final SortClause that = (SortClause) other;
-      return this.getItem().equals(that.getItem()) && this.getOrder().equals(that.getOrder());
+      return this.item.equals(that.item) && this.order.equals(that.order);
     }
 
     public int hashCode(){
-      return this.getItem().hashCode();
+      return this.item.hashCode();
     }
 
     /**
@@ -1358,7 +1359,7 @@ public class SolrQuery extends ModifiableSolrParams
      * @return a description of the current sort clause
      */
     public String toString() {
-      return "[" + getClass().getSimpleName() + ": item=" + getItem() + "; order=" + getOrder() + "]";
+      return "[" + getClass().getSimpleName() + ": item=" + item + "; order=" + order + "]";
     }
   }
 }

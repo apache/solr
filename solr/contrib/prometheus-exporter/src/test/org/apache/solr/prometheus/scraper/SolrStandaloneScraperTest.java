@@ -23,10 +23,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.prometheus.client.Collector;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -45,14 +48,18 @@ public class SolrStandaloneScraperTest extends RestTestBase {
   private static MetricsConfiguration configuration;
   private static SolrStandaloneScraper solrScraper;
   private static ExecutorService executor;
-  private static HttpSolrClient solrClient;
+  private static Http2SolrClient solrClient;
 
   @BeforeClass
   public static void setupBeforeClass() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
+    // SolrTestCase disables metrics by default (solr.enableMetrics=false); the prometheus
+    // exporter scrapes /admin/metrics, which is only registered when metrics are enabled.
+    System.setProperty("solr.enableMetrics", "true");
+
+    File tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpSolrHome.deleteOnExit();
 
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     initCore("solrconfig.xml", "managed-schema");
 
@@ -64,7 +71,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
         true,
         null);
 
-    executor = ExecutorUtil.newMDCAwareFixedThreadPool(25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
+    executor = Executors.newFixedThreadPool(25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
     configuration = Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
     solrClient = getHttpSolrClient(restTestHarness.getAdminURL());
@@ -82,7 +89,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
   public static void cleanUp() throws Exception {
     IOUtils.closeQuietly(solrScraper);
     IOUtils.closeQuietly(solrClient);
-    cleanUpHarness();
+    deleteCore();
     if (null != executor) {
       executor.shutdownNow();
       executor = null;

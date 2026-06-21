@@ -28,6 +28,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.util.Utils;
 
 /**
  * A simple sorted int[] array implementation of {@link DocSet}, good for small sets.
@@ -57,7 +58,7 @@ public class SortedIntDocSet extends DocSet {
   @Override
   public int size()      { return docs.length; }
 
-  public static int[] zeroInts = new int[0];
+  public static int[] zeroInts = Utils.EMPTY_INTS;
   public static SortedIntDocSet zero = new SortedIntDocSet(zeroInts);
 
   public static int[] shrink(int[] arr, int newSize) {
@@ -813,7 +814,7 @@ public class SortedIntDocSet extends DocSet {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED + (docs.length << 2);
+    return BASE_RAM_BYTES_USED + ((long) docs.length << 2);
   }
 
   @Override

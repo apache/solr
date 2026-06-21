@@ -21,13 +21,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
+import it.unimi.dsi.fastutil.objects.ObjectAVLTreeSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
@@ -189,16 +191,16 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     /**
      * Build an automaton to represent the frontier query
      */
-    private Automaton buildAutomaton(BytesRefHash termBytesHash) {
+    private static Automaton buildAutomaton(BytesRefHash termBytesHash) {
       // need top pass a sorted set of terms to the autn builder (maybe a better way to avoid this?)
-      final TreeSet<BytesRef> terms = new TreeSet<BytesRef>();
-      for (int i = 0; i < termBytesHash.size(); i++) {
-        BytesRef ref = new BytesRef();
+      int sz = termBytesHash.size();
+      final ObjectArrayList<BytesRef> terms = new ObjectArrayList<>(sz);
+      for (var i = 0; i < sz; i++) {
+        var ref = new BytesRef();
         termBytesHash.get(i, ref);
         terms.add(ref);
       }
-      final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
-      return a;
+      return  DaciukMihovAutomatonBuilder.build(terms);
     }
 
   }

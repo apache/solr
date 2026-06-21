@@ -20,47 +20,45 @@ import java.io.File;
 import java.nio.file.Path;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 {
 
-  protected static Path SOLR_HOME;
-  protected static Path CONFIG_HOME;
+  protected Path SOLR_HOME;
+  protected Path CONFIG_HOME;
 
   protected CoreContainer cores = null;
   protected File tempDir;
-
-  @BeforeClass
-  public static void setUpHome() throws Exception {
-    CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
-    SOLR_HOME = createTempDir("solrHome");
-    FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
-  }
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
 
+    CONFIG_HOME = SolrTestUtil.getFile("solrj/solr/shared").toPath().toAbsolutePath();
+    SOLR_HOME = SolrTestUtil.createTempDir("solrHome");
+    FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
+
     System.setProperty("solr.solr.home", SOLR_HOME.toString());
     System.setProperty("configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
     System.out.println("Solr home: " + SOLR_HOME.toString());
 
     //The index is always stored within a temporary directory
-    tempDir = createTempDir().toFile();
+    tempDir = SolrTestUtil.createTempDir().toFile();
     
     File dataDir = new File(tempDir,"data1");
     File dataDir2 = new File(tempDir,"data2");
     System.setProperty("dataDir1", dataDir.getAbsolutePath());
     System.setProperty("dataDir2", dataDir2.getAbsolutePath());
     System.setProperty("tempDir", tempDir.getAbsolutePath());
-    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(SolrTestCase.random().nextLong()));
     cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
     //cores.setPersistent(false);
   }
@@ -81,14 +79,11 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
 
     deleteAdditionalFiles();
 
-    super.tearDown();
-  }
-
-  @AfterClass
-  public static void tearDownHome() throws Exception {
     if (SOLR_HOME != null) {
       FileUtils.deleteDirectory(SOLR_HOME.toFile());
     }
+
+    super.tearDown();
   }
 
   protected void deleteAdditionalFiles() {

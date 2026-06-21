@@ -124,49 +124,68 @@ public class GeoTransformerFactory extends TransformerFactory
 
     // Using ValueSource
     if(shapes!=null) {
-      return new DocTransformer() {
-        @Override
-        public String getName() {
-          return display;
-        }
-
-        @Override
-        public void transform(SolrDocument doc, int docid) throws IOException {
-          int leafOrd = ReaderUtil.subIndex(docid, context.getSearcher().getTopReaderContext().leaves());
-          LeafReaderContext ctx = context.getSearcher().getTopReaderContext().leaves().get(leafOrd);
-          ShapeValues values = shapes.getValues(ctx);
-          int segmentDoc = docid - ctx.docBase;
-          if (values.advanceExact(segmentDoc)) {
-            updater.setValue(doc, values.value());
-          }
-        }
-      };
+      return new MyDocTransformer(display, shapes, updater);
 
     }
     
     // Using the raw stored values
-    return new DocTransformer() {
-      
-      @Override
-      public void transform(SolrDocument doc, int docid) throws IOException {
-        Object val = doc.remove(updater.field);
-        if(val!=null) {
-          updater.setValue(doc, val);
-        }
-      }
-      
-      @Override
-      public String getName() {
-        return updater.display;
-      }
-
-      @Override
-      public String[] getExtraRequestFields() {
-        return new String[] {updater.field};
-      }
-    };
+    return new GeoUpdaterDocTransformer(updater);
   }
 
+  private static class MyDocTransformer extends DocTransformer {
+    private final String display;
+    private final ShapeValuesSource shapes;
+    private final GeoFieldUpdater updater;
+
+    public MyDocTransformer(String display, ShapeValuesSource shapes, GeoFieldUpdater updater) {
+      this.display = display;
+      this.shapes = shapes;
+      this.updater = updater;
+    }
+
+    @Override
+    public String getName() {
+      return display;
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid) throws IOException {
+      int leafOrd = ReaderUtil.subIndex(docid, context.getSearcher().getTopReaderContext().leaves());
+      LeafReaderContext ctx = context.getSearcher().getTopReaderContext().leaves().get(leafOrd);
+      ShapeValues values = shapes.getValues(ctx);
+      int segmentDoc = docid - ctx.docBase;
+      if (values.advanceExact(segmentDoc)) {
+        updater.setValue(doc, values.value());
+      }
+    }
+  }
+
+  private static class GeoUpdaterDocTransformer extends DocTransformer {
+
+    private final GeoFieldUpdater updater;
+
+    public GeoUpdaterDocTransformer(GeoFieldUpdater updater) {
+      this.updater = updater;
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid) throws IOException {
+      Object val = doc.remove(updater.field);
+      if(val!=null) {
+        updater.setValue(doc, val);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return updater.display;
+    }
+
+    @Override
+    public String[] getExtraRequestFields() {
+      return new String[] {updater.field};
+    }
+  }
 }
 
 class GeoFieldUpdater {
@@ -212,7 +231,7 @@ class GeoFieldUpdater {
     }
     // Don't explode on 'InvalidShpae'
     else if( val instanceof Exception) {
-      doc.setField( display_error, ((Exception)val).toString() );
+      doc.setField( display_error, val.toString() );
     }
     else {
       // Use the stored value

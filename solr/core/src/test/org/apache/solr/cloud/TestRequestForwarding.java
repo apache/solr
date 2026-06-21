@@ -16,33 +16,45 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.InputStream;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressSSL
 public class TestRequestForwarding extends SolrTestCaseJ4 {
 
   private MiniSolrCloudCluster solrCluster;
+
+  @BeforeClass
+  public static void beforeTestRequestForwarding() {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
+  }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
-    solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
+
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
+
+    solrCluster = new SolrCloudTestCase.Builder(3, SolrTestUtil.createTempDir()).addConfig("conf1", configDir).configure();
   }
 
   @Override
   public void tearDown() throws Exception {
     solrCluster.shutdown();
+    solrCluster = null;
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
 
@@ -61,8 +73,10 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
       };
       for (String q: queryStrings) {
         try {
-          URL url = new URL(jettySolrRunner.getBaseUrl().toString()+"/collection1/select?"+q);
-          url.openStream(); // Shouldn't throw any errors
+
+          Http2SolrClient.SimpleResponse res = Http2SolrClient
+              .GET(jettySolrRunner.getBaseUrl().toString() + "/collection1/select?" + URLEncoder.encode(q, "UTF-8"));
+
         } catch (Exception ex) {
           throw new RuntimeException("Query '" + q + "' failed, ",ex);
         }
@@ -75,11 +89,11 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
     create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
-    
+
+    solrCluster.waitForActiveCollection(name, 2, 2);
+
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
-    solrCluster.waitForActiveCollection(name, 2, 2);
   }
 }

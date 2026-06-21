@@ -21,8 +21,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.common.SolrException;
+import org.junit.After;
+import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,14 +34,14 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   
-  public static final int TIMEOUT = 45000;
+  public static final int TIMEOUT = 15000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static File SOLRHOME;
-  static {
+  public File SOLRHOME;
+  {
     try {
-      SOLRHOME = new File(SolrTestCaseJ4.TEST_HOME());
+      SOLRHOME = new File(SolrTestUtil.TEST_HOME());
     } catch (RuntimeException e) {
       log.warn("TEST_HOME() does not exist - solrj test?");
       // solrj tests not working with TEST_HOME()
@@ -52,19 +54,23 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   protected volatile static Path zkDir;
 
 
-  @BeforeClass
-  public static void azt_beforeClass() throws Exception {
-    zkDir = createTempDir("zkData");
+  @Before
+  public void azt_before() throws Exception {
+    zkDir = SolrTestUtil.createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
+    try {
+      zkServer.run();
+    } catch (Exception e) {
+      log.error("Error starting Zk Test Server", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
     
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("jetty.port", "0000");
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     
-    zkServer.buildZooKeeper(SOLRHOME,
-        "solrconfig.xml", "schema.xml");
+    zkServer.buildZooKeeper();
 
     initCore("solrconfig.xml", "schema.xml");
   }
@@ -72,33 +78,28 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
 
   @Override
+  @After
   public void tearDown() throws Exception {
     super.tearDown();
-  }
-  
-  @AfterClass
-  public static void azt_afterClass() throws Exception {
+    deleteCore();
 
+    System.clearProperty("zkHost");
+    System.clearProperty("solr.test.sys.prop1");
+    System.clearProperty("solr.test.sys.prop2");
+    System.clearProperty("solrcloud.skip.autorecovery");
+    System.clearProperty("jetty.port");
+    System.clearProperty(ZOOKEEPER_FORCE_SYNC);
     try {
-      deleteCore();
-    } finally {
-
-      System.clearProperty("zkHost");
-      System.clearProperty("solr.test.sys.prop1");
-      System.clearProperty("solr.test.sys.prop2");
-      System.clearProperty("solrcloud.skip.autorecovery");
-      System.clearProperty("jetty.port");
-      System.clearProperty(ZOOKEEPER_FORCE_SYNC);
-
       if (zkServer != null) {
         zkServer.shutdown();
-        zkServer = null;
       }
+    } finally {
       zkDir = null;
+      zkServer = null;
     }
   }
 
-  protected void printLayout() throws Exception {
+  protected static void printLayout() throws Exception {
     zkServer.printLayout();
   }
 }

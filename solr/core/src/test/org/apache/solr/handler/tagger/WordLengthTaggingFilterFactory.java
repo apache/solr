@@ -25,8 +25,8 @@ package org.apache.solr.handler.tagger;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -35,12 +35,9 @@ import org.apache.solr.common.util.Template;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
-
-
 public class V1toV2ApiMapper {
 
-  private static EnumMap<CollectionAction, ActionInfo> mapping = new EnumMap<>(CollectionAction.class);
+  private static final EnumMap<CollectionAction, ActionInfo> mapping = new EnumMap<>(CollectionAction.class);
 
   static {
     for (CollectionApiMapping.Meta meta : CollectionApiMapping.Meta.values()) {
@@ -77,7 +74,7 @@ public class V1toV2ApiMapper {
         path = result;
         template = new Template(path, Template.BRACES_PLACEHOLDER_PATTERN);
 
-        validator = new JsonSchemaValidator(m.getMap("commands", NOT_NULL).getMap(meta.commandName, NOT_NULL));
+        //validator = new JsonSchemaValidator(m.getMap("commands", NOT_NULL).getMap(meta.commandName, NOT_NULL));
       }
     }
 

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.cloud;
 
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,9 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocketFactory;
-
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +84,6 @@ public class SocketProxy {
     int listenPort = port;
     this.usesSSL = useSSL;
     serverSocket = createServerSocket(useSSL);
-    serverSocket.setReuseAddress(true);
     if (receiveBufferSize > 0) {
       serverSocket.setReceiveBufferSize(receiveBufferSize);
     }
@@ -125,18 +124,26 @@ public class SocketProxy {
     return listenPort;
   }
 
-  private ServerSocket createServerSocket(boolean useSSL) throws Exception {
+  private static ServerSocket createServerSocket(boolean useSSL) throws Exception {
+    ServerSocket socket;
     if (useSSL) {
-      return SSLServerSocketFactory.getDefault().createServerSocket();
+      socket = SSLServerSocketFactory.getDefault().createServerSocket();
+    } else {
+      socket = new ServerSocket();
     }
-    return new ServerSocket();
+    socket.setReuseAddress(true);
+    return socket;
   }
 
-  private Socket createSocket(boolean useSSL) throws Exception {
+  private static Socket createSocket(boolean useSSL) throws Exception {
+    Socket socket;
     if (useSSL) {
-      return SSLSocketFactory.getDefault().createSocket();
+      socket = SSLSocketFactory.getDefault().createSocket();
+    } else {
+      socket = new Socket();
     }
-    return new Socket();
+    socket.setReuseAddress(true);
+    return socket;
   }
 
   public URI getUrl() {
@@ -151,7 +158,7 @@ public class SocketProxy {
     synchronized (this.connections) {
       connections = new ArrayList<Bridge>(this.connections);
     }
-    log.warn("Closing {} connections to: {}, target: {}", connections.size(), getUrl(), target);
+    log.warn("Closing {} connections to: {}, target: {}", connections.size(), proxyUrl, target);
     for (Bridge con : connections) {
       closeConnection(con);
     }
@@ -185,22 +192,22 @@ public class SocketProxy {
    */
   public void reopen() {
     if (log.isInfoEnabled()) {
-      log.info("Re-opening connectivity to {}", getUrl());
+      log.info("Re-opening connectivity to {}", proxyUrl);
     }
     try {
       if (proxyUrl == null) {
         throw new IllegalStateException("Can not call open before open(URI uri).");
       }
       serverSocket = createServerSocket(usesSSL);
-      serverSocket.setReuseAddress(true);
       if (receiveBufferSize > 0) {
         serverSocket.setReceiveBufferSize(receiveBufferSize);
       }
       serverSocket.bind(new InetSocketAddress(proxyUrl.getPort()));
       doOpen();
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       if (log.isDebugEnabled()) {
-        log.debug("exception on reopen url:{} ", getUrl(), e);
+        log.debug("exception on reopen url:{} ", proxyUrl, e);
       }
     }
   }
@@ -240,6 +247,7 @@ public class SocketProxy {
     try {
       c.close();
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       log.debug("exception on close of: {}", c, e);
     }
   }
@@ -248,6 +256,7 @@ public class SocketProxy {
     try {
       c.halfClose();
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       log.debug("exception on half close of: {}", c, e);
     }
   }
@@ -268,7 +277,7 @@ public class SocketProxy {
     this.acceptBacklog = acceptBacklog;
   }
 
-  private URI urlFromSocket(URI uri, ServerSocket serverSocket)
+  private static URI urlFromSocket(URI uri, ServerSocket serverSocket)
       throws Exception {
     int listenPort = serverSocket.getLocalPort();
 
@@ -384,6 +393,7 @@ public class SocketProxy {
               out.write(buf, 0, len);
           }
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           if (log.isDebugEnabled()) {
             log.debug("read/write failed, reason: {}", e.getLocalizedMessage());
           }
@@ -393,12 +403,15 @@ public class SocketProxy {
               // remote end will see a close at the same time.
               close();
             }
-          } catch (Exception ignore) {}
+          } catch (Exception ignore) {
+            ParWork.propagateInterrupt(e);
+          }
         } finally {
           if (in != null) {
             try {
               in.close();
             } catch (Exception exc) {
+              ParWork.propagateInterrupt(exc);
               log.debug("Error when closing InputStream on socket: {}", src, exc);
             }
           }
@@ -406,6 +419,7 @@ public class SocketProxy {
             try {
               out.close();
             } catch (Exception exc) {
+              ParWork.propagateInterrupt(exc);
               log.debug("{} when closing OutputStream on socket: {}", exc, destination);
             }
           }
@@ -448,12 +462,30 @@ public class SocketProxy {
             if (log.isInfoEnabled()) {
               log.info("accepted {}, receiveBufferSize: {}", source, source.getReceiveBufferSize());
             }
-            synchronized (connections) {
-              connections.add(new Bridge(source, target));
+            try {
+              synchronized (connections) {
+                connections.add(new Bridge(source, target));
+              }
+            } catch (IOException bridgeFail) {
+              // The backend (target) is momentarily unreachable -- e.g. the proxied Solr node was
+              // stopped and is restarting. The Bridge constructor connects to the backend, so this
+              // throws ConnectException ("Connection refused") during that window. Previously that
+              // exception escaped to the OUTER catch and KILLED the acceptor thread permanently: the
+              // ServerSocket stayed open (so the OS still completed client TCP handshakes) but nothing
+              // bridged the connections, so every later request to this proxy hung until its idle
+              // timeout -- even after the backend restarted. That silently and permanently broke any
+              // node restarted behind its (never-closed) proxy, making failover-recovery tests flaky
+              // (TestCloudConsistency.testOutOfSyncReplicasCannotBecomeLeader: out-of-sync followers
+              // could never reach the restarted leader to recover -> stuck BUFFERING). Close the
+              // orphaned client socket and keep accepting, so the proxy resumes bridging the instant
+              // the backend is back.
+              log.warn("proxy could not connect to target {} (backend down?); dropping this connection and continuing to accept", target, bridgeFail);
+              try { source.close(); } catch (IOException ignore) {}
             }
           } catch (SocketTimeoutException expected) {}
         }
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         if (log.isDebugEnabled()) {
           log.debug("acceptor: finished for reason: {}", e.getLocalizedMessage());
         }

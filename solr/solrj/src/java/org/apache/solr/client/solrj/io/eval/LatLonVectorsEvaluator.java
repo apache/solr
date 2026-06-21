@@ -44,7 +44,7 @@ public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements 
   public LatLonVectorsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
 
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if(namedParam.getName().equals("field")) {

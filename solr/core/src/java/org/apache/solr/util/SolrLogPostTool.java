@@ -16,22 +16,28 @@
  */
 package org.apache.solr.util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
-import java.net.URLDecoder;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.handler.component.ShardRequest;
@@ -64,10 +70,10 @@ public class SolrLogPostTool {
     String baseUrl = args[0];
     String root = args[1];
 
-    HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
+    Http2SolrClient.Builder builder = new Http2SolrClient.Builder();
     SolrClient client = null;
     try {
-      client = builder.withBaseSolrUrl(baseUrl).build();
+      client = builder.withBaseUrl(baseUrl).markInternalRequest().build();
       File rf = new File(root);
       List<File> files = new ArrayList();
       gatherFiles(rf, files);
@@ -136,6 +142,7 @@ public class SolrLogPostTool {
         client.commit();
         CLIO.out("Committed");
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         CLIO.err("Unable to commit documents: " + e.getMessage());
         e.printStackTrace(CLIO.getErrStream());
       }
@@ -164,7 +171,7 @@ public class SolrLogPostTool {
     private String pushedBack = null;
     private boolean finished = false;
     private String cause;
-    private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
+    private Pattern p = Pattern.compile("^(\\d\\d\\d\\d-\\d\\d-\\d\\d[\\s|T]\\d\\d:\\d\\d:\\d\\d.\\d\\d\\d)");
 
     public LogRecordReader(BufferedReader bufferedReader) throws IOException {
       this.bufferedReader = bufferedReader;
@@ -222,7 +229,7 @@ public class SolrLogPostTool {
 
           if (!m.find() && buf.length() < 10000) {
             //Line does not start with a timestamp so append to the stack trace
-            buf.append(line.replace("\t", "    ") + "<br/>");
+            buf.append(line.replace("\t", "    ")).append("<br/>");
             if(line.startsWith("Caused by:")) {
               this.cause = line;
             }
@@ -246,7 +253,7 @@ public class SolrLogPostTool {
       return null;
     }
 
-    private void setFieldIfUnset(SolrInputDocument doc, String fieldName, String fieldValue) {
+    private static void setFieldIfUnset(SolrInputDocument doc, String fieldName, String fieldValue) {
       if (doc.containsKey(fieldName)) return;
 
       doc.setField(fieldName, fieldValue);
@@ -342,7 +349,7 @@ public class SolrLogPostTool {
       return doc;
     }
 
-    private String parseCollection(String line) {
+    private static String parseCollection(String line) {
       char[] ca = {' ', ']', ','};
       String parts[] = line.split("c:");
       if(parts.length >= 2) {
@@ -373,7 +380,7 @@ public class SolrLogPostTool {
       return doc;
     }
 
-    private String parseNewSearcherCore(String line) {
+    private static String parseNewSearcherCore(String line) {
       char[] ca = {']'};
       String parts[] = line.split("\\[");
       if(parts.length > 3) {
@@ -383,7 +390,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseCore(String line) {
+    private static String parseCore(String line) {
       char[] ca = {' ', ']', '}', ','};
       String parts[] = line.split("x:");
       if(parts.length >= 2) {
@@ -393,7 +400,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseShard(String line) {
+    private static String parseShard(String line) {
       char[] ca = {' ', ']', '}', ','};
       String parts[] = line.split("s:");
       if(parts.length >= 2) {
@@ -403,7 +410,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseReplica(String line) {
+    private static String parseReplica(String line) {
       char[] ca = {' ', ']', '}',','};
       String parts[] = line.split("r:");
       if(parts.length >= 2) {
@@ -414,7 +421,7 @@ public class SolrLogPostTool {
     }
 
 
-    private String parsePath(String line) {
+    private static String parsePath(String line) {
       char[] ca = {' '};
       String parts[] = line.split(" path=");
       if(parts.length == 2) {
@@ -424,7 +431,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseQTime(String line) {
+    private static String parseQTime(String line) {
       char[] ca = {'\n', '\r'};
       String parts[] = line.split(" QTime=");
       if(parts.length == 2) {
@@ -434,7 +441,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseNode(String line) {
+    private static String parseNode(String line) {
       char[] ca = {' ', ']', '}', ','};
       String parts[] = line.split("node_name=n:");
       if(parts.length >= 2) {
@@ -444,7 +451,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseStatus(String line) {
+    private static String parseStatus(String line) {
       char[] ca = {' ', '\n', '\r'};
       String parts[] = line.split(" status=");
       if(parts.length == 2) {
@@ -454,7 +461,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseHits(String line) {
+    private static String parseHits(String line) {
       char[] ca = {' '};
       String parts[] = line.split(" hits=");
       if(parts.length == 2) {
@@ -464,7 +471,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String parseParams(String line) {
+    private static String parseParams(String line) {
       char[] ca = {' '};
       String parts[] = line.split(" params=");
       if(parts.length == 2) {
@@ -475,7 +482,7 @@ public class SolrLogPostTool {
       }
     }
 
-    private String readUntil(String s, char[] chars) {
+    private static String readUntil(String s, char[] chars) {
       StringBuilder builder = new StringBuilder();
       for(int i=0; i<s.length(); i++) {
         char a = s.charAt(i);
@@ -490,11 +497,11 @@ public class SolrLogPostTool {
       return builder.toString();
     }
 
-    private void addOrReplaceFieldValue(SolrInputDocument doc, String fieldName, String fieldValue) {
+    private static void addOrReplaceFieldValue(SolrInputDocument doc, String fieldName, String fieldValue) {
       doc.setField(fieldName, fieldValue);
     }
 
-    private void addParams(SolrInputDocument doc,  String params) {
+    private static void addParams(SolrInputDocument doc, String params) {
       String[] pairs = params.split("&");
       for(String pair : pairs) {
         String[] parts = pair.split("=");
@@ -558,7 +565,7 @@ public class SolrLogPostTool {
       setFieldIfUnset(doc, "ids_s", "false");
     }
 
-    private boolean isRTGRequest(SolrInputDocument doc) {
+    private static boolean isRTGRequest(SolrInputDocument doc) {
       final SolrInputField path = doc.getField("path_s");
       if (path == null) return false;
 

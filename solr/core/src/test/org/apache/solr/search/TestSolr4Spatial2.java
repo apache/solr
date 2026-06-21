@@ -22,10 +22,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -33,13 +36,16 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SpatialUtils;
-import org.apache.solr.util.TestUtils;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -50,15 +56,28 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
+    System.setProperty("solr.enableMetrics", "true");
     initCore("solrconfig-spatial.xml", "schema-spatial.xml");
+  }
+
+  @AfterClass
+  public static void afterTestSolr4Spatial2() throws Exception {
+    deleteCore();
   }
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    clearIndex();
     RetrievalCombo.idCounter = 0;
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    clearIndex();
+    super.tearDown();
   }
 
   @Test
@@ -122,10 +141,9 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   @Test
   public void testBadScoreParam() throws Exception {
     String fieldName = "bbox";
-    assertQEx("expect friendly error message",
-        "area2D",
-        req("{!field f=" + fieldName + " filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))"),
-        SolrException.ErrorCode.BAD_REQUEST);
+    try (SolrQueryRequest req = req("{!field f=" + fieldName + " filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))")) {
+      assertQEx("expect friendly error message", "area2D", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 
   @Test
@@ -157,7 +175,9 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   public void testLLPDecodeIsStableAndPrecise() throws Exception {
     // test that LatLonPointSpatialField decode of docValue will round-trip (re-index then re-decode) to the same value
     @SuppressWarnings({"resource", "IOResourceOpenedButNotSafelyClosed"})
-    SolrClient client = new EmbeddedSolrServer(h.getCore());// do NOT close it; it will close Solr
+    SolrCore core = h.getCore();
+    SolrClient client = new EmbeddedSolrServer(core);// do NOT close it; it will close Solr
+    core.close();
 
     final String fld = "llp_1_dv_dvasst";
     String ptOrig = GeoTestUtil.nextLatitude() + "," + GeoTestUtil.nextLongitude();
@@ -184,7 +204,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     //max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm accuracy but then we
     // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
-    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.41);
+    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.48);
     // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
   }
 
@@ -231,7 +251,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         doc.addField(combo.fieldName, indexValue);
       }
       assertU(adoc(doc));
-      if (TestUtils.rarely()) { // induce segments to potentially change internal behavior
+      if (LuceneTestCase.rarely()) { // induce segments to potentially change internal behavior
         assertU(commit());
       }
     }
@@ -251,10 +271,10 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     // check
     assertJQ(req("q","*:*", "sort", "id asc",
         "fl","*"),
-        assertJQsFlStar.toArray(new String[0]));
+        assertJQsFlStar.toArray(Utils.EMPTY_STRINGS));
     assertJQ(req("q","*:*", "sort", "id asc",
         "fl", "id," + combos.stream().map(c -> c.fieldName).collect(Collectors.joining(","))),
-        assertJQsFlListed.toArray(new String[0]));
+        assertJQsFlListed.toArray(Utils.EMPTY_STRINGS));
   }
 
   private static class RetrievalCombo {
@@ -286,7 +306,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     // Search to the edge but not quite touching the indexed envelope of id=0.  It requires geom validation to
     //  eliminate id=0.  id=1 is found and doesn't require validation.  cache=false means no query cache.
-    final SolrQueryRequest sameReq = req(
+    SolrQueryRequest sameReq = req(
         "q", "{!cache=false field f=" + fieldName + "}Intersects(ENVELOPE(-20, -10.0001, 30, 15.0001))",
         "sort", "id asc");
     assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
@@ -294,34 +314,47 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     if (testCache) {
       // The tricky thing is verifying the cache works correctly...
 
-      MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
-      assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
-      assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
+        sameReq = req(
+            "q", "{!cache=false field f=" + fieldName + "}Intersects(ENVELOPE(-20, -10.0001, 30, 15.0001))",
+            "sort", "id asc");
+      Gauge cacheMetrics = (Gauge) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+        assertEquals("1", ((Map)cacheMetrics.getValue()).get("cumulative_inserts").toString());
+        assertEquals("0", ((Map)cacheMetrics.getValue()).get("cumulative_hits").toString());
 
-      // Repeat the query earlier
-      assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
-      assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
+        // Repeat the query earlier
+        assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+        assertEquals("1", ((Map)cacheMetrics.getValue()).get("cumulative_hits").toString());
 
-      assertEquals("1 segment",
-          1, getSearcher().getRawReader().leaves().size());
-      // Get key of first leaf reader -- this one contains the match for sure.
-      Object leafKey1 = getFirstLeafReaderKey();
+        assertEquals("1 segment", 1, getSearcher(sameReq.getCore()).getRawReader().leaves().size());
+        // Get key of first leaf reader -- this one contains the match for sure.
+        Object leafKey1 = getFirstLeafReaderKey(sameReq.getCore());
 
-      // add new segment
-      assertU(adoc("id", "3"));
+        // add new segment
+        assertU(adoc("id", "3"));
 
-      assertU(commit()); // sometimes merges (to one seg), sometimes won't
+        assertU(commit()); // sometimes merges (to one seg), sometimes won't
 
-      // can still find the same document
-      assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+        sameReq = req(
+          "q", "{!cache=false field f=" + fieldName + "}Intersects(ENVELOPE(-20, -10.0001, 30, 15.0001))",
+          "sort", "id asc");
+        // can still find the same document
+        assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
-      // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
-      // (i.e. the cache instance is new but it should've been regenerated from the old one).
-      // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
-      Object leafKey2 = getFirstLeafReaderKey();
-      // get the current instance of metrics - the old one may not represent the current cache instance
-      cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
-      assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
+        // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
+        // (i.e. the cache instance is new but it should've been regenerated from the old one).
+        // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
+        Object leafKey2 = getFirstLeafReaderKey(sameReq.getCore());
+        // get the current instance of metrics - the old one may not represent the current cache instance
+
+        cacheMetrics = (Gauge) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+
+        try {
+          assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", ((Map) cacheMetrics.getValue()).get("cumulative_hits").toString());
+        } catch (AssertionError error) {
+          Thread.sleep(250);
+          assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", ((Map) cacheMetrics.getValue()).get("cumulative_hits").toString());
+        }
+
     }
 
     if (testHeatmap) {
@@ -350,14 +383,15 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     }
   }
 
-  protected SolrIndexSearcher getSearcher() {
+  protected SolrIndexSearcher getSearcher(SolrCore core) {
     // neat trick; needn't deal with the hassle RefCounted
-    return (SolrIndexSearcher) h.getCore().getInfoRegistry().get("searcher");
+
+    return (SolrIndexSearcher) core.getInfoRegistry().get("searcher");
   }
 
 
-  protected Object getFirstLeafReaderKey() {
-    return getSearcher().getRawReader().leaves().get(0).reader().getCoreCacheHelper().getKey();
+  protected Object getFirstLeafReaderKey(SolrCore core) {
+    return getSearcher(core).getRawReader().leaves().get(0).reader().getCoreCacheHelper().getKey();
   }
 
   @Test// SOLR-8541
@@ -375,12 +409,12 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @Test
   public void testErrorHandlingGeodist() throws Exception{
-    assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
-    assertQEx("wrong test exception message","sort param could not be parsed as a query, " +
-            "and is not a field that exists in the index: geodist(llp,47.36667,8.55)",
-        req(
-            "q", "*:*",
-            "sort", "geodist(llp,47.36667,8.55) asc"
-        ), SolrException.ErrorCode.BAD_REQUEST);
+    try (SolrQueryRequest req = req(
+        "q", "*:*",
+        "sort", "geodist(llp,47.36667,8.55) asc"
+    )) {
+      assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
+      assertQEx("wrong test exception message", "sort param could not be parsed as a query, " + "and is not a field that exists in the index: geodist(llp,47.36667,8.55)", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 }

@@ -60,7 +60,7 @@ public class CatStream extends TupleStream implements Expressible {
   private LineIterator currentFileLines;
 
   public CatStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    this(factory.getValueOperand(expression, 0), factory.getIntOperand(expression, "maxLines", -1));
+    this(StreamFactory.getValueOperand(expression, 0), StreamFactory.getIntOperand(expression, "maxLines", -1));
   }
 
   public CatStream(String commaDelimitedFilepaths, int maxLines) {
@@ -76,7 +76,7 @@ public class CatStream extends TupleStream implements Expressible {
     this.maxLines = maxLines;
   }
 
-  private String stripSurroundingQuotesIfTheyExist(String value) {
+  private static String stripSurroundingQuotesIfTheyExist(String value) {
     if (value.length() < 2) return value;
     if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
       return value.substring(1, value.length() - 1);
@@ -89,7 +89,7 @@ public class CatStream extends TupleStream implements Expressible {
   public void setStreamContext(StreamContext context) {
     this.context = context;
     Object solrCoreObj = context.get("solr-core");
-    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
+    if (!(solrCoreObj instanceof SolrCore)) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
     }
     final SolrCore core = (SolrCore) context.get("solr-core");
@@ -196,7 +196,6 @@ public class CatStream extends TupleStream implements Expressible {
     return false;
   }
 
-  @SuppressWarnings({"unchecked"})
   private Tuple fetchNextLineFromCurrentFile() {
     linesReturned++;
 
@@ -222,7 +221,7 @@ public class CatStream extends TupleStream implements Expressible {
     }
   }
 
-  private void findReadableFiles(CrawlFile seed, List<CrawlFile> foundFiles) {
+  private static void findReadableFiles(CrawlFile seed, List<CrawlFile> foundFiles) {
 
     final File entry = new File(seed.absolutePath);
 
@@ -250,7 +249,7 @@ public class CatStream extends TupleStream implements Expressible {
   // A pair of paths for a particular file to stream:
   // - absolute path for reading,
   // - display path to avoid leaking Solr node fs details in tuples (relative to chroot)
-  public class CrawlFile {
+  public static class CrawlFile {
     private final String displayPath;
     private final String absolutePath;
 

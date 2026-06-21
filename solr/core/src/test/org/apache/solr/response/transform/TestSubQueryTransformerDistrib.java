@@ -31,21 +31,23 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @org.apache.solr.SolrTestCaseJ4.SuppressSSL()
@@ -62,7 +64,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     
     differentUniqueId = random().nextBoolean();
     
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
@@ -83,32 +85,35 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
         .withProperty("config", "solrconfig-doctransformers.xml")
-        .withProperty("schema", 
+        .withProperty("schema",
               differentUniqueId ? "schema-minimal-with-another-uniqkey.xml":
                                   "schema-docValuesJoin.xml")
         .process(cluster.getSolrClient());
 
-    CloudSolrClient client = cluster.getSolrClient();
+    // createCollection().process() returns once the collection appears, but under heavy load a
+    // replica can still be recovering when indexing starts. The first update batch issues a
+    // *:* delete + adds; a replica that misses it (or is not yet caught up) stays permanently
+    // short, and the distributed subquery randomly fans out to it -> the deptMultiplier*2 count
+    // flakes. Block until every replica of both collections is ACTIVE before indexing.
+    cluster.waitForActiveCollection(people, shards, shards * replicas);
+    cluster.waitForActiveCollection(depts, shards, shards * replicas);
+
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(people);
-    
-    ZkStateReader zkStateReader = client.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
   }
   
   
   @SuppressWarnings("serial")
   @Test
   public void test() throws Exception {
-    int peopleMultiplier = atLeast(1);
-    int deptMultiplier = atLeast(1);
+    int peopleMultiplier = SolrTestUtil.atLeast(1);
+    int deptMultiplier = SolrTestUtil.atLeast(1);
     
     createIndex(people, peopleMultiplier, depts, deptMultiplier);
     
     Random random1 = random();
     
-    final ModifiableSolrParams params = params(
+    final ModifiableSolrParams params = SolrTestCaseJ4.params(
         new String[]{"q","name_s:dave", "indent","true",
             "fl","*,depts:[subquery "+((random1.nextBoolean() ? "" : "separator=,"))+"]",
             "rows","" + peopleMultiplier,
@@ -126,8 +131,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     final SolrDocumentList hits;
     {
       final QueryRequest qr = new QueryRequest(params);
-      final QueryResponse  rsp = new QueryResponse();
-      rsp.setResponse(cluster.getSolrClient().request(qr, people+","+depts));
+      final QueryResponse  rsp = new QueryResponse(cluster.getSolrClient().request(qr, people+","+depts), cluster.getSolrClient());
+
       hits = rsp.getResults();
       
       assertEquals(peopleMultiplier, hits.getNumFound());
@@ -182,23 +187,23 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     List<String> peopleDocs = new ArrayList<>();
     for (int p=0; p < peopleMultiplier; p++){
 
-      peopleDocs.add(add(doc("id", ""+id++,"name_s", "john", "title_s", "Director", 
+      peopleDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc("id", ""+id++,"name_s", "john", "title_s", "Director",
                                                       "dept_ss_dv","Engineering",
                                                       "dept_i", "0",
                                                       "dept_is", "0")));
-      peopleDocs.add(add(doc("id", ""+id++,"name_s", "mark", "title_s", "VP", 
+      peopleDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc("id", ""+id++,"name_s", "mark", "title_s", "VP",
                                                          "dept_ss_dv","Marketing",
                                                          "dept_i", "1",
                                                          "dept_is", "1")));
-      peopleDocs.add(add(doc("id", ""+id++,"name_s", "nancy", "title_s", "MTS",
+      peopleDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc("id", ""+id++,"name_s", "nancy", "title_s", "MTS",
                                                          "dept_ss_dv","Sales",
                                                          "dept_i", "2",
                                                          "dept_is", "2")));
-      peopleDocs.add(add(doc("id", ""+id++,"name_s", "dave", "title_s", "MTS", 
+      peopleDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc("id", ""+id++,"name_s", "dave", "title_s", "MTS",
                                                          "dept_ss_dv","Support", "dept_ss_dv","Engineering",
                                                          "dept_i", "3",
                                                          "dept_is", "3", "dept_is", "0")));
-      peopleDocs.add(add(doc("id", ""+id++,"name_s", "tina", "title_s", "VP", 
+      peopleDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc("id", ""+id++,"name_s", "tina", "title_s", "VP",
                                                          "dept_ss_dv","Engineering",
                                                          "dept_i", "0",
                                                          "dept_is", "0")));
@@ -209,13 +214,13 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     List<String> deptsDocs = new ArrayList<>();
     String deptIdField = differentUniqueId? "notid":"id";
     for (int d=0; d < deptMultiplier; d++) {
-      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Engineering", "text_t",engineering, "salary_i_dv", "1000",
+      deptsDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc(deptIdField,""+id++, "dept_id_s", "Engineering", "text_t",engineering, "salary_i_dv", "1000",
                                      "dept_id_i", "0")));
-      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Marketing", "text_t","These guys make you look good","salary_i_dv", "1500",
+      deptsDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc(deptIdField,""+id++, "dept_id_s", "Marketing", "text_t","These guys make you look good","salary_i_dv", "1500",
                                      "dept_id_i", "1")));
-      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Sales", "text_t","These guys sell stuff","salary_i_dv", "1600",
+      deptsDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc(deptIdField,""+id++, "dept_id_s", "Sales", "text_t","These guys sell stuff","salary_i_dv", "1600",
                                     "dept_id_i", "2")));
-      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Support", "text_t",support,"salary_i_dv", "800",
+      deptsDocs.add(SolrTestCaseJ4.add(SolrTestCaseJ4.doc(deptIdField,""+id++, "dept_id_s", "Support", "text_t",support,"salary_i_dv", "800",
                                     "dept_id_i", "3")));
       
     }
@@ -230,12 +235,12 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     for (Iterator<String> iterator = docs.iterator(); iterator.hasNext();) {
       String add =  iterator.next();
       upd.append(add);
-      if (rarely()) {
-        upd.append(commit("softCommit", "true"));
+      if (LuceneTestCase.rarely()) {
+        upd.append(SolrTestCaseJ4.commit("softCommit", "true"));
       }
-      if (rarely() || !iterator.hasNext()) {
+      if (LuceneTestCase.rarely() || !iterator.hasNext()) {
         if (!iterator.hasNext()) {
-          upd.append(commit("softCommit", "false"));
+          upd.append(SolrTestCaseJ4.commit("softCommit", "false"));
         }
         upd.append("</update>");
         

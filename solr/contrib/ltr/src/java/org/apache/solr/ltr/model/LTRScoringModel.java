@@ -292,7 +292,7 @@ public abstract class LTRScoringModel implements Accountable {
 
   @Override
   public String toString() {
-    return  getClass().getSimpleName() + "(name="+getName()+")";
+    return  getClass().getSimpleName() + "(name="+ name +")";
   }
 
   /**

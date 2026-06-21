@@ -1,0 +1,631 @@
+# Upstream Apache Solr — Bugs & Optimizations Since Fork Divergence
+
+Fork diverged from upstream at `4dcdd750` (*SOLR-14545: Fix or suppress warnings in apache/solr/update*, 2020-06-08). This catalogs **bug fixes** and **optimizations** landed on `apache/solr` `main` afterward.
+
+**Categorization is authoritative**: derived from upstream `solr/CHANGES.txt` (`Optimizations` / `Bug Fixes` sections) and the newer `changelog/*.yml` entries, intersected with the 5,240 post-divergence non-merge commits. A supplementary section lists keyword-detected fixes that carry no JIRA/PR id in CHANGES (verify before relying on).
+
+**Applicability pass applied.** Items whose commit(s) touch *no* file present in the fork were removed as non-applicable — i.e. ref-guide/doc typos, changelog/CI/build/lockfile churn, benchmark & test-infra, **Lucene-source** fixes (the fork pins the released Lucene 9.0.0 *jar*, so there is no Lucene source to patch), and fork-deleted components (Apache-HttpClient-based SolrJ clients such as `HttpSolrClient`, the removed autoscaling `Policy`/`PolicyHelper`, and the Solr-9 `cluster/placement` plugins that never existed in this 8.6-era fork). Anything touching a package still present in the fork was **kept** (treated as "unsure"), even when upstream later renamed the class.
+
+Totals after the pass — Optimizations: **77** · Bug Fixes: **436** · Untracked (keyword) opt: **2** · Untracked (keyword) bug: **92** · Grand total: **607**
+
+Each item: representative upstream commit SHA, date, subject. Ordered oldest→newest.
+
+
+## Optimizations — from CHANGES (77)
+
+- [ ] `9728f4ef201d` 2020-06-10 — **SOLR-14552** Add BMW support to ReRank queries (#1559)
+- [ ] `a1be1de67e64` 2020-06-22 — **SOLR-14554** Let Solr use WAND algorithm when scores are requested (#1566)
+- [ ] `68a9e8fc97b6` 2020-06-26 — **SOLR-14376** remove no-longer-needed 'not no filter queries' check in SolrFeatureWeight
+- [ ] `5154b6008f54` 2020-07-07 — **SOLR-14634** Limit the HTTP security headers to "/solr" end point (#1655)
+- [ ] `a80eb84d5659` 2020-07-07 — **SOLR-14354** HttpShardHandler send requests in async (#1470)
+- [ ] `4ae976bdf0b2` 2020-07-09 — **SOLR-14610** CHANGES.txt
+- [ ] `c20501a5044e` 2020-07-09 — **SOLR-13132** fix some small package visibility and javadoc glitches that were caught on backport by the java8/branch_8x precommit but slipped past the java11/master precommit
+- [ ] `6ab3660f25b8` 2020-09-02 — **SOLR-14422** was committed to master but not documented
+- [ ] `2544df8f6d9a` 2020-09-03 — **SOLR-14658** SolrJ collectionStatus(col) should only fetch one status (#1687)
+- [ ] `22abecdbc13b` 2020-09-03 — **SOLR-14819** Fix inefficient iterator pattern in JsonSchemaValidator.
+- [ ] `8c41418c0fb3` 2020-10-08 — **SOLR-14576** Do not use SolrCore as keys in a WeakHashMap (#1586)
+- [ ] `9594ab3ac01c` 2020-10-13 — **SOLR-14776** Precompute the fingerprint during PeerSync (#1814)
+- [ ] `91ee53d41873` 2020-11-11 — **SOLR-14975** Add entry in CHANGES.txt
+- [ ] `8b272a0960b6` 2020-12-22 — **SOLR-15049** Add TopLevelJoinQuery optimization for 'self-joins' (#2146)
+- [ ] `4cb3ad4a1c40` 2021-01-07 — **SOLR-14923** Nested docs indexing perf & robustness (#2159)
+- [ ] `6711eb757172` 2021-01-11 — **SOLR-15036** auto- select / rollup / sort / plist over facet expression when using a collection alias with multiple collections (#2132)
+- [ ] `a4aa3d1d4f6c` 2021-01-19 — **SOLR-15079** Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
+- [ ] `0d4769e174aa` 2021-01-29 — **SOLR-15120** Reduce duplicated core creation work (#2266)
+- [ ] `1adedf548839` 2021-04-25 — **SOLR-15067** Child doc transformer should use the perSegFilter cache (#92)
+- [ ] `2801defab5d8` 2021-05-18 — **SOLR-15315** contrib/ltr MultipleAdditiveTreesModel latency optimisation by changing recursion to loop (#58)
+- [ ] `26d3f9516238` 2021-05-25 — **SOLR-15433** Replace transient core cache LRU by Caffeine cache.
+- [ ] `afdf88680a13` 2021-07-21 — **SOLR-15496** remove deprecated LTRRescorer.sortByScore method
+- [ ] `29bd686ee0c3` 2022-03-30 — **SOLR-16120** optimise hl.fl expansion (#767)
+- [ ] `3621ef3be093` 2022-04-04 — **SOLR-14765** Optimize DocList creation by skipping sort for sort-irrelevant cases (#592)
+- [ ] `d2a619768d04` 2022-06-06 — **SOLR-16146** removed unused code
+- [ ] `13b1fd20db9f` 2022-06-27 — **SOLR-16266** Eliminate unneccessary byte[] copy in Http2SolrClient
+- [ ] `3540e7cd3a83` 2022-08-08 — **SOLR-9359** Make Config API work for warming queries (#875)
+- [ ] `d7a4c6fd0fb0` 2022-08-31 — **SOLR-16336** avoid fetching solrconfig.xml & schema.xml for already cached schema and config (#987)
+- [ ] `1b7ff717b191` 2022-09-07 — **SOLR-16328** intern() strings in DocCollection to reduce memory footp… (#965)
+- [ ] `fc2f67487b68` 2022-10-14 — **SOLR-16445** Leader message should only be sent when there is more than one (NRT+Tlog) replica
+- [ ] `53d90030d0c4` 2022-11-04 — **SOLR-16515** [SOLR-16515] Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (#1156)
+- [ ] `30bf94db62fd` 2022-11-22 — **SOLR-16555** SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (#1184)
+- [ ] `dcfdc68e5691` 2022-12-07 — **SOLR-15732** addressing test failures
+- [ ] `9f2a95f5fabf` 2023-01-23 — **SOLR-15616** Fixing tidy formatting
+- [ ] `73c938ad2ce7` 2023-01-30 — **SOLR-16615** Reinstate Jersey app-per-configset (#1314)
+- [ ] `c6706dfdbaa4` 2023-03-11 — **SOLR-16487** Improve Pull Replica Interval (#1437)
+- [ ] `44c750a29ecc` 2023-03-13 — **SOLR-16689** Improving efficiency of replication process (#1442)
+- [ ] `a50cb06b2f30` 2023-03-16 — **SOLR-16694** Shortcut Http2SolrClient mimeType check for default response parse (#1447)
+- [ ] `cc35c1e3bc46` 2023-03-17 — **SOLR-16692** Let users set the CookieStore implementation in Http2SolrClient (#1445)
+- [ ] `4ff4a311d590` 2023-05-02 — **SOLR-16764** Be clearer that bin/solr export uses JSONL, not JSON format. Fix up how files are named and output and add tests. (#1614)
+- [ ] `f3b0386f724f` 2023-05-30 — **SOLR-14630** SolrJ queries: form the URL to the replica (#1646)
+- [ ] `4362568f5fe0` 2023-06-11 — **SOLR-16273** Prometheus Exporter is very slow when collecting large amounts of sample data (#1627)
+- [ ] `3b22f62b0df8` 2023-06-23 — **SOLR-16846** Use IndexOrDocValuesQuery for PointFields on Set queries (#1706)
+- [ ] `19a02650ab76` 2023-07-07 — **SOLR-16869** Use Panama Vector apis for Java 20/21 (#1758)
+- [ ] `c4fb1010285d` 2023-07-15 — **SOLR-16845** BinaryResponseWriter should not attempt cast to Utf8CharSequence (#1728)
+- [ ] `f896ad9c1fc0` 2023-07-23 — **SOLR-16693** upgrade notes (#1803)
+- [ ] `c79c8994b5e2` 2023-08-22 — **SOLR-16265** Fix NPE for req in Http2SolrClient (#1860)
+- [ ] `dafbe800c2f7` 2023-09-26 — **SOLR-16989** Optimize and consolidate reuse of DocValues iterators for value retrieval (#1938)
+- [ ] `3e7d11f638c7` 2023-10-02 — **SOLR-17004** Move CHANGES to 9.4
+- [ ] `1f42897ab71a` 2023-12-02 — **SOLR-17084** CHANGES.txt update
+- [ ] `ad586a8b446a` 2024-01-08 — **SOLR-17036** Add missing SOLR-17036 in CHANGES.txt
+- [ ] `3ab16670d13c` 2024-02-03 — **SOLR-17144** Do not keep an active thread per core (#2236)
+- [ ] `b7d4ef867a46` 2024-05-01 — **SOLR-17257** Avoid instantiating NodeStateProvider several times when computing replica placement (#2420)
+- [ ] `d1a4cbe487a0` 2024-06-05 — **SOLR-17099** snitch does not return spurious tags (#2278)
+- [ ] `2193374ef0cf` 2024-06-22 — **SOLR-17330** When not set, loadOnStartup defaults to true (#2513)
+- [ ] `502faf224ba2` 2024-06-26 — **SOLR-16677** Update Solr to use new Lucene 9.5 storedFields() API (#1557)
+- [ ] `9a86b2102ef2` 2024-07-09 — **SOLR-17349** (adjusted) SolrDocumentFetcher should always skip lazy field loading overhead if documentCache==null (#2551)
+- [ ] `0da7a784353e` 2024-07-22 — **SOLR-17340** /admin/info/system optimization by caching BeanInfo (#2538)
+- [ ] `88fa6208c0f2` 2024-08-01 — **SOLR-14985** CloudSolrClient with Solr URLs wasn't caching state (#2571)
+- [ ] `7ccf4d3c9af7` 2024-08-06 — **SOLR-17102** Replaced VersionBucket array with locks on-demand (#2548)
+- [ ] `49b24d532e77` 2024-08-08 — **SOLR-17396** fix CHANGES.txt
+- [ ] `83e5778af58c` 2024-08-09 — **SOLR-17386** SOLR-17269, SOLR-17386: Fixed SyntheticSolrCore reload issue (#2607)
+- [ ] `83e5778af58c` 2024-08-09 — **SOLR-17269** , SOLR-17386: Fixed SyntheticSolrCore reload issue (#2607)
+- [ ] `bc8dcd5ffd02` 2024-08-22 — **SOLR-17408** COLSTATUS shouldn't talk to replicas if not needed (#2645)
+- [ ] `94146c1c3084` 2024-08-27 — **SOLR-3913** Optimize the commit/optimize cycle in the PostTool (#2667)
+- [ ] `ee5c9bedf069` 2024-09-27 — **SOLR-17441** MetricUtils: Skip Unreadable Properties (#2694)
+- [ ] `b657ec0c2176` 2024-11-07 — **SOLR-17453** Leverage waitForState() instead of busy waiting (#2737)
+- [ ] `3e358911be52` 2024-12-03 — **SOLR-17568** SolrCloud shouldn't proxy/route a core specific request (#2885)
+- [ ] `d2045f679e55` 2024-12-09 — **SOLR-17381** Fix CloudSolrClient.getClusterState when HTTP CSP (not ZK) (#2853)
+- [ ] `b2f8b109dd78` 2024-12-11 — **SOLR-17578** Remove ZkController internal core supplier. (#2891)
+- [ ] `864c5e4c0f72` 2024-12-12 — **SOLR-17592** CHANGES.txt: SOLR-17592 and SOLR-17290
+- [ ] `5ddaf5f9d95f` 2025-02-25 — **SOLR-17669** SolrJ getBeans: reduce memory for dynamic/wildcard Field annotated methods (#3179)
+- [ ] `2041d1d0e6ab` 2025-05-21 — **SOLR-17756** Parallelize calculation of index fingerprint across segments (#3352)
+- [ ] `e160aeb65d8f` 2025-06-19 — **SOLR-17775** avoid over-calling ReaderUtil.subIndex (#3386)
+- [ ] `50655d0e1b27` 2025-06-27 — **SOLR-17582** Fix ClusterState serializing for older SolrJ versions (#3410)
+- [ ] `df686ddc0cac` 2025-06-30 — **SOLR-17130** edismax MatchAllDocsQuery (*:*) Optimization (#2218)
+- [ ] `b61fdcbbec44` 2025-06-30 — **SOLR-17801** Use TotalHitCountCollector to collect count when no rows needed (#2655)
+
+## Bug Fixes — from CHANGES (436)
+
+- [ ] `53040984f62e` 2020-06-10 — **SOLR-14345** return correct err msg when non-binary resp parser is used
+- [ ] `001c4e2ddd51` 2020-06-10 — **SOLR-14550** fix duplicate issue in Atomic updates with add-distinct
+- [ ] `cfae052973a9` 2020-06-17 — **SOLR-14577** Return BAD REQUEST when field is missing in terms QP (#1588)
+- [ ] `3f4f5e2f76a6` 2020-06-23 — **SOLR-14584** CHANGES.txt entry
+- [ ] `3c6e09268cc8` 2020-06-23 — **SOLR-14546** add a Bug Fixes section for Solr 9.0.0 in CHANGES.txt (#1607)
+- [ ] `419560ef2a5a` 2020-06-25 — **SOLR-14409** Existing violations allow bypassing policy rules when add… (#1598)
+- [ ] `31e7ad9ee287` 2020-07-06 — **SOLR-14628** hl.fragsizeIsMinimum now defaults to true (#1651)
+- [ ] `4b2e90b3aaf6` 2020-07-24 — **SOLR-11656** TLOG replication doesn't work properly after rebalancing leaders.
+- [ ] `ebb5219b1b7d` 2020-07-29 — **SOLR-14671** Parsing dynamic ZK config sometimes cause NuberFormatException (#1701)
+- [ ] `07a89e7bf627` 2020-07-31 — **SOLR-14516** fix NPE is resp writer while writing docvalue only field
+- [ ] `a6c058a26094` 2020-08-03 — **SOLR-14657** Improve error handling in IndexReader realted metrics that were causing scary ERROR logging if metrics were requested while Solr was in the process of closing/re-opening a new IndexReader
+- [ ] `a6515ca38f98` 2020-08-12 — **SOLR-14748** Correct condition on startup auth/ssl logging
+- [ ] `216aec03a6f6` 2020-08-13 — **SOLR-14677** Always close DIH EntityProcessor/DataSource (#1741)
+- [ ] `44c4e6ef311e` 2020-08-14 — **SOLR-14703** Edismax parser replaces whitespace characters with spaces (#1713)
+- [ ] `bed3b8fbfbc5` 2020-08-14 — **SOLR-14751** Zookeeper Admin screen not working for old ZK versions
+- [ ] `4761dbabd9be` 2020-08-24 — **SOLR-14700** avoid NPEs in TupleStream.getShards() when streamContext is null. (#1754)
+- [ ] `f4c4fbcafc59` 2020-08-26 — **SOLR-14752** Fix error in Zookeeper status when Prometheus plugin is enabled in ZK
+- [ ] `59d087f0b391` 2020-08-28 — **SOLR-14774** Create HealthCheckHandler in CoreContainer (#1774)
+- [ ] `070237cd97cd` 2020-09-01 — **SOLR-14714** Solr.cmd in windows loads the incorrect jetty module when using java>=9
+- [ ] `ecb8ca2fef7c` 2020-09-04 — **SOLR-14821** {!terms} dVTFTL supports single-valued strings
+- [ ] `9a6ca2dcd088` 2020-09-17 — **SOLR-14859** Set fieldType defaults for DateRangeField
+- [ ] `7b5367192084` 2020-09-22 — **SOLR-14768** Fix multipart POST to Solr. (#1838)
+- [ ] `2197776be673` 2020-09-22 — **SOLR-13181** param macro expansion could throw (#1877)
+- [ ] `ddd10725b006` 2020-09-23 — **SOLR-14503** use specified waitForZk val as conn timeout for zk
+- [ ] `3dcb19f88670` 2020-09-28 — **SOLR-14897** limit no of forwarding for given request
+- [ ] `8b329a09c215` 2020-09-29 — **SOLR-14850** Correct the spelling in contributor's name.
+- [ ] `8c7502dfeb5b` 2020-09-29 — **SOLR-14898** Stop returning duplicate HTTP response headers when requests are forward to another node
+- [ ] `8f2f80bbb3c3` 2020-10-01 — **SOLR-14663** Copy ConfigSet root data from base ConfigSet when using CREATE command
+- [ ] `fa3e1ad71fd9` 2020-10-14 — **SOLR-14869** ChildDocTransformer should have omitted deleted child documents. Closes #1970
+- [ ] `6ac5747d7630` 2020-10-15 — **SOLR-14549** Fix listing of Files in a Directory on Solr Admin UI
+- [ ] `d7e58ede0ed2` 2020-10-15 — **SOLR-14483** (#1988)
+- [ ] `6d00843d9705` 2020-10-16 — **SOLR-14940** Fix ReplicationHandler memory leak through SolrCore.closeHooks
+- [ ] `3bc873e6d403` 2020-10-19 — **SOLR-14936** Fixed Grafana dashboard filters for collection, shard, replica and core (#1986)
+- [ ] `e7f0294d85db` 2020-10-28 — **SOLR-14961** ZkMaintenanceUtils.clean doesn't remove zk nodes with same length
+- [ ] `f3fdd9b90b8e` 2020-10-30 — **SOLR-14946** fix responseHeader returned in resp with omitHeader=true (#2029)
+- [ ] `be19432b750b` 2020-11-09 — **SOLR-14969** Prevent creating multiple cores with the same name which leads to instabilities (race condition) changed error code
+- [ ] `a7197ac0ce83` 2020-11-11 — **SOLR-14971** Handle atomic-removes on uncommitted docs (#2056)
+- [ ] `2f02040a4c45` 2020-11-12 — **SOLR-14983** Fix response returning original score instead of reranked score due to query and filter combining. (Krishan Goyal, Jason Baik, Christine Poerschke)
+- [ ] `cb5ba42bd7d9` 2020-11-20 — **SOLR-15009** Propogate IOException from DF.exists
+- [ ] `77a205387f69` 2020-11-22 — **SOLR-14993** Unable to download zookeeper files of 1byte in size
+- [ ] `0846da5c2280` 2020-11-25 — **SOLR-14950** fix regenerating of copyfield with explicit src/dest matching dyn rule
+- [ ] `d7fd3d8c20e8` 2020-11-25 — **SOLR-12539** handle extra spaces in JSON facet shorthand syntax
+- [ ] `6ff4a9b395a6` 2020-11-26 — **SOLR-14514** add extra checks for picking 'stream' method in JSON facet
+- [ ] `98f12f4aeb9f` 2020-11-27 — **SOLR-15031** Prevent null being wrapped in a QueryValueSource
+- [ ] `99c38eee491a` 2020-11-27 — **SOLR-14851** Http2SolrClient doesn't handle keystore type (#2098)
+- [ ] `2c1ec75eaaa6` 2020-11-29 — **SOLR-12559** fix error when multi-val fields are derefernced in JSON aggs
+- [ ] `feb897a96245` 2020-12-01 — **SOLR-15017** Core's lib/ dir was ignored sometimes (#2107)
+- [ ] `4c100a0175e2` 2020-12-02 — **SOLR-12182** Fix Changes.txt in master (#2116)
+- [ ] `5208d47e1a20` 2020-12-02 — **SOLR-14934** Remove redundent deprecated "solr.solr.home" logic
+- [ ] `0b5003cfed51` 2020-12-16 — **SOLR-14939** JSON range faceting to support cache=false parameter (#1992)
+- [ ] `fa41ea51d4ec` 2020-12-17 — **SOLR-15046** Add two solr/CHANGES.txt entries for SOLR-14981 and SOLR-15046. (#2149)
+- [ ] `5e21e3f380be` 2020-12-24 — **SOLR-15061** Fix NPE in SearchHandler when shards.info and no QueryComponent configured
+- [ ] `a48e937f599b` 2021-01-05 — **SOLR-15048** Fixed collapse parser behavior when dealing with docs boosted by QueryElevationComponent that are in the null group to treat them consistently regardless of collapse field type or group head selector
+- [ ] `a677d2247a9e` 2021-01-05 — **SOLR-14571** Download speed was hard-coded in the Replication screen of the Solr Admin UI. (Florin Babes via Christine Poerschke)
+- [ ] `2fcaba1ce24a` 2021-01-05 — **SOLR-15058** Enforce node_name contains colon and port and find first underscore after colon to parse context (#2178)
+- [ ] `07071ca8e107` 2021-01-06 — **SOLR-15047** Fix collapse parser behavior when collapsing on numeric fields to differentiate '0' group from null group
+- [ ] `d4fa1aae213a` 2021-01-07 — **SOLR-10860** Return proper error code for bad input incase of inplace updates (#2121)
+- [ ] `98c51ca34b06` 2021-01-11 — **SOLR-15070** Remove HashMap usage in SuggestComponent rsp (#2183)
+- [ ] `32e95ddb3f25` 2021-01-22 — **SOLR-15071** Fix ArrayIndexOutOfBoundsException in contrib/ltr SolrFeatureScorer (#2196)
+- [ ] `9d4811e02f0d` 2021-01-22 — **SOLR-15073** Fix ClassCastException in SystemInfoHandler.getSecurityInfo.
+- [ ] `166d39a12eff` 2021-01-25 — **SOLR-14924** SOLR-15076: Fix wrong test assumption - type of this property has changed in SOLR-14924.
+- [ ] `47a89aca715e` 2021-01-25 — **SOLR-15078** Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group
+- [ ] `b6db6c88d7bc` 2021-02-11 — **SOLR-15114** Add CHANGES entry
+- [ ] `938039a6889f` 2021-02-12 — **SOLR-15136** Reduce excessive logging introduced with Per Replica States feature
+- [ ] `97763ad3cef7` 2021-02-14 — **SOLR-15145** Additional fix for SolrJ back-compat (#2366)
+- [ ] `83ccf23fa205` 2021-02-15 — **SOLR-15138** Send an intra-process message after ZkClient#create() call
+- [ ] `0671ef5e5ffc` 2021-02-16 — **SOLR-15149** messages expected in tests fixed
+- [ ] `75fd9ef7852e` 2021-02-16 — **SOLR-15135** Use DocCollection to generate state.json format expected by UI to work with perReplicaState collections. (#2383)
+- [ ] `2f0d191452b9` 2021-02-20 — **SOLR-15162** Add some parameters to make MODIFYCOLLECTION v1 and v2 more similar.    (#2402)
+- [ ] `62971c4f9904` 2021-02-25 — **SOLR-13034** RTG sometimes didn't materialize LazyField (#2408)
+- [ ] `c7abf3f32ca4` 2021-03-24 — **SOLR-15217** Rename shardsWhitelist and extract AllowListUrlChecker.
+- [ ] `7ab60a2b8391` 2021-03-26 — **SOLR-15191** Fix testFacetEnumSearch
+- [ ] `3a533aa2dfbe` 2021-03-27 — **SOLR-15273** Distributed Group Query supports rename unique key field name (#35)
+- [ ] `def7f47a4d23` 2021-04-02 — **SOLR-15233** Set doAs in ConfigurableInternodeAuthHadoopPlugin
+- [ ] `59a59138668e` 2021-04-05 — **SOLR-11921** Move "cursorMark" logic from QueryComponent to SearchHandler so it can work with things like QueryElevationComponent that modify the SortSpec in prepare(), as well as possible custom "search" components other then QueryComponent
+- [ ] `c8ef5e9c3dbe` 2021-04-06 — **SOLR-15249** Update unit test
+- [ ] `ddf9dc7d21c9` 2021-04-11 — **SOLR-15288** fix DOWNNODE issue for PRS collections when cluster state updates are distributed (#71)
+- [ ] `d0adf4d815d0` 2021-04-23 — **SOLR-15334** NPE when test is ignored
+- [ ] `7c4567c8c491` 2021-04-29 — **SOLR-15383** Solr Zookeeper status page shows green even for down Zookeepers (#103)
+- [ ] `69ff66322a19` 2021-05-06 — **SOLR-15384** Zookeeper admin handlers not queryable from SolrJ (#105)
+- [ ] `30e34d8563d1` 2021-05-17 — **SOLR-11904** Move SOLR-11904 under 8.9 in solr/CHANGES.txt now that backport is complete
+- [ ] `c731873aef43` 2021-05-20 — **SOLR-15399** IndexFetcher should not issue a local commit for PULL replicas (#133)
+- [ ] `f36262d7426b` 2021-05-20 — **SOLR-15424** Solr replication UI wraps ETA time (#137)
+- [ ] `aeb617d5c59f` 2021-05-24 — **SOLR-15418** V2 API: Fix GET to /select and others (#134)
+- [ ] `112585ee082d` 2021-06-04 — **SOLR-15311** docs: document 'async' as MODIFYCOLLECTION parameter (#161)
+- [ ] `260e3f0b6c69` 2021-06-09 — **SOLR-15457** fix test; bad backport facet counts are now "long" not "int"
+- [ ] `b113d36017b3` 2021-06-09 — **SOLR-15410** Always use -Xverbosegclog for OpenJ9 (#131)
+- [ ] `9791057a8520` 2021-06-09 — **SOLR-15449** edismax sow and mm (#158)
+- [ ] `1925693127e8` 2021-07-29 — **SOLR-15482** correct CHANGES.txt entry erroneously refering to SOLR-15531
+- [ ] `1925693127e8` 2021-07-29 — **SOLR-15531** SOLR-15482: correct CHANGES.txt entry erroneously refering to SOLR-15531
+- [ ] `83770854a358` 2021-08-03 — **SOLR-14506** Fix NPE in COLSTATUS for collections using implicit routing.
+- [ ] `dd655f700f25` 2021-08-04 — **SOLR-15575** Propagate request level basic auth creds from the top-level request to internally used async requests (#246)
+- [ ] `c63be9cfb4e2` 2021-08-07 — **SOLR-15558** Identify zombie processes when stopping
+- [ ] `38848e62b246` 2021-08-12 — **SOLR-15579** Re-configure calcite to allow more values in an IN clause (#249)
+- [ ] `47c1fdcfb70d` 2021-08-15 — **SOLR-14758** Fix query execution to pass shards
+- [ ] `5c3465eb4985` 2021-08-16 — **SOLR-8889** Fixed various problems in Solr and SolrJ that could cause deleteById commands with "_route_" information to processed by the wrong shard, and/or fail when forwarded to replicas from the shard leader.
+- [ ] `2fa1e50d17fc` 2021-08-18 — **SOLR-13209** Fix NPE when no grouping query specified
+- [ ] `0a81be3439eb` 2021-08-25 — **SOLR-15324** Upgrade Jaeger dependency from 1.1.0 to 1.6.0 (#268)
+- [ ] `9d33530da1e5` 2021-09-02 — **SOLR-6156** Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed (#248)
+- [ ] `812de21e75de` 2021-09-03 — **SOLR-15595** Partial results from shard queries needlessly discarded for queries without sort fields (#267)
+- [ ] `42b2ff5c61ef` 2021-09-03 — **SOLR-14457** Fix closing of malformed GZIPInputStream (#283)
+- [ ] `99713cb31f65` 2021-09-09 — **SOLR-15620** Download Config button in Schema Designer screen should not require user to re-login when already authenticated (#291)
+- [ ] `bafbdb23bd3e` 2021-10-01 — **SOLR-15653** Fix collection creation race that assumes a local clusterstate when the collection has only just been created.
+- [ ] `d013e9b48565` 2021-10-07 — **SOLR-15626** Fix `config-read` permission. (#296)
+- [ ] `1c21e7a1b4be` 2021-10-12 — **SOLR-15691** Admin UI raises yellow warning even when only case differ (#345)
+- [ ] `174f7c17e978` 2021-10-21 — **SOLR-15702** Fix S3Repository to follow BackupRepository.createDirectory() API contract
+- [ ] `1a35c83647cd` 2021-10-22 — **SOLR-15696** CHANGES.txt entry
+- [ ] `d65a69df611a` 2021-10-25 — **SOLR-15628** Update changes on main branch to reflect backport to 8x for 8.11
+- [ ] `8c3bf90ff60e` 2021-10-28 — **SOLR-15676** add solr/CHANGES.txt entry
+- [ ] `7076359155e0` 2021-10-29 — **SOLR-15722** (#374)
+- [ ] `b3835dca6438` 2021-11-03 — **SOLR-15766** MultiAuthPlugin should send non-AJAX anonymous requests to the plugin that allows anonymous requests (#394)
+- [ ] `b532f4dc604d` 2021-11-04 — **SOLR-15706** Fix incorrect path in backup purging
+- [ ] `2d2d4c4502e3` 2021-11-09 — **SOLR-10529** Revert change to solrconfig for techproducts example as it introduced test failures
+- [ ] `2e5f89a87296` 2021-11-11 — **SOLR-15783** Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available
+- [ ] `c2dcba1599bc` 2021-11-16 — **SOLR-15635** move to 8.11.1 in CHANGES.txt (#417)
+- [ ] `70a19f921b6b` 2021-11-16 — **SOLR-15795** Fix REPLACENODE to not use source node (#414)
+- [ ] `847905520e41` 2021-11-16 — **SOLR-14781** Delete unused classes (#330)
+- [ ] `5866f807247f` 2021-11-18 — **SOLR-15774** Move changes entry to 8.11.1 section
+- [ ] `470b7fbff96a` 2021-11-30 — **SOLR-15813** Schema designer not handling  stored as a string (vs. boolean) in the config overlay (#435)
+- [ ] `7ea2530e31d7` 2021-11-30 — **SOLR-13900** Reset index values on authorization rules after deleting by index (#434)
+- [ ] `f49734e5f73b` 2021-12-02 — **SOLR-15825** Security UI 'hasPermission' check should check if the user has the all permission if the requested permission is not defined (#437)
+- [ ] `cfc953b6b906` 2021-12-02 — **SOLR-15828** AuthTool (in SolrCLI) should include the config-read, collection-admin-read, core-admin-read, and all permissions in the initial security.json (#438)
+- [ ] `b144f7341837` 2021-12-03 — **SOLR-15199** Pass thru all command actions not explicitly handled by the bin/solr script, such as 'api', to the SolrCLI Java app (#441)
+- [ ] `d172b2c7ae8e` 2021-12-05 — **SOLR-15826** Simplify some code in SolrResourceLoader, consider PR feedback (#443)
+- [ ] `0287458f836e` 2021-12-06 — **SOLR-15833** Spatial types should work with exists query (#446)
+- [ ] `10fb66fcfc9d` 2021-12-08 — **SOLR-15832** Clean-up after publish action in Schema Designer shouldn't fail if .system collection doesn't exist (#451)
+- [ ] `82f9d473b9e6` 2021-12-10 — **SOLR-8319** Fix cluster usage in FacetPivot2CollectionsTest
+- [ ] `cabf786f09d1` 2021-12-13 — **SOLR-15804** Support leading slash for "file" parameter, to mean relative to config dir. Support text/javascript (#456)
+- [ ] `d2c49c6ed6e0` 2021-12-14 — **SOLR-15843** Update Log4J from 2.15 to 2.16 (#457)
+- [ ] `48ffa68aecc9` 2021-12-15 — **SOLR-15849** Incorrect use Zookeeper 4LW (#458)
+- [ ] `1217f486f191` 2022-01-03 — **SOLR-15871** Upgrade to Log4j 2.17.1 (#489)
+- [ ] `64c02c05667a` 2022-01-13 — **LUCENE-9047** SOLR-15405: Make HDFS handle little endian LUCENE-9047
+- [ ] `64c02c05667a` 2022-01-13 — **SOLR-15405** Make HDFS handle little endian LUCENE-9047
+- [ ] `bf55ef080160` 2022-01-21 — **SOLR-15944** Tagger: JSON response should use map not array (#552)
+- [ ] `cf64d6e6c365` 2022-01-24 — **SOLR-15842** Fix changelog entry
+- [ ] `1533ac42625d` 2022-01-24 — **SOLR-15501** Fix longstanding GCS test issue
+- [ ] `86bf5e847bff` 2022-01-25 — **SOLR-15919** Another pass as moving File to Path (#544)
+- [ ] `cfacd182dada` 2022-01-26 — **SOLR-14595** Consistent overrequest across different facet methods for `sort:index` JSON Facet field (#447)
+- [ ] `dfef340534c5` 2022-01-26 — **SOLR-15918** Fix test failures (#568)
+- [ ] `82e5d326a50c` 2022-01-28 — **SOLR-15961** Only consider the number in the SolrAuth header a timestamp if it's between a valid range of digits (#575)
+- [ ] `38421ea20581` 2022-02-02 — **SOLR-15968** bin/solr zk always throws exception - change zk logging to ERROR level for SolrCLI (#586)
+- [ ] `79189717d45f` 2022-02-04 — **SOLR-15587** Don't use the UrlScheme singleton on the client-side (#460)
+- [ ] `9dee3815edb0` 2022-02-05 — **SOLR-15259** hl.fragAlignRatio now defaults to 0.33 (#573)
+- [ ] `739fe3b0a54c` 2022-02-08 — **SOLR-14569** Configuring a shardHandlerFactory on the /select requestHandler results in HTTP 401 when searching on alias in secured Solr.
+- [ ] `7c2278bd6ed1` 2022-02-11 — **SOLR-15974** Remove Calcite's ENUMERABLE_AGGREGATE_RULE as Solr only supports push-down for LogicalAggregate (#626)
+- [ ] `8d4ea0038dbc` 2022-02-12 — **SOLR-15116** track changes
+- [ ] `ad1d9439afb3` 2022-02-17 — **SOLR-15965** Clarify Upgrade Instructions (#649)
+- [ ] `7f620c7a1000` 2022-02-18 — **SOLR-15333** Fix SpatialRecursivePrefixTreeFieldType schema definition warnings (#645)
+- [ ] `7c0767064eea` 2022-02-21 — **SOLR-15983** parallel log replay now uses separate UpdateRequestProcessor objects (#601)
+- [ ] `2e3ae7a138e3` 2022-02-21 — **SOLR-16019** Supress SSL for test, fix V2ApiIntegrationTest test failure (#676)
+- [ ] `c1b5ec885521` 2022-02-22 — **SOLR-15964** Fix test; use latch instead of a sleep (#674)
+- [ ] `b7424bd1b338` 2022-03-02 — **SOLR-16009** Disable Calcite simplify config setting (#715)
+- [ ] `2479013589c6` 2022-03-04 — **SOLR-16075** ShowFile handler should validate that files param is strictly relative to instance dir in standalone mode (#725)
+- [ ] `07424ed1c59c` 2022-03-11 — **SOLR-16022** Enforce special character requirements on passwords with length less than 15 (#741)
+- [ ] `cf27e77daf3b` 2022-03-11 — **SOLR-16090** Better error message when JWT auth SIGNATURE_INVALID during token parsing (#737)
+- [ ] `8d164438fb7d` 2022-03-15 — **SOLR-16089** Fix empty columns in Cloud Node UI Screen when replica is in down state.
+- [ ] `3bed330993f7` 2022-03-29 — **SOLR-16112** DefaultSolrHighlighter.doHighlighting to rewrite sufficiently (#756)
+- [ ] `3ed851fc8401` 2022-04-18 — **SOLR-16143** SolrConfig ResourceProvider can miss updates from ZooKeeper (#801)
+- [ ] `d3d43521795b` 2022-04-22 — **SOLR-13044** fix searcher/core close sequence (#815)
+- [ ] `7f2d4f7368a6` 2022-04-25 — **SOLR-16168** Spellcheck NPE if invalid dictionary name is provided (#821)
+- [ ] `ef2b725931dd` 2022-04-26 — **SOLR-16145** NPE fix in rejoinOverseerElection (#793)
+- [ ] `6510f14a2678` 2022-04-27 — **SOLR-16169** IndexBasedSpellChecker with empty spellcheck.q results in NegativeArraySizeException (#820)
+- [ ] `9f2dce1d9b56` 2022-04-29 — **SOLR-15830** Ensure SchemaManager releases lock
+- [ ] `eb3026bfef91` 2022-04-29 — **SOLR-16164** ConfigSet API returns error if untrusted user creates from _default configset (#825)
+- [ ] `88adac1ae64e` 2022-05-05 — **SOLR-16110** add CHANGES.txt
+- [ ] `b28e7514deb9` 2022-05-19 — **SOLR-16199** Improve handling of LIKE queries with wildcard (#870)
+- [ ] `83953a4d18b3` 2022-05-19 — **SOLR-16191** Verify that ps supports -p (#867)
+- [ ] `87f0c23d7b10` 2022-05-20 — **SOLR-16209** Rolling restart will no longer trigger as much PKI Plugin error logging. (#874)
+- [ ] `cd2cf06b7aea` 2022-05-26 — **SOLR-16215** Escape query characters in Solr SQL Array UDF functions (#879)
+- [ ] `e88cd0f323b1` 2022-05-30 — **SOLR-16213** Upgrade Jackson to 2.13.3 (#877)
+- [ ] `a3d59161ef47` 2022-06-01 — **SOLR-16227** Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
+- [ ] `125bac6c5612` 2022-06-20 — **SOLR-16259** Missing newline at the end of solr.in.sh breaks the installer.
+- [ ] `4bd33e8b01a8` 2022-06-27 — **SOLR-16241** Fix JettyConfig.builder(JettyConfig) to correctly copy all attributes
+- [ ] `0bd8c4d98358` 2022-06-28 — **SOLR-16142** Fix Admin UI's spatial parameter generation. (#886)
+- [ ] `01233753e0ce` 2022-07-10 — **SOLR-9661** added missing operations[withField,withValue] for expression on stream operations (#934)
+- [ ] `902b66bad177` 2022-07-30 — **SOLR-16316** Fix debug query clicking on the query UI does not show the debug.explain.structured option (#956)
+- [ ] `ae242ff03372` 2022-08-18 — **SOLR-16343** Handle MDC snapshot being null
+- [ ] `2fec44b12bd0` 2022-09-06 — **SOLR-16399** ExportWriter fails with max values for fields (#995)
+- [ ] `7904f367cef8` 2022-09-09 — **SOLR-16357** CaffeineCache ramBytes incorrect accounting on updates and deletes (#985)
+- [ ] `335ba21352fe` 2022-09-15 — **SOLR-7883** /mlt handler to support facets (#1010)
+- [ ] `1e6dd0e4be42` 2022-09-17 — **SOLR-16406** Take SOLR_MODULES into account (#1007)
+- [ ] `3643634481d9` 2022-09-19 — **SOLR-16344** CHANGES.txt
+- [ ] `8eb826a65eb8` 2022-09-19 — **SOLR-16417** NPE if facet query hits timeout or exception (#1025)
+- [ ] `223f8107608a` 2022-09-21 — **SOLR-16219** ICUCollationField protected field IllegalAccessException from different classloader (#1028)
+- [ ] `3a53ff9af2a2` 2022-09-21 — **SOLR-16418** Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (#1026)
+- [ ] `f97264ada434` 2022-09-22 — **SOLR-16426** LBHttp2SolrClient now passes info to child client. (#1036)
+- [ ] `5cf79e9df551` 2022-09-23 — **SOLR-16232** Fix EnvVar usage in bin/solr (#892)
+- [ ] `d03f7fef9399` 2022-09-23 — **SOLR-16429** Add AWS STS support in s3-repository (#1041)
+- [ ] `97e516b94a79` 2022-10-03 — **SOLR-16229** Abort requests on exception (#1047)
+- [ ] `d9acc079af26` 2022-10-07 — **SOLR-13219** Fix NPE in FieldLengthFeature with non-stored/missing fields (#1051)
+- [ ] `a41c4cc2662e` 2022-10-10 — **SOLR-16436** Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency > 1 in multi-shard collections
+- [ ] `087bc2682321` 2022-10-13 — **SOLR-16439** Cloud Node does not have Core, the admin UI cannot be displayed properly (#1050)
+- [ ] `03703689f037` 2022-10-14 — **SOLR-16460** ClusterState.copyWith is buggy (#1070)
+- [ ] `095976e2a04d` 2022-10-17 — **SOLR-16160** UpdateXmlMessages duplicate data when data is removed and then added in the same message (#1078)
+- [ ] `b99db0d884cc` 2022-10-18 — **SOLR-16453** Overseer doesn't handle PRS and non-PRS messages properly (#1055)
+- [ ] `c54ed38cb977` 2022-10-18 — **SOLR-16451** removed unused method
+- [ ] `c96c78132d77` 2022-10-19 — **SOLR-15854** (java-semver-->semver4j)-LICENSE-MIT.txt rename follow-up (#1086)
+- [ ] `49f03a6a74df` 2022-10-20 — **SOLR-16463** Workaround for serious crash on JDK17+ (#1090)
+- [ ] `8cf60fb6f855` 2022-10-20 — **SOLR-16452** CHANGES.txt
+- [ ] `b50367a3a499` 2022-10-20 — **SOLR-16483** Fix IndexOutOfBounds in RecursiveNumericEvaluator (#1054)
+- [ ] `69320ec6293a` 2022-10-21 — **SOLR-16478** CHANGES.txt
+- [ ] `422d6fe8a00e` 2022-10-21 — **SOLR-16485** Fix NPE in ShardHandlerFactory for standalone (#1100)
+- [ ] `73d695405676` 2022-10-23 — **SOLR-16433** Upgrade Jackson bom to 2.13.4.20221013 (#1106)
+- [ ] `19b816efc22c` 2022-10-25 — **SOLR-16440** hard coded shard name in test
+- [ ] `57719fedef71` 2022-10-25 — **SOLR-16363** DirectUpdateHandler2 remove String.format from error logging (#1124)
+- [ ] `2f6818886e90` 2022-10-25 — **SOLR-16412** Fix TestSizeLimitedDistributedMap LinkedList compilation error
+- [ ] `9eee466d6626` 2022-10-26 — **SOLR-16293** Luke request fails for document with a binary field (#1134)
+- [ ] `b01ae1783946` 2022-10-26 — **SOLR-16416** Fix testDesignatedOverseerRestarts
+- [ ] `282fb99e1481` 2022-10-26 — **SOLR-10918** Fix IntPointField hashing for HLL (#1137)
+- [ ] `8c11b3325e2b` 2022-10-26 — **SOLR-16477** Collection RENAME api creates broken alias (#1127)
+- [ ] `2d1a7485f00b` 2022-10-26 — **SOLR-14679** Fix evergrowing tlogs on TLOG replicas (#1131)
+- [ ] `6869ec97c7a5` 2022-10-27 — **SOLR-16274** HEAD request for managed resource returns 500 Server Error (#1140)
+- [ ] `1c7b58a02f3c` 2022-11-04 — **SOLR-16502** move solr/CHANGES.txt from 9.2 to 9.1 section
+- [ ] `2e6c76929818` 2022-11-07 — **SOLR-16527** move changes to 9.1
+- [ ] `6bc3d6860e0d` 2022-11-08 — **SOLR-16414** simplified code
+- [ ] `407be4ca7ec4` 2022-11-10 — **SOLR-16528** Fix locfile
+- [ ] `4afda4b29a34` 2022-11-26 — **SOLR-16420** update stream ref guide about mindf=5 default (#1194)
+- [ ] `4519c1fcb050` 2022-12-05 — **SOLR-16473** Fix race condition in shard split when a sub-shard is put in recovery state.
+- [ ] `46bce2382f8c` 2022-12-08 — **SOLR-10458** setFollowRedirects should be deprecated in favor of Solr Client Builder methods (#1216)
+- [ ] `b6bfb56ccb56` 2022-12-16 — **SOLR-16589** Fix test to use same xml encoding used
+- [ ] `5884467f4902` 2023-01-02 — **SOLR-16605** fix CPU calculaton in cloud->nodes UI tab
+- [ ] `da67c104dab7` 2023-01-07 — **SOLR-16165** CHANGES.txt
+- [ ] `0cc18eb4cae3` 2023-01-09 — **SOLR-16611** fix collapse hint=top_fc bug (#1274)
+- [ ] `248dc3c35426` 2023-01-10 — **SOLR-16613** CryptoKeys should handle RSA padding for OpenJ9 (#1279)
+- [ ] `6c82db6e5f06` 2023-02-02 — **SOLR-16621** Use $scope.isPermitted("my-permissiong") in security dash
+- [ ] `7a33c191341e` 2023-02-06 — **SOLR-16631** solr.allowUrls - hostnames should be treated in case insensitive way (#1325)
+- [ ] `277f000bb936` 2023-02-06 — **SOLR-16647** Fix circuit breaker examples in solrconfig.xml (#1333)
+- [ ] `96f690cddf07` 2023-02-08 — **SOLR-16648** NullPointerException when excluding facets in More Like This Handler (#1339)
+- [ ] `e20fcf857a32` 2023-02-09 — **SOLR-16628** Ensure that InputStreams are closed after Xml parsing (#1302)
+- [ ] `47b7f6c75a43` 2023-02-10 — **SOLR-16457** Add symbolic link version of solr.install.dir to security.policy (#1346)
+- [ ] `62efc319c50a` 2023-02-15 — **SOLR-16658** List of permissions returned to Admin UI is not complete (#1359)
+- [ ] `8decf1d356c5` 2023-02-15 — **SOLR-16639** Fix jq parse error of solr-exporter metrics node_thread_pool_completed_total (#1317)
+- [ ] `f804af73397c` 2023-02-16 — **SOLR-9698** Fix start/stop wait time and RMI_PORT on Windows (#1329)
+- [ ] `eb34d9ffbebe` 2023-02-21 — **SOLR-16668** Default to Java SSL for Http2SolrClient (#1366)
+- [ ] `7bdebb2bd025` 2023-02-21 — **SOLR-16670** Fix 404 error in S3 directory check (#1373)
+- [ ] `b070b5c19159` 2023-02-23 — **SOLR-16669** Fix default checkPeerName in Http2SolrClient (#1367)
+- [ ] `67a654b0df24` 2023-02-27 — **SOLR-16679** Fix solr.jetty.ssl.verifyClientHostName logging (#1376)
+- [ ] `05b66b9669de` 2023-02-28 — **SOLR-16682** transfer MLT Component queries via {!bool} (#1260)
+- [ ] `35a9bed31dc1` 2023-03-01 — **SOLR-16656** rid parameter missing from query logs (#1364)
+- [ ] `916513973f33` 2023-03-09 — **SOLR-16676** Http2SolrClient loss of MDC context - test fixes (#1444)
+- [ ] `aa9680caf271` 2023-03-13 — **SOLR-16686** Fix CHANGES.txt mistake, moved to 9.2
+- [ ] `30588947747d` 2023-03-14 — **SOLR-16585** bypass empty update in the test (#1454)
+- [ ] `7becc8497b14` 2023-03-14 — **SOLR-16653** CHANGES.txt
+- [ ] `46bf8a902a8f` 2023-03-21 — **SOLR-16638** Add CHANGES entry
+- [ ] `2e6715a2d6d2` 2023-03-29 — **SOLR-16723** Http2SolrClient should not use Apache Http client classes (#1503)
+- [ ] `f7fe594cdade` 2023-03-31 — **SOLR-16721** Java version detection fails when `_JAVA_OPTIONS` is set (#1502)
+- [ ] `6e9c3c223cd0` 2023-04-01 — **SOLR-16649** Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser
+- [ ] `c9e8fb89fe16` 2023-04-03 — **SOLR-16730** Exclude username, roles and permissions for inter-node requests to SystemInfoHandler (#1511)
+- [ ] `483f4f29a054` 2023-04-03 — **SOLR-16734** SOLR_DATA_HOME is only honored in verbode mode (#1536)
+- [ ] `882be9f396d0` 2023-04-03 — **SOLR-16731** Use the right cluster property for determining if TLS is enabled (#1512)
+- [ ] `744719418908` 2023-04-05 — **SOLR-16728** Add changelog entry
+- [ ] `d9eba437064f` 2023-04-10 — **SOLR-16240** Fix kerberosPlugin module classloading (#1546)
+- [ ] `27f69db8827d` 2023-04-12 — **SOLR-16741** refactor Replia.State.toString() (#1549)
+- [ ] `de5d9c3f5a94` 2023-04-19 — **SOLR-16755** bin/solr's '-noprompt' option no longer works for examples (#1576)
+- [ ] `1d8781d61746` 2023-04-25 — **SOLR-7609** Validate the version is present on follower replicas when adding documents (#1504)
+- [ ] `015f8a22449a` 2023-04-26 — **SOLR-16737** Http2SolrClient needs to inherit all properties when initialized with another http2 client (#1587)
+- [ ] `a557776ba196` 2023-04-27 — **SOLR-15083** prometheus-exporter incorrect metric namings (#1588)
+- [ ] `44cb2b4436ed` 2023-04-29 — **SOLR-13605** HttpSolrClient.Builder.withHttpClient() is useless for the purpose of setting client scoped so/connect timeouts (#1565)
+- [ ] `538145f5567d` 2023-05-01 — **SOLR-16773** UI: Cloud>Nodes screen fix display of cores with non-standard shard names (#1593)
+- [ ] `0788fb488b78` 2023-05-03 — **SOLR-16771** Fixed behavior and handling of 'unset' logging levels in /admin/info/logging API and related Admin UI
+- [ ] `1c50f16abee6` 2023-05-04 — **SOLR-16783** Ignore NoNodeException when deleting clusterstate.json on startup (#1624)
+- [ ] `d9ddba3ac51e` 2023-05-05 — **SOLR-16789** Admin UI Dashboard shows "unauthenticated" warning on authenticated servers (#1628)
+- [ ] `9df806308050` 2023-05-09 — **SOLR-16760** bin/solr package support the -h and -help commands like other tools (#1600)
+- [ ] `be68ec9404c1` 2023-05-15 — **SOLR-16765** Export what the limit param specifies, and don't be off by one in the counter. (#1636)
+- [ ] `0a6a114319cb` 2023-05-18 — **SOLR-16801** Reset the thread's contextClassloader after loading the CoreContainer (#1645)
+- [ ] `35fc4bdc4817` 2023-05-19 — **SOLR-16808** Don't publish envVars via the Metrics API
+- [ ] `8c83faadfa37` 2023-05-23 — **SOLR-16811** fix echo and mapUniqueKeyOnly params at /update/json/docs. (#1656)
+- [ ] `3f734ab8a520` 2023-05-30 — **SOLR-16807** Update CHANGES.txt
+- [ ] `eb5e1f2292df` 2023-06-22 — **SOLR-16831** Fix precommit
+- [ ] `98c198810f2c` 2023-06-26 — **SOLR-16809** Converge logic for hidden sysProps
+- [ ] `75810c953e84` 2023-06-28 — **SOLR-16848** Fix flaky DeleteReplicaTest test (#1727)
+- [ ] `b191650b4ae9` 2023-06-28 — **SOLR-16619** Fix `solr` script for IBM i (#1287)
+- [ ] `171716e7e871` 2023-07-06 — **SOLR-16861** CHANGES.txt for SOLR-16812, SOLR-16860, SOLR-16861
+- [ ] `6094fb2cb0bb` 2023-07-06 — **SOLR-16860** Remove collection -> synthetic core mapping in Coordinator Node upon collection deletion (#1754)
+- [ ] `6350eb539556` 2023-07-07 — **SOLR-16877** Allow empty ZK data in Backup (#1764)
+- [ ] `35d352522df0` 2023-07-10 — **SOLR-16777** Make SchemaDesigner use ConfigSet trust
+- [ ] `952a7be422b1` 2023-07-17 — **SOLR-16891** Fix blank Cloud graph screen in UI (#1783)
+- [ ] `0a2bda206a0b` 2023-07-17 — **SOLR-16753** Fix PRS state update for splitShard (#1787)
+- [ ] `4905213d0fd2` 2023-07-17 — **SOLR-16886** Don't commit multi-part uploads that have been aborted (#1773)
+- [ ] `ee9e37252d71` 2023-07-19 — **SOLR-16889** Rate Limiter should stop processing on HTTP 429 (#1780)
+- [ ] `9c7adc0d4236` 2023-07-27 — **SOLR-16906** Correctly capture REPLICATION metrics in Prometheus config (#1809)
+- [ ] `59057dabc139` 2023-07-28 — **SOLR-16905** Allow access to allowPaths in SecurityManager (#1811)
+- [ ] `aa9f8675d271` 2023-08-08 — **SOLR-16922** Scripts wrongly prohibit embedded zookeeper when solr port is between 55535 and 64535 (#1830)
+- [ ] `9b88eb8f5646` 2023-08-09 — **SOLR-16360** Atomic update on boolean fields doesn't reflect when value starts with "1", "t" or "T" (#1816)
+- [ ] `21740acc3392` 2023-08-16 — **SOLR-16859** Missing Proxy support for Http2SolrClient (#1779)
+- [ ] `59f701721677` 2023-08-22 — **SOLR-16944** V2 API /api/node/health should be governed by "health" permission, not "config-read" (#1858)
+- [ ] `6e508802ab8e` 2023-08-22 — **SOLR-16934** Give securityManager permission for client TLS (#1857)
+- [ ] `c7b58302d334` 2023-08-22 — **SOLR-16929** SolrStream propagates undecoded error message (#1852)
+- [ ] `57acde3752be` 2023-08-23 — **SOLR-16933** Use JSONMapResponseWriter for CLI errors
+- [ ] `0619f7873cfc` 2023-08-23 — **SOLR-16946** Updated Cluster Singleton plugins are stopped correctly when the Overseer is closed (#1862)
+- [ ] `04bfd236ad47` 2023-08-24 — **SOLR-16916** JSON boolean queries when solrconfig defType is set to edismax (#1827)
+- [ ] `585ba9ba5f9a` 2023-08-31 — **SOLR-16879** throttle BACKUPCORE, RESTORECORE, SPLIT (#1864)
+- [ ] `8c0d1a0698ca` 2023-09-01 — **SOLR-16958** Fix spurious warning about LATEST luceneMatchVersion (#1879)
+- [ ] `bc7c8190de0d` 2023-09-06 — **SOLR-16955** Tracing v2 apis breaks SecurityConfHandler (#1884)
+- [ ] `ca4692b5a26a` 2023-09-10 — **SOLR-16044** SlowRequest logging disabled if SolrCore logger set to ERROR (#1907)
+- [ ] `78b02620807e` 2023-09-11 — **SOLR-16415** ZK DistributedMap should reject slash in IDs. (#1824)
+- [ ] `4989aadf2794` 2023-09-12 — **SOLR-16899** Do not statically register ops in CoreAdminHandler (#1892)
+- [ ] `901e0debc381` 2023-09-13 — **SOLR-16963** Fix usage of clientHostnameVerification (#1916)
+- [ ] `e77e3dc80b7c` 2023-09-13 — **SOLR-16973** fix REMOTE_JMX_OPTS to delayed expansion (#1917)
+- [ ] `330abd4be3cb` 2023-09-15 — **SOLR-16971** RealTimeGet with Composite router throws NPE (#1914)
+- [ ] `5caacd37f790` 2023-09-19 — **SOLR-16931** Update CHANGES.txt
+- [ ] `117a6cdf415a` 2023-09-21 — **SOLR-16983** Fixed a bug that could cause some usages of SolrStream to fail to close InputStreams from the server.
+- [ ] `f22a51cc64f8` 2023-09-22 — **SOLR-16701** Race condition on PRS enabled collection deletion (#1460)
+- [ ] `1a8457d9ca39` 2023-09-22 — **SOLR-16925** Fix indentation for JacksonJsonWriter (#1942)
+- [ ] `4980fbd1dd89` 2023-09-23 — **SOLR-16991** Fix bug: Concurrent requests failing JWT Auth intermittently (#1949)
+- [ ] `61d41e5734fd` 2023-09-26 — **SOLR-16980** Connect to SOLR standalone with basic authentication (#1957)
+- [ ] `adc03933add1` 2023-09-26 — **SOLR-16997** OTEL configurator NPE when SOLR_HOST not set (#1959)
+- [ ] `f0fcd300c896` 2023-09-27 — **SOLR-16992** Non-reproducible StreamingTest failures (#1955)
+- [ ] `204ff1ddb7d3` 2023-10-04 — **SOLR-17009** json.wrf parameter ignored in JacksonJsonWriter (#1980)
+- [ ] `4e9b330d9e7a` 2023-10-11 — **SOLR-16644** Only warn entropy on Linux (#2000)
+- [ ] `241d6f9acc5e` 2023-10-12 — **SOLR-17019** ZkCli should create chroot if necessary
+- [ ] `e0b34d7411f2` 2023-10-14 — **SOLR-6853** Add slash support for Managed Resources (synonyms and stopwords) (#1829)
+- [ ] `5a9f914a6a6d` 2023-10-18 — **SOLR-17039** Entropy calculation fails in Docker due to missing 'bc' cmd (#2023)
+- [ ] `d2fa8427b970` 2023-10-31 — **SOLR-17045** correct 'bug fix' jira id typo in CHANGES: SOLR-17046 -> SOLR-17045
+- [ ] `c1cfaec00d37` 2023-11-25 — **SOLR-10653** leader to replica update fail if there's a UUIDField in schema (#2078)
+- [ ] `180362a5b33f` 2023-12-01 — **SOLR-17093** Collection restore API returns requestid when executed asynchronously (#2111)
+- [ ] `f68cfbc1d845` 2023-12-04 — **SOLR-17090** Remove DeleteAlias JAX-RS annotations (#2115)
+- [ ] `508f63b28c49` 2023-12-04 — **SOLR-16952** add DenseVectorField to DocsStreamer.KNOWN_TYPES (#2103)
+- [ ] `60ff0fa1aacf` 2023-12-04 — **SOLR-17057** JSON Query regression of defType (#2045)
+- [ ] `e2bf1f434aad` 2023-12-05 — **SOLR-17098** Only use ZK ACLs for default ZK Host
+- [ ] `5876c530c6e3` 2023-12-19 — **SOLR-17060** CoreContainer#create may deadlock with concurrent requests for metrics (#2101)
+- [ ] `8201bf81d79b` 2024-01-05 — **SOLR-16203** Initialize schema plugins loaded by SPI name (#2175)
+- [ ] `1624b4d7d2e3` 2024-01-19 — **SOLR-17121** Fix SchemaCodecFactory to get PostingsFormat and DocValues from field. (#2206)
+- [ ] `2a85f47c2093` 2024-01-19 — **SOLR-17116** Fix INSTALLSHARDDATA async reporting (#2188)
+- [ ] `a7441c175a4b` 2024-01-22 — **SOLR-17074** Fixed not correctly escaped quote in bin/solr script (#2200)
+- [ ] `571c8871278b` 2024-01-24 — **SOLR-17120** handle null value when merging partials (#2214)
+- [ ] `f99935db8248` 2024-01-26 — **SOLR-17112** bin/solr script doesn't do ps properly on some systems (#2225)
+- [ ] `c98a8f655cec` 2024-02-06 — **SOLR-17149** Fix backup/restore for large collections. (#2243)
+- [ ] `4e62f98d8c2c` 2024-02-08 — **SOLR-17152** Better alignment of Admin UI graph (#2249)
+- [ ] `a88305d253ca` 2024-02-13 — **SOLR-17148** Fixing Config API overlay property enabling or disabling cache (#2247)
+- [ ] `148abec1a37b` 2024-03-01 — **SOLR-17186** Streaming query breaks if token contains backtick (#2321)
+- [ ] `c6f9e6238de9` 2024-03-04 — **SOLR-17197** Fix getting fieldType by its name in FileBasedSpellChecker (#2329)
+- [ ] `a4fbad59fcf6` 2024-03-15 — **SOLR-17198** AttributeFetcher no longer fails when it observes multiple shard leaders (#2335)
+- [ ] `b04c9202bf19` 2024-03-21 — **SOLR-14892** shards.info with shards.tolerant can yield an empty key (#286)
+- [ ] `1a322d9fd07e` 2024-03-25 — **SOLR-17209** Fix NullPointerException in QueryComponent (#2354)
+- [ ] `2def20abfe85` 2024-03-27 — **SOLR-17200** Fix false positive race condition in  during core loading
+- [ ] `883fd6d941c3` 2024-03-27 — **SOLR-17113** fix backup response in case of exception (#2334)
+- [ ] `418dc06f24ec` 2024-03-28 — **SOLR-17218** Fix indexFetcher logging to include MDC details
+- [ ] `62cf3aaef34b` 2024-03-28 — **SOLR-17110** Fix JacksonJsonWriter to properly quote uuid values in json query response (#2367)
+- [ ] `44211bc40a7c` 2024-04-05 — **SOLR-17018** add QueryLimits support to Learning To Rank rescoring (#2348)
+- [ ] `4d57b44dbc16` 2024-04-10 — **SOLR-17206** Don't respond with status=-1 (#2368)
+- [ ] `ee1255558e0a` 2024-04-10 — **SOLR-17213** Make warning optional so we can warn only when solrUrl is user entered (#2377)
+- [ ] `2b9d4c85dd58` 2024-04-10 — **SOLR-11535** Fix race condition in singleton-per-collection StateWatcher creation (#1964)
+- [ ] `5335de669cc0` 2024-04-10 — **SOLR-17176** Fix log history V2 API serialization (#2293)
+- [ ] `72793f5b9d9b` 2024-04-19 — **SOLR-16866** Reorder nested directory deletions to avoid logging spurious NoSuchFileException (#2349)
+- [ ] `5e454a7c0eae` 2024-04-21 — **SOLR-17194** Fix bug - CloudHttp2SolrClient doesn't preserve the passed httpClient to Http2ClusterStateProvider when using the internalClientBuilder (#2412)
+- [ ] `f46812082d58` 2024-05-01 — **SOLR-17261** Allow cores to load without a timeout (#2431)
+- [ ] `1b582e90de22` 2024-05-14 — **SOLR-17049** Fix Replica Down on startup logic (#2432)
+- [ ] `4c439d07ca35` 2024-05-15 — **SOLR-17263** HttpJdkSolrClient doesn't encode curly braces etc (#2433)
+- [ ] `f073dc86e1ab` 2024-05-16 — **SOLR-17275** Revert SolrJ ZkClientClusterStateProvider SOLR-17153 (#2463)
+- [ ] `f073dc86e1ab` 2024-05-16 — **SOLR-17153** SOLR-17275: Revert SolrJ ZkClientClusterStateProvider SOLR-17153 (#2463)
+- [ ] `6af52f33ac78` 2024-05-17 — **SOLR-17296** Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE.
+- [ ] `0551589dffb1` 2024-05-22 — **SOLR-12813** followup -- preserve user Principal in alternate codepath in EmbeddedSolrServer (#2429)
+- [ ] `917e682d269f` 2024-05-22 — **SOLR-17307** Use file separator instead of '/' in CachingDirectoryFactory (#2464)
+- [ ] `8bbfbdbc4692` 2024-05-23 — **SOLR-16659** Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (#2473)
+- [ ] `14a219542bdc` 2024-05-29 — **SOLR-17247** Fix bug - 'WWW-Authenticate' headers missing in MultiAuthPlugin (#2416)
+- [ ] `1177796e3263` 2024-05-31 — **SOLR-17118** Simplify/fix CoreContainerProvider initialization (#2474)
+- [ ] `18ab94781d35` 2024-06-06 — **SOLR-17304** PKG_VERSIONS not honored when loading the schema plugins (#2471)
+- [ ] `af2a3c742b50` 2024-06-06 — **SOLR-17317** Correct 'wt' interpretation for v2 APIs (#2496)
+- [ ] `99a9b10feb0a` 2024-06-09 — **SOLR-17315** Fix message formatting (#2511)
+- [ ] `461955f00118` 2024-06-11 — **SOLR-17326** Fix references in generated SolrRequest impls (#2510)
+- [ ] `0c2b1a6dd615` 2024-06-18 — **SOLR-17255** Fix bugs in SolrParams.toLocalParamsString()
+- [ ] `7b00ddac9ebf` 2024-06-26 — **SOLR-16962** Fix failing test for SOLR-16962; update log must be enabled (#2537)
+- [ ] `9903d0342fad` 2024-07-08 — **SOLR-17333** Various rate limiting fixes (#2522)
+- [ ] `1084db9477ec` 2024-07-19 — **SOLR-17367** org.apache.solr.cli.PostTool is ignoring -params option (#2557)
+- [ ] `da7230a7c609` 2024-07-22 — **SOLR-17369** Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants
+- [ ] `e00cc7b1e411` 2024-07-29 — **SOLR-17337** Show proper distributed stage id (#2594)
+- [ ] `6703ccfc2744` 2024-08-08 — **SOLR-17391** Fixed thread pool misconfiguration regression (#2619)
+- [ ] `7df3eb5bddba` 2024-08-15 — **SOLR-17394** Address review feedback
+- [ ] `7ef2c0ef3660` 2024-08-23 — **SOLR-17417** Remove unecessary code in PKIAuthPlugin and HttpSolrCall
+- [ ] `8ec3876dc6d0` 2024-08-26 — **SOLR-17418** Streamline configSet code
+- [ ] `a276a0f42788` 2024-08-27 — **SOLR-12429** Prevent symbolic links from being uploaded as part of a configset (#2651)
+- [ ] `8513516ed39d` 2024-08-28 — **SOLR-17421** Make sure overseer drops leadership after QUIT failure (#2663)
+- [ ] `4a6e18b54cef` 2024-09-04 — **SOLR-17416** Fixed ExportHandler bug that silently suppressed errors and returned partial results in some situations
+- [ ] `14c9575611e2` 2024-09-11 — **SOLR-16254** Clarify when a create needs to be run on the same server as Solr. (#2698)
+- [ ] `34f77886104a` 2024-09-28 — **SOLR-6962** bin/solr stop/start/restart should complain about missing value for options that expect a value. (#2671)
+- [ ] `e5d266195096` 2024-10-03 — **SOLR-17464** (#2733)
+- [ ] `0b4157a8d832` 2024-10-28 — **SOLR-17413** ulog replay should copy SolrQueryRequest (#2765)
+- [ ] `e377ebbdaff5` 2024-10-29 — **SOLR-11191** SolrIndexSplitter: Routing child docs by _root_ when available (#2799)
+- [ ] `dbf1c50a67b2` 2024-10-29 — **SOLR-16976** Remove log4j-jul jar and use Slf4j bridge for JUL (#2703)
+- [ ] `cebdb2d790a6` 2024-11-28 — **SOLR-17575** Fixed broken backwards compatibility with the legacy "langid.whitelist" config in Solr Langid (#2886)
+- [ ] `83391964df5b` 2024-12-04 — **SOLR-17574** Move host allow list cache to AllowListUrlChecker. (#2892)
+- [ ] `a4229e76771d` 2024-12-17 — **SOLR-17595** Fix Solr examples for Windows (#2909)
+- [ ] `9cef6e390719` 2024-12-19 — **SOLR-17306** fix replication problem on follower restart (#2918)
+- [ ] `796b788ce856` 2025-01-08 — **SOLR-17587** wt=prometheus fix duplicate TYPE information (#2902)
+- [ ] `82083ea13ad2` 2025-01-16 — **SOLR-17221** Fix Http2SolrClient merging case sensitive solr params (#3028)
+- [ ] `e91e8dcd31ff` 2025-01-22 — **SOLR-17629** SQLHandler: remember to close if open fails (#3045)
+- [ ] `b1fe883991e5` 2025-01-23 — **SOLR-17519** CloudSolrClient's HTTP ClusterStateProvider now uses configured URLs as backup (#2935)
+- [ ] `db0cbd38d512` 2025-01-30 — **SOLR-17637** Fix LBHttpSolrClient & HttpShardHandler bug (#3147)
+- [ ] `bca4cd630b9c` 2025-02-05 — **SOLR-17652** Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever
+- [ ] `f66aa9ed07fa` 2025-02-12 — **SOLR-17649** Fix JSON faceting on multiValued number types (#3158)
+- [ ] `cef521b1c232` 2025-02-14 — **SOLR-17673** Add back in option to use max CPU threads for searching (#3186)
+- [ ] `76c09a35dba4` 2025-02-23 — **SOLR-17670** Fix unnecessary memory allocation caused by a large reRankDocs param (#3181)
+- [ ] `3a492203cf4d` 2025-02-24 — **SOLR-17677** HashRangeQuery doesn't NEED SolrIndexSearcher (#3206)
+- [ ] `f1badb755d11` 2025-02-28 — **SOLR-17644** SolrCloudManager directly uses HttpSolrClientProvider's client, resolving missing auth listeners (#3208)
+- [ ] `7725ac324592` 2025-03-13 — **SOLR-17700** Use core operation lock when unloading core (#3260)
+- [ ] `ac74ced99e28` 2025-03-17 — **SOLR-17699** Fix {!frange} perf regression in disjunction (#3259)
+- [ ] `d0d4f280b641` 2025-03-19 — **SOLR-17709** Fix race condition when checking distrib async cmd status (#3268)
+- [ ] `eb96873c174e` 2025-04-02 — **SOLR-17692** Abort ongoing fetches on core close (#3292)
+- [ ] `17510244b214` 2025-04-10 — **SOLR-5386** Fix various methods of invoking "local" solr requests to re-use the same searcher as the original request.
+- [ ] `d1498e8d5a7f` 2025-04-17 — **SOLR-12831** Clean up ZK nodes after shard deletion is invoked (#3314)
+- [ ] `4aa321635d6f` 2025-04-18 — **SOLR-17740** V2 API: fix raw file uploads missing 1st byte (#3322)
+- [ ] `67a642fe0263` 2025-04-22 — **SOLR-17720** Fix rare deadlock in CollectionProperties (#3304)
+- [ ] `75289fa19237` 2025-04-25 — **SOLR-17638** Some CLI errors not logged when starting prometheus exporter (#3236)
+- [ ] `1a8131c45868` 2025-05-06 — **SOLR-17745** Reduce leader election optimization never occurs (#3330)
+- [ ] `68423b576cc6` 2025-05-16 — **SOLR-17761** Prevent CircuitBreakerRegistry static init races (#3349)
+- [ ] `733c41a6adae` 2025-05-19 — **SOLR-17758** Fix limiting-URP "warnOnly" mode (#3348)
+- [ ] `72499dd5e753` 2025-05-27 — **SOLR-7962** Passing additional arguments to solr.cmd using "--jvm-opts" (formerly "-a") does not work with "-e" on Windows (#3347)
+- [ ] `e714925a32a5` 2025-05-29 — **SOLR-17772** Tests for examples failing on Windows (#3378)
+- [ ] `e364f3971100` 2025-06-06 — **SOLR-17754** Fix race condition in overseer main loop. (#3350)
+- [ ] `aef65cbd1ad7` 2025-06-10 — **SOLR-17769** Use S3 RetryStrategy instead of RetryPolicy (#3375)
+- [ ] `8a3e4c87a3b1` 2025-06-16 — **SOLR-17790** Allow -j option to start with a dash (#3392)
+- [ ] `d249593e5aff` 2025-06-30 — **SOLR-17726** [SOLR-17726] Fix CloudMLTQParser to support copyField in qf (#3328)
+- [ ] `e759c154011d` 2025-06-30 — **SOLR-17800** Security Manager should handle symlink on /tmp (#3359)
+- [ ] `a931e8a356c2` 2025-07-02 — **SOLR-17805** Exception in TransactionLog constructor deletes the file and does not block subsequent updates. (#3412)
+- [ ] `cda6c8c9a8bd` 2025-07-03 — **SOLR-17711** index fetcher shouldn't have a request timeout (#3356)
+- [ ] `28a2ee239a32` 2025-07-07 — **SOLR-17777** Fix leaked metric registry after core unload (#3382)
+- [ ] `71554944de68` 2025-07-18 — **SOLR-17792** Fix error handling for shard requests (#3429)
+- [ ] `17f318e2d7b9` 2025-07-18 — **SOLR-17819** Improve DistributedDebugComponentTest.testTolerantSearch
+- [ ] `fe84b633d4dd` 2025-07-24 — **SOLR-17717** Move CHANGES.txt entry to 9.10
+- [ ] `c0f03c014296` 2025-07-24 — **SOLR-17294** Move CHANGES.txt entry to 9.10
+- [ ] `6bb80bd72d5f` 2025-07-27 — **SOLR-17824** RecoveryStrategy.pingLeader could NPE when there's no leader. (#3414)
+- [ ] `eaceca8911ef` 2025-07-30 — **SOLR-17789** Fix Internode Authorization not working for external roles (#3397)
+- [ ] `a1ebd0433c71` 2025-07-30 — **SOLR-17721** null pointer fix in the doAddDistinct method (#3436)
+- [ ] `199eed9454bc` 2025-08-01 — **SOLR-17831** Fix the bug in QueryLimits initialization in SolrIndexSearcher. (#3446)
+- [ ] `39ab8f23335d` 2025-08-14 — **SOLR-17834** missing @Override annotation in test
+- [ ] `577dee150776` 2025-08-20 — **SOLR-17830** Fix backup/collection-name conflation in v1 Restore API (#3479)
+- [ ] `4659f9b1f053` 2025-08-21 — **SOLR-17863** fix per segment fingerprint cache race (#3477)
+- [ ] `3a3e6b2515fb` 2025-08-26 — **SOLR-17871** fix error-prone warning
+- [ ] `7301af08f901` 2025-09-01 — **SOLR-17876** Http2SolrClient: followRedirects=true flaky (#3505)
+- [ ] `b69f698b3c5c` 2025-09-12 — **SOLR-17837** Omit PULL replicas from preferredLeader prop distribution (#3451)
+- [ ] `1121d24aff6e` 2025-09-25 — **SOLR-3696** Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic
+- [ ] `1818ae278f11` 2025-09-25 — **SOLR-17869** Avoid creating grouping shard requests when timeAllowed is exhausted (#3678)
+- [ ] `59facc9033cb` 2025-10-01 — **SOLR-17883** Move CHANGES.txt entry to 9.9.1 section
+- [ ] `5782bdc0b650` 2025-10-01 — **SOLR-17940** Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES
+- [ ] `85d84ae46942` 2025-10-30 — **SOLR-17760** SOLR-17619 Move SOLR-17760 changelog to unreleased folder
+
+## Optimizations — keyword-detected, no CHANGES id (2)
+
+- [ ] `10e96f79770c` 2022-11-01 — Make ReplaceNodeTest faster, use less nodes/shards
+- [ ] `3b15605f5532` 2022-11-17 — speed up javac and error-prone tasks by using less resources (#11927) (#1181)
+
+## Bug Fixes — keyword-detected, no CHANGES id (92)
+
+- [ ] `2005c43667b4` 2020-07-02 — fix link and wordsmith a bit (#1642)
+- [ ] `9dcc42a282a2` 2020-08-06 — fix copypaste
+- [ ] `d2cc022fcf2b` 2020-08-13 — Fix syntax warning in smokeTestRelease.py (#1746)
+- [ ] `b381595f552f` 2020-08-27 — Fix NPE in CB Config Resolution
+- [ ] `aab9331c5e55` 2020-09-01 — fix links to JavaDocs
+- [ ] `a46316e15635` 2020-09-08 — Clean up many small fixes (#1732)
+- [ ] `b47ccbc618af` 2020-10-19 — Fix a highlight in query-settings-in-solrconfig.adoc file.
+- [ ] `1b67ed951650` 2020-12-22 — fix typos
+- [ ] `6a2294db8ec1` 2021-03-10 — Fix mailing list addresses.
+- [ ] `8bfba7837f55` 2021-03-17 — Fix javadocs URL with new Solr webpage
+- [ ] `23e277bf5e31` 2021-04-09 — fix 2 typos in help/validateLogCalls.txt
+- [ ] `798ea7ab3227` 2021-04-25 — CHANGES.txt fix wrong JIRA reference and add my name
+- [ ] `da384087380a` 2021-04-27 — Fix bad unchecked casts for generic types (#87)
+- [ ] `f01c41361f69` 2021-05-18 — SolrJ V2Request.getCollection broken (#125)
+- [ ] `abc87c738d52` 2021-05-26 — Use a fixed Lucene prerelease from Apache Nightlies server (#148)
+- [ ] `e00ac7deff9c` 2021-06-08 — Fix 8.9.0 < 8.10.0 comparison in smokeTestRelease.py script. (#2509)
+- [ ] `41661f862324` 2021-06-15 — Fix copy/paste mistake
+- [ ] `65e5f9c106cb` 2021-07-06 — Fix line endings and enforce LF for all java files
+- [ ] `6668d1f49261` 2021-07-21 — Fix solr-ref-guide/README.adoc (#231)
+- [ ] `bd1ff339ab4c` 2021-08-12 — major-changes-in-solr-9.adoc: fix SOLR_SECURITY_MANAGER_ENABLED
+- [ ] `dd154da81600` 2021-08-13 — fix project name in Eclipse integration
+- [ ] `36a3185f33f5` 2021-09-02 — Fix gpg key download in release wizard. (#284)
+- [ ] `abfe1d851254` 2021-10-11 — fix url (#342)
+- [ ] `68bcb6dcd83a` 2021-10-21 — Fix solr-upgrade-notes.adoc URL (#359)
+- [ ] `5c6d12d864e8` 2021-11-09 — Fix githubPRs.py to query the new solr repo (#405)
+- [ ] `93c36a830111` 2021-11-09 — fixed esri link (#400)
+- [ ] `4bbc25f3b905` 2021-11-23 — fixed comment (#430)
+- [ ] `55698aafe4dd` 2022-02-13 — Fix escaping in playbook/antora templates: Use single quotes and escape all single quotes by duplicating them (#631)
+- [ ] `c84f373c860f` 2022-03-29 — Fix official dockerfile sources and add build steps to RC message (#773)
+- [ ] `1536f7eae089` 2022-03-29 — Fix smoketester bug in solr path
+- [ ] `c006b2900f9f` 2022-03-30 — minor CHANGES.txt cleanup; formatting consistency and fix version associations
+- [ ] `c02bd61c6d6d` 2022-03-30 — Fix smoketester so it works with JDK17 - cwd bug (#775)
+- [ ] `329fda71bf3f` 2022-06-09 — Fix bug in in-place update when failOnVersionConflicts=false (#898)
+- [ ] `dc3dd28069c2` 2022-07-01 — Fix bug with version constant (see https://github.com/apache/lucene/pull/978)
+- [ ] `393fc53596c0` 2022-08-03 — TestContainerPlugin race condition (#959)
+- [ ] `3aaffa868096` 2022-09-23 — Fix leaky threads in testCoreAdminRequestStatus
+- [ ] `d6d5c876248d` 2022-10-15 — Fix Solr project URL in README.  Thanks to Guillaume Rossolini on APacheSolr slack.
+- [ ] `99e82589eb10` 2022-10-17 — Fix ordering of antoraYaml generation in releaseWizard
+- [ ] `360923eaf6c1` 2022-10-26 — Fix useGpg signing without password in releaseWizard (#1125)
+- [ ] `09f9549a8e35` 2022-10-26 — Fix file endings for smoke tester
+- [ ] `4e17820276e6` 2022-11-01 — Fix failures in TestCollectionAPI for healthState
+- [ ] `773f1f473ffd` 2023-01-11 — Null check added in package loader. It was just throwing an NPE
+- [ ] `637f3705e875` 2023-03-13 — Fix version parsing in dev-tools
+- [ ] `a2f656541566` 2023-03-27 — Make fixes for release wizard
+- [ ] `01bc0f41168b` 2023-04-12 — Wrong impl of Mapwriter#write()
+- [ ] `810783d812e5` 2023-05-08 — MINOR: Fix typos in `org.apache.solr.core` package (#1629)
+- [ ] `eed71f154dd8` 2023-06-26 — Fix example usage in smoke tester
+- [ ] `a4bf8bb3d30e` 2023-07-06 — Fix error logging in CollectionHandlingUtils
+- [ ] `272ef788888e` 2023-07-17 — Fix release candidate text for docker image
+- [ ] `b4edd56d8a8e` 2023-07-21 — Release wizard fixes
+- [ ] `e0462e75a5cf` 2023-08-21 — Add/fix wrong/missing "solr.home" to zkcli scripts (#1798)
+- [ ] `d58815694748` 2023-09-30 — Fix the admin UI green core-size graph on nodes screen (#1963)
+- [ ] `ebcb3b92f6f0` 2023-11-14 — Fix errorprone with alternative runtime (ported from https://github.com/apache/lucene/pull/12808)
+- [ ] `b33943054174` 2023-11-22 — Tidy fix for #2086
+- [ ] `f9c17ebd9018` 2023-11-23 — GH-2086: errorprone build fix #2086 (#2090)
+- [ ] `c2af5fa1a07b` 2024-01-22 — Fix nodeSetup, use node distBaseUrl instead of registry (#2208)
+- [ ] `cca51bb08744` 2024-05-01 — Fix TestUninvertingReader (#2422)
+- [ ] `6d945eb75f4a` 2024-05-22 — Admin UI: fixed node list display bug caused by different hostname with same front part (duplicates PR #2449) (#2475)
+- [ ] `ce683829be57` 2024-05-29 — Temporary fix for SearchHandlerTest
+- [ ] `93a012d54cea` 2024-08-16 — TestExportWriter fix, loosen order constraint (#2615)
+- [ ] `391cdd04277b` 2024-08-26 — HttpShardHandler: Fix extension hook (#2661)
+- [ ] `290dba64cd16` 2024-10-28 — Fix StatusTool related issues on Windows (#2798)
+- [ ] `998eeb08821d` 2024-10-28 — Fix release wizard to remove from Solr space before attempting Lucene (#2796)
+- [ ] `8de572164534` 2024-11-21 — Fix: Avoid NPE if snapshotMgr failed during core init (#2879)
+- [ ] `44ea44d1fb07` 2024-12-14 — Fix argument parsing for -D options with multiple values on Windows
+- [ ] `41920dd9f2f6` 2025-01-14 — build: Fix smoketest for Solr 10 (#3024)
+- [ ] `41a7cd50141f` 2025-01-27 — Remove broken and unused ZkStateReader.getReplicaProps() (#3059)
+- [ ] `a5b0b98a7955` 2025-01-29 — Fix TestReplicationHandler (#3142)
+- [ ] `8160f9ffff86` 2025-02-20 — Fix small race condition in DeleteReplicaTest
+- [ ] `46c34a4a66fe` 2025-02-20 — Fix uncaught AlreadyClosedException in Overseer election
+- [ ] `d2fdb16a7819` 2025-02-21 — Fix small race condition in ZkStateReaderTest.testStateWatcherRaceCondition
+- [ ] `558d2eceebda` 2025-02-21 — Revert "Fix uncaught AlreadyClosedException in Overseer election"
+- [ ] `85f50fa83326` 2025-02-21 — Fix race condition in TestThinCache (#3198)
+- [ ] `5a8adec0a573` 2025-02-24 — Finally fix TestCoordinatorRole for good. (#3205)
+- [ ] `2a8b7ab2266d` 2025-03-07 — Fix client management in TestQueryingOnDownCollection
+- [ ] `641f0f8ac93b` 2025-03-14 — Fix version (#3264)
+- [ ] `6f7b8b082c8b` 2025-04-24 — fix type
+- [ ] `1490cf820233` 2025-06-25 — Catch cancellation exceptions - Fix TestTolerantSearch (#3393)
+- [ ] `a9d2d1527806` 2025-07-17 — Fix RankFieldTest usage of LogWatcher on main
+- [ ] `bef3353e1930` 2025-08-10 — Fix formatting issues (tidy) (#3460)
+- [ ] `b6562691c845` 2025-09-09 — Fix a tiny bitrot in cloud.sh with command script params (#3638)
+- [ ] `c3a670a72bba` 2025-09-18 — Fix confusing assertion messages
+- [ ] `65d585f420a7` 2025-10-02 — Remove incorrect CHANGES.txt entry
+- [ ] `1f5fe210e88c` 2025-11-08 — minor fix solr-jetty-context.xml defaultsDescriptor
+- [ ] `87785bbf3f67` 2025-11-27 — build: print broken links
+- [ ] `f61a21c05a54` 2026-01-10 — Fix allowPath-related DistributedDebugComponentTest failure
+- [ ] `dbbbc5bad4b1` 2026-01-14 — Fix 'path' and 'permission' related NPEs
+- [ ] `ffe9f2c4d6ac` 2026-01-22 — Fix TestReplicationHandler.testUrlAllowListFailure
+- [ ] `3f3a2d53e172` 2026-01-23 — Fix for '--user-mode' with example (-e) on Windows (#4074)
+- [ ] `570b198185d6` 2026-03-03 — Minor IntRangeField fixes
+- [ ] `74b098e9839b` 2026-05-02 — Fix HTTP 500 in filestore getMetadata racing with concurrent delete (#4367)
+- [ ] `ffd773b8dcb7` 2026-06-03 — JavaBinCodec: fix self-suppression risk (#4489)

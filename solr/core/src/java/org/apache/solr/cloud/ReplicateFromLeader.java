@@ -17,16 +17,20 @@
 
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.index.IndexCommit;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,7 +40,7 @@ import org.apache.solr.update.UpdateLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReplicateFromLeader {
+public class ReplicateFromLeader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CoreContainer cc;
@@ -46,6 +50,7 @@ public class ReplicateFromLeader {
   private volatile long lastVersion = 0;
 
   public ReplicateFromLeader(CoreContainer cc, String coreName) {
+    assert ObjectReleaseTracker.getInstance().track(this);
     this.cc = cc;
     this.coreName = coreName;
   }
@@ -91,7 +96,7 @@ public class ReplicateFromLeader {
       replicationProcess = new ReplicationHandler();
       if (switchTransactionLog) {
         replicationProcess.setPollListener((solrCore, fetchResult) -> {
-          if (fetchResult == IndexFetcher.IndexFetchResult.INDEX_FETCH_SUCCESS) {
+          if (fetchResult.getSuccessful()) {
             String commitVersion = getCommitVersion(core);
             if (commitVersion == null) return;
             if (Long.parseLong(commitVersion) == lastVersion) return;
@@ -102,6 +107,21 @@ public class ReplicateFromLeader {
             cuc.setVersion(Long.parseLong(commitVersion));
             updateLog.commitAndSwitchToNewTlog(cuc);
             lastVersion = Long.parseLong(commitVersion);
+            try {
+              cc.getZkController().publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+            } catch (Exception e) {
+              log.warn("Failed publishing as ACTIVE", e);
+            }
+          }
+        });
+      } else {
+        replicationProcess.setPollListener((solrCore, fetchResult) -> {
+          if (fetchResult.getSuccessful()) {
+            try {
+              cc.getZkController().publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+            } catch (Exception e) {
+              log.warn("Failed publishing as ACTIVE", e);
+            }
           }
         });
       }
@@ -117,6 +137,7 @@ public class ReplicateFromLeader {
       if (commitVersion == null) return null;
       else return commitVersion;
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       log.warn("Cannot get commit command version from index commit point ",e);
       return null;
     }
@@ -131,9 +152,19 @@ public class ReplicateFromLeader {
     return hour + ":" + min + ":" + sec;
   }
 
-  public void stopReplication() {
+  private void stopReplication() {
     if (replicationProcess != null) {
-      replicationProcess.shutdown();
+      replicationProcess.close();
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    try {
+      stopReplication();
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+    }
+    assert ObjectReleaseTracker.getInstance().release(this);
   }
 }

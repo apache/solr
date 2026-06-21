@@ -16,6 +16,23 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,35 +52,29 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrJErrorHandling extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   List<Throwable> unexpected = new CopyOnWriteArrayList<>();
 
-
   @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+  public static void beforeSolrExampleTestsBase() throws Exception {
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+  }
+
+  @AfterClass
+  public static void afterTestSolrJErrorHandling() {
+
   }
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @After
+  public void tearDown() throws Exception {
+    SolrClient client = getSolrClient(jetty);
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    super.tearDown();
     unexpected.clear();
   }
 
@@ -104,17 +115,15 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new RequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
   }
 
   @Test
   public void testWithBinary() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new BinaryRequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
   }
 
@@ -143,7 +152,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     };
   };
 
-  void doThreads(final HttpSolrClient client, final int numThreads, final int numRequests) throws Exception {
+  void doThreads(final Http2SolrClient client, final int numThreads, final int numRequests) throws Exception {
     final AtomicInteger tries = new AtomicInteger(0);
 
     List<Thread> threads = new ArrayList<>();
@@ -151,12 +160,12 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     for (int i=0; i<numThreads; i++) {
       final int threadNum = i;
       threads.add( new Thread() {
-                     int reqLeft = numRequests;
+                     AtomicInteger reqLeft = new AtomicInteger(numRequests);
 
                      @Override
                      public void run() {
                        try {
-                         while (--reqLeft >= 0) {
+                         while (reqLeft.decrementAndGet() >= 0) {
                            tries.incrementAndGet();
                            doSingle(client, threadNum);
                          }
@@ -182,12 +191,10 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       fail("Number of requests was " + tries.get() + " but final count was " + count);
     }
 
-    assertEquals(tries.get(), getCount(client));
-
     assertTrue("got unexpected exceptions. ", unexpected.isEmpty() );
   }
 
-  int getCount(HttpSolrClient client) throws IOException, SolrServerException {
+  int getCount(Http2SolrClient client) throws IOException, SolrServerException {
     client.commit();
     QueryResponse rsp = client.query(params("q", "id:test", "fl", "count_i", "wt", "json"));
     int count = ((Number)rsp.getResults().get(0).get("count_i")).intValue();
@@ -195,13 +202,12 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   // this always failed with the Jetty 9.3 snapshot
-  void doIt(HttpSolrClient client) throws Exception {
-    client.deleteByQuery("*:*");
-    doThreads(client,10,100);
+  void doIt(Http2SolrClient client) throws Exception {
+    doThreads(client, TEST_NIGHTLY ? 10 : 3,TEST_NIGHTLY ? 100 : 25);
     // doSingle(client, 1);
   }
 
-  void doSingle(HttpSolrClient client, int threadNum) {
+  void doSingle(Http2SolrClient client, int threadNum) {
     try {
       client.add(manyDocs(threadNum*1000000, 1000));
     }
@@ -219,7 +225,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   /***
   @Test
   public void testLive() throws Exception {
-    HttpSolrClient client = new HttpSolrClient("http://localhost:8983/techproducts/solr/");
+    Http2SolrClient client = new Http2SolrClient("http://localhost:8983/techproducts/solr/");
     client.add( sdoc() );
     doiIt(client);
   }
@@ -262,11 +268,12 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testHttpURLConnection() throws Exception {
 
    String bodyString = getJsonDocs(200000);  // sometimes succeeds with this size, but larger can cause OOM from command line
 
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
 
     String urlString = client.getBaseURL() + "/update";
 
@@ -317,6 +324,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";

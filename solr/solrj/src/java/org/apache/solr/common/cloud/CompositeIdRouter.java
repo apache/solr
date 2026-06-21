@@ -24,7 +24,9 @@ import org.apache.solr.common.util.Hash;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * CompositeIdRouter partitions ids based on a {@link #SEPARATOR}, hashes each partition and merges the hashes together
@@ -80,6 +82,22 @@ public class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
   public static final String SEPARATOR = "!";
+
+  public static final String DEFAULT_NAME = NAME;
+  public static final DocRouter DEFAULT = new CompositeIdRouter();
+
+  // currently just an implementation detail...
+  final static Map<String, DocRouter> routerMap;
+  static {
+    routerMap = new HashMap<>();
+    PlainIdRouter plain = new PlainIdRouter();
+    // instead of doing back compat this way, we could always convert the clusterstate on first read to "plain" if it doesn't have any properties.
+    routerMap.put(null, plain);     // back compat with 4.0
+    routerMap.put(PlainIdRouter.NAME, plain);
+    routerMap.put(CompositeIdRouter.NAME, DEFAULT_NAME.equals(CompositeIdRouter.NAME) ? DEFAULT : new CompositeIdRouter());
+    routerMap.put(ImplicitDocRouter.NAME, new ImplicitDocRouter());
+    // NOTE: careful that the map keys (the static .NAME members) are filled in by making them final
+  }
 
   // separator used to optionally specify number of bits to allocate toward first part.
   public static final int bitsSeparator = '/';
@@ -150,7 +168,10 @@ public class CompositeIdRouter extends HashBasedRouter {
     Range completeRange = new KeyParser(id).getRange();
 
     List<Slice> targetSlices = new ArrayList<>(1);
-    for (Slice slice : collection.getActiveSlicesArr()) {
+    for (Slice slice : collection.getSlices()) {
+      if (slice.getState() != Slice.State.ACTIVE) {
+        continue;
+      }
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
         targetSlices.add(slice);
@@ -210,7 +231,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     // With default bits==16, one would need to create more than 4000 shards before this
     // becomes false by default.
     int mask = 0x0000ffff;
-    boolean round = rangeStep >= (1 << bits) * 16;
+    boolean round = rangeStep >= (1L << bits) * 16L;
 
     while (end < max) {
       targetEnd = targetStart + rangeStep;
@@ -350,7 +371,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       return masks;
     }
 
-    private int[] getBitMasks(int firstBits, int secondBits) {
+    private static int[] getBitMasks(int firstBits, int secondBits) {
       // java can't shift 32 bits
       int[] masks = new int[3];
       masks[0] = firstBits == 0 ? 0 : (-1 << (32 - firstBits));
@@ -360,7 +381,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       return masks;
     }
 
-    private int getNumBits(String firstPart, int commaIdx) {
+    private static int getNumBits(String firstPart, int commaIdx) {
       int v = 0;
       for (int idx = commaIdx + 1; idx < firstPart.length(); idx++) {
         char ch = firstPart.charAt(idx);
@@ -370,7 +391,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       return v > 32 ? -1 : v;
     }
 
-    private int[] getBitMasks(int firstBits) {
+    private static int[] getBitMasks(int firstBits) {
       // java can't shift 32 bits
       int[] masks;
       masks = new int[2];

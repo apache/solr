@@ -45,7 +45,7 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
     tokenNL.add("end", 7);
     tokenNL.add("position", 1);
 
-    AnalysisResponseBase response = new AnalysisResponseBase();
+    AnalysisResponseBase response = new AnalysisResponseBase(null);
 
     AnalysisResponseBase.TokenInfo tokenInfo = response.buildTokenInfo(tokenNL);
     assertEquals("JUMPING", tokenInfo.getText());
@@ -82,7 +82,7 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
     nl.add("Filter2", buildFakeTokenInfoList(4));
     nl.add("Filter3", buildFakeTokenInfoList(3));
 
-    AnalysisResponseBase response = new AnalysisResponseBase() {
+    AnalysisResponseBase response = new AnalysisResponseBase(nl) {
       @Override
       protected TokenInfo buildTokenInfo(NamedList tokenNL) {
         return tokenInfo;
@@ -106,7 +106,7 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
   public void testCharFilterBuildPhases() throws Exception {
     NamedList nl = new NamedList();
     nl.add("CharFilter1", "CharFilterOutput"); //not list of tokens
-    AnalysisResponseBase response = new AnalysisResponseBase();
+    AnalysisResponseBase response = new AnalysisResponseBase(nl);
     List<AnalysisResponseBase.AnalysisPhase> phases = response.buildPhases(nl);
     assertEquals(1, phases.size());
   }

@@ -60,13 +60,14 @@ public class ExclusiveOrEvaluator extends RecursiveBooleanEvaluator implements M
 
   @Override
   protected Checker constructChecker(Object value) throws IOException {
-    return new BooleanChecker(){
-      @Override
-      public boolean test(Object left, Object right) {
-        // does nothing useful
-        return false;
-      }
-    };
+    return new MyBooleanChecker();
   }
 
+  private static class MyBooleanChecker implements BooleanChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      // does nothing useful
+      return false;
+    }
+  }
 }

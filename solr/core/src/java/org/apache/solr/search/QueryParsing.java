@@ -351,7 +351,7 @@ public class QueryParsing {
    */
   public static String toString(Query query, IndexSchema schema) {
     try {
-      StringBuilder sb = new StringBuilder();
+      StringBuilder sb = new StringBuilder(32);
       toString(query, schema, sb, 0);
       return sb.toString();
     } catch (Exception e) {

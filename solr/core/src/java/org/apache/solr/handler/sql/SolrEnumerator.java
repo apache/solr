@@ -85,7 +85,7 @@ class SolrEnumerator implements Enumerator<Object> {
     Class clazz = field.getValue();
     if(clazz.equals(Long.class)) {
       if(val instanceof Double) {
-        return this.getRealVal(val);
+        return SolrEnumerator.getRealVal(val);
       }
       return val;
     }
@@ -104,7 +104,7 @@ class SolrEnumerator implements Enumerator<Object> {
     return val;
   }
 
-  private Object getRealVal(Object val) {
+  private static Object getRealVal(Object val) {
     // Check if Double is really a Long
     if(val instanceof Double) {
       double doubleVal = (double) val;

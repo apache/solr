@@ -16,45 +16,45 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CommonParams.NAME;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class CollectionMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCloudManager cloudManager;
   protected final DistribStateManager stateManager;
+  private final ZkStateReader reader;
 
-  public CollectionMutator(SolrCloudManager cloudManager) {
+  public CollectionMutator(SolrCloudManager cloudManager, ZkStateReader reader) {
     this.cloudManager = cloudManager;
     this.stateManager = cloudManager.getDistribStateManager();
+    this.reader = reader;
   }
 
-  public ZkWriteCommand createShard(final ClusterState clusterState, ZkNodeProps message) {
+  public ClusterState createShard(final ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
@@ -77,34 +77,52 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
-      return new ZkWriteCommand(collectionName, collection);
+      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName, collection.getId()));
+
+      Map<String,byte[]> paths = new HashMap<>();
+
+        try {
+       //   paths.put(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect", null);
+          paths.put(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" +  shardId + "/election", null);
+       //   paths.put(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/", null);
+          paths.put(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/" +  shardId, null);
+          paths.put(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/" +  shardId + "/leader", null);
+      //    paths.put(ZkStateReader.COLLECTIONS_ZKNODE  + "/" + collectionName + "/terms", null);
+          paths.put(ZkStateReader.COLLECTIONS_ZKNODE  + "/" + collectionName + "/terms/" + shardId, ZkStateReader.emptyJson);
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      try {
+        reader.getZkClient().mkdirs(paths, 3);
+      } catch (KeeperException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+
+      return clusterState.copyWith(collectionName, collection);
     } else {
       log.error("Unable to create Shard: {} because it already exists in collection: {}", shardId, collectionName);
-      return ZkStateWriter.NO_OP;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);
     }
   }
 
-  public ZkWriteCommand deleteShard(final ClusterState clusterState, ZkNodeProps message) {
+  public static ClusterState deleteShard(final ClusterState clusterState, ZkNodeProps message) {
     final String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
 
     log.info("Removing collection: {} shard: {}  from clusterstate", collection, sliceId);
 
     DocCollection coll = clusterState.getCollection(collection);
 
     Map<String, Slice> newSlices = new LinkedHashMap<>(coll.getSlicesMap());
-    newSlices.remove(sliceId);
+    newSlices.get(sliceId).getProperties().put("remove", "true");
 
-    DocCollection newCollection = coll.copyWithSlices(newSlices);
-    return new ZkWriteCommand(collection, newCollection);
+    DocCollection newCollection = coll.copyWithSlicesShallow(newSlices);
+    return clusterState.copyWith(collection, newCollection);
   }
 
-  public ZkWriteCommand modifyCollection(final ClusterState clusterState, ZkNodeProps message) {
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
+  public static ClusterState modifyCollection(final ClusterState clusterState, ZkNodeProps message) {
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
-    Map<String, Object> m = coll.shallowCopy();
+    Map<String, Object> m = new LinkedHashMap<>(coll.getProps());
     boolean hasAnyOps = false;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
       if (message.containsKey(prop)) {
@@ -120,42 +138,41 @@ public class CollectionMutator {
       }
     }
     // other aux properties are also modifiable
-    for (String prop : message.keySet()) {
+    for (Map.Entry<String,Object> theEntry : message.getProperties().entrySet()) {
+      Map.Entry<String,Object> entry = theEntry;
+      String prop = entry.getKey();
       if (prop.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
         hasAnyOps = true;
-        if (message.get(prop) == null) {
+        if (entry.getValue() == null) {
           m.remove(prop);
         } else {
-          m.put(prop, message.get(prop));
+          m.put(prop, entry.getValue());
         }
       }
     }
 
     if (!hasAnyOps) {
-      return ZkStateWriter.NO_OP;
+      return clusterState;
     }
 
-    return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode()));
+    return clusterState.copyWith(coll.getName(),
+        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
-    DocCollection newCollection = null;
+    DocCollection newCollection;
     Map<String, Slice> slices;
 
     if (collection == null) {
-      //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
-      // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
-      slices = new LinkedHashMap<>(1);
-      slices.put(slice.getName(), slice);
-      Map<String, Object> props = new HashMap<>(1);
-      props.put(DocCollection.DOC_ROUTER, Utils.makeMap(NAME, ImplicitDocRouter.NAME));
-      newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
+      throw new IllegalStateException("Collection does not exist: " + collectionName);
     } else {
       slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
       slices.put(slice.getName(), slice);
-      newCollection = collection.copyWithSlices(slices);
+      newCollection = collection.copyWithSlicesShallow(slices);
     }
+    log.debug("docCollection={} with slice={} to newDocCollection={} via toString, but physical replicas={}", collection, slice, newCollection, newCollection.getReplicas());
+
+   // assert newCollection.getSlice(slice.getName()).getReplicasMap().keySet().containsAll(slice.getReplicasMap().keySet());
 
     return newCollection;
   }
@@ -166,7 +183,7 @@ public class CollectionMutator {
 
   static boolean checkKeyExistence(ZkNodeProps message, String key) {
     String value = message.getStr(key);
-    if (value == null || value.trim().length() == 0) {
+    if (value == null || StringUtils.isBlank(value)) {
       log.error("Skipping invalid Overseer message because it has no {} specified '{}'", key, message);
       return false;
     }

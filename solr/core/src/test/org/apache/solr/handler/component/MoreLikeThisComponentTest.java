@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -24,6 +23,7 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,11 +33,10 @@ import org.junit.Test;
  *
  * @see MoreLikeThisComponent
  */
-@Slow
 public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void moreLikeThisBeforeClass() throws Exception {
+  public static void beforeMoreLikeThisBeforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
     assertU(adoc("id","42","name","Tom Cruise","subword","Top Gun","subword","Risky Business","subword","The Color of Money","subword","Minority Report","subword", "Days of Thunder","subword", "Eyes Wide Shut","subword", "Far and Away", "foo_ti","10"));
     assertU(adoc("id","43","name","Tom Hanks","subword","The Green Mile","subword","Forest Gump","subword","Philadelphia Story","subword","Big","subword","Cast Away", "foo_ti","10"));
@@ -45,6 +44,11 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id","45","name","George Harrison","subword","Yellow Submarine","subword","Help","subword","Magical Mystery Tour","subword","Sgt. Peppers Lonley Hearts Club Band"));
     assertU(adoc("id","46","name","Nicole Kidman","subword","Batman","subword","Days of Thunder","subword","Eyes Wide Shut","subword","Far and Away"));
     assertU(commit());
+  }
+
+  @AfterClass
+  public static void afterMoreLikeThisBeforeClass() throws Exception {
+    deleteCore();
   }
   
   private void initCommonMoreLikeThisParams(ModifiableSolrParams params) {
@@ -64,16 +68,15 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     initCommonMoreLikeThisParams(params);
     
     params.set(CommonParams.Q, "id:42");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
-    assertQ("morelikethis - tom cruise",mltreq
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params, true);
+    assertQ("morelikethis - tom cruise", mltreq
         ,"//result/doc[1]/str[@name='id'][.='46']"
         ,"//result/doc[2]/str[@name='id'][.='43']");
 
     params.set(CommonParams.Q, "id:44");
-    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ("morelike this - harrison ford",mltreq
         ,"//result/doc[1]/str[@name='id'][.='45']");
-    mltreq.close();
   }
 
   @Test
@@ -86,13 +89,12 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
     
     params.set(CommonParams.Q, "id:42");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params, true);
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/str[@name='id'][.='46']"
         ,"//result/doc[2]/str[@name='id'][.='43']",
         "//lst[@name='interestingTerms']/lst[1][count(*)>0]",
         "//lst[@name='interestingTerms']/lst[1]/float[.=1.0]");
-    mltreq.close();
   }
 
   @Test
@@ -105,13 +107,12 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "list");
 
     params.set(CommonParams.Q, "id:42");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params, true);
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/str[@name='id'][.='46']"
         ,"//result/doc[2]/str[@name='id'][.='43']",
         "//lst[@name='interestingTerms']/arr[@name='42'][count(*)>0]",
         "//lst[@name='interestingTerms']/arr[@name='42']/str[.='name:Cruise']");
-    mltreq.close();
   }
 
   @Test
@@ -124,19 +125,17 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.BOOST, "true");
 
     params.set(CommonParams.Q, "id:42");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params, true);
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/str[@name='id'][.='46']"
         ,"//result/doc[2]/str[@name='id'][.='43']");
 
     params.set(CommonParams.Q, "id:42");
     params.set(MoreLikeThisParams.QF,"name^5.0 subword^0.1");
-    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ("morelikethis with weights",mltreq
         ,"//result/doc[1]/str[@name='id'][.='43']"
         ,"//result/doc[2]/str[@name='id'][.='46']");
-
-    mltreq.close();
   }
 
   @Test
@@ -150,7 +149,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
     
     params.set(CommonParams.Q, "id:42");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params, true);
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/str[@name='id'][.='46']"
         ,"//result/doc[2]/str[@name='id'][.='43']",
@@ -158,14 +157,12 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='interestingTerms']/lst[1]/float[.>1.0]");
     
     params.set(MoreLikeThisParams.QF,"name^5.0 subword^0.1");
-    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ("morelikethis with weights",mltreq
         ,"//result/doc[1]/str[@name='id'][.='43']"
         ,"//result/doc[2]/str[@name='id'][.='46']",
         "//lst[@name='interestingTerms']/lst[1][count(*)>0]",
         "//lst[@name='interestingTerms']/lst[1]/float[.>5.0]");
-
-    mltreq.close();
   }
 
   @Test
@@ -179,7 +176,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "list");
 
     params.set(CommonParams.Q, "id:42");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params, true);
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/str[@name='id'][.='46']"
         ,"//result/doc[2]/str[@name='id'][.='43']",
@@ -187,14 +184,12 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='interestingTerms']/arr[@name='42']/str[.='name:Cruise']");
 
     params.set(MoreLikeThisParams.QF,"name^5.0 subword^0.1");
-    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ("morelikethis with weights",mltreq
         ,"//result/doc[1]/str[@name='id'][.='43']"
         ,"//result/doc[2]/str[@name='id'][.='46']",
         "//lst[@name='interestingTerms']/arr[@name='42'][count(*)>0]",
         "//lst[@name='interestingTerms']/arr[@name='42']/str[.='name:Cruise']");
-
-    mltreq.close();
   }
 
   @Test
@@ -207,7 +202,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
 
     params.set(CommonParams.Q, "id:44");
     params.set(CommonParams.DEBUG_QUERY, "true");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ("morelike this - harrison ford",mltreq
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
@@ -217,10 +212,9 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     
     params.remove(CommonParams.DEBUG_QUERY);
     params.set(CommonParams.Q, "{!field f=id}44");
-    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ(mltreq
         ,"//result/doc[1]/str[@name='id'][.='45']");
-    mltreq.close();
   }
 
   @Test
@@ -234,7 +228,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
 
     params.set(CommonParams.Q, "id:44");
     params.set(CommonParams.DEBUG_QUERY, "true");
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ("morelike this - harrison ford",mltreq
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
@@ -245,12 +239,11 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
 
     params.remove(CommonParams.DEBUG_QUERY);
     params.set(CommonParams.Q, "{!field f=id}44");
-    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ(mltreq
         ,"//result/doc[1]/str[@name='id'][.='45']",
         "//lst[@name='interestingTerms']/lst[1][count(*)>0]",
         "//lst[@name='interestingTerms']/lst[1]/float[.>1.0]");
-    mltreq.close();
   }
 
   @Test
@@ -265,7 +258,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(CommonParams.Q, "id:44");
     params.set(CommonParams.DEBUG_QUERY, "true");
     
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ("morelike this - harrison ford",mltreq
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
         ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
@@ -276,11 +269,11 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
 
     params.remove(CommonParams.DEBUG_QUERY);
     params.set(CommonParams.Q, "{!field f=id}44");
-    mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
+
+    mltreq = new LocalSolrQueryRequest(h.getCore(), params, true);
     assertQ(mltreq
         ,"//result/doc[1]/str[@name='id'][.='45']",
         "//lst[@name='interestingTerms']/arr[@name='44'][count(*)>0]",
         "//lst[@name='interestingTerms']/arr[@name='44']/str[.='name:Harrison']");
-    mltreq.close();
   }
 }

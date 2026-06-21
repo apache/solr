@@ -21,7 +21,7 @@ import java.util.Collection;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
   
-  private Collection<ZkCredentials> zkCredentials;
+  private volatile Collection<ZkCredentials> zkCredentials;
 
   @Override
   public Collection<ZkCredentials> getCredentials() {

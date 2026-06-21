@@ -686,11 +686,11 @@
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
 
   <!-- some trie-coded dynamic fields for faster range queries -->
-  <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>
-  <dynamicField name="*_tl" type="tlong" indexed="true" stored="true"/>
-  <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
-  <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
-  <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
+  <dynamicField name="*_ti" type="pint" indexed="true" stored="true"/>
+  <dynamicField name="*_tl" type="plong" indexed="true" stored="true"/>
+  <dynamicField name="*_tf" type="pfloat" indexed="true" stored="true"/>
+  <dynamicField name="*_td" type="pdouble" indexed="true" stored="true"/>
+  <dynamicField name="*_tdt" type="pdate" indexed="true" stored="true"/>
 
   <!-- KD-tree (point) numerics -->
   <dynamicField name="*_pi" type="pint"    indexed="true"  stored="true"/>

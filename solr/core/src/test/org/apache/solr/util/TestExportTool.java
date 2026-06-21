@@ -28,10 +28,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
@@ -43,14 +45,24 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.apache.solr.SolrTestCaseJ4.randomizeNumericTypesProperties;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
 
+  @BeforeClass
+  public static void beforeTestPackages() throws Exception {
+    randomizeNumericTypesProperties();
+  }
+
+  @Test
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
 
     try {
@@ -58,7 +70,6 @@ public class TestExportTool extends SolrCloudTestCase {
           .createCollection(COLLECTION_NAME, "conf", 2, 1)
           .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
       String tmpFileLoc = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
           File.separator).getPath();
@@ -80,7 +91,7 @@ public class TestExportTool extends SolrCloudTestCase {
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
 
 
-      ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
+      ExportTool.Info info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("200");
@@ -89,7 +100,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("-1");
@@ -98,7 +109,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJsonDocsCount(info, 1000,null);
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
       info.setLimit("200");
@@ -107,7 +118,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJavabinDocsCount(info, 200);
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
       info.setLimit("-1");
@@ -121,11 +132,12 @@ public class TestExportTool extends SolrCloudTestCase {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
+  @Test
   public void testVeryLargeCluster() throws Exception {
     String COLLECTION_NAME = "veryLargeColl";
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
 
     try {
@@ -161,9 +173,9 @@ public class TestExportTool extends SolrCloudTestCase {
       long totalDocsFromCores = 0;
       for (Slice slice : coll.getSlices()) {
         Replica replica = slice.getLeader();
-        try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getBaseUrl()).build()) {
-          long count = ExportTool.getDocCount(replica.getCoreName(), client);
-          docCounts.put(replica.getCoreName(), count);
+        try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).build()) {
+          long count = ExportTool.getDocCount(replica.getName(), client);
+          docCounts.put(replica.getName(), count);
           totalDocsFromCores += count;
         }
       }
@@ -172,7 +184,7 @@ public class TestExportTool extends SolrCloudTestCase {
       ExportTool.MultiThreadedRunner info = null;
       String absolutePath = null;
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       info.output = System.out;
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
@@ -182,7 +194,7 @@ public class TestExportTool extends SolrCloudTestCase {
       for (Map.Entry<String, Long> e : docCounts.entrySet()) {
         assertEquals(e.getValue().longValue(), info.corehandlers.get(e.getKey()).receivedDocs.get());
       }
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       info.output = System.out;
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");

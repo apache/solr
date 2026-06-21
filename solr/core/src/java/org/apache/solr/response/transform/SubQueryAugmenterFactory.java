@@ -133,7 +133,7 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
     }
   }
 
-  private SolrParams retainAndShiftPrefix(SolrParams params, String subPrefix) {
+  private static SolrParams retainAndShiftPrefix(SolrParams params, String subPrefix) {
     ModifiableSolrParams out = new ModifiableSolrParams();
     Iterator<String> baseKeyIt = params.getParameterNamesIterator();
     while (baseKeyIt.hasNext()) {
@@ -218,9 +218,9 @@ class SubQueryAugmenter extends DocTransformer {
       final Collection<Object> vals = mapToDocField(param);
       
       if (vals != null) {
-        StringBuilder rez = new StringBuilder();
+        StringBuilder rez = new StringBuilder(32);
         for (Iterator iterator = vals.iterator(); iterator.hasNext();) {
-          Object object = (Object) iterator.next();
+          Object object = iterator.next();
           rez.append(convertFieldValue(object));
           if (iterator.hasNext()) {
             rez.append(separator);
@@ -261,7 +261,7 @@ class SubQueryAugmenter extends DocTransformer {
     }
     
 
-    protected String convertFieldValue(Object val) {
+    protected static String convertFieldValue(Object val) {
       
       if (val instanceof IndexableField) {
         IndexableField f = (IndexableField)val;
@@ -343,9 +343,9 @@ class SubQueryAugmenter extends DocTransformer {
       QueryResponse response = 
           SolrRequestInfoSuspender.doInSuspension(subQuery);
 
-      final SolrDocumentList docList = (SolrDocumentList) response.getResults();
+      final SolrDocumentList docList = response.getResults();
 
-      doc.setField(getName(), new Result(docList));
+      doc.setField(name, new Result(docList));
 
     } catch (Exception e) {
       String docString = doc.toString();

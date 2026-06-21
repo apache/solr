@@ -65,9 +65,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   private final String field;
   private final BytesRef lower;
   private final BytesRef upper;
-  private byte flags;
-  private static byte FLAG_INC_LOWER = 0x01;
-  private static byte FLAG_INC_UPPER = 0x02;
+  private final byte flags;
+  private static final byte FLAG_INC_LOWER = 0x01;
+  private static final byte FLAG_INC_UPPER = 0x02;
 
   public SolrRangeQuery(String field, BytesRef lower, BytesRef upper, boolean includeLower, boolean includeUpper) {
     this.field = field;
@@ -118,9 +118,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   @Override
   public String toString(String field) {
-    StringBuilder buffer = new StringBuilder();
-    if (!getField().equals(field)) {
-      buffer.append(getField());
+    StringBuilder buffer = new StringBuilder(32);
+    if (!this.field.equals(field)) {
+      buffer.append(this.field);
       buffer.append(":");
     }
     // TODO: use our schema?
@@ -137,7 +137,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     visitor.visitLeaf(this);
   }
 
-  private String endpoint(BytesRef ref) {
+  private static String endpoint(BytesRef ref) {
     if (ref == null) return "*";
     String toStr = Term.toString(ref);
     if ("*".equals(toStr)) {
@@ -300,7 +300,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
 
   public TermsEnum getTermsEnum(LeafReaderContext ctx) throws IOException {
-    return new RangeTermsEnum( ctx.reader().terms(getField()) );
+    return new RangeTermsEnum( ctx.reader().terms(field) );
   }
 
 
@@ -360,7 +360,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (terms == null) {
         return null;
       }
-      if (terms.hasPositions() == false) {
+      if (!terms.hasPositions()) {
         return super.matches(context, doc);
       }
       return MatchesUtils.forField(query.field, () -> MatchesUtils.disjunction(context, doc, query, query.field, query.getTermsEnum(context)));
@@ -399,7 +399,6 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         if (solrSearcher.getFilterCache() == null) {
           doCheck = false;
         } else {
-          solrSearcher = (SolrIndexSearcher)searcher;
           DocSet answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
           if (answer != null) {
             filter = answer.getTopFilter();
@@ -422,7 +421,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
       PostingsEnum docs = null;
 
-      final List<TermAndState> collectedTerms = new ArrayList<>();
+      final List<TermAndState> collectedTerms = new ArrayList<>(32);
       long count = collectTerms(context, termsEnum, collectedTerms);
       if (count < 0) {
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
@@ -465,7 +464,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
       DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
       builder.grow((int)Math.min(Integer.MAX_VALUE,count));
-      if (collectedTerms.isEmpty() == false) {
+      if (!collectedTerms.isEmpty()) {
         TermsEnum termsEnum2 = terms.iterator();
         for (TermAndState t : collectedTerms) {
           termsEnum2.seekExact(t.term, t.state);

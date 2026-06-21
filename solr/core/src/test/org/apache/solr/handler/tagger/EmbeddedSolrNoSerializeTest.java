@@ -45,7 +45,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -57,14 +56,15 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   static EmbeddedSolrServer solrServer;
 
   @BeforeClass
-  public static void init() throws Exception {
+  public static void beforeEmbeddedSolrNoSerializeTest() throws Exception {
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
     solrServer = new EmbeddedSolrServer(h.getCoreContainer(), "collection1");
     //we don't need to close the EmbeddedSolrServer because SolrTestCaseJ4 closes the core
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void afterEmbeddedSolrNoSerializeTest() throws Exception {
+    deleteCore();
     solrServer = null;
   }
 
@@ -122,16 +122,6 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   @Test
   public void testAssertTagStreamingWithSolrTaggerRequest() throws Exception {
     doTestAssertTagStreaming(SolrTaggerRequest::new);
-  }
-
-  @Test
-  @Ignore("As of Solr 7, stream.body is disabled by default for security ") // DWS: dubious, IMO
-  // and it can't be enabled with EmbeddedSolrServer until SOLR-12126
-  public void testAssertTagStreamingWithStreamBodyParam() throws Exception {
-    doTestAssertTagStreaming((params, input) -> {
-      params.set("stream.body", input);
-      return new QueryRequest(params);
-    });
   }
 
   public void doTestAssertTagStreaming(BiFunction<ModifiableSolrParams,String,QueryRequest> newQueryRequest) throws IOException, SolrServerException {

@@ -95,7 +95,7 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
   @Override
   public boolean isDerivedFrom(StreamComparator base){
     if(null == base){ return false; }
-    if(base instanceof StreamComparator){
+    if(base instanceof MultipleFieldComparator){
       MultipleFieldComparator baseComps = (MultipleFieldComparator)base;
       
       if(baseComps.getComps().length >= eqs.length){

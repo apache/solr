@@ -27,6 +27,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.MapSolrParams;
@@ -47,6 +48,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly
 public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -71,6 +73,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     initCore("solrconfig-tlog.xml", "schema.xml");
     core = h.getCore();
     updateHandler = (DirectUpdateHandler2) core.getUpdateHandler();
+    core.close();
 
     // we don't care about auto-commit's opening a new Searcher in this test, just skip it.
     updateHandler.softCommitTracker.setOpenSearcher(false);

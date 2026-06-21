@@ -49,20 +49,20 @@ public class ReplaceWithValueOperation implements StreamOperation {
       wasBuiltWithFieldName = false;
       
       this.fieldName = forField;
-      this.original = factory.constructPrimitiveObject(factory.getValueOperand(expression, 0));
+      this.original = StreamFactory.constructPrimitiveObject(StreamFactory.getValueOperand(expression, 0));
 
     }
     else if(3 == expression.getParameters().size()){
       wasBuiltWithFieldName = true;
       
-      this.fieldName = factory.getValueOperand(expression, 0);
-      this.original = factory.constructPrimitiveObject(factory.getValueOperand(expression, 1));
+      this.fieldName = StreamFactory.getValueOperand(expression, 0);
+      this.original = StreamFactory.constructPrimitiveObject(StreamFactory.getValueOperand(expression, 1));
     }
     else{
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
     }
     
-    StreamExpressionNamedParameter replacementParameter = factory.getNamedOperand(expression, "withValue");
+    StreamExpressionNamedParameter replacementParameter = StreamFactory.getNamedOperand(expression, "withValue");
     if(null == replacementParameter){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a parameter named 'withValue' but didn't find one.", expression));
     }
@@ -70,7 +70,7 @@ public class ReplaceWithValueOperation implements StreamOperation {
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting parameter named 'withValue' to be a primitive type.", expression));      
     }
     
-    this.replacement = factory.constructPrimitiveObject(((StreamExpressionValue)replacementParameter.getParameter()).getValue());
+    this.replacement = StreamFactory.constructPrimitiveObject(((StreamExpressionValue)replacementParameter.getParameter()).getValue());
   }
   
   @Override

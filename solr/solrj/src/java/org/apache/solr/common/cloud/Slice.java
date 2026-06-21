@@ -16,6 +16,11 @@
  */
 package org.apache.solr.common.cloud;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import org.agrona.collections.Object2ObjectHashMap;
+import org.noggit.JSONWriter;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -25,11 +30,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import org.apache.solr.common.cloud.Replica.Type;
-import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
@@ -37,21 +41,37 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
-  public final String collection;
+ // private static transient final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  final String collection;
+
+  final Integer collectionId;
+
+  private volatile Replica leader;
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    Slice slice = (Slice) o;
+    return collection.equals(slice.collection) && collectionId.equals(slice.collectionId) && name.equals(slice.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return hashcode;
+  }
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
-  public static Map<String,Slice> loadAllFromMap(String collection, Map<String, Object> genericSlices) {
+  public static Map<String,Slice> loadAllFromMap(String collection, Integer id, Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
-    Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
-    for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
-      String name = entry.getKey();
-      Object val = entry.getValue();
+    Map<String, Slice> result =  new Object2ObjectLinkedOpenHashMap<>(genericSlices.size(), 0.5f);
+    genericSlices.forEach((name, val) -> {
       if (val instanceof Slice) {
         result.put(name, (Slice) val);
       } else if (val instanceof Map) {
-        result.put(name, new Slice(name, null, (Map<String, Object>) val, collection));
+        result.put(name, new Slice(name, null, (Map<String,Object>) val, collection, id));
       }
-    }
+    });
     return result;
   }
 
@@ -60,6 +80,16 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     return replicas.values().iterator();
   }
 
+
+  public Slice copyWithReplicas(Map<String,Replica> replicasCopy) {
+    Slice s = new Slice(name, replicasCopy, propMap, name, collectionId);
+    return s;
+  }
+
+  void setLeader(Replica replica) {
+    //log.info("update leader for slice {} {}", replica.getName(), getName());
+    this.leader = replica;
+  }
   /** The slice's state. */
   public enum State {
 
@@ -117,102 +147,104 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   private final String name;
   private final DocRouter.Range range;
-  private final Integer replicationFactor;      // FUTURE: optional per-slice override of the collection replicationFactor
-  private final Map<String,Replica> replicas;
-  private final Replica leader;
-  private final State state;
+
+  final Map<String,Replica> replicas;
+//  private Replica leader;
+  private State state;
   private final String parent;
   private final Map<String, RoutingRule> routingRules;
+
+  private final int hashcode;
 
   /**
    * @param name  The name of the slice
    * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.
    * @param props  The properties of the slice - a shallow copy will always be made.
    */
-  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection) {
-    super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<>(props));
+  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection, Integer collectionId) {
+    super(props == null ? new Object2ObjectLinkedOpenHashMap<>(32, 0.5f) : new Object2ObjectLinkedOpenHashMap<>(props, 0.5f));
     this.name = name;
     this.collection = collection;
-
-    Object rangeObj = propMap.get(RANGE);
-    if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+    this.collectionId = collectionId;
+    Object rangeObj = get(RANGE);
+    if (get(ZkStateReader.STATE_PROP) != null) {
+      this.state = State.getState((String) get(ZkStateReader.STATE_PROP));
     } else {
       this.state = State.ACTIVE;                         //Default to ACTIVE
       propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
     DocRouter.Range tmpRange = null;
     if (rangeObj instanceof DocRouter.Range) {
-      tmpRange = (DocRouter.Range)rangeObj;
+      tmpRange = (DocRouter.Range) rangeObj;
     } else if (rangeObj != null) {
       // Doesn't support custom implementations of Range, but currently not needed.
-      tmpRange = DocRouter.DEFAULT.fromString(rangeObj.toString());
+      tmpRange = DocRouter.fromString(rangeObj.toString());
     }
     range = tmpRange;
 
-    /** debugging.  this isn't an error condition for custom sharding.
-    if (range == null) {
-      System.out.println("###### NO RANGE for " + name + " props=" + props);
+    if (replicas != null) {
+      for (Replica replica : replicas.values()) {
+        replica.setSlice(this);
+      }
     }
-    **/
 
-    if (propMap.containsKey(PARENT) && propMap.get(PARENT) != null)
-      this.parent = (String) propMap.get(PARENT);
-    else
-      this.parent = null;
+    /** debugging.  this isn't an error condition for custom sharding.
+     if (range == null) {
+     System.out.println("###### NO RANGE for " + name + " props=" + props);
+     }
+     **/
 
-    replicationFactor = null;  // future
+    if (containsKey(PARENT) && get(PARENT) != null) this.parent = (String) get(PARENT);
+    else this.parent = null;
 
     // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
-    this.replicas = replicas != null ? replicas : makeReplicas(collection,name, (Map<String,Object>)propMap.get(REPLICAS));
+    this.replicas = replicas != null ? replicas : makeReplicas(collection, collectionId, name, (Map<String,Object>) get(REPLICAS));
+
     propMap.put(REPLICAS, this.replicas);
 
-    Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
+    Map<String,Object> rules = (Map<String,Object>) get("routingRules");
     if (rules != null) {
-      this.routingRules = new HashMap<>();
-      for (Map.Entry<String, Object> entry : rules.entrySet()) {
-        Object o = entry.getValue();
+      this.routingRules = new Object2ObjectHashMap<>();
+      rules.forEach((key, o) -> {
         if (o instanceof Map) {
-          Map map = (Map) o;
-          RoutingRule rule = new RoutingRule(entry.getKey(), map);
-          routingRules.put(entry.getKey(), rule);
+          // From the StateUpdates/JavaBin channel this is an Object2ObjectMap, but a routingRules map
+          // read back from JSON state.json is a plain java.util.Map (e.g. LinkedHashMap). Wrap it into the
+          // fastutil map the RoutingRule ctor expects instead of blind-casting (which threw
+          // ClassCastException: LinkedHashMap cannot be cast to Object2ObjectLinkedOpenHashMap, making the
+          // whole collection unloadable once a routing rule existed — e.g. after MIGRATE).
+          @SuppressWarnings("unchecked")
+          Object2ObjectMap<String,Object> map = (o instanceof Object2ObjectMap)
+              ? (Object2ObjectMap<String,Object>) o
+              : new Object2ObjectLinkedOpenHashMap<>((Map<String,Object>) o, 0.5f);
+          RoutingRule rule = new RoutingRule(key, map);
+          routingRules.put(key, rule);
         } else {
-          routingRules.put(entry.getKey(), (RoutingRule) o);
+          routingRules.put(key, (RoutingRule) o);
         }
-      }
+      });
     } else {
       this.routingRules = null;
     }
 
-    leader = findLeader();
+    hashcode = Objects.hash(collection, collectionId, name);
   }
 
 
-  private Map<String,Replica> makeReplicas(String collection, String slice,Map<String,Object> genericReplicas) {
-    if (genericReplicas == null) return new HashMap<>(1);
-    Map<String,Replica> result = new LinkedHashMap<>(genericReplicas.size());
-    for (Map.Entry<String,Object> entry : genericReplicas.entrySet()) {
-      String name = entry.getKey();
-      Object val = entry.getValue();
+  private Map<String,Replica> makeReplicas(String collection, Integer collectionId, String slice, Map<String,Object> genericReplicas) {
+    if (genericReplicas == null) return new Object2ObjectHashMap();
+    Object2ObjectMap<String,Replica> result = new Object2ObjectLinkedOpenHashMap<String,Replica>(genericReplicas.size(), 0.5f);
+    genericReplicas.forEach((name, val) -> {
       Replica r;
       if (val instanceof Replica) {
-        r = (Replica)val;
+        r = (Replica) val;
+
       } else {
-        r = new Replica(name, (Map<String,Object>)val, collection, slice);
+        r = new Replica(name, new Object2ObjectLinkedOpenHashMap((Map)val, 0.25f), collection, collectionId, this.name, this);
+
       }
       result.put(name, r);
-    }
+    });
     return result;
-  }
-
-  private Replica findLeader() {
-    for (Replica replica : replicas.values()) {
-      if (replica.getStr(LEADER) != null) {
-        assert replica.getType() == Type.TLOG || replica.getType() == Type.NRT: "Pull replica should not become leader!";
-        return replica;
-      }
-    }
-    return null;
   }
 
   public String getCollection() {
@@ -258,11 +290,24 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
   public Replica getLeader() {
-    return leader;
+    return getLeader(Collections.emptySet());
+  }
+
+  public Replica getLeader(Set<String> liveNodes) {
+
+    for (Replica replica : this.replicas.values()) {
+      if (replica.getRawState() == Replica.State.LEADER && (liveNodes.size() == 0 || liveNodes.contains(replica.getNodeName()))) {
+        this.leader = replica;
+        return replica;
+      }
+    }
+
+    return null;
   }
 
   public Replica getReplica(String replicaName) {
-    return replicas.get(replicaName);
+    Replica replica = replicas.get(replicaName);
+    return replica;
   }
 
   public DocRouter.Range getRange() {
@@ -271,6 +316,12 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public State getState() {
     return state;
+  }
+
+  // hack for zk writer
+  public void setState(State state) {
+     this.state = state;
+    propMap.put(ZkStateReader.STATE_PROP, state.toString());
   }
 
   public String getParent() {
@@ -283,8 +334,9 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   @Override
   public String toString() {
-    return name + ':' + toJSONString(propMap);
+    return name + "[" + leader + "]"  + ':' + toJSONString(propMap);
   }
+
 
   @Override
   public void write(JSONWriter jsonWriter) {

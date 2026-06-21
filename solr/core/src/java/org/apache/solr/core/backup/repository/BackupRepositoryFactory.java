@@ -68,8 +68,7 @@ public class BackupRepositoryFactory {
   public BackupRepository newInstance(SolrResourceLoader loader, String name) {
     Objects.requireNonNull(loader);
     Objects.requireNonNull(name);
-    PluginInfo repo = Objects.requireNonNull(backupRepoPluginByName.get(name),
-        "Could not find a backup repository with name " + name);
+    PluginInfo repo = Objects.requireNonNull(backupRepoPluginByName.get(name), () -> "Could not find a backup repository with name " + name);
 
     BackupRepository result = loader.newInstance(repo.className, BackupRepository.class);
     result.init(repo.initArgs);

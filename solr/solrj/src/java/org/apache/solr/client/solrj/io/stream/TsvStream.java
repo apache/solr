@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -28,6 +29,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class TsvStream extends CsvStream implements Expressible {
 
   private static final long serialVersionUID = 1;
+  private static final Pattern COMPILE = Pattern.compile("\\t");
 
   public TsvStream(StreamExpression expression,StreamFactory factory) throws IOException {
     super(expression, factory);
@@ -74,7 +76,7 @@ public class TsvStream extends CsvStream implements Expressible {
   }
 
   protected String[] split(String line) {
-    String[] parts = line.split("\\t", -1);
+    String[] parts = COMPILE.split(line, -1);
     return parts;
   }
 

@@ -26,7 +26,7 @@ import org.apache.solr.SolrTestCase;
 public class DynamicMapsTest extends SolrTestCase {
 
   public void testIntFloatMap() {
-    IntFloatDynamicMap map = new IntFloatDynamicMap(10, -1.1f);
+    IntFloatDynamicMap map = new IntFloatDynamicMap(100,100, -1.1f);
     Map<Integer, Float> standard = new HashMap<>();
     for (int i = 0; i < 100; i++) {
       int key = random().nextInt(100) + 1;
@@ -47,7 +47,7 @@ public class DynamicMapsTest extends SolrTestCase {
   }
 
   public void testIntLongMap() {
-    IntLongDynamicMap map = new IntLongDynamicMap(10, -1);
+    IntLongDynamicMap map = new IntLongDynamicMap(10, 3, -1);
     Map<Integer, Long> standard = new HashMap<>();
     for (int i = 0; i < 100; i++) {
       int key = random().nextInt(100) + 1;
@@ -68,7 +68,7 @@ public class DynamicMapsTest extends SolrTestCase {
   }
 
   public void testIntIntMap() {
-    IntIntDynamicMap map = new IntIntDynamicMap(10, -1);
+    IntIntDynamicMap map = new IntIntDynamicMap(100, 90, -1);
     Map<Integer, Integer> standard = new HashMap<>();
     for (int i = 0; i < 100; i++) {
       int key = random().nextInt(100) + 1;

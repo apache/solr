@@ -17,10 +17,11 @@
 package org.apache.solr;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.IntervalFacet.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -29,8 +30,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
-@SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
+@SolrTestCase.SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+@LuceneTestCase.Nightly // can be a slow test
 public class DistributedIntervalFacetingTest extends
     BaseDistributedSearchTestCase {
 
@@ -42,7 +44,6 @@ public class DistributedIntervalFacetingTest extends
 
   @Test
   public void test() throws Exception {
-    del("*:*");
     commit();
     testRandom();
     del("*:*");
@@ -104,18 +105,18 @@ public class DistributedIntervalFacetingTest extends
 
   private void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
-    int cardinality = 1000000;
+    int cardinality = TEST_NIGHTLY ? 1000000 : 250;
     // Fields to use for interval faceting
     String[] fields = new String[]{"test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv",
         "test_ss_dv", "test_is_dv", "test_fs_dv", "test_ls_dv", "test_ds_dv"};
-    for (int i = 0; i < atLeast(500); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 50); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         indexr("id", String.valueOf(i));
         continue;
       }
 
-      if (random().nextInt(100) == 0 && i > 0) {
+      if (random().nextInt(TEST_NIGHTLY ? 100 : 20) == 0 && i > 0) {
         //delete some docs
         del("id:" + String.valueOf(i - 1));
       }
@@ -145,7 +146,7 @@ public class DistributedIntervalFacetingTest extends
         docFields[j++] = String.valueOf(random().nextDouble() * cardinality);
       }
       indexr(docFields);
-      if (random().nextInt(50) == 0) {
+      if (random().nextInt(TEST_NIGHTLY ? 50 : 5) == 0) {
         commit();
       }
     }
@@ -157,7 +158,7 @@ public class DistributedIntervalFacetingTest extends
     handle.put("maxScore", SKIPVAL);
 
 
-    for (int i = 0; i < atLeast(100); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(TEST_NIGHTLY ? 100 : 15); i++) {
       doTestQuery(cardinality, fields);
     }
 
@@ -183,7 +184,7 @@ public class DistributedIntervalFacetingTest extends
       params.set("facet.interval", getFieldWithKey(field));
     }
     // number of intervals
-    for (int i = 0; i < 1 + random().nextInt(20); i++) {
+    for (int i = 0; i < 1 + random().nextInt(TEST_NIGHTLY ? 20 : 5); i++) {
       Integer[] interval = getRandomRange(cardinality, field);
       String open = startOptions[interval[0] % 2];
       String close = endOptions[interval[1] % 2];
@@ -193,7 +194,7 @@ public class DistributedIntervalFacetingTest extends
 
   }
 
-  private String getFieldWithKey(String field) {
+  private static String getFieldWithKey(String field) {
     return "{!key='_some_key_for_" + field + "_" + random().nextInt() + "'}" + field;
   }
 
@@ -205,12 +206,12 @@ public class DistributedIntervalFacetingTest extends
    * two fields used for Strings), the comparison will be done
    * alphabetically
    */
-  private Integer[] getRandomRange(int max, String fieldName) {
+  private static Integer[] getRandomRange(int max, String fieldName) {
     Integer[] values = new Integer[2];
     values[0] = random().nextInt(max);
     values[1] = random().nextInt(max);
     if ("test_s_dv".equals(fieldName) || "test_ss_dv".equals(fieldName)) {
-      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
+      Arrays.sort(values, Comparator.comparing(String::valueOf));
     } else {
       Arrays.sort(values);
     }

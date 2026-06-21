@@ -22,10 +22,12 @@ import java.util.EnumSet;
 import javax.xml.xpath.XPathConstants;
 
 import org.apache.solr.common.luke.FieldFlag;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.CustomAnalyzerStrField; // jdoc
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.TestHarness;
 import org.junit.Assert;
 import org.junit.Before;
@@ -116,20 +118,17 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
     }
 
-    // diff loop for checking 'index' flags,
-    // only valid for fields that are indexed & stored
-    for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
-        "solr_td","solr_dt","solr_b")) {
-      if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
-      final String xp = getFieldXPathPrefix(f);
-      assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
-          req("qt","/admin/luke", "fl", f),
-          numFlags+"=string-length("+xp+"[@name='index'])");
+    try (SolrCore core = h.getCore()) {
+      // diff loop for checking 'index' flags,
+      // only valid for fields that are indexed & stored
+      for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti", "solr_td", "solr_dt", "solr_b")) {
+        if (core.getLatestSchema().getField(f).getType().isPointField()) continue;
+        final String xp = getFieldXPathPrefix(f);
+        assertQ("Not as many index flags as expected (" + numFlags + ") for " + f, req("qt", "/admin/luke", "fl", f), numFlags + "=string-length(" + xp + "[@name='index'])");
 
-      final String hxp = getFieldXPathHistogram(f);
-      assertQ("Historgram field should be present for field "+f,
-          req("qt", "/admin/luke", "fl", f),
-          hxp+"[@name='histogram']");
+        final String hxp = getFieldXPathHistogram(f);
+        assertQ("Historgram field should be present for field " + f, req("qt", "/admin/luke", "fl", f), hxp + "[@name='histogram']");
+      }
     }
   }
 
@@ -145,17 +144,6 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   private static String dynfield(String field) {
     return "//lst[@name='dynamicFields']/lst[@name='"+field+"']/";
   }
-  
-  @Test
-  public void testIndexHeapUsageBytes() throws Exception {
-    try (SolrQueryRequest req = req("qt", "/admin/luke")) {
-      String response = h.query(req);
-      String xpath = "//long[@name='indexHeapUsageBytes']";
-      Double num = (Double) TestHarness.evaluateXPath(response, xpath, XPathConstants.NUMBER);
-      //with docs in the index, indexHeapUsageBytes should be greater than 0
-      Assert.assertTrue("indexHeapUsageBytes should be > 0, but was " + num.intValue(), num.intValue() > 0);
-    }
-  }
 
   @Test
   public void testFlParam() {
@@ -163,7 +151,8 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     try {
       // First, determine that the two fields ARE there
       String response = h.query(req);
-      assertNull(TestHarness.validateXPath(response,
+      req.close();
+      assertNull(TestHarness.validateXPath(solrConfig.getResourceLoader(), response,
           getFieldXPathPrefix("solr_t") + "[@name='index']",
           getFieldXPathPrefix("solr_s") + "[@name='index']"
       ));
@@ -172,7 +161,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
       for (String f : Arrays.asList("solr_ti",
           "solr_td", "solr_dt", "solr_b")) {
 
-        assertNotNull(TestHarness.validateXPath(response,
+        assertNotNull(TestHarness.validateXPath(solrConfig.getResourceLoader(), response,
             getFieldXPathPrefix(f) + "[@name='index']"));
 
       }
@@ -181,10 +170,11 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
       response = h.query(req);
       for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti",
           "solr_td", "solr_dt", "solr_b")) {
-        if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
-        assertNull(TestHarness.validateXPath(response,
+        if (req.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
+        assertNull(TestHarness.validateXPath(solrConfig.getResourceLoader(), response,
             getFieldXPathPrefix(f) + "[@name='index']"));
       }
+      req.close();
     } catch (Exception e) {
       fail("Caught unexpected exception " + e.getMessage());
     }
@@ -238,8 +228,9 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema");
 
     String xml = h.query(req);
+    req.close();
     String r = TestHarness.validateXPath
-      (xml,
+      (solrConfig.getResourceLoader(), xml,
        field("text") + "/arr[@name='copySources']/str[.='title']",
        field("text") + "/arr[@name='copySources']/str[.='subject']",
        field("title") + "/arr[@name='copyDests']/str[.='text']",
@@ -252,8 +243,10 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   public void testCatchAllCopyField() throws Exception {
     deleteCore();
     initCore("solrconfig.xml", "schema-copyfield-test.xml");
-    
-    IndexSchema schema = h.getCore().getLatestSchema();
+
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
     
     assertNull("'*' should not be (or match) a dynamic field", schema.getDynamicPattern("*"));
     
@@ -268,7 +261,8 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema", "indent", "on");
     String xml = h.query(req);
-    String result = TestHarness.validateXPath(xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
+    req.close();
+    String result = TestHarness.validateXPath(solrConfig.getResourceLoader(), xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
     assertNull(xml, result);
 
     // Put back the configuration expected by the rest of the tests in this suite

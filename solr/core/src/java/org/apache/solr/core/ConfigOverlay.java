@@ -57,6 +57,10 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   public Object getXPathProperty(String xpath, boolean onlyPrimitive) {
+    if (xpath.startsWith("/")) {
+      xpath = xpath.substring(xpath.indexOf('/', 1) + 1);
+    }
+
     List<String> hierarchy = checkEditable(xpath, true, false);
     if (hierarchy == null) return null;
     return Utils.getObjectByPath(props, onlyPrimitive, hierarchy);
@@ -108,7 +112,7 @@ public class ConfigOverlay implements MapSerializable {
 
   public static final String NOT_EDITABLE = "''{0}'' is not an editable property";
 
-  private List<String> checkEditable(String propName, boolean isXPath, boolean failOnError) {
+  private static List<String> checkEditable(String propName, boolean isXPath, boolean failOnError) {
     LinkedList<String> hierarchy = new LinkedList<>();
     if (!isEditableProp(propName, isXPath, hierarchy)) {
       if (failOnError)

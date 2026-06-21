@@ -16,19 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -43,42 +30,55 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @SolrTestCaseJ4.SuppressSSL
 // Tests https://issues.apache.org/jira/browse/SOLR-13963
-public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTestBase {
+public class TestDynamicFieldNamesIndexCorrectly extends SolrCloudBridgeTestCase {
 
   private static final String COLLECTION = "test";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Test
-  @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
-  public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+  public TestDynamicFieldNamesIndexCorrectly () {
+    numJettys = 3;
+    createCollection1 = false;
+    solrconfigString = "solrconfig.xml";
+    schemaString = "schema.xml";
+    uploadSelectCollection1Config = true;
+  }
 
-    createCollection(COLLECTION, "conf1", 4, 1, 4);
-    final int numRuns = 10;
+  @Test
+  public void test() throws Exception {
+
+    createCollection(COLLECTION, 4,  1);
+    final int numRuns = TEST_NIGHTLY ? 10 : 1;
     populateIndex(numRuns);
   }
 
   void populateIndex(int numRuns) throws IOException, SolrServerException {
-    try {
-      for (int i = 0; i < numRuns; i++) {
-        log.debug("Iteration number: {}", i);
-        cloudClient.deleteByQuery(COLLECTION, "*:*");
-        cloudClient.commit(COLLECTION);
+    for (int i = 0; i < numRuns; i++) {
+      log.debug("Iteration number: {}", i);
+      cloudClient.deleteByQuery(COLLECTION, "*:*");
+      cloudClient.commit(COLLECTION);
 
-        final Collection<SolrInputDocument> solrDocs = generateRandomizedFieldDocuments();
-        addToSolr(solrDocs);
+      final Collection<SolrInputDocument> solrDocs = generateRandomizedFieldDocuments();
+      addToSolr(solrDocs);
 
-        final SolrQuery solrQuery = new SolrQuery("*:*");
-        solrQuery.setRows(solrDocs.size());
-        final SolrDocumentList resultDocs = getSolrResponse(solrQuery, COLLECTION);
-        log.debug("{}", resultDocs);
-        assertThatDocsHaveCorrectFields(solrDocs, resultDocs);
-      }
-    } finally {
-      cloudClient.close();
+      final SolrQuery solrQuery = new SolrQuery("*:*");
+      solrQuery.setRows(solrDocs.size());
+      final SolrDocumentList resultDocs = getSolrResponse(solrQuery, COLLECTION);
+      log.debug("{}", resultDocs);
+      assertThatDocsHaveCorrectFields(solrDocs, resultDocs);
     }
   }
 
@@ -122,7 +122,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
     cloudClient.commit(COLLECTION);
   }
 
-  public static List<SolrInputDocument> generateRandomizedFieldDocuments() {
+  public List<SolrInputDocument> generateRandomizedFieldDocuments() {
     final List<SolrInputDocument> solrDocs = new ArrayList<>();
 
     final Iterator<String> iterator = FIELD_NAMES.iterator();
@@ -141,7 +141,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
     return solrDoc;
   }
 
-  private static final List<String> FIELD_NAMES = Arrays.asList(
+  private final List<String> FIELD_NAMES = Arrays.asList(
       new String[] {
           "name_DfsqCIYgwMpJnc_prop_s",
           "name_VHzHTZWnqGALJJ_prop_s",

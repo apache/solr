@@ -24,12 +24,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
@@ -58,41 +61,40 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
-    executor = ExecutorUtil.newMDCAwareCachedThreadPool(getClassName());
+    executor = getTestExecutor();
     System.setProperty("enable.update.log", "true");
     initCore("solr/collection1/conf/solrconfig.xml","solr/collection1/conf/schema-minimal-with-another-uniqkey.xml");
   }
 
   @AfterClass
   public static void AfterClass() {
-    if (null != executor) { // may not have inited due to lack of mockito 
-      executor.shutdown();
-    }
     System.clearProperty("enable.update.log");
+    executor = null;
   }
 
   @Test
   public void testShouldBufferUpdateZk() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
     try (DistributedUpdateProcessor processor = new DistributedUpdateProcessor(
         req, null, null, null)) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       // applying buffer updates, isReplayOrPeerSync flag doesn't matter
-      assertFalse(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
-      assertFalse(processor.shouldBufferUpdate(cmd, true, UpdateLog.State.APPLYING_BUFFERED));
+      assertFalse(DistributedUpdateProcessor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
+      assertFalse(DistributedUpdateProcessor.shouldBufferUpdate(cmd, true, UpdateLog.State.APPLYING_BUFFERED));
   
-      assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.BUFFERING));
+      assertTrue(DistributedUpdateProcessor.shouldBufferUpdate(cmd, false, UpdateLog.State.BUFFERING));
       // this is not an buffer updates and it depend on other updates
       cmd.prevVersion = 10;
-      assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
+      assertTrue(DistributedUpdateProcessor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
     }
+    req.close();
   }
   
   @Test
   public void testVersionAdd() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
     int threads = 5;
-    Function<DistributedUpdateProcessor,Boolean> versionAddFunc = (DistributedUpdateProcessor process) -> {
+    Function<DistributedUpdateProcessor,Future> versionAddFunc = (DistributedUpdateProcessor process) -> {
       try {
         AddUpdateCommand cmd = new AddUpdateCommand(req);
         cmd.solrDoc = new SolrInputDocument();
@@ -102,21 +104,22 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         throw new RuntimeException(e);
       }
     };
-    int succeeded = runCommands(threads, 1000, req, versionAddFunc);
+    int succeeded = runCommands(threads, 50, req, versionAddFunc);
     // only one should succeed
     assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionAddFunc);
     // all should succeed
     assertThat(succeeded, is(threads));
+    req.close();
   }
 
   @Test
   public void testVersionDelete() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
 
-    int threads = 5;
-    Function<DistributedUpdateProcessor,Boolean> versionDeleteFunc = (DistributedUpdateProcessor process) -> {
+    int threads = TEST_NIGHTLY ? 5 : 2;
+    Function<DistributedUpdateProcessor,Future> versionDeleteFunc = (DistributedUpdateProcessor process) -> {
       try {
         DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
         cmd.id = "1";
@@ -125,8 +128,9 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         throw new RuntimeException(e);
       }
     };
+    req.close();
 
-    int succeeded = runCommands(threads, 1000, req, versionDeleteFunc);
+    int succeeded = runCommands(threads, 50, req, versionDeleteFunc);
     // only one should succeed
     assertThat(succeeded, is(1));
 
@@ -139,7 +143,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
    * @return how many requests succeeded
    */
   private int runCommands(int threads, int versionBucketLockTimeoutMs, SolrQueryRequest req,
-      Function<DistributedUpdateProcessor,Boolean> function)
+      Function<DistributedUpdateProcessor,Future> function)
       throws IOException {
     try (DistributedUpdateProcessor processor = new DistributedUpdateProcessor(
         req, null, null, null)) {
@@ -151,24 +155,33 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         doReturn(new TimedVersionBucket() {
           /**
            * simulate the case: it takes 5 seconds to add the doc
-           * 
            */
           @Override
-          protected boolean tryLock(int lockTimeoutMs) {
-            boolean locked = super.tryLock(versionBucketLockTimeoutMs);
-            if (locked) {
-              try {
-                Thread.sleep(5000);
-              } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+          public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function, BytesRef idBytes) throws IOException {
+            boolean locked = false;
+            try {
+              locked = lock.tryLock(versionBucketLockTimeoutMs, TimeUnit.MILLISECONDS);
+              if (locked) {
+
+                Thread.sleep(150);
+
+                return function.apply();
+              } else {
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "could not get lock");
+              }
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            } finally {
+              if (locked) {
+                lock.unlock();
               }
             }
-            return locked;
           }
         }).when(vinfo).bucket(anyInt());
       }
       CountDownLatch latch = new CountDownLatch(1);
-      Collection<Future<Boolean>> futures = new ArrayList<>();
+      Collection<Future<Future>> futures = new ArrayList<>();
       for (int t = 0; t < threads; ++t) {
         futures.add(executor.submit(() -> {
           latch.await();
@@ -178,7 +191,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       latch.countDown();
 
       int succeeded = 0;
-      for (Future<Boolean> f : futures) {
+      for (Future<Future> f : futures) {
         try {
           f.get();
           succeeded++;

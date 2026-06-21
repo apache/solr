@@ -17,97 +17,86 @@
 
 package org.apache.solr.cloud;
 
-import java.util.concurrent.TimeUnit;
-
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.TestInjection;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * Tests for PREPRECOVERY CoreAdmin API
  */
 public class TestPrepRecovery extends SolrCloudTestCase {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    useFactory(null);
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     // the default is 180s and our waitForState times out in 90s
     // so we lower this so that we can still test timeouts
-    System.setProperty("leaderConflictResolveWait", "5000");
-    System.setProperty("prepRecoveryReadTimeoutExtraWait", "1000");
+    System.setProperty("leaderConflictResolveWait", "500");
+    System.setProperty("prepRecoveryReadTimeoutExtraWait", "0");
+
     
     configureCluster(2)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
-  }
-
-  @AfterClass
-  public static void tearCluster() throws Exception {
-    System.clearProperty("leaderConflictResolveWait");
   }
 
   @Test
   public void testLeaderUnloaded() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testLeaderUnloaded";
     CollectionAdminRequest.createCollection(collectionName, 1, 2)
+        .setMaxShardsPerNode(100)
         .process(solrClient);
 
-    waitForState("Expected collection: testLeaderUnloaded to be live with 1 shard and 2 replicas",
-        collectionName, clusterShape(1, 2));
+    try (JettySolrRunner newNode = cluster.startJettySolrRunner()) {
 
-    JettySolrRunner newNode = cluster.startJettySolrRunner();
-    String newNodeName = newNode.getNodeName();
+      String newNodeName = newNode.getNodeName();
 
-    // add a replica to the new node so that it starts watching the collection
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-        .setNode(newNodeName)
-        .process(solrClient);
+      // add a replica to the new node so that it starts watching the collection
+      CollectionAdminRequest.AddReplica req = CollectionAdminRequest.addReplicaToShard(collectionName, "s1").setNode(newNodeName);
+      req.process(solrClient);
 
-    // now delete the leader
-    Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1");
-    CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
-        .process(solrClient);
+      // now delete the leader
+      log.info("Delete replica");
+      Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "s1");
+      CollectionAdminRequest.deleteReplica(collectionName, "s1", leader.getName()).process(solrClient);
 
-    // add another replica to the new node. When it starts recovering, it will likely have stale state
-    // and ask the erstwhile leader to PREPRECOVERY which will hang for about 30 seconds
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-        .setNode(newNodeName)
-        .process(solrClient);
-
-    // in the absence of the fixes made in SOLR-10914, this statement will timeout after 90s
-    waitForState("Expected collection: testLeaderUnloaded to be live with 1 shard and 3 replicas",
-        collectionName, clusterShape(1, 3));
+      // add another replica to the new node. When it starts recovering, it will likely have stale state
+      // and ask the erstwhile leader to PREPRECOVERY which will hang for about 30 seconds
+      CollectionAdminRequest.addReplicaToShard(collectionName, "s1").setNode(newNodeName).process(solrClient);
+    }
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testLeaderNotResponding() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testLeaderNotResponding";
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
+        .setMaxShardsPerNode(100)
         .process(solrClient);
-
-    waitForState("Expected collection: testLeaderNotResponding to be live with 1 shard and 1 replicas",
-        collectionName, clusterShape(1, 1));
 
     TestInjection.prepRecoveryOpPauseForever = "true:100";
     try {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-          .process(solrClient);
-
       // in the absence of fixes made in SOLR-9716, prep recovery waits forever and the following statement
       // times out
-      waitForState("Expected collection: testLeaderNotResponding to be live with 1 shard and 2 replicas",
-          collectionName, clusterShape(1, 2), 30, TimeUnit.SECONDS);
+      CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
+          .process(solrClient);
     } finally {
       TestInjection.prepRecoveryOpPauseForever = null;
       TestInjection.notifyPauseForeverDone();

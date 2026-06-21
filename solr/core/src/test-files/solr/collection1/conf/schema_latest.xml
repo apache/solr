@@ -209,6 +209,8 @@
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_sd" type="string" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_sds" type="string" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_currency_l" type="long" indexed="true" stored="false" multiValued="false"/>
+  <dynamicField name="*_currency_s" type="string" indexed="true" stored="false" multiValued="false"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_ls" type="long" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_ld" type="long" indexed="true" stored="false" docValues="true"/>
@@ -785,8 +787,9 @@
                             ratesFileLocation: URL or path to rates JSON file (default latest.json on the web)
                             refreshInterval: Number of minutes between each rates fetch (default: 1440, min: 60)
   -->
-  <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD"
-             currencyConfig="currency.xml"/>
+  <fieldType name="currency" class="solr.CurrencyFieldType" defaultCurrency="USD"
+             currencyConfig="currency.xml"
+             amountLongSuffix="_currency_l" codeStrSuffix="_currency_s"/>
 
 
   <!-- some examples for different languages (generally ordered by ISO code) -->

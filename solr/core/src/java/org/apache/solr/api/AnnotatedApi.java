@@ -28,12 +28,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -61,9 +62,11 @@ import org.slf4j.LoggerFactory;
 public class AnnotatedApi extends Api implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public final static ObjectMapper MAPPER = SolrJacksonAnnotationInspector.createObjectMapper();
+
   public static final String ERR = "Error executing commands :";
   private EndPoint endPoint;
-  private final Map<String, Cmd> commands ;
+  private final Map<String, Cmd> commands;
   private final Cmd singletonCommand;
   private final Api fallback;
 
@@ -90,10 +93,11 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
         throw new RuntimeException("No method with @Command in class: " + obj.getClass().getName());
       }
       SpecProvider specProvider = readSpec(endPoint, methods);
-      return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
+      return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, Collections.unmodifiableMap(commands), null));
     } else {
-      List<Api> apis = new ArrayList<>();
-      for (Method m : klas.getDeclaredMethods()) {
+      Method[] methods = klas.getDeclaredMethods();
+      List<Api> apis = new ArrayList<>(methods.length);
+      for (Method m : methods) {
         EndPoint endPoint = m.getAnnotation(EndPoint.class);
         if (endPoint == null) continue;
         if (!Modifier.isPublic(m.getModifiers())) {
@@ -126,14 +130,15 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
   private static SpecProvider readSpec(EndPoint endPoint, List<Method> m) {
     return () -> {
-      Map map = new LinkedHashMap();
-      List<String> methods = new ArrayList<>();
+      Map map = new ConcurrentHashMap(16, 0.70f);
+      List<String> methods = new ArrayList<>(endPoint.method().length);
+
       for (SolrRequest.METHOD method : endPoint.method()) {
         methods.add(method.name());
       }
       map.put("methods", methods);
       map.put("url", new ValidatingJsonMap(Collections.singletonMap("paths", Arrays.asList(endPoint.path()))));
-      Map<String, Object> cmds = new HashMap<>();
+      Map<String, Object> cmds = new HashMap<>(m.size());
 
       for (Method method : m) {
         Command command = method.getAnnotation(Command.class);
@@ -191,7 +196,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     final String command;
     final Method method;
     final Object obj;
-    ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+    ObjectMapper mapper = MAPPER;
     int paramsCount;
     Class c;
     boolean isWrappedInPayloadObj = false;
@@ -265,6 +270,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
         log.error("Error executing command ", ite);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }

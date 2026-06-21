@@ -80,7 +80,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
       } else {
         try {
           Class<? extends PreAnalyzedParser> implClazz = schema.getResourceLoader().findClass(implName, PreAnalyzedParser.class);
-          Constructor<?> c = implClazz.getConstructor(new Class<?>[0]);
+          Constructor<?> c = implClazz.getConstructor();
           parser = (PreAnalyzedParser) c.newInstance(new Object[0]);
         } catch (Exception e) {
           log.warn("Can't use the configured PreAnalyzedParser class '{}', using defualt {}"

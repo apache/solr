@@ -27,8 +27,7 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -101,7 +100,10 @@ public class DefaultPackageRepository extends PackageRepository {
   }
 
   private void initPackages() {
-    try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+    // A package repository is an arbitrary external web server (repository.json), not a Solr h2c node.
+    // The HTTP/2-only default transport sends a prior-knowledge h2c preface over cleartext, which an
+    // HTTP/1.1-only repo server cannot parse (frame_size_error), failing the fetch. Force HTTP/1.1.
+    try (Http2SolrClient client = new Http2SolrClient.Builder().useHttp1_1(true).build()) {
       SolrPackage[] items = PackageUtils.getJson(client, repositoryURL + "/repository.json", SolrPackage[].class);
 
       packages = new HashMap<>(items.length);
@@ -109,7 +111,7 @@ public class DefaultPackageRepository extends PackageRepository {
         pkg.setRepository(name);
         packages.put(pkg.name, pkg);
       }
-    } catch (IOException ex) {
+    } catch (Exception ex) {
       throw new SolrException(ErrorCode.INVALID_STATE, ex);
     }
     if (log.isDebugEnabled()) {

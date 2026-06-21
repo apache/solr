@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PointsVsTrieQuery" type="jmh-id" factoryName="Jmh" vm-parameters="" program-parameters="org.apache.solr.bench.schema.PointsVsTrieQuery.* -rf json -rff pointvstrie-query.json" working-dir="$PROJECT_DIR$" benchmark-type="CLASS" benchmark-class="org.apache.solr.bench.schema.PointsVsTrieQuery">
+    <module name="lucene-solr.solr.test-framework.jmh" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

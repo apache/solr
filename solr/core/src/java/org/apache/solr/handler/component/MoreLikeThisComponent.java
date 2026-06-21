@@ -240,8 +240,7 @@ public class MoreLikeThisComponent extends SearchComponent {
    * Returns NamedList based on the order of
    * resultIds.shardDoc.positionInResponse
    */
-  NamedList<SolrDocumentList> buildMoreLikeThisNamed(
-      Map<Object,SolrDocumentList> allMlt, Map<Object,ShardDoc> resultIds) {
+  static NamedList<SolrDocumentList> buildMoreLikeThisNamed(Map<Object,SolrDocumentList> allMlt, Map<Object,ShardDoc> resultIds) {
     NamedList<SolrDocumentList> result = new NamedList<>();
     TreeMap<Integer,Object> sortingMap = new TreeMap<>();
     for (Entry<Object,ShardDoc> next : resultIds.entrySet()) {
@@ -259,8 +258,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     return result;
   }
   
-  public SolrDocumentList mergeSolrDocumentList(SolrDocumentList one,
-      SolrDocumentList two, int maxSize, String idField) {
+  public static SolrDocumentList mergeSolrDocumentList(SolrDocumentList one, SolrDocumentList two, int maxSize, String idField) {
 
     List<SolrDocument> l = new ArrayList<>();
     
@@ -280,24 +278,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     // Comparator to sort docs based on score. null scores/docs are set to 0.
     
     // hmm...we are ordering by scores that are not really comparable...
-    Comparator<SolrDocument> c = new Comparator<SolrDocument>() {
-      public int compare(SolrDocument o1, SolrDocument o2) {
-        Float f1 = getFloat(o1);
-        Float f2 = getFloat(o2);
-        return f2.compareTo(f1);
-      }
-      
-      private Float getFloat(SolrDocument doc) {
-        Float f = 0f;
-        if (doc != null) {
-          Object o = doc.getFieldValue("score");
-          if (o != null && o instanceof Float) {
-            f = (Float) o;
-          }
-        }
-        return f;
-      }
-    };
+    Comparator<SolrDocument> c = new SolrDocumentComparator();
     
     Collections.sort(l, c);
     
@@ -316,7 +297,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     return result;
   }
   
-  ShardRequest buildShardQuery(ResponseBuilder rb, String q, String key) {
+  static ShardRequest buildShardQuery(ResponseBuilder rb, String q, String key) {
     ShardRequest s = new ShardRequest();
     s.params = new ModifiableSolrParams(rb.req.getParams());
     s.purpose |= ShardRequest.PURPOSE_GET_MLT_RESULTS;
@@ -350,7 +331,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     return s;
   }
   
-  ShardRequest buildMLTQuery(ResponseBuilder rb, String q) {
+  static ShardRequest buildMLTQuery(ResponseBuilder rb, String q) {
     ShardRequest s = new ShardRequest();
     s.params = new ModifiableSolrParams();
     
@@ -367,8 +348,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     return s;
   }
   
-  NamedList<DocList> getMoreLikeThese(ResponseBuilder rb,
-      SolrIndexSearcher searcher, DocList docs, int flags) throws IOException {
+  static NamedList<DocList> getMoreLikeThese(ResponseBuilder rb, SolrIndexSearcher searcher, DocList docs, int flags) throws IOException {
     SolrParams p = rb.req.getParams();
     IndexSchema schema = searcher.getSchema();
     MoreLikeThisHandler.MoreLikeThisHelper mltHelper = new MoreLikeThisHandler.MoreLikeThisHelper(
@@ -456,5 +436,24 @@ public class MoreLikeThisComponent extends SearchComponent {
   @Override
   public Category getCategory() {
     return Category.QUERY;
+  }
+
+  private static class SolrDocumentComparator implements Comparator<SolrDocument> {
+    public int compare(SolrDocument o1, SolrDocument o2) {
+      Float f1 = getFloat(o1);
+      Float f2 = getFloat(o2);
+      return f2.compareTo(f1);
+    }
+
+    private static Float getFloat(SolrDocument doc) {
+      Float f = 0f;
+      if (doc != null) {
+        Object o = doc.getFieldValue("score");
+        if (o instanceof Float) {
+          f = (Float) o;
+        }
+      }
+      return f;
+    }
   }
 }

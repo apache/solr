@@ -52,9 +52,9 @@ public interface PackageStore {
    * Fetch a resource from another node
    * internal API
    */
-  boolean fetch(String path, String from);
+  boolean fetch(String path, String from) throws IOException;
 
-  List<FileDetails> list(String path, Predicate<String> predicate);
+  List<FileDetails> list(String path, Predicate<String> predicate) throws IOException;
 
   /** Sync a local file to all nodes. All the nodes are asked to pull the file from this node
    */
@@ -68,7 +68,7 @@ public interface PackageStore {
   /**
    * The type of the resource
    */
-  FileType getType(String path, boolean fetchMissing);
+  FileType getType(String path, boolean fetchMissing) throws IOException;
 
   /**Get all the keys in the package store. The data is a .DER file content
    */

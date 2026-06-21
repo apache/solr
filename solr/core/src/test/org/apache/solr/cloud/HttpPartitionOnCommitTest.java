@@ -19,40 +19,37 @@ package org.apache.solr.cloud;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
+public class HttpPartitionOnCommitTest extends HttpPartitionTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long sleepMsBeforeHealPartition = 2000L;
 
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
-
   @BeforeClass
-  public static void setupSysProps() {
+  public static void setupHttpPartitionOnCommitTest() {
+    // Override the parent's sliceCount=2/numJettys=3 with our desired topology
+    sliceCount = 1;
+    numJettys = 4;
     System.setProperty("socketTimeout", "5000");
     System.setProperty("distribUpdateSoTimeout", "5000");
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
-    System.setProperty("solr.retries.to.followers", "0"); 
-  }
-  
-  public HttpPartitionOnCommitTest() {
-    super();
-    sliceCount = 1;
-    fixShardCount(4);
+    System.setProperty("solr.retries.to.followers", "0");
   }
 
   @Override
@@ -68,27 +65,33 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
   }
 
   private void multiShardTest() throws Exception {
-
     log.info("Running multiShardTest");
 
-    // create a collection that has 2 shard and 2 replicas
+    // create a collection that has 2 shards and 2 replicas
     String testCollectionName = "c8n_2x2_commits";
-    createCollection(testCollectionName, "conf1", 2, 2, 1);
+    createCollectionRetry(testCollectionName, "_default", 2, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
-    List<Replica> notLeaders =
-        ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 30);
-    assertTrue("Expected 1 replicas for collection " + testCollectionName
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(2, 4));
+
+    ArrayList<Replica> notLeaders = new ArrayList<>();
+    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica : replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
+    assertTrue("Expected 2 replicas for collection " + testCollectionName
             + " but found " + notLeaders.size() + "; clusterState: "
             + printClusterStateInfo(),
-        notLeaders.size() == 1);
+        notLeaders.size() == 2);
 
     if (log.isInfoEnabled()) {
       log.info("All replicas active for {}", testCollectionName);
     }
 
     // let's put the leader in its own partition, no replicas can contact it now
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1");
     if (log.isInfoEnabled()) {
       log.info("Creating partition to leader at {}", leader.getCoreUrl());
     }
@@ -96,13 +99,12 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     leaderProxy.close();
 
     // let's find the leader of shard2 and ask him to commit
-    Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard2");
+    Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s2");
     sendCommitWithRetry(shard2Leader);
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
-    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
     if (log.isInfoEnabled()) {
@@ -122,11 +124,18 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
     // create a collection that has 1 shard and 3 replicas
     String testCollectionName = "c8n_1x3_commits";
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    createCollectionRetry(testCollectionName, "_default", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
-    List<Replica> notLeaders =
-        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 30);
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
+
+    ArrayList<Replica> notLeaders = new ArrayList<>();
+    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+    for (Replica replica : replicas) {
+      if (!replica.getBool("leader", false)) {
+        notLeaders.add(replica);
+      }
+    }
     assertTrue("Expected 2 replicas for collection " + testCollectionName
             + " but found " + notLeaders.size() + "; clusterState: "
             + printClusterStateInfo(),
@@ -135,7 +144,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     log.info("All replicas active for {}", testCollectionName);
 
     // let's put the leader in its own partition, no replicas can contact it now
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1");
     if (log.isInfoEnabled()) {
       log.info("Creating partition to leader at {}", leader.getCoreUrl());
     }
@@ -147,8 +156,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     sendCommitWithRetry(replica);
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
-    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
     if (log.isInfoEnabled()) {
@@ -163,21 +171,11 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     log.info("oneShardTest completed OK");
   }
 
-  /**
-   * Overrides the parent implementation to install a SocketProxy in-front of the Jetty server.
-   */
-  @Override
-  public JettySolrRunner createJetty(File solrHome, String dataDir,
-                                     String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
-      throws Exception {
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
-  }
-
   protected void sendCommitWithRetry(Replica replica) throws Exception {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
-    try (HttpSolrClient client = getHttpSolrClient(replicaCoreUrl)) {
+    try (Http2SolrClient client = getHttpSolrClient(replicaCoreUrl)) {
       try {
         client.commit();
 
@@ -197,5 +195,4 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
       }
     }
   }
-
 }

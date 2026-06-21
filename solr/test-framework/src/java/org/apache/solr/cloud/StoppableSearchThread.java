@@ -17,34 +17,33 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThread {
+class StoppableSearchThread extends StoppableThread {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudSolrClient cloudClient;
+  private final CloudHttp2SolrClient cloudClient;
   private volatile boolean stop = false;
   protected final AtomicInteger queryFails = new AtomicInteger();
   private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
 
-  public StoppableSearchThread(CloudSolrClient cloudClient) {
-    super("StoppableSearchThread");
+  public StoppableSearchThread(CloudHttp2SolrClient cloudClient) {
+    super();
     this.cloudClient = cloudClient;
-    setDaemon(true);
   }
 
   @Override
   public void run() {
-    Random random = LuceneTestCase.random();
+    Random random = SolrTestCase.random();
     int numSearches = 0;
 
     while (!stop) {
@@ -53,11 +52,11 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
         //to come to the aid of their country.
         cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         System.err.println("QUERY REQUEST FAILED:");
-        e.printStackTrace();
+        log.error("", e);
         if (e instanceof SolrServerException) {
-          System.err.println("ROOT CAUSE:");
-          ((SolrServerException) e).getRootCause().printStackTrace();
+          log.error("ROOTCAUSE", ((SolrServerException) e).getRootCause());
         }
         queryFails.incrementAndGet();
       }

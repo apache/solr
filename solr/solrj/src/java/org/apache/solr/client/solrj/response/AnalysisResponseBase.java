@@ -30,6 +30,10 @@ import java.util.Map;
  */
 public class AnalysisResponseBase extends SolrResponseBase {
 
+  public AnalysisResponseBase(NamedList response) {
+    super(response);
+  }
+
   /**
    * Parses the given named list and builds a list of analysis phases form it. Expects a named list of the form:
    * <br>
@@ -90,7 +94,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
    * @param value String value
    * @return The built token info (with type set to null)
    */
-  protected TokenInfo buildTokenInfoFromString(String value) {
+  protected static TokenInfo buildTokenInfoFromString(String value) {
     return new TokenInfo(value, value, null, 0, value.length(), 1, false);
   }
 

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
@@ -30,21 +31,22 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestOriginalScoreFeature extends TestRerankBase {
 
   @Before
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1"));
-    assertU(adoc("id", "2", "title", "w2"));
-    assertU(adoc("id", "3", "title", "w3"));
-    assertU(adoc("id", "4", "title", "w4"));
-    assertU(adoc("id", "5", "title", "w5"));
-    assertU(adoc("id", "6", "title", "w1 w2"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2"));
-    assertU(commit());
+    restTestHarness.update(adoc("id", "1", "title", "w1"));
+    restTestHarness.update(adoc("id", "2", "title", "w2"));
+    restTestHarness.update(adoc("id", "3", "title", "w3"));
+    restTestHarness.update(adoc("id", "4", "title", "w4"));
+    restTestHarness.update(adoc("id", "5", "title", "w5"));
+    restTestHarness.update(adoc("id", "6", "title", "w1 w2"));
+    restTestHarness.update(adoc("id", "7", "title", "w1 w2 w3 w4 w5"));
+    restTestHarness.update(adoc("id", "8", "title", "w1 w1 w1 w2 w2"));
+    restTestHarness.update(commit());
   }
 
   @After
@@ -75,7 +77,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     implTestOriginalScoreResponseDocsCheck("origScore", "origScore", "c2", "2.0");
   }
 
-  public static void implTestOriginalScoreResponseDocsCheck(String modelName,
+  public void implTestOriginalScoreResponseDocsCheck(String modelName,
       String origScoreFeatureName,
       String nonScoringFeatureName, String nonScoringFeatureValue) throws Exception {
 
@@ -133,7 +135,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
         nonScoringFeatureName, nonScoringFeatureValue, debugQuery);
   }
 
-  private static void implTestOriginalScoreResponseDocsCheck(String modelName,
+  private void implTestOriginalScoreResponseDocsCheck(String modelName,
       SolrQuery query, int docIdx, int docId,
       String origScoreFeatureName, String origScoreFeatureValue,
       String nonScoringFeatureName, String nonScoringFeatureValue,

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetBucket {
@@ -61,7 +62,7 @@ public class FacetBucket {
 
     if (merger != null) {
       if (subs == null) {
-        subs = new HashMap<>();
+        subs = new Object2ObjectOpenHashMap<>(16, 0.5f);
       }
       subs.put(key, merger);
     }

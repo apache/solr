@@ -48,7 +48,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   private final static String LOG4J2_WATCHER_APPENDER = "Log4j2WatcherAppender";
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Appender extends AbstractAppender {
+  protected static class Log4j2Appender extends AbstractAppender {
 
     private Log4j2Watcher watcher;
     private ThresholdFilter filter;
@@ -78,7 +78,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   }
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Info extends LoggerInfo {
+  protected static class Log4j2Info extends LoggerInfo {
     final Level level;
 
     Log4j2Info(String name, Level level) {
@@ -163,11 +163,11 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
   }
 
-  protected boolean isRootLogger(String loggerName) {
+  protected static boolean isRootLogger(String loggerName) {
     return LoggerInfo.ROOT_NAME.equals(loggerName);
   }
 
-  protected LoggerConfig getLoggerConfig(LoggerContext ctx, String loggerName) {
+  protected static LoggerConfig getLoggerConfig(LoggerContext ctx, String loggerName) {
     Configuration config = ctx.getConfiguration();
     return isRootLogger(loggerName) ? config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME)
                                   : config.getLoggerConfig(loggerName);
@@ -184,7 +184,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     for(Map.Entry<String, LoggerConfig> logger : loggers.entrySet()) {
       String name = logger.getKey();
 
-      if (logger == root || root.equals(logger) || isRootLogger(name) || "".equals(name)) {
+      if (logger == root || root.equals(logger) || isRootLogger(name) || name != null && name.isEmpty()) {
         continue;
       }
       map.put(name, new Log4j2Info(name, logger.getValue().getLevel()));
@@ -197,7 +197,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
       map.put(name, new Log4j2Info(name, logger.getLevel()));
       while (true) {
-        int dot = name.lastIndexOf(".");
+        int dot = name.lastIndexOf('.');
         if (dot < 0)
           break;
 

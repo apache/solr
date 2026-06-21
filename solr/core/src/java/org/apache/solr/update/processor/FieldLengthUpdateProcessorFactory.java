@@ -51,7 +51,6 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  */
 public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     // no length specific init args

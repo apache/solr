@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -25,24 +26,20 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,23 +50,23 @@ import org.slf4j.LoggerFactory;
  * Even when in standalone mode, perhaps surprisingly, an instance of this class exists.
  * If {@link #getZkController()} returns null then we're in standalone mode.
  */
-public class ZkContainer {
+public class ZkContainer implements Closeable {
   // NOTE DWS: It's debatable if this in-between class is needed instead of folding it all into ZkController.
   //  ZKC is huge though.
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  protected ZkController zkController;
-  private SolrZkServer zkServer;
+  private final SolrZkClient zkClient;
 
-  private ExecutorService coreZkRegister = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new SolrNamedThreadFactory("coreZkRegister") );
+  protected volatile ZkController zkController;
+  private volatile SolrZkServer zkServer;
   
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
-  
-  public ZkContainer() {
-    
+  private volatile String confDir;
+  private boolean boostrapConf;
+
+  public ZkContainer(SolrZkClient zkClient) {
+    this.zkClient = zkClient;
   }
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
@@ -81,7 +78,10 @@ public class ZkContainer {
     if (config == null)
         return;  // not in zk mode
 
-    String zookeeperHost = config.getZkHost();
+    String zookeeperHost = System.getProperty("zkHost");
+    if (zookeeperHost == null) {
+      zookeeperHost = config.getZkHost();
+    }
 
     // zookeeper in quorum mode currently causes a failure when trying to
     // register log4j mbeans.  See SOLR-2369
@@ -115,12 +115,13 @@ public class ZkContainer {
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
-        String confDir = System.getProperty("bootstrap_confdir");
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
+        confDir = System.getProperty("bootstrap_confdir");
+        boostrapConf = Boolean.getBoolean("bootstrap_conf");  
 
         // We may have already loaded NodeConfig from zookeeper with same connect string, so no need to recheck chroot
         boolean alreadyUsedChroot = cc.getConfig().isFromZookeeper() && zookeeperHost.equals(System.getProperty("zkHost"));
         if(!alreadyUsedChroot && !ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
+          log.error("A chroot was specified in ZkHost but the znode doesn't exist. {}", zookeeperHost);
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
@@ -134,8 +135,6 @@ public class ZkContainer {
           return descriptors;
         };
 
-        ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
-
         if (zkRun != null) {
           if (StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
             // Embedded ZK and probably running with SSL
@@ -147,26 +146,14 @@ public class ZkContainer {
             Thread.sleep(10000);
           }
         }
-
-        if(confDir != null) {
-          Path configPath = Paths.get(confDir);
-          if (!Files.isDirectory(configPath))
-            throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
-
-          String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
-          ZkConfigManager configManager = new ZkConfigManager(zkController.getZkClient());
-          configManager.uploadConfigDir(configPath, confName);
+        if (log.isDebugEnabled()) {
+          log.debug("create zkController");
         }
+        zkController = new ZkController(cc, zkClient, config);
 
-        if(boostrapConf) {
-          ZkController.bootstrapConf(zkController.getZkClient(), cc);
-        }
-
-        this.zkController = zkController;
+        if (log.isDebugEnabled()) log.debug("done zkController create");
       } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.error("", e);
+        ParWork.propagateInterrupt(e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "", e);
       } catch (TimeoutException e) {
@@ -180,62 +167,30 @@ public class ZkContainer {
       }
     }
   }
-  
-  private String stripChroot(String zkRun) {
-    if (zkRun == null || zkRun.trim().length() == 0 || zkRun.lastIndexOf('/') < 0) return zkRun;
-    return zkRun.substring(0, zkRun.lastIndexOf('/'));
+
+  public void start(CoreContainer cc) throws IOException, KeeperException {
+    zkController.start();
+    if(confDir != null) {
+      log.info("none null conf dir");
+      Path configPath = Paths.get(confDir);
+      if (!Files.isDirectory(configPath))
+        throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
+
+      String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
+      ZkConfigManager configManager = new ZkConfigManager(zkController.getZkClient());
+      log.info("upload conf");
+      configManager.uploadConfigDir(configPath, confName);
+    }
+
+    if (boostrapConf) {
+      log.info("bootstrap conf");
+      ZkController.bootstrapConf(zkController.getZkClient(), cc);
+    }
   }
-
-  public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
-
-  public void registerInZk(final SolrCore core, boolean background, boolean skipRecovery) {
-    if (zkController == null) {
-      return;
-    }
-
-    CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
-    Runnable r = () -> {
-      MDCLoggingContext.setCore(core);
-      try {
-        try {
-          if (testing_beforeRegisterInZk != null) {
-            boolean didTrigger = testing_beforeRegisterInZk.test(cd);
-            if (log.isDebugEnabled()) {
-              log.debug("{} pre-zk hook", (didTrigger ? "Ran" : "Skipped"));
-            }
-          }
-          if (!core.getCoreContainer().isShutDown()) {
-            zkController.register(core.getName(), cd, skipRecovery);
-          }
-        } catch (InterruptedException e) {
-          // Restore the interrupted status
-          Thread.currentThread().interrupt();
-          SolrException.log(log, "", e);
-        } catch (KeeperException e) {
-          SolrException.log(log, "", e);
-        } catch (AlreadyClosedException e) {
-
-        } catch (Exception e) {
-          try {
-            zkController.publish(cd, Replica.State.DOWN);
-          } catch (InterruptedException e1) {
-            Thread.currentThread().interrupt();
-            log.error("", e1);
-          } catch (Exception e1) {
-            log.error("", e1);
-          }
-          SolrException.log(log, "", e);
-        }
-      } finally {
-        MDCLoggingContext.clear();
-      }
-    };
-
-    if (background) {
-      coreZkRegister.execute(r);
-    } else {
-      r.run();
-    }
+  
+  private static String stripChroot(String zkRun) {
+    if (zkRun == null || StringUtils.isBlank(zkRun) || zkRun.lastIndexOf('/') < 0) return zkRun;
+    return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
   
   public ZkController getZkController() {
@@ -243,24 +198,11 @@ public class ZkContainer {
   }
 
   public void close() {
-    
-    try {
-      if (zkController != null) {
-        zkController.close();
-      }
-    } finally {
-      try {
-        if (zkServer != null) {
-          zkServer.stop();
-        }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
-      }
+    IOUtils.closeQuietly(zkController);
+    if (zkClient != null) {
+      zkClient.disableCloseLock();
     }
-    
-  }
-
-  public ExecutorService getCoreZkRegisterExecutorService() {
-    return coreZkRegister;
+    IOUtils.closeQuietly(zkClient);
+    IOUtils.closeQuietly(zkServer);
   }
 }

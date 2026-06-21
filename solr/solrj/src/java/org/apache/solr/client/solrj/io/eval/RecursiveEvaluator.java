@@ -65,7 +65,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return new BigDecimal(value.toString());
     }
     else if(value instanceof BigDecimal){
-      return (BigDecimal)value;
+      return value;
     }
     else if(value instanceof Number){
       return new BigDecimal(value.toString());
@@ -117,7 +117,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
 
   }
   
-  protected Object normalizeOutputType(Object value) {
+  protected static Object normalizeOutputType(Object value) {
     if(null == value){
       return null;
     } else if (value instanceof VectorFunction) {
@@ -161,7 +161,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
     this.constructingFactory = factory;
     
     // We have to do this because order of the parameters matter
-    List<StreamExpressionParameter> parameters = factory.getOperandsOfType(expression, StreamExpressionParameter.class);
+    List<StreamExpressionParameter> parameters = StreamFactory.getOperandsOfType(expression, StreamExpressionParameter.class);
     
     for(StreamExpressionParameter parameter : parameters){
       if(parameter instanceof StreamExpression){
@@ -182,7 +182,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
         if(0 != ((StreamExpressionValue)parameter).getValue().length()){
           // special case - if evaluates to a number, boolean, or null then we'll treat it 
           // as a RawValueEvaluator
-          Object value = factory.constructPrimitiveObject(((StreamExpressionValue)parameter).getValue());
+          Object value = StreamFactory.constructPrimitiveObject(((StreamExpressionValue)parameter).getValue());
           if(null == value || value instanceof Boolean || value instanceof Number){
             containedEvaluators.add(new RawValueEvaluator(value));
           }
@@ -193,7 +193,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       }
     }
     
-    Set<String> namedParameters = factory.getNamedOperands(expression).stream().map(param -> param.getName()).collect(Collectors.toSet());
+    Set<String> namedParameters = StreamFactory.getNamedOperands(expression).stream().map(param -> param.getName()).collect(Collectors.toSet());
     long ignorableCount = ignoredNamedParameters.stream().filter(name -> namedParameters.contains(name)).count();
     /*
     if(0 != expression.getParameters().size() - containedEvaluators.size() - ignorableCount){

@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.util;
 
+import static java.util.Collections.emptyList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,15 +25,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static java.util.Collections.emptyList;
-
 /**
  * A utility class to efficiently parse/store/lookup hierarchical paths which are templatized
  * like /collections/{collection}/shards/{shard}/{replica}
  */
 public class PathTrie<T> {
   private final Set<String> reserved = new HashSet<>();
-  Node root = new Node(emptyList(), null);
+  private volatile Node root = new Node(reserved, emptyList(), null);
 
   public PathTrie() {
   }
@@ -53,7 +52,8 @@ public class PathTrie<T> {
       return;
     }
 
-    for (int i = 0; i < parts.size(); i++) {
+    final int size = parts.size();
+    for (int i = 0; i < size; i++) {
       String part = parts.get(i);
       if (part.charAt(0) == '$') {
         String replacement = replacements.get(part.substring(1));
@@ -71,7 +71,7 @@ public class PathTrie<T> {
   // /a/b/c will be returned as ["a","b","c"]
   public static List<String> getPathSegments(String path) {
     if (path == null || path.isEmpty()) return emptyList();
-    List<String> parts = new ArrayList<String>() {
+    List<String> parts = new ArrayList<>() {
       @Override
       public boolean add(String s) {
         if (s == null || s.isEmpty()) return false;
@@ -84,31 +84,33 @@ public class PathTrie<T> {
 
 
   public T lookup(String path, Map<String, String> templateValues) {
-    return root.lookup(getPathSegments(path), 0, templateValues);
+    return (T) root.lookup(getPathSegments(path), 0, templateValues);
   }
 
   public T lookup(List<String> path, Map<String, String> templateValues) {
-    return root.lookup(path, 0, templateValues);
+    return (T) root.lookup(path, 0, templateValues);
   }
 
   public T lookup(String path, Map<String, String> templateValues, Set<String> paths) {
-    return root.lookup(getPathSegments(path), 0, templateValues, paths);
+    return (T) root.lookup(getPathSegments(path), 0, templateValues, paths);
   }
 
   public static String templateName(String templateStr) {
-    return templateStr.startsWith("{") && templateStr.endsWith("}") ?
+    return !templateStr.isEmpty() && templateStr.charAt(0) == '{' && !templateStr.isEmpty() && templateStr.charAt(templateStr.length() - 1) == '}' ?
         templateStr.substring(1, templateStr.length() - 1) :
         null;
 
   }
 
-  class Node {
+  static class Node {
+    private final Set<String> reserved;
     String name;
     Map<String, Node> children;
-    T obj;
+    Object obj;
     String templateName;
 
-    Node(List<String> path, T o) {
+    Node(Set<String> reserved, List<String> path, Object o) {
+      this.reserved = reserved;
       if (path.isEmpty()) {
         obj = o;
         return;
@@ -120,20 +122,20 @@ public class PathTrie<T> {
     }
 
 
-    private synchronized void insert(List<String> path, T o) {
+    private void insert(List<String> path, Object o) {
       String part = path.get(0);
       Node matchedChild = null;
       if ("*".equals(name)) {
         return;
       }
-      if (children == null) children = new ConcurrentHashMap<>();
+      if (children == null) children = new ConcurrentHashMap<>(32);
 
       String varName = templateName(part);
       String key = varName == null ? part : "";
 
       matchedChild = children.get(key);
       if (matchedChild == null) {
-        children.put(key, matchedChild = new Node(path, o));
+        children.put(key, matchedChild = new Node(reserved, path, o));
       }
       if (varName != null) {
         if (!matchedChild.templateName.equals(varName)) {
@@ -167,7 +169,7 @@ public class PathTrie<T> {
     }
 
 
-    public T lookup(List<String> pieces, int i, Map<String, String> templateValues) {
+    public Object lookup(List<String> pieces, int i, Map<String, String> templateValues) {
       return lookup(pieces, i, templateValues, null);
 
     }
@@ -178,41 +180,46 @@ public class PathTrie<T> {
      * @param templateVariables The mapping of template variable to its value
      * @param availableSubPaths If not null , available sub paths will be returned in this set
      */
-    public T lookup(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
-      if (templateName != null) templateVariables.put(templateName, pathSegments.get(index - 1));
-      if (pathSegments.size() < index + 1) {
-        findAvailableChildren("", availableSubPaths);
-        if (obj == null) {//this is not a leaf node
-          Node n = children.get("*");
+    public Object lookup(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
+      Node other = this;
+      while (true) {
+        if (other.templateName != null) templateVariables.put(other.templateName, pathSegments.get(index - 1));
+        final int size1 = pathSegments.size();
+        if (size1 < index + 1) {
+          other.findAvailableChildren("", availableSubPaths);
+          if (other.obj == null) {//this is not a leaf node
+            Node n = other.children.get("*");
+            if (n != null) {
+              return n.obj;
+            }
+
+          }
+          return other.obj;
+        }
+        String piece = pathSegments.get(index);
+        if (other.children == null) {
+          return null;
+        }
+        Node n = other.children.get(piece);
+        if (n == null && !other.reserved.contains(piece)) n = other.children.get("");
+        if (n == null) {
+          n = other.children.get("*");
           if (n != null) {
+            StringBuffer sb = new StringBuffer(32);
+            for (int i = index; i < size1; i++) {
+              sb.append("/").append(pathSegments.get(i));
+            }
+            templateVariables.put("*", sb.toString());
             return n.obj;
-          }
 
-        }
-        return obj;
-      }
-      String piece = pathSegments.get(index);
-      if (children == null) {
-        return null;
-      }
-      Node n = children.get(piece);
-      if (n == null && !reserved.contains(piece)) n = children.get("");
-      if (n == null) {
-        n = children.get("*");
-        if (n != null) {
-          StringBuffer sb = new StringBuffer();
-          for (int i = index; i < pathSegments.size(); i++) {
-            sb.append("/").append(pathSegments.get(i));
           }
-          templateVariables.put("*", sb.toString());
-          return n.obj;
-
         }
+        if (n == null) {
+          return null;
+        }
+        index = index + 1;
+        other = n;
       }
-      if (n == null) {
-        return null;
-      }
-      return n.lookup(pathSegments, index + 1, templateVariables, availableSubPaths);
     }
   }
 

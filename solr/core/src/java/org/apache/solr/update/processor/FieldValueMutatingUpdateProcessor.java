@@ -78,8 +78,7 @@ public abstract class FieldValueMutatingUpdateProcessor
       } else {
         if (destVal != srcVal) {
           if (log.isDebugEnabled()) {
-            log.debug("replace value from field '{}': {} with {}",
-                new Object[]{src.getName(), srcVal, destVal});
+            log.debug("replace value from field '{}': {} with {}", src.getName(), srcVal, destVal);
           }
         }
         result.addValue(destVal);

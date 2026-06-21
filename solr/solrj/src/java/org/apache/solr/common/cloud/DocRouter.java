@@ -25,12 +25,12 @@ import org.noggit.JSONWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.solr.common.cloud.CompositeIdRouter.*;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 
 /**
@@ -38,8 +38,7 @@ import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
  * @lucene.experimental
  */
 public abstract class DocRouter {
-  public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
-  public static final DocRouter DEFAULT = new CompositeIdRouter();
+
 
 
   public static DocRouter getDocRouter(String routerName) {
@@ -48,7 +47,7 @@ public abstract class DocRouter {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
   }
 
-  public String getRouteField(DocCollection coll) {
+  public static String getRouteField(DocCollection coll) {
     if (coll == null) return null;
     Map m = (Map) coll.get(DOC_ROUTER);
     if (m == null) return null;
@@ -68,26 +67,15 @@ public abstract class DocRouter {
     return map;
   }
 
-  // currently just an implementation detail...
-  private final static Map<String, DocRouter> routerMap;
-  static {
-    routerMap = new HashMap<>();
-    PlainIdRouter plain = new PlainIdRouter();
-    // instead of doing back compat this way, we could always convert the clusterstate on first read to "plain" if it doesn't have any properties.
-    routerMap.put(null, plain);     // back compat with 4.0
-    routerMap.put(PlainIdRouter.NAME, plain);
-    routerMap.put(CompositeIdRouter.NAME, DEFAULT_NAME.equals(CompositeIdRouter.NAME) ? DEFAULT : new CompositeIdRouter());
-    routerMap.put(ImplicitDocRouter.NAME, new ImplicitDocRouter());
-    // NOTE: careful that the map keys (the static .NAME members) are filled in by making them final
-  }
+
 
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
   public static class Range implements JSONWriter.Writable, Comparable<Range> {
-    public int min;  // inclusive
-    public int max;  // inclusive
+    public final int min;  // inclusive
+    public final int max;  // inclusive
 
     public Range(int min, int max) {
       assert min <= max;
@@ -139,7 +127,7 @@ public abstract class DocRouter {
     }
   }
 
-  public Range fromString(String range) {
+  public static Range fromString(String range) {
     int middle = range.indexOf('-');
     String minS = range.substring(0, middle);
     String maxS = range.substring(middle+1);
@@ -148,7 +136,7 @@ public abstract class DocRouter {
     return new Range((int)min, (int)max);
   }
 
-  public Range fullRange() {
+  public static Range fullRange() {
     return new Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
   }
 
@@ -169,7 +157,7 @@ public abstract class DocRouter {
    *        of variation in resulting ranges - odd ranges will be larger and even ranges will be smaller
    *        by up to that percentage.
    */
-  public List<Range> partitionRange(int partitions, Range range, float fuzz) {
+  public static List<Range> partitionRange(int partitions, Range range, float fuzz) {
     int min = range.min;
     int max = range.max;
 

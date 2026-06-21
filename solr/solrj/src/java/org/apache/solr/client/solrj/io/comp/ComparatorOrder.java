@@ -36,12 +36,9 @@ public enum ComparatorOrder {
   }
   
   public String toString(){
-    switch(this){
-      case DESCENDING:
-        return "desc";
-      default:
-        return "asc";
-        
+    if (this == ComparatorOrder.DESCENDING) {
+      return "desc";
     }
+    return "asc";
   }
 }

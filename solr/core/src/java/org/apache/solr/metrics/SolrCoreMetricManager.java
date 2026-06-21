@@ -18,24 +18,25 @@ package org.apache.solr.metrics;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.RejectedExecutionException;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 
 /**
  * Helper class for managing registration of {@link SolrMetricProducer}'s
- * and {@link SolrMetricReporter}'s specific to a {@link SolrCore} instance.
+ * specific to a {@link SolrCore} instance.
  */
 public class SolrCoreMetricManager implements Closeable {
 
   private final SolrCore core;
-  private SolrMetricsContext solrMetricsContext;
+  private final boolean enableMetrics;
+  private volatile SolrMetricsContext solrMetricsContext;
   private SolrMetricManager metricManager;
   private String collectionName;
   private String shardName;
@@ -49,11 +50,12 @@ public class SolrCoreMetricManager implements Closeable {
    * @param core the metric manager's core
    */
   public SolrCoreMetricManager(SolrCore core) {
+    enableMetrics = Boolean.parseBoolean(System.getProperty("solr.enableMetrics", "true"));
     this.core = core;
     initCloudMode();
     metricManager = core.getCoreContainer().getMetricManager();
     String registryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
-    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, core.getMetricTag());
+    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, core.getMetricTag(), enableMetrics);
     leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
   }
 
@@ -63,36 +65,19 @@ public class SolrCoreMetricManager implements Closeable {
       cloudMode = true;
       collectionName = core.getCoreDescriptor().getCollectionName();
       shardName = cd.getShardId();
-      //replicaName = cd.getCoreNodeName();
       String coreName = core.getName();
-      replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
-      if (replicaName == null) {
-        replicaName = cd.getCoreNodeName();
-      }
-    }
-  }
-
-  /**
-   * Load reporters configured globally and specific to {@link org.apache.solr.core.SolrInfoBean.Group#core}
-   * group or with a registry name specific to this core.
-   */
-  public void loadReporters() {
-    CoreContainer coreContainer = core.getCoreContainer();
-    NodeConfig nodeConfig = coreContainer.getConfig();
-    PluginInfo[] pluginInfos = nodeConfig.getMetricsConfig().getMetricReporters();
-    metricManager.loadReporters(pluginInfos, core.getResourceLoader(), coreContainer, core, solrMetricsContext.getTag(),
-        SolrInfoBean.Group.core, solrMetricsContext.getRegistryName());
-    if (cloudMode) {
-      metricManager.loadShardReporters(pluginInfos, core);
+      replicaName = coreName;
     }
   }
 
   /**
    * Make sure that metrics already collected that correspond to the old core name
    * are carried over and will be used under the new core name.
-   * This method also reloads reporters so that they use the new core name.
    */
   public void afterCoreSetName() {
+    if (!enableMetrics) {
+      return;
+    }
     String oldRegistryName = solrMetricsContext.getRegistryName();
     String oldLeaderRegistryName = leaderRegistryName;
     initCloudMode();
@@ -101,14 +86,7 @@ public class SolrCoreMetricManager implements Closeable {
     if (oldRegistryName.equals(newRegistryName)) {
       return;
     }
-    // close old reporters
-    metricManager.closeReporters(oldRegistryName, solrMetricsContext.getTag());
-    if (oldLeaderRegistryName != null) {
-      metricManager.closeReporters(oldLeaderRegistryName, solrMetricsContext.getTag());
-    }
-    solrMetricsContext = new SolrMetricsContext(metricManager, newRegistryName, solrMetricsContext.getTag());
-    // load reporters again, using the new core name
-    loadReporters();
+    solrMetricsContext = new SolrMetricsContext(metricManager, newRegistryName, solrMetricsContext.getTag(), enableMetrics);
   }
 
   /**
@@ -138,15 +116,17 @@ public class SolrCoreMetricManager implements Closeable {
   }
 
   /**
-   * Closes reporters specific to this core and unregisters gauges with this core's instance tag.
+   * Unregisters gauges with this core's instance tag.
    */
   @Override
   public void close() throws IOException {
-    metricManager.closeReporters(solrMetricsContext.getRegistryName(), solrMetricsContext.getTag());
-    if (getLeaderRegistryName() != null) {
-      metricManager.closeReporters(getLeaderRegistryName(), solrMetricsContext.getTag());
+    try {
+      ParWork.submit("CloseSolrMetricManager", () -> {
+        metricManager.unregisterGauges(getRegistryName(), solrMetricsContext.tag);
+      });
+    } catch (RejectedExecutionException e) {
+
     }
-    metricManager.unregisterGauges(solrMetricsContext.getRegistryName(), solrMetricsContext.getTag());
   }
 
   public SolrMetricsContext getSolrMetricsContext() {

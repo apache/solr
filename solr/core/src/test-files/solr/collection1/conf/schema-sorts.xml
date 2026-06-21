@@ -113,6 +113,10 @@ NOTE: Tests expect every field in this schema to be sortable.
   <field name="enum_dv_last" type="enum_dv_last" />
   <field name="enum_dv_first" type="enum_dv_first" />
 
+  <!-- dynamic sub-fields for CurrencyFieldType (currency, currency_last, currency_first) -->
+  <dynamicField name="*_c_l" type="long" multiValued="false" indexed="true" stored="false"/>
+  <dynamicField name="*_c_s" type="str" multiValued="false" indexed="true" stored="false"/>
+
   <!-- ensure function sorts don't mistakenly get interpreted as field sorts
        https://issues.apache.org/jira/browse/SOLR-5354?focusedCommentId=13835891&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-13835891
   -->
@@ -264,12 +268,15 @@ NOTE: Tests expect every field in this schema to be sortable.
   <fieldType name="uuid_dv_first" class="solr.UUIDField" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
-  <fieldType name="currency" class="solr.CurrencyField" stored="true" indexed="true" foo="bar"
-             providerClass="solr.MockExchangeRateProvider"/>
-  <fieldType name="currency_last" class="solr.CurrencyField" stored="true" indexed="true" foo="bar"
-             providerClass="solr.MockExchangeRateProvider" sortMissingLast="true"/>
-  <fieldType name="currency_first" class="solr.CurrencyField" stored="true" indexed="true" foo="bar"
-             providerClass="solr.MockExchangeRateProvider" sortMissingFirst="true"/>
+  <fieldType name="currency" class="solr.CurrencyFieldType" stored="true" indexed="true"
+             amountLongSuffix="_c_l" codeStrSuffix="_c_s"
+             providerClass="solr.MockExchangeRateProvider" foo="bar"/>
+  <fieldType name="currency_last" class="solr.CurrencyFieldType" stored="true" indexed="true"
+             amountLongSuffix="_c_l" codeStrSuffix="_c_s"
+             providerClass="solr.MockExchangeRateProvider" foo="bar" sortMissingLast="true"/>
+  <fieldType name="currency_first" class="solr.CurrencyFieldType" stored="true" indexed="true"
+             amountLongSuffix="_c_l" codeStrSuffix="_c_s"
+             providerClass="solr.MockExchangeRateProvider" foo="bar" sortMissingFirst="true"/>
 
   <fieldType name="collation_en_primary" class="solr.CollationField" language="en" strength="primary" stored="true"
              indexed="true"/>
@@ -302,11 +309,11 @@ NOTE: Tests expect every field in this schema to be sortable.
   <fieldType name="bool_last" class="solr.BoolField" stored="true" indexed="true" sortMissingLast="true"/>
   <fieldType name="bool_first" class="solr.BoolField" stored="true" indexed="true" sortMissingFirst="true"/>
 
-  <fieldType name="enum" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
-  <fieldType name="enum_last" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"
-             sortMissingLast="true"/>
-  <fieldType name="enum_first" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"
-             sortMissingFirst="true"/>
+  <fieldType name="enum" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true"/>
+  <fieldType name="enum_last" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"
+             docValues="true" sortMissingLast="true"/>
+  <fieldType name="enum_first" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"
+             docValues="true" sortMissingFirst="true"/>
   <fieldType name="enum_dv" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true"/>
   <fieldType name="enum_dv_last" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingLast="true"/>
   <fieldType name="enum_dv_first" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingFirst="true"/>

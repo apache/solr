@@ -21,32 +21,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-  
-
   @Test
   public void testNoConfigSetPropertiesFile() throws Exception {
-    assertNull(createConfigSetProps(null));
+    assertEquals(0, createConfigSetProps(null).size());
   }
 
   @Test
   public void testEmptyConfigSetProperties() throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
+    SolrException thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       createConfigSetProps("");
     });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
@@ -54,7 +48,7 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testConfigSetPropertiesNotMap() throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
+    SolrException thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       createConfigSetProps(Utils.toJSONString(new String[] {"test"}));
     });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
@@ -76,14 +70,15 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
   }
 
   private NamedList createConfigSetProps(String props) throws Exception {
-    Path testDirectory = createTempDir();
+    Path testDirectory = SolrTestUtil.createTempDir();
     String filename = "configsetprops.json";
     if (props != null) {
       Path confDir = testDirectory.resolve("conf");
       Files.createDirectories(confDir);
       Files.write(confDir.resolve(filename), props.getBytes(StandardCharsets.UTF_8));
     }
-    SolrResourceLoader loader = new SolrResourceLoader(testDirectory);
-    return ConfigSetProperties.readFromResourceLoader(loader, filename);
+    try (SolrResourceLoader loader = new SolrResourceLoader(testDirectory)) {
+      return ConfigSetProperties.readFromResourceLoader(loader, filename);
+    }
   }
 }

@@ -56,6 +56,8 @@ import org.slf4j.LoggerFactory;
  */
 public class CommandHandler {
 
+  public static final Collector[] EMPTY_COLLECTORS = new Collector[0];
+
   public static class Builder {
 
     private QueryCommand queryCommand;
@@ -159,7 +161,7 @@ public class CommandHandler {
     } else if (needDocset) {
       docSet = computeDocSet(query, filter, collectors);
     } else if (!collectors.isEmpty()) {
-      searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
+      searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(EMPTY_COLLECTORS)));
     } else {
       searchWithTimeLimiter(query, filter, null);
     }
@@ -190,7 +192,7 @@ public class CommandHandler {
       searchWithTimeLimiter(query, filter, allGroupHeadsCollector);
     } else {
       collectors.add(allGroupHeadsCollector);
-      searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
+      searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[0])));
     }
 
     return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));

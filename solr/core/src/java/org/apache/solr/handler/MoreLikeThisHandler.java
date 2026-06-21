@@ -39,12 +39,13 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.MoreLikeThisParams.TermStyle;
 import org.apache.solr.common.params.MoreLikeThisParams;
+import org.apache.solr.common.params.MoreLikeThisParams.TermStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -80,7 +81,7 @@ import org.slf4j.LoggerFactory;
 public class MoreLikeThisHandler extends RequestHandlerBase  
 {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
-  private static final Pattern splitList = Pattern.compile(",| ");
+  private static final Pattern splitList = Pattern.compile("[, ]");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -100,7 +101,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   {
     SolrParams params = req.getParams();
 
-    long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
+    long timeAllowed = params.getInt( CommonParams.TIME_ALLOWED, -1 );
     if(timeAllowed > 0) {
       SolrQueryTimeoutImpl.set(timeAllowed);
     }
@@ -131,7 +132,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           if (fqs != null && fqs.length != 0) {
             filters = new ArrayList<>();
             for (String fq : fqs) {
-              if (fq != null && fq.trim().length() != 0) {
+              if (fq != null && !org.apache.commons.lang3.StringUtils.isBlank(fq)) {
                 QParser fqp = QParser.getParser(fq, req);
                 filters.add(fqp.getQuery());
               }
@@ -275,6 +276,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
               rsp.add("debug", dbgInfo);
             }
           } catch (Exception e) {
+            ParWork.propagateInterrupt(e);
             SolrException.log(log, "Exception during debug", e);
             rsp.add("exception_during_debug", SolrException.toStr(e));
           }
@@ -325,7 +327,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           }
         }
       }
-      String[] fields = list.toArray(new String[list.size()]);
+      String[] fields = list.toArray(new String[0]);
       if( fields.length < 1 ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
             "MoreLikeThis requires at least one similarity field: "+MoreLikeThisParams.SIMILARITY_FIELDS );
@@ -484,7 +486,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       return result;
     }
     
-    private void fillInterestingTermsFromMLTQuery( Query query, List<InterestingTerm> terms )
+    private static void fillInterestingTermsFromMLTQuery(Query query, List<InterestingTerm> terms)
     { 
       Collection<BooleanClause> clauses = ((BooleanQuery)query).clauses();
       for( BooleanClause o : clauses ) {

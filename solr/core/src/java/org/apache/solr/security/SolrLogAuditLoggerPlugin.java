@@ -78,4 +78,14 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
         break;
     }
   }
+
+  @Override
+  public String getName() {
+    return "SolrLogAuditLoggerPlugin";
+  }
+
+  @Override
+  public boolean isCallerThreadAllowed() {
+    return true;
+  }
 }

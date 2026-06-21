@@ -48,6 +48,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -139,7 +140,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         return new TestCollector1(null);
     }
 
-    public MergeStrategy getMergeStrategy() {
+    public MergeStrategy getMergeStrategy(SolrClient client) {
       if(mergeStrategy == 0)
         return new TestMergeStrategy();
       else

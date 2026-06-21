@@ -50,6 +50,9 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGrou
  */
 public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
+  public static final TopDocs[] EMPTY_TOP_DOCS = new TopDocs[0];
+  public static final TopFieldDocs[] EMPTY_TOP_FIELD_DOCS = new TopFieldDocs[0];
+
   @Override
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
@@ -97,8 +100,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
         if (srsp.getException() != null) {
           Throwable t = srsp.getException();
-          if (t instanceof SolrServerException && ((SolrServerException) t).getCause() != null) {
-            t = ((SolrServerException) t).getCause();
+          if (t instanceof SolrServerException && t.getCause() != null) {
+            t = t.getCause();
           }
           individualShardInfo.add("error", t.toString());
           StringWriter trace = new StringWriter();
@@ -157,7 +160,6 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         continue;
       }
 
-      @SuppressWarnings({"rawtypes"})
       TopGroups<BytesRef>[] topGroupsArr = new TopGroups[topGroups.size()];
       int docsPerGroup = docsPerGroupDefault;
       if (docsPerGroup < 0) {
@@ -166,6 +168,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }
+
       rb.mergedTopGroups.put(entry.getKey(), TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
     }
 
@@ -199,11 +202,12 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       final TopDocs mergedTopDocs;
       if (withinGroupSort.equals(Sort.RELEVANCE)) {
         mergedTopDocs = TopDocs.merge(
-            start, topN, topDocs.toArray(new TopDocs[topDocs.size()]));
+            start, topN, topDocs.toArray(EMPTY_TOP_DOCS));
       } else {
         mergedTopDocs = TopDocs.merge(
-            withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
+            withinGroupSort, start, topN, topDocs.toArray(EMPTY_TOP_FIELD_DOCS));
       }
+
       rb.mergedQueryCommandResults.put(entry.getKey(), new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));
     }
     fillResultIds(rb);
@@ -214,25 +218,29 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
    * @param rb the response builder
    */
   static void fillResultIds(ResponseBuilder rb) {
-    Map<Object, ShardDoc> resultIds = new HashMap<>();
+    Map<Object, ShardDoc> resultIds = new HashMap<>(32);
     int i = 0;
-    for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
-      for (GroupDocs<BytesRef> group : topGroups.groups) {
-        for (ScoreDoc scoreDoc : group.scoreDocs) {
-          ShardDoc solrDoc = (ShardDoc) scoreDoc;
-          // Include the first if there are duplicate IDs
-          if ( ! resultIds.containsKey(solrDoc.id)) {
-            solrDoc.positionInResponse = i++;
-            resultIds.put(solrDoc.id, solrDoc);
+    if (rb.mergedTopGroups != null) {
+      for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
+        for (GroupDocs<BytesRef> group : topGroups.groups) {
+          for (ScoreDoc scoreDoc : group.scoreDocs) {
+            ShardDoc solrDoc = (ShardDoc) scoreDoc;
+            // Include the first if there are duplicate IDs
+            if (!resultIds.containsKey(solrDoc.id)) {
+              solrDoc.positionInResponse = i++;
+              resultIds.put(solrDoc.id, solrDoc);
+            }
           }
         }
       }
     }
-    for (QueryCommandResult queryCommandResult : rb.mergedQueryCommandResults.values()) {
-      for (ScoreDoc scoreDoc : queryCommandResult.getTopDocs().scoreDocs) {
-        ShardDoc solrDoc = (ShardDoc) scoreDoc;
-        solrDoc.positionInResponse = i++;
-        resultIds.put(solrDoc.id, solrDoc);
+    if (rb.mergedQueryCommandResults != null) {
+      for (QueryCommandResult queryCommandResult : rb.mergedQueryCommandResults.values()) {
+        for (ScoreDoc scoreDoc : queryCommandResult.getTopDocs().scoreDocs) {
+          ShardDoc solrDoc = (ShardDoc) scoreDoc;
+          solrDoc.positionInResponse = i++;
+          resultIds.put(solrDoc.id, solrDoc);
+        }
       }
     }
 

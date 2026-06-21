@@ -36,6 +36,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,7 @@ public final class TrackingUpdateProcessorFactory
    * The map of group queues containing commands that were recorded
    * @see #startRecording
    */
-  private final static Map<String, List<UpdateCommand>> groupToCommands = new ConcurrentHashMap<>();
+  private final static Map<String, List<UpdateCommand>> groupToCommands = new NonBlockingHashMap<>();
 
   private String group = "default";
 

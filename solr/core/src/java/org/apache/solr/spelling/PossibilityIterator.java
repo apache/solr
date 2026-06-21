@@ -139,7 +139,7 @@ public class PossibilityIterator implements
     rankedPossibilityIterator = Arrays.asList(rpArr).iterator();
   }
   
-  private boolean isSuggestionForReal(RankedSpellPossibility rsp) {
+  private static boolean isSuggestionForReal(RankedSpellPossibility rsp) {
     for (SpellCheckCorrection corr : rsp.corrections) {
       if (!corr.getOriginalAsString().equals(corr.getCorrection())) {
         return true;
@@ -251,8 +251,7 @@ public class PossibilityIterator implements
     }
   }
   
-  private List<List<SpellCheckCorrection>> separateOverlappingTokens(
-      List<SpellCheckCorrection> possibleCorrection) {
+  private static List<List<SpellCheckCorrection>> separateOverlappingTokens(List<SpellCheckCorrection> possibleCorrection) {
     List<List<SpellCheckCorrection>> ret = null;
     if (possibleCorrection.size() == 1) {
       ret = new ArrayList<>(1);
@@ -267,8 +266,7 @@ public class PossibilityIterator implements
     return ret;
   }
   
-  private List<SpellCheckCorrection> compatible(List<SpellCheckCorrection> all,
-      int pos) {
+  private static List<SpellCheckCorrection> compatible(List<SpellCheckCorrection> all, int pos) {
     List<SpellCheckCorrection> priorPassCompatibles = null;
     {
       List<SpellCheckCorrection> firstPassCompatibles = new ArrayList<>(
@@ -329,7 +327,7 @@ public class PossibilityIterator implements
     }
   }
   
-  private boolean conflicts(SpellCheckCorrection c1, SpellCheckCorrection c2) {
+  private static boolean conflicts(SpellCheckCorrection c1, SpellCheckCorrection c2) {
     int s1 = c1.getOriginal().startOffset();
     int e1 = c1.getOriginal().endOffset();
     int s2 = c2.getOriginal().startOffset();

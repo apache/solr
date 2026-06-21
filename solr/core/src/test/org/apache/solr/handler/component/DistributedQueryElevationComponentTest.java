@@ -20,10 +20,12 @@ import java.io.File;
 
 import org.apache.lucene.util.Constants;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -40,7 +42,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
   @BeforeClass
   public static void betterNotBeJ9() {
-    assumeFalse("FIXME: SOLR-5791: This test fails under IBM J9",
+    LuceneTestCase.assumeFalse("FIXME: SOLR-5791: This test fails under IBM J9",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
   }
 
@@ -53,13 +55,13 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeDistributedQueryElevationComponentTest() {
     System.setProperty("elevate.data.file", "elevate.xml");
-    File parent = new File(TEST_HOME(), "conf");
+    File parent = new File(SolrTestUtil.TEST_HOME(), "conf");
   }
 
   @AfterClass
-  public static void afterClass() {
+  public static void afterDistributedQueryElevationComponentTest() {
     System.clearProperty("elevate.data.file");
   }
 
@@ -67,8 +69,6 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
   @ShardsFixed(num = 3)
   public void test() throws Exception {
 
-
-    del("*:*");
     indexr(id,"1", "int_i", "1", "text", "XXXX XXXX", "field_t", "anything");
     indexr(id,"2", "int_i", "2", "text", "YYYY YYYY", "plow_t", "rake");
     indexr(id,"3", "int_i", "3", "text", "ZZZZ ZZZZ");
@@ -90,6 +90,10 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     handle.put("shards", SKIP);
     handle.put("q", SKIP);
     handle.put("qt", SKIP);
+    // The echoed responseHeader/params contains the same set of params in both the control and
+    // distributed responses, but the distributed request pipeline rebuilds them in a different
+    // insertion order. The param ORDER is not meaningful, so compare params as an unordered set.
+    handle.put("params", UNORDERED);
     query("q", "*:*", "qt", "/elevate", "shards.qt", "/elevate", "rows", "500", "sort", "id desc", CommonParams.FL, "id, score, [elevated]");
 
     query("q", "ZZZZ", "qt", "/elevate", "shards.qt", "/elevate", "rows", "500", CommonParams.FL, "*, [elevated]", "forceElevation", "true", "sort", "int_i desc");
@@ -110,8 +114,8 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
-    final String clientUrl = ((HttpSolrClient)clients.get(0)).getBaseURL();
-    HttpSolrClient client = getHttpSolrClient(clientUrl);
+    final String clientUrl = ((Http2SolrClient)clients.get(0)).getBaseURL();
+    Http2SolrClient client = getHttpSolrClient(clientUrl);
     client.setParser(new BinaryResponseParser());
     SolrQuery solrQuery = new SolrQuery("XXXX").setParam("qt", "/elevate").setParam("shards.qt", "/elevate").setRows(500).setFields("id,[elevated]")
         .setParam("enableElevation", "true").setParam("forceElevation", "true").setParam("elevateIds", "6", "wt", "javabin")

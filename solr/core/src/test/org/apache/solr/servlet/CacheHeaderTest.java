@@ -31,10 +31,12 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -45,9 +47,9 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    File solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
+    jetty = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
   @AfterClass
@@ -257,7 +259,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = createTempFile("cachetest","csv").toFile();
+      File f = SolrTestUtil.createTempFile("cachetest", "csv").toFile();
       try (Writer out = new OutputStreamWriter(new FileOutputStream(f), charset)) {
         out.write(contents);
       }

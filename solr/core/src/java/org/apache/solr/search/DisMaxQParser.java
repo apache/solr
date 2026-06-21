@@ -21,6 +21,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.DisMaxParams;
@@ -122,7 +123,7 @@ public class DisMaxQParser extends QParser {
     String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
     if (null != boostFuncs && 0 != boostFuncs.length) {
       for (String boostFunc : boostFuncs) {
-        if (null == boostFunc || "".equals(boostFunc)) continue;
+        if (null == boostFunc || boostFunc.isEmpty()) continue;
         Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
         for (Map.Entry<String, Float> entry : ff.entrySet()) {
           Query fq = subQuery(entry.getKey(), FunctionQParserPlugin.NAME).getQuery();
@@ -143,7 +144,7 @@ public class DisMaxQParser extends QParser {
     if (boostParams != null && boostParams.length > 0) {
       boostQueries = new ArrayList<>();
       for (String qs : boostParams) {
-        if (qs.trim().length() == 0) continue;
+        if (StringUtils.isBlank(qs)) continue;
         Query q = subQuery(qs, null).getQuery();
         boostQueries.add(q);
       }
@@ -164,8 +165,8 @@ public class DisMaxQParser extends QParser {
           /* if the default boost was used, and we've got a BooleanQuery
            * extract the subqueries out and use them directly
            */
-          for (Object c : ((BooleanQuery) f).clauses()) {
-            query.add((BooleanClause) c);
+          for (BooleanClause c : ((BooleanQuery) f).clauses()) {
+            query.add(c);
           }
         } else {
           query.add(f, BooleanClause.Occur.SHOULD);
@@ -227,7 +228,7 @@ public class DisMaxQParser extends QParser {
     }
   }
 
-  protected Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp) throws SyntaxError {
+  protected static Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp) throws SyntaxError {
     /* * * Add on Phrases for the Query * * */
 
     /* build up phrase boosting queries */
@@ -272,7 +273,7 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public String[] getDefaultHighlightFields() {
-    return queryFields.keySet().toArray(new String[queryFields.keySet().size()]);
+    return queryFields.keySet().toArray(Utils.EMPTY_STRINGS);
   }
 
   @Override

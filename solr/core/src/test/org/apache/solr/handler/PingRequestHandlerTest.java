@@ -21,9 +21,12 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -35,6 +38,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+@LuceneTestCase.Nightly // slow
 public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   protected int NUM_SERVERS = 5;
   protected int NUM_SHARDS = 2;
@@ -162,15 +166,15 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
   
   public void testBadActionRaisesException() throws Exception {
-    SolrException se = expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
+    SolrException se = SolrTestCaseUtil.expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
   }
 
  public void testPingInClusterWithNoHealthCheck() throws Exception {
 
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
 
-    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+    final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
     try {
       assertNotNull(miniCluster.getZkServer());
@@ -183,9 +187,12 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       // create collection
       String collectionName = "testSolrCloudCollection";
       String configName = "solrCloudCollectionConfig";
-      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
+      miniCluster.uploadConfigSet(SolrTestUtil.configset("cloud-minimal"), configName);
+
       CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
           .process(miniCluster.getSolrClient());
+
+      miniCluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
 
       // Send distributed and non-distributed ping query
       SolrPingWithDistrib reqDistrib = new SolrPingWithDistrib();

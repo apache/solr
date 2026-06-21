@@ -135,7 +135,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     return builder;
   }
 
-  private SolrHttpClientBuilder initHttpClientBuilder(SolrHttpClientBuilder builder, String basicAuthUser, String basicAuthPass) {
+  private static SolrHttpClientBuilder initHttpClientBuilder(SolrHttpClientBuilder builder, String basicAuthUser, String basicAuthPass) {
     builder.setDefaultCredentialsProvider(() -> {
       CredentialsProvider credsProvider = new BasicCredentialsProvider();
       credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(basicAuthUser, basicAuthPass));

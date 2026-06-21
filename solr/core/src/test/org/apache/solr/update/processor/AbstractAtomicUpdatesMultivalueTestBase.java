@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.curator.shaded.com.google.common.collect.Lists;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -293,11 +294,13 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testMultivalueCollationField() throws SolrServerException, IOException {
     runTestForFieldWithQuery("collationRemove", new String[] {"cf1", "cf2", "cf3", "cf4"});
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testMultivalueDatePointField() throws SolrServerException, IOException {
 
     final String s1 = "1980-01-01T00:00:00Z";
@@ -314,6 +317,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testMultivalueDateRangeField() throws SolrServerException, IOException {
 
     final String s1 = "1980-01-01T00:00:00Z";
@@ -354,6 +358,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testMultivalueFloatPointField() throws SolrServerException, IOException {
     runTestForFieldWithQuery("floatPointRemove", new Float[] {1.0f, 2.0f, 3.0f, 4.0f});
   }
@@ -390,6 +395,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testMultivalueRandomSortField() throws SolrServerException, IOException {
     runTestForFieldWithQuery("randomSortRemove", new String[] {"rsf1", "rsf2", "rsf3", "rsf4"});
   }
@@ -418,6 +424,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testMultivalueUUIDField() throws SolrServerException, IOException {
     final String[] values = new String[] {UUID.randomUUID().toString(), UUID.randomUUID().toString(),
         UUID.randomUUID().toString(), UUID.randomUUID().toString()};

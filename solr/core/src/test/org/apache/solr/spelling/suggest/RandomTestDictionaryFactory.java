@@ -26,6 +26,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -97,7 +98,7 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
         if (System.getProperty(enabledSysProp) != null) {
           if (emittedItems < maxItems) {
             ++emittedItems;
-            next = new BytesRef(TestUtil.randomUnicodeString(LuceneTestCase.random(), MAX_LENGTH));
+            next = new BytesRef(TestUtil.randomUnicodeString(SolrTestCase.random(), MAX_LENGTH));
             if (emittedItems % 1000 == 0) {
               log.info("{} emitted {} items", enabledSysProp, emittedItems);
             }

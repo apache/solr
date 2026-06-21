@@ -36,7 +36,7 @@ public class NumberUtils {
     } else if (size / 1024 > 0) {
       return formatter.format(size * 1.0d / 1024) + " KB";
     } else {
-      return String.valueOf(size) + " bytes";
+      return size + " bytes";
     }
   }
 

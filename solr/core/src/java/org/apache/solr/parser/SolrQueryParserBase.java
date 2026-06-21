@@ -27,11 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.agrona.collections.Object2NullableObjectHashMap;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -163,10 +163,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     public String toString() {
       return field;
     }
-    private final static Map<String,MagicFieldName> lookup
-        = new HashMap<>();
+    private final static Map<String,MagicFieldName> lookup;
+
+
     static {
-      for(MagicFieldName s : EnumSet.allOf(MagicFieldName.class))
+      EnumSet<MagicFieldName> fn = EnumSet.allOf(MagicFieldName.class);
+      lookup
+          = new Object2NullableObjectHashMap<>(fn.size(), 0.25f);
+      for(MagicFieldName s : fn)
         lookup.put(s.toString(), s);
     }
     public static MagicFieldName get(final String field) {
@@ -202,7 +206,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     @Override
     public String toString(String field) {
-      return "RAW(" + field + "," + getJoinedExternalVal() + ")";
+      return "RAW(" + field + ',' + getJoinedExternalVal() + ')';
     }
 
     @Override
@@ -525,11 +529,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);
-    setSynonymQueryStyle(synonymQueryStyle);
+    this.synonymQueryStyle = synonymQueryStyle;
     Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
     setEnableGraphQueries(true); // reset back to default
-    setSynonymQueryStyle(AS_SAME_TERM);
+    this.synonymQueryStyle = AS_SAME_TERM;
     return query;
   }
 
@@ -576,7 +580,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   * @param occur how this clause should occur when matching documents
   * @return new BooleanClause instance
   */
-  protected BooleanClause newBooleanClause(Query q, BooleanClause.Occur occur) {
+  protected static BooleanClause newBooleanClause(Query q, BooleanClause.Occur occur) {
     return new BooleanClause(q, occur);
   }
 
@@ -598,7 +602,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query newRegexpQuery(Term regexp) {
     RegexpQuery query = new RegexpQuery(regexp);
     SchemaField sf = schema.getField(regexp.field());
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    query.setRewriteMethod(FieldType.getRewriteMethod(parser, sf));
     return query;
   }
 
@@ -648,7 +652,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @param prefixLength prefix length
    * @return new FuzzyQuery Instance
    */
-  protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
+  protected static Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
     // FuzzyQuery doesn't yet allow constant score rewrite
     String text = term.text();
     int numEdits = FuzzyQuery.floatToEdits(minimumSimilarity,
@@ -660,7 +664,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * Builds a new MatchAllDocsQuery instance
    * @return new MatchAllDocsQuery instance
    */
-  protected Query newMatchAllDocsQuery() {
+  protected static Query newMatchAllDocsQuery() {
     return new MatchAllDocsQuery();
   }
 
@@ -672,7 +676,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query newWildcardQuery(Term t) {
     WildcardQuery query = new WildcardQuery(t);
     SchemaField sf = schema.getField(t.field());
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    query.setRewriteMethod(FieldType.getRewriteMethod(parser, sf));
     return query;
   }
 
@@ -879,7 +883,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * <code>\\u0041</code> to <code>A</code>.
    *
    */
-  String discardEscapeChar(String input) throws SyntaxError {
+  static String discardEscapeChar(String input) throws SyntaxError {
     int start = input.indexOf('\\');
     if (start < 0) return input;
 
@@ -962,7 +966,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * expects to be escaped are escaped by a preceding <code>\</code>.
    */
   public static String escape(String s) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
       // These characters are part of the query syntax and must be escaped
@@ -1061,7 +1065,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     checkNullField(field);
 
     SchemaField sf;
-    if (field.equals(lastFieldName)) {
+    if (field != null && field.equals(lastFieldName)) {
       // only look up the SchemaField on a field change... this helps with memory allocation of dynamic fields
       // and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed "foo_i" each time.
       sf = lastField;
@@ -1214,7 +1218,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     checkNullField(field);
 
     if ("*".equals(termStr)) {
-      if ("*".equals(field) || getExplicitField() == null) {
+      if ("*".equals(field) || explicitField == null) {
         // '*:*' and '*' -> MatchAllDocsQuery
         return newMatchAllDocsQuery();
       } else {
@@ -1242,21 +1246,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             Automata.makeChar(factory.getMarkerChar()),
             Automata.makeAnyString());
         // subtract these away
-        automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+        automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
       }
-      return new AutomatonQuery(term, automaton) {
-        // override toString so it's completely transparent
-        @Override
-        public String toString(String field) {
-          StringBuilder buffer = new StringBuilder();
-          if (!getField().equals(field)) {
-            buffer.append(getField());
-            buffer.append(":");
-          }
-          buffer.append(term.text());
-          return buffer.toString();
-        }
-      };
+      return new AutomatonQuery(term, automaton);
     }
 
     // Solr has always used constant scoring for wildcard queries.  This should return constant scoring by default.
@@ -1274,7 +1266,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws SyntaxError {
     termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
     Term t = new Term(field, termStr);
-    return newFuzzyQuery(t, minSimilarity, getFuzzyPrefixLength());
+    return newFuzzyQuery(t, minSimilarity, fuzzyPrefixLength);
   }
 
   // called from parser
@@ -1287,8 +1279,25 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   // called from parser for filter(query)
-  Query getFilter(Query q) {
+  static Query getFilter(Query q) {
     return new FilterQuery(q);
   }
 
+  private static class AutomatonQuery extends org.apache.lucene.search.AutomatonQuery {
+    public AutomatonQuery(Term term, Automaton automaton) {
+      super(term, automaton);
+    }
+
+    // override toString so it's completely transparent
+    @Override
+    public String toString(String field) {
+      StringBuilder buffer = new StringBuilder(32);
+      if (!getField().equals(field)) {
+        buffer.append(getField());
+        buffer.append(":");
+      }
+      buffer.append(term.text());
+      return buffer.toString();
+    }
+  }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -37,13 +38,17 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .withSecurityJson(STD_CONF)
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
         .setMaxShardsPerNode(100)
         .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
+    // This fork's CreateCollectionCmd returns once the cores are created but before they
+    // publish ACTIVE (waitForFinalState defaults to false; see the MRM TODO in
+    // CreateCollectionCmd). The 4-shard collection must be fully active before basicTest's
+    // immediate distributed query, otherwise it 503s with "no servers hosting shard: s3".
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
   }
 
@@ -51,6 +56,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @After
   public void tearDown() throws Exception {
     cluster.shutdown();
+    cluster = null;
     super.tearDown();
   }
 
@@ -78,7 +84,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
       } catch (Exception e) { /* Ignore */ }
 
       // Deleting security.json will disable security - before SOLR-9679 it would instead cause an exception
-      cluster.getZkClient().delete("/security.json", -1, false);
+      cluster.getZkClient().delete("/security.json", -1);
 
       int count = 0;
       boolean done = false;

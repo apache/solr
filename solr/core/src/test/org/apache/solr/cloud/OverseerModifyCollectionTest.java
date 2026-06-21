@@ -19,12 +19,15 @@ package org.apache.solr.cloud;
 
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,12 +39,18 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf1", configset("cloud-minimal"))
-        .addConfig("conf2", configset("cloud-minimal"))
-        .configure();
+        .addConfig("conf1", SolrTestUtil.configset("cloud-minimal"))
+        .addConfig("conf2", SolrTestUtil.configset("cloud-minimal"))
+        .formatZk(true).configure();
+  }
+
+  @AfterClass
+  public static void afterOverseerModifyCollectionTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
+  // this is a flakey test, can rarely fail on collection create
   public void testModifyColl() throws Exception {
 
     final String collName = "modifyColl";
@@ -63,16 +72,16 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
     p2.add("collection", collName);
     p2.add("action", "MODIFYCOLLECTION");
     p2.add("collection.configName", "notARealConfigName");
-    Exception e = expectThrows(Exception.class, () -> {
+    Exception e = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p2));
     });
 
-    assertTrue(e.getMessage(), e.getMessage().contains("Can not find the specified config set"));
+    assertTrue(e.toString(), e.getMessage().contains("Can not find the specified config set"));
 
   }
   
   private String getConfigNameFromZk(String collName) throws KeeperException, InterruptedException {
-    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
+    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null);
     Map confData = (Map) Utils.fromJSON(b);
     return (String) confData.get(ZkController.CONFIGNAME_PROP); 
   }

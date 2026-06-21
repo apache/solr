@@ -26,7 +26,6 @@ import org.junit.Test;
  * provided a tokenizerFactory that requires a match version
  *
  */
-
 public class SynonymTokenizerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -36,8 +35,9 @@ public class SynonymTokenizerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSchemaLoading() {
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    assertTrue( schema.getFieldTypes().containsKey("text_synonyms") );
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+      assertTrue(schema.getFieldTypes().containsKey("text_synonyms"));
+    }
   }
 }

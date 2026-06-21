@@ -26,24 +26,29 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.spec.InvalidKeySpecException;
 
 public class PublicKeyHandler extends RequestHandlerBase {
   public static final String PATH = "/admin/info/key";
 
+  //This is an optimization for tests only
+  public static volatile CryptoKeys.RSAKeyPair REUSABLE_KEYPAIR ;
   final CryptoKeys.RSAKeyPair keyPair;
 
   @VisibleForTesting
-  public PublicKeyHandler() {
-    keyPair = new CryptoKeys.RSAKeyPair();
+  public PublicKeyHandler() throws IOException, InvalidKeySpecException {
+    keyPair = createKeyPair(null);
   }
 
   public PublicKeyHandler(CloudConfig config) throws IOException, InvalidKeySpecException {
     keyPair = createKeyPair(config);
   }
 
-  private CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) throws IOException, InvalidKeySpecException {
+  private static CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) throws IOException, InvalidKeySpecException {
+    CryptoKeys.RSAKeyPair reused = REUSABLE_KEYPAIR;
+    if(reused != null) return reused;
     if (config == null) {
       return new CryptoKeys.RSAKeyPair();
     }
@@ -56,7 +61,27 @@ public class PublicKeyHandler extends RequestHandlerBase {
       return new CryptoKeys.RSAKeyPair();
     }
 
-    return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
+    return new CryptoKeys.RSAKeyPair(toURL(privateKey), toURL(publicKey));
+  }
+
+  /**
+   * Resolve a configured key location to a URL. The location may be a real URL
+   * (e.g. {@code file:...}, set by the test framework) or a bare classpath
+   * resource path (e.g. {@code cryptokeys/priv_key512_pkcs8.pem}, the fallback
+   * baked into the MiniSolrCloudCluster solr.xml template). A bare path is
+   * resolved against the classloader rather than blindly fed to {@code new URL()},
+   * which would throw MalformedURLException ("no protocol").
+   */
+  private static URL toURL(String location) throws IOException {
+    try {
+      return new URL(location);
+    } catch (MalformedURLException e) {
+      URL resource = PublicKeyHandler.class.getClassLoader().getResource(location);
+      if (resource == null) {
+        throw new IOException("Could not resolve PublicKeyHandler key location as URL or classpath resource: " + location, e);
+      }
+      return resource;
+    }
   }
 
   public String getPublicKey() {

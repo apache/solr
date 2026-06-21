@@ -20,6 +20,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.response.SolrQueryResponse;
 
+
 /**
  * Implementations of <code>SolrRequestHandler</code> are called to handle query requests.
  *

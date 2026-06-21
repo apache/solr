@@ -237,7 +237,7 @@ public class DateMathParser  {
     String math;
     final DateMathParser p = new DateMathParser(zone);
 
-    if (null != now) p.setNow(now);
+    if (null != now) p.now = now;
 
     if (val.startsWith("NOW")) {
       math = val.substring("NOW".length());
@@ -249,14 +249,14 @@ public class DateMathParser  {
       }
       math = val.substring(zz+1);
       try {
-        p.setNow(parseNoMath(val.substring(0, zz + 1)));
+        p.now = parseNoMath(val.substring(0, zz + 1));
       } catch (DateTimeParseException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Invalid Date in Date Math String:'" + val + '\'', e);
       }
     }
 
-    if (null == math || math.equals("")) {
+    if (null == math || math.isEmpty()) {
       return p.getNow();
     }
 
@@ -408,7 +408,7 @@ public class DateMathParser  {
             ("Not a Number: \"" + ops[pos-1] + "\"", pos-1);
         }
         if ('-' == command) {
-          val = 0 - val;
+          val = -val;
         }
         try {
           String unit = ops[pos++];

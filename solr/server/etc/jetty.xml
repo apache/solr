@@ -30,25 +30,18 @@
   <!-- for all configuration that may be set here.                 -->
   <!-- =========================================================== -->
   <Arg name="threadpool">
-    <New id="threadpool" class="com.codahale.metrics.jetty9.InstrumentedQueuedThreadPool">
-      <Arg name="registry">
-        <Call id="solrJettyMetricRegistry" name="getOrCreate" class="com.codahale.metrics.SharedMetricRegistries">
-          <Arg>solr.jetty</Arg>
-        </Call>
-      </Arg>
-    </New>
-  </Arg>
-
-  <Get name="ThreadPool">
-    <Set name="minThreads" type="int"><Property name="solr.jetty.threads.min" default="10"/></Set>
-    <Set name="maxThreads" type="int"><Property name="solr.jetty.threads.max" default="10000"/></Set>
-    <Set name="idleTimeout" type="int"><Property name="solr.jetty.threads.idle.timeout" default="120000"/></Set>
-    <Set name="stopTimeout" type="int"><Property name="solr.jetty.threads.stop.timeout" default="60000"/></Set>
-    <Set name="detailedDump">false</Set>
-  </Get>
+    <New id="threadpool" class="org.apache.solr.common.util.SolrQTP">
+  <!--   <New id="threadpool" class="com.codahale.metrics.jetty9.InstrumentedQueuedThreadPool">
+    <Arg name="registry">
+      <Call id="solrJettyMetricRegistry" name="getOrCreate" class="com.codahale.metrics.SharedMetricRegistries">
+        <Arg>solr.jetty</Arg>
+      </Call>
+    </Arg>-->
+  </New>
+</Arg>
 
 
-  <!-- =========================================================== -->
+<!-- =========================================================== -->
   <!-- Http Configuration.                                         -->
   <!-- This is a common configuration instance used by all         -->
   <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, SPDY)-->
@@ -66,14 +59,16 @@
   <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Set name="secureScheme">https</Set>
     <Set name="securePort"><Property name="solr.jetty.secure.port" default="8443" /></Set>
-    <Set name="outputBufferSize"><Property name="solr.jetty.output.buffer.size" default="32768" /></Set>
+    <Set name="outputBufferSize"><Property name="solr.jetty.output.buffer.size" default="8192" /></Set>
     <Set name="outputAggregationSize"><Property name="solr.jetty.output.aggregation.size" default="8192" /></Set>
-    <Set name="requestHeaderSize"><Property name="solr.jetty.request.header.size" default="8192" /></Set>
-    <Set name="responseHeaderSize"><Property name="solr.jetty.response.header.size" default="8192" /></Set>
+    <Set name="requestHeaderSize"><Property name="solr.jetty.request.header.size" default="16384" /></Set>
+    <Set name="responseHeaderSize"><Property name="solr.jetty.response.header.size" default="16384" /></Set>
     <Set name="sendServerVersion"><Property name="solr.jetty.send.server.version" default="false" /></Set>
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
-    <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="false"/></Set>
+    <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="true"/></Set>
+    <Set name="notifyRemoteAsyncErrors">true</Set>
+
     <!-- Uncomment to enable handling of X-Forwarded- style headers
     <Call name="addCustomizer">
       <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
@@ -89,11 +84,27 @@
       <Set name="rewritePathInfo">false</Set>
       <Set name="originalPathAttribute">requestedPath</Set>
 
+       <!-- Set DispatcherTypes  -->
+       <Set name="dispatcherTypes">
+         <Array type="javax.servlet.DispatcherType">
+           <Item>
+             <Call class="javax.servlet.DispatcherType" name="valueOf">
+               <Arg>REQUEST</Arg>
+             </Call>
+           </Item>
+           <Item>
+             <Call class="javax.servlet.DispatcherType" name="valueOf">
+               <Arg>ASYNC</Arg>
+             </Call>
+           </Item>
+         </Array>
+       </Set>
+
       <!-- security-related headers -->
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">Content-Security-Policy</Set>
             <Set name="value">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self'; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';</Set>
           </New>
@@ -102,7 +113,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">X-Content-Type-Options</Set>
             <Set name="value">nosniff</Set>
           </New>
@@ -111,7 +122,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">X-Frame-Options</Set>
             <Set name="value">SAMEORIGIN</Set>
           </New>
@@ -120,7 +131,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">*</Set>
+            <Set name="pattern">/solr/*</Set>
             <Set name="name">X-XSS-Protection</Set>
             <Set name="value">1; mode=block</Set>
           </New>
@@ -177,14 +188,6 @@
                    </Set>
                  </New>
                </Item>
-               <Item>
-                 <New id="InstrumentedHandler" class="com.codahale.metrics.jetty9.InstrumentedHandler">
-                   <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
-                   <Set name="handler">
-                     <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-                   </Set>
-                 </New>
-               </Item>
              </Array>
            </Set>
          </New>
@@ -202,6 +205,7 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
+    <Set name="stopTimeout">5000</Set>
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
 
@@ -224,7 +228,7 @@
               </New>
             </Arg>
           </Call>
-          
+
           <!-- Add a customize step to the deployment lifecycle -->
           <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
           <Call name="insertLifeCycleNode">
@@ -240,9 +244,9 @@
             </Arg>
           </Call>
           -->
-          
+
         </New>
       </Arg>
     </Call>
-    
+
 </Configure>

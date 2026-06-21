@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="CloudIndexing" type="jmh-id" factoryName="Jmh" vm-parameters="" program-parameters="org.apache.solr.bench.index.CloudIndexing.* -rf json -rff $USER_HOME$/indexing.json" working-dir="$PROJECT_DIR$" benchmark-type="CLASS" benchmark-class="org.apache.solr.bench.index.CloudIndexing">
+    <module name="lucene-solr.solr.test-framework.jmh" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

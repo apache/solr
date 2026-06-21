@@ -75,7 +75,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       return vals.length;
     }
 
-    private int hash(long val) {
+    private static int hash(long val) {
       // For floats: exponent bits start at bit 23 for single precision,
       // and bit 52 for double precision.
       // Many values will only have significant bits just to the right of that,

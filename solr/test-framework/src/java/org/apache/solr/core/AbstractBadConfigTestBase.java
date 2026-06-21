@@ -16,10 +16,11 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.SolrTestCaseJ4;
-
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.ParWork;
 
 public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
 
@@ -28,9 +29,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
    * expected errString, asserts that initializing a core with these 
    * files causes an error matching the specified errString ot be thrown.
    */
-  protected final void assertConfigs(final String solrconfigFile,
-                                     final String schemaFile,
-                                     final String errString)
+  protected static void assertConfigs(final String solrconfigFile, final String schemaFile, final String errString)
       throws Exception {
     assertConfigs(solrconfigFile, schemaFile, null, errString);
   }
@@ -40,10 +39,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
      * and an expected errString, asserts that initializing a core with these 
      * files causes an error matching the specified errString ot be thrown.
      */
-  protected final void assertConfigs(final String solrconfigFile,
-                                     final String schemaFile,
-                                     final String solrHome,
-                                     final String errString) 
+  protected static void assertConfigs(final String solrconfigFile, final String schemaFile, final String solrHome, final String errString)
     throws Exception {
 
     ignoreException(Pattern.quote(errString));
@@ -60,8 +56,8 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
         if (matches(entry.getValue().exception, errString))
           return;
       }
-    }
-    catch (Exception e) {
+    } catch (Throwable e) {
+      ParWork.propagateInterrupt(e);
       if (matches(e, errString))
         return;
       throw e;
@@ -73,7 +69,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
     fail("Did not encounter any exception from: " + solrconfigFile + " using " + schemaFile);
   }
 
-  private static boolean matches(Exception e, String errString) {
+  private static boolean matches(Throwable e, String errString) {
     for (Throwable t = e; t != null; t = t.getCause()) {
       if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString))
         return true;

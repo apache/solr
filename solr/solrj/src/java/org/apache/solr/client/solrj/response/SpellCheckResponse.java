@@ -159,7 +159,6 @@ public class SpellCheckResponse {
         } else if ("origFreq".equals(n)) {
           originalFrequency = (Integer) suggestion.getVal(i);
         } else if ("suggestion".equals(n)) {
-          @SuppressWarnings("unchecked")
           List list = (List)suggestion.getVal(i);
           if (list.size() > 0 && list.get(0) instanceof NamedList) {
             // extended results detected

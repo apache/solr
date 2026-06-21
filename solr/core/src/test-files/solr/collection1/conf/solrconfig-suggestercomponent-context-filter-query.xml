@@ -16,7 +16,33 @@
  limitations under the License.
 -->
 <config>
-  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <indexConfig>
+    <!-- this sys property is not set by SolrTestCaseJ4 because we ideally want to use
+         the RandomMergePolicy in all tests - but some tests expect very specific
+         Merge behavior, so those tests can set it as needed.
+    -->
+    <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
+
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+
+    <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+    <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+    <ramPerThreadHardLimitMB>${solr.tests.ramPerThreadHardLimitMB}</ramPerThreadHardLimitMB>
+
+    <mergeScheduler class="${solr.tests.mergeScheduler}" />
+
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+
+    <!-- this sys property is not set by SolrTestCaseJ4 because almost all tests should
+         use the single process lockType for speed - but tests that explicitly need
+         to vary the lockType canset it as needed.
+    -->
+    <lockType>${solr.tests.lockType:single}</lockType>
+
+    <infoStream>${solr.tests.infostream:false}</infoStream>
+
+  </indexConfig>
    <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
@@ -44,6 +70,21 @@
       <str name="storeDir">suggest_blended_infix_suggester</str>
       <str name="indexPath">suggest_blended_infix_suggester</str>
       <str name="highlight">false</str>
+    </lst>
+
+    <lst name="suggester">
+      <str name="name">suggest_blended_infix_suggester_highlight</str>
+      <str name="lookupImpl">BlendedInfixLookupFactory</str>
+      <str name="dictionaryImpl">DocumentDictionaryFactory</str>
+      <str name="field">cat</str>
+      <str name="weightField">price</str>
+      <str name="contextField">my_contexts_t</str>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <str name="buildOnCommit">false</str>
+      <str name="buildOnStartup">false</str>
+      <str name="storeDir">suggest_blended_infix_suggester_highlight</str>
+      <str name="indexPath">suggest_blended_infix_suggester_highlight</str>
+      <str name="highlight">true</str>
     </lst>
 
     <lst name="suggester">

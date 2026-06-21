@@ -19,7 +19,7 @@ package org.apache.solr.search.facet;
 import java.util.Arrays;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -31,6 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Test Heatmap Facets (both impls) */
+@LuceneTestCase.Nightly // MRM TODO: - debug why this can be so slow - close to 30 seconds in a parallel run
 public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   private static final String FIELD = "srpt_quad";
 
@@ -180,6 +181,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   /** Tests JSON Facet module implementation of heatmaps. */
   @SuppressWarnings("unchecked")
   @Test
+  @LuceneTestCase.Nightly
   public void testJsonFacets() throws Exception {
     /*
     THIS IS THE MOSTLY SAME CODE as above with tweaks to request it using the JSON Facet approach.
@@ -314,13 +316,12 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @Repeat(iterations = 3)
   public void testPng() {
     //We test via round-trip randomized data:
 
     // Make random data
-    int columns = random().nextInt(100) + 1;
-    int rows = random().nextInt(100) + 1;
+    int columns = random().nextInt(TEST_NIGHTLY ? 100 : 10) + 1;
+    int rows = random().nextInt(TEST_NIGHTLY ? 100 : 10) + 1;
     int[] counts = new int[columns * rows];
     for (int i = 0; i < counts.length; i++) {
       final int ri = random().nextInt(10);

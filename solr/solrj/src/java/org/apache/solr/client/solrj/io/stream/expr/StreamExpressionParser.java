@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.solr.common.ParWork;
+
 /**
  * Takes a prefix notation expression and returns a tokenized expression
  */
@@ -47,7 +49,7 @@ public class StreamExpressionParser {
 
 
   static String stripComments(String clause) throws RuntimeException {
-    StringBuilder builder = new StringBuilder();
+    StringBuilder builder = new StringBuilder(32);
 
     try (BufferedReader reader = new BufferedReader(new StringReader(clause))) {
       String line;
@@ -57,6 +59,7 @@ public class StreamExpressionParser {
         }
       }
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
 
@@ -113,7 +116,7 @@ public class StreamExpressionParser {
     StreamExpressionNamedParameter namedParameter = new StreamExpressionNamedParameter(working.substring(0, firstOpenEquals).trim());
 
     // we know this is ok because of the check in isNamedParameter
-    String parameter = working.substring(firstOpenEquals + 1, working.length());
+    String parameter = working.substring(firstOpenEquals + 1);
     if(isExpressionClause(parameter)){
       namedParameter.setParameter(generateStreamExpression(parameter));
     }

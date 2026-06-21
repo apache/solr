@@ -17,11 +17,11 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
@@ -33,12 +33,12 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
-  protected final Map<String,Object> propMap;
+  protected final Object2ObjectMap<String,Object> propMap;
 
   /**
    * Construct ZKNodeProps from map.
    */
-  public ZkNodeProps(Map<String,Object> propMap) {
+  public ZkNodeProps(Object2ObjectMap<String,Object> propMap) {
     this.propMap = propMap;
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
@@ -49,12 +49,17 @@ public class ZkNodeProps implements JSONWriter.Writable {
   }
 
   public ZkNodeProps plus(Map<String, Object> newVals) {
-    LinkedHashMap<String, Object> copy = new LinkedHashMap<>(propMap);
+    Object2ObjectMap<String, Object> copy = new Object2ObjectLinkedOpenHashMap<>(propMap, 0.25f);
     if (newVals == null || newVals.isEmpty()) return new ZkNodeProps(copy);
     copy.putAll(newVals);
     return new ZkNodeProps(copy);
   }
 
+  public ZkNodeProps minus(String... minusKeys) {
+    ZkNodeProps props = new ZkNodeProps(propMap);
+    Arrays.asList(minusKeys).forEach(props.keySet()::remove);
+    return props;
+  }
 
   /**
    * Constructor that populates the from array of Strings in form key1, value1,
@@ -79,35 +84,52 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Get all properties as map.
    */
-  public Map<String, Object> getProperties() {
+  public Object2ObjectMap<String, Object> getProperties() {
     return propMap;
   }
 
   /** Returns a shallow writable copy of the properties */
-  public Map<String,Object> shallowCopy() {
-    return new LinkedHashMap<>(propMap);
+  public Object2ObjectMap<String,Object> shallowCopy() {
+    return new Object2ObjectLinkedOpenHashMap<>(propMap, 0.25f);
   }
 
   /**
    * Create Replica from json string that is typically stored in zookeeper.
    */
   public static ZkNodeProps load(byte[] bytes) {
-    Map<String, Object> props = null;
-    if (bytes[0] == 2) {
+    Object2ObjectMap<String, Object> props = null;
+    // Detect javabin by its leading version byte. The fork bumped JavaBinCodec.VERSION (2 -> 3), so this
+    // must compare against the codec's actual VERSION rather than a hardcoded literal; JSON payloads start
+    // with '{' or '[' and never collide with the version byte.
+    if (bytes[0] == JavaBinCodec.VERSION) {
       try (JavaBinCodec jbc = new JavaBinCodec()) {
-        props = (Map<String, Object>) jbc.unmarshal(bytes);
+        props = (Object2ObjectMap<String, Object>) jbc.unmarshal(bytes);
       } catch (IOException e) {
         throw new RuntimeException("Unable to parse javabin content");
       }
     } else {
-      props = (Map<String, Object>) Utils.fromJSON(bytes);
+      props = (Object2ObjectMap<String, Object>) new Object2ObjectLinkedOpenHashMap((Map)Utils.fromJSON(bytes), 0.5f);
     }
     return new ZkNodeProps(props);
   }
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(propMap);
+    jsonWriter.startObject();
+    int sz = propMap.size();
+    boolean first = true;
+    for (Map.Entry<?, ?> entry : Object2ObjectMaps.fastIterable(propMap)) {
+      if (first) {
+        first = false;
+      } else {
+        jsonWriter.writeValueSeparator();
+      }
+      if (sz > 1)  jsonWriter.indent();
+      if (entry.getKey() != null)  jsonWriter.writeString(entry.getKey().toString());
+      jsonWriter.writeNameSeparator();
+      jsonWriter.write(entry.getValue());
+    }
+    jsonWriter.endObject();
   }
   
   /**
@@ -165,8 +187,21 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return Boolean.parseBoolean(o.toString());
   }
 
+
+  public int size() {
+    return propMap.size();
+  }
+
   @Override
-  public boolean equals(Object that) {
-    return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ZkNodeProps that = (ZkNodeProps) o;
+    return propMap.equals(that.propMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(propMap);
   }
 }

@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * {@link ConcurrentUpdateSolrClient} reuses the same HTTP connection to send multiple requests.  These tests ensure
+ * {@link ConcurrentUpdateHttp2SolrClient} reuses the same HTTP connection to send multiple requests.  These tests ensure
  * that this connection-reuse never results in documents being sent to the wrong collection.  See SOLR-12803
  */
 public class ConcurrentUpdateHttp2SolrClientMultiCollectionTest extends SolrCloudTestCase {

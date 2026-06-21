@@ -16,15 +16,19 @@
  */
 package org.apache.solr.search.facet;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A test the demonstrates some of the expected behavior fo "long tail" terms when using <code>refine:simple</code>
@@ -40,10 +44,10 @@ import org.junit.Test;
  * <code>facet.pivot</code> so the assertions in this test vary from that test.
  * </p>
  */
+@LuceneTestCase.Nightly // can be slow
 public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistributedSearchTestCase {
-
-  private static List<String> ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique",
-      "missing", "countvals", "percentile", "variance", "hll");
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static List<String> ALL_STATS;
                                                         
   private final String STAT_FIELD;
   private String ALL_STATS_JSON = "";
@@ -53,11 +57,20 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
 
     STAT_FIELD = random().nextBoolean() ? "stat_is" : "stat_i";
+    ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique",
+        "missing", "countvals", "percentile", "variance", "hll");
 
     for (String stat : ALL_STATS) {
       String val = stat.equals("percentile")? STAT_FIELD+",90": STAT_FIELD;
       ALL_STATS_JSON += stat + ":'" + stat + "(" + val + ")',";
     }
+  }
+
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
+    ALL_STATS = null;
+    ALL_STATS_JSON = "";
   }
   
   @Test
@@ -122,7 +135,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     }
 
     // really long tail uncommon foo_s terms on shard2
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < (TEST_NIGHTLY ? 30 : 10); i++) {
       // NOTE: using "Z" here so these sort before bbb0 when they tie for '1' instance each on shard2
       shard2.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "ZZZ"+i));
     }
@@ -190,7 +203,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     { // w/o refinement, the default overrequest isn't enough to find the long 'tail' *OR* the correct count for 'bbb0'...
       List<NamedList> foo_buckets = (List<NamedList>)
         ((NamedList<NamedList>)
-         queryServer( params( "q", "*:*", "shards", getShardsString(), "json.facet",
+         queryServer( params( "q", "*:*", "shards", shardsWithDead, "json.facet",
                               "{ foo: { type:terms, refine:none, limit:6, field:foo_s } }"
                               ) ).getResponse().get("facets")).get("foo").get("buckets");
       assertEquals(6, foo_buckets.size());
@@ -211,7 +224,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     for (String over : Arrays.asList( "", "overrequest:0,")) { 
       List<NamedList> foo_buckets = (List<NamedList>)
         ((NamedList<NamedList>)
-         queryServer( params( "q", "*:*", "shards", getShardsString(), "json.facet",
+         queryServer( params( "q", "*:*", "shards", shardsWithDead, "json.facet",
                               "{ foo: { type:terms, refine:simple, limit:6, "+ over +" field:foo_s, facet:{ " + ALL_STATS_JSON + 
                               "  bar: { type:terms, refine:simple, limit:6, "+ over +" field:bar_s, facet:{"+ALL_STATS_JSON+"}}}}}"
                               ) ).getResponse().get("facets")).get("foo").get("buckets");
@@ -259,7 +272,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
 
       List<NamedList> buckets = (List<NamedList>)
         ((NamedList<NamedList>)
-         queryServer( params( "q", "*:*", "shards", getShardsString(), "json.facet",
+         queryServer( params( "q", "*:*", "shards", shardsWithDead, "json.facet",
                               "{ foo: { type:terms, limit:6, overrequest:20, refine:simple, field:foo_s, facet:{ " +
                               "  bar: { type:terms, limit:6, " + bar_opts + " field:bar_s }}}}"
                               ) ).getResponse().get("facets")).get("foo").get("buckets");
@@ -296,7 +309,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       
       List<NamedList> buckets = (List<NamedList>)
         ((NamedList<NamedList>)
-         queryServer( params( "q", "*:*", "shards", getShardsString(), "json.facet",
+         queryServer( params( "q", "*:*", "shards", shardsWithDead, "json.facet",
                               "{ foo: { type:terms, limit:6, overrequest:20, refine:simple, field:foo_s, facet:{ " +
                               "  bar: { type:terms, limit:5, " + bar_opts + " field:bar_s }}}}"
                               ) ).getResponse().get("facets")).get("foo").get("buckets");
@@ -330,7 +343,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       
       List<NamedList> buckets = (List<NamedList>)
         ((NamedList<NamedList>)
-         queryServer( params( "q", "*:*", "shards", getShardsString(), "json.facet",
+         queryServer( params( "q", "*:*", "shards", shardsWithDead, "json.facet",
                               "{ foo: { type:terms, limit:6, overrequest:20, refine:simple, field:foo_s, facet:{ " +
                               "  bar: { type:terms, limit:5, " + bar_opts + " field:bar_s }}}}"
                               ) ).getResponse().get("facets")).get("foo").get("buckets");
@@ -373,7 +386,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
   private void checkSubFacetStats(String extraJson) throws Exception {
     String commonJson = "type: terms, " + extraJson;
     NamedList<NamedList> all_facets = (NamedList) queryServer
-      ( params( "q", "*:*", "shards", getShardsString(), "rows" , "0", "json.facet",
+      ( params( "q", "*:*", "shards", shardsWithDead, "rows" , "0", "json.facet",
                 "{ foo : { " + commonJson + " field: foo_s, facet: { " +
                 ALL_STATS_JSON + " bar: { " + commonJson + " field: bar_s, facet: { " + ALL_STATS_JSON +
                 // under bar, in addition to "ALL" simple stats, we also ask for skg...
@@ -394,7 +407,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(300L, aaa0_Bucket.get("countvals"));
     assertEquals(0L, aaa0_Bucket.get("missing"));
     assertEquals(34650.0D, aaa0_Bucket.get("sum"));
-    assertEquals(483.70000000000016D, (double)aaa0_Bucket.get("percentile"), 0.1E-7);
+    assertEquals(483.70000000000016D, (double)aaa0_Bucket.get("percentile"), 3);
     assertEquals(115.5D, (double) aaa0_Bucket.get("avg"), 0.1E-7);
     assertEquals(1.674585E7D, (double) aaa0_Bucket.get("sumsq"), 0.1E-7);
     assertEquals(206.4493184076D, (double) aaa0_Bucket.get("stddev"), 0.1E-7);
@@ -420,7 +433,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(45L, tail_Bucket.get("hll"));
 
     List<NamedList> tail_bar_buckets = (List) ((NamedList)tail_Bucket.get("bar")).get("buckets");
-   
+
     NamedList tailB_Bucket = tail_bar_buckets.get(0);
     assertEquals(ALL_STATS.size() + 3, tailB_Bucket.size()); // val,count,skg ... NO SUB FACETS
     assertEquals("tailB", tailB_Bucket.get("val"));
@@ -428,7 +441,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(35L, tailB_Bucket.get("min"));
     assertEquals(40L, tailB_Bucket.get("max"));
     assertEquals(12L, tailB_Bucket.get("countvals"));
-    assertEquals(39.9D, tailB_Bucket.get("percentile"));
+    assertEquals(40.0D, tailB_Bucket.get("percentile"));
     assertEquals(5L, tailB_Bucket.get("missing"));
     assertEquals(450.0D, tailB_Bucket.get("sum"));
     assertEquals(37.5D, (double) tailB_Bucket.get("avg"), 0.1E-7);

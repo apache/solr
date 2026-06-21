@@ -52,7 +52,7 @@ public class InjectionDefense {
   private static final Pattern NUMBER_PARAM = Pattern.compile("\\?#\\?");
   private static final Pattern EXPRESSION_PARAM = Pattern.compile("\\?\\(\\d+\\)\\?");
   private static final Pattern EXPRESSION_COUNT = Pattern.compile("\\d+");
-  private static final Pattern ANY_PARAM = Pattern.compile("\\?(?:[$#]|(?:\\(\\d+\\)))\\?");
+  private static final Pattern ANY_PARAM = Pattern.compile("\\?(?:[$#]|\\(\\d+\\))\\?");
   private static final Pattern INT_OR_FLOAT = Pattern.compile("-?\\d+(?:\\.\\d+)?");
 
   private String exprString;
@@ -152,7 +152,7 @@ public class InjectionDefense {
       Matcher counter = EXPRESSION_COUNT.matcher(eMatcher.group());
       eMatcher.appendReplacement(temp, "noop()");
       if (counter.find()) {
-        Integer subExprCount = Integer.valueOf(counter.group());
+        int subExprCount = Integer.parseInt(counter.group());
         if (subExprCount < 1) {
           throw new IllegalStateException("Expression Param must contribute at least 1 expression!" +
               " ?(1)? is the minimum allowed ");
@@ -171,7 +171,7 @@ public class InjectionDefense {
     }
   }
 
-  private int countExpressions(StreamExpression expression) {
+  private static int countExpressions(StreamExpression expression) {
     int result = 0;
     List<StreamExpressionParameter> exprToCheck = new ArrayList<>();
     exprToCheck.add(expression);

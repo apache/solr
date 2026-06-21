@@ -17,11 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -30,44 +26,44 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import java.lang.invoke.MethodHandles;
+import java.util.Set;
 
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBase {
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void beforeLeaderFailureAfterFreshStartTest() throws Exception {
+    useFactory(null);
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+  }
 
   public TestOnReconnectListenerSupport() {
     super();
     sliceCount = 2;
-    fixShardCount(3);
-  }
-
-  @BeforeClass
-  public static void initSysProperties() {
+    numJettys = 3;
+    solrconfigString = "solrconfig-managed-schema.xml";
+    createCollection1 = false;
     System.setProperty("managed.schema.mutable", "false");
     System.setProperty("enable.update.log", "true");
   }
 
-  @Override
-  protected String getCloudSolrConfig() {
-    return "solrconfig-managed-schema.xml";
-  }
-
   @Test
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
     String testCollectionName = "c8n_onreconnect_1x1";
-    String shardId = "shard1";
-    createCollectionRetry(testCollectionName, "conf1", 1, 1, 1);
+    String shardId = "s1";
+
+    createCollection(testCollectionName, 1, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
-    Replica leader = getShardLeader(testCollectionName, shardId, 30 /* timeout secs */);
+    Replica leader = getShardLeader(testCollectionName, shardId, 30000 /* 30s timeout in ms */);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
 
     // get the ZkController for the node hosting the leader
@@ -75,7 +71,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     ZkController zkController = cores.getZkController();
     assertNotNull("ZkController is null", zkController);
 
-    String leaderCoreName = leader.getStr(CORE_NAME_PROP);
+    String leaderCoreName = leader.getName();
     String leaderCoreId;
     try (SolrCore leaderCore = cores.getCore(leaderCoreName)) {
       assertNotNull("SolrCore for "+leaderCoreName+" not found!", leaderCore);
@@ -85,10 +81,15 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     // verify the ZkIndexSchemaReader is a registered OnReconnect listener
     Set<OnReconnect> listeners = zkController.getCurrentOnReconnectListeners();
     assertNotNull("ZkController returned null OnReconnect listeners", listeners);
+    assertTrue(listeners.size() > 0);
     ZkIndexSchemaReader expectedListener = null;
     for (OnReconnect listener : listeners) {
+      log.info("listener:" + listener.getClass().getSuperclass().getName());
       if (listener instanceof ZkIndexSchemaReader) {
         ZkIndexSchemaReader reader = (ZkIndexSchemaReader)listener;
+        if (log.isInfoEnabled()) {
+          log.info("leadercoreid={} against={}", leaderCoreId, reader.getUniqueCoreId());
+        }
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
           break;
@@ -96,7 +97,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
       }
     }
     assertNotNull("ZkIndexSchemaReader for core " + leaderCoreName +
-        " not registered as an OnReconnect listener and should be", expectedListener);
+        " not registered as an OnReconnect listener and should be " + listeners, expectedListener);
 
     // reload the collection
     boolean wasReloaded = reloadCollection(leader, testCollectionName);

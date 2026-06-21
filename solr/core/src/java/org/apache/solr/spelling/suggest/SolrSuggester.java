@@ -16,15 +16,24 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
@@ -44,7 +53,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.SolrCoreState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,8 +158,8 @@ public class SolrSuggester implements Accountable {
         if (log.isDebugEnabled()) {
           log.debug("attempt reload of the stored lookup from file {}", getStoreFile());
         }
-        try {
-          lookup.load(new FileInputStream(getStoreFile()));
+        try (InputStream is = new BufferedInputStream(Files.newInputStream(getStoreFile().toPath()))) {
+          lookup.load(is);
         } catch (IOException e) {
           log.warn("Loading stored lookup data failed, possibly not cached yet");
         }
@@ -176,22 +184,24 @@ public class SolrSuggester implements Accountable {
   public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     log.info("SolrSuggester.build({})", name);
 
-    dictionary = dictionaryFactory.create(core, searcher);
-    try {
-      lookup.build(dictionary);
-    } catch (AlreadyClosedException e) {
-      RuntimeException e2 = new SolrCoreState.CoreIsClosedException
-          ("Suggester build has been interrupted by a core reload or shutdown.");
-      e2.initCause(e);
-      throw e2;
-    }
-    if (storeDir != null) {
-      File target = getStoreFile();
-      if(!lookup.store(new FileOutputStream(target))) {
-        log.error("Store Lookup build failed");
-      } else {
-        if (log.isInfoEnabled()) {
-          log.info("Stored suggest data to: {}", target.getAbsolutePath());
+    synchronized (this) {
+      dictionary = dictionaryFactory.create(core, searcher);
+      try {
+        lookup.build(dictionary);
+      } catch (AlreadyClosedException e) {
+        log.info("Suggester build has been interrupted by a core reload or shutdown.");
+        return;
+      }
+      if (storeDir != null) {
+        File target = getStoreFile();
+        try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(target.toPath()))) {
+          if (!lookup.store(out)) {
+            log.error("Store Lookup build failed");
+          } else {
+            if (log.isInfoEnabled()) {
+              log.info("Stored suggest data to: {}", target.getAbsolutePath());
+            }
+          }
         }
       }
     }
@@ -204,7 +214,7 @@ public class SolrSuggester implements Accountable {
       File lookupFile = getStoreFile();
       if (lookupFile.exists()) {
         // this may be a firstSearcher event, try loading it
-        FileInputStream is = new FileInputStream(lookupFile);
+        InputStream is = new BufferedInputStream(Files.newInputStream(lookupFile.toPath()));
         try {
           if (lookup.load(is)) {
             return;  // loaded ok
@@ -257,7 +267,16 @@ public class SolrSuggester implements Accountable {
         suggestions = lookup.lookup(options.token, false, options.count);
       }
     }
-    res.add(getName(), options.token.toString(), suggestions);
+    Set<String> sugset = new HashSet<>(suggestions.size());
+    Iterator<LookupResult> it = suggestions.iterator();
+
+    while (it.hasNext()) {
+      LookupResult key = it.next();
+      if (!sugset.add(key.toString())) {
+        it.remove();
+      }
+    }
+    res.add(name, options.token.toString(), suggestions);
     return res;
   }
 

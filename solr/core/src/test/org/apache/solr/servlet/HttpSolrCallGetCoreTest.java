@@ -25,9 +25,9 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -43,15 +43,12 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
-        .setMaxShardsPerNode(NUM_SHARD * REPLICA_FACTOR)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, 30);
   }
 
   @Test
@@ -61,18 +58,17 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
     assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, new TestRequest("/collection1/select"));
   }
 
-  private void assertCoreChosen(int numCores, TestRequest testRequest) {
+  private void assertCoreChosen(int numCores, TestRequest testRequest) throws Exception {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     Set<String> coreNames = new HashSet<>();
     SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
+    String path = ServletUtils.getPathAfterContext(testRequest);
     for (int i = 0; i < NUM_SHARD * REPLICA_FACTOR * 20; i++) {
       if (coreNames.size() == numCores) return;
-      HttpSolrCall httpSolrCall = new HttpSolrCall(dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
+      HttpSolrCall httpSolrCall = new HttpSolrCall(dispatchFilter, path, testRequest, new TestResponse());
       try {
-        httpSolrCall.init();
-      } catch (Exception e) {
+        coreNames.add(httpSolrCall.getSolrReq().getCore().getName());
       } finally {
-        coreNames.add(httpSolrCall.core.getName());
         httpSolrCall.destroy();
       }
     }
@@ -117,6 +113,11 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
     public TestRequest(String path) {
       super(null, null);
       this.path = path;
+    }
+
+    @Override
+    public boolean isAsyncStarted() {
+      return false;
     }
 
     @Override

@@ -19,8 +19,10 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.JSONTestUtil;
@@ -41,7 +43,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   private static SolrInstances servers;  // for distributed testing
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestJsonFacetRefinement() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
@@ -57,13 +59,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   }
 
   @AfterClass
-  public static void afterTests() throws Exception {
+  public static void afterTestJsonFacetRefinement() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    deleteCore();
   }
 
 
@@ -820,7 +822,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     }
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12556")
+  @LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12556")
   @Test
   public void testProcessEmptyRefinement() throws Exception {
     initServers();
@@ -965,7 +967,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   }
   
   /** @see #testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShard */
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12556")
+  @LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12556")
   @Test
   public void testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShardProcessEmpty() throws Exception {
     final int numDocs = initSomeDocsWhere1ShardHasOnlyParentFacetField();
@@ -1019,6 +1021,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   
   @Test
+  @LuceneTestCase.Nightly
   public void testBasicRefinement() throws Exception {
     ModifiableSolrParams p;
     p = params("cat_s", "cat_s", "cat_i", "cat_i", "date","cat_dt", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s", "er_s");

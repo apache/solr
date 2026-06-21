@@ -52,7 +52,7 @@ public class Explanation implements MapSerializable {
     this.expressionType = expressionType;
   }
   public Explanation withExpressionType(String expressionType){
-    setExpressionType(expressionType);
+    this.expressionType = expressionType;
     return this;
   }
 
@@ -63,7 +63,7 @@ public class Explanation implements MapSerializable {
     this.functionName = functionName;
   }
   public Explanation withFunctionName(String functionName){
-    setFunctionName(functionName);
+    this.functionName = functionName;
     return this;
   }
 
@@ -74,7 +74,7 @@ public class Explanation implements MapSerializable {
     this.implementingClass = implementingClass;
   }
   public Explanation withImplementingClass(String implementingClass){
-    setImplementingClass(implementingClass);
+    this.implementingClass = implementingClass;
     return this;
   }
   
@@ -85,7 +85,7 @@ public class Explanation implements MapSerializable {
     this.expression = expression;
   }
   public Explanation withExpression(String expression){
-    setExpression(expression);
+    this.expression = expression;
     return this;
   }
   
@@ -96,7 +96,7 @@ public class Explanation implements MapSerializable {
     this.note = note;
   }
   public Explanation withNote(String note){
-    setNote(note);
+    this.note = note;
     return this;
   }
   
@@ -107,7 +107,7 @@ public class Explanation implements MapSerializable {
     this.helpers = helpers;
   }
   public Explanation withHelpers(List<Explanation> helpers){
-    setHelpers(helpers);
+    this.helpers = helpers;
     return this;
   }
   public Explanation withHelpers(Explanation[] helpers){

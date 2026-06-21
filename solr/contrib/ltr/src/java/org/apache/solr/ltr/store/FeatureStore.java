@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
@@ -29,7 +30,14 @@ public class FeatureStore {
   /** the name of the default feature store **/
   public static final String DEFAULT_FEATURE_STORE_NAME = "_DEFAULT_";
 
-  private final LinkedHashMap<String,Feature> store = new LinkedHashMap<>(); // LinkedHashMap because we need predictable iteration order
+  // LinkedHashMap because we need predictable (insertion-order) iteration order:
+  // Feature.setIndex(store.size()) assigns each feature an index equal to its
+  // insertion position, and LTRScoringQuery later indexes the extracted-feature
+  // array by that same insertion order. A key-sorted map (e.g. ConcurrentSkipListMap)
+  // breaks that alignment and causes a model's weights to be applied to the wrong
+  // feature values. Guard with synchronizedMap to keep concurrent load/query safe.
+  private final Map<String,Feature> store =
+      Collections.synchronizedMap(new LinkedHashMap<String,Feature>());
   private final String name;
 
   public FeatureStore(String name) {

@@ -84,8 +84,7 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor extends FieldM
       final Object destVal = mutateValue(srcVal);
       if (SKIP_FIELD_VALUE_LIST_SINGLETON == destVal) {
         if (log.isDebugEnabled()) {
-          log.debug("field '{}' {} value '{}' is not mutable, so no values will be mutated",
-              new Object[]{srcField.getName(), srcVal.getClass().getSimpleName(), srcVal});
+          log.debug("field '{}' {} value '{}' is not mutable, so no values will be mutated", srcField.getName(), srcVal.getClass().getSimpleName(), srcVal);
         }
         return srcField;
       }

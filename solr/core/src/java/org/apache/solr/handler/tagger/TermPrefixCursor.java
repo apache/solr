@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -107,7 +108,6 @@ class TermPrefixCursor {
 
   /** Seeks to prefixBuf or the next term that is prefixed by prefixBuf plus the separator char.
    * Sets docIds. **/
-  @SuppressWarnings({"fallthrough"})
   private boolean seekPrefix() throws IOException {
     TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(prefixBuf);
 
@@ -163,7 +163,7 @@ class TermPrefixCursor {
     //read postingsEnum
     docIds = new IntsRef(termsEnum.docFreq());
     int docId;
-    while ((docId = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
+    while ((docId = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (liveDocs != null && !liveDocs.get(postingsEnum.docID())) {
         continue;
       }

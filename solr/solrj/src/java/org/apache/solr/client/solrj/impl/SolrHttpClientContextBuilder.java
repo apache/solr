@@ -39,9 +39,9 @@ public class SolrHttpClientContextBuilder {
     public abstract Lookup<CookieSpecProvider> getCookieSpecRegistry();
   }
   
-  private CookieSpecRegistryProvider cookieSpecRegistryProvider;
-  private AuthSchemeRegistryProvider authSchemeRegistryProvider;
-  private CredentialsProviderProvider credentialsProviderProvider;
+  private volatile CookieSpecRegistryProvider cookieSpecRegistryProvider;
+  private volatile AuthSchemeRegistryProvider authSchemeRegistryProvider;
+  private volatile CredentialsProviderProvider credentialsProviderProvider;
 
   public SolrHttpClientContextBuilder() {
     super();
@@ -79,15 +79,15 @@ public class SolrHttpClientContextBuilder {
 
   public HttpClientContext createContext(Object userToken) {
     HttpClientContext context = new HttpClientContext();
-    if (getCredentialsProviderProvider() != null) {
-      context.setCredentialsProvider(getCredentialsProviderProvider().getCredentialsProvider());
+    if (credentialsProviderProvider != null) {
+      context.setCredentialsProvider(credentialsProviderProvider.getCredentialsProvider());
     }
-    if (getAuthSchemeRegistryProvider() != null) {
-      context.setAuthSchemeRegistry( getAuthSchemeRegistryProvider().getAuthSchemeRegistry());
+    if (authSchemeRegistryProvider != null) {
+      context.setAuthSchemeRegistry( authSchemeRegistryProvider.getAuthSchemeRegistry());
     }
     
-    if (getCookieSpecRegistryProvider() != null) {
-      context.setCookieSpecRegistry(getCookieSpecRegistryProvider().getCookieSpecRegistry());
+    if (cookieSpecRegistryProvider != null) {
+      context.setCookieSpecRegistry(cookieSpecRegistryProvider.getCookieSpecRegistry());
     }
 
     context.setUserToken(userToken);

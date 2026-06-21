@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -46,7 +46,7 @@ public class ManagedWordSetResource extends ManagedResource
   public static final String WORD_SET_JSON_FIELD = "wordSet";
   public static final String IGNORE_CASE_INIT_ARG = "ignoreCase";
       
-  private SortedSet<String> managedWords = null;
+  private volatile SortedSet<String> managedWords = null;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -74,7 +74,7 @@ public class ManagedWordSetResource extends ManagedResource
    * Returns the boolean value of the {@link #IGNORE_CASE_INIT_ARG} init arg,
    * or the default value (false) if it has not been specified
    */
-  public boolean getIgnoreCase(NamedList<?> initArgs) {
+  public static boolean getIgnoreCase(NamedList<?> initArgs) {
     Boolean ignoreCase = initArgs.getBooleanArg(IGNORE_CASE_INIT_ARG);
     // ignoreCase = false by default
     return null == ignoreCase ? false : ignoreCase;
@@ -98,16 +98,18 @@ public class ManagedWordSetResource extends ManagedResource
       ((NamedList<Object>)initArgs).add(IGNORE_CASE_INIT_ARG, false);
     }
 
-    managedWords = new TreeSet<>();
+    managedWords = new ConcurrentSkipListSet<>();
     if (data != null) {
-      List<String> wordList = (List<String>)data;
+      Iterable wordList = (Iterable)data;
       if (ignoreCase) {
         // if we're ignoring case, just lowercase all terms as we add them
-        for (String word : wordList) {
-          managedWords.add(word.toLowerCase(Locale.ROOT));
+        for (Object word : wordList) {
+          managedWords.add(((String) word).toLowerCase(Locale.ROOT));
         }
       } else {
-        managedWords.addAll(wordList);        
+        for (Object word : wordList) {
+          managedWords.add((String) word);
+        }
       }
     } else {
       storeManagedData(new ArrayList<String>(0)); // stores an empty word set      
@@ -142,7 +144,7 @@ public class ManagedWordSetResource extends ManagedResource
    * Deletes words managed by this resource.
    */
   @Override
-  public synchronized void doDeleteChild(BaseSolrResource endpoint, String childId) {
+  public void doDeleteChild(BaseSolrResource endpoint, String childId) {
     // downcase arg if we're configured to ignoreCase
     String key = getIgnoreCase() ? childId.toLowerCase(Locale.ROOT) : childId;       
     if (!managedWords.contains(key))
@@ -189,7 +191,7 @@ public class ManagedWordSetResource extends ManagedResource
           "Changing a managed word set's ignoreCase arg from true to false is not permitted.");
     } else if (currentIgnoreCase == false && updatedIgnoreCase == true) {
       // rebuild the word set on policy change from case-sensitive to case-insensitive
-      SortedSet<String> updatedWords = new TreeSet<>();
+      SortedSet<String> updatedWords = new ConcurrentSkipListSet<>();
       for (String word : managedWords) {
         updatedWords.add(word.toLowerCase(Locale.ROOT));
       }

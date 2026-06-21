@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Verify that there is a working Solr core at the URL of a {@link org.apache.solr.client.solrj.SolrClient}.
@@ -46,8 +47,8 @@ public class SolrPing extends SolrRequest<SolrPingResponse> {
   }
   
   @Override
-  protected SolrPingResponse createResponse(SolrClient client) {
-    return new SolrPingResponse();
+  protected SolrPingResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new SolrPingResponse(nl);
   }
 
   @Override

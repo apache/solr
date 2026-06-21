@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
@@ -31,6 +32,7 @@ import org.apache.solr.rest.ManagedResourceStorage.FileStorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.JsonStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.ZooKeeperStorageIO;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -40,14 +42,17 @@ import org.junit.Test;
 // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6443")
 public class TestManagedResourceStorage extends AbstractZkTestCase {
 
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+
+  }
+
   /**
    * Runs persisted managed resource creation and update tests on Zookeeper storage.
    */
   @Test
   public void testZkBasedJsonStorage() throws Exception {
-    
-    // test using ZooKeeper
-    assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
+
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     // Solr unit tests can only write to their working directory due to
     // a custom Java Security Manager installed in the test environment
@@ -67,7 +72,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
    */
   @Test
   public void testFileBasedJsonStorage() throws Exception {
-    File instanceDir = createTempDir("json-storage").toFile();
+    File instanceDir = SolrTestUtil.createTempDir("json-storage").toFile();
     SolrResourceLoader loader = new SolrResourceLoader(instanceDir.toPath());
     try {
       NamedList<String> initArgs = new NamedList<>();

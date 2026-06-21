@@ -18,11 +18,12 @@ package org.apache.solr.search;
 
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiBits;
@@ -41,21 +42,21 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 public class TestRTGBase extends SolrTestCaseJ4 {
 
   // means we've seen the leader and have version info (i.e. we are a non-leader replica)
-  public static String FROM_LEADER = DistribPhase.FROMLEADER.toString();
+  public static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
   protected final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<>();
-  protected Map<Integer,DocInfo> committedModel = new HashMap<>();
-  protected long snapshotCount;
-  protected long committedModelClock;
+  protected volatile Map<Integer,DocInfo> committedModel = new ConcurrentHashMap<>();
+  protected final AtomicInteger snapshotCount = new AtomicInteger();
+  protected final AtomicLong committedModelClock = new AtomicLong();
   protected volatile int lastId;
   protected static final String FIELD = "val_l";
-  protected Object[] syncArr;
+  protected volatile Object[] syncArr;
 
-  protected Object globalLock = this;
+  protected final Object globalLock = new Object();
 
   protected void initModel(int ndocs) {
-    snapshotCount = 0;
-    committedModelClock = 0;
+    snapshotCount.set(0);
+    committedModelClock.set(0);
     lastId = 0;
 
     syncArr = new Object[ndocs];

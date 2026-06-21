@@ -56,7 +56,7 @@ public class IntersectStream extends TupleStream implements Expressible {
   public IntersectStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter onExpression = factory.getNamedOperand(expression, "on");
+    StreamExpressionNamedParameter onExpression = StreamFactory.getNamedOperand(expression, "on");
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 1){
@@ -73,7 +73,7 @@ public class IntersectStream extends TupleStream implements Expressible {
     
     init( factory.constructStream(streamExpressions.get(0)),
           factory.constructStream(streamExpressions.get(1)),
-          factory.constructEqualitor(((StreamExpressionValue)onExpression.getParameter()).getValue(), FieldEqualitor.class)
+          StreamFactory.constructEqualitor(((StreamExpressionValue)onExpression.getParameter()).getValue(), FieldEqualitor.class)
         );
   }
   

@@ -68,7 +68,7 @@ public class Token implements java.io.Serializable {
    * Any subclass of Token that actually wants to return a non-null value can
    * override this method as appropriate.
    */
-  public Object getValue() {
+  public static Object getValue() {
     return null;
   }
 

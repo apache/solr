@@ -20,7 +20,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
-
+import org.apache.solr.common.util.NamedList;
 
 /**
  *
@@ -112,8 +112,8 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse> 
   }
 
   @Override
-  protected UpdateResponse createResponse(SolrClient client) {
-    return new UpdateResponse();
+  protected UpdateResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new UpdateResponse(nl);
   }
 
   public boolean isWaitSearcher() {
@@ -128,7 +128,7 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse> 
   }
 
   public void setWaitSearcher(boolean waitSearcher) {
-    setParam( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
+    setParam( UpdateParams.WAIT_SEARCHER, String.valueOf(waitSearcher));
   }
 
   public int getCommitWithin() {

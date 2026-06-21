@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -36,10 +38,11 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     initCore("solrconfig.xml", "schema.xml");
 
     XmlDoc docs = new XmlDoc();
-    for (int i = 0; i < atLeast(10); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(10); i++) {
       docs.xml += doc("id", "" + i,
           "name_s", "" + i);
     }
@@ -52,7 +55,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
     Random random = random();
     
-    for (int i = 0; i < atLeast(random, 2); i++) {
+    for (int i = 0; i < LuceneTestCase.atLeast(random, 2); i++) {
 
       int asyncId = taskNum.incrementAndGet();
 
@@ -64,15 +67,17 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
           CoreAdminParams.CORE, DEFAULT_TEST_CORENAME,
           "async", "" + asyncId), new SolrQueryResponse());
 
-      boolean isCompleted;
+      boolean isCompleted = false;
       do {
         if (random.nextBoolean()) {
-          requestMetrics(true);
+         if (requestMetrics(true)) {
+           isCompleted = true;
+         }
         } else {
           requestCoreStatus();
         }
 
-        isCompleted = checkReloadComlpetion(asyncId);
+        isCompleted = checkReloadComlpetion(asyncId) && isCompleted;
       } while (!isCompleted);
       requestMetrics(false);
     }
@@ -106,15 +111,15 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     return isCompleted;
   }
 
-  private void requestMetrics(boolean softFail) throws Exception {
-    SolrQueryResponse rsp = new SolrQueryResponse();
+  private boolean requestMetrics(boolean softFail) throws Exception {
     String registry = "solr.core." + h.coreName;
-    String key = "SEARCHER.searcher.indexVersion";
+    String key = "SEARCHER.new.errors";
     boolean found = false;
-    int count = 10;
+    int count = 50;
     while (!found && count-- > 0) {
+      SolrQueryResponse rsp = new SolrQueryResponse();
       h.getCoreContainer().getRequestHandler("/admin/metrics").handleRequest(
-          req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
+              req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
 
       NamedList values = rsp.getValues();
       // this is not guaranteed to exist right away after core reload - there's a
@@ -123,24 +128,33 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       NamedList metrics = (NamedList)values.get("metrics");
       if (metrics == null) {
         if (softFail) {
-          return;
+          return false;
         } else {
           fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
         }
       }
       metrics = (NamedList)metrics.get(registry);
+      if (metrics == null) {
+        // registry not visible yet during reload — treat as soft failure
+        if (softFail) {
+          return false;
+        }
+        Thread.sleep(10);
+        continue;
+      }
       if (metrics.get(key) != null) {
         found = true;
         assertTrue(metrics.get(key) instanceof Long);
         break;
       } else {
-        Thread.sleep(500);
+        Thread.sleep(20);
       }
     }
     if (softFail && !found) {
-      return;
+      return false;
     }
     assertTrue("Key " + key + " not found in registry " + registry, found);
+    return true;
   }
 
 }

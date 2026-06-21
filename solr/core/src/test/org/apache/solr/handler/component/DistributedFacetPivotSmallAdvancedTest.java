@@ -46,7 +46,6 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
   @ShardsFixed(num = 2)
   public void test() throws Exception {
 
-    del("*:*");
     final SolrClient shard0 = clients.get(0);
     final SolrClient shard1 = clients.get(1);
 
@@ -125,7 +124,7 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
       // for all three sets of these params, the "top level" 
       // stats in the response of a distributed query should be the same
       ModifiableSolrParams q = new ModifiableSolrParams(params);
-      q.set("shards", getShardsString());
+      q.set("shards", shardsWithDead);
 
       QueryResponse rsp = queryServer(q);
       FieldStatsInfo fieldStatsInfo = rsp.getFieldStatsInfo().get("foo_i");
@@ -195,7 +194,7 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
 
   private void doTestDeepPivotStatsOnString() throws Exception {
     SolrParams params = params("q", "*:*", "rows", "0",
-        "shards", getShardsString(),
+        "shards", shardsWithDead,
         "facet", "true", "stats", "true",
         "facet.pivot", "{!stats=s1}place_t,company_t",
         "stats.field", "{!key=avg_price tag=s1}foo_s");

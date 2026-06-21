@@ -16,35 +16,45 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-
-import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
-import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+
 /**
  * ResourceLoader that works with ZooKeeper.
  *
  */
-public class ZkSolrResourceLoader extends SolrResourceLoader {
+public class ZkSolrResourceLoader extends SolrResourceLoader implements ResourceLoader {
 
   private final String configSetZkPath;
-  private ZkController zkController;
-  private ZkIndexSchemaReader zkIndexSchemaReader;
+
+  private static final ZkByteArrayInputStream NOT_FOUND = new ZkByteArrayInputStream(new byte[0], null, System.nanoTime());
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final SolrZkClient zkClient;
+
+//  public static final Map CONFIG_CACHE = new ReferenceMap(AbstractReferenceMap.ReferenceStrength.HARD, AbstractReferenceMap.ReferenceStrength.WEAK) {
+//    {
+//      purgeBeforeRead();
+//      purgeBeforeWrite();
+//    }
+//  };
+
+ // private static Map<String, ZkSolrResourceLoader.ZkByteArrayInputStream> SYNC_CONFIG_CACHE = Collections.synchronizedMap(CONFIG_CACHE);
 
   /**
    * <p>
@@ -53,108 +63,105 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    * otherwise it will attempt to resolve resources using any jar files found in
    * the "lib/" directory in the specified instance directory.
    */
-  public ZkSolrResourceLoader(Path instanceDir, String configSet, ClassLoader parent,
+  public ZkSolrResourceLoader(Path instanceDir, String configSet, SolrResourceLoader parent,
                               ZkController zooKeeperController) {
     super(instanceDir, parent);
-    this.zkController = zooKeeperController;
+    this.zkClient = zooKeeperController.getZkClient();
     configSetZkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
   }
 
   /**
-   * Opens any resource by its name. By default, this will look in multiple
-   * locations to load the resource: $configDir/$resource from ZooKeeper.
-   * It will look for it in any jar
-   * accessible through the class loader if it cannot be found in ZooKeeper. 
-   * Override this method to customize loading resources.
+   * Opens any resource from zk by its name.
    * 
    * @return the stream for the named resource
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    InputStream is;
-    String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
-    int maxTries = 10;
-    Exception exception = null;
-    while (maxTries -- > 0) {
-      try {
-        if (zkController.pathExists(file)) {
-          Stat stat = new Stat();
-          byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
-          return new ZkByteArrayInputStream(bytes, stat);
-        } else {
-          //Path does not exists. We only retry for session expired exceptions.
-          break;
-        }
-      } catch (KeeperException.SessionExpiredException e) {
-        exception = e;
-        if (!zkController.getCoreContainer().isShutDown()) {
-          // Retry in case of session expiry
-          try {
-            Thread.sleep(1000);
-            log.debug("Sleeping for 1s before retrying fetching resource={}", resource);
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Could not load resource=" + resource, ie);
-          }
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new IOException("Error opening " + file, e);
-      } catch (Exception e) {
-        throw new IOException("Error opening " + file, e);
-      }
-    }
 
-    if (exception != null) {
-      throw new IOException("We re-tried 10 times but was still unable to fetch resource=" + resource + " from ZK", exception);
-    }
+    String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
+    if (log.isTraceEnabled()) log.trace("open resource {}", resource);
 
     try {
-      // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
-    } catch (Exception e) {
-      throw new IOException("Error opening " + resource, e);
-    }
-    if (is == null) {
+
+//      ZkSolrResourceLoader.ZkByteArrayInputStream cached = SYNC_CONFIG_CACHE.get(file);
+//      if (cached != null) {
+//
+//        Stat checkStat;
+//
+//        if (TimeUnit.MILLISECONDS.convert(System.nanoTime() - cached.getTime(), TimeUnit.NANOSECONDS) < 5000) {
+//          if (cached == NOT_FOUND) {
+//            throw new SolrResourceNotFoundException("Can't find resource '" + resource
+//                + "' in classpath or '" + configSetZkPath + "', cwd="
+//                + System.getProperty("user.dir"));
+//          }
+//          checkStat = cached.getStat();
+//        } else {
+//          try {
+//            checkStat = zkClient.exists(file, null);
+//          } catch (KeeperException | InterruptedException e) {
+//            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//          }
+//        }
+//        if (checkStat != null && cached.getStat() != null && checkStat.getVersion() == cached.getStat().getVersion()) {
+//          return new ZkSolrResourceLoader.ZkByteArrayInputStream(cached.getBytes(), cached.getStat(), cached.getTime());
+//        }
+//      }
+
+      Stat stat = new Stat();
+      byte[] bytes = zkClient.getData(file, null, stat, true, true);
+      if (bytes == null) {
+
+       // SYNC_CONFIG_CACHE.put(file, NOT_FOUND);
+        if (log.isDebugEnabled()) log.debug("resource not found {}", resource);
+        throw new SolrResourceNotFoundException("Can't find resource '" + resource
+                + "' in classpath or '" + configSetZkPath + "', cwd="
+                + System.getProperty("user.dir"));
+      }
+      ZkByteArrayInputStream is = new ZkByteArrayInputStream(bytes, stat, System.nanoTime());
+      //SYNC_CONFIG_CACHE.put(file, (ZkSolrResourceLoader.ZkByteArrayInputStream) is);
+      return is;
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while opening " + file, e);
+    } catch (KeeperException.NoNodeException e) {
       throw new SolrResourceNotFoundException("Can't find resource '" + resource
-          + "' in classpath or '" + configSetZkPath + "', cwd="
-          + System.getProperty("user.dir"));
+              + "' in classpath or '" + configSetZkPath + "', cwd="
+              + System.getProperty("user.dir"));
+    } catch (KeeperException e) {
+      log.error("zookeeper exception trying to open resource {}", resource);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error opening " + file, e);
     }
-    return is;
+  }
+
+  public SolrZkClient getZkClient() {
+    return zkClient;
   }
 
   public static class ZkByteArrayInputStream extends ByteArrayInputStream{
 
     private final Stat stat;
-    public ZkByteArrayInputStream(byte[] buf, Stat stat) {
+    private final long time;
+
+    public ZkByteArrayInputStream(byte[] buf, Stat stat, long time) {
       super(buf);
       this.stat = stat;
-
+      this.time = time;
     }
 
-    public Stat getStat(){
+    public Stat getStat() {
       return stat;
     }
-  }
 
-  @Override
-  public String getConfigDir() {
-    throw new ZooKeeperException(
-        ErrorCode.SERVER_ERROR,
-        "ZkSolrResourceLoader does not support getConfigDir() - likely, what you are trying to do is not supported in ZooKeeper mode");
+    public byte[] getBytes() {
+      return buf;
+    }
+
+    public long getTime() {
+      return time;
+    }
   }
 
   public String getConfigSetZkPath() {
     return configSetZkPath;
   }
-  
-  public ZkController getZkController() {
-    return zkController;
-  }
-
-  public void setZkIndexSchemaReader(ZkIndexSchemaReader zkIndexSchemaReader) {
-    this.zkIndexSchemaReader = zkIndexSchemaReader;
-  }
-
-  public ZkIndexSchemaReader getZkIndexSchemaReader() { return zkIndexSchemaReader; }
 }

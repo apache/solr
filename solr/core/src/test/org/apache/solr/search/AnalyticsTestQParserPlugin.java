@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -32,6 +33,7 @@ import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ShardResponse;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.io.IOException;
 
@@ -52,7 +54,7 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       int base = localParams.getInt("base", 0);
       boolean iterate = localParams.getBool("iterate", false);
       if(iterate)
-        return new TestAnalyticsQuery(base, new TestIterative());
+        return new TestAnalyticsQuery(base, new TestIterative(req.getCore().getCoreContainer().getUpdateShardHandler().getSearchOnlyClient()));
       else
         return new TestAnalyticsQuery(base, new TestAnalyticsMergeStrategy());
     }
@@ -131,6 +133,10 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
   }
 
   static class TestIterative extends IterativeMergeStrategy  {
+
+    public TestIterative(SolrClient client) {
+      super(client);
+    }
 
     public void process(ResponseBuilder rb, ShardRequest sreq) throws Exception {
       int count = 0;

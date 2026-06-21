@@ -53,7 +53,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     final NamedList<NamedList> result = new NamedList<>(data.size());
     for (Command command : data) {
       final NamedList<Object> commandResult = new NamedList<>(2);
-      if (SearchGroupsFieldCommand.class.isInstance(command)) {
+      if (command instanceof SearchGroupsFieldCommand) {
         SearchGroupsFieldCommand fieldCommand = (SearchGroupsFieldCommand) command;
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
@@ -78,7 +78,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
       SortField[] groupSortField, List<Comparable> rawSearchGroupData) {
     SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
     searchGroup.groupValue = null;
-    if (groupValue != null) {
+    if (groupValue != null && groupValue.length() > 0) {
       if (groupField != null) {
         BytesRefBuilder builder = new BytesRefBuilder();
         groupField.getType().readableToIndexed(groupValue, builder);
@@ -87,7 +87,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         searchGroup.groupValue = new BytesRef(groupValue);
       }
     }
-    searchGroup.sortValues = rawSearchGroupData.toArray(new Comparable[rawSearchGroupData.size()]);
+    searchGroup.sortValues = rawSearchGroupData.toArray(new Comparable[0]);
     for (int i = 0; i < searchGroup.sortValues.length; i++) {
       SchemaField field = groupSortField[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSortField[i].getField()) : null;
       searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], field);

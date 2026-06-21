@@ -144,7 +144,6 @@ public class Aliases {
    * @return an unmodifiable Map of collection aliases mapped to a comma delimited string of the collection(s) the
    * alias maps to. Does not return null.
    */
-  @SuppressWarnings("unchecked")
   public Map<String, String> getCollectionAliasMap() {
     return Collections.unmodifiableMap(convertMapOfListToMapOfCommaDelimited(collectionAliases));
   }
@@ -264,7 +263,7 @@ public class Aliases {
       }
     }
     if (uniqueResult == null) {
-      return level1;
+      return Collections.unmodifiableList(level1);
     } else {
       return Collections.unmodifiableList(new ArrayList<>(uniqueResult));
     }

@@ -30,10 +30,11 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.FieldType;
 
 class StringFieldWriter extends FieldWriter {
+  public static final byte[] EMTPY_BYTES = new byte[0];
   private String field;
   private FieldType fieldType;
   private CharsRefBuilder cref = new CharsRefBuilder();
-  final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
+  final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(EMTPY_BYTES, 0, 0) {
     @Override
     public String toString() {
       String str = super.utf16;

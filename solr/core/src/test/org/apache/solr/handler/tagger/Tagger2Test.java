@@ -24,8 +24,9 @@ package org.apache.solr.handler.tagger;
 
 import java.nio.charset.StandardCharsets;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -34,8 +35,13 @@ import org.junit.Test;
 public class Tagger2Test extends TaggerTestCase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTagger2Test() throws Exception {
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
+  }
+
+  @AfterClass
+  public static void afterTagger2Test() throws Exception {
+    deleteCore();
   }
 
   @Override
@@ -62,31 +68,9 @@ public class Tagger2Test extends TaggerTestCase {
 
   }
 
-  // As of Lucene/Solr 4.9, StandardTokenizer never does this anymore (reported to Lucene dev-list,
-  // Jan 26th 2015.  Honestly it's not particularly important to us but it renders this test
-  // pointless.
-  /** Orig issue https://github.com/OpenSextant/SolrTextTagger/issues/2  related: #13 */
-  @Test
-  @Ignore
-  public void testVeryLongWord() throws Exception {
-    String SANFRAN = "San Francisco";
-    buildNames(SANFRAN);
-
-    // exceeds default 255 max token length which means it in-effect becomes a stop-word
-    StringBuilder STOP = new StringBuilder(260);//>255
-    for (int i = 0; i < STOP.capacity(); i++) {
-      STOP.append((char) ('0' + (i % 10)));
-    }
-
-    String doc = "San " + STOP + " Francisco";
-    assertTags(doc);//no match due to default stop word handling
-    //and we find it when we ignore stop words
-    assertTags(reqDoc(doc, "ignoreStopwords", "true"), new TestTag(0, doc.length(), doc, lookupByName(SANFRAN)));
-  }
-
   /** Support for stopwords (posInc &gt; 1);
    * discussion: https://github.com/OpenSextant/SolrTextTagger/issues/13 */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8344")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8344")
   @Test
   public void testStopWords() throws Exception {
     baseParams.set("field", "name_tagStop");//stop filter (pos inc enabled) index & query

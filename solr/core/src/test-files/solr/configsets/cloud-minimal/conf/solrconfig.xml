@@ -24,8 +24,10 @@
   <dataDir>${solr.data.dir:}</dataDir>
 
   <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+                    class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <statsCache class="${solr.statsCache:}"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
@@ -33,7 +35,7 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-    <updateLog class="${solr.ulog:solr.UpdateLog}"></updateLog>
+    <updateLog> class="${solr.ulog:solr.UpdateLog}" enable="${enable.update.log:true}"></updateLog>
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">
@@ -46,6 +48,8 @@
   </requestHandler>
   <indexConfig>
     <mergeScheduler class="${solr.mscheduler:org.apache.lucene.index.ConcurrentMergeScheduler}"/>
-:  </indexConfig>
+    <lockType>${solr.tests.lockType:single}</lockType>
+    <infoStream>${solr.tests.infostream:false}</infoStream>
+  </indexConfig>
 </config>
 

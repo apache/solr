@@ -26,13 +26,13 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -41,7 +41,7 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -69,63 +69,78 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
 enum CoreAdminOperation implements CoreAdminOp {
 
-  CREATE_OP(CREATE, it -> {
-    assert TestInjection.injectRandomDelayInCoreCreation();
+  CREATE_OP(CREATE, new CoreAdminOp() {
+    @Override
+    public void execute(CallInfo it) {
 
-    SolrParams params = it.req.getParams();
-    log().info("core create command {}", params);
-    String coreName = params.required().get(CoreAdminParams.NAME);
-    Map<String, String> coreParams = buildCoreParams(params);
-    CoreContainer coreContainer = it.handler.coreContainer;
-    Path instancePath;
+      SolrParams params = it.req.getParams();
+      //log().info("core create command {}", params);
+      String coreName = params.required().get(CoreAdminParams.NAME);
+      MDCLoggingContext.setCoreName(coreName);
+      try {
 
-    // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
-    String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
-    if (instanceDir == null)
-      instanceDir = it.req.getParams().get("property.instanceDir");
-    if (instanceDir != null) {
-      instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties());
-      instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
-    } else {
-      instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
-    }
+        assert TestInjection.injectRandomDelayInCoreCreation();
 
-    boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+        Map<String,String> coreParams = buildCoreParams(params);
+        CoreContainer coreContainer = it.handler.coreContainer;
 
-    coreContainer.create(coreName, instancePath, coreParams, newCollection);
+        Path instancePath;
 
-    it.rsp.add("core", coreName);
-  }),
-  UNLOAD_OP(UNLOAD, it -> {
-    SolrParams params = it.req.getParams();
-    String cname = params.required().get(CoreAdminParams.CORE);
-
-    boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
-    boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
-    boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
-    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, false);
-    CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
-    it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-    if (deleteMetricsHistory) {
-      MetricsHistoryHandler historyHandler = it.handler.coreContainer.getMetricsHistoryHandler();
-      if (historyHandler != null) {
-        CloudDescriptor cd = cdescr != null ? cdescr.getCloudDescriptor() : null;
-        String registry;
-        if (cd == null) {
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cname);
+        // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
+        String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
+        if (instanceDir == null) instanceDir = it.req.getParams().get("property.instanceDir");
+        if (instanceDir != null) {
+          instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties());
+          instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
         } else {
-          String replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), cname);
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core,
-              cd.getCollectionName(),
-              cd.getShardId(),
-              replicaName);
+          instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
         }
-        historyHandler.checkSystemCollection();
-        historyHandler.removeHistory(registry);
+
+        boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+        if (coreContainer.isShutDown()) {
+          log().warn("Will not create SolrCore, CoreContainer is shutdown");
+          throw new AlreadyClosedException("Will not create SolrCore, CoreContainer is shutdown");
+        }
+
+        if (coreContainer.isZooKeeperAware()) {
+          String collectionName = coreParams.get(CoreDescriptor.CORE_COLLECTION);
+          coreContainer.getZkController().getZkStateReader().registerCore(collectionName, coreName);
+        }
+        long start = System.nanoTime();
+
+        try {
+          coreContainer.create(coreName, instancePath, coreParams, newCollection, true);
+        } catch (Exception e) {
+          if (coreContainer.isZooKeeperAware()) {
+            String collectionName = coreParams.get(CoreDescriptor.CORE_COLLECTION);
+            coreContainer.getZkController().getZkStateReader().unregisterCore(collectionName, coreName);
+          }
+          throw e;
+        }
+       // log().info("SolrCore {} created in {}ms", coreName, TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+
+        it.rsp.add("core", coreName);
+      } finally {
+        MDCLoggingContext.clear();
       }
     }
+  }),
+  UNLOAD_OP(UNLOAD, new CoreAdminOp() {
+    @Override
+    public void execute(CallInfo it) throws Exception {
+      SolrParams params = it.req.getParams();
+      String cname = params.required().get(CoreAdminParams.CORE);
 
-    assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
+      boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, true);
+      boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, true);
+      boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+      boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
+      boolean removeFromZk = params.getBool("removeFromZk", true);
+      CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
+      it.handler.coreContainer.unload(cdescr, cname, deleteIndexDir, deleteDataDir, deleteInstanceDir, removeFromZk);
+
+      assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
+    }
   }),
   RELOAD_OP(RELOAD, it -> {
     SolrParams params = it.req.getParams();
@@ -160,12 +175,11 @@ enum CoreAdminOperation implements CoreAdminOp {
   REQUESTRECOVERY_OP(REQUESTRECOVERY, it -> {
     final SolrParams params = it.req.getParams();
     final String cname = params.required().get(CoreAdminParams.CORE);
-    log().info("It has been requested that we recover: core=" + cname);
+    log().info("It has been requested that we recover: core={}", cname);
     
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
       if (core != null) {
-        // This can take a while, but doRecovery is already async so don't worry about it here
-        core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
+        core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor(), "CoreAdmin", null);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
@@ -176,7 +190,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   REQUESTBUFFERUPDATES_OP(REQUESTBUFFERUPDATES, it -> {
     SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.NAME);
-    log().info("Starting to buffer updates on core:" + cname);
+    log().info("Starting to buffer updates on core:{}", cname);
 
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
       if (core == null)
@@ -202,7 +216,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   REQUESTSTATUS_OP(REQUESTSTATUS, it -> {
     SolrParams params = it.req.getParams();
     String requestId = params.required().get(CoreAdminParams.REQUESTID);
-    log().info("Checking request status for : " + requestId);
+    log().info("Checking request status for : {}", requestId);
 
     if (it.handler.getRequestStatusMap(RUNNING).containsKey(requestId)) {
       it.rsp.add(RESPONSE_STATUS, RUNNING);
@@ -224,7 +238,7 @@ enum CoreAdminOperation implements CoreAdminOp {
       String op = it.req.getParams().get("op");
       String electionNode = it.req.getParams().get("electionNode");
       if (electionNode != null) {
-        zkController.rejoinOverseerElection(electionNode, "rejoinAtHead".equals(op));
+        zkController.rejoinOverseerElection("rejoinAtHead".equals(op));
       } else {
         log().info("electionNode is required param");
       }
@@ -252,7 +266,7 @@ enum CoreAdminOperation implements CoreAdminOp {
 
     CoreContainer cc = it.handler.getCoreContainer();
 
-    try ( SolrCore core = cc.getCore(cname) ) {
+    try (SolrCore core = cc.getCore(cname) ) {
       if (core == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
@@ -273,6 +287,8 @@ enum CoreAdminOperation implements CoreAdminOp {
     }
   });
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final CoreAdminParams.CoreAdminAction action;
   final CoreAdminOp fun;
 
@@ -281,13 +297,11 @@ enum CoreAdminOperation implements CoreAdminOp {
     this.fun = fun;
   }
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   static Logger log() {
     return log;
   }
-
-
 
 
   /**
@@ -338,7 +352,7 @@ enum CoreAdminOperation implements CoreAdminOp {
               SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
-              cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+              cloudInfo.add(REPLICA, core.getCoreDescriptor().getName());
               cloudInfo.add(REPLICA_TYPE, core.getCoreDescriptor().getCloudDescriptor().getReplicaType().name());
               info.add("cloud", cloudInfo);
             }
@@ -365,11 +379,23 @@ enum CoreAdminOperation implements CoreAdminOp {
   public void execute(CallInfo it) throws Exception {
     try {
       fun.execute(it);
+    } catch (PrepRecoveryOp.NotValidLeader e) {
+      // No need to re-wrap; throw as-is.
+      throw e;
     } catch (SolrException | InterruptedException e) {
+      log.error("Error handling CoreAdmin action", e);
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       // No need to re-wrap; throw as-is.
       throw e;
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling '" + action.name() + "' action", e);
+      log.error("Error handling CoreAdmin action", e);
+      if (action == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling CoreAdmin action. " + e.getMessage(), e);
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling '" + action.name() + "' action. " + e.getMessage(), e);
+      }
     }
   }
 }

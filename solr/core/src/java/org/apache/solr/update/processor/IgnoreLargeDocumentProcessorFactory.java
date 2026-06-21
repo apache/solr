@@ -148,7 +148,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
         return primitiveSizes.get(clazz);
       }
       if (obj instanceof String) {
-        return ((String) obj).length() * Character.BYTES;
+        return (long) ((String) obj).length() * Character.BYTES;
       }
       return def;
     }

@@ -17,37 +17,41 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.schema.IndexSchema;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 /** simple tests for PostingsSolrHighlighter */
 public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeClass() throws Exception {
     initCore("solrconfig-postingshighlight.xml", "schema-postingshighlight.xml");
     
     // test our config is sane, just to be sure:
-    
+    SolrCore core = h.getCore();
     // postingshighlighter should be used
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+    SolrHighlighter highlighter = HighlightComponent.getHighlighter(core);
     assertTrue("wrong highlighter: " + highlighter.getClass(), highlighter instanceof PostingsSolrHighlighter);
     
     // 'text' and 'text3' should have offsets, 'text2' should not
-    IndexSchema schema = h.getCore().getLatestSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());
-  }
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    clearIndex();
+
     assertU(adoc("text", "document one", "text2", "document one", "text3", "crappy document", "id", "101"));
     assertU(adoc("text", "second document", "text2", "second document", "text3", "crappier document", "id", "102"));
     assertU(commit());
+    core.close();
+  }
+  
+  @After
+  public void afterTest() {
+    deleteCore();
   }
   
   public void testSimple() {
@@ -114,8 +118,7 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
 
   public void testMisconfiguredField() {
     ignoreException("was indexed without offsets");
-    expectThrows(Exception.class, () ->
-        h.query(req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2")));
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> query(req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2")));
     resetExceptionIgnores();
   }
   

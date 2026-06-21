@@ -115,9 +115,9 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
 
     if (log.isTraceEnabled()) {
       log.trace("Following perms are associated with collection");
-      for (String pathKey : pathVsPerms.keySet()) {
-        final List<Permission> permsAssociatedWithPath = pathVsPerms.get(pathKey);
-        log.trace("Path: [{}], Perms: [{}]", pathKey, permsAssociatedWithPath);
+      for (Map.Entry<String,List<Permission>> entry : pathVsPerms.entrySet()) {
+        final List<Permission> permsAssociatedWithPath = entry.getValue();
+        log.trace("Path: [{}], Perms: [{}]", entry.getKey(), permsAssociatedWithPath);
       }
     }
 
@@ -136,9 +136,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     log.trace("Following perms are associated with this collection and path: [{}]", permissions);
     final Permission governingPermission = findFirstGoverningPermission(permissions, context);
     if (governingPermission == null) {
-      if (log.isDebugEnabled()) {
-        log.debug("No perms configured for the resource {} . So allowed to access", context.getResource());
-      }
+      log.info("No perms configured for the resource {} . So allowed to access", context.getResource());
       return MatchStatus.NO_PERMISSIONS_FOUND;
     }
     if (log.isDebugEnabled()) {
@@ -148,7 +146,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     return determineIfPermissionPermitsPrincipal(principal, governingPermission);
   }
 
-  private Permission findFirstGoverningPermission(List<Permission> permissions, AuthorizationContext context) {
+  private static Permission findFirstGoverningPermission(List<Permission> permissions, AuthorizationContext context) {
     for (int i = 0; i < permissions.size(); i++) {
       Permission permission = permissions.get(i);
       if (permissionAppliesToRequest(permission, context)) return permission;
@@ -157,7 +155,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     return null;
   }
 
-  private boolean permissionAppliesToRequest(Permission permission, AuthorizationContext context) {
+  private static boolean permissionAppliesToRequest(Permission permission, AuthorizationContext context) {
     if (log.isTraceEnabled()) {
       log.trace("Testing whether permission [{}] applies to request [{}]", permission, context.getResource());
     }
@@ -168,7 +166,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     }
   }
 
-  private boolean predefinedPermissionAppliesToRequest(Permission predefinedPermission, AuthorizationContext context) {
+  private static boolean predefinedPermissionAppliesToRequest(Permission predefinedPermission, AuthorizationContext context) {
     log.trace("Permission [{}] is a predefined perm", predefinedPermission);
     if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
       log.trace("'ALL' perm applies to all requests; perm applies.");
@@ -189,7 +187,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     }
   }
 
-  private boolean customPermissionAppliesToRequest(Permission customPermission, AuthorizationContext context) {
+  private static boolean customPermissionAppliesToRequest(Permission customPermission, AuthorizationContext context) {
     log.trace("Permission [{}] is a custom permission", customPermission);
     if (customPermission.method != null && !customPermission.method.contains(context.getHttpMethod())) {
       if (log.isTraceEnabled()) {
@@ -218,14 +216,14 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
 
   private MatchStatus determineIfPermissionPermitsPrincipal(Principal principal, Permission governingPermission) {
     if (governingPermission.role == null) {
-      log.debug("Governing permission [{}] has no role; permitting access", governingPermission);
+      log.info("Governing permission [{}] has no role; permitting access", governingPermission);
       return MatchStatus.PERMITTED;
     }
     if (principal == null) {
-      log.debug("Governing permission [{}] has role, but request principal cannot be identified; forbidding access", governingPermission);
+      log.info("Governing permission [{}] has role, but request principal cannot be identified; forbidding access", governingPermission);
       return MatchStatus.USER_REQUIRED;
     } else if (governingPermission.role.contains("*")) {
-      log.debug("Governing permission [{}] allows all roles; permitting access", governingPermission);
+      log.info("Governing permission [{}] allows all roles; permitting access", governingPermission);
       return MatchStatus.PERMITTED;
     }
 

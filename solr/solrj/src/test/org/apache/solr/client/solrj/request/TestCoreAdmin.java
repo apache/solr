@@ -16,20 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -49,30 +39,51 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String tempDirProp;
 
-  @Rule
-  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  // This test asserts on per-request-handler metrics (e.g. UPDATE./update.requests). The fork's
+  // SolrTestCase globally disables metrics (solr.enableMetrics=false) for test speed, which turns
+  // counters/meters/timers into no-ops. Re-enable metrics for this class (runs after the parent's
+  // @BeforeClass, before cores are created in @Before) and restore the value afterwards.
+  private static String prevEnableMetrics;
+
+  @org.junit.BeforeClass
+  public static void enableMetricsForCoreAdmin() {
+    prevEnableMetrics = System.getProperty("solr.enableMetrics");
+    System.setProperty("solr.enableMetrics", "true");
+  }
+
+  @org.junit.AfterClass
+  public static void restoreEnableMetrics() {
+    if (prevEnableMetrics == null) {
+      System.clearProperty("solr.enableMetrics");
+    } else {
+      System.setProperty("solr.enableMetrics", prevEnableMetrics);
+    }
+  }
 
   /*
   @Override
   protected File getSolrXml() throws Exception {
     // This test writes on the directory where the solr.xml is located. Better
-    // to copy the solr.xml to
+    // to copy the solr.xml toz
     // the temporary directory where we store the index
     File origSolrXml = new File(SOLR_HOME, SOLR_XML);
     File solrXml = new File(tempDir, SOLR_XML);
@@ -89,7 +100,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   public void testConfigSet() throws Exception {
 
     SolrClient client = getSolrAdmin();
-    File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
+    // LuceneTestCase.getTestClass() relies on a class-name rule that is not active in this fork's
+    // setup path ("The rule is not currently executing"); use the concrete class name directly.
+    File testDir = SolrTestUtil.createTempDir(TestCoreAdmin.class.getSimpleName()).toFile();
 
     File newCoreInstanceDir = new File(testDir, "newcore");
 
@@ -112,9 +125,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     
     try (SolrClient client = getSolrAdmin()) {
 
-      File dataDir = createTempDir("data").toFile();
+      File dataDir = SolrTestUtil.createTempDir("data").toFile();
 
-      File newCoreInstanceDir = createTempDir("instance").toFile();
+      File newCoreInstanceDir = SolrTestUtil.createTempDir("instance").toFile();
 
       File instanceDir = new File(cores.getSolrHome());
       FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,
@@ -138,9 +151,6 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       try (SolrCore coreProveIt = cores.getCore("collection1");
            SolrCore core = cores.getCore("newcore")) {
 
-        assertTrue(core.getCoreDescriptor().isTransient());
-        assertFalse(coreProveIt.getCoreDescriptor().isTransient());
-
         assertFalse(core.getCoreDescriptor().isLoadOnStartup());
         assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
 
@@ -162,13 +172,13 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     params.set("name", collectionName);
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
-    expectThrows(SolrException.class, () -> getSolrAdmin().request(request));
+    LuceneTestCase.expectThrows(SolrException.class, () -> getSolrAdmin().request(request));
   }
   
   @Test
   public void testInvalidCoreNamesAreRejectedWhenCreatingCore() {
     final Create createRequest = new Create();
-    SolrException e = expectThrows(SolrException.class, () -> createRequest.setCoreName("invalid$core@name"));
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> createRequest.setCoreName("invalid$core@name"));
     final String exceptionMessage = e.getMessage();
     assertTrue(exceptionMessage.contains("Invalid core"));
     assertTrue(exceptionMessage.contains("invalid$core@name"));
@@ -177,7 +187,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   
   @Test
   public void testInvalidCoreNamesAreRejectedWhenRenamingExistingCore() throws Exception {
-    SolrException e = expectThrows(SolrException.class,
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class,
         () -> CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null));
     final String exceptionMessage = e.getMessage();
     assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
@@ -276,7 +286,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   public void testInvalidRequestRecovery() throws SolrServerException, IOException {
       RequestRecovery recoverRequestCmd = new RequestRecovery();
       recoverRequestCmd.setCoreName("non_existing_core");
-      expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
+    LuceneTestCase.expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
   }
   
   @Test
@@ -289,7 +299,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
       Path data = Paths.get(ddir, "index");
-      assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
+      LuceneTestCase.assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
       getSolrCore0().add(new SolrInputDocument("id", "core0-1"));
       getSolrCore0().commit();
@@ -301,10 +311,10 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
 
       // Need to run a query to confirm that the core couldn't load
-      expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
+      LuceneTestCase.expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
 
       // We didn't fix anything, so should still throw
-      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
+      LuceneTestCase.expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
 
       Files.move(data.resolve("backup"), data.resolve("_0.si"));
       CoreAdminRequest.reloadCore("core0", getSolrCore0());

@@ -18,10 +18,15 @@ package org.apache.solr.search.mlt;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Arrays;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,68 +36,71 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // slow test
 public class CloudMLTQParserTest extends SolrCloudTestCase {
   
   @Before
-  public void setupCluster() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     configureCluster(2)
-    .addConfig("conf", configset("cloud-dynamic"))
+    .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
     .configure();
     
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .processAndWait(client, DEFAULT_TIMEOUT);
-
-    cluster.waitForActiveCollection(COLLECTION, 2, 2);
+        .process(client);
 
     String id = "id";
     String FIELD1 = "lowerfilt_u" ;
     String FIELD2 = "lowerfilt1_u" ;
 
     new UpdateRequest()
-        .add(sdoc(id, "1", FIELD1, "toyota"))
-        .add(sdoc(id, "2", FIELD1, "chevrolet"))
-        .add(sdoc(id, "3", FIELD1, "bmw usa"))
-        .add(sdoc(id, "4", FIELD1, "ford"))
-        .add(sdoc(id, "5", FIELD1, "ferrari"))
-        .add(sdoc(id, "6", FIELD1, "jaguar"))
-        .add(sdoc(id, "7", FIELD1, "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"))
-        .add(sdoc(id, "8", FIELD1, "sonata"))
-        .add(sdoc(id, "9", FIELD1, "The quick red fox jumped over the lazy big and large brown dogs."))
-        .add(sdoc(id, "10", FIELD1, "blue"))
-        .add(sdoc(id, "12", FIELD1, "glue"))
-        .add(sdoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "17", FIELD1,
+        .add(SolrTestCaseJ4.sdoc(id, "1", FIELD1, "toyota"))
+        .add(SolrTestCaseJ4.sdoc(id, "2", FIELD1, "chevrolet"))
+        .add(SolrTestCaseJ4.sdoc(id, "3", FIELD1, "bmw usa"))
+        .add(SolrTestCaseJ4.sdoc(id, "4", FIELD1, "ford"))
+        .add(SolrTestCaseJ4.sdoc(id, "5", FIELD1, "ferrari"))
+        .add(SolrTestCaseJ4.sdoc(id, "6", FIELD1, "jaguar"))
+        .add(SolrTestCaseJ4.sdoc(id, "7", FIELD1, "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"))
+        .add(SolrTestCaseJ4.sdoc(id, "8", FIELD1, "sonata"))
+        .add(SolrTestCaseJ4.sdoc(id, "9", FIELD1, "The quick red fox jumped over the lazy big and large brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "10", FIELD1, "blue"))
+        .add(SolrTestCaseJ4.sdoc(id, "12", FIELD1, "glue"))
+        .add(SolrTestCaseJ4.sdoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "17", FIELD1,
             "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"))
-        .add(sdoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "25", FIELD1, "rod fix"))
-        .add(sdoc(id, "26", FIELD1, "bmw usa 328i"))
-        .add(sdoc(id, "27", FIELD1, "bmw usa 535i"))
-        .add(sdoc(id, "28", FIELD1, "bmw 750Li"))
-        .add(sdoc(id, "29", FIELD1, "bmw usa", FIELD2, "red green blue"))
-        .add(sdoc(id, "30", FIELD1, "The quote red fox jumped over the lazy brown dogs.", FIELD2, "red green yellow"))
-        .add(sdoc(id, "31", FIELD1, "The fat red fox jumped over the lazy brown dogs.", FIELD2, "green blue yellow"))
-        .add(sdoc(id, "32", FIELD1, "The slim red fox jumped over the lazy brown dogs.", FIELD2, "yellow white black"))
+        .add(SolrTestCaseJ4.sdoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "25", FIELD1, "rod fix"))
+        .add(SolrTestCaseJ4.sdoc(id, "26", FIELD1, "bmw usa 328i"))
+        .add(SolrTestCaseJ4.sdoc(id, "27", FIELD1, "bmw usa 535i"))
+        .add(SolrTestCaseJ4.sdoc(id, "28", FIELD1, "bmw 750Li"))
+        .add(SolrTestCaseJ4.sdoc(id, "29", FIELD1, "bmw usa", FIELD2, "red green blue"))
+        .add(SolrTestCaseJ4.sdoc(id, "30", FIELD1, "The quote red fox jumped over the lazy brown dogs.", FIELD2, "red green yellow"))
+        .add(SolrTestCaseJ4.sdoc(id, "31", FIELD1, "The fat red fox jumped over the lazy brown dogs.", FIELD2, "green blue yellow"))
+        .add(SolrTestCaseJ4.sdoc(id, "32", FIELD1, "The slim red fox jumped over the lazy brown dogs.", FIELD2, "yellow white black"))
         .commit(client, COLLECTION);
   }
   
   @After
-  public void cleanCluster() throws Exception {
+  public void tearDown() throws Exception {
     if (null != cluster) {
       cluster.shutdown();
+      cluster = null;
     }
+    super.tearDown();
   }
 
   public static final String COLLECTION = "mlt-collection";
@@ -143,7 +151,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    System.out.println("DEBUG ACTUAL IDS 1: " + Arrays.toString(actualIds));
+    //System.out.println("DEBUG ACTUAL IDS 1: " + Arrays.toString(actualIds));
     assertArrayEquals(expectedIds, actualIds);
 
     queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=true mintf=0 mindf=0}30"));
@@ -157,7 +165,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    System.out.println("DEBUG ACTUAL IDS 2: " + Arrays.toString(actualIds));
+    //System.out.println("DEBUG ACTUAL IDS 2: " + Arrays.toString(actualIds));
     assertArrayEquals(Arrays.toString(expectedIds) + " " + Arrays.toString(actualIds), expectedIds, actualIds);
   }
 
@@ -187,7 +195,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
       String parsedQueryString = (String) queryResponse.getDebugMap().get("parsedquery");
       assertTrue(parsedQueryString.equals(expectedQueryStrings[0]) || parsedQueryString.equals(expectedQueryStrings[1]));
     } else {
-      actualParsedQueries = ((ArrayList<String>) queryResponse
+      actualParsedQueries = ((List<String>) queryResponse
           .getDebugMap().get("parsedquery")).toArray(new String[0]);
       Arrays.sort(actualParsedQueries);
       assertArrayEquals(expectedQueryStrings, actualParsedQueries);
@@ -268,7 +276,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
 
   public void testInvalidSourceDocument() throws IOException {
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999"));
     });
   }

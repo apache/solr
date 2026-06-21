@@ -63,6 +63,6 @@ public class AscEvaluator extends RecursiveObjectEvaluator implements OneValueWo
       }
     }
 
-    return list.stream().sorted((left,right) -> ((Comparable)left).compareTo((Comparable)right)).collect(Collectors.toList());
+    return list.stream().sorted((left,right) -> ((Comparable)left).compareTo(right)).collect(Collectors.toList());
   }
 }

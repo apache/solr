@@ -322,13 +322,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
   
         try {
           try {
-            AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
-              @Override
-              public Void run() throws ScriptException  {
-                engine.eval(scriptSrc);
-                return null;
-              }
-            }, SCRIPT_SANDBOX);
+            AccessController.doPrivileged(new VoidPrivilegedExceptionAction(engine, scriptSrc), SCRIPT_SANDBOX);
           } catch (PrivilegedActionException e) {
             throw (ScriptException) e.getException();
           }
@@ -454,7 +448,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
       for (EngineInfo engine : engines) {
         try {
           Object result = engine.getEngine().invokeFunction(name, cmd);
-          if (null != result && result instanceof Boolean) {
+          if (result instanceof Boolean) {
             if (! ((Boolean)result).booleanValue() ) {
               return false;
             }
@@ -517,6 +511,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
     }
 
     public Reader openReader(SolrResourceLoader resourceLoader) throws IOException {
+      // TODO: close the inputstream as well
       InputStream input = resourceLoader.openResource(fileName);
       return org.apache.lucene.util.IOUtils.getDecodingReader
         (input, StandardCharsets.UTF_8);
@@ -526,4 +521,20 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
   // sandbox for script code: zero permissions
   private static final AccessControlContext SCRIPT_SANDBOX =
       new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, null) });
+
+  private static class VoidPrivilegedExceptionAction implements PrivilegedExceptionAction<Void> {
+    private final ScriptEngine engine;
+    private final Reader scriptSrc;
+
+    public VoidPrivilegedExceptionAction(ScriptEngine engine, Reader scriptSrc) {
+      this.engine = engine;
+      this.scriptSrc = scriptSrc;
+    }
+
+    @Override
+    public Void run() throws ScriptException {
+      engine.eval(scriptSrc);
+      return null;
+    }
+  }
 }

@@ -67,23 +67,16 @@ public class StringDistanceFunction extends ValueSource {
 
       @Override
       public String toString(int doc) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        sb.append("strdist").append('(');
-        sb.append(str1DV.toString(doc)).append(',').append(str2DV.toString(doc))
-                .append(", dist=").append(dist.getClass().getName());
-        sb.append(')');
-        return sb.toString();
+        String sb = "strdist" + '(' + str1DV.toString(doc) + ',' + str2DV.toString(doc) + ", dist=" + dist.getClass().getName() + ')';
+        return sb;
       }
     };
   }
 
   @Override
   public String description() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("strdist").append('(');
-    sb.append(str1).append(',').append(str2).append(", dist=").append(dist.getClass().getName());
-    sb.append(')');
-    return sb.toString();
+    String sb = "strdist" + '(' + str1 + ',' + str2 + ", dist=" + dist.getClass().getName() + ')';
+    return sb;
   }
 
   @Override

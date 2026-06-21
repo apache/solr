@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.List;
@@ -83,11 +84,8 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
       } else {
         MultivariateNormalDistribution multivariateNormalDistribution = (MultivariateNormalDistribution)first;
         double[] sample = multivariateNormalDistribution.sample();
-        List<Number> sampleList = new ArrayList<>(sample.length);
-        for(int i=0; i<sample.length; i++) {
-          sampleList.add(sample[i]);
-        }
-        return sampleList;
+
+        return Collections.singletonList(sample);
       }
     } else {
       IntegerDistribution integerDistribution = (IntegerDistribution) first;

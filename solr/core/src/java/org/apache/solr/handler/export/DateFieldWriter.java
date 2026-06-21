@@ -33,7 +33,7 @@ class DateFieldWriter extends FieldWriter {
   }
 
   public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
-    Long val;
+    long val;
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {

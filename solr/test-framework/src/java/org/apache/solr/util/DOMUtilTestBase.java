@@ -16,40 +16,28 @@
  */
 package org.apache.solr.util;
 
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.core.SolrResourceLoader;
 
-import java.io.StringReader;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
-
-import org.apache.solr.SolrTestCase;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
 
 public abstract class DOMUtilTestBase extends SolrTestCase {
-  
-  private DocumentBuilder builder;
-  private static final XPathFactory xpathFactory = XPathFactory.newInstance();
+
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
   }
 
-  public Node getNode( String xml, String path ) throws Exception {
-    return getNode( getDocument(xml), path );
+  public NodeInfo getNode(SolrResourceLoader loader, String xml, String path ) throws Exception {
+    return getNode(loader, BaseTestHarness.getTinyDocument(xml, loader), path );
   }
   
-  public Node getNode( Document doc, String path ) throws Exception {
-    XPath xpath = xpathFactory.newXPath();
-    return (Node)xpath.evaluate(path, doc, XPathConstants.NODE);
-  }
-  
-  public Document getDocument( String xml ) throws Exception {
-    return builder.parse(new InputSource(new StringReader(xml)));
+  public static NodeInfo getNode(SolrResourceLoader loader, TinyDocumentImpl doc, String path) throws Exception {
+    XPath xpath = SolrResourceLoader.getXPath();
+    return (NodeInfo)xpath.evaluate(path, doc, XPathConstants.NODE);
   }
 }

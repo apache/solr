@@ -42,7 +42,7 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -51,7 +51,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
 import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -84,7 +83,7 @@ public class TermsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "terms";
 
   // This needs to be created here too, because Solr doesn't call init(...) on default components. Bug?
-  private WhitelistHostChecker whitelistHostChecker = new WhitelistHostChecker(
+  private HttpShardHandlerFactory.WhitelistHostChecker whitelistHostChecker = new HttpShardHandlerFactory.WhitelistHostChecker(
       null, 
       !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
 
@@ -92,7 +91,7 @@ public class TermsComponent extends SearchComponent {
   public void init( @SuppressWarnings({"rawtypes"})NamedList args )
   {
     super.init(args);
-    whitelistHostChecker = new WhitelistHostChecker(
+    whitelistHostChecker = new HttpShardHandlerFactory.WhitelistHostChecker(
         (String) args.get(HttpShardHandlerFactory.INIT_SHARDS_WHITELIST), 
         !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
   }
@@ -117,7 +116,7 @@ public class TermsComponent extends SearchComponent {
       }
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
       checkShardsWhitelist(rb, lst);
-      rb.shards = lst.toArray(new String[lst.size()]);
+      rb.shards = lst.toArray(Utils.EMPTY_STRINGS);
     }
   }
 
@@ -132,11 +131,11 @@ public class TermsComponent extends SearchComponent {
           +" not configured but required when using the '"+ShardParams.SHARDS+"' parameter with the TermsComponent."
           +HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
     } else {
-      ClusterState cs = null;
+      ZkStateReader zkStateReader = null;
       if (rb.req.getCore().getCoreContainer().getZkController() != null) {
-        cs = rb.req.getCore().getCoreContainer().getZkController().getClusterState();
+        zkStateReader = rb.req.getCore().getCoreContainer().getZkController().getZkStateReader();
       }
-      whitelistHostChecker.checkWhitelist(cs, urls.toString(), urls);
+      whitelistHostChecker.checkWhitelist(zkStateReader, urls.toString(), urls);
     }
   }
 
@@ -363,7 +362,7 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
-  int resolveRegexpFlags(SolrParams params) {
+  static int resolveRegexpFlags(SolrParams params) {
       String[] flagParams = params.getParams(TermsParams.TERMS_REGEXP_FLAG);
       if (flagParams == null) {
           return 0;
@@ -473,6 +472,7 @@ public class TermsComponent extends SearchComponent {
   }
 
   public static class TermsHelper {
+    public static final TermsResponse.Term[] EMPTY_TERMS_RESPONSE = new TermsResponse.Term[0];
     // map to store returned terms
     private HashMap<String, HashMap<String, TermsResponse.Term>> fieldmap;
     private SolrParams params;
@@ -589,8 +589,8 @@ public class TermsComponent extends SearchComponent {
     }
 
     // based on code from facets
-    public TermsResponse.Term[] getLexSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+    public static TermsResponse.Term[] getLexSorted(HashMap<String,TermsResponse.Term> data) {
+      TermsResponse.Term[] arr = data.values().toArray(EMPTY_TERMS_RESPONSE);
 
       Arrays.sort(arr, (o1, o2) -> o1.getTerm().compareTo(o2.getTerm()));
 
@@ -598,8 +598,8 @@ public class TermsComponent extends SearchComponent {
     }
 
     // based on code from facets
-    public TermsResponse.Term[] getCountSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+    public static TermsResponse.Term[] getCountSorted(HashMap<String,TermsResponse.Term> data) {
+      TermsResponse.Term[] arr = data.values().toArray(EMPTY_TERMS_RESPONSE);
 
       Arrays.sort(arr, new TermCountComparator());
       return arr;
@@ -610,7 +610,7 @@ public class TermsComponent extends SearchComponent {
       boolean includeTotalTermFreq, NamedList<Object> result) throws IOException {
     List<String> splitTermList = StrUtils.splitSmart(termList, ",", true);
     // Sort the terms once
-    String[] splitTerms = splitTermList.toArray(new String[splitTermList.size()]);
+    String[] splitTerms = splitTermList.toArray(new String[0]);
     // Not a great idea to trim here, but it was in the original implementation
     for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();

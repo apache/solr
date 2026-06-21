@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -56,7 +57,7 @@ public class MergeStream extends TupleStream implements Expressible {
   public MergeStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter onExpression = factory.getNamedOperand(expression, "on");
+    StreamExpressionNamedParameter onExpression = StreamFactory.getNamedOperand(expression, "on");
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 1){
@@ -76,7 +77,7 @@ public class MergeStream extends TupleStream implements Expressible {
       streams[idx] = factory.constructStream(streamExpressions.get(idx));
     }
     
-    init( factory.constructComparator(((StreamExpressionValue)onExpression.getParameter()).getValue(), FieldComparator.class),
+    init( StreamFactory.constructComparator(((StreamExpressionValue)onExpression.getParameter()).getValue(), FieldComparator.class),
           streams
         );
   }
@@ -147,10 +148,7 @@ public class MergeStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
-    for(PushBackStream stream : streams){
-      l.add(stream);
-    }
+    List<TupleStream> l = new ArrayList<TupleStream>(Arrays.asList(streams));
     return l;
   }
 

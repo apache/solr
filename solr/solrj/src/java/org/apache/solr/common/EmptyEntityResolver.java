@@ -16,15 +16,16 @@
  */
 package org.apache.solr.common;
 
-import java.io.InputStream;
-import org.xml.sax.InputSource;
-import org.xml.sax.EntityResolver;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
+import javax.xml.xpath.XPathFactory;
+import java.io.InputStream;
 
 import org.apache.commons.io.input.ClosedInputStream;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 /**
  * This class provides several singletons of entity resolvers used by
@@ -59,6 +60,7 @@ public final class EmptyEntityResolver {
     try {
       saxFactory.setFeature(feature, enabled);
     } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
       // ignore
     }
   }
@@ -70,6 +72,7 @@ public final class EmptyEntityResolver {
   public static void configureSAXParserFactory(SAXParserFactory saxFactory) {
     // don't enable validation of DTDs:
     saxFactory.setValidating(false);
+    saxFactory.setXIncludeAware(false);
     // enable secure processing:
     trySetSAXFeature(saxFactory, XMLConstants.FEATURE_SECURE_PROCESSING, true);
   }
@@ -78,6 +81,16 @@ public final class EmptyEntityResolver {
     try {
       inputFactory.setProperty(key, value);
     } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
+      // ignore
+    }
+  }
+
+  private static void trySetStAXProperty(XPathFactory xpathFactory, String key, boolean value) {
+    try {
+      xpathFactory.setFeature(key, value);
+    } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
       // ignore
     }
   }
@@ -85,12 +98,20 @@ public final class EmptyEntityResolver {
   /** Configures the given {@link XMLInputFactory} to not parse external entities.
    * No further configuration on is needed, all required entity resolvers are configured.
    */
-  public static void configureXMLInputFactory(XMLInputFactory inputFactory) {
+  public static void configureInputFactory(XMLInputFactory inputFactory) {
     // don't enable validation of DTDs:
     trySetStAXProperty(inputFactory, XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
     // enable this to *not* produce parsing failure on external entities:
     trySetStAXProperty(inputFactory, XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
     inputFactory.setXMLResolver(EmptyEntityResolver.STAX_INSTANCE);
+  }
+
+
+  public static void configureXPathFactory(XPathFactory xPathFactory) {
+    // don't enable validation of DTDs:
+    trySetStAXProperty(xPathFactory, XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
+    // enable this to *not* produce parsing failure on external entities:
+    trySetStAXProperty(xPathFactory, XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
   }
   
 }

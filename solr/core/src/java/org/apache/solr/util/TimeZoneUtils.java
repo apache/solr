@@ -77,7 +77,7 @@ public final class TimeZoneUtils {
     return null;
   }
 
-  private static Pattern CUSTOM_ID_REGEX = Pattern.compile("GMT(?:\\+|\\-)(\\d{1,2})(?::?(\\d{2}))?");
+  private static Pattern CUSTOM_ID_REGEX = Pattern.compile("GMT[+\\-](\\d{1,2})(?::?(\\d{2}))?");
 
   /**
    * Parse the specified timezone ID. If null input then return UTC. If we can't resolve it then

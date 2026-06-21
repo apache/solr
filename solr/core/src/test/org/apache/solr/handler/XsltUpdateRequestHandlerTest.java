@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -72,7 +73,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     args.put(CommonParams.TR, "xsl-update-handler-test.xsl");
       
     SolrCore core = h.getCore();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     ArrayList<ContentStream> streams = new ArrayList<>();
     streams.add(new ContentStreamBase.StringStream(xml));
     req.setContentStreams(streams);
@@ -99,7 +100,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   public void testEntities() throws Exception
   {
     // use a binary file, so when it's loaded fail with XML eror:
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = SolrTestUtil.getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml = 
       "<?xml version=\"1.0\"?>" +
       "<!DOCTYPE foo [" + 
@@ -125,5 +126,6 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
     assertEquals("zzz", add.solrDoc.getField("foo_s").getFirstValue());
     req.close();
+    p.close();
   }  
 }

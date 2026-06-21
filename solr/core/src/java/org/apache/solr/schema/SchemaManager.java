@@ -16,28 +16,18 @@
  */
 package org.apache.solr.schema;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.BaseSolrResource;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -53,6 +43,17 @@ import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
 import static org.apache.solr.schema.IndexSchema.NAME;
 import static org.apache.solr.schema.IndexSchema.SOURCE;
 import static org.apache.solr.schema.IndexSchema.TYPE;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A utility class to manipulate schema using the bulk mode.
@@ -63,18 +64,21 @@ public class SchemaManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrQueryRequest req;
-  ManagedIndexSchema managedIndexSchema;
-  int timeout;
+  private final ConnectionManager.IsClosed isClosed;
+  private volatile ManagedIndexSchema managedIndexSchema;
+  private int timeout;
 
-  public SchemaManager(SolrQueryRequest req){
+  public SchemaManager(SolrQueryRequest req, ConnectionManager.IsClosed isClosed){
     this.req = req;
+    this.isClosed = isClosed;
     //The default timeout is 10 minutes when no BaseSolrResource.UPDATE_TIMEOUT_SECS is specified
-    timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, 600);
+    timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, 60);
 
     //If BaseSolrResource.UPDATE_TIMEOUT_SECS=0 or -1 then end time then we'll try for 10 mins ( default timeout )
     if (timeout < 1) {
       timeout = 600;
     }
+    managedIndexSchema = (ManagedIndexSchema) req.getSchema();
   }
 
   /**
@@ -83,6 +87,10 @@ public class SchemaManager {
    * @return List of errors. If the List is empty then the operation was successful.
    */
   public List performOperations() throws Exception {
+    if (isClosed.isClosed()) {
+      return Collections.singletonList("Already Closed");
+    }
+
     List<CommandOperation> ops = req.getCommands(false);
     List errs = CommandOperation.captureErrors(ops);
     if (!errs.isEmpty()) return errs;
@@ -97,14 +105,21 @@ public class SchemaManager {
 
   private List doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    SolrCore core = req.getCore();
+    final SolrCore reqCore = req.getCore();
+    SolrCore core = reqCore;
     String errorMsg = "Unable to persist managed schema. ";
     List errors = Collections.emptyList();
     int latestVersion = -1;
+    boolean hasTimedOut = false;
+    ReentrantLock lock = managedIndexSchema.getSchemaUpdateLock();
+    lock.lock();
+    try {
 
-    synchronized (req.getSchema().getSchemaUpdateLock()) {
-      while (!timeOut.hasTimedOut()) {
-        managedIndexSchema = getFreshManagedSchema(req.getCore());
+      while (!hasTimedOut) {
+        hasTimedOut = timeOut.hasTimedOut();
+        final boolean reqCoreClosing = reqCore.isClosing();
+        if (reqCoreClosing) break;
+        managedIndexSchema = getFreshManagedSchema(reqCore);
         for (CommandOperation op : operations) {
           OpType opType = OpType.get(op.name);
           if (opType != null) {
@@ -115,7 +130,7 @@ public class SchemaManager {
         }
         errors = CommandOperation.captureErrors(operations);
         if (!errors.isEmpty()) break;
-        SolrResourceLoader loader = req.getCore().getResourceLoader();
+        SolrResourceLoader loader = reqCore.getResourceLoader();
         if (loader instanceof ZkSolrResourceLoader) {
           ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
           StringWriter sw = new StringWriter();
@@ -127,10 +142,15 @@ public class SchemaManager {
           }
 
           try {
-            latestVersion = ZkController.persistConfigResourceToZooKeeper
-                (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
-                 sw.toString().getBytes(StandardCharsets.UTF_8), true);
-            req.getCore().getCoreContainer().reload(req.getCore().getName());
+            latestVersion = ZkController
+                .persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
+                    sw.toString().getBytes(StandardCharsets.UTF_8), true);
+            core.setLatestSchema(managedIndexSchema);
+            if (isClosed.isClosed()) {
+              return Collections.singletonList("Already Closed");
+            }
+
+            reqCore.getCoreContainer().reload(reqCore.getName());
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
             log.info("Schema was modified by another node. Retrying..");
@@ -138,23 +158,28 @@ public class SchemaManager {
         } else {
           try {
             //only for non cloud stuff
-            managedIndexSchema.persistManagedSchema(false);
-            core.setLatestSchema(managedIndexSchema);
-            core.getCoreContainer().reload(core.getName());
+            boolean success = managedIndexSchema.persistManagedSchema(false);
+            if (success) {
+              core.setLatestSchema(managedIndexSchema);
+              core.getCoreContainer().reload(core.getName());
+            }
           } catch (SolrException e) {
-            log.warn(errorMsg);
+            log.warn(errorMsg, e);
             errors = singletonList(errorMsg + e.getMessage());
           }
           break;
         }
       }
+    } finally {
+      if (lock.isHeldByCurrentThread()) lock.unlock();
     }
-    if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
+
+    if (reqCore.getResourceLoader() instanceof ZkSolrResourceLoader) {
       // Don't block further schema updates while waiting for a pending update to propagate to other replicas.
       // This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
     }
-    if (errors.isEmpty() && timeOut.hasTimedOut()) {
+    if (errors.isEmpty() && hasTimedOut) {
       log.warn("{} Timed out", errorMsg);
       errors = singletonList(errorMsg + "Timed out.");
     }
@@ -170,8 +195,8 @@ public class SchemaManager {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Not enough time left to update replicas. However, the schema is updated already.");
       }
-      ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getCloudDescriptor().getCoreNodeName(),
-          latestVersion, core.getCoreContainer().getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS));
+      ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getName(),
+          latestVersion, core.getCoreContainer().getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS), isClosed);
     }
   }
 
@@ -187,6 +212,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -221,6 +247,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addCopyFields(src, dests, maxChars);
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -238,6 +265,7 @@ public class SchemaManager {
               = mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -250,11 +278,12 @@ public class SchemaManager {
         if (op.hasError())
           return false;
         try {
-          SchemaField field = mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
+          SchemaField field = mgr.managedIndexSchema. newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
           mgr.managedIndexSchema
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -273,6 +302,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -293,6 +323,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteCopyFields(singletonMap(source, dests));
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -311,6 +342,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFields(singleton(name));
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -329,6 +361,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -344,6 +377,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceFieldType(name, className, op.getDataMap());
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -364,6 +398,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceField(name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -384,6 +419,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceDynamicField(name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
+          log.warn("Error in command", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -406,7 +442,7 @@ public class SchemaManager {
   }
 
   public static String getErrorStr(Exception e) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(256);
     Throwable cause = e;
     for (int i = 0 ; i < 5 ; i++) {
       sb.append(cause.getMessage()).append("\n");
@@ -423,11 +459,11 @@ public class SchemaManager {
     String name = core.getLatestSchema().getResourceName();
     if (resourceLoader instanceof ZkSolrResourceLoader) {
       final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)resourceLoader;
-      SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+      SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
       try {
-        if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + name, true)) {
+        if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + name)) {
           String backupName = name + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
-          if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
+          if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName)) {
             log.warn("Unable to retrieve fresh managed schema, neither {} nor {} exist.", name, backupName);
             // use current schema
             return (ManagedIndexSchema) core.getLatestSchema();
@@ -444,8 +480,11 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,
-            core.getLatestSchema().getSchemaUpdateLock());
+        ManagedIndexSchemaFactory sf = managedIndexSchema.getManagedIndexSchemaFactory();
+        ManagedIndexSchema schema = new ManagedIndexSchema(sf, core.getCoreDescriptor().getCollectionName(), core.getSolrConfig(), name, new InputSource(in),
+            true, name, version, sf.getSchemaUpdateLock());
+        schema.inform();
+        return schema;
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }

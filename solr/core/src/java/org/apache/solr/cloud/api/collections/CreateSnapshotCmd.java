@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -66,7 +67,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
 
@@ -96,19 +97,20 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() != State.ACTIVE) {
           if (log.isInfoEnabled()) {
-            log.info("Replica {} is not active. Hence not sending the createsnapshot request", replica.getCoreName());
+            log.info("Replica {} is not active. Hence not sending the createsnapshot request", replica.getName());
           }
           continue; // Since replica is not active - no point sending a request.
         }
 
-        String coreName = replica.getStr(CORE_NAME_PROP);
+        // Replica name IS the core name in this fork; CORE_NAME_PROP is always null.
+        String coreName = replica.getName();
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATESNAPSHOT.toString());
@@ -142,7 +144,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
         // to have latest state.
         String coreName = (String)resp.get(CoreAdminParams.CORE);
         Slice slice = shardByCoreName.remove(coreName);
-        boolean leader = (slice.getLeader() != null && slice.getLeader().getCoreName().equals(coreName));
+        boolean leader = (slice.getLeader(ocmh.zkStateReader.getLiveNodes()) != null && slice.getLeader(ocmh.zkStateReader.getLiveNodes()).getName().equals(coreName));
         resp.add(SolrSnapshotManager.SHARD_ID, slice.getName());
         resp.add(SolrSnapshotManager.LEADER, leader);
 
@@ -198,5 +200,10 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to create snapshot on shards " + failedShards);
     }
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 }

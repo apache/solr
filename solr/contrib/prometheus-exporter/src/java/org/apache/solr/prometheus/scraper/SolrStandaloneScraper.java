@@ -22,11 +22,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.IOUtils;
@@ -36,9 +36,9 @@ import org.apache.solr.prometheus.exporter.MetricsQuery;
 
 public class SolrStandaloneScraper extends SolrScraper {
 
-  private final HttpSolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
-  public SolrStandaloneScraper(HttpSolrClient solrClient, Executor executor) {
+  public SolrStandaloneScraper(Http2SolrClient solrClient, ExecutorService executor) {
     super(executor);
     this.solrClient = solrClient;
   }

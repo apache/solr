@@ -17,23 +17,24 @@
 package org.apache.solr.packagemanager;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
@@ -41,7 +42,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
 import org.apache.solr.filestore.DistribPackageStore;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
@@ -109,7 +109,7 @@ public class PackageUtils {
   /**
    * Download JSON from the url and deserialize into klass.
    */
-  public static <T> T getJson(HttpClient client, String url, Class<T> klass) {
+  public static <T> T getJson(Http2SolrClient client, String url, Class<T> klass) {
     try {
       return getMapper().readValue(getJsonStringFromUrl(client, url), klass);
     } catch (IOException e) {
@@ -139,15 +139,14 @@ public class PackageUtils {
   /**
    * Returns JSON string from a given URL
    */
-  public static String getJsonStringFromUrl(HttpClient client, String url) {
+  public static String getJsonStringFromUrl(Http2SolrClient client, String url) {
     try {
-      HttpResponse resp = client.execute(new HttpGet(url));
-      if (resp.getStatusLine().getStatusCode() != 200) {
-        throw new SolrException(ErrorCode.NOT_FOUND,
-            "Error (code="+resp.getStatusLine().getStatusCode()+") fetching from URL: "+url);
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(url, client);
+      if (resp.status != 200) {
+        throw new SolrException(ErrorCode.NOT_FOUND, "Error (code=" + resp.status + ") fetching from URL: " + url);
       }
-      return IOUtils.toString(resp.getEntity().getContent(), "UTF-8");
-    } catch (UnsupportedOperationException | IOException e) {
+      return resp.asString;
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -162,9 +161,9 @@ public class PackageUtils {
   /**
    * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after fetching.
    */
-  public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
-    String manifestJson = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
-    String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
+  public static Manifest fetchManifest(Http2SolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
+    String manifestJson = PackageUtils.getJsonStringFromUrl(solrClient, solrBaseUrl + "/api/node/files" + manifestFilePath);
+    String calculatedSHA512 = PackageUtils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
     if (expectedSHA512.equals(calculatedSHA512) == false) {
       throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
           + "Expected: " + expectedSHA512 + ", calculated: " + calculatedSHA512 + ", manifest location: " + manifestFilePath);
@@ -181,15 +180,16 @@ public class PackageUtils {
 
     if (str == null) return null;
     if (defaults != null) {
-      for (String param: defaults.keySet()) {
-        str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+      for (Map.Entry<String,String> entry : defaults.entrySet()) {
+        String param = entry.getKey();
+        str = str.replaceAll("\\$\\{"+param+"}", overrides.containsKey(param)? overrides.get(param): entry.getValue());
       }
     }
-    for (String param: overrides.keySet()) {
-      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.get(param));
+    for (Map.Entry<String,String> entry : overrides.entrySet()) {
+      str = str.replaceAll("\\$\\{"+ entry.getKey() +"}", entry.getValue());
     }
-    for (String param: systemParams.keySet()) {
-      str = str.replaceAll("\\$\\{"+param+"\\}", systemParams.get(param));
+    for (Map.Entry<String,String> entry : systemParams.entrySet()) {
+      str = str.replaceAll("\\$\\{"+ entry.getKey() +"}", entry.getValue());
     }
     return str;
   }
@@ -233,7 +233,7 @@ public class PackageUtils {
     String RESET = "\u001B[0m";
 
     if (color != null) {
-      System.out.println(color + String.valueOf(message) + RESET);
+      System.out.println(color + message + RESET);
     } else {
       System.out.println(message);
     }
@@ -254,10 +254,24 @@ public class PackageUtils {
     return "/api/collections/" + collection + "/config/params";
   }
 
-  public static void uploadKey(byte bytes[], String path, Path home, HttpSolrClient client) throws IOException {
+  public static void uploadKey(byte bytes[], String path, Path home) throws IOException {
     ByteBuffer buf = ByteBuffer.wrap(bytes);
     PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(buf, null);
     DistribPackageStore._persistToFile(home, path, buf, ByteBuffer.wrap(Utils.toJSON(meta)));
+  }
+
+  public static String sha512Digest(ByteBuffer byteBuffer) {
+    MessageDigest digest;
+    try {
+      digest = MessageDigest.getInstance("SHA-512");
+    } catch (NoSuchAlgorithmException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+    digest.update(byteBuffer);
+    return String.format(
+        Locale.ROOT,
+        "%0128x",
+        new BigInteger(1, digest.digest()));
   }
 
 }

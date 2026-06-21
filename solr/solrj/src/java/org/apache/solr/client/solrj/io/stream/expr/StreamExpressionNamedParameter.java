@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.io.stream.expr;
 
 
+import java.util.Objects;
+
 /**
  * Provides a named parameter
  */
@@ -33,7 +35,7 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
   }
   public StreamExpressionNamedParameter(String name, StreamExpressionParameter parameter){
     this.name = name;
-    setParameter(parameter);
+    this.parameter = parameter;
   }
   
   public String getName(){
@@ -54,7 +56,7 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
     this.parameter = parameter;
   }
   public StreamExpressionNamedParameter withParameter(StreamExpressionParameter parameter){
-    setParameter(parameter);
+    this.parameter = parameter;
     return this;
   }
   public void setParameter(String parameter){
@@ -104,5 +106,10 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
     }
     
     return this.parameter.equals(check.parameter);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name);
   }
 }

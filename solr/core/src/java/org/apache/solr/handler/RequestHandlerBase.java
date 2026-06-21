@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
@@ -28,6 +29,8 @@ import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
@@ -37,6 +40,8 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.handler.admin.PrepRecoveryOp;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -44,6 +49,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +58,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport, Closeable {
 
   @SuppressWarnings({"rawtypes"})
   protected NamedList initArgs = null;
@@ -67,7 +73,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private Meter numClientErrors = new Meter();
   private Meter numTimeouts = new Meter();
   private Counter requests = new Counter();
-  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
+  private final Map<String, Counter> shardPurposes = new NonBlockingHashMap<>();
   private Timer requestTimes = new Timer();
   private Timer distribRequestTimes = new Timer();
   private Timer localRequestTimes = new Timer();
@@ -157,9 +163,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numClientErrors = solrMetricsContext.meter("clientErrors", getCategory().toString(), scope);
     numTimeouts = solrMetricsContext.meter("timeouts", getCategory().toString(), scope);
     requests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
-    MetricsMap metricsMap = new MetricsMap((detail, map) ->
-        shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
+    // MRM TODO:
+//    MetricsMap metricsMap = new MetricsMap((detail, map) ->
+//                shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
+    //solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
     requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
     distribRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "distrib");
     localRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "local");
@@ -171,7 +178,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   public static SolrParams getSolrParamsFromNamedList(@SuppressWarnings({"rawtypes"})NamedList args, String key) {
     Object o = args.get(key);
-    if (o != null && o instanceof NamedList) {
+    if (o instanceof NamedList) {
       return ((NamedList) o).toSolrParams();
     }
     return null;
@@ -186,91 +193,136 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    requests.inc();
-    // requests are distributed by default when ZK is in use, unless indicated otherwise
-    boolean distrib = req.getParams().getBool(CommonParams.DISTRIB,
-        req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
-    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-      shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
-      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
-      if (purpose != 0) {
-        String[] names = SolrPluginUtils.getRequestPurposeNames(purpose);
-        for (String n : names) {
-          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
-        }
-      }
+    if (req.getCore() != null) {
+      MDCLoggingContext.setCoreName(req.getCore().getName());
     }
-    Timer.Context timer = requestTimes.time();
-    @SuppressWarnings("resource")
-    Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
     try {
-      if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
-        req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
-      SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
-      req.getContext().remove(USEPARAM);
-      rsp.setHttpCaching(httpCaching);
-      handleRequestBody(req, rsp);
-      // count timeouts
-      @SuppressWarnings({"rawtypes"})
-      NamedList header = rsp.getResponseHeader();
-      if (header != null) {
-        if (Boolean.TRUE.equals(header.getBooleanArg(
-            SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          numTimeouts.mark();
-          rsp.setHttpCaching(false);
+      requests.inc();
+      // requests are distributed by default when ZK is in use, unless indicated otherwise
+      boolean distrib = req.getParams().getBool(CommonParams.DISTRIB, req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
+      if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+        // shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
+        int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
+        if (purpose != 0) {
+          String[] names = SolrPluginUtils.getRequestPurposeNames(purpose);
+          //        for (String n : names) {
+          //          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
+          //        }
         }
       }
-    } catch (Exception e) {
-      if (req.getCore() != null) {
-        boolean isTragic = req.getCore().getCoreContainer().checkTragicException(req.getCore());
-        if (isTragic) {
-          if (e instanceof SolrException) {
-            // Tragic exceptions should always throw a server error
-            assert ((SolrException) e).code() == 500;
-          } else {
-            // wrap it in a solr exception
-            e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+      Timer.Context timer = requestTimes.time();
+      @SuppressWarnings("resource")
+      Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
+      try {
+        String useParams = null;
+        if (pluginInfo != null ) useParams = pluginInfo.attributes.get(USEPARAM);
+        SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants, useParams);
+        rsp.setHttpCaching(httpCaching);
+
+        Runnable finish = () -> {
+          @SuppressWarnings({"rawtypes"}) NamedList header = rsp.getResponseHeader();
+          if (header != null) {
+            if (Boolean.TRUE.equals(header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+              numTimeouts.mark();
+              rsp.setHttpCaching(false);
+            }
+          }
+        };
+
+//        if (rsp.isAsync()) {
+//          rsp.onFinished(finish);
+//        }
+
+        handleRequestBody(req, rsp);
+        // count timeouts
+
+       // if (!rsp.isAsync()) {
+          finish.run();
+      //  }
+
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new AlreadyClosedException(e);
+      } catch (Exception e) {
+        if (!(e instanceof PrepRecoveryOp.NotValidLeader)) {
+          log.error("Exception handling request", e);
+        }
+        if (req.getCore() != null) {
+          boolean isTragic = req.getCore().getCoreContainer().checkTragicException(req.getCore());
+          if (isTragic) {
+            if (e instanceof SolrException) {
+              // Tragic exceptions should always throw a server error
+              //assert ((SolrException) e).code() == 500;
+            } else {
+              // wrap it in a solr exception
+              e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            }
           }
         }
-      }
-      boolean incrementErrors = true;
-      boolean isServerError = true;
-      if (e instanceof SolrException) {
-        SolrException se = (SolrException) e;
-        if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
-          incrementErrors = false;
-        } else if (se.code() >= 400 && se.code() < 500) {
-          isServerError = false;
-        }
-      } else {
-        if (e instanceof SyntaxError) {
-          isServerError = false;
-          e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
-      }
-
-      rsp.setException(e);
-
-      if (incrementErrors) {
-        SolrException.log(log, e);
-
-        numErrors.mark();
-        if (isServerError) {
-          numServerErrors.mark();
+        boolean incrementErrors = true;
+        boolean isServerError = true;
+        if (e instanceof SolrException) {
+          SolrException se = (SolrException) e;
+          if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
+            incrementErrors = false;
+          } else if (se.code() >= 400 && se.code() < 500) {
+            isServerError = false;
+          }
         } else {
-          numClientErrors.mark();
+          if (e instanceof SyntaxError) {
+            isServerError = false;
+            e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+          } else if (isTooComplexToDeterminize(e)) {
+            // A query whose automaton is too large to determinize is a client problem (too broad a
+            // query), not a server fault — report it as a 400 rather than a 500 (matches upstream Solr).
+            isServerError = false;
+            e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+          }
+        }
+
+        if (e instanceof PrepRecoveryOp.NotValidLeader) {
+          isServerError = false;
+          incrementErrors = false;
+        }
+
+        rsp.setException(e);
+
+        if (incrementErrors) {
+          SolrException.log(log, e);
+
+          numErrors.mark();
+          if (isServerError) {
+            numServerErrors.mark();
+          } else {
+            numClientErrors.mark();
+          }
+        }
+      } finally {
+        dTimer.stop();
+        long elapsed = timer.stop();
+        totalTime.inc(elapsed);
+        if (distrib) {
+          distribTotalTime.inc(elapsed);
+        } else {
+          localTotalTime.inc(elapsed);
         }
       }
     } finally {
-      dTimer.stop();
-      long elapsed = timer.stop();
-      totalTime.inc(elapsed);
-      if (distrib) {
-        distribTotalTime.inc(elapsed);
-      } else {
-        localTotalTime.inc(elapsed);
+      if (req.getCore() != null) {
+        MDCLoggingContext.clear();
       }
     }
+  }
+
+  /** True if the throwable, or anything in its cause chain, is a Lucene "too complex to determinize" error. */
+  private static boolean isTooComplexToDeterminize(Throwable t) {
+    for (Throwable c = t; c != null; c = c.getCause()) {
+      if (c instanceof org.apache.lucene.util.automaton.TooComplexToDeterminizeException) {
+        return true;
+      }
+      if (c == c.getCause()) break;
+    }
+    return false;
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -300,6 +352,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * This function is thread safe.
    */
   public static SolrRequestHandler getRequestHandler(String handlerName, PluginBag<SolrRequestHandler> reqHandlers) {
+    if (log.isDebugEnabled()) {
+      log.debug("get request handler {} from {}", handlerName, reqHandlers);
+    }
     if (handlerName == null) return null;
     SolrRequestHandler handler = reqHandlers.get(handlerName);
     int idx = 0;
@@ -332,6 +387,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public Collection<Api> getApis() {
     return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+  }
+
+
+  @Override
+  public void close() {
+
   }
 }
 

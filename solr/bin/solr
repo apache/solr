@@ -46,11 +46,11 @@
 # ensuring that no include files exist in the aforementioned search list.
 
 SOLR_SCRIPT="$0"
-verbose=false
+verbose=true
 THIS_OS=`uname -s`
 
 # What version of Java is required to run this version of Solr.
-JAVA_VER_REQ="8"
+JAVA_VER_REQ="11"
 
 stop_all=false
 
@@ -170,7 +170,8 @@ fi
 
 # Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
-SOLR_JETTY_CONFIG=()
+SOLR_JETTY_CONFIG=("--module=quickstart")
+SOLR_JETTY_CONFIG+=("--module=started")
 SOLR_SSL_OPTS=""
 
 if [ -n "$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH" ]; then
@@ -330,7 +331,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling, export"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -427,7 +428,7 @@ function print_usage() {
     echo ""
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
-    echo "  -z <zkHost>      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;" 
+    echo "  -z <zkHost>      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
     echo "                     otherwise, default is localhost:9983"
     echo ""
     echo "  -V               Enable more verbose output"
@@ -705,7 +706,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
+  SOLR_PROC=$(ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port)
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -823,8 +824,20 @@ function run_package() {
     fi
   fi
 
-  run_tool package -solrUrl "$runningSolrUrl" $@
+  run_tool package -solrUrl "$runningSolrUrl" "$@"
   #exit $?
+}
+
+function running()
+{
+  if [ -f "$1" ]
+  then
+    local PID=$(cat "$1" 2>/dev/null) || return 1
+    kill -0 "$PID" 2>/dev/null
+    return
+  fi
+  rm -f "$1"
+  return 1
 }
 
 # tries to gracefully stop Solr using the Jetty
@@ -838,50 +851,36 @@ function stop_solr() {
   STOP_KEY="$3"
   SOLR_PID="$4"
 
-  if [ "$SOLR_PID" != "" ]; then
-    echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
-      (loops=0
-      while true
-      do
-        CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
-        if [ "$CHECK_PID" != "" ]; then
-          slept=$((loops * 2))
-          if [ $slept -lt $SOLR_STOP_WAIT ]; then
-            sleep 2
-            loops=$[$loops+1]
-          else
-            exit # subshell!
-          fi
-        else
-          exit # subshell!
-        fi
-      done) &
-    spinner $!
-    rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
-  else
-    echo -e "No Solr nodes found to stop."
-    exit 0
-  fi
+  export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
-  CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
-  if [ "$CHECK_PID" != "" ]; then
-    if [ "$JSTACK" != "" ]; then
-      echo -e "Solr process $SOLR_PID is still running; jstacking it now."
-      $JSTACK $SOLR_PID
-    fi
-    echo -e "Solr process $SOLR_PID is still running; forcefully killing it now."
-    kill -9 $SOLR_PID
-    echo "Killed process $SOLR_PID"
-    rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
-    sleep 1
-  fi
+  echo -e "Sending stop command to Solr running on port $SOLR_PORT ...  $JAVA -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS org.apache.solr.servlet.StopJetty "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY""
+  "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY" org.apache.solr.servlet.StopJetty || true
 
-  CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
-  if [ "$CHECK_PID" != "" ]; then
-    echo "ERROR: Failed to kill previous Solr Java process $SOLR_PID ... script fails."
+  if [ ! -f "$JETTY_PID" ] ; then
+    echo "ERROR: no pid found at $SOLR_PID_DIR/$JETTY_PID"
     exit 1
   fi
+  PID=$(cat $JETTY_PID)
+
+  if [ -z "$PID" ] ; then
+    echo "ERROR: no pid id found in $PID"
+    exit 1
+  fi
+
+  TIMEOUT=30
+  while running $PID; do
+    if (( TIMEOUT-- <= 0 )); then
+       echo "Timed out waiting for Solr shutdown, killing ${PID}"
+       kill -KILL "$PID" 2>/dev/null
+    fi
+
+    sleep .3
+  done
+
+  rm -f "$JETTY_PID"
+  JETTY_STATE="${SOLR_PID_DIR}/jetty.state"
+  rm -f "${JETTY_STATE}"
+  echo OK
 } # end stop_solr
 
 if [ $# -eq 1 ]; then
@@ -925,7 +924,7 @@ fi
 
 # assert tool
 if [ "$SCRIPT_CMD" == "assert" ]; then
-  run_tool assert $*
+  run_tool assert "$*"
   exit $?
 fi
 
@@ -1139,7 +1138,8 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ -z "$CREATE_PORT" ]; then
-    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
+    running=$(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
+    for ID in $running
       do
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
@@ -1417,18 +1417,13 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 fi
 
 
-if [[ "$SCRIPT_CMD" == "autoscaling" ]]; then
-  run_tool autoscaling $@
-  exit $?
-fi
-
 if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export $@
+  run_tool export "$@"
   exit $?
 fi
 
 if [[ "$SCRIPT_CMD" == "package" ]]; then
-  run_package $@
+  run_package "$@"
   exit $?
 fi
 
@@ -1568,7 +1563,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         fi
       done
   fi
-  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
@@ -1767,6 +1762,10 @@ if [ $# -gt 0 ]; then
             stop_all=true
             shift
         ;;
+        -jfr)
+            JFR_ON=true
+            shift
+        ;;
         -force)
             FORCE=true
             PASS_TO_RUN_EXAMPLE+=" -force"
@@ -1833,8 +1832,7 @@ fi
 if [ "$SOLR_HOST" != "" ]; then
   SOLR_HOST_ARG=("-Dhost=$SOLR_HOST")
 elif [[ -z "$SOLR_JETTY_HOST" || "$SOLR_JETTY_HOST" == "127.0.0.1" ]]; then
-  # Jetty will only bind on localhost interface, so nodes must advertise themselves with localhost
-  SOLR_HOST_ARG=("-Dhost=localhost")
+  SOLR_HOST_ARG=("-Dhost=127.0.0.1")
 else
   SOLR_HOST_ARG=()
 fi
@@ -1920,10 +1918,10 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
     SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
   fi
 
-  if [ "$SOLR_PID" != "" ]; then
-    echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
-    exit 1
-  fi
+#  if [ "$SOLR_PID" != "" ]; then
+#    echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
+#    exit 1
+#  fi
 else
   # either stop or restart
   # see if Solr is already running
@@ -1972,6 +1970,10 @@ fi
 LOG4J_CONFIG=()
 if [ -n "$LOG4J_PROPS" ]; then
   LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
+  LOG4J_CONFIG+=('-Dlog4j2.is.webapp')
+  LOG4J_CONFIG+=('-Dlog4j2.garbagefreeThreadContextMap=true')
+  LOG4J_CONFIG+=('-Dlog4j2.enableDirectEncoders=true')
+  LOG4J_CONFIG+=('-Dlog4j2.enable.threadlocals=true')
 fi
 
 if [ "$SCRIPT_CMD" == "stop" ]; then
@@ -2010,10 +2012,10 @@ if [ -z ${GC_LOG_OPTS+x} ]; then
                  '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
                  '-XX:+PrintGCApplicationStoppedTime')
   else
-    GC_LOG_OPTS=('-Xlog:gc*')
+    GC_LOG_OPTS=('-Dno_gc_logging')
   fi
 else
-  GC_LOG_OPTS=($GC_LOG_OPTS)
+  GC_LOG_OPTS=("${GC_LOG_OPTS[@]}")
 fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
@@ -2136,6 +2138,30 @@ if [ -z "$SOLR_TIMEZONE" ]; then
   SOLR_TIMEZONE='UTC'
 fi
 
+if [ -n "$JFR_ON" ]; then
+  if [ -v ${JFR_DIR+x} ]; then
+    JFR_DIR="/tmp/jfr"
+    mkdir -p "$JFR_DIR"
+  fi
+  JFR_ON=("-XX:+FlightRecorder")
+  SOLR_OPTS+=($JFR_ON)
+  JFR_ON=("-XX:StartFlightRecording=filename=${JFR_DIR}/jfr_results-${SOLR_PORT}-$(date +%s).jfr,dumponexit=true,settings=profile,path-to-gc-roots=true")
+  SOLR_OPTS+=($JFR_ON)
+fi
+
+function mk_writable_dir() {
+  local DIRNAME="$1"
+  local DESCRIPTION="$2"
+  if ! mkdir -p "$DIRNAME" 2> /dev/null ; then
+    echo -e "\nERROR: $DESCRIPTION directory $DIRNAME could not be created. Exiting"
+    exit 1
+  fi
+  if [ ! -w "$DIRNAME" ]; then
+    echo -e "\nERROR: $DESCRIPTION directory $DIRNAME is not writable. Exiting"
+    exit 1
+  fi
+}
+
 # Launches Solr in foreground/background depending on parameters
 function start_solr() {
 
@@ -2153,9 +2179,11 @@ function start_solr() {
         '-XX:MaxGCPauseMillis=250' \
         '-XX:+UseLargePages' \
         '-XX:+AlwaysPreTouch' \
+        '-XX:+UseStringDeduplication' \
+        '-XX:MaxTenuringThreshold=16' \
         '-XX:+ExplicitGCInvokesConcurrent')
   else
-    GC_TUNE=($GC_TUNE)
+    GC_TUNE=${GC_TUNE[@]}
   fi
 
   if [ -n "$SOLR_WAIT_FOR_ZK" ]; then
@@ -2173,6 +2201,15 @@ function start_solr() {
   # If authentication system props are set, add them to SOLR_OPTS
   if [ -n "$AUTHC_OPTS" ]; then
     SOLR_OPTS+=($AUTHC_OPTS)
+  fi
+
+  # If a heap dump directory is specified, enable it in SOLR_OPTS
+  if [[ -z "$SOLR_HEAP_DUMP_DIR" ]] && [[ "$SOLR_HEAP_DUMP" == "true" ]]; then
+    SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
+  fi
+  if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
+    SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
+    SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
   fi
 
   if $verbose ; then
@@ -2216,34 +2253,44 @@ function start_solr() {
   fi
 
   # need to launch solr from the server dir
-  cd "$SOLR_SERVER_DIR"
+  cd "$SOLR_SERVER_DIR" || exit 1
 
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
     echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
     exit 1
   fi
 
-  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
-    "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
-    # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
-    # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
-    "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
+  LOG4J_CONFIG+=(${SOLR_LOG_LEVEL_OPT[@]})
+  LOG4J_CONFIG+=("-Dlog4j2.is.webapp=false")
+  LOG4J_CONFIG+=("-Dlog4j2.garbagefreeThreadContextMap=true")
+  LOG4J_CONFIG+=("-Dlog4j2.enableDirectEncoders=true")
+  LOG4J_CONFIG+=("-Dlog4j2.enable.threadlocals=true")
+  LOG4J_CONFIG+=("-Dlog4j2.disable.jmx=true")
+
+  SOLR_START_OPTS=(${JAVA_MEM_OPTS[@]} ${GC_TUNE[@]} ${GC_LOG_OPTS[@]} ${IP_ACL_OPTS[@]} ${REMOTE_JMX_OPTS[@]} ${CLOUD_MODE_OPTS[@]})
+  SOLR_START_OPTS+=(${SOLR_HOST_ARG[@]} ${LOG4J_CONFIG[@]} ${SECURITY_MANAGER_OPTS[@]} ${SOLR_ADMIN_UI})
+
+  SOLR_START_OPTS+=("-Dsolr.log.dir=${SOLR_LOGS_DIR}" "-Djetty.port=${SOLR_PORT}" "-DSTOP.PORT=${stop_port}" "-DSTOP.KEY=${STOP_KEY}")
+  SOLR_START_OPTS+=("-Duser.timezone=${SOLR_TIMEZONE}" "-Djetty.home=${SOLR_SERVER_DIR}" "-Dsolr.solr.home=${SOLR_HOME}" "-Dsolr.data.home=${SOLR_DATA_HOME}" "-Dsolr.install.dir=${SOLR_TIP}")
+  SOLR_START_OPTS+=("-Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault" "-Djava.net.preferIPv4Stack=true")
+  SOLR_START_OPTS+=("-XX:-UseBiasedLocking" "-Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog")
+  SOLR_START_OPTS+=("-Dsolr.default.confdir=${DEFAULT_CONFDIR}")
+
+
+  # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
+  # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
+  SOLR_START_OPTS+=("-XX:-OmitStackTraceInFastThrow")
+
+
+  # MRM TODO: this is hard to deref properly with arguments "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR"
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"
   fi
 
-  mkdir -p "$SOLR_LOGS_DIR" 2>/dev/null
-  if [ $? -ne 0 ]; then
-    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR could not be created. Exiting"
-    exit 1
-  fi
-  if [ ! -w "$SOLR_LOGS_DIR" ]; then
-    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR is not writable. Exiting"
-    exit 1
+  mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
+  if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
+    mk_writable_dir "$SOLR_HEAP_DUMP_DIR" "Heap Dump"
   fi
   case "$SOLR_LOGS_DIR" in
     contexts|etc|lib|modules|resources|scripts|solr|solr-webapp)
@@ -2252,55 +2299,43 @@ function start_solr() {
       ;;
   esac
 
-  if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
-  else
-    # run Solr in the background
-    nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
-	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-        -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
-	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
-
-    # check if /proc/sys/kernel/random/entropy_avail exists then check output of cat /proc/sys/kernel/random/entropy_avail to see if less than 300
-    if [[ -f /proc/sys/kernel/random/entropy_avail ]] && (( `cat /proc/sys/kernel/random/entropy_avail` < 300)); then
-	echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
-	echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
-	echo ""
-    fi
-    # no lsof on cygwin though
-    if lsof -v 2>&1 | grep -q revision; then
-      echo -n "Waiting up to $SOLR_STOP_WAIT seconds to see Solr running on port $SOLR_PORT"
-      # Launch in a subshell to show the spinner
-      (loops=0
-      while true
-      do
-        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
-        if [ -z "$running" ]; then
-	  slept=$((loops * 2))
-          if [ $slept -lt $SOLR_STOP_WAIT ]; then
-            sleep 2
-            loops=$[$loops+1]
-          else
-            echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_STOP_WAIT seconds!"
-            tail -30 "$SOLR_LOGS_DIR/solr.log"
-            exit # subshell!
-          fi
-        else
-          SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
-          echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
-          exit # subshell!
-        fi
-      done) &
-      spinner $!
-    else
-      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
-      sleep 10
-      SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
-      echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
-      return;
-    fi
+  # check if /proc/sys/kernel/random/entropy_avail exists then check output of cat /proc/sys/kernel/random/entropy_avail to see if less than 300
+  if [[ -f /proc/sys/kernel/random/entropy_avail ]] && (( `cat /proc/sys/kernel/random/entropy_avail` < 300)); then
+	  echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
+  	echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
+	  echo ""
   fi
+
+  SOLR_JETTY_ADDL_CONFIG+=(SOLR_JETTY_ADDL_CONFIG[@])
+  SOLR_START_OPTS+=(${SOLR_OPTS[@]})
+
+  # MRM TODO: enable
+  #SOLR_START_OPTS+=("-XX:OnOutOfMemoryError=${SOLR_TIP}/bin/oom_solr.sh ${SOLR_PORT} ${SOLR_LOGS_DIR}")
+
+  if [ "$run_in_foreground" == "true" ]; then
+    #set -x
+    SOLR_START_OPTS+=("-Djetty.state=${SOLR_PID_DIR}/jetty.state" "-DLOG4J_APPENDER=STDOUT")
+    exec "$JAVA" "${SOLR_START_OPTS[@]}" -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
+  else
+    # run Solr in the background MRM-TODO: Move relevant parts in from jetty.sh
+
+    SOLR_START_OPTS+=("-Djetty.state=${SOLR_PID_DIR}/jetty.state" "-DLOG4J_APPENDER=MainLogFile")
+
+    export JAVA=$JAVA
+    export JETTY_HOME="${SOLR_SERVER_DIR}"
+    export JETTY_PID="solr-$SOLR_PORT.pid"
+    export JETTY_RUN="${SOLR_SERVER_DIR}"
+    export JETTY_PID="${SOLR_PID_DIR}/solr-$SOLR_PORT.pid"
+    export JETTY_ARGS="${SOLR_JETTY_CONFIG[*]}"
+    export JAVA_OPTIONS="${SOLR_START_OPTS[*]}"
+    export JETTY_STATE="${SOLR_PID_DIR}/jetty.state"
+    bash "${SOLR_SERVER_DIR}"/../bin/jetty.sh -d start
+  fi
+
 }
+
+#find "$SOLR_SERVER_DIR/lib" -type f -exec cat {} > /dev/null \;
+#find "$SOLR_SERVER_DIR/lib/ext" -type f -exec cat {} > /dev/null \;
 
 start_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
 

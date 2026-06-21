@@ -19,6 +19,8 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.agrona.MutableDirectBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.noggit.CharArr;
 
 
@@ -71,6 +73,46 @@ public class ByteUtils {
     out.setEnd(out.getEnd() + n);
   }
 
+  public static int UTF8toUTF16(MutableDirectBuffer utf8, int offset, int len, char[] out, int out_offset) {
+    int out_start = out_offset;
+    final int limit = offset + len;
+    while (offset < limit) {
+      int b = utf8.getByte(offset++) &0xff;
+
+      if (b < 0xc0) {
+        assert b < 0x80;
+        out[out_offset++] = (char)b;
+      } else if (b < 0xe0) {
+        out[out_offset++] = (char)(((b&0x1f)<<6) + (utf8.getByte(offset++)&0x3f));
+      } else if (b < 0xf0) {
+        out[out_offset++] = (char)(((b&0xf)<<12) + ((utf8.getByte(offset)&0x3f)<<6) + (utf8.getByte(offset+1)&0x3f));
+        offset += 2;
+      } else {
+        assert b < 0xf8;
+        int ch = ((b&0x7)<<18) + ((utf8.getByte(offset)&0x3f)<<12) + ((utf8.getByte(offset+1)&0x3f)<<6) + (utf8.getByte(offset+2)&0x3f);
+        offset += 3;
+        if (ch < 0xffff) {
+          out[out_offset++] = (char)ch;
+        } else {
+          int chHalf = ch - 0x0010000;
+          out[out_offset++] = (char) ((chHalf >> 10) + 0xD800);
+          out[out_offset++] = (char) ((chHalf & 0x3FFL) + 0xDC00);
+        }
+      }
+    }
+
+    return out_offset - out_start;
+  }
+
+
+
+  public static void UTF8toUTF16(MutableDirectBuffer utf8, int offset, int len, CharArr out) {
+    // TODO: do in chunks if the input is large
+    out.reserve(len);
+    int n = UTF8toUTF16(utf8, offset, len, out.getArray(), out.getEnd());
+    out.setEnd(out.getEnd() + n);
+  }
+
   /** Convert UTF8 bytes into a String */
   public static String UTF8toUTF16(byte[] utf8, int offset, int len) {
     char[] out = new char[len];
@@ -89,7 +131,7 @@ public class ByteUtils {
 
     int upto = resultOffset;
     for(int i=offset;i<end;i++) {
-      final int code = (int) s.charAt(i);
+      final int code = s.charAt(i);
 
       if (code < 0x80)
         result[upto++] = (byte) code;
@@ -104,7 +146,7 @@ public class ByteUtils {
         // surrogate pair
         // confirm valid high surrogate
         if (code < 0xDC00 && (i < end-1)) {
-          int utf32 = (int) s.charAt(i+1);
+          int utf32 = s.charAt(i+1);
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
             utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
@@ -127,6 +169,49 @@ public class ByteUtils {
     return upto - resultOffset;
   }
 
+  public static int UTF16toUTF8(CharSequence s, int offset, int len, MutableDirectBuffer result, int resultOffset) {
+    final int end = offset + len;
+
+    int upto = resultOffset;
+    for(int i=offset;i<end;i++) {
+      final int code = s.charAt(i);
+
+      if (code < 0x80)
+        result.putByte(upto++, (byte) code);
+      else if (code < 0x800) {
+        result.putByte(upto++,  (byte) (0xC0 | (code >> 6)));
+        result.putByte(upto++, (byte)(0x80 | (code & 0x3F)));
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        result.putByte(upto++,  (byte)(0xE0 | (code >> 12)));
+        result.putByte(upto++,  (byte)(0x80 | ((code >> 6) & 0x3F)));
+        result.putByte(upto++,  (byte)(0x80 | (code & 0x3F)));
+      } else {
+        // surrogate pair
+        // confirm valid high surrogate
+        if (code < 0xDC00 && (i < end-1)) {
+          int utf32 = s.charAt(i+1);
+          // confirm valid low surrogate and write pair
+          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
+            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
+            i++;
+            result.putByte(upto++, (byte)(0xF0 | (utf32 >> 18)));
+            result.putByte(upto++, (byte)(0x80 | ((utf32 >> 12) & 0x3F)));
+            result.putByte(upto++, (byte)(0x80 | ((utf32 >> 6) & 0x3F)));
+            result.putByte(upto++, (byte)(0x80 | (utf32 & 0x3F)));
+            continue;
+          }
+        }
+        // replace unpaired surrogate or out-of-order low surrogate
+        // with substitution character
+        result.putByte(upto++,  (byte) 0xEF);
+        result.putByte(upto++, (byte) 0xBF);
+        result.putByte(upto++, (byte) 0xBD);
+      }
+    }
+
+    return upto - resultOffset;
+  }
+
   /** Writes UTF8 into the given OutputStream by first writing to the given scratch array
    * and then writing the contents of the scratch array to the OutputStream. The given scratch byte array
    * is used to buffer intermediate data before it is written to the output stream.
@@ -138,7 +223,7 @@ public class ByteUtils {
 
     int upto = 0, totalBytes = 0;
     for(int i=offset;i<end;i++) {
-      final int code = (int) s.charAt(i);
+      final int code = s.charAt(i);
 
       if (upto > scratch.length - 4)  {
         // a code point may take upto 4 bytes and we don't have enough space, so reset
@@ -161,7 +246,7 @@ public class ByteUtils {
         // surrogate pair
         // confirm valid high surrogate
         if (code < 0xDC00 && (i < end-1)) {
-          int utf32 = (int) s.charAt(i+1);
+          int utf32 = s.charAt(i+1);
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
             utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
@@ -187,6 +272,72 @@ public class ByteUtils {
     return totalBytes;
   }
 
+  public static int writeUTF16toUTF8(CharSequence s, int offset, int len, OutputStream fos, MutableDirectBuffer scratch) throws IOException {
+    final int end = offset + len;
+
+    int upto = 0, totalBytes = 0;
+    for(int i=offset;i<end;i++) {
+      final int code = s.charAt(i);
+
+      if (upto > scratch.byteBuffer().remaining() - 4)  {
+        // a code point may take upto 4 bytes and we don't have enough space, so reset
+        totalBytes += upto;
+        if(fos == null) throw new IOException("buffer over flow");
+     //   fos.write(scratch, 0, upto);
+  //      scratch.byteBuffer().limit(upto);
+        BufferUtil.writeTo(scratch.byteBuffer(), fos);
+        scratch.byteBuffer().limit(scratch.byteBuffer().capacity());
+        scratch.byteBuffer().position(0);
+        upto = 0;
+      }
+
+      if (code < 0x80)
+        scratch.putByte(upto++, (byte) code);
+      else if (code < 0x800) {
+        scratch.putByte(upto++, (byte) (0xC0 | (code >> 6)));
+        scratch.putByte(upto++, (byte)(0x80 | (code & 0x3F)));
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        scratch.putByte(upto++, (byte)(0xE0 | (code >> 12)));
+        scratch.putByte(upto++,(byte)(0x80 | ((code >> 6) & 0x3F)));
+        scratch.putByte(upto++, (byte)(0x80 | (code & 0x3F)));
+      } else {
+        // surrogate pair
+        // confirm valid high surrogate
+        if (code < 0xDC00 && (i < end-1)) {
+          int utf32 = s.charAt(i+1);
+          // confirm valid low surrogate and write pair
+          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
+            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
+            i++;
+            scratch.putByte(upto++,(byte)(0xF0 | (utf32 >> 18)));
+            scratch.putByte(upto++,(byte)(0x80 | ((utf32 >> 12) & 0x3F)));
+            scratch.putByte(upto++,(byte)(0x80 | ((utf32 >> 6) & 0x3F)));
+            scratch.putByte(upto++, (byte)(0x80 | (utf32 & 0x3F)));
+            continue;
+          }
+        }
+        // replace unpaired surrogate or out-of-order low surrogate
+        // with substitution character
+        scratch.putByte(upto++, (byte) 0xEF);
+        scratch.putByte(upto++, (byte) 0xBF);
+        scratch.putByte(upto++, (byte) 0xBD);
+      }
+    }
+
+    totalBytes += upto;
+    if(fos != null) {
+      scratch.byteBuffer().limit(scratch.byteBuffer().position());
+      scratch.byteBuffer().position(0);
+
+      BufferUtil.writeTo(scratch.byteBuffer(), fos);
+   //   fos.write(scratch, 0, upto);
+      scratch.byteBuffer().position(0);
+      scratch.byteBuffer().limit(scratch.byteBuffer().capacity());
+    }
+
+    return totalBytes;
+  }
+
   /**
    * Calculates the number of UTF8 bytes necessary to write a UTF16 string.
    *
@@ -197,7 +348,7 @@ public class ByteUtils {
 
     int res = 0;
     for (int i = offset; i < end; i++) {
-      final int code = (int) s.charAt(i);
+      final int code = s.charAt(i);
 
       if (code < 0x80)
         res++;
@@ -209,7 +360,7 @@ public class ByteUtils {
         // surrogate pair
         // confirm valid high surrogate
         if (code < 0xDC00 && (i < end - 1)) {
-          int utf32 = (int) s.charAt(i + 1);
+          int utf32 = s.charAt(i + 1);
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
             i++;

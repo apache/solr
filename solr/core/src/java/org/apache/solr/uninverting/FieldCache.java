@@ -398,8 +398,8 @@ public interface FieldCache {
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder(100);
-      b.append("segment='").append(getReaderKey().toString()).append("', ");
-      b.append("field='").append(getFieldName()).append("', ");
+      b.append("segment='").append(readerKey.toString()).append("', ");
+      b.append("field='").append(fieldName).append("', ");
       String s = getEstimatedSize();
       b.append("size =~ ").append(s);
 

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.SolrTestUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import java.util.Random;
@@ -23,16 +25,23 @@ import java.util.Random;
 public class TestReload extends TestRTGBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestReload() throws Exception {
     // useFactory(null);   // force FS directory
     initCore("solrconfig-tlog.xml","schema15.xml");
+  }
+
+  @AfterClass
+  public static void afterTestReload() throws Exception {
+    deleteCore();
   }
 
   @Test
   public void testGetRealtimeReload() throws Exception {
     clearIndex();
     assertU(commit());
-    long version = addAndGetVersion(sdoc("id","1") , null);
+    Long version = addAndGetVersion(sdoc("id","1") , null);
+
+    assertNotNull("did not find doc 1 returned in response", version);
 
     assertU(commit("softCommit","true"));   // should cause a RTG searcher to be opened
 
@@ -54,7 +63,7 @@ public class TestReload extends TestRTGBase {
 
 
     Random rand = random();
-    int iter = atLeast(20);
+    int iter = SolrTestUtil.atLeast(5);
 
     for (int i=0; i<iter; i++) {
       if (rand.nextBoolean()) {
@@ -68,7 +77,7 @@ public class TestReload extends TestRTGBase {
           assertU(commit("openSearcher","false"));   // should cause a RTG searcher to be opened as well
         } else {
           boolean softCommit = rand.nextBoolean();
-          System.out.println("!!! softCommit" + softCommit);
+          //System.out.println("!!! softCommit" + softCommit);
           // assertU(commit("softCommit", ""+softCommit));
         }
       }

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.facet;
 
+import org.agrona.collections.Object2ObjectHashMap;
+
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -44,7 +46,7 @@ public abstract class FacetMerger {
     // FacetComponentState state;  // todo: is this needed?
     final int numShards;
     private final BitSet sawShard = new BitSet(); // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0, bucket1_shard1, bucket1_shard2]
-    private Map<String,Integer> shardmap = new HashMap<>();
+    private Map<String,Integer> shardmap = new Object2ObjectHashMap<>();
 
     public Context(int numShards) {
       this.numShards = numShards;
@@ -56,8 +58,8 @@ public abstract class FacetMerger {
     boolean bucketWasMissing;
 
     public void newShard(String shard) {
-      Integer prev = shardmap.put(shard, ++shardNum);
-      assert prev == null;
+     shardmap.put(shard, ++shardNum);
+     // assert prev == null;
       this.bucketWasMissing = false;
     }
 

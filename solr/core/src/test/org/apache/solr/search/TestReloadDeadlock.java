@@ -104,7 +104,7 @@ public class TestReloadDeadlock extends TestRTGBase {
 
                   synchronized (TestReloadDeadlock.this) {
                     newCommittedModel = new HashMap<>(model);  // take a snapshot
-                    version = snapshotCount++;
+                    version = snapshotCount.incrementAndGet();
                   }
 
                   ifVerbose("hardCommit start");
@@ -113,10 +113,10 @@ public class TestReloadDeadlock extends TestRTGBase {
 
                   synchronized (TestReloadDeadlock.this) {
                     // install this model snapshot only if it's newer than the current one
-                    if (version >= committedModelClock) {
+                    if (version >= committedModelClock.get()) {
                       ifVerbose("installing new committedModel version=" + committedModelClock);
                       committedModel = newCommittedModel;
-                      committedModelClock = version;
+                      committedModelClock.set(version);
                     }
                   }
                   areCommitting.set(false);
@@ -146,9 +146,6 @@ public class TestReloadDeadlock extends TestRTGBase {
               long nextVal = Math.abs(val) + 1;
 
               long version = testVersion.incrementAndGet();
-
-              // yield after getting the next version to increase the odds of updates happening out of order
-              if (rand.nextBoolean()) Thread.yield();
 
               if (oper < commitPercent + deleteByQueryPercent) {
                 deleteByQuery(id, nextVal, version);

@@ -21,30 +21,33 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // Slow test, > 10 seconds
 public class PeerSyncWithLeaderTest extends PeerSyncTest {
 
   @Override
-  protected void testOverlap(Set<Integer> docsAdded, SolrClient client0, SolrClient client1, long v) throws IOException, SolrServerException {
+  protected void testOverlap(Set<Integer> docsAdded, Http2SolrClient client0, SolrClient client1, long v) throws IOException, SolrServerException {
     for (int i=0; i<numVersions; i++) {
       add(client0, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
       docsAdded.add(i+11);
     }
 
     // sync should fail since we are too far with the leader
-    assertSync(client1, numVersions, false, shardsArr[0]);
+    assertSync(client1, numVersions, false, shardsArr.get(0));
 
     // add a doc that was missing... just enough to give enough overlap
     add(client1, seenLeader, sdoc("id",Integer.toString(11),"_version_",v+1));
 
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     validateDocs(docsAdded, client0, client1);
   }
 

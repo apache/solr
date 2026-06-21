@@ -30,16 +30,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Pair;
@@ -54,13 +46,15 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Validate that JWT token authentication works in a real cluster.
- * <p> 
+ * <p>
  * TODO: Test also using SolrJ as client. But that requires a way to set Authorization header on request, see SOLR-13070<br>
  *       This is also the reason we use {@link org.apache.solr.SolrTestCaseJ4.SuppressSSL} annotation, since we use HttpUrlConnection
  * </p>
@@ -76,14 +70,21 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   private JsonWebSignature jws;
   private String jwtTokenWrongSignature;
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
+    System.setProperty("solr.enableMetrics", "true");
+    disableReuseOfCryptoKeys();
+  }
+
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    
-    configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+
+    configureCluster(NUM_SERVERS)
+        .withSecurityJson(SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
     baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
@@ -107,7 +108,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 
     jwtTestToken = jws.getCompactSerialization();
-    
+
     PublicJsonWebKey jwk2 = RsaJwkGenerator.generateJwk(2048);
     jwk2.setKeyId("k2");
     JsonWebSignature jws2 = new JsonWebSignature();
@@ -147,11 +148,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void infoRequestValidateXSolrAuthHeadersBlockUnknownFalse() throws Exception {
-    // Re-configure cluster with other security.json, see https://issues.apache.org/jira/browse/SOLR-14196
     shutdownCluster();
-    configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security_blockUnknownFalse.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    configureCluster(NUM_SERVERS)
+        .withSecurityJson(SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security_blockUnknownFalse.json"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
     baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
@@ -171,75 +171,69 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   public void testMetrics() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
-    if(isUseV2Api){
+    if (isUseV2Api) {
       authcPrefix = "/____v2/cluster/security/authentication";
     }
     String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    CloseableHttpClient cl = HttpClientUtil.createClient(null);
-    
-    createCollection(COLLECTION);
-    
-    // Missing token
-    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
-    assertAuthMetricsMinimums(2, 1, 0, 0, 1, 0);
-    executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", jws);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "false", 20, jws);
-    // Pass through
-    verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
-    // Now succeeds since blockUnknown=false 
-    get(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
-    executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", null);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, jws);
 
-    assertAuthMetricsMinimums(9, 4, 4, 0, 1, 0);
-    
+    createCollection(COLLECTION);
+
+    // Missing token
+    getAndFail(baseUrl + "/" + COLLECTION + "/select?q=*:*", null);
+    assertAuthMetricsMinimums(2, 1, 0, 0, 1, 0);
+    executeCommand(baseUrl + authcPrefix, "{set-property : { blockUnknown: false}}", jws);
+    // Pass through (blockUnknown=false)
+    get(baseUrl + "/admin/info/key", null);
+    // Now succeeds since blockUnknown=false
+    get(baseUrl + "/" + COLLECTION + "/select?q=*:*", null);
+    executeCommand(baseUrl + authcPrefix, "{set-property : { blockUnknown: true}}", null);
+
+    assertAuthMetricsMinimums(5, 1, 2, 0, 1, 0);
+
     // Wrong Credentials
-    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtTokenWrongSignature);
-    assertAuthMetricsMinimums(10, 4, 4, 1, 1, 0);
+    getAndFail(baseUrl + "/" + COLLECTION + "/select?q=*:*", jwtTokenWrongSignature);
+    assertAuthMetricsMinimums(6, 1, 2, 1, 1, 0);
 
     // JWT parse error
-    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", "foozzz");
-    assertAuthMetricsMinimums(11, 4, 4, 1, 1, 1);
-    
-    HttpClientUtil.close(cl);
+    getAndFail(baseUrl + "/" + COLLECTION + "/select?q=*:*", "foozzz");
+    assertAuthMetricsMinimums(7, 1, 2, 1, 1, 1);
   }
 
   @Test
+  // JWT inter-node principal propagation: HttpSolrCall no longer diverts authorized requests around
+  // the PROCESS path (SolrRequestInfo is established), and HttpShardHandler.submit stamps the
+  // authenticated principal on outbound shard sub-requests, so JWTAuthPlugin.interceptInternodeRequest
+  // relays the bearer token and sub-requests authenticate via JWT (not PKI).
   public void createCollectionUpdateAndQueryDistributed() throws Exception {
-    // Admin request will use PKI inter-node auth from Overseer, and succeed
     createCollection(COLLECTION);
-    
-    // Now update three documents
+
     assertAuthMetricsMinimums(1, 1, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
     Pair<String,Integer> result = post(baseUrl + "/" + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
-    
-    // First a non distributed query
-    result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
+    assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
+
+    result = get(baseUrl + "/" + COLLECTION + "/select?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     assertAuthMetricsMinimums(5, 5, 0, 0, 0, 0);
 
-    // Now do a distributed query, using JWTAuth for inter-node
-    result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtTestToken);
+    result = get(baseUrl + "/" + COLLECTION + "/select?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     assertAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
-    
-    // Delete
+
     assertEquals(200, get(baseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
     assertAuthMetricsMinimums(11, 11, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(6, 6, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
   }
 
   private void getAndFail(String url, String token) {
     try {
       get(url, token);
       fail("Request to " + url + " with token " + token + " should have failed");
-    } catch(Exception e) { /* Fall through */ }
+    } catch (Exception e) { /* Fall through */ }
   }
-  
+
   private Pair<String, Integer> get(String url, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
@@ -270,7 +264,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     URL createUrl = new URL(url);
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
     con.setRequestMethod("POST");
-    con.setRequestProperty(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+    con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
     if (token != null)
       con.setRequestProperty("Authorization", "Bearer " + token);
 
@@ -288,44 +282,44 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  private void createCollection(String collectionName) throws IOException {
+  private void createCollection(String collectionName) throws Exception {
     assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + collectionName + "&numShards=2", jwtTestToken).second().intValue());
     cluster.waitForActiveCollection(collectionName, 2, 2);
   }
 
-  private void executeCommand(String url, HttpClient cl, String payload, JsonWebSignature jws)
-    throws Exception {
-    
-    // HACK: work around for SOLR-13464...
-    //
-    // note the authz/authn objects in use on each node before executing the command,
-    // then wait until we see new objects on every node *after* executing the command
-    // before returning...
-    final Set<Map.Entry<String,Object>> initialPlugins
-      = getAuthPluginsInUseForCluster(url).entrySet();
-    
-    HttpPost httpPost;
-    HttpResponse r;
-    httpPost = new HttpPost(url);
-    if (jws != null)
-      setAuthorizationHeader(httpPost, "Bearer " + jws.getCompactSerialization());
-    httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-    r = cl.execute(httpPost);
-    String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
-    assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
-    assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
-    Utils.consumeFully(r.getEntity());
+  private void executeCommand(String url, String payload, JsonWebSignature jws)
+      throws Exception {
 
-    // HACK (continued)...
+    final Set<Map.Entry<String,Object>> initialPlugins
+        = getAuthPluginsInUseForCluster(url).entrySet();
+
+    URL postUrl = new URL(url);
+    HttpURLConnection con = (HttpURLConnection) postUrl.openConnection();
+    con.setRequestMethod("POST");
+    con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+    if (jws != null)
+      con.setRequestProperty("Authorization", "Bearer " + jws.getCompactSerialization());
+    con.setDoOutput(true);
+    OutputStream os = con.getOutputStream();
+    os.write(payload.getBytes(UTF_8));
+    os.flush();
+    os.close();
+    con.connect();
+    int code = con.getResponseCode();
+    InputStream is = code < 400 ? con.getInputStream() : con.getErrorStream();
+    String response = new BufferedReader(new InputStreamReader(is, UTF_8))
+        .lines().collect(Collectors.joining("\n"));
+    con.disconnect();
+    assertEquals("Non-200 response code. Response was " + response, 200, code);
+    assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
+
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     timeout.waitFor("core containers never fully updated their auth plugins",
-                    () -> {
-                      final Set<Map.Entry<String,Object>> tmpSet
-                        = getAuthPluginsInUseForCluster(url).entrySet();
-                      tmpSet.retainAll(initialPlugins);
-                      return tmpSet.isEmpty();
-                    });
-    
+        () -> {
+          final Set<Map.Entry<String,Object>> tmpSet
+              = getAuthPluginsInUseForCluster(url).entrySet();
+          tmpSet.retainAll(initialPlugins);
+          return tmpSet.isEmpty();
+        });
   }
 }

@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * 
@@ -33,6 +34,7 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class LukeRequest extends SolrRequest<LukeResponse> {
 
+  public static final String[] STRINGS = new String[0];
   private List<String> fields;
   private int numTerms = -1;
   private boolean showSchema = false;
@@ -106,15 +108,15 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
   //---------------------------------------------------------------------------------
 
   @Override
-  protected LukeResponse createResponse(SolrClient client) {
-    return new LukeResponse();
+  protected LukeResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new LukeResponse(nl);
   }
 
   @Override
   public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if( fields != null && fields.size() > 0 ) {
-      params.add( CommonParams.FL, fields.toArray( new String[fields.size()] ) );
+      params.add( CommonParams.FL, fields.toArray(STRINGS) );
     }
     if( numTerms >= 0 ) {
       params.add( "numTerms", numTerms+"" );

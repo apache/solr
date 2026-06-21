@@ -44,7 +44,10 @@ import org.apache.http.annotation.ThreadingBehavior;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
@@ -54,13 +57,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin , SpecProvider {
+public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin , SpecProvider, HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private AuthenticationProvider authenticationProvider;
+  private volatile AuthenticationProvider authenticationProvider;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
   private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
   private boolean blockUnknown = true;
-  private boolean forwardCredentials = false;
+  private volatile boolean forwardCredentials = false;
 
   public boolean authenticate(String username, String pwd) {
     return authenticationProvider.authenticate(username, pwd);
@@ -109,7 +112,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     throw new SolrException(ErrorCode.BAD_REQUEST, "This cannot be edited");
   }
 
-  protected AuthenticationProvider getAuthenticationProvider(Map<String, Object> pluginConfig) {
+  protected static AuthenticationProvider getAuthenticationProvider(Map<String,Object> pluginConfig) {
     Sha256AuthenticationProvider provider = new Sha256AuthenticationProvider();
     provider.init(pluginConfig);
     return provider;
@@ -117,7 +120,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   private void authenticationFailure(HttpServletResponse response, boolean isAjaxRequest, String message) throws IOException {
     getPromptHeaders(isAjaxRequest).forEach(response::setHeader);
-    response.sendError(401, message);
+    response.setStatus(401);
+    response.getWriter().write(message);
   }
 
   @Override
@@ -134,7 +138,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
           if (st.hasMoreTokens()) {
             try {
               String credentials = new String(Base64.decodeBase64(st.nextToken()), StandardCharsets.UTF_8);
-              int p = credentials.indexOf(":");
+              int p = credentials.indexOf(':');
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
                 String pwd = credentials.substring(p + 1).trim();
@@ -194,6 +198,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       log.debug("Prefixing {} header for Basic Auth with 'x' to prevent browser basic auth popup",
           HttpHeaders.WWW_AUTHENTICATE);
     }
+    log.info("set prompts headers for basic auth:  {}", headers);
     return headers;
   }
 
@@ -205,6 +210,20 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   @Override
   public void closeRequest() {
     authHeader.remove();
+  }
+
+  @Override public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
+    return null;
+  }
+
+  public void setup(Http2SolrClient client) {
+    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
+      @Override
+      public void onQueued(Request request, SolrRequest solrRequest) {
+        interceptInternodeRequest(request);
+      }
+    };
+    client.addListenerFactory(() -> listener);
   }
 
   public interface AuthenticationProvider extends SpecProvider {
@@ -263,12 +282,12 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
    * @param request the servlet request
    * @return true if the request is AJAX request
    */
-  private boolean isAjaxRequest(HttpServletRequest request) {
+  private static boolean isAjaxRequest(HttpServletRequest request) {
     return "XMLHttpRequest".equalsIgnoreCase(request.getHeader(X_REQUESTED_WITH_HEADER));
   }
   
   @Contract(threading = ThreadingBehavior.IMMUTABLE)
-  private class BasicAuthUserPrincipal implements Principal, Serializable {
+  private static class BasicAuthUserPrincipal implements Principal, Serializable {
     private String username;
     private final String password;
 

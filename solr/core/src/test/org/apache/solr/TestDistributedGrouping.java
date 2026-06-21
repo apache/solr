@@ -19,10 +19,12 @@ package org.apache.solr;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -43,11 +45,15 @@ import static org.hamcrest.CoreMatchers.containsString;
  */
 @Slow
 @SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10844")
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   public TestDistributedGrouping() {
     // SOLR-10844: Even with points suppressed, this test breaks if we (randomize) docvalues="true" on trie fields?!?!?!!?
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"false");
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
   }
   
   String t1="a_t";
@@ -63,8 +69,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   @Test
   public void test() throws Exception {
-    del("*:*");
-    commit();
 
     handle.clear();
     handle.put("timestamp", SKIPVAL);
@@ -111,7 +115,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     String[] vals = new String[100];
-    for (int i=0; i<100; i++) {
+    for (int i=0; i<(TEST_NIGHTLY ? 100 : 10); i++) {
       vals[i] = "test " + i;
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
@@ -147,14 +151,14 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         oddField, "odd eggs"
     );
 
-    for (int i = 100; i < 150; i++) {
+    for (int i = 100; i < (TEST_NIGHTLY ? 150 : 5); i++) {
       indexr(id, i);
     }
 
     int[] values = new int[]{9999, 99999, 999999, 9999999};
     for (int shard = 0; shard < clients.size(); shard++) {
       int groupValue = values[shard];
-      for (int i = 500; i < 600; i++) {
+      for (int i = 500; i <  (TEST_NIGHTLY ? 600 : 510); i++) {
         index_specific(shard, 
                        i1, groupValue, 
                        s1, "a", 
@@ -168,15 +172,67 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // test grouping
     // The second sort = id asc . The sorting behaviour is different in dist mode. See TopDocs#merge
     // The shard the result came from matters in the order if both document sortvalues are equal
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0, "sort", i1 + " asc, id asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "id asc, _docid_ asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "{!func}add(" + i1 + ",5) asc, id asc");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", tlong);
-    query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH", "df", "subject");
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "hl","true","hl.fl",t1);
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.sort", "id desc");
+
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect("", () -> {
+        try {
+          query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        worker.collect("", () -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "id asc, _docid_ asc");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect("", () -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "{!func}add(" + i1 + ",5) asc, id asc");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect("", () -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+
+        worker.collect("", () -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", tlong);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect("", () -> {
+          try {
+            query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH", "df", "subject");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect("", () -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "hl","true","hl.fl",t1);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+        worker.collect("", () -> {
+          try {
+            query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.sort", "id desc");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+      });
+    }
+
 
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.offset", 5, "group.limit", -1, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "offset", 5, "rows", 5, "group.offset", 5, "group.limit", -1, "sort", i1 + " asc, id asc");
@@ -190,8 +246,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     query("q", "*:*", "fl", "id," + i1dv, "group", "true", "group.field", i1dv, "group.limit", 10, "sort", i1 + " asc, id asc");
 
-    
-    // SOLR-4150: what if group.query has no matches, 
+
+    // SOLR-4150: what if group.query has no matches,
     // or only matches on one shard
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true",
           "group.query", t1 + ":kings OR " + t1 + ":eggs",
@@ -204,13 +260,13 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     // SOLR-4164: main query matches nothing, or only matches on one shard
     query("q", "bogus_s:nothing", // no docs match
-          "group", "true", 
+          "group", "true",
           "group.query", t1 + ":this_will_never_match",
-          "group.field", i1, 
+          "group.field", i1,
           "fl", "id", "group.limit", "2", "group.format", "simple");
     query("q", "id:5", // one doc matches, so only one shard
-          "rows", 100, "fl", "id," + i1, "group", "true", 
-          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+          "rows", 100, "fl", "id," + i1, "group", "true",
+          "group.query", t1 + ":kings OR " + t1 + ":eggs",
           "group.field", i1,
           "group.limit", 10, "sort", i1 + " asc, id asc");
 
@@ -227,10 +283,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "sort", i1 + " asc, id asc");
 
     ignoreException("'group.offset' parameter cannot be negative");
-    SolrException exception = expectThrows(SolrException.class, () -> query("q", "*:*",
-        "group", "true",
-        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.offset", "-1")
-    );
+    SolrException exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> query("q", "*:*", "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.offset", "-1"));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
     assertThat(exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
     resetExceptionIgnores();
@@ -287,9 +340,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // SOLR-3960 - include a postfilter
     for (String facet : new String[] { "false", "true"}) {
       for (String fcache : new String[] { "", " cache=false cost=200"}) {
-      query("q", "*:*", "rows", 100, "fl", "id," + i1, 
+      query("q", "*:*", "rows", 100, "fl", "id," + i1,
             "group.limit", 10, "sort", i1 + " asc, id asc",
-            "group", "true", "group.field", i1, 
+            "group", "true", "group.field", i1,
             "fq", "{!frange l=50 "+fcache+"}"+tlong,
             "facet.field", t1,
             "facet", facet
@@ -313,63 +366,125 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);
     int groupCount = (Integer) nl.get("ngroups");
-    assertEquals(100 * shardsArr.length, matches);
-    assertEquals(shardsArr.length, groupCount);
+    assertEquals((TEST_NIGHTLY ? 100 : 10) * shardsArr.length(), matches);
+    assertEquals(shardsArr.length(), groupCount);
 
 
     // We validate distributed grouping with scoring as first sort.
     // note: this 'q' matches all docs and returns the 'id' as the score, which is unique and so our results should be deterministic.
     handle.put("maxScore", SKIP);// TODO see SOLR-6612
-    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
-    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
-    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
 
-    query("q", "*:*",
-        "group", "true",
-        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
-        "fl", "id,score", "sort", i1 + " asc, id asc");
-    query("q", "*:*",
-        "group", "true",
-        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
-        "fl", "id,score", "group.format", "simple", "sort", i1 + " asc, id asc");
-    query("q", "*:*",
-        "group", "true",
-        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
-        "fl", "id,score", "group.main", "true", "sort", i1 + " asc, id asc");
+    try (ParWork worker = new ParWork(this)) {
+      worker.collect("", ()->{
+        try {
+          query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          query("q", "*:*",
+                  "group", "true",
+                  "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+                  "fl", "id,score", "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          query("q", "*:*",
+                  "group", "true",
+                  "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+                  "fl", "id,score", "group.format", "simple", "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          query("q", "*:*",
+                  "group", "true",
+                  "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+                  "fl", "id,score", "group.main", "true", "sort", i1 + " asc, id asc");
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
 
-    // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
-    variantQuery(params("q", "*:*",
-                        "group", "true", "group.field", i1dv, "group.limit", "10",
-                        "sort", i1 + " asc, id asc")
-                 , params("fl", "id," + i1dv)
-                 , params("fl", i1dv + ",id")
-                 , params("fl", "id", "fl", i1dv)
-                 , params("fl", i1dv, "fl", "id")
-                 );
-    variantQuery(params("q", "*:*", "rows", "100",
-                        "group", "true", "group.field", s1dv, "group.limit", "-1", 
-                        "sort", b1dv + " asc, id asc",
-                        "group.sort", "id desc")
-                 , params("fl", "id," + s1dv + "," + tdate_a)
-                 , params("fl", "id", "fl", s1dv, "fl", tdate_a)
-                 , params("fl", tdate_a, "fl", s1dv, "fl", "id")
-                 );
-    variantQuery(params("q", "*:*", "rows", "100",
-                        "group", "true", "group.field", s1dv, "group.limit", "-1", 
-                        "sort", b1dv + " asc, id asc",
-                        "group.sort", "id desc")
-                 , params("fl", s1dv + "," + tdate_a)
-                 , params("fl", s1dv, "fl", tdate_a)
-                 , params("fl", tdate_a, "fl", s1dv)
-                 );
-    variantQuery(params("q", "{!func}id_i1", "rows", "100",
-                        "group", "true", "group.field", i1, "group.limit", "-1",
-                        "sort", tlong+" asc, id desc")
-                 , params("fl", t1 + ",score," + i1dv)
-                 , params("fl", t1, "fl", "score", "fl", i1dv)
-                 , params("fl", "score", "fl", t1, "fl", i1dv)
-                 );
-                             
+      worker.collect("", ()->{
+        try {
+          // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
+          variantQuery(params("q", "*:*",
+                  "group", "true", "group.field", i1dv, "group.limit", "10",
+                  "sort", i1 + " asc, id asc")
+                  , params("fl", "id," + i1dv)
+                  , params("fl", i1dv + ",id")
+                  , params("fl", "id", "fl", i1dv)
+                  , params("fl", i1dv, "fl", "id")
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          variantQuery(params("q", "*:*", "rows", "100",
+                  "group", "true", "group.field", s1dv, "group.limit", "-1",
+                  "sort", b1dv + " asc, id asc",
+                  "group.sort", "id desc")
+                  , params("fl", "id," + s1dv + "," + tdate_a)
+                  , params("fl", "id", "fl", s1dv, "fl", tdate_a)
+                  , params("fl", tdate_a, "fl", s1dv, "fl", "id")
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          variantQuery(params("q", "*:*", "rows", "100",
+                  "group", "true", "group.field", s1dv, "group.limit", "-1",
+                  "sort", b1dv + " asc, id asc",
+                  "group.sort", "id desc")
+                  , params("fl", s1dv + "," + tdate_a)
+                  , params("fl", s1dv, "fl", tdate_a)
+                  , params("fl", tdate_a, "fl", s1dv)
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+      worker.collect("", ()->{
+        try {
+          variantQuery(params("q", "{!func}id_i1", "rows", "100",
+                  "group", "true", "group.field", i1, "group.limit", "-1",
+                  "sort", tlong+" asc, id desc")
+                  , params("fl", t1 + ",score," + i1dv)
+                  , params("fl", t1, "fl", "score", "fl", i1dv)
+                  , params("fl", "score", "fl", t1, "fl", i1dv)
+          );
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+    }
+
     // some explicit checks of non default sorting, and sort/group.sort with diff clauses
     query("q", "{!func}id_i1", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
           "group.field", i1, "group.limit", -1,
@@ -423,7 +538,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         assertTrue(docs.toString(), 8 <= docs.get(4).getFieldNames().size());
       }
     }
-    
+
     // grouping on boolean non-stored docValued enabled field
     rsp = query("q", b1dv + ":*", "fl", "id," + b1dv, "group", "true", "group.field",
         b1dv, "group.limit", 10, "sort", b1dv + " asc, id asc");
@@ -435,10 +550,10 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertEquals(rsp.toString(), false, nl.get("groupValue"));
     SolrDocumentList docs = (SolrDocumentList) nl.get("doclist");
     assertEquals(docs.toString(), 4, docs.getNumFound());
-    
+
     // Can't validate the response, but can check if no errors occur.
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc", CommonParams.TIME_ALLOWED, 1);
-    
+
     //Debug
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
   }

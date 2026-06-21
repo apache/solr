@@ -50,6 +50,9 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     //fixShardCount=true;
     //shardCount=2;
     //stress=0;
+    if (!TEST_NIGHTLY) {
+      fixShardCount(2);
+    }
   }
 
   @BeforeClass
@@ -88,7 +91,6 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 
   @Test
   public void test() throws Exception {
-    del("*:*");
     index(id, "1", "lowerfilt", "toyota");
     index(id, "2", "lowerfilt", "chevrolet");
     index(id, "3", "lowerfilt", "suzuki");
@@ -122,7 +124,10 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     // we care only about the spellcheck results
     handle.put("response", SKIP);
     handle.put("grouped", SKIP);
-    
+
+    handle.put("freq", SKIP); // distrib spell check does not currently add up freqs
+    handle.put("origFreq", SKIP); // distrib spell check does not currently add up freqs
+
     //Randomly select either IndexBasedSpellChecker or DirectSolrSpellChecker
     String requestHandlerName = "/spellCheckCompRH_Direct";
     String reqHandlerWithWordbreak = "/spellCheckWithWordbreak_Direct";
@@ -152,8 +157,11 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     
     //Test Collate functionality
     query(buildRequest("The quick reb fox jumped over the lazy brown dogs", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "4", collate, "true"));    
-    query(buildRequest("lowerfilt:(+quock +reb)", 
+        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "4", collate, "true"));
+
+    handle.put("hits", SKIP); // distrib spell check does not merge up 100% like single node
+
+    query(buildRequest("lowerfilt:(+quock +reb)",
         false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
         collate, "true", maxCollationTries, "10", maxCollations, "10", collateExtended, "true"));
     query(buildRequest("lowerfilt:(+quock +reb)", 

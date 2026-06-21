@@ -57,7 +57,7 @@ public class ClusteringResponse {
             break;
 
           case CLUSTERS_NODE:
-            subclusters = new ClusteringResponse((List<NamedList<Object>>) e.getValue()).getClusters();
+            subclusters = new ClusteringResponse((List<NamedList<Object>>) e.getValue()).clusters;
             break;
             
           case IS_OTHER_TOPICS:

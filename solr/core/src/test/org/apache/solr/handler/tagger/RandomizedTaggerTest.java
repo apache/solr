@@ -29,17 +29,16 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * Randomly generate taggable text and verify via simple tag algorithm.
  */
-@Repeat(iterations = 10)
 public class RandomizedTaggerTest extends TaggerTestCase {
 
   @BeforeClass
@@ -75,6 +74,15 @@ public class RandomizedTaggerTest extends TaggerTestCase {
           buf.append(RandomPicks.randomFrom(R, names));
         }
       }
+      // try to avoid:
+      // 'Exception writing document id 6 to the index; possible analysis error: input automaton is too large: 1001'
+      String name;
+      if (buf.length() > 150) {
+        name = buf.substring(0, 150);
+      } else {
+        name = buf.toString();
+      }
+
       names.add(buf.toString());
     }
 
@@ -82,7 +90,7 @@ public class RandomizedTaggerTest extends TaggerTestCase {
     buildNames(names.toArray(new String[names.size()]));
 
     // QUERY LOOP
-    for (int tTries = 0; tTries < 10 * RANDOM_MULTIPLIER; tTries++) {
+    for (int tTries = 0; tTries < 10 * LuceneTestCase.RANDOM_MULTIPLIER; tTries++) {
       // Build up random input, similar to multi-word random names above
       StringBuilder input = new StringBuilder();
       final int INPUT_WORD_LEN = 20;
@@ -102,17 +110,15 @@ public class RandomizedTaggerTest extends TaggerTestCase {
         madeIt = true;
       } finally {
         if (!madeIt) {
-          System.out.println("Reproduce with:");
-          System.out.print(" buildNames(");
           for (int i = 0; i < NAMES.size(); i++) {
             if (i != 0)
               System.out.print(',');
-            System.out.print('"');
-            System.out.print(NAMES.get(i));
-            System.out.print('"');
+            //System.out.print('"');
+            //System.out.print(NAMES.get(i));
+           // System.out.print('"');
           }
-          System.out.println(");");
-          System.out.println(" assertBruteForce(\"" + input+"\");");
+          //System.out.println(");");
+          //System.out.println(" assertBruteForce(\"" + input+"\");");
         }
       }
     }

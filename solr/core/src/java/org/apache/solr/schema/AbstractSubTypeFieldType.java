@@ -34,15 +34,15 @@ import java.util.Map;
  *
  **/
 public abstract class AbstractSubTypeFieldType extends FieldType implements SchemaAware {
-  protected FieldType subType;
+  protected volatile FieldType subType;
   public static final String SUB_FIELD_SUFFIX = "subFieldSuffix";
   public static final String SUB_FIELD_TYPE = "subFieldType";
-  protected String suffix;
-  protected int dynFieldProps;
-  protected String[] suffixes;
-  protected String subFieldType = null;
-  protected String subSuffix = null;
-  protected IndexSchema schema;   // needed for retrieving SchemaFields
+  protected volatile String suffix;
+  protected volatile int dynFieldProps;
+  protected volatile String[] suffixes;
+  protected volatile String subFieldType = null;
+  protected volatile String subSuffix = null;
+  protected volatile IndexSchema schema;   // needed for retrieving SchemaFields
 
   public FieldType getSubType() {
     return subType;
@@ -59,6 +59,9 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     if (subFieldType != null) {
       args.remove(SUB_FIELD_TYPE);
       subType = schema.getFieldTypeByName(subFieldType.trim());
+      if (subType == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "subtype not found " + subFieldType.trim() + " in " + schema.getFieldTypes());
+      }
       suffix = POLY_FIELD_SEPARATOR + subType.typeName;
     } else if (subSuffix != null) {
       args.remove(SUB_FIELD_SUFFIX);
@@ -126,10 +129,11 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
   }
 
   protected void createSuffixCache(int size) {
-    suffixes = new String[size];
+    String[] suffixeCache = new String[size];
     for (int i=0; i<size; i++) {
-      suffixes[i] = "_" + i + suffix;
+      suffixeCache[i] = "_" + i + suffix;
     }
+    this.suffixes = suffixeCache;
   }
 
   protected SchemaField subField(SchemaField base, int i, IndexSchema schema) {

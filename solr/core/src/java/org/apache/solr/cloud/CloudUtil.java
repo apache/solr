@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -60,13 +59,12 @@ public class CloudUtil {
    * + throw exception if it has been.
    */
   public static void checkSharedFSFailoverReplaced(CoreContainer cc, CoreDescriptor desc) {
-    if (!cc.isSharedFs(desc)) return;
-
+    if (desc.getCloudDescriptor() == null) return;
     ZkController zkController = cc.getZkController();
-    String thisCnn = zkController.getCoreNodeName(desc);
+    String coreName = desc.getName();
     String thisBaseUrl = zkController.getBaseUrl();
 
-    log.debug("checkSharedFSFailoverReplaced running for coreNodeName={} baseUrl={}", thisCnn, thisBaseUrl);
+    log.debug("checkSharedFSFailoverReplaced running for coreName={} baseUrl={}", coreName, thisBaseUrl);
 
     // if we see our core node name on a different base url, unload
     final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName());
@@ -75,43 +73,27 @@ public class CloudUtil {
       for (Slice slice : slicesMap.values()) {
         for (Replica replica : slice.getReplicas()) {
 
-          String cnn = replica.getName();
-          String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-          log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
+          String replicaName = replica.getName();
+          String baseUrl = replica.getBaseUrl();
+          log.debug("compare against coreName={} baseUrl={}", replicaName, baseUrl);
 
-          if (thisCnn != null && thisCnn.equals(cnn)
+          if (coreName != null && coreName.equals(replicaName)
               && !thisBaseUrl.equals(baseUrl)) {
             if (cc.getLoadedCoreNames().contains(desc.getName())) {
-              cc.unload(desc.getName());
+              try {
+                cc.unload(desc.getName(), true, true, true);
+              } catch (Exception e ) {
+                log.error("unload exception", e);
+              }
             }
-
-            try {
-              FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
-            } catch (IOException e) {
-              SolrException.log(log, "Failed to delete instance dir for core:"
-                  + desc.getName() + " dir:" + desc.getInstanceDir());
-            }
-            log.error("{}",
-                new SolrException(ErrorCode.SERVER_ERROR, "Will not load SolrCore " + desc.getName()
-                    + " because it has been replaced due to failover.")); // logOk
+            log.warn("Will not load SolrCore {} because it has been replaced due to fail-over.", desc.getName());
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "Will not load SolrCore " + desc.getName()
-                    + " because it has been replaced due to failover.");
+                    + " because it has been replaced due to fail-over.");
           }
         }
       }
     }
-  }
-
-  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreNodeName) {
-    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection != null) {
-      Slice slice = docCollection.getSlice(shard);
-      if (slice != null) {
-        return slice.getReplica(coreNodeName) != null;
-      }
-    }
-    return false;
   }
 
   /**
@@ -137,13 +119,13 @@ public class CloudUtil {
       List<String> children = zk.getChildren("/keys/" + dir, null, true);
       for (String key : children) {
         if (key.endsWith(".der")) result.put(key, zk.getData("/keys/" + dir +
-            "/" + key, null, null, true));
+            "/" + key, null, null));
       }
     } catch (KeeperException.NoNodeException e) {
       log.info("Error fetching key names");
       return Collections.EMPTY_MAP;
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );
@@ -175,6 +157,7 @@ public class CloudUtil {
         return predicate.matches(n, c);
       });
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new AssertionError(message + "\n" + "Live Nodes: " + liveNodesLastSeen.get() + "\nLast available state: " + state.get(), e);
     }
   }
@@ -208,7 +191,7 @@ public class CloudUtil {
         timeout.sleep(100);
         continue;
       }
-      if (predicate.matches(state.getLiveNodes(), coll)) {
+      if (predicate.matches(cloudManager.getClusterStateProvider().getLiveNodes(), coll)) {
         log.trace("-- predicate matched with state {}", state);
         return timeout.timeElapsed(TimeUnit.MILLISECONDS);
       }
@@ -234,7 +217,6 @@ public class CloudUtil {
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
    * number of shards and replicas.
    * <p>Note: for shards marked as inactive the current Solr behavior is that replicas remain active.
-   * {@link org.apache.solr.cloud.autoscaling.sim.SimCloudManager} follows this behavior.</p>
    * @param expectedShards expected number of shards
    * @param expectedReplicas expected number of active replicas per shard
    * @param withInactive if true then count also inactive shards
@@ -257,7 +239,7 @@ public class CloudUtil {
       Set<String> leaderless = new HashSet<>();
       for (Slice slice : slices) {
         int activeReplicas = 0;
-        if (requireLeaders && slice.getState() != Slice.State.INACTIVE && slice.getLeader() == null) {
+        if (requireLeaders && slice.getState() != Slice.State.INACTIVE && slice.getLeader(liveNodes) == null) {
           leaderless.add(slice.getName());
           continue;
         }

@@ -57,9 +57,9 @@ public class MemsetEvaluator extends RecursiveEvaluator {
     */
 
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter colsExpression = factory.getNamedOperand(expression, "cols");
-    StreamExpressionNamedParameter varsExpression = factory.getNamedOperand(expression, "vars");
-    StreamExpressionNamedParameter sizeExpression = factory.getNamedOperand(expression, "size");
+    StreamExpressionNamedParameter colsExpression = StreamFactory.getNamedOperand(expression, "cols");
+    StreamExpressionNamedParameter varsExpression = StreamFactory.getNamedOperand(expression, "vars");
+    StreamExpressionNamedParameter sizeExpression = StreamFactory.getNamedOperand(expression, "size");
 
     if(1 != streamExpressions.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));

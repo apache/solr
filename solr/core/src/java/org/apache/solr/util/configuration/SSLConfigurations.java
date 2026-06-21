@@ -118,7 +118,7 @@ public class SSLConfigurations {
     return null;
   }
 
-  private boolean isEmpty(String str) {
+  private static boolean isEmpty(String str) {
     return StringUtils.isEmpty(str);
   }
 }

@@ -16,32 +16,26 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedTransferQueue;
 
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.jctools.maps.NonBlockingHashMap;
 
 /**
  * A ShardHandlerFactory that extends HttpShardHandlerFactory and
@@ -52,7 +46,11 @@ import org.apache.solr.core.CoreContainer;
  */
 public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
-  private Queue<ShardRequestAndParams> queue;
+  public TrackingShardHandlerFactory() {
+    super();
+  }
+
+  private volatile Queue<ShardRequestAndParams> queue;
 
   /**
    * Set the tracking queue for this factory. All the ShardHandler instances
@@ -90,14 +88,9 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
   @Override
   public ShardHandler getShardHandler() {
-    return super.getShardHandler();
-  }
-
-  @Override
-  public ShardHandler getShardHandler(Http2SolrClient client) {
-    final ShardHandlerFactory factory = this;
-    final ShardHandler wrapped = super.getShardHandler(client);
-    return new HttpShardHandler(this, client) {
+    final HttpShardHandlerFactory factory = this;
+    final ShardHandler wrapped = super.getShardHandler();
+    return new HttpShardHandler(factory) {
       @Override
       public void prepDistributed(ResponseBuilder rb) {
         wrapped.prepDistributed(rb);
@@ -136,10 +129,10 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   }
 
   @Override
-  public ShardHandler getShardHandler(HttpClient httpClient) {
-    final ShardHandlerFactory factory = this;
-    final ShardHandler wrapped = super.getShardHandler(httpClient);
-    return new HttpShardHandler(this, null) {
+  public ShardHandler getShardHandler(LBHttp2SolrClient lbClient) {
+    final HttpShardHandlerFactory factory = this;
+    final ShardHandler wrapped = super.getShardHandler(lbClient);
+    return new HttpShardHandler(factory) {
       @Override
       public void prepDistributed(ResponseBuilder rb) {
         wrapped.prepDistributed(rb);
@@ -156,13 +149,6 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
       }
 
       @Override
-      protected NamedList<Object> request(String url, @SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException, SolrServerException {
-        try (SolrClient client = new HttpSolrClient.Builder(url).withHttpClient(httpClient).build()) {
-          return client.request(req);
-        }
-      }
-
-      @Override
       public ShardResponse takeCompletedIncludingErrors() {
         return wrapped.takeCompletedIncludingErrors();
       }
@@ -175,6 +161,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
       @Override
       public void cancelAll() {
         wrapped.cancelAll();
+        wrapped.clearPending();
       }
 
       @Override
@@ -214,14 +201,10 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   public static void setTrackingQueue(List<JettySolrRunner> runners, Queue<ShardRequestAndParams> queue) {
     for (JettySolrRunner runner : runners) {
       CoreContainer container = runner.getCoreContainer();
-      if (container != null) {
-        ShardHandlerFactory factory = container.getShardHandlerFactory();
-        assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: "
-            + factory.getClass();
-        @SuppressWarnings("resource")
-        TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
-        trackingShardHandlerFactory.setTrackingQueue(queue);
-      }
+      ShardHandlerFactory factory = container.getShardHandlerFactory();
+      assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: " + factory.getClass();
+      TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
+      trackingShardHandlerFactory.queue = queue;
     }
   }
 
@@ -251,14 +234,14 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
    *
    * @see org.apache.solr.handler.component.TrackingShardHandlerFactory#setTrackingQueue(java.util.List, java.util.Queue)
    */
-  public static class RequestTrackingQueue extends LinkedList<ShardRequestAndParams> {
-    private final Map<String, List<ShardRequestAndParams>> requests = new ConcurrentHashMap<>();
+  public static class RequestTrackingQueue extends LinkedTransferQueue<ShardRequestAndParams> {
+    private final Map<String, Set<ShardRequestAndParams>> requests = new NonBlockingHashMap<>();
 
     @Override
     public boolean offer(ShardRequestAndParams shardRequestAndParams) {
-      List<ShardRequestAndParams> list = requests.get(shardRequestAndParams.shard);
+      Set<ShardRequestAndParams> list = requests.get(shardRequestAndParams.shard);
       if (list == null) {
-        list = new ArrayList<>();
+        list = ConcurrentHashMap.newKeySet();
       }
       list.add(shardRequestAndParams);
       requests.put(shardRequestAndParams.shard, list);
@@ -310,11 +293,11 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
       Slice slice = collection.getSlice(shardId);
       assert slice != null;
 
-      for (Map.Entry<String, List<ShardRequestAndParams>> entry : requests.entrySet()) {
+      for (Map.Entry<String, Set<ShardRequestAndParams>> entry : requests.entrySet()) {
         // multiple shard addresses may be present separated by '|'
         List<String> list = StrUtils.splitSmart(entry.getKey(), '|');
         for (Map.Entry<String, Replica> replica : slice.getReplicasMap().entrySet()) {
-          String coreUrl = new ZkCoreNodeProps(replica.getValue()).getCoreUrl();
+          String coreUrl = replica.getValue().getCoreUrl();
           if (list.contains(coreUrl)) {
             return new ArrayList<>(entry.getValue());
           }
@@ -331,8 +314,8 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
      */
     public List<ShardRequestAndParams> getCoreAdminRequests() {
       List<ShardRequestAndParams> results = new ArrayList<>();
-      Map<String, List<ShardRequestAndParams>> map = getAllRequests();
-      for (Map.Entry<String, List<ShardRequestAndParams>> entry : map.entrySet()) {
+      Map<String, Set<ShardRequestAndParams>> map = requests;
+      for (Map.Entry<String, Set<ShardRequestAndParams>> entry : map.entrySet()) {
         for (ShardRequestAndParams shardRequestAndParams : entry.getValue()) {
           if (shardRequestAndParams.sreq.purpose == ShardRequest.PURPOSE_PRIVATE) {
             results.add(shardRequestAndParams);
@@ -349,7 +332,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
      * @return a {@link java.util.concurrent.ConcurrentHashMap} of url strings to {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams} objects
      * or empty map if none have been recorded
      */
-    public Map<String, List<ShardRequestAndParams>> getAllRequests() {
+    public Map<String, Set<ShardRequestAndParams>> getAllRequests() {
       return requests;
     }
   }

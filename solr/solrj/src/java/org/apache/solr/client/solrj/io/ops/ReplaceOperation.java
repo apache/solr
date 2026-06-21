@@ -53,8 +53,8 @@ public class ReplaceOperation implements StreamOperation {
   
   public ReplaceOperation(String forField, StreamExpression expression, StreamFactory factory) throws IOException {
     
-    StreamExpressionNamedParameter withValue = factory.getNamedOperand(expression, "withValue");
-    StreamExpressionNamedParameter withField = factory.getNamedOperand(expression, "withField");
+    StreamExpressionNamedParameter withValue = StreamFactory.getNamedOperand(expression, "withValue");
+    StreamExpressionNamedParameter withField = StreamFactory.getNamedOperand(expression, "withField");
     
     if(null != withValue && null == withField){
       replacer = new ReplaceWithValueOperation(forField, expression, factory);

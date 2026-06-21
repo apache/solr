@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -92,7 +93,7 @@ public class ValueFeature extends Feature {
 
   @Override
   protected void validate() throws FeatureException {
-    if (configValueStr != null && configValueStr.trim().isEmpty()) {
+    if (configValueStr != null && StringUtils.isBlank(configValueStr)) {
       throw new FeatureException("Empty field 'value' in params for " + this);
     }
   }

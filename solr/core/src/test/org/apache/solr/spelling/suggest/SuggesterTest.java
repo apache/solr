@@ -19,6 +19,7 @@ package org.apache.solr.spelling.suggest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,23 +30,15 @@ public class SuggesterTest extends SolrTestCaseJ4 {
    */
   protected String requestUri = "/suggest";
 
-  // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
-
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+  public static void beforeSuggesterTest() throws Exception {
+    useFactory(null);
     initCore("solrconfig-spellchecker.xml","schema-spellchecker.xml");
   }
   
   @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
+  public static void afterSuggesterTest() {
+
   }
 
   public static void addDocs() {
@@ -108,7 +101,9 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     NamedList params = new NamedList();
     params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
-    suggester.init(params, h.getCore());
+    SolrCore core = h.getCore();
+    suggester.init(params, core);
+    core.close();
     assertTrue(suggester.getQueryAnalyzer() != null);
   }
 }

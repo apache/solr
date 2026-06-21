@@ -20,11 +20,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,23 +38,28 @@ import org.junit.Test;
  */
 public class CopyFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeCopyFieldTest() throws Exception {
     initCore("solrconfig.xml","schema-copyfield-test.xml");
-  }    
+  }
+
+  @AfterClass
+  public static void afterCopyFieldTest() {
+    deleteCore();
+  }
 
   @Test
   public void testCopyFieldSchemaFieldSchemaField() {
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+    IllegalArgumentException e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
       new CopyField(new SchemaField("source", new TextField()), null);
     });
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
-    e = expectThrows(IllegalArgumentException.class, () -> {
+    e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
       new CopyField(null, new SchemaField("destination", new TextField()));
     });
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
-    e = expectThrows(IllegalArgumentException.class, () -> {
+    e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
       new CopyField(null, null);
     });
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
@@ -60,24 +67,23 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCopyFieldSchemaFieldSchemaFieldInt() {
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+    IllegalArgumentException e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
       new CopyField(null, new SchemaField("destination", new TextField()), 1000);
     });
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
-    e = expectThrows(IllegalArgumentException.class, () -> {
+    e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
       new CopyField(new SchemaField("source", new TextField()), null, 1000);
     });
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
-    e = expectThrows(IllegalArgumentException.class, () -> {
+    e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
       new CopyField(null, null, 1000);
     });
     assertTrue(e.getLocalizedMessage().contains("can't be NULL"));
 
-    e = expectThrows(IllegalArgumentException.class, () -> {
-      new CopyField(new SchemaField("source", new TextField()),
-          new SchemaField("destination", new TextField()), -1000);
+    e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+      new CopyField(new SchemaField("source", new TextField()), new SchemaField("destination", new TextField()), -1000);
     });
     assertTrue(e.getLocalizedMessage().contains("can't have a negative value"));
 
@@ -112,14 +118,13 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testCopyFieldFunctionality() 
     {
-      SolrCore core = h.getCore();
       assertU(adoc("id", "5", "title", "test copy field", "text_en", "this is a simple test of the copy field functionality"));
       assertU(commit());
       
       Map<String,String> args = new HashMap<>();
       args.put( CommonParams.Q, "text_en:simple" );
       args.put( "indent", "true" );
-      SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      SolrQueryRequest req = new LocalSolrQueryRequest( h.getCore(), new MapSolrParams( args), true );
       
       assertQ("Make sure they got in", req
               ,"//*[@numFound='1']"
@@ -129,7 +134,8 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       args = new HashMap<>();
       args.put( CommonParams.Q, "highlight:simple" );
       args.put( "indent", "true" );
-      req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      SolrCore core = h.getCore();
+      req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
       assertQ("dynamic source", req
               ,"//*[@numFound='1']"
               ,"//result/doc[1]/str[@name='id'][.='5']"
@@ -139,14 +145,16 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       args = new HashMap<>();
       args.put( CommonParams.Q, "text_en:functionality" );
       args.put( "indent", "true" );
-      req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      core = h.getCore();
+      req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
       assertQ("Make sure they got in", req
               ,"//*[@numFound='1']");
       
       args = new HashMap<>();
       args.put( CommonParams.Q, "highlight:functionality" );
       args.put( "indent", "true" );
-      req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      core = h.getCore();
+      req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
       assertQ("dynamic source", req
               ,"//*[@numFound='0']");
     }
@@ -156,6 +164,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     
     assertTrue("schema should contain explicit field 'sku1'", schema.getFields().containsKey("sku1"));
     assertTrue("schema should contain explicit field 'sku2'", schema.getFields().containsKey("sku2"));
@@ -180,7 +189,8 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "text:AAM46" );
     args.put( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    core = h.getCore();
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
         ,"//result/doc[1]/str[@name='id'][.='5']"
@@ -189,7 +199,8 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put( CommonParams.Q, "1_s:10-1839ACX-93" );
     args.put( "indent", "true" );
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    core = h.getCore();
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku1 copied to dynamic dest *_s", req
         ,"//*[@numFound='1']"
         ,"//result/doc[1]/str[@name='id'][.='5']"
@@ -199,14 +210,16 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put( CommonParams.Q, "1_dest_sub_s:10-1839ACX-93" );
     args.put( "indent", "true" );
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    core = h.getCore();
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku1 copied to *_dest_sub_s (*_s subset pattern)", req
         ,"//*[@numFound='1']");
 
     args = new HashMap<>();
     args.put( CommonParams.Q, "dest_sub_no_ast_s:AAM46" );
     args.put( "indent", "true" );
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    core = h.getCore();
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku2 copied to dest_sub_no_ast_s (*_s subset pattern no asterisk)", req
         ,"//*[@numFound='1']");
   }
@@ -217,7 +230,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     // SOLR-4650: copyField source globs should not have to match an explicit or dynamic field 
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-
+    core.close();
     assertNull("'testing123_*' should not be (or match) a dynamic or explicit field", schema.getFieldOrNull("testing123_*"));
 
     assertTrue("schema should contain dynamic field '*_s'", schema.getDynamicPattern("*_s").equals("*_s"));
@@ -228,7 +241,8 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "text:AAM46" );
     args.put( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    core = h.getCore();
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
         ,"//result/doc[1]/str[@name='id'][.='5']"
@@ -236,17 +250,16 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   }
 
   public void testCatchAllCopyField() {
-    IndexSchema schema = h.getCore().getLatestSchema();
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
 
-    assertNull("'*' should not be (or match) a dynamic field", 
-               schema.getDynamicPattern("*"));
-    
-    assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
-    assertU(commit());
-    for (String q : new String[] {"5", "10-1839ACX-93", "AAM46" }) {
-      assertQ(req("q","catchall_t:" + q)
-              ,"//*[@numFound='1']"
-              ,"//result/doc[1]/str[@name='id'][.='5']");
+      assertNull("'*' should not be (or match) a dynamic field", schema.getDynamicPattern("*"));
+
+      assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
+      assertU(commit());
+      for (String q : new String[] {"5", "10-1839ACX-93", "AAM46"}) {
+        assertQ(req("q", "catchall_t:" + q), "//*[@numFound='1']", "//result/doc[1]/str[@name='id'][.='5']");
+      }
     }
   }
 }

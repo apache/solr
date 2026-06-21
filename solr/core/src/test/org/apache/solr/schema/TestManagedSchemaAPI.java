@@ -22,8 +22,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -31,34 +33,43 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// MRM TODO: leaks about 10 objects
 public class TestManagedSchemaAPI extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void createCluster() throws Exception {
+  public static void beforeTestManagedSchemaAPI() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
+  }
+
+  @AfterClass
+  public static void afterTestManagedSchemaAPI() throws Exception {
+    shutdownCluster();
   }
 
   @Test
   public void test() throws Exception {
     String collection = "testschemaapi";
-    CollectionAdminRequest.createCollection(collection, "conf1", 1, 2)
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 2).process(cluster.getSolrClient());
+
+   // cluster.getSolrClient().getZkStateReader().waitForActiveCollection(cluster.getSolrClient().getHttpClient(), collection, 5, TimeUnit.SECONDS, false, 1, 2, true, true);
+
     testModifyField(collection);
     testReloadAndAddSimple(collection);
     testAddFieldAndDocument(collection);
   }
 
   private void testReloadAndAddSimple(String collection) throws IOException, SolrServerException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     String fieldName = "myNewField";
     addStringField(fieldName, collection, cloudClient);
@@ -76,7 +87,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   }
 
   private void testAddFieldAndDocument(String collection) throws IOException, SolrServerException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     String fieldName = "myNewField1";
     addStringField(fieldName, collection, cloudClient);
@@ -85,10 +96,10 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     doc.addField("id", "2");
     doc.addField(fieldName, "val1");
     UpdateRequest ureq = new UpdateRequest().add(doc);
-    cloudClient.request(ureq, collection);;
+    cloudClient.request(ureq, collection);
   }
 
-  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient) throws IOException, SolrServerException {
+  private void addStringField(String fieldName, String collection, CloudHttp2SolrClient cloudClient) throws IOException, SolrServerException {
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", "string");
@@ -100,18 +111,20 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     log.info("added new field={}", fieldName);
   }
 
-  private void testModifyField(String collection) throws IOException, SolrServerException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+  private void testModifyField(String collection) throws Exception {
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
+    // assumption: in this schema, the id field is docValues=false, uninvertible=true
 
     SolrInputDocument doc = new SolrInputDocument("id", "3");
     cloudClient.add(collection, doc);
     cloudClient.commit(collection);
+    cloudClient.query(collection, params("q", "*:*", "sort", "id asc")); // does not throw
 
     String fieldName = "id";
     SchemaRequest.Field getFieldRequest = new SchemaRequest.Field(fieldName);
     SchemaResponse.FieldResponse getFieldResponse = getFieldRequest.process(cloudClient, collection);
     Map<String, Object> field = getFieldResponse.getField();
-    field.put("docValues", true);
+    field.put("uninvertible", false); // and because this field does not have docValues, can't sort.
     SchemaRequest.ReplaceField replaceRequest = new SchemaRequest.ReplaceField(field);
     SchemaResponse.UpdateResponse replaceResponse = replaceRequest.process(cloudClient, collection);
     assertNull(replaceResponse.getResponse().get("errors"));
@@ -120,6 +133,10 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
+    Exception e = LuceneTestCase.expectThrows(Exception.class, () -> {
+      cloudClient.query(collection, params("q", "*:*", "sort", "id asc"));
+    });
+    assertTrue("Should fail because needs docValues", e.getMessage().contains("docValues"));
   }
 
 }

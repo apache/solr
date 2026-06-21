@@ -21,11 +21,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -62,8 +65,10 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
     }
 
     // client-side SolrJ would do this ...
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
-    (new JavaBinUpdateRequestCodec()).marshal(updateRequest, os);
+    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(4092);
+
+    ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
+    (new JavaBinUpdateRequestCodec()).marshal(updateRequest, out);
 
     // need to override the processAdd method b/c JavabinLoader calls
     // clear on the addCmd after it is passed on to the handler ... a simple clone will suffice for this test
@@ -77,7 +82,7 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     (new JavabinLoader()).load(req,
         new SolrQueryResponse(),
-        new ContentStreamBase.ByteArrayStream(os.toByteArray(), "test"),
+        new ContentStreamBase.ByteArrayStream(expandableBuffer1.byteArray(), "test", null,out.position() + expandableBuffer1.wrapAdjustment()),
         mockUpdateProcessor);
     req.close();
 
@@ -87,5 +92,6 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
 
     // last doc should have the flag set
     assertTrue(mockUpdateProcessor.addCommands.get(batch.size()-1).isLastDocInBatch);
+    mockUpdateProcessor.close();
   }
 }

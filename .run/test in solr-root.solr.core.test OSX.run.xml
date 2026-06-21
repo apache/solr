@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="test in solr-root.solr.core.test OSX" type="JUnit" factoryName="JUnit">
+    <module name="solr-root.solr.core.test" />
+    <option name="MAIN_CLASS_NAME" value="" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="directory" />
+    <option name="VM_PARAMETERS" value="-ea -Xmx1g -Djetty.insecurerandom=1 -Djava.security.egd=file:/dev/./urandom -XX:-UseBiasedLocking -XX:+UseG1GC -XX:+PerfDisableSharedMem -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=250 -XX:+ExplicitGCInvokesConcurrent -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManager -Dlog4j.configurationFile=logconf/log4j2-std.xml -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -Dtests.nightly=true -Dsolr.default.collection_op_timeout=120000 -Xss256k -Dzookeeper.jmx.log4j.disable=true -Dlog4j2.disable.jmx=true -XX:+MaxFDLimit -XX:ConcGCThreads=3 -XX:ParallelGCThreads=4 -XX:+UseG1GC -Dsolr.asyncDispatchFilter=true -Dsolr.asyncIO=true" />
+    <dir value="$PROJECT_DIR$/solr/core/src/test" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

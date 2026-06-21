@@ -18,6 +18,7 @@
 package org.apache.solr.api;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SpecProvider;
@@ -32,7 +33,7 @@ import org.apache.solr.common.util.JsonSchemaValidator;
  */
 public abstract class Api implements SpecProvider {
   protected SpecProvider spec;
-  protected volatile Map<String, JsonSchemaValidator> commandSchema;
+  protected final AtomicReference<Map<Object, JsonSchemaValidator>>  commandSchema = new AtomicReference<>();
 
   protected Api(SpecProvider spec) {
     this.spec = spec;
@@ -40,18 +41,19 @@ public abstract class Api implements SpecProvider {
 
   /**This method helps to cache the schema validator object
    */
-  public Map<String, JsonSchemaValidator> getCommandSchema() {
-    if (commandSchema == null) {
-      synchronized (this) {
-        if(commandSchema == null) {
+  public Map<Object, JsonSchemaValidator> getCommandSchema() {
+    return commandSchema.updateAndGet(objectJsonSchemaValidatorMap -> {
+      if (objectJsonSchemaValidatorMap == null) {
+
           ValidatingJsonMap commands = getSpec().getMap("commands", null);
-          commandSchema = commands != null ?
+          objectJsonSchemaValidatorMap = commands != null ?
               ImmutableMap.copyOf(ApiBag.getParsedSchema(commands)) :
               ImmutableMap.of();
-        }
+
+
       }
-    }
-    return commandSchema;
+      return objectJsonSchemaValidatorMap;
+    });
   }
 
   /** The method that gets called for each request

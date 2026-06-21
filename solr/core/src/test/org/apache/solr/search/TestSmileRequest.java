@@ -25,7 +25,7 @@ import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -41,7 +41,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   private static SolrTestCaseHS.SolrInstances servers;  // for distributed testing
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestSmileRequest() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
@@ -54,13 +54,13 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterTests() throws Exception {
+  public static void afterTestSmileRequest() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    deleteCore();
   }
 
   @Test
@@ -70,7 +70,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
     client.tester = new SolrTestCaseHS.Client.Tester() {
       @Override
       public void assertJQ(SolrClient client, SolrParams args, String... tests) throws Exception {
-        ((HttpSolrClient) client).setParser(SmileResponseParser.inst);
+        ((Http2SolrClient) client).setParser(SmileResponseParser.inst);
         QueryRequest query = new QueryRequest(args);
         String path = args.get("qt");
         if (path != null) {

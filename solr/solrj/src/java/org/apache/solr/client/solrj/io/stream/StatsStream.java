@@ -17,18 +17,18 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -54,8 +55,10 @@ import org.apache.solr.common.util.NamedList;
 public class StatsStream extends TupleStream implements Expressible  {
 
   private static final long serialVersionUID = 1;
-
-
+  private static final Pattern COMPILE = Pattern.compile("\"");
+  private static final Pattern PATTERN_SPACE = Pattern.compile(" ");
+  private static final Pattern PER = Pattern.compile("per");
+  private static final Pattern STD = Pattern.compile("std");
 
   private Metric[] metrics;
   private Tuple tuple;
@@ -64,7 +67,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   private SolrParams params;
   private String collection;
   protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
   private StreamContext context;
 
   public StatsStream(String zkHost,
@@ -77,15 +80,15 @@ public class StatsStream extends TupleStream implements Expressible  {
 
   public StatsStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
 
     if(collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = PATTERN_SPACE.matcher(COMPILE.matcher(collectionName).replaceAll("")).replaceAll("");
     }
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
 
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
 
     // Collection Name
@@ -222,16 +225,17 @@ public class StatsStream extends TupleStream implements Expressible  {
     Map<String, List<String>> shardsMap = (Map<String, List<String>>)context.get("shards");
     if(shardsMap == null) {
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+      cloudSolrClient = cache.getCloudSolrClient();
       try {
         NamedList response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new IOException(e);
       }
     } else {
       List<String> shards = shardsMap.get(collection);
-      HttpSolrClient client = cache.getHttpSolrClient(shards.get(0));
+      Http2SolrClient client = cache.getHttpSolrClient(shards.get(0));
 
       if(shards.size() > 1) {
         String shardsParam = getShardString(shards);
@@ -244,13 +248,14 @@ public class StatsStream extends TupleStream implements Expressible  {
         NamedList response = client.request(request);
         getTuples(response, metrics);
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new IOException(e);
       }
     }
   }
 
-  private String getShardString(List<String> shards) {
-    StringBuilder builder = new StringBuilder();
+  private static String getShardString(List<String> shards) {
+    StringBuilder builder = new StringBuilder(32);
     for(String shard : shards) {
       if(builder.length() > 0) {
         builder.append(",");
@@ -273,14 +278,13 @@ public class StatsStream extends TupleStream implements Expressible  {
     }
   }
 
-  private String getJsonFacetString(Metric[] _metrics) {
-    StringBuilder buf = new StringBuilder();
+  private static String getJsonFacetString(Metric[] _metrics) {
+    StringBuilder buf = new StringBuilder(32);
     appendJson(buf, _metrics);
-    return "{"+buf.toString()+"}";
+    return "{"+ buf +"}";
   }
 
-  private void appendJson(StringBuilder buf,
-                          Metric[] _metrics) {
+  private static void appendJson(StringBuilder buf, Metric[] _metrics) {
     
     int metricCount = 0;
     for(Metric metric : _metrics) {
@@ -290,9 +294,9 @@ public class StatsStream extends TupleStream implements Expressible  {
           buf.append(",");
         }
         if(identifier.startsWith("per(")) {
-          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(PER.matcher(identifier).replaceFirst("percentile")).append('"');
         } else if(identifier.startsWith("std(")) {
-          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(STD.matcher(identifier).replaceFirst("stddev")).append('"');
         } else {
           buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
         }
@@ -309,9 +313,7 @@ public class StatsStream extends TupleStream implements Expressible  {
     fillTuple(tuple, facets, metrics);
   }
 
-  private void fillTuple(Tuple t,
-                         NamedList nl,
-                         Metric[] _metrics) {
+  private static void fillTuple(Tuple t, NamedList nl, Metric[] _metrics) {
 
     if(nl == null) {
       return;

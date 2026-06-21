@@ -19,8 +19,10 @@ package org.apache.solr.security;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.security.Principal;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.http.Header;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -35,11 +38,13 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
+import org.junit.Ignore;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@LuceneTestCase.Nightly // PublicKeyHandler is expensive blocking
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   static class MockPKIAuthenticationPlugin extends PKIAuthenticationPlugin {
@@ -47,7 +52,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     Map<String, PublicKey> remoteKeys = new ConcurrentHashMap<>();
 
-    public MockPKIAuthenticationPlugin(CoreContainer cores, String node) {
+    public MockPKIAuthenticationPlugin(CoreContainer cores, String node) throws IOException, InvalidKeySpecException {
       super(cores, node, new PublicKeyHandler());
     }
 

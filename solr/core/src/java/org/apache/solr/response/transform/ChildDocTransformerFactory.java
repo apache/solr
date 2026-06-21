@@ -79,7 +79,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
   }
 
-  private DocTransformer createChildDocTransformer(String field, SolrParams params, SolrQueryRequest req) {
+  private static DocTransformer createChildDocTransformer(String field, SolrParams params, SolrQueryRequest req) {
     SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
     if (uniqueKeyField == null) {
       throw new SolrException( ErrorCode.BAD_REQUEST,

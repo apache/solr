@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="TestPointFields2" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
+    <module name="lucene-solr.solr.core.test" />
+    <useClassPathOnly />
+    <extension name="History Recorder Settings" includeConstructors="false" includeGettersSetters="false" minMethodSize="2" maxBreakpointsPerMethod="5" maxBreakpoints="200" maxDepthVariables="3" mode="1" nrCollectionItems="5" includeCollections="true" nrFieldsToShow="10" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="org.apache.solr.schema.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="org.apache.solr.schema" />
+    <option name="MAIN_CLASS_NAME" value="org.apache.solr.schema.TestPointFields2" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea -Xmx512m -Djetty.testMode=1 -Djetty.insecurerandom=1 -Djava.security.egd=file:/dev/./urandom -XX:-UseBiasedLocking -XX:TieredStopAtLevel=1 -XX:-UseBiasedLocking -XX:+UseG1GC -XX:+PerfDisableSharedMem -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=250 -XX:MaxTenuringThreshold=4 -XX:+ExplicitGCInvokesConcurrent -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManager -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -Djava.net.preferIPv4Stack=true -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -Dlog4j.configurationFile=logconf/log4j2-collection-create-debug.xml -Dtests.nightly=true -Dzookeeper.jmx.log4j.disable=true -Dlog4j2.disable.jmx=true" />
+    <option name="PARAMETERS" value="" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

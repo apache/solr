@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ChaosMonkeySafeLeaderTest" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
+    <module name="lucene-solr.solr.core.test" />
+    <useClassPathOnly />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="org.apache.solr.cloud.overseer.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="org.apache.solr.cloud" />
+    <option name="MAIN_CLASS_NAME" value="org.apache.solr.cloud.ChaosMonkeySafeLeaderTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea -Xmx6g -Djetty.testMode=1 -Djetty.insecurerandom=1 -Djava.security.egd=file:/dev/./urandom -Dlog4j.configurationFile=log4j2.xml -XX:+FlightRecorder -XX:StartFlightRecording=filename=$USER_HOME$/jfr_results2.jfr,dumponexit=true,settings=profile,path-to-gc-roots=true -XX:-UseBiasedLocking -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -Djava.net.preferIPv4Stack=true -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault -XX:HeapBaseMinAddress=34G -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -Dlog4j2.disable.jmx=true -Dzookeeper.jmx.log4j.disable=true -Dtests.nightly=true" />
+    <option name="PARAMETERS" value="" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

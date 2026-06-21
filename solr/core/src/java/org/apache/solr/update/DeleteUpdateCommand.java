@@ -27,10 +27,10 @@ import org.apache.solr.schema.SchemaField;
  *
  */
 public class DeleteUpdateCommand extends UpdateCommand {
-  public String id;    // external (printable) id, for delete-by-id
-  public String query; // query string for delete-by-query
-  public BytesRef indexedId;
-  public int commitWithin = -1;
+  public volatile String id;    // external (printable) id, for delete-by-id
+  public volatile String query; // query string for delete-by-query
+  public volatile BytesRef indexedId;
+  public volatile int commitWithin = -1;
 
 
   public DeleteUpdateCommand(SolrQueryRequest req) {
@@ -51,6 +51,11 @@ public class DeleteUpdateCommand extends UpdateCommand {
     query = null;
     indexedId = null;
     version = 0;
+    commitWithin = -1;
+
+    flags = 0;
+    route = null;
+    indexedId = null;
   }
 
   /** Returns the indexed ID for this delete.  The returned BytesRef is retained across multiple calls, and should not be modified. */

@@ -35,13 +35,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
@@ -550,7 +550,7 @@ public class SolrDocumentFetcher {
         if (!ndv.advanceExact(localId)) {
           return null;
         }
-        Long val = ndv.longValue();
+        long val = ndv.longValue();
         return decodeNumberFromDV(schemaField, val, false);
       case BINARY:
         BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
@@ -561,7 +561,7 @@ public class SolrDocumentFetcher {
       case SORTED:
         SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
         if (sdv != null && sdv.advanceExact(localId)) {
-          final BytesRef bRef = sdv.binaryValue();
+          final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
           if (schemaField.getType() instanceof BoolField) {
             return schemaField.getType().toObject(schemaField, bRef);

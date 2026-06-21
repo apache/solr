@@ -23,7 +23,11 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.common.util.IOUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -32,8 +36,13 @@ import org.junit.BeforeClass;
  */
 public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeAlternateDirectoryTest() throws Exception {
     initCore("solrconfig-altdirectory.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterAlternateDirectoryTest() throws Exception {
+    deleteCore();
   }
 
   public void testAltDirectoryUsed() throws Exception {
@@ -43,11 +52,11 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   }
   
   public void testAltReaderUsed() throws Exception {
-    IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
-    assertNotNull("Factory is null", readerFactory);
-    assertEquals("readerFactory is wrong class",
-                 AlternateDirectoryTest.TestIndexReaderFactory.class.getName(), 
-                 readerFactory.getClass().getName());
+    try (SolrCore core = h.getCore()) {
+      IndexReaderFactory readerFactory = core.getIndexReaderFactory();
+      assertNotNull("Factory is null", readerFactory);
+      assertEquals("readerFactory is wrong class", AlternateDirectoryTest.TestIndexReaderFactory.class.getName(), readerFactory.getClass().getName());
+    }
   }
 
   static public class TestFSDirectoryFactory extends StandardDirectoryFactory {
@@ -59,7 +68,12 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
       openCalled = true;
 
       // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-      return dir = newFSDirectory(new File(path).toPath(), lockFactory);
+      return dir = SolrTestUtil.newFSDirectory(new File(path).toPath(), lockFactory, random());
+    }
+
+    @Override
+    public void close() throws IOException {
+      IOUtils.closeQuietly(dir);
     }
 
   }

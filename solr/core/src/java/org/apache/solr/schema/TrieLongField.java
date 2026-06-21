@@ -43,6 +43,7 @@ import org.apache.lucene.util.mutable.MutableValueLong;
  * 
  * @see Long
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see LongPointField
  */
 @Deprecated
 public class TrieLongField extends TrieField implements LongValueFieldType {
@@ -57,8 +58,8 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
     try {
       if (val instanceof CharSequence) return Long.parseLong(val.toString());
     } catch (NumberFormatException e) {
-      Double v = Double.parseDouble((String)val);
-      return v.longValue();
+      double v = Double.parseDouble((String)val);
+      return v;
     }
     return super.toNativeType(val);
   }
@@ -68,12 +69,12 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
     
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-        
+
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-        
+
         return new LongDocValues(thisAsSortedSetFieldSource) {
           private int lastDocID;
 
@@ -92,7 +93,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
           @Override
           public long longVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return LegacyNumericUtils.prefixCodedToLong(bytes);
             } else {
@@ -109,17 +110,17 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
           public ValueFiller getValueFiller() {
             return new ValueFiller() {
               private final MutableValueLong mval = new MutableValueLong();
-              
+
               @Override
               public MutableValue getValue() {
                 return mval;
               }
-              
+
               @Override
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = LegacyNumericUtils.prefixCodedToLong(view.binaryValue());
+                  mval.value = LegacyNumericUtils.prefixCodedToLong(view.lookupOrd(view.ordValue()));
                 } else {
                   mval.exists = false;
                   mval.value = 0L;

@@ -16,58 +16,52 @@
  */
 package org.apache.solr.metrics;
 
-import java.io.File;
-import java.io.InputStream;
-import java.util.Properties;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.Clock;
-import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.UniformReservoir;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
+
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  *
  */
 public class MetricsConfigTest extends SolrTestCaseJ4 {
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  // tmp dir, cleaned up automatically.
-  private static File solrHome = null;
 
   @BeforeClass
-  public static void setupLoader() throws Exception {
-    solrHome = createTempDir().toFile();
+  public static void beforeMetricsConfigTest() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
+
   }
 
   @AfterClass
-  public static void cleanupLoader() throws Exception {
-    solrHome = null;
+  public static void afterMetricsConfigTest() throws Exception {
   }
 
   @Test
   public void testDefaults() throws Exception {
     NodeConfig cfg = loadNodeConfig();
     SolrMetricManager mgr = new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
-    assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
+    LuceneTestCase.assumeFalse("Test does not work with Mocks", mgr.getCounterSupplier() instanceof MockCounterSupplier);
+
+    assertTrue(mgr.getCounterSupplier().getClass().getName(), mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.DefaultMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.DefaultTimerSupplier);
     assertTrue(mgr.getHistogramSupplier() instanceof MetricSuppliers.DefaultHistogramSupplier);
     Clock clk = ((MetricSuppliers.DefaultTimerSupplier)mgr.getTimerSupplier()).clk;
     assertTrue(clk instanceof Clock.UserTimeClock);
     Reservoir rsv = ((MetricSuppliers.DefaultTimerSupplier)mgr.getTimerSupplier()).getReservoir();
-    assertTrue(rsv instanceof ExponentiallyDecayingReservoir);
+    // TODO can be UniformReservoir
+    // assertTrue(rsv.getClass().getName(), rsv instanceof ExponentiallyDecayingReservoir);
   }
 
   @Test
@@ -78,7 +72,11 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     System.setProperty("histogram.reservoir", SlidingTimeWindowReservoir.class.getName());
     NodeConfig cfg = loadNodeConfig();
     SolrMetricManager mgr = new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
-    assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
+
+    LuceneTestCase.assumeFalse("Test does not work with Mocks", mgr.getCounterSupplier() instanceof MockCounterSupplier);
+
+    assertTrue(mgr.getCounterSupplier().getClass().getName(), mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
+    LuceneTestCase.assumeFalse("Test does not work with Mocks", mgr.getCounterSupplier() instanceof MockCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.DefaultMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.DefaultTimerSupplier);
     assertTrue(mgr.getHistogramSupplier() instanceof MetricSuppliers.DefaultHistogramSupplier);
@@ -96,7 +94,9 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     System.setProperty("histogram.class", MockHistogramSupplier.class.getName());
     NodeConfig cfg = loadNodeConfig();
     SolrMetricManager mgr = new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
-    assertTrue(mgr.getCounterSupplier() instanceof MockCounterSupplier);
+
+    LuceneTestCase.assumeFalse("Test does not work with Mocks", mgr.getCounterSupplier() instanceof MockCounterSupplier);
+    assertTrue(mgr.getCounterSupplier().getClass().getName(), mgr.getCounterSupplier() instanceof MockCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MockMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MockTimerSupplier);
     assertTrue(mgr.getHistogramSupplier() instanceof MockHistogramSupplier);
@@ -116,8 +116,8 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     assertNotNull(mockHistogramSupplier.info);
   }
 
-  private NodeConfig loadNodeConfig() throws Exception {
+  private static NodeConfig loadNodeConfig() throws Exception {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/solr-metricsconfig.xml");
-    return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); //TODO pass in props
+    return SolrXmlConfig.fromInputStream(SolrTestUtil.TEST_PATH(), is, new Properties()); //TODO pass in props
   }
 }

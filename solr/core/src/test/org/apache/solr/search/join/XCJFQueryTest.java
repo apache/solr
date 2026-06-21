@@ -23,19 +23,30 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
 import org.junit.Test;
 
+// XCJF uses CloudSolrStream with QT=/export internally (XCJFQuery.java:221).
+// All 3 tests are now enabled and passing. Fixes applied:
+//   * Added solr.ExportHandler to configsets/xcjf/conf/solrconfig.xml (was missing → 500).
+//   * Moved collection creation into setupIndexes() so each test recreates its own collections.
+//   * Fixed JavabinTupleStreamParser.isObjectType(): MAP size was read via readVInt() but
+//     written via daos.writeInt() (raw 4-byte int); changed to readInt(). This fixed the
+//     under-count (CloudSolrStream export path was dropping rows due to the size mismatch).
+//   * Fixed XCJFQParser null-whitelist NPE (solrUrlWhiteList can be null when unconfigured).
 public class XCJFQueryTest extends SolrCloudTestCase {
 
   private static final int NUM_NODES = 3;
@@ -46,24 +57,33 @@ public class XCJFQueryTest extends SolrCloudTestCase {
   private static final String[] SIZES = new String[]{"S", "M", "L", "XL"};
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeXCJFQueryTest() throws Exception {
     configureCluster(NUM_NODES)
-        .addConfig("xcjf", configset("xcjf"))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .addConfig("xcjf", SolrTestUtil.configset("xcjf"))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
-
-
-    CollectionAdminRequest.createCollection("products", "xcjf", NUM_SHARDS, NUM_REPLICAS)
-        .process(cluster.getSolrClient());
-
-    CollectionAdminRequest.createCollection("parts", "xcjf", NUM_SHARDS, NUM_REPLICAS)
-        .process(cluster.getSolrClient());
-
   }
 
-  public static void setupIndexes(boolean routeByKey) throws IOException, SolrServerException {
-    clearCollection("products");
-    clearCollection("parts");
+  @AfterClass
+  public static void afterXCJFQueryTest() throws Exception {
+    shutdownCluster();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    // Each test recreates the collections in setupIndexes() (routed vs. non-routed differs per test),
+    // so drop them here. The "xcjf" configset is uploaded once in @BeforeClass and must survive.
+    cluster.deleteAllCollections();
+    super.tearDown();
+  }
+
+  public static void setupIndexes(boolean routeByKey) throws Exception {
+    CollectionAdminRequest.createCollection("products", "xcjf", NUM_SHARDS, NUM_REPLICAS)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("parts", "xcjf", NUM_SHARDS, NUM_REPLICAS)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection("products", NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS);
+    cluster.waitForActiveCollection("parts", NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS);
 
     buildIndexes(routeByKey);
 
@@ -138,12 +158,11 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     }
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
-      CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
+      CloudHttp2SolrClient client = cluster.getSolrClient();
+
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
-      Thread.sleep(10000);
 
       testXcjfQuery("{!xcjf collection=products from=product_id_i to=product_id_i}size_s:M",true);
 
@@ -217,9 +236,8 @@ public class XCJFQueryTest extends SolrCloudTestCase {
       System.setProperty("test.xcjf.solr.url." + i, runner.getBaseUrl().toString());
     }
     try {
-      // now we need to re-upload our config , now that we know a valid solr url for the cluster.
-      CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
+      CloudHttp2SolrClient client = cluster.getSolrClient();
+
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);

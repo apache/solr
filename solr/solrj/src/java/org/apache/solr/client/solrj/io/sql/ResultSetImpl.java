@@ -95,7 +95,7 @@ class ResultSetImpl implements ResultSet {
   }
 
   private void checkClosed() throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("ResultSet is closed.");
     }
   }
@@ -402,7 +402,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("Statement is closed.");
     }
 
@@ -411,7 +411,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public void clearWarnings() throws SQLException {
-    if(isClosed()) {
+    if(closed) {
       throw new SQLException("Statement is closed.");
     }
 

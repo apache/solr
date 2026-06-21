@@ -88,7 +88,7 @@ public class SSLConfig {
    * @see #createContextFactory()
    */
   public static SslContextFactory.Server createContextFactory(SSLConfig sslConfig) {
-    if (sslConfig != null) {
+    if (sslConfig != null && sslConfig.useSsl) {
       return sslConfig.createContextFactory();
     }
     // else...
@@ -113,48 +113,50 @@ public class SSLConfig {
    * @see #getTrustStorePassword
    */
   public SslContextFactory.Server createContextFactory() {
-    if (! isSSLMode()) {
+    if (!useSsl) {
       return null;
     }
     // else...
     
     SslContextFactory.Server factory = new SslContextFactory.Server();
-    if (getKeyStore() != null)
-      factory.setKeyStorePath(getKeyStore());
-    if (getKeyStorePassword() != null)
-      factory.setKeyStorePassword(getKeyStorePassword());
+    if (keyStore != null)
+      factory.setKeyStorePath(keyStore);
+    if (keyStorePassword != null)
+      factory.setKeyStorePassword(keyStorePassword);
     
-    factory.setNeedClientAuth(isClientAuthMode());
+    factory.setNeedClientAuth(clientAuth);
     
-    if (isClientAuthMode()) {
-      if (getTrustStore() != null)
-        factory.setTrustStorePath(getTrustStore());
-      if (getTrustStorePassword() != null)
-        factory.setTrustStorePassword(getTrustStorePassword());
+    if (clientAuth) {
+      if (trustStore != null)
+        factory.setTrustStorePath(trustStore);
+      if (trustStorePassword != null)
+        factory.setTrustStorePassword(trustStorePassword);
     }
     return factory;
   }
 
   public SslContextFactory.Client createClientContextFactory() {
-    if (! isSSLMode()) {
+    if (!useSsl) {
       return null;
     }
     // else...
 
     SslContextFactory.Client factory = new SslContextFactory.Client();
-    if (getKeyStore() != null) {
-      factory.setKeyStorePath(getKeyStore());
+    if (keyStore != null) {
+      factory.setKeyStorePath(keyStore);
     }
-    if (getKeyStorePassword() != null) {
-      factory.setKeyStorePassword(getKeyStorePassword());
+    if (keyStorePassword != null) {
+      factory.setKeyStorePassword(keyStorePassword);
     }
 
-    if (isClientAuthMode()) {
-      if (getTrustStore() != null)
-        factory.setTrustStorePath(getTrustStore());
-      if (getTrustStorePassword() != null)
-        factory.setTrustStorePassword(getTrustStorePassword());
+    if (clientAuth) {
+      if (trustStore != null)
+        factory.setTrustStorePath(trustStore);
+      if (trustStorePassword != null)
+        factory.setTrustStorePassword(trustStorePassword);
     }
+
+    factory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName", null));
 
     return factory;
   }

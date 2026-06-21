@@ -72,7 +72,7 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  @SuppressWarnings({"static-access", "rawtypes", "null"})
+  @SuppressWarnings({"rawtypes", "null"})
   @Override
   public void init(final NamedList args) {
 
@@ -116,7 +116,6 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
      * will be treated as conventional updates.
      * 4. retry when encounter version conflict
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void processAdd(AddUpdateCommand cmd)
         throws IOException {
@@ -132,7 +131,7 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 
         if (!param.startsWith(ATOMIC_FIELD_PREFIX)) continue;
 
-        String field = param.substring(ATOMIC_FIELD_PREFIX.length(), param.length());
+        String field = param.substring(ATOMIC_FIELD_PREFIX.length());
         String operation = req.getParams().get(param);
 
         if (!VALID_OPS.contains(operation)) {
@@ -154,7 +153,9 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       if (isAtomicUpdateAddedByMe) {
         Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
         // if lastVersion is null then we put -1 to assert that document must not exist
-        lastVersion = lastVersion == null ? -1 : lastVersion;
+        if (lastVersion == null) {
+          lastVersion = -1L;
+        }
         orgdoc.setField(VERSION, lastVersion);
         processAddWithRetry(cmd, 1, cmd.getSolrInputDocument().deepCopy());
       } else {
@@ -177,7 +178,9 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 
           Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
           // if lastVersion is null then we put -1 to assert that document must not exist
-          lastVersion = lastVersion == null ? -1 : lastVersion;
+          if (lastVersion == null) {
+            lastVersion = -1L;
+          }
 
           // The AtomicUpdateDocumentMerger modifies the AddUpdateCommand.solrDoc to populate the real values of the
           // modified fields. We don't want those absolute values because they are out-of-date due to the conflict

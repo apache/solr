@@ -22,6 +22,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 
 /** @lucene.internal */
@@ -31,7 +33,7 @@ import org.apache.solr.common.SolrException;
  */
 public class TimedVersionBucket extends VersionBucket {
 
-  private final Lock lock = new ReentrantLock(true);
+  protected final Lock lock = new ReentrantLock(true);
   private final Condition condition = lock.newCondition();
 
   /**
@@ -39,17 +41,25 @@ public class TimedVersionBucket extends VersionBucket {
    * <code>lockTimeoutMs</code>.
    */
   @Override
-  public <T,R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function) throws IOException {
-    if (tryLock(lockTimeoutMs)) {
-      return function.apply();
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to get version bucket lock in " + lockTimeoutMs + " ms");
-    }
-  }
+  public <T,R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function, BytesRef idBytes) throws IOException {
+    boolean success = false;
 
-  public void unlock() {
-    lock.unlock();
+    try {
+      success = lock.tryLock() || lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
+
+      if (success) {
+        return function.apply();
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to get version bucket lock in " + lockTimeoutMs + " ms");
+      }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      if (success) {
+        lock.unlock();
+      }
+    }
   }
 
   public void signalAll() {
@@ -62,16 +72,7 @@ public class TimedVersionBucket extends VersionBucket {
         condition.awaitNanos(nanosTimeout);
       }
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
-    }
-  }
-
-  protected boolean tryLock(int lockTimeoutMs) {
-    try {
-      return lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }

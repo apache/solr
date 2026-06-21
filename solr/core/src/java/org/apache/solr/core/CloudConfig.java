@@ -16,15 +16,13 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.common.SolrException;
-
 public class CloudConfig {
 
   private final String zkHost;
 
   private final int zkClientTimeout;
 
-  private final int hostPort;
+  private volatile int hostPort;
 
   private final String hostName;
 
@@ -67,10 +65,10 @@ public class CloudConfig {
     this.pkiHandlerPrivateKeyPath = pkiHandlerPrivateKeyPath;
     this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
 
-    if (this.hostPort == -1)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostPort' must be configured to run SolrCloud");
-    if (this.hostContext == null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostContext' must be configured to run SolrCloud");
+//    if (this.hostPort == -1)
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostPort' must be configured to run SolrCloud");
+//    if (this.hostContext == null)
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostContext' must be configured to run SolrCloud");
   }
 
   public String getZkHost() {
@@ -83,6 +81,10 @@ public class CloudConfig {
 
   public int getSolrHostPort() {
     return hostPort;
+  }
+
+  public void setPort(int port) {
+    this.hostPort = port;
   }
 
   public String getSolrHostContext() {
@@ -132,9 +134,9 @@ public class CloudConfig {
   public static class CloudConfigBuilder {
 
     private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 45000;
-    private static final int DEFAULT_LEADER_VOTE_WAIT = 180000;  // 3 minutes
-    private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
-    private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 45;  // 45 seconds
+    private static final int DEFAULT_LEADER_VOTE_WAIT = 10000;  // 15 SECONDS
+    private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 10000;
+    private final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = Integer.getInteger("solr.defaultCollectionActiveWait", 60);  // seconds
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false;
 
     private String zkHost = System.getProperty("zkHost");

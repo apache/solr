@@ -24,13 +24,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,7 +115,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
    * @param targetCurrencyCode The target currency.
    * @param rate               The known exchange rate.
    */
-  private void addRate(Map<String, Map<String, Double>> ratesMap, String sourceCurrencyCode, String targetCurrencyCode, double rate) {
+  private static void addRate(Map<String,Map<String,Double>> ratesMap, String sourceCurrencyCode, String targetCurrencyCode, double rate) {
     Map<String, Double> rhs = ratesMap.get(sourceCurrencyCode);
 
     if (rhs == null) {
@@ -150,9 +151,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
     Set<String> currencies = new HashSet<>();
     for(Map.Entry<String, Map<String, Double>> entry : rates.entrySet()) {
       currencies.add(entry.getKey());
-      for(String to : entry.getValue().keySet()) {
-        currencies.add(to);
-      }
+      currencies.addAll(entry.getValue().keySet());
     }
     return currencies;
   }
@@ -164,8 +163,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
 
     try {
       Document doc = SafeXMLParsing.parseConfigXML(log, loader, currencyConfigFile);
-      XPathFactory xpathFactory = XPathFactory.newInstance();
-      XPath xpath = xpathFactory.newXPath();
+      XPath xpath = SolrResourceLoader.getXPath();
       
       // Parse exchange rates.
       NodeList nodes = (NodeList) xpath.evaluate("/currencyConfig/rates/rate", doc, XPathConstants.NODESET);
@@ -183,7 +181,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
         
         String fromCurrency = from.getNodeValue();
         String toCurrency = to.getNodeValue();
-        Double exchangeRate;
+        double exchangeRate;
         
         if (null == CurrencyFieldType.getCurrency(fromCurrency)) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Specified 'from' currency not supported in this JVM: " + fromCurrency);
@@ -200,7 +198,7 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
         
         addRate(tmpRates, fromCurrency, toCurrency, exchangeRate);
       }
-    } catch (SAXException | IOException | XPathExpressionException e) {
+    } catch (SAXException | IOException | XPathExpressionException | ParserConfigurationException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while parsing currency configuration file "+currencyConfigFile, e);
     }
     // Atomically swap in the new rates map, if it loaded successfully

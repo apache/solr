@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
@@ -61,19 +62,35 @@ public class TestStressReorder extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random().nextInt(20);
+    final int commitPercent = 5 + random().nextInt(TEST_NIGHTLY ? 20 : 3);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = random().nextInt(8);
-    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    int nWriteThreads = 5 + random().nextInt(25);
+    int ndocs;
+    if (TEST_NIGHTLY) {
+      ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    } else {
+      ndocs = 50;
+    }
+
+    int nWriteThreads;
+    if (TEST_NIGHTLY) {
+      nWriteThreads = 5 + random().nextInt(6);
+    } else {
+      nWriteThreads = 3;
+    }
 
     final int maxConcurrentCommits = nWriteThreads;
         // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
-    int nReadThreads = 5 + random().nextInt(25);
+    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 50000 : 500);  // number of query operations to perform in total
 
+    int nReadThreads;
+    if (TEST_NIGHTLY) {
+      nReadThreads = 5 + random().nextInt(25);
+    } else {
+      nReadThreads = 3;
+    }
 
     /** // testing
     final int commitPercent = 5;
@@ -106,150 +123,155 @@ public class TestStressReorder extends TestRTGBase {
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
-        Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
           try {
-          while (operations.get() > 0) {
-            int oper = rand.nextInt(100);
+            Random rand = new Random(random().nextInt());
+            while (operations.get() > 0) {
+              int oper = rand.nextInt(100);
 
-            if (oper < commitPercent) {
-              if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                Map<Integer,DocInfo> newCommittedModel;
-                long version;
+              if (oper < commitPercent) {
+                if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
+                  Map<Integer,DocInfo> newCommittedModel;
+                  long version;
 
-                synchronized(TestStressReorder.this) {
-                  newCommittedModel = new HashMap<>(model);  // take a snapshot
-                  version = snapshotCount++;
-                }
+                  synchronized (TestStressReorder.this) {
+                    newCommittedModel = new HashMap<>(model);  // take a snapshot
+                    version = snapshotCount.incrementAndGet();
+                  }
 
-                if (rand.nextInt(100) < softCommitPercent) {
-                  verbose("softCommit start");
-                  assertU(TestHarness.commit("softCommit","true"));
-                  verbose("softCommit end");
-                } else {
-                  verbose("hardCommit start");
-                  assertU(commit());
-                  verbose("hardCommit end");
-                }
+                  if (rand.nextInt(100) < softCommitPercent) {
+                    verbose("softCommit start");
+                    assertU(TestHarness.commit("softCommit", "true"));
+                    verbose("softCommit end");
+                  } else {
+                    verbose("hardCommit start");
+                    assertU(commit());
+                    verbose("hardCommit end");
+                  }
 
-                synchronized(TestStressReorder.this) {
-                  // install this model snapshot only if it's newer than the current one
-                  if (version >= committedModelClock) {
-                    if (VERBOSE) {
-                      verbose("installing new committedModel version="+committedModelClock);
+                  synchronized (TestStressReorder.this) {
+                    // install this model snapshot only if it's newer than the current one
+                    if (version >= committedModelClock.get()) {
+                      if (VERBOSE) {
+                        verbose("installing new committedModel version=" + committedModelClock);
+                      }
+                      committedModel = newCommittedModel;
+                      committedModelClock.set(version);
                     }
-                    committedModel = newCommittedModel;
-                    committedModelClock = version;
                   }
                 }
+                numCommitting.decrementAndGet();
+                continue;
               }
-              numCommitting.decrementAndGet();
-              continue;
-            }
 
+              int id;
 
-            int id;
-
-            if (rand.nextBoolean()) {
-              id = rand.nextInt(ndocs);
-            } else {
-              id = lastId;  // reuse the last ID half of the time to force more race conditions
-            }
-
-            // set the lastId before we actually change it sometimes to try and
-            // uncover more race conditions between writing and reading
-            boolean before = rand.nextBoolean();
-            if (before) {
-              lastId = id;
-            }
-
-            DocInfo info = model.get(id);
-
-            long val = info.val;
-            long nextVal = Math.abs(val)+1;
-
-            // the version we set on the update should determine who wins
-            // These versions are not derived from the actual leader update handler hand hence this
-            // test may need to change depending on how we handle version numbers.
-            long version = testVersion.incrementAndGet();
-
-            // yield after getting the next version to increase the odds of updates happening out of order
-            if (rand.nextBoolean()) Thread.yield();
-
-              if (oper < commitPercent + deletePercent) {
-                verbose("deleting id",id,"val=",nextVal,"version",version);
-
-                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
-
-                // TODO: returning versions for these types of updates is redundant
-                // but if we do return, they had better be equal
-                if (returnedVersion != null) {
-                  assertEquals(-version, returnedVersion.longValue());
-                }
-
-                // only update model if the version is newer
-                synchronized (model) {
-                  DocInfo currInfo = model.get(id);
-                  if (Math.abs(version) > Math.abs(currInfo.version)) {
-                    model.put(id, new DocInfo(version, -nextVal));
-                  }
-                }
-
-                verbose("deleting id", id, "val=",nextVal,"version",version,"DONE");
-              } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
-
-                verbose("deleteByQuery id",id,"val=",nextVal,"version",version);
-
-                Long returnedVersion = deleteByQueryAndGetVersion("id:"+Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
-
-                // TODO: returning versions for these types of updates is redundant
-                // but if we do return, they had better be equal
-                if (returnedVersion != null) {
-                  assertEquals(-version, returnedVersion.longValue());
-                }
-
-                // only update model if the version is newer
-                synchronized (model) {
-                  DocInfo currInfo = model.get(id);
-                  if (Math.abs(version) > Math.abs(currInfo.version)) {
-                    model.put(id, new DocInfo(version, -nextVal));
-                  }
-                }
-
-                verbose("deleteByQuery id", id, "val=",nextVal,"version",version,"DONE");
-
+              if (rand.nextBoolean()) {
+                id = rand.nextInt(ndocs);
               } else {
-                verbose("adding id", id, "val=", nextVal,"version",version);
-
-                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal), "_version_",Long.toString(version)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-                if (returnedVersion != null) {
-                  assertEquals(version, returnedVersion.longValue());
-                }
-
-                // only update model if the version is newer
-                synchronized (model) {
-                  DocInfo currInfo = model.get(id);
-                  if (version > currInfo.version) {
-                    model.put(id, new DocInfo(version, nextVal));
-                  }
-                }
-
-                if (VERBOSE) {
-                  verbose("adding id", id, "val=", nextVal,"version",version,"DONE");
-                }
-
+                id = lastId;  // reuse the last ID half of the time to force more race conditions
               }
-            // }   // end sync
 
-            if (!before) {
-              lastId = id;
+              // set the lastId before we actually change it sometimes to try and
+              // uncover more race conditions between writing and reading
+              boolean before = rand.nextBoolean();
+              if (before) {
+                lastId = id;
+              }
+              Object sync = syncArr[id];
+              // MRM TODO: do we need this like in TestRealTimeGet to make sure our model matches?
+              // maybe try a test httpclient with strict ordering?
+              synchronized (sync) {
+                DocInfo info = model.get(id);
+
+                long val = info.val;
+                long nextVal = Math.abs(val) + 1;
+
+                // the version we set on the update should determine who wins
+                // These versions are not derived from the actual leader update handler hand hence this
+                // test may need to change depending on how we handle version numbers.
+                long version = testVersion.incrementAndGet();
+
+                // yield after getting the next version to increase the odds of updates happening out of order
+                if (rand.nextBoolean()) Thread.yield();
+
+                if (oper < commitPercent + deletePercent) {
+                  verbose("deleting id", id, "val=", nextVal, "version", version);
+
+                  Long returnedVersion = deleteAndGetVersion(Integer.toString(id),
+                      params("_version_", Long.toString(-version), DISTRIB_UPDATE_PARAM, FROM_LEADER));
+
+                  // TODO: returning versions for these types of updates is redundant
+                  // but if we do return, they had better be equal
+                  if (returnedVersion != null) {
+                    assertEquals(-version, returnedVersion.longValue());
+                  }
+
+                  // only update model if the version is newer
+                  synchronized (model) {
+                    DocInfo currInfo = model.get(id);
+                    if (Math.abs(version) > Math.abs(currInfo.version)) {
+                      model.put(id, new DocInfo(version, -nextVal));
+                    }
+                  }
+
+                  verbose("deleting id", id, "val=", nextVal, "version", version, "DONE");
+                } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
+
+                  verbose("deleteByQuery id", id, "val=", nextVal, "version", version);
+
+                  Long returnedVersion = deleteByQueryAndGetVersion("id:" + Integer.toString(id),
+                      params("_version_", Long.toString(-version), DISTRIB_UPDATE_PARAM, FROM_LEADER));
+
+                  // TODO: returning versions for these types of updates is redundant
+                  // but if we do return, they had better be equal
+                  if (returnedVersion != null) {
+                    assertEquals(-version, returnedVersion.longValue());
+                  }
+
+                  // only update model if the version is newer
+                  synchronized (model) {
+                    DocInfo currInfo = model.get(id);
+                    if (Math.abs(version) > Math.abs(currInfo.version)) {
+                      model.put(id, new DocInfo(version, -nextVal));
+                    }
+                  }
+
+                  verbose("deleteByQuery id", id, "val=", nextVal, "version", version, "DONE");
+
+                } else {
+                  verbose("adding id", id, "val=", nextVal, "version", version);
+
+                  Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal), "_version_", Long.toString(version)),
+                      params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+                  if (returnedVersion != null) {
+                    assertEquals(version, returnedVersion.longValue());
+                  }
+
+                  // only update model if the version is newer
+                  synchronized (model) {
+                    DocInfo currInfo = model.get(id);
+                    if (version > currInfo.version) {
+                      model.put(id, new DocInfo(version, nextVal));
+                    }
+                  }
+
+                  if (VERBOSE) {
+                    verbose("adding id", id, "val=", nextVal, "version", version, "DONE");
+                  }
+
+                }
+              }   // end sync
+
+              if (!before) {
+                lastId = id;
+              }
             }
-          }
           } catch (Throwable e) {
             operations.set(-1L);
-            log.error("",e);
+            log.error("", e);
             throw new RuntimeException(e);
           }
         }
@@ -287,14 +309,19 @@ public class TestStressReorder extends TestRTGBase {
               if (VERBOSE) {
                 verbose("querying id", id);
               }
-              SolrQueryRequest sreq;
-              if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
-              } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              }
+              String response = null;
+              SolrQueryRequest sreq = null;
+              try {
+                if (realTime) {
+                  sreq = req("wt", "json", "qt", "/get", "ids", Integer.toString(id));
+                } else {
+                  sreq = req("wt", "json", "q", "id:" + Integer.toString(id), "omitHeader", "true");
+                }
 
-              String response = h.query(sreq);
+                response = h.query(sreq);
+              } finally {
+                IOUtils.closeQuietly(sreq);
+              }
               Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
@@ -312,7 +339,7 @@ public class TestStressReorder extends TestRTGBase {
             }
           } catch (Throwable e) {
             operations.set(-1L);
-            log.error("",e);
+            log.error("Fail",e);
             throw new RuntimeException(e);
           }
         }

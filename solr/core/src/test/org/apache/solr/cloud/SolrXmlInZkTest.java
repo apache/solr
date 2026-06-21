@@ -22,27 +22,24 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly // too slow
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected ZkTestServer zkServer;
 
@@ -55,11 +52,11 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   private NodeConfig cfg;
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     Path solrHome = tmpDir.resolve("home");
     copyMinConf(new File(solrHome.toFile(), "myCollect"));
     if (leaveOnLocal) {
-      FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"), new File(solrHome.toFile(), "solr.xml"));
+      FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr-stress-new.xml"), new File(solrHome.toFile(), "solr.xml"));
     }
 
     ignoreException("No UpdateLog found - cannot sync");
@@ -71,18 +68,16 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    zkServer.buildZooKeeper("solrconfig.xml", "schema.xml");
+    zkServer.buildZooKeeper();
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-
+    zkClient.start();
     if (toZk) {
       zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8), true);
     }
 
-    zkClient.close();
-
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
+      log.info("####SETUP_START {}", SolrTestUtil.getTestName());
     }
 
     // set some system properties for use by tests
@@ -90,9 +85,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     props.setProperty("solr.test.sys.prop1", "propone");
     props.setProperty("solr.test.sys.prop2", "proptwo");
 
-    cfg = SolrDispatchFilter.loadNodeConfig(solrHome, props);
+    cfg = SolrDispatchFilter.loadNodeConfig(zkClient, solrHome, props);
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
+      log.info("####SETUP_END {}", SolrTestUtil.getTestName());
     }
   }
 
@@ -143,11 +138,11 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   @Test
   public void testNotInZkOrOnDisk() throws Exception {
     try {
-      SolrException e = expectThrows(SolrException.class, () -> {
+      SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         System.setProperty("hostPort", "8787");
         setUpZkAndDiskXml(false, false); // solr.xml not on disk either
       });
-      assertTrue("Should be failing to create default solr.xml in code",
+      assertTrue("Should be failing to create default solr.xml in code:" + e.getMessage(),
           e.getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();

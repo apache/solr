@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -61,7 +62,7 @@ public class KnnStream extends TupleStream implements Expressible  {
   private Map<String, String> props;
   private String collection;
   protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
   private Iterator<SolrDocument> documentIterator;
   private String id;
 
@@ -74,11 +75,11 @@ public class KnnStream extends TupleStream implements Expressible  {
 
   public KnnStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    StreamExpressionNamedParameter idExpression = factory.getNamedOperand(expression, "id");
-    StreamExpressionNamedParameter qfExpression = factory.getNamedOperand(expression, "qf");
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
+    StreamExpressionNamedParameter idExpression = StreamFactory.getNamedOperand(expression, "id");
+    StreamExpressionNamedParameter qfExpression = StreamFactory.getNamedOperand(expression, "qf");
 
 
     // Collection Name
@@ -188,7 +189,7 @@ public class KnnStream extends TupleStream implements Expressible  {
   }
 
   public void open() throws IOException {
-    cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    cloudSolrClient = cache.getCloudSolrClient();
     ModifiableSolrParams params = getParams(this.props);
 
     StringBuilder builder = new StringBuilder();
@@ -207,7 +208,7 @@ public class KnnStream extends TupleStream implements Expressible  {
       params.remove(k);
     }
 
-    params.add(Q, "{!mlt"+builder.toString()+"}"+id);
+    params.add(Q, "{!mlt"+ builder +"}"+id);
 
     QueryRequest request = new QueryRequest(params);
     try {
@@ -215,6 +216,7 @@ public class KnnStream extends TupleStream implements Expressible  {
       SolrDocumentList docs = response.getResults();
       documentIterator = docs.iterator();
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -236,7 +238,7 @@ public class KnnStream extends TupleStream implements Expressible  {
     }
   }
 
-  private ModifiableSolrParams getParams(Map<String, String> props) {
+  private static ModifiableSolrParams getParams(Map<String,String> props) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for(Entry<String, String> entry : props.entrySet()) {
       String value = entry.getValue();

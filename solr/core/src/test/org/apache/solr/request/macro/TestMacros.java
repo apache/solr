@@ -17,6 +17,7 @@
 package org.apache.solr.request.macro;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -24,8 +25,13 @@ import org.junit.Test;
 public class TestMacros extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestMacros() throws Exception {
     initCore("solrconfig-tlog.xml","schema_latest.xml");
+  }
+
+  @AfterClass
+  public static void afterTestMacros() throws Exception {
+    deleteCore();
   }
 
   @Test

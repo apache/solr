@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<schema name="schema-numbers" version="1.6">
+  <types>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+
+    <!-- Override useDocValuesAsStored="true" default for schema version=1.6 -->
+    <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" useDocValuesAsStored="${solr.tests.dv.as.stored}"/>
+    <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" useDocValuesAsStored="${solr.tests.dv.as.stored}"/>
+    <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" useDocValuesAsStored="${solr.tests.dv.as.stored}"/>
+    <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" useDocValuesAsStored="${solr.tests.dv.as.stored}"/>
+    <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" useDocValuesAsStored="${solr.tests.dv.as.stored}"/>
+
+  </types>
+
+  <fields>
+    <field name="id" type="string"/>
+    <field name="text" type="string"/>
+    <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
+
+
+    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
+    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
+
+    <dynamicField name="*_i"  type="int"    indexed="true"  stored="${solr.tests.numeric.stored}" docValues="${solr.tests.numeric.dv}"/>
+    <dynamicField name="*_i_dv"  type="int"    indexed="true"  stored="true" docValues="true"/>
+    <dynamicField name="*_i_mv"  type="int"    indexed="true"  stored="true" multiValued="true"/>
+    <dynamicField name="*_i_mv_dv"  type="int"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_i_ni"  type="int"    indexed="false"  stored="true" docValues="false"/>
+    <dynamicField name="*_i_ni_dv"  type="int"    indexed="false"  stored="true" docValues="true"/>
+    <dynamicField name="*_i_ni_dv_ns"  type="int"    indexed="false"  stored="false" docValues="true"/>
+    <dynamicField name="*_i_ni_dv_ns_mv"  type="int"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
+    <dynamicField name="*_i_ni_mv"  type="int"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
+    <dynamicField name="*_i_ni_mv_dv"  type="int"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_i_ni_ns"  type="int"    indexed="false"  stored="false" docValues="false" />
+    <dynamicField name="*_i_ni_ns_mv"  type="int"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
+    <dynamicField name="*_i_smf"  type="int"    indexed="true"  stored="true" sortMissingFirst="true"/>
+    <dynamicField name="*_i_dv_smf"  type="int"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_i_mv_smf"  type="int"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_i_mv_dv_smf"  type="int"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_i_ni_dv_smf"  type="int"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_i_ni_mv_dv_smf"  type="int"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_i_sml"  type="int"    indexed="true"  stored="true" sortMissingLast="true"/>
+    <dynamicField name="*_i_dv_sml"  type="int"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_i_mv_sml"  type="int"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_i_mv_dv_sml"  type="int"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_i_ni_dv_sml"  type="int"    indexed="false"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_i_ni_mv_dv_sml"  type="int"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+
+    <dynamicField name="*_l"  type="long"    indexed="true"  stored="${solr.tests.numeric.stored}" docValues="${solr.tests.numeric.dv}"/>
+    <dynamicField name="*_l_dv"  type="long"    indexed="true"  stored="true" docValues="true"/>
+    <dynamicField name="*_l_mv"  type="long"    indexed="true"  stored="true" multiValued="true"/>
+    <dynamicField name="*_l_mv_dv"  type="long"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_l_ni"  type="long"    indexed="false"  stored="true" docValues="false"/>
+    <dynamicField name="*_l_ni_dv"  type="long"    indexed="false"  stored="true" docValues="true"/>
+    <dynamicField name="*_l_ni_dv_ns"  type="long"    indexed="false"  stored="false" docValues="true"/>
+    <dynamicField name="*_l_ni_dv_ns_mv"  type="long"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
+    <dynamicField name="*_l_ni_mv"  type="long"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
+    <dynamicField name="*_l_ni_mv_dv"  type="long"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_l_ni_ns"  type="long"    indexed="false"  stored="false" docValues="false" />
+    <dynamicField name="*_l_ni_ns_mv"  type="long"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
+    <dynamicField name="*_l_smf"  type="long"    indexed="true"  stored="true" sortMissingFirst="true"/>
+    <dynamicField name="*_l_dv_smf"  type="long"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_l_mv_smf"  type="long"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_l_mv_dv_smf"  type="long"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_l_ni_dv_smf"  type="long"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_l_ni_mv_dv_smf"  type="long"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_l_sml"  type="long"    indexed="true"  stored="true" sortMissingLast="true"/>
+    <dynamicField name="*_l_dv_sml"  type="long"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_l_mv_sml"  type="long"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_l_mv_dv_sml"  type="long"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_l_ni_dv_sml"  type="long"    indexed="false"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_l_ni_mv_dv_sml"  type="long"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+
+    <dynamicField name="*_d"  type="double"    indexed="true"  stored="true"/>
+    <dynamicField name="*_d_dv"  type="double"    indexed="true"  stored="true" docValues="true"/>
+    <dynamicField name="*_d_mv"  type="double"    indexed="true"  stored="true" multiValued="true"/>
+    <dynamicField name="*_d_mv_dv"  type="double"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_d_ni"  type="double"    indexed="false"  stored="true" docValues="false"/>
+    <dynamicField name="*_d_ni_dv"  type="double"    indexed="false"  stored="true" docValues="true"/>
+    <dynamicField name="*_d_ni_dv_ns"  type="double"    indexed="false"  stored="false" docValues="true"/>
+    <dynamicField name="*_d_ni_dv_ns_mv"  type="double"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
+    <dynamicField name="*_d_ni_mv"  type="double"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
+    <dynamicField name="*_d_ni_mv_dv"  type="double"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_d_ni_ns"  type="double"    indexed="false"  stored="false" docValues="false"/>
+    <dynamicField name="*_d_ni_ns_mv"  type="double"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
+    <dynamicField name="*_d_smf"  type="double"    indexed="true"  stored="true" sortMissingFirst="true"/>
+    <dynamicField name="*_d_dv_smf"  type="double"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_d_mv_smf"  type="double"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_d_mv_dv_smf"  type="double"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_d_ni_dv_smf"  type="double"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_d_ni_mv_dv_smf"  type="double"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_d_sml"  type="double"    indexed="true"  stored="true" sortMissingLast="true"/>
+    <dynamicField name="*_d_dv_sml"  type="double"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_d_mv_sml"  type="double"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_d_mv_dv_sml"  type="double"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_d_ni_dv_sml"  type="double"    indexed="false"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_d_ni_mv_dv_sml"  type="double"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+
+    <dynamicField name="*_f"  type="float"    indexed="true"  stored="true"/>
+    <dynamicField name="*_f_dv"  type="float"    indexed="true"  stored="true" docValues="true"/>
+    <dynamicField name="*_f_mv"  type="float"    indexed="true"  stored="true" multiValued="true"/>
+    <dynamicField name="*_f_mv_dv"  type="float"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_f_ni"  type="float"    indexed="false"  stored="true" docValues="false"/>
+    <dynamicField name="*_f_ni_dv"  type="float"    indexed="false"  stored="true" docValues="true"/>
+    <dynamicField name="*_f_ni_dv_ns"  type="float"    indexed="false"  stored="false" docValues="true"/>
+    <dynamicField name="*_f_ni_dv_ns_mv"  type="float"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
+    <dynamicField name="*_f_ni_mv"  type="float"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
+    <dynamicField name="*_f_ni_mv_dv"  type="float"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_f_ni_ns"  type="float"    indexed="false"  stored="false" docValues="false"/>
+    <dynamicField name="*_f_ni_ns_mv"  type="float"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
+    <dynamicField name="*_f_smf"  type="float"    indexed="true"  stored="true" sortMissingFirst="true"/>
+    <dynamicField name="*_f_dv_smf"  type="float"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_f_mv_smf"  type="float"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_f_mv_dv_smf"  type="float"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_f_ni_dv_smf"  type="float"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_f_ni_mv_dv_smf"  type="float"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_f_sml"  type="float"    indexed="true"  stored="true" sortMissingLast="true"/>
+    <dynamicField name="*_f_dv_sml"  type="float"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_f_mv_sml"  type="float"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_f_mv_dv_sml"  type="float"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_f_ni_dv_sml"  type="float"    indexed="false"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_f_ni_mv_dv_sml"  type="float"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+
+    <dynamicField name="*_dt"  type="date"    indexed="true"  stored="true"/>
+    <dynamicField name="*_dt_dv"  type="date"    indexed="true"  stored="true" docValues="true"/>
+    <dynamicField name="*_dt_mv"  type="date"    indexed="true"  stored="true" multiValued="true"/>
+    <dynamicField name="*_dt_mv_dv"  type="date"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_dt_ni"  type="date"    indexed="false"  stored="true" docValues="false"/>
+    <dynamicField name="*_dt_ni_dv"  type="date"    indexed="false"  stored="true" docValues="true"/>
+    <dynamicField name="*_dt_ni_dv_ns"  type="date"    indexed="false"  stored="false" docValues="true"/>
+    <dynamicField name="*_dt_ni_dv_ns_mv"  type="date"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
+    <dynamicField name="*_dt_ni_mv"  type="date"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
+    <dynamicField name="*_dt_ni_mv_dv"  type="date"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+    <dynamicField name="*_dt_ni_ns"  type="date"    indexed="false"  stored="false" docValues="false"/>
+    <dynamicField name="*_dt_ni_ns_mv"  type="date"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
+    <dynamicField name="*_dt_smf"  type="date"    indexed="true"  stored="true" sortMissingFirst="true"/>
+    <dynamicField name="*_dt_dv_smf"  type="date"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_dt_mv_smf"  type="date"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_dt_mv_dv_smf"  type="date"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_dt_ni_dv_smf"  type="date"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
+    <dynamicField name="*_dt_ni_mv_dv_smf"  type="date"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
+    <dynamicField name="*_dt_sml"  type="date"    indexed="true"  stored="true" sortMissingLast="true"/>
+    <dynamicField name="*_dt_dv_sml"  type="date"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_dt_mv_sml"  type="date"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_dt_mv_dv_sml"  type="date"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+    <dynamicField name="*_dt_ni_dv_sml"  type="date"    indexed="false"  stored="true" docValues="true" sortMissingLast="true"/>
+    <dynamicField name="*_dt_ni_mv_dv_sml"  type="date"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
+
+    <!-- return DV fields as stored -->
+    <dynamicField name="*_i_dv_ns"  type="int"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_l_dv_ns"  type="long"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_d_dv_ns"  type="double"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_f_dv_ns"  type="float"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_dt_dv_ns"  type="date"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_i_ni_ns_dv" type="int"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_l_ni_ns_dv" type="long"   indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_d_ni_ns_dv" type="double" indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_f_ni_ns_dv" type="float"  indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+    <dynamicField name="*_dt_ni_ns_dv" type="date"   indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+
+    <dynamicField name="*_i_dv_ns_mv"  type="int"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
+    <dynamicField name="*_d_dv_ns_mv"  type="double"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
+    <dynamicField name="*_l_dv_ns_mv"  type="long"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
+    <dynamicField name="*_f_dv_ns_mv"  type="float"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
+    <dynamicField name="*_dt_dv_ns_mv"  type="date"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
+  </fields>
+
+  <uniqueKey>id</uniqueKey>
+
+</schema>

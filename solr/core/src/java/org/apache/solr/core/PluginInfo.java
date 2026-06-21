@@ -16,25 +16,24 @@
  */
 package org.apache.solr.core;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.type.Type;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.DOMUtil;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An Object which represents a Plugin of any type 
@@ -80,15 +79,15 @@ public class PluginInfo implements MapSerializable {
 
   }
 
+  public PluginInfo(NodeInfo node, String err, boolean requireName, boolean requireClass) {
+    type = node.getDisplayName();
 
-  public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
-    type = node.getNodeName();
     name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
     Pair<String, String> parsed = parseClassName(DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null));
     className = parsed.second();
     pkgName = parsed.first();
     initArgs = DOMUtil.childNodesToNamedList(node);
-    attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
+    attributes = unmodifiableMap(DOMUtil.toMap(node.attributes()));
     children = loadSubPlugins(node);
     isFromSolrConfig = true;
   }
@@ -125,17 +124,19 @@ public class PluginInfo implements MapSerializable {
     isFromSolrConfig = true;
   }
 
-  private List<PluginInfo> loadSubPlugins(Node node) {
+  private static List<PluginInfo> loadSubPlugins(NodeInfo node) {
     List<PluginInfo> children = new ArrayList<>();
     //if there is another sub tag with a non namedlist tag that has to be another plugin
-    NodeList nlst = node.getChildNodes();
-    for (int i = 0; i < nlst.getLength(); i++) {
-      Node nd = nlst.item(i);
-      if (nd.getNodeType() != Node.ELEMENT_NODE) continue;
-      if (NL_TAGS.contains(nd.getNodeName())) continue;
-      PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
-      if (pluginInfo.isEnabled()) children.add(pluginInfo);
-    }
+    Iterable<? extends NodeInfo> nlst = node.children();
+    nlst.forEach(nodeInfo -> {
+      if (nodeInfo.getNodeKind() == Type.ELEMENT) {
+        if (!NL_TAGS.contains(nodeInfo.getDisplayName())) {
+
+          PluginInfo pluginInfo = new PluginInfo(nodeInfo, null, false, false);
+          if (pluginInfo.isEnabled()) children.add(pluginInfo);
+        }
+      }
+    });
     return children.isEmpty() ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
   }
 

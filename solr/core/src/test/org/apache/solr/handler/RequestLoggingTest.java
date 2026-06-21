@@ -36,6 +36,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressForbidden(reason = "test is specific to log4j2")

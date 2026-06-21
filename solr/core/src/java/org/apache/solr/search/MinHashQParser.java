@@ -95,7 +95,7 @@ public class MinHashQParser extends QParser {
     ts.close();
   }
 
-  private Query createFingerPrintQuery(String field, List<BytesRef> minhashes, float similarity, float expectedTruePositive) {
+  private static Query createFingerPrintQuery(String field, List<BytesRef> minhashes, float similarity, float expectedTruePositive) {
     int bandSize = 1;
     if (expectedTruePositive < 1) {
       bandSize = computeBandSize(minhashes.size(), similarity, expectedTruePositive);

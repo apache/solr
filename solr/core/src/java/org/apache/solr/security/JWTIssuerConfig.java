@@ -110,7 +110,7 @@ public class JWTIssuerConfig {
       }
     }
     if (iss == null && usesHttpsJwk() && !JWTAuthPlugin.PRIMARY_ISSUER.equals(name)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required config 'iss' for issuer " + getName());
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required config 'iss' for issuer " + name);
     }
   }
 
@@ -159,7 +159,7 @@ public class JWTIssuerConfig {
         jsonWebKeySet = parseJwkSet((Map<String, Object>) jwksObject);
       }
     } catch (JoseException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed parsing parameter 'jwk' for issuer " + getName(), e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed parsing parameter 'jwk' for issuer " + name, e);
     }
   }
 
@@ -177,7 +177,7 @@ public class JWTIssuerConfig {
     return webKeySet;
   }
 
-  private WellKnownDiscoveryConfig fetchWellKnown(String wellKnownUrl) {
+  private static WellKnownDiscoveryConfig fetchWellKnown(String wellKnownUrl) {
     return WellKnownDiscoveryConfig.parse(wellKnownUrl);
   }
 
@@ -236,7 +236,7 @@ public class JWTIssuerConfig {
 
   public List<HttpsJwks> getHttpsJwks() {
     if (httpsJwks == null) {
-      httpsJwks = httpsJwksFactory.createList(getJwksUrls());
+      httpsJwks = httpsJwksFactory.createList(jwksUrl);
     }
     return httpsJwks;
   }
@@ -263,7 +263,7 @@ public class JWTIssuerConfig {
    * @return true if keys are fetched over https
    */
   public boolean usesHttpsJwk() {
-    return getJwksUrls() != null && !getJwksUrls().isEmpty();
+    return jwksUrl != null && !jwksUrl.isEmpty();
   }
 
   public WellKnownDiscoveryConfig getWellKnownDiscoveryConfig() {
@@ -312,7 +312,7 @@ public class JWTIssuerConfig {
     return config;
   }
 
-  private void putIfNotNull(HashMap<String, Object> config, String paramName, Object value) {
+  private static void putIfNotNull(HashMap<String,Object> config, String paramName, Object value) {
     if (value != null) {
       config.put(paramName, value);
     }

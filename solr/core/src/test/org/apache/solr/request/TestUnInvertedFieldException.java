@@ -21,37 +21,30 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema11.xml");
-  }
 
   private int numTerms;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    initCore("solrconfig.xml","schema11.xml");
     numTerms = TestUtil.nextInt(random(), 10, 50);
     createIndex(numTerms);
   }
@@ -59,6 +52,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
   @After
   @Override
   public void tearDown() throws Exception {
+    deleteCore();
     super.tearDown();
   }
 
@@ -78,23 +72,19 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
 
   @Test
   public void testConcurrentInit() throws Exception {
-    final SolrQueryRequest req = req("*:*");
-    final SolrIndexSearcher searcher = req.getSearcher();
+    try (SolrQueryRequest req = req("*:*")) {
+      final SolrIndexSearcher searcher = req.getSearcher();
 
-    List<Callable<UnInvertedField>> initCallables = new ArrayList<>();
-    for (int i=0;i< TestUtil.nextInt(random(), 10, 30);i++) {
-      initCallables.add(()-> UnInvertedField.getUnInvertedField(proto.field(), searcher));
-    }
+      List<Callable<UnInvertedField>> initCallables = new ArrayList<>();
+      for (int i = 0; i < TestUtil.nextInt(random(), 10, 30); i++) {
+        initCallables.add(() -> UnInvertedField.getUnInvertedField(proto.field(), searcher));
+      }
 
-    final ThreadPoolExecutor pool  = new MDCAwareThreadPoolExecutor(3, 
-        TestUtil.nextInt(random(), 3, 6), 10, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory(getClass().getSimpleName()));
+      final ExecutorService pool = getTestExecutor();
 
-    try {
       TestInjection.uifOutOfMemoryError = true;
-      if (assertsAreEnabled) { // if they aren't, we check that injection is disabled in live
-        List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c))
-            .collect(Collectors.toList());
+      if (LuceneTestCase.assertsAreEnabled) { // if they aren't, we check that injection is disabled in live
+        List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c)).collect(Collectors.toList());
         for (Future<UnInvertedField> uifuture : futures) {
           try {
             final UnInvertedField uif = uifuture.get();
@@ -108,8 +98,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
         TestInjection.uifOutOfMemoryError = false;
       }
       UnInvertedField prev = null;
-      List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c))
-          .collect(Collectors.toList());
+      List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c)).collect(Collectors.toList());
       for (Future<UnInvertedField> uifuture : futures) {
         final UnInvertedField uif = uifuture.get();
         assertNotNull(uif);
@@ -120,9 +109,6 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
         assertEquals(numTerms, uif.numTerms());
         prev = uif;
       }
-    } finally {
-      pool.shutdownNow();
-      req.close();
     }
   }
 }

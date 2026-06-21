@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -163,11 +164,12 @@ public class TimeRoutedAlias extends RoutedAlias {
     // check that the date math is valid
     final Date now = new Date();
     try {
-      final Date after = new DateMathParser(now, timeZone).parseMath(getIntervalMath());
+      final Date after = new DateMathParser(now, timeZone).parseMath(intervalMath);
       if (!after.after(now)) {
         throw new SolrException(BAD_REQUEST, "duration must add to produce a time in the future");
       }
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_INTERVAL + ", " + e, e);
     }
 
@@ -178,6 +180,7 @@ public class TimeRoutedAlias extends RoutedAlias {
           throw new SolrException(BAD_REQUEST, "duration must round or subtract to produce a time in the past");
         }
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE + ", " + e, e);
       }
     }
@@ -201,10 +204,10 @@ public class TimeRoutedAlias extends RoutedAlias {
 
   @Override
   String[] formattedRouteValues(SolrInputDocument doc) {
-    String routeField = getRouteField();
+    String routeField = this.routeField;
     Date fieldValue = (Date) doc.getFieldValue(routeField);
     String dest = calcCandidateCollection(fieldValue.toInstant()).getDestinationCollection();
-    int nonValuePrefix = getAliasName().length() + getRoutedAliasType().getSeparatorPrefix().length();
+    int nonValuePrefix = aliasName.length() + getRoutedAliasType().getSeparatorPrefix().length();
     return new String[]{dest.substring(nonValuePrefix)};
   }
 
@@ -230,13 +233,13 @@ public class TimeRoutedAlias extends RoutedAlias {
     return aliasName + TYPE.getSeparatorPrefix() + nextCollName;
   }
 
-  private Instant parseStringAsInstant(String str, TimeZone zone) {
+  private static Instant parseStringAsInstant(String str, TimeZone zone) {
     Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
     checkMillis(start);
     return start;
   }
 
-  private void checkMillis(Instant date) {
+  private static void checkMillis(Instant date) {
     if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
       throw new SolrException(BAD_REQUEST,
           "Date or date math for start time includes milliseconds, which is not supported. " +
@@ -250,7 +253,7 @@ public class TimeRoutedAlias extends RoutedAlias {
     if (this.parsedCollectionsAliases != aliases) {
       if (this.parsedCollectionsAliases != null) {
         if (log.isDebugEnabled()) {
-          log.debug("Observing possibly updated alias: {}", getAliasName());
+          log.debug("Observing possibly updated alias: {}", aliasName);
         }
       }
       this.parsedCollectionsDesc = parseCollections(aliases);
@@ -321,7 +324,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   private List<Map.Entry<Instant, String>> parseCollections(Aliases aliases) {
     final List<String> collections = getCollectionList(aliases);
     if (collections == null) {
-      throw RoutedAlias.newAliasMustExistException(getAliasName());
+      throw RoutedAlias.newAliasMustExistException(aliasName);
     }
     // note: I considered TreeMap but didn't like the log(N) just to grab the most recent when we use it later
     List<Map.Entry<Instant, String>> result = new ArrayList<>(collections.size());
@@ -348,13 +351,13 @@ public class TimeRoutedAlias extends RoutedAlias {
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
 
     final Instant docTimestamp =
-        parseRouteKey(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
+        parseRouteKey(cmd.getSolrInputDocument().getFieldValue(routeField));
 
     // FUTURE: maybe in some cases the user would want to ignore/warn instead?
-    if (docTimestamp.isAfter(Instant.now().plusMillis(getMaxFutureMs()))) {
+    if (docTimestamp.isAfter(Instant.now().plusMillis(maxFutureMs))) {
       throw new SolrException(BAD_REQUEST,
           "The document's time routed key of " + docTimestamp + " is too far in the future given " +
-              ROUTER_MAX_FUTURE + "=" + getMaxFutureMs());
+              ROUTER_MAX_FUTURE + "=" + maxFutureMs);
     }
 
     // Although this is also checked later, we need to check it here too to handle the case in Dimensional Routed
@@ -381,7 +384,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       // should all be identical and who wins won't matter (baring cases of Date Math involving seconds,
       // which is pretty far fetched). Putting this in a separate thread to ensure that any failed
       // races don't cause documents to get rejected.
-      core.runAsync(() -> zkStateReader.aliasesManager.applyModificationAndExportToZk(
+      SolrCore.runAsync(() -> zkStateReader.aliasesManager.applyModificationAndExportToZk(
           (a) -> aliases.cloneWithCollectionAliasProperties(aliasName, props)));
 
     }
@@ -414,7 +417,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   }
 
 
-  private Instant calcPreemptNextColCreateTime(String preemptiveCreateMath, Instant nextCollTimestamp) {
+  private static Instant calcPreemptNextColCreateTime(String preemptiveCreateMath, Instant nextCollTimestamp) {
     DateMathParser dateMathParser = new DateMathParser();
     dateMathParser.setNow(Date.from(nextCollTimestamp));
     try {
@@ -425,7 +428,7 @@ public class TimeRoutedAlias extends RoutedAlias {
     }
   }
 
-  private Instant parseRouteKey(Object routeKey) {
+  private static Instant parseRouteKey(Object routeKey) {
     final Instant docTimestamp;
     if (routeKey instanceof Instant) {
       docTimestamp = (Instant) routeKey;
@@ -448,7 +451,7 @@ public class TimeRoutedAlias extends RoutedAlias {
    */
   @Override
   public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
-    Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
+    Object value = cmd.getSolrInputDocument().getFieldValue(routeField);
     ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
     String printableId = cmd.getPrintableId();
     updateParsedCollectionAliases(zkStateReader, true);
@@ -463,7 +466,7 @@ public class TimeRoutedAlias extends RoutedAlias {
     if (next1 != null) return next1;
 
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-        "Doc " + printableId + " couldn't be routed with " + getRouteField() + "=" + docTimestamp);
+        "Doc " + printableId + " couldn't be routed with " + routeField + "=" + docTimestamp);
   }
 
   private CandidateCollection calcCandidateCollection(Instant docTimestamp) {
@@ -500,7 +503,7 @@ public class TimeRoutedAlias extends RoutedAlias {
                 colDestTime = possibleDestTime;
                 possibleDestTime = computeNextCollTimestamp(colDestTime);
               }
-              String destCol = TimeRoutedAlias.formatCollectionNameFromInstant(getAliasName(),colDestTime);
+              String destCol = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName,colDestTime);
               candidate = new CandidateCollection(SYNCHRONOUS, destCol, creationCol); //found it
             }
           } else {
@@ -508,15 +511,14 @@ public class TimeRoutedAlias extends RoutedAlias {
             candidate = new CandidateCollection(NONE, entry.getValue()); //found it
           }
 
-          if (candidate.getCreationType() == NONE && isNotBlank(getPreemptiveCreateWindow()) && !this.preemptiveCreateOnceAlready) {
+          if (candidate.getCreationType() == NONE && isNotBlank(preemptiveCreateMath) && !this.preemptiveCreateOnceAlready) {
             // are we getting close enough to the (as yet uncreated) next collection to warrant preemptive creation?
-            Instant time2Create = calcPreemptNextColCreateTime(getPreemptiveCreateWindow(), computeNextCollTimestamp(mostRecentCol));
+            Instant time2Create = calcPreemptNextColCreateTime(preemptiveCreateMath, computeNextCollTimestamp(mostRecentCol));
             if (!docTimestamp.isBefore(time2Create)) {
               String destinationCollection = candidate.getDestinationCollection(); // dest doesn't change
               String creationCollection = calcNextCollection(mostRecentCol);
               return new CandidateCollection(ASYNC_PREEMPTIVE, // add next collection
-                  destinationCollection,
-                  creationCollection);
+                  destinationCollection, creationCollection);
             }
           }
           return candidate;
@@ -534,7 +536,7 @@ public class TimeRoutedAlias extends RoutedAlias {
    *                this method.
    */
   private List<Action> calcDeletes(List<Action> actions) {
-    final String autoDeleteAgeMathStr = this.getAutoDeleteAgeMath();
+    final String autoDeleteAgeMathStr = this.autoDeleteAgeMath;
     if (autoDeleteAgeMathStr == null || actions .size() == 0) {
       return Collections.emptyList();
     }
@@ -543,10 +545,10 @@ public class TimeRoutedAlias extends RoutedAlias {
     }
 
     String deletionReferenceCollection = actions.get(0).targetCollection;
-    Instant deletionReferenceInstant = parseInstantFromCollectionName(getAliasName(), deletionReferenceCollection);
+    Instant deletionReferenceInstant = parseInstantFromCollectionName(aliasName, deletionReferenceCollection);
     final Instant delBefore;
     try {
-      delBefore = new DateMathParser(Date.from(computeNextCollTimestamp(deletionReferenceInstant)), this.getTimeZone()).parseMath(autoDeleteAgeMathStr).toInstant();
+      delBefore = new DateMathParser(Date.from(computeNextCollTimestamp(deletionReferenceInstant)), this.timeZone).parseMath(autoDeleteAgeMathStr).toInstant();
     } catch (ParseException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e); // note: should not happen by this point
     }
@@ -601,7 +603,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       String mostRecentCol = collectionList.get(0);
       String pfx = getRoutedAliasType().getSeparatorPrefix();
       int sepLen = mostRecentCol.contains(pfx) ? pfx.length() : 1; // __TRA__ or _
-      String mostRecentTime = mostRecentCol.substring(getAliasName().length() + sepLen);
+      String mostRecentTime = mostRecentCol.substring(aliasName.length() + sepLen);
       Instant parsed = DATE_TIME_FORMATTER.parse(mostRecentTime, Instant::from);
       String nextCol = calcNextCollection(parsed);
       return Collections.singletonList(new Action(this, ActionType.ENSURE_EXISTS, nextCol));

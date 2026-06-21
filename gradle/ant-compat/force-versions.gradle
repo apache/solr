@@ -18,10 +18,10 @@
 
 // Force versions of certain components to align them with ant build.
 
-subprojects {
+project(":solr").subprojects {
   plugins.withType(JavaPlugin) {
     dependencies {
-      implementation enforcedPlatform('org.slf4j:slf4j-api:1.7.24')
+      implementation enforcedPlatform('org.slf4j:slf4j-api:2.0.0-alpha1')
       implementation enforcedPlatform('commons-logging:commons-logging:1.1.3')
     }
   }
@@ -30,7 +30,7 @@ subprojects {
 configure(project(":solr:server")) {
   afterEvaluate {
     dependencies {
-      libExt enforcedPlatform('org.slf4j:slf4j-api:1.7.24')
+      libExt enforcedPlatform('org.slf4j:slf4j-api:2.0.0-alpha1')
       libExt enforcedPlatform('commons-logging:commons-logging:1.1.3')
     }
   }

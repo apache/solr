@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
+import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
@@ -45,6 +46,7 @@ import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectionKeepAliveStrategy;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
@@ -59,6 +61,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -73,18 +76,19 @@ import org.slf4j.LoggerFactory;
  * @lucene.experimental
  */
 public class HttpClientUtil {
+  /** Stable token used as the user-token cache key for connection reuse (formerly HttpSolrClient.class). */
+  private static final Object USER_TOKEN_CACHE_KEY = new Object();
+
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
-  public static final int DEFAULT_SO_TIMEOUT = 600000;
+
+  public static final int DEFAULT_CONNECT_TIMEOUT = 5000;
+  public static final int DEFAULT_SO_TIMEOUT = (int) TimeUnit.MINUTES.toMillis(1);
   public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
   public static final int DEFAULT_MAXCONNECTIONS = 100000;
-  
+
   private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
-  private static final int EVICT_IDLE_CONNECTIONS_DEFAULT = 50000;
   private static final String VALIDATE_AFTER_INACTIVITY = "validateAfterInactivity";
-  private static final String EVICT_IDLE_CONNECTIONS = "evictIdleConnections";
 
   // Maximum connections allowed per host
   public static final String PROP_MAX_CONNECTIONS_PER_HOST = "maxConnectionsPerHost";
@@ -143,7 +147,7 @@ public class HttpClientUtil {
 
   private static volatile SolrHttpClientBuilder httpClientBuilder;
 
-  private static SolrHttpClientContextBuilder httpClientRequestContextBuilder = new SolrHttpClientContextBuilder();
+  private static volatile SolrHttpClientContextBuilder httpClientRequestContextBuilder = new SolrHttpClientContextBuilder();
 
   private static volatile SocketFactoryRegistryProvider socketFactoryRegistryProvider;
   private static volatile String cookiePolicy;
@@ -156,7 +160,7 @@ public class HttpClientUtil {
     // Configure the SocketFactoryRegistryProvider if user has specified the provider type.
     String socketFactoryRegistryProviderClassName = System.getProperty(SYS_PROP_SOCKET_FACTORY_REGISTRY_PROVIDER);
     if (socketFactoryRegistryProviderClassName != null) {
-      log.debug("Using {}", socketFactoryRegistryProviderClassName);
+      log.info("Using socket factory {}", socketFactoryRegistryProviderClassName);
       try {
         socketFactoryRegistryProvider = (SocketFactoryRegistryProvider)Class.forName(socketFactoryRegistryProviderClassName).getConstructor().newInstance();
       } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
@@ -189,18 +193,29 @@ public class HttpClientUtil {
       // don't synchronize traversal - can lead to deadlock - CopyOnWriteArrayList is critical
       // we also do not want to have to acquire the mutex when the list is empty or put a global
       // mutex around the process calls
-      interceptors.forEach(new Consumer<HttpRequestInterceptor>() {
+      interceptors.forEach(new HttpRequestInterceptorConsumer(request, context));
 
-        @Override
-        public void accept(HttpRequestInterceptor interceptor) {
-          try {
-            interceptor.process(request, context);
-          } catch (Exception e) {
-            log.error("", e);
-          }
+    }
+
+    private static class HttpRequestInterceptorConsumer implements Consumer<HttpRequestInterceptor> {
+
+      private final HttpRequest request;
+      private final HttpContext context;
+
+      public HttpRequestInterceptorConsumer(HttpRequest request, HttpContext context) {
+        this.request = request;
+        this.context = context;
+      }
+
+      @Override
+      public void accept(HttpRequestInterceptor interceptor) {
+        try {
+          interceptor.process(request, context);
+        } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
+          log.error("", e);
         }
-      });
-
+      }
     }
   }
 
@@ -233,6 +248,9 @@ public class HttpClientUtil {
   public static void resetHttpClientBuilder() {
     socketFactoryRegistryProvider = new DefaultSocketFactoryRegistryProvider();
     httpClientBuilder = SolrHttpClientBuilder.create();
+    httpClientRequestContextBuilder = new SolrHttpClientContextBuilder();
+    cookiePolicy = null;
+    interceptors.clear();
   }
 
   private static final class DefaultSocketFactoryRegistryProvider extends SocketFactoryRegistryProvider {
@@ -245,15 +263,29 @@ public class HttpClientUtil {
       RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory> create();
       builder.register("http", PlainConnectionSocketFactory.getSocketFactory());
 
+      return builder.build();
+    }
+  }
+
+  public static final class SSLSocketFactoryRegistryProvider extends SocketFactoryRegistryProvider {
+    @Override
+    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
+      // this mimics PoolingHttpClientConnectionManager's default behavior,
+      // except that we explicitly use SSLConnectionSocketFactory.getSystemSocketFactory()
+      // to pick up the system level default SSLContext (where javax.net.ssl.* properties
+      // related to keystore & truststore are specified)
+      RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory> create();
+      builder.register("http", PlainConnectionSocketFactory.getSocketFactory());
+
       // logic to turn off peer host check
       SSLConnectionSocketFactory sslConnectionSocketFactory = null;
       boolean sslCheckPeerName = toBooleanDefaultIfNull(
-          toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
+              toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
       if (sslCheckPeerName) {
         sslConnectionSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
       } else {
         sslConnectionSocketFactory = new SSLConnectionSocketFactory(SSLContexts.createSystemDefault(),
-                                                                    NoopHostnameVerifier.INSTANCE);
+                NoopHostnameVerifier.INSTANCE);
         log.debug("{} is false, hostname checks disabled.", HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
       }
       builder.register("https", sslConnectionSocketFactory);
@@ -275,7 +307,13 @@ public class HttpClientUtil {
 
   /** test usage subject to change @lucene.experimental */ 
   static PoolingHttpClientConnectionManager createPoolingConnectionManager() {
-    return new PoolingHttpClientConnectionManager(socketFactoryRegistryProvider.getSocketFactoryRegistry());
+    PoolingHttpClientConnectionManager pool = new PoolingHttpClientConnectionManager(socketFactoryRegistryProvider.getSocketFactoryRegistry());
+
+    //SocketConfig config = new SocketConfig(SocketConfig.DEFAULT.getSoTimeout(), true, SocketConfig.DEFAULT.getSoLinger(), SocketConfig.DEFAULT.isSoKeepAlive(), SocketConfig.DEFAULT.isTcpNoDelay(), SocketConfig.DEFAULT.getSndBufSize(), SocketConfig.DEFAULT.getRcvBufSize(), SocketConfig.DEFAULT.getBacklogSize());
+    SocketConfig config = SocketConfig.custom().setSoReuseAddress(true).build();
+
+    pool.setDefaultSocketConfig(config);
+    return pool;
   }
   
   public static CloseableHttpClient createClient(SolrParams params, PoolingHttpClientConnectionManager cm) {
@@ -325,8 +363,14 @@ public class HttpClientUtil {
 
     newHttpClientBuilder.addInterceptorLast(new DynamicInterceptor());
 
-    newHttpClientBuilder = newHttpClientBuilder.setKeepAliveStrategy(keepAliveStrat)
-        .evictIdleConnections((long) Integer.getInteger(EVICT_IDLE_CONNECTIONS, EVICT_IDLE_CONNECTIONS_DEFAULT), TimeUnit.MILLISECONDS);
+    newHttpClientBuilder = newHttpClientBuilder.setKeepAliveStrategy(keepAliveStrat);
+
+    newHttpClientBuilder = newHttpClientBuilder.setConnectionReuseStrategy(new ConnectionReuseStrategy() {
+      @Override
+      public boolean keepAlive(HttpResponse response, HttpContext context) {
+        return true;
+      }
+    });
 
     if (httpRequestExecutor != null)  {
       newHttpClientBuilder.setRequestExecutor(httpRequestExecutor);
@@ -334,10 +378,10 @@ public class HttpClientUtil {
 
     HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params);
 
-    HttpClient httpClient = builder.setConnectionManager(cm).build();
+    CloseableHttpClient httpClient = builder.setConnectionManager(cm).build();
 
-    assert ObjectReleaseTracker.track(httpClient);
-    return (CloseableHttpClient) httpClient;
+    assert ObjectReleaseTracker.getInstance().track(httpClient);
+    return httpClient;
   }
   
   /**
@@ -391,10 +435,10 @@ public class HttpClientUtil {
   }
 
   public static void close(HttpClient httpClient) { 
-
+    if (httpClient == null) return;
     org.apache.solr.common.util.IOUtils.closeQuietly((CloseableHttpClient) httpClient);
 
-    assert ObjectReleaseTracker.release(httpClient);
+    assert ObjectReleaseTracker.getInstance().release(httpClient);
   }
 
   public static void addRequestInterceptor(HttpRequestInterceptor interceptor) {
@@ -486,7 +530,7 @@ public class HttpClientUtil {
    * in connection pools if client authentication is enabled.
    */
   public static HttpClientContext createNewHttpClientRequestContext() {
-    HttpClientContext context = httpClientRequestContextBuilder.createContext(HttpSolrClient.cacheKey);
+    HttpClientContext context = httpClientRequestContextBuilder.createContext(USER_TOKEN_CACHE_KEY);
 
     return context;
   }

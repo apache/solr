@@ -52,6 +52,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
+import org.jctools.maps.NonBlockingHashMap;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -61,34 +62,36 @@ import org.apache.lucene.util.packed.PackedLongValues;
  */
 public class FieldCacheImpl implements FieldCache {
 
-  private Map<Class<?>,Cache> caches;
+  public static final CacheEntry[] EMPTY_CACHE_ENTRY = new CacheEntry[0];
+  private volatile Map<Class<?>,Cache> caches;
   FieldCacheImpl() {
     init();
   }
 
-  private synchronized void init() {
-    caches = new HashMap<>(6);
+  private void init() {
+    Map<Class<?>,Cache> caches = new HashMap<>(6);
     caches.put(Long.TYPE, new LongCache(this));
     caches.put(BinaryDocValues.class, new BinaryDocValuesCache(this));
     caches.put(SortedDocValues.class, new SortedDocValuesCache(this));
     caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
     caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
+    this.caches = Collections.unmodifiableMap(caches);
   }
 
   @Override
-  public synchronized void purgeAllCaches() {
+  public void purgeAllCaches() {
     init();
   }
 
   @Override
-  public synchronized void purgeByCacheKey(IndexReader.CacheKey coreCacheKey) {
+  public void purgeByCacheKey(IndexReader.CacheKey coreCacheKey) {
     for(Cache c : caches.values()) {
       c.purgeByCacheKey(coreCacheKey);
     }
   }
 
   @Override
-  public synchronized CacheEntry[] getCacheEntries() {
+  public CacheEntry[] getCacheEntries() {
     List<CacheEntry> result = new ArrayList<>(17);
     for(final Map.Entry<Class<?>,Cache> cacheEntry: caches.entrySet()) {
       final Cache cache = cacheEntry.getValue();
@@ -107,7 +110,7 @@ public class FieldCacheImpl implements FieldCache {
         }
       }
     }
-    return result.toArray(new CacheEntry[result.size()]);
+    return result.toArray(EMPTY_CACHE_ENTRY);
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
@@ -154,7 +157,7 @@ public class FieldCacheImpl implements FieldCache {
         Map<CacheKey,Accountable> innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
           // First time this reader is using FieldCache
-          innerCache = new HashMap<>();
+          innerCache = new NonBlockingHashMap<>();
           readerCache.put(readerKey, innerCache);
           wrapper.initReader(reader);
         }
@@ -741,7 +744,7 @@ public class FieldCacheImpl implements FieldCache {
           public void visitDoc(int docID) {
             values.set(docID, currentValue - minValue);
           }
-          
+
           @Override
           protected TermsEnum termsEnum(Terms terms) throws IOException {
             return parser.termsEnum(terms);
@@ -860,7 +863,7 @@ public class FieldCacheImpl implements FieldCache {
     public long ramBytesUsed() {
       return bytes.ramBytesUsed() + 
              termOrdToBytesOffset.ramBytesUsed() + 
-             docToTermOrd.ramBytesUsed() + 
+             docToTermOrd.ramBytesUsed() +
              3*RamUsageEstimator.NUM_BYTES_OBJECT_REF +
              Integer.BYTES;
     }
@@ -1076,10 +1079,6 @@ public class FieldCacheImpl implements FieldCache {
 
   public BinaryDocValues getTerms(LeafReader reader, String field, float acceptableOverheadRatio) throws IOException {
     BinaryDocValues valuesIn = reader.getBinaryDocValues(field);
-    if (valuesIn == null) {
-      valuesIn = reader.getSortedDocValues(field);
-    }
-
     if (valuesIn != null) {
       // Not cached here by FieldCacheImpl (cached instead
       // per-thread by SegmentReader):

@@ -54,7 +54,7 @@ public class GeohashHaversineFunction extends ValueSource {
     assert this.ctx.getDistCalc() instanceof GeodesicSphereDistCalc.Haversine;
   }
 
-  protected String name() {
+  protected static String name() {
     return "ghhsin";
   }
 
@@ -71,7 +71,7 @@ public class GeohashHaversineFunction extends ValueSource {
       }
       @Override
       public String toString(int doc) throws IOException {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(32);
         sb.append(name()).append('(');
         sb.append(gh1DV.toString(doc)).append(',').append(gh2DV.toString(doc));
         sb.append(')');
@@ -107,8 +107,7 @@ public class GeohashHaversineFunction extends ValueSource {
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     GeohashHaversineFunction other = (GeohashHaversineFunction) o;
-    return this.name().equals(other.name())
-            && geoHash1.equals(other.geoHash1) &&
+    return geoHash1.equals(other.geoHash1) &&
             geoHash2.equals(other.geoHash2) &&
             degreesToDist == other.degreesToDist;
   }
@@ -126,7 +125,7 @@ public class GeohashHaversineFunction extends ValueSource {
 
   @Override
   public String description() {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     sb.append(name()).append('(');
     sb.append(geoHash1).append(',').append(geoHash2);
     sb.append(')');

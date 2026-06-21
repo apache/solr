@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -48,7 +49,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(4, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(4, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
   }
 
   @Override
@@ -116,7 +117,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
     final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[1];
     int numStart = num;
-    System.out.println("NUM ==> " +num);
+    //System.out.println("NUM ==> " +num);
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAliasCplx" + num;
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();

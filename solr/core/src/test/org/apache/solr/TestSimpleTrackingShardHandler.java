@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
@@ -23,11 +24,13 @@ import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrac
 
 import java.util.List;
 import java.util.Collections;
+import java.util.Set;
 
 /**
  * super simple sanity check that SimpleTrackingShardHandler can be used in a 
  * {@link BaseDistributedSearchTestCase} subclass
  */
+@LuceneTestCase.Nightly // a bit slow for what it does...
 public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCase {
 
   @Override
@@ -39,13 +42,11 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
     RequestTrackingQueue trackingQueue = new RequestTrackingQueue();
     
     TrackingShardHandlerFactory.setTrackingQueue(jettys, trackingQueue);
-    // sanity check that our control jetty has the correct configs as well
-    TrackingShardHandlerFactory.setTrackingQueue(Collections.singletonList(controlJetty), trackingQueue);
-    
+
     QueryResponse ignored = query("q","*:*", "fl", "id", "sort", "id asc");
 
     int numShardRequests = 0;
-    for (List<ShardRequestAndParams> shard : trackingQueue.getAllRequests().values()) {
+    for (Set<ShardRequestAndParams> shard : trackingQueue.getAllRequests().values()) {
       for (ShardRequestAndParams shardReq : shard) {
         numShardRequests++;
       }

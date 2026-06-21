@@ -29,6 +29,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
@@ -52,7 +53,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
     return  this;
   }
 
-  public MergeStrategy getMergeStrategy() {
+  public MergeStrategy getMergeStrategy(SolrClient client) {
     return null;
   }
 

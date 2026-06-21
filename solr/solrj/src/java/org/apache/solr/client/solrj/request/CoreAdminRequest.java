@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * This class is experimental and subject to change.
@@ -151,9 +152,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       if (roles != null) {
         params.set( CoreAdminParams.ROLES, roles);
       }
-      if (coreNodeName != null) {
-        params.set( CoreAdminParams.CORE_NODE_NAME, coreNodeName);
-      }
 
       if (isTransient != null) {
         params.set(CoreAdminParams.TRANSIENT, isTransient);
@@ -174,11 +172,12 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   
   public static class WaitForState extends CoreAdminRequest {
     protected String nodeName;
-    protected String coreNodeName;
+    protected String coreName;
+    protected String leaderName;
     protected Replica.State state;
     protected Boolean checkLive;
-    protected Boolean onlyIfLeader;
-    protected Boolean onlyIfLeaderActive;
+    protected Boolean checkIsLeader;
+    private String coresCollection;
 
     public WaitForState() {
       action = CoreAdminAction.PREPRECOVERY;
@@ -191,13 +190,17 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     public String getNodeName() {
       return nodeName;
     }
-    
-    public String getCoreNodeName() {
-      return coreNodeName;
+
+    public String getCoreName() {
+      return coreName;
     }
 
-    public void setCoreNodeName(String coreNodeName) {
-      this.coreNodeName = coreNodeName;
+    public void setCoreName(String coreName) {
+      this.coreName = coreName;
+    }
+
+    public void setLeaderName(String leaderName) {
+      this.leaderName = leaderName;
     }
 
     public Replica.State getState() {
@@ -215,19 +218,19 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     public void setCheckLive(Boolean checkLive) {
       this.checkLive = checkLive;
     }
-    
-    public boolean isOnlyIfLeader() {
-      return onlyIfLeader;
+
+    public void setCheckIsLeader(Boolean checkIsLeader) {
+      this.checkIsLeader = checkIsLeader;
     }
 
-    public void setOnlyIfLeader(boolean onlyIfLeader) {
-      this.onlyIfLeader = onlyIfLeader;
+    public Boolean getCheckIsLeader() {
+      return checkIsLeader;
     }
-    
-    public void setOnlyIfLeaderActive(boolean onlyIfLeaderActive) {
-      this.onlyIfLeaderActive = onlyIfLeaderActive;
+
+    public void setCoresCollection(String collectionName) {
+      this.coresCollection = collectionName;
     }
-    
+
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -235,17 +238,27 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set( CoreAdminParams.ACTION, action.toString() );
- 
-      params.set( CoreAdminParams.CORE, core );
+
+      if (coreName == null) {
+        throw new IllegalStateException("The core name must not be null");
+      }
+
+      if (leaderName == null) {
+        throw new IllegalStateException("The leaderName name must not be null");
+      }
+
+      if (coresCollection == null) {
+        throw new IllegalStateException("The coresCollection must not be null");
+      }
+
+      params.set( CoreAdminParams.CORE, coreName);
+
+      params.set( "leaderName", leaderName);
       
       if (nodeName != null) {
         params.set( "nodeName", nodeName);
       }
-      
-      if (coreNodeName != null) {
-        params.set( "coreNodeName", coreNodeName);
-      }
-      
+
       if (state != null) {
         params.set(ZkStateReader.STATE_PROP, state.toString());
       }
@@ -253,14 +266,12 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       if (checkLive != null) {
         params.set( "checkLive", checkLive);
       }
-      
-      if (onlyIfLeader != null) {
-        params.set( "onlyIfLeader", onlyIfLeader);
+
+      if (checkIsLeader != null) {
+        params.set( "checkIsLeader", checkIsLeader);
       }
-      
-      if (onlyIfLeaderActive != null) {
-        params.set( "onlyIfLeaderActive", onlyIfLeaderActive);
-      }
+
+      params.set("coresCollection", coresCollection);
 
       return params;
     }
@@ -567,8 +578,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
 
   @Override
-  protected CoreAdminResponse createResponse(SolrClient client) {
-    return new CoreAdminResponse();
+  protected CoreAdminResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new CoreAdminResponse(nl);
   }
 
   //---------------------------------------------------------------------------------------
@@ -579,7 +590,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   {
     CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreName(name);
-    req.setAction(CoreAdminAction.RELOAD);
+    req.action = CoreAdminAction.RELOAD;
     return req.process(client);
   }
 
@@ -608,8 +619,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       throws SolrServerException, IOException {
     CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreName(coreName);
-    req.setOtherCoreName(SolrIdentifierValidator.validateCoreName(newName));
-    req.setAction( CoreAdminAction.RENAME );
+    req.other = SolrIdentifierValidator.validateCoreName(newName);
+    req.action = CoreAdminAction.RENAME;
     return req.process( client );
   }
 
@@ -626,8 +637,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       throws SolrServerException, IOException {
     CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreName(core1);
-    req.setOtherCoreName(core2);
-    req.setAction( CoreAdminAction.SWAP );
+    req.other = core2;
+    req.action = CoreAdminAction.SWAP;
     return req.process( client );
   }
 
@@ -638,8 +649,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   public static CoreStatus getCoreStatus(String coreName, boolean getIndexInfo, SolrClient client)
       throws SolrServerException, IOException {
     CoreAdminRequest req = new CoreAdminRequest();
-    req.setAction(CoreAdminAction.STATUS);
-    req.setIndexInfoNeeded(getIndexInfo);
+    req.action = CoreAdminAction.STATUS;
+    req.isIndexInfoNeeded = getIndexInfo;
     return new CoreStatus(req.process(client).getCoreStatus(coreName));
   }
 
@@ -647,7 +658,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   {
     CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreName( name );
-    req.setAction( CoreAdminAction.STATUS );
+    req.action = CoreAdminAction.STATUS;
     return req.process( client );
   }
   

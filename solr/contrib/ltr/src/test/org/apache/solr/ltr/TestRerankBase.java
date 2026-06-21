@@ -32,12 +32,12 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.ValueFeature;
@@ -49,19 +49,14 @@ import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.rest.ManagedResourceStorage;
-import org.apache.solr.rest.SolrSchemaRestApi;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestRerankBase extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  protected static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
 
   protected static File tmpSolrHome;
   protected static File tmpConfDir;
@@ -117,25 +112,25 @@ public class TestRerankBase extends RestTestBase {
     System.clearProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT);
   }
 
-  protected static void setuptest(boolean bulkIndex) throws Exception {
+  protected void setuptest(boolean bulkIndex) throws Exception {
     chooseDefaultFeatureFormat();
     setuptest("solrconfig-ltr.xml", "schema.xml");
     if (bulkIndex) bulkIndex();
   }
 
-  protected static void setupPersistenttest(boolean bulkIndex) throws Exception {
+  protected void setupPersistenttest(boolean bulkIndex) throws Exception {
     chooseDefaultFeatureFormat();
     setupPersistentTest("solrconfig-ltr.xml", "schema.xml");
     if (bulkIndex) bulkIndex();
   }
 
-  public static ManagedFeatureStore getManagedFeatureStore() {
+  public ManagedFeatureStore getManagedFeatureStore() {
     try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       return ManagedFeatureStore.getManagedFeatureStore(core);
     }
   }
 
-  public static ManagedModelStore getManagedModelStore() {
+  public ManagedModelStore getManagedModelStore() {
     try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       return ManagedModelStore.getManagedModelStore(core);
     }
@@ -144,10 +139,10 @@ public class TestRerankBase extends RestTestBase {
   protected static SortedMap<ServletHolder,String>  setupTestInit(
       String solrconfig, String schema,
       boolean isPersistent) throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, CONF_DIR);
     tmpConfDir.deleteOnExit();
-    FileUtils.copyDirectory(new File(TEST_HOME()),
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()),
         tmpSolrHome.getAbsoluteFile());
 
     final File fstore = new File(tmpConfDir, FEATURE_FILE_NAME);
@@ -183,50 +178,33 @@ public class TestRerankBase extends RestTestBase {
               + "/collection1/conf/schema.xml"));
     }
 
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi",
-        ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application",
-        SolrSchemaRestApi.class.getCanonicalName());
-    solrRestApi.setInitParameter("storageIO",
-        ManagedResourceStorage.InMemoryStorageIO.class.getCanonicalName());
-    extraServlets.put(solrRestApi, PARENT_ENDPOINT);
-
     System.setProperty("managed.schema.mutable", "true");
-
+    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
     return extraServlets;
   }
 
-  public static void setuptest(String solrconfig, String schema)
+  public void setuptest(String solrconfig, String schema)
       throws Exception {
 
     SortedMap<ServletHolder,String> extraServlets =
         setupTestInit(solrconfig,schema,false);
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
         "/solr", true, extraServlets);
   }
 
-  public static void setupPersistentTest(String solrconfig, String schema)
+  public void setupPersistentTest(String solrconfig, String schema)
       throws Exception {
 
     SortedMap<ServletHolder,String> extraServlets =
         setupTestInit(solrconfig,schema,true);
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
         "/solr", true, extraServlets);
   }
 
-  protected static void aftertest() throws Exception {
-    if (null != restTestHarness) {
-      restTestHarness.close();
-      restTestHarness = null;
-    }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+  protected void aftertest() throws Exception {
     if (null != tmpSolrHome) {
       FileUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
@@ -236,7 +214,7 @@ public class TestRerankBase extends RestTestBase {
     unchooseDefaultFeatureFormat();
   }
 
-  public static void makeRestTestHarnessNull() {
+  public void makeRestTestHarnessNull() {
     restTestHarness = null;
   }
 
@@ -284,7 +262,7 @@ public class TestRerankBase extends RestTestBase {
     return sb.toString();
   }
 
-  protected static void loadFeature(String name, String type, String params)
+  protected void loadFeature(String name, String type, String params)
       throws Exception {
     final String feature = getFeatureInJson(name, type, "test", params);
     log.info("loading feauture \n{} ", feature);
@@ -292,7 +270,7 @@ public class TestRerankBase extends RestTestBase {
         "/responseHeader/status==0");
   }
 
-  protected static void loadFeature(String name, String type, String fstore,
+  protected void loadFeature(String name, String type, String fstore,
       String params) throws Exception {
     final String feature = getFeatureInJson(name, type, fstore, params);
     log.info("loading feauture \n{} ", feature);
@@ -300,12 +278,12 @@ public class TestRerankBase extends RestTestBase {
         "/responseHeader/status==0");
   }
 
-  protected static void loadModel(String name, String type, String[] features,
+  protected void loadModel(String name, String type, String[] features,
       String params) throws Exception {
     loadModel(name, type, features, "test", params);
   }
 
-  protected static void loadModel(String name, String type, String[] features,
+  protected void loadModel(String name, String type, String[] features,
       String fstore, String params) throws Exception {
     final String model = getModelInJson(name, type, features, fstore, params);
     log.info("loading model \n{} ", model);
@@ -313,7 +291,7 @@ public class TestRerankBase extends RestTestBase {
         "/responseHeader/status==0");
   }
 
-  public static void loadModels(String fileName) throws Exception {
+  public void loadModels(String fileName) throws Exception {
     final URL url = TestRerankBase.class.getResource("/modelExamples/"
         + fileName);
     final String multipleModels = FileUtils.readFileToString(
@@ -323,13 +301,13 @@ public class TestRerankBase extends RestTestBase {
         "/responseHeader/status==0");
   }
 
-  public static LTRScoringModel createModelFromFiles(String modelFileName,
+  public LTRScoringModel createModelFromFiles(String modelFileName,
       String featureFileName) throws ModelException, Exception {
     return createModelFromFiles(modelFileName, featureFileName,
         FeatureStore.DEFAULT_FEATURE_STORE_NAME);
   }
 
-  public static LTRScoringModel createModelFromFiles(String modelFileName,
+  public LTRScoringModel createModelFromFiles(String modelFileName,
       String featureFileName, String featureStoreName) throws ModelException, Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/"
         + modelFileName);
@@ -359,7 +337,7 @@ public class TestRerankBase extends RestTestBase {
     ms.setManagedFeatureStore(fs); // can we skip this and just use fs directly below?
 
     final LTRScoringModel ltrScoringModel = ManagedModelStore.fromLTRScoringModelMap(
-        solrResourceLoader, mapFromJson(modelJson), ms.getManagedFeatureStore());
+        getTestResourceLoader(), mapFromJson(modelJson), ms.getManagedFeatureStore());
     ms.addModel(ltrScoringModel);
     return ltrScoringModel;
   }
@@ -375,7 +353,7 @@ public class TestRerankBase extends RestTestBase {
     return (Map<String,Object>) parsedJson;
   }
 
-  public static void loadFeatures(String fileName) throws Exception {
+  public void loadFeatures(String fileName) throws Exception {
     final URL url = TestRerankBase.class.getResource("/featureExamples/"
         + fileName);
     final String multipleFeatures = FileUtils.readFileToString(
@@ -386,6 +364,20 @@ public class TestRerankBase extends RestTestBase {
         "/responseHeader/status==0");
   }
 
+  /**
+   * Returns a resource loader usable for feature/model instantiation in tests.
+   *
+   * <p>MRM: in this fork these LTR tests are bootstrapped via {@code createJettyAndHarness},
+   * which never calls {@code initCore()}, so the static {@code SolrTestCaseJ4.solrConfig} is
+   * always null. Pull the resource loader from the running Jetty's CoreContainer instead.
+   */
+  protected static org.apache.solr.core.SolrResourceLoader getTestResourceLoader() {
+    if (solrConfig != null) {
+      return solrConfig.getResourceLoader();
+    }
+    return jetty.getCoreContainer().getResourceLoader();
+  }
+
   protected List<Feature> getFeatures(List<String> names)
       throws FeatureException {
     final List<Feature> features = new ArrayList<>();
@@ -393,7 +385,7 @@ public class TestRerankBase extends RestTestBase {
     for (final String name : names) {
       final Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", 10);
-      final Feature f = Feature.getInstance(solrResourceLoader,
+      final Feature f = Feature.getInstance(getTestResourceLoader(),
           ValueFeature.class.getCanonicalName(),
           name, params);
       f.setIndex(pos);
@@ -407,7 +399,7 @@ public class TestRerankBase extends RestTestBase {
     return getFeatures(Arrays.asList(names));
   }
 
-  protected static void loadModelAndFeatures(String name, int allFeatureCount,
+  protected void loadModelAndFeatures(String name, int allFeatureCount,
       int modelFeatureCount) throws Exception {
     final String[] features = new String[modelFeatureCount];
     final String[] weights = new String[modelFeatureCount];
@@ -425,16 +417,16 @@ public class TestRerankBase extends RestTestBase {
         "{\"weights\":{" + String.join(",", weights) + "}}");
   }
 
-  protected static void bulkIndex() throws Exception {
-    assertU(adoc("title", "bloomberg different bla", "description",
+  protected void bulkIndex() throws Exception {
+    restTestHarness.update(adoc("title", "bloomberg different bla", "description",
         "bloomberg", "id", "6", "popularity", "1"));
-    assertU(adoc("title", "bloomberg bloomberg ", "description", "bloomberg",
+    restTestHarness.update(adoc("title", "bloomberg bloomberg ", "description", "bloomberg",
         "id", "7", "popularity", "2"));
-    assertU(adoc("title", "bloomberg bloomberg bloomberg", "description",
+    restTestHarness.update(adoc("title", "bloomberg bloomberg bloomberg", "description",
         "bloomberg", "id", "8", "popularity", "3"));
-    assertU(adoc("title", "bloomberg bloomberg bloomberg bloomberg",
+    restTestHarness.update(adoc("title", "bloomberg bloomberg bloomberg bloomberg",
         "description", "bloomberg", "id", "9", "popularity", "5"));
-    assertU(commit());
+    restTestHarness.update(commit());
   }
 
   protected static void bulkIndex(String filePath) throws Exception {
@@ -453,7 +445,7 @@ public class TestRerankBase extends RestTestBase {
       // Ignore. Just log the exception and go to the next file
       log.error(ex.getMessage(), ex);
     }
-    assertU(commit());
+    restTestHarness.update(commit());
 
   }
 
@@ -482,9 +474,9 @@ public class TestRerankBase extends RestTestBase {
       buff.append(curLine + "\n");
     }
     for (final String doc : docsToAdd) {
-      assertU(doc.trim());
+      restTestHarness.update(doc.trim());
     }
-    assertU(commit());
+    restTestHarness.update(commit());
     scn.close();
   }
 
@@ -529,14 +521,14 @@ public class TestRerankBase extends RestTestBase {
     final String featureName = "randomFeatureName"+random().nextInt(10);
 
     // create a feature from the parameters
-    final Feature featureA = Feature.getInstance(solrResourceLoader,
+    final Feature featureA = Feature.getInstance(getTestResourceLoader(),
         featureClassName, featureName, paramsA);
 
     // turn the feature back into parameters
     final LinkedHashMap<String,Object> paramsB = featureA.paramsToMap();
 
     // create feature B from feature A's parameters
-    final Feature featureB = Feature.getInstance(solrResourceLoader,
+    final Feature featureB = Feature.getInstance(getTestResourceLoader(),
         featureClassName, featureName, paramsB);
 
     // check that feature A and feature B are identical

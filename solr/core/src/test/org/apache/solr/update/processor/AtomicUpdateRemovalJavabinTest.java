@@ -23,6 +23,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -31,6 +33,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -50,18 +53,16 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
   private static final Date DATE_2 = Date.from(Instant.ofEpochSecond(1554243909));
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeAtomicUpdateRemovalJavabinTest() throws Exception {
     configureCluster(1)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
         .setMaxShardsPerNode(MAX_SHARDS_PER_NODE)
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(COLLECTION, 1, 1);
-
-    final SolrInputDocument doc1 = sdoc(
+    final SolrInputDocument doc1 = SolrTestCaseJ4.sdoc(
         "id", "1",
         "title_s", "title_1", "title_s", "title_2",
         "tv_mv_text", "text_1", "tv_mv_text", "text_2",
@@ -71,6 +72,11 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
     final UpdateRequest req = new UpdateRequest()
         .add(doc1);
     req.commit(cluster.getSolrClient(), COLLECTION);
+  }
+
+  @AfterClass
+  public static void afterAtomicUpdateRemovalJavabinTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test

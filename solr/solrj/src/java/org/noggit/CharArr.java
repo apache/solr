@@ -98,7 +98,7 @@ public class CharArr implements CharSequence, Appendable {
     return buf[start++];
   }
 
-  public int read(char cbuf[], int off, int len) {
+  public static int read(char cbuf[], int off, int len) {
     //TODO
     return 0;
   }
@@ -277,7 +277,7 @@ public class CharArr implements CharSequence, Appendable {
 
 
   // IDEA: a subclass that refills the array from a reader?
-  class CharArrReader extends CharArr {
+  static class CharArrReader extends CharArr {
     protected final Reader in;
 
     public CharArrReader(Reader in, int size) {
@@ -327,7 +327,7 @@ public class CharArr implements CharSequence, Appendable {
   }
 
 
-  class CharArrWriter extends CharArr {
+  static class CharArrWriter extends CharArr {
     protected Writer sink;
 
     @Override

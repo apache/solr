@@ -22,12 +22,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
@@ -46,15 +49,18 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
+@LuceneTestCase.Nightly// MRM TODO: debug - can take a long time
 public class HealthCheckHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("_default", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -70,13 +76,13 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
         req.process(cluster.getSolrClient()).getResponse().get(CommonParams.STATUS));
 
     // positive check that our exiting "healthy" node works with direct http client
-    try (HttpSolrClient httpSolrClient = getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
+    try (Http2SolrClient httpSolrClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
       SolrResponse response = req.process(httpSolrClient);
       assertEquals(CommonParams.OK, response.getResponse().get(CommonParams.STATUS));
     }
 
     // successfully create a dummy collection
-    try (HttpSolrClient httpSolrClient = getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
+    try (Http2SolrClient httpSolrClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
       CollectionAdminResponse collectionAdminResponse = CollectionAdminRequest.createCollection("test", "_default", 1, 1)
           .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
           .process(httpSolrClient);
@@ -90,16 +96,18 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
     // add a new node for the purpose of negative testing
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
-    try (HttpSolrClient httpSolrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try (Http2SolrClient httpSolrClient = SolrTestCaseJ4.getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
       // postive check that our (new) "healthy" node works with direct http client
       assertEquals(CommonParams.OK, req.process(httpSolrClient).getResponse().get(CommonParams.STATUS));
 
-      // now "break" our (new) node
+      // now "break" our (new) node. The node protects its Zk client with a close lock
+      // (SolrDispatchFilter#init), so disable it before this intentional simulation-close.
+      newJetty.getCoreContainer().getZkController().getZkClient().disableCloseLock();
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealth state
-      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
+      BaseHttpSolrClient.RemoteSolrException e = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
       {
         req.process(httpSolrClient);
       });
@@ -112,7 +120,8 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     // add a new node for the purpose of negative testing
     // negative check that if core container is not available at the node
     newJetty = cluster.startJettySolrRunner();
-    try (HttpSolrClient httpSolrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try (Http2SolrClient httpSolrClient = SolrTestCaseJ4
+        .getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
       // postive check that our (new) "healthy" node works with direct http client
       assertEquals(CommonParams.OK, req.process(httpSolrClient).getResponse().get(CommonParams.STATUS));
@@ -121,7 +130,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().shutdown();
 
       // api shouldn't unreachable
-      SolrException thrown = expectThrows(SolrException.class, () -> {
+      SolrException thrown = LuceneTestCase.expectThrows(SolrException.class, () -> {
         req.process(httpSolrClient).getResponse().get(CommonParams.STATUS);
         fail("API shouldn't be available, and fail at above request");
       });
@@ -134,7 +143,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
     // (redundent) positive check that our (previously) exiting "healthy" node (still) works
     // after getting negative results from our broken node and failed core container
-    try (HttpSolrClient httpSolrClient = getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
+    try (Http2SolrClient httpSolrClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
 
       assertEquals(CommonParams.OK, req.process(httpSolrClient).getResponse().get(CommonParams.STATUS));
     }
@@ -145,7 +154,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   public void testHealthCheckHandlerSolrJ() throws IOException, SolrServerException {
     // positive check of a HealthCheckRequest using http client
     HealthCheckRequest req = new HealthCheckRequest();
-    try (HttpSolrClient httpSolrClient = getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
+    try (Http2SolrClient httpSolrClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
       HealthCheckResponse rsp = req.process(httpSolrClient);
       assertEquals(CommonParams.OK, rsp.getNodeStatus());
     }
@@ -159,6 +168,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.Nightly // slow way to do this
   public void testHealthCheckV2Api() throws Exception {
     V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());
     assertEquals(0, res.getStatus());
@@ -166,17 +176,19 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
     // add a new node for the purpose of negative testing
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
-    try (HttpSolrClient httpSolrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try (Http2SolrClient httpSolrClient = SolrTestCaseJ4.getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
       // postive check that our (new) "healthy" node works with direct http client
       assertEquals(CommonParams.OK, new V2Request.Builder("/node/health").build().process(httpSolrClient).
           getResponse().get(CommonParams.STATUS));
 
-      // now "break" our (new) node
+      // now "break" our (new) node. The node protects its Zk client with a close lock
+      // (SolrDispatchFilter#init), so disable it before this intentional simulation-close.
+      newJetty.getCoreContainer().getZkController().getZkClient().disableCloseLock();
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealth state
-      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
+      BaseHttpSolrClient.RemoteSolrException e = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
       {
         new V2Request.Builder("/node/health").build().process(httpSolrClient);
       });

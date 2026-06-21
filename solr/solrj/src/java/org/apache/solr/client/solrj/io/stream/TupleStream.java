@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -140,19 +139,20 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       shards = shardsMap.get(collection);
     } else {
       //SolrCloud Sharding
-      CloudSolrClient cloudSolrClient =
-          Optional.ofNullable(streamContext.getSolrClientCache()).orElseGet(SolrClientCache::new).getCloudSolrClient(zkHost);
+      SolrClientCache clientCache = streamContext != null ? streamContext.getSolrClientCache() : null;
+      if (clientCache == null) {
+        clientCache = new SolrClientCache(zkHost);
+      }
+      CloudHttp2SolrClient cloudSolrClient = clientCache.getCloudSolrClient();
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = zkStateReader.getLiveNodes();
 
-
-      ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+      ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext != null ? streamContext.getRequestParams() : null);
       solrParams.add(requestParams);
 
       RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
-          Optional.ofNullable(streamContext.getRequestReplicaListTransformerGenerator()).orElseGet(RequestReplicaListTransformerGenerator::new);
+          Optional.ofNullable(streamContext != null ? streamContext.getRequestReplicaListTransformerGenerator() : null).orElseGet(RequestReplicaListTransformerGenerator::new);
 
       ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
 
@@ -170,7 +170,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
         }
       }
     }
-    Object core = streamContext.get("core");
+    Object core = streamContext != null ? streamContext.get("core") : null;
     if (streamContext != null && streamContext.isLocal() && core != null) {
       shards.removeIf(shardUrl -> !shardUrl.contains((CharSequence) core));
     }

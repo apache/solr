@@ -42,10 +42,10 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
 
   public ShuffleStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
+    StreamExpressionNamedParameter aliasExpression = StreamFactory.getNamedOperand(expression, "aliases");
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if(null == collectionName){

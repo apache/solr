@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
@@ -47,20 +48,26 @@ public class TestStressVersions extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random().nextInt(20);
+    final int commitPercent = 5 + random().nextInt(TEST_NIGHTLY ? 20 : 3);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = 1 + random().nextInt(5);
     final int optimisticPercent = 1+random().nextInt(50);    // percent change that an update uses optimistic locking
     final int optimisticCorrectPercent = 25+random().nextInt(70);    // percent change that a version specified will be correct
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    int nWriteThreads = 5 + random().nextInt(25);
+    int nWriteThreads;
+    if (TEST_NIGHTLY) {
+      nWriteThreads = 5 + random().nextInt(6);
+    } else {
+      nWriteThreads = 3;
+    }
+
 
     final int maxConcurrentCommits = nWriteThreads;
 
     // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 50000 : 500);  // number of query operations to perform in total
     int nReadThreads = 5 + random().nextInt(25);
 
 
@@ -88,7 +95,7 @@ public class TestStressVersions extends TestRTGBase {
 
                   synchronized(globalLock) {
                     newCommittedModel = new HashMap<>(model);  // take a snapshot
-                    version = snapshotCount++;
+                    version = snapshotCount.incrementAndGet();
                   }
 
                   if (rand.nextInt(100) < softCommitPercent) {
@@ -103,12 +110,12 @@ public class TestStressVersions extends TestRTGBase {
 
                   synchronized(globalLock) {
                     // install this model snapshot only if it's newer than the current one
-                    if (version >= committedModelClock) {
+                    if (version >= committedModelClock.get()) {
                       if (VERBOSE) {
                         verbose("installing new committedModel version="+committedModelClock);
                       }
                       committedModel = newCommittedModel;
-                      committedModelClock = version;
+                      committedModelClock.set(version);
                     }
                   }
                 }
@@ -132,7 +139,8 @@ public class TestStressVersions extends TestRTGBase {
               // Even with versions, we can't remove the sync because increasing versions does not mean increasing vals.
               //
               // NOTE: versioning means we can now remove the sync and tell what update "won"
-              // synchronized (sync) {
+              // MRM TODO: sync turned back on or else fail
+              synchronized (sync) {
               DocInfo info = model.get(id);
 
               long val = info.val;
@@ -188,7 +196,7 @@ public class TestStressVersions extends TestRTGBase {
                 }
 
               }
-              // }   // end sync
+              }   // end sync
 
               if (!before) {
                 lastId = id;
@@ -233,14 +241,19 @@ public class TestStressVersions extends TestRTGBase {
               if (VERBOSE) {
                 verbose("querying id", id);
               }
-              SolrQueryRequest sreq;
-              if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
-              } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              }
+              String response = null;
+              SolrQueryRequest sreq = null;
+              try {
+                if (realTime) {
+                  sreq = req("wt", "json", "qt", "/get", "ids", Integer.toString(id));
+                } else {
+                  sreq = req("wt", "json", "q", "id:" + Integer.toString(id), "omitHeader", "true");
+                }
 
-              String response = h.query(sreq);
+                response = h.query(sreq);
+              } finally {
+                IOUtils.closeQuietly(sreq);
+              }
               Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {

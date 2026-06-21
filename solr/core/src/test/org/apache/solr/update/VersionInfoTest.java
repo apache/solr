@@ -22,12 +22,14 @@ import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class VersionInfoTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxIndexedVersionFromIndex() throws Exception {
+    System.setProperty("enable.update.log", "true");
     initCore("solrconfig-tlog.xml", "schema-version-indexed.xml");
     try (SolrQueryRequest r = req()) {
       SchemaField v = r.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getVersionField();
@@ -43,6 +45,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxDocValuesVersionFromIndex() throws Exception {
+    System.setProperty("enable.update.log", "true");
     initCore("solrconfig-tlog.xml","schema-version-dv.xml");
     try (SolrQueryRequest r = req()) {
       SchemaField v = r.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getVersionField();
@@ -91,7 +94,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
     int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     VersionBucket bucket = vInfo.bucket(bucketHash);
-    assertEquals(bucket.highest, version.longValue());
+    assertEquals(bucket.highest.get(), version.longValue());
 
     // send 2nd doc ... BUT DO NOT COMMIT
     docId = Integer.toString(2);
@@ -134,7 +137,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
     
     bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     bucket = vInfo.bucket(bucketHash);
-    assertEquals(bucket.highest, version.longValue());
+    assertEquals(bucket.highest.get(), version.longValue());
 
     // reload the core, which should reset the max
     CoreContainer coreContainer = req.getCore().getCoreContainer();
@@ -167,6 +170,6 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
     bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     bucket = vInfo.bucket(bucketHash);
-    assertEquals(bucket.highest, version.longValue());
+    assertEquals(bucket.highest.get(), version.longValue());
   }
 }

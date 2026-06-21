@@ -1,0 +1,319 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.cloud;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.common.cloud.ShardStateLog;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.StateDelta;
+import org.apache.solr.common.cloud.StateDeltaCodec;
+import org.apache.solr.common.cloud.StateDeltaConfig;
+import org.apache.solr.common.cloud.StatePlanePaths;
+import org.apache.solr.common.cloud.StatePlaneReader;
+import org.apache.solr.common.cloud.StatePlaneWriter;
+import org.apache.solr.common.cloud.StateSnapshot;
+import org.apache.zookeeper.data.Stat;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+/**
+ * PR-5 compaction tests for {@link StatePlaneWriter}: real snapshot fold (replacing the blind trim),
+ * snapshot-durable-before-delta-delete ordering, crash/interrupt idempotency, and the
+ * compaction-vs-new-delta race. ZK-backed via {@link ZkTestServer}.
+ *
+ * <p>Short states: LEADER=1, ACTIVE=2, BUFFERING=3, RECOVERING=4, DOWN=5.
+ */
+public class StatePlaneCompactionTest extends SolrTestCaseJ4 {
+
+    private static final int LEADER = 1;
+    private static final int ACTIVE = 2;
+    private static final int BUFFERING = 3;
+    private static final int RECOVERING = 4;
+    private static final int DOWN = 5;
+
+    /** Small compaction trigger so a handful of publishes folds. */
+    private static final int COMPACT_AFTER = 5;
+
+    private ZkTestServer server;
+    private SolrZkClient zkClient;
+    private String savedCompactAfter;
+
+    static class AlwaysElectedFence implements StatePlaneWriter.ElectionFence {
+        final String id;
+        AlwaysElectedFence(String id) { this.id = id; }
+        public boolean stillElected() { return true; }
+        public String writerId() { return id; }
+        public boolean isFencedBy(String ringWriterId) { return false; }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        savedCompactAfter = System.getProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP);
+        System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, Integer.toString(COMPACT_AFTER));
+        Path zkDir = SolrTestUtil.createTempDir("zkData-spc");
+        server = new ZkTestServer(zkDir);
+        server.run(true);
+        zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+        zkClient.start();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (zkClient != null) zkClient.close();
+        if (server != null) server.shutdown();
+        if (savedCompactAfter == null) {
+            System.clearProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP);
+        } else {
+            System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, savedCompactAfter);
+        }
+        super.tearDown();
+    }
+
+    private StatePlaneWriter writer(String id) {
+        return new StatePlaneWriter(zkClient, new AlwaysElectedFence(id));
+    }
+
+    private ShardStateLog readRing(String coll, String shard) throws Exception {
+        String path = StatePlanePaths.shardDeltas(StatePlanePaths.collectionPath(coll), shard);
+        byte[] data = zkClient.getData(path, null, new Stat(), true);
+        return StateDeltaCodec.decodeShardStateLog(data);
+    }
+
+    private StateSnapshot readSnapshot(String coll, String shard) throws Exception {
+        String path = StatePlanePaths.shardSnapshot(StatePlanePaths.collectionPath(coll), shard);
+        if (!zkClient.exists(path, true)) return null;
+        byte[] data = zkClient.getData(path, null, new Stat(), true);
+        return StateDeltaCodec.decodeStateSnapshot(data);
+    }
+
+    private static List<StateDelta.Entry> promo(int replicaId, int shortState) {
+        return Collections.singletonList(new StateDelta.Entry(replicaId, shortState));
+    }
+
+    /** Effective state seen by a reader: read snapshot (or empty base) folded with the live ring. */
+    private Map<Integer, Integer> effective(String coll, String shard) throws Exception {
+        ShardStateLog ring = readRing(coll, shard);
+        StateSnapshot snap = readSnapshot(coll, shard);
+        if (snap == null) {
+            snap = new StateSnapshot(-1L, coll, ring.epoch, shard, ring.baseSeq, Collections.emptyMap());
+        }
+        return snap.reconstruct(ring.entries);
+    }
+
+    // ---- 1. compaction creates a valid snapshot and bounds the ring ----
+
+    @Test
+    public void compactionCreatesValidSnapshot() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        assertNull("no snapshot before any compaction", readSnapshot("c1", "s1"));
+
+        // 5 real transitions across two replicas → the 5th append (ring size == COMPACT_AFTER) folds.
+        w.publish("c1", "s1", promo(10, ACTIVE), null);      // seq1
+        w.publish("c1", "s1", promo(11, ACTIVE), null);      // seq2
+        w.publish("c1", "s1", promo(10, RECOVERING), null);  // seq3
+        w.publish("c1", "s1", promo(11, DOWN), null);        // seq4
+        w.publish("c1", "s1", promo(10, DOWN), null);        // seq5 -> compaction at upToSeq=5
+
+        StateSnapshot snap = readSnapshot("c1", "s1");
+        assertNotNull("snapshot written by compaction", snap);
+        assertEquals("snapshot upToSeq == folded prefix head", 5L, snap.upToSeq());
+        assertEquals("baseSeq mirrors upToSeq", 5L, snap.baseSeq);
+        assertEquals("collection name carried into snapshot identity", "c1", snap.collectionName);
+        Map<Integer, Integer> m = snap.replicaStates;
+        assertEquals("replica 10 folded to DOWN", Integer.valueOf(DOWN), m.get(10));
+        assertEquals("replica 11 folded to DOWN", Integer.valueOf(DOWN), m.get(11));
+
+        ShardStateLog ring = readRing("c1", "s1");
+        assertTrue("ring bounded after compaction (<= compactAfterCount)", ring.entries.size() <= COMPACT_AFTER);
+        assertEquals("folded prefix removed from ring", 0, ring.entries.size());
+        assertEquals("ring baseSeq advanced to upToSeq", 5L, ring.baseSeq);
+        assertEquals("lastSeq high-water preserved across the fold", 5L, ring.lastSeq);
+
+        // The reader-visible effective state is unchanged by compaction.
+        Map<Integer, Integer> eff = effective("c1", "s1");
+        assertEquals(Integer.valueOf(DOWN), eff.get(10));
+        assertEquals(Integer.valueOf(DOWN), eff.get(11));
+    }
+
+    // ---- 2. old deltas removed only after the snapshot is durable (no stale window) ----
+
+    @Test
+    public void deltasDeletedOnlyAfterSnapshotDurable() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        for (int i = 0; i < COMPACT_AFTER; i++) {
+            w.publish("c2", "s1", promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
+        }
+        ShardStateLog ring = readRing("c2", "s1");
+        StateSnapshot snap = readSnapshot("c2", "s1");
+
+        // Invariant proving the order: the ring's baseSeq advanced past the folded prefix, and a
+        // snapshot covering EXACTLY that prefix (upToSeq == baseSeq) is already present. There is no
+        // window where deltas are gone (baseSeq advanced) but the snapshot is missing or stale.
+        assertTrue("ring advanced its baseSeq (deltas folded out)", ring.baseSeq > 0);
+        assertNotNull("snapshot durable whenever baseSeq has advanced", snap);
+        assertEquals("snapshot fully covers everything below the ring baseSeq", ring.baseSeq, snap.upToSeq());
+
+        // And the snapshot+remaining-ring reconstructs the true effective state (nothing lost).
+        Map<Integer, Integer> eff = effective("c2", "s1");
+        assertEquals("last write (seq5 -> ACTIVE) is captured in the snapshot", Integer.valueOf(ACTIVE), eff.get(10));
+    }
+
+    // ---- 3. a reader holding a pre-compaction cursor catches up from snapshot + remaining deltas ----
+
+    @Test
+    public void readerCatchUpFromCompactedSnapshot() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        for (int i = 0; i < COMPACT_AFTER; i++) {
+            w.publish("c3", "s1", promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
+        } // compaction at upToSeq=5, snapshot {10: ACTIVE}, ring empty
+        // Two more post-compaction deltas (seq6, seq7) so the reader folds snapshot + remaining deltas.
+        w.publish("c3", "s1", promo(10, DOWN), null);        // seq6
+        w.publish("c3", "s1", promo(11, BUFFERING), null);   // seq7
+
+        ShardStateLog ring = readRing("c3", "s1");
+        StateSnapshot snap = readSnapshot("c3", "s1");
+        assertNotNull(snap);
+        assertEquals(5L, snap.upToSeq());
+
+        // A fresh reader (cursor {0,0}) and a reader stuck at a pre-compaction position both must
+        // force a snapshot catch-up because the ring's baseSeq advanced past their cursor.
+        assertTrue("fresh reader catches up from snapshot",
+                StatePlaneReader.needsSnapshotCatchup(ring, new long[] {0L, 0L}));
+        assertTrue("reader stuck mid-prefix (seq=3) catches up from snapshot",
+                StatePlaneReader.needsSnapshotCatchup(ring, new long[] {ring.epoch, 3L}));
+        // A reader already at the snapshot head folds the remaining deltas incrementally (no catch-up).
+        assertFalse("reader at the snapshot head applies remaining deltas incrementally",
+                StatePlaneReader.needsSnapshotCatchup(ring, new long[] {ring.epoch, 5L}));
+
+        // snapshot + remaining-ring reconstructs the correct effective state.
+        Map<Integer, Integer> eff = snap.reconstruct(ring.entries);
+        assertEquals("10 -> DOWN (seq6)", Integer.valueOf(DOWN), eff.get(10));
+        assertEquals("11 -> BUFFERING (seq7)", Integer.valueOf(BUFFERING), eff.get(11));
+    }
+
+    // ---- 4. interrupted compaction (snapshot written, deltas NOT yet deleted) loses no state ----
+
+    @Test
+    public void interruptedCompactionLosesNoState() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        // Drive 4 deltas — one short of the compaction trigger, so the ring still holds all 4.
+        w.publish("c4", "s1", promo(10, ACTIVE), null);      // seq1
+        w.publish("c4", "s1", promo(10, RECOVERING), null);  // seq2
+        w.publish("c4", "s1", promo(11, DOWN), null);        // seq3
+        w.publish("c4", "s1", promo(10, DOWN), null);        // seq4
+        ShardStateLog ring = readRing("c4", "s1");
+        assertEquals("no compaction yet (under the trigger)", 4, ring.entries.size());
+
+        Map<Integer, Integer> before = effective("c4", "s1");
+
+        // Simulate a CRASH between snapshot-write and delta-delete: write a snapshot folding the whole
+        // ring (upToSeq = lastSeq) but leave every delta in place (the delete never happened).
+        Map<Integer, Integer> folded =
+                new StateSnapshot(-1L, "c4", ring.epoch, "s1", ring.baseSeq, Collections.emptyMap())
+                        .reconstruct(ring.entries);
+        StateSnapshot crashSnap = new StateSnapshot(-1L, "c4", ring.epoch, "s1", ring.lastSeq, folded);
+        String snapPath = StatePlanePaths.shardSnapshot(StatePlanePaths.collectionPath("c4"), "s1");
+        zkClient.makePath(snapPath, StateDeltaCodec.encodeStateSnapshot(crashSnap),
+                org.apache.zookeeper.CreateMode.PERSISTENT, true);
+        // Ring is untouched: all 4 deltas (seq <= upToSeq) still present.
+        assertEquals("leftover deltas still in ring after the 'crash'", 4, readRing("c4", "s1").entries.size());
+
+        // Reconstruct: the leftover deltas are all stale (seq <= snapshot.upToSeq) and skipped — the
+        // effective state is identical to before the interrupted compaction. No double-apply, no loss.
+        Map<Integer, Integer> after = effective("c4", "s1");
+        assertEquals("interrupted compaction is idempotent — state unchanged", before, after);
+        assertEquals("replica 10 still DOWN", Integer.valueOf(DOWN), after.get(10));
+        assertEquals("replica 11 still DOWN", Integer.valueOf(DOWN), after.get(11));
+
+        // A subsequent normal publish still moves forward correctly off the crash snapshot + ring.
+        assertTrue(w.publish("c4", "s1", promo(11, ACTIVE), null));
+        assertEquals("forward progress after recovery", Integer.valueOf(ACTIVE), effective("c4", "s1").get(11));
+    }
+
+    // ---- 5. a new higher-seq delta interleaved with compaction survives and wins (no regression) ----
+
+    @Test
+    public void compactionRaceWithNewDeltaDoesNotRegress() throws Exception {
+        StatePlaneWriter w = writer("e1");
+        for (int i = 0; i < COMPACT_AFTER; i++) {
+            w.publish("c5", "s1", promo(10, i % 2 == 0 ? ACTIVE : RECOVERING), null);
+        } // compaction at upToSeq=5
+        StateSnapshot snap = readSnapshot("c5", "s1");
+        assertEquals(5L, snap.upToSeq());
+        long lastSeqAfterCompaction = readRing("c5", "s1").lastSeq;
+        assertEquals("high-water never regresses across compaction", 5L, lastSeqAfterCompaction);
+
+        // A new delta lands AFTER compaction: it must take seq > upToSeq and win — never be folded away.
+        assertTrue(w.publish("c5", "s1", promo(10, LEADER), null)); // seq6
+        ShardStateLog ring = readRing("c5", "s1");
+        assertEquals("new delta got seq strictly above the compacted upToSeq", 6L, ring.lastSeq);
+        StateDelta newest = ring.entries.get(ring.entries.size() - 1);
+        assertEquals("new delta carried in the ring (not folded into the snapshot)", 6L, newest.seq);
+        assertEquals(LEADER, newest.entries.get(0).shortState);
+
+        // The new state wins on a full reconstruct.
+        assertEquals("post-compaction delta wins", Integer.valueOf(LEADER), effective("c5", "s1").get(10));
+
+        // A re-publish of the already-current state is a no-op — a retry cannot regress (CAS safety).
+        assertFalse("re-publish of current state is an idempotent no-op",
+                w.publish("c5", "s1", promo(10, LEADER), null));
+        assertEquals("still LEADER, never regressed", Integer.valueOf(LEADER), effective("c5", "s1").get(10));
+
+        // A second writer (overseer takeover) can append safely on top of the compacted snapshot.
+        StatePlaneWriter w2 = writer("e2");
+        assertTrue(w2.publish("c5", "s1", promo(10, DOWN), null)); // seq7
+        assertEquals("cross-writer seq monotonic past compaction", 7L, readRing("c5", "s1").lastSeq);
+        assertEquals(Integer.valueOf(DOWN), effective("c5", "s1").get(10));
+    }
+
+    // ---- 6. time-based compaction trigger folds even under the count threshold ----
+
+    @Test
+    public void timeBasedCompactionTrigger() throws Exception {
+        String saved = System.getProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP);
+        // Disable the count trigger; enable an immediate time trigger.
+        System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, "1000");
+        System.setProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP, "1");
+        try {
+            StatePlaneWriter w = writer("e1");
+            // First publish establishes the per-shard timer baseline (no compaction yet).
+            w.publish("c6", "s1", promo(10, ACTIVE), null); // seq1
+            Thread.sleep(20); // exceed the 1ms threshold
+            // Second publish: elapsed >= compactAfterMillis → compaction folds despite count < 1000.
+            w.publish("c6", "s1", promo(10, RECOVERING), null); // seq2 -> time-triggered compaction
+            StateSnapshot snap = readSnapshot("c6", "s1");
+            assertNotNull("time-based trigger compacted under the count threshold", snap);
+            assertEquals("snapshot folded up to the latest seq", 2L, snap.upToSeq());
+            assertEquals(Integer.valueOf(RECOVERING), snap.replicaStates.get(10));
+            assertEquals("ring emptied by time-based compaction", 0, readRing("c6", "s1").entries.size());
+        } finally {
+            if (saved == null) System.clearProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP);
+            else System.setProperty(StateDeltaConfig.COMPACT_AFTER_MILLIS_SYSPROP, saved);
+            System.setProperty(StateDeltaConfig.COMPACT_AFTER_COUNT_SYSPROP, Integer.toString(COMPACT_AFTER));
+        }
+    }
+}

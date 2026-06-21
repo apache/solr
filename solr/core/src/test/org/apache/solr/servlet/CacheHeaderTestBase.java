@@ -16,6 +16,10 @@
  */
 package org.apache.solr.servlet;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -23,25 +27,38 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.junit.AfterClass;
 import org.junit.Test;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 
 public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
-  protected HttpRequestBase getSelectMethod(String method, String... params) throws URISyntaxException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+  protected static JettySolrRunner jetty;
+
+  // The fork's SolrClient is Http2SolrClient (Jetty), which doesn't expose an Apache HttpClient like the
+  // old Http2SolrClient did; these tests need a raw Apache client to inspect HTTP cache headers, so manage one here.
+  private static CloseableHttpClient cacheHeaderHttpClient;
+
+  @AfterClass
+  public static void closeCacheHeaderHttpClient() {
+    if (cacheHeaderHttpClient != null) {
+      HttpClientUtil.close(cacheHeaderHttpClient);
+      cacheHeaderHttpClient = null;
+    }
+  }
+
+  protected HttpRequestBase getSelectMethod(String method, String... params) throws Exception {
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     HttpRequestBase m = null;
-    
+
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
-    if(params.length==0) {
+    if (params.length == 0) {
       qparams.add(new BasicNameValuePair("q", "solr"));
       qparams.add(new BasicNameValuePair("qt", "standard"));
     }
@@ -49,9 +66,8 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
       qparams.add(new BasicNameValuePair(params[i * 2], params[i * 2 + 1]));
     }
 
-    URI uri = URI.create(client.getBaseURL() + "/select?" +
-                         URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
-   
+    URI uri = URI.create(client.getBaseURL() + "/select?" + URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
+
     if ("GET".equals(method)) {
       m = new HttpGet(uri);
     } else if ("HEAD".equals(method)) {
@@ -59,36 +75,37 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     } else if ("POST".equals(method)) {
       m = new HttpPost(uri);
     }
-    
+
     return m;
   }
 
-  protected HttpRequestBase getUpdateMethod(String method, String... params) throws URISyntaxException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+  protected HttpRequestBase getUpdateMethod(String method, String... params) throws Exception {
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     HttpRequestBase m = null;
-    
+
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
-    for(int i=0;i<params.length/2;i++) {
-      qparams.add(new BasicNameValuePair(params[i*2], params[i*2+1]));
+    for (int i = 0; i < params.length / 2; i++) {
+      qparams.add(new BasicNameValuePair(params[i * 2], params[i * 2 + 1]));
     }
 
-    URI uri = URI.create(client.getBaseURL() + "/update?" +
-                         URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
-    
+    URI uri = URI.create(client.getBaseURL() + "/update?" + URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
+
     if ("GET".equals(method)) {
-      m=new HttpGet(uri);
+      m = new HttpGet(uri);
     } else if ("POST".equals(method)) {
-      m=new HttpPost(uri);
+      m = new HttpPost(uri);
     } else if ("HEAD".equals(method)) {
-      m=new HttpHead(uri);
+      m = new HttpHead(uri);
     }
 
     return m;
   }
   
   protected HttpClient getClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    return client.getHttpClient();
+    if (cacheHeaderHttpClient == null) {
+      cacheHeaderHttpClient = HttpClientUtil.createClient(null);
+    }
+    return cacheHeaderHttpClient;
   }
 
   protected void checkResponseBody(String method, HttpResponse resp)

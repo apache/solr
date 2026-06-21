@@ -53,18 +53,15 @@ public class QuerySenderListener extends AbstractSolrEventListener {
     if (allLists == null) return;
     boolean createNewReqInfo = SolrRequestInfo.getRequestInfo() == null;
     for (NamedList nlst : allLists) {
-      SolrQueryRequest req = null;
-      try {
+      NamedList params = addEventParms(currentSearcher, nlst);
+      // for this, we default to distrib = false
+      if (params.get(DISTRIB) == null) {
+        params.add(DISTRIB, false);
+      }
+      try (SolrQueryRequest req = new LocalSolrQueryRequest(getCore(), params) {
+        @Override public SolrIndexSearcher getSearcher() { return searcher; }
+      }) {
         // bind the request to a particular searcher (the newSearcher)
-        NamedList params = addEventParms(currentSearcher, nlst);
-        // for this, we default to distrib = false
-        if (params.get(DISTRIB) == null) {
-          params.add(DISTRIB, false);
-        }
-        req = new LocalSolrQueryRequest(getCore(),params) {
-          @Override public SolrIndexSearcher getSearcher() { return searcher; }
-          @Override public void close() { }
-        };
 
         SolrQueryResponse rsp = new SolrQueryResponse();
         if (createNewReqInfo) {
@@ -92,14 +89,14 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         }
 
       } catch (Exception e) {
+
         // do nothing... we want to continue with the other requests.
         // the failure should have already been logged.
       } finally {
-        if (req != null) req.close();
         if (createNewReqInfo) SolrRequestInfo.clearRequestInfo();
       }
     }
-    log.info("QuerySenderListener done.");
+    if (log.isDebugEnabled()) log.debug("QuerySenderListener done.");
   }
 
 

@@ -28,12 +28,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // base class for facets that create a list of buckets that can be sorted
 abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted> extends FacetModule.FacetBucketMerger<FacetRequestT> {
   LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
-  List<FacetBucket> sortedBuckets;
+  ObjectArrayList<FacetBucket> sortedBuckets;
   BitSet shardHasMoreBuckets;  // null, or "true" if we saw a result from this shard and it indicated that there are more results
   Context mcontext;  // HACK: this should be passed in getMergedResult as well!
 
@@ -69,7 +70,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public void mergeBucketList(List<SimpleOrderedMap> bucketList, Context mcontext) {
     for (SimpleOrderedMap bucketRes : bucketList) {
       Comparable bucketVal = (Comparable)bucketRes.get("val");
@@ -83,10 +84,10 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   }
 
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public void sortBuckets(final FacetRequest.FacetSort sort) {
     // NOTE: we *always* re-init from buckets, because it may have been modified post-refinement 
-    sortedBuckets = new ArrayList<>( buckets.values() );
+    sortedBuckets = new ObjectArrayList<>( buckets.values() );
 
     Comparator<FacetBucket> comparator = null;
 
@@ -98,10 +99,10 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         int v = -Long.compare(o1.count, o2.count) * sortMul;
         return v == 0 ? o1.bucketValue.compareTo(o2.bucketValue) : v;
       };
-      Collections.sort(sortedBuckets, comparator);
+      sortedBuckets.sort(comparator);
     } else if ("index".equals(sort.sortVariable)) {
-      comparator = (o1, o2) -> -o1.bucketValue.compareTo(o2.bucketValue) * sortMul;
-      Collections.sort(sortedBuckets, comparator);
+      comparator = (o1, o2) -> -(o1.bucketValue.compareTo(o2.bucketValue) * sortMul);
+      sortedBuckets.sort(comparator);
     } else {
       final String key = sort.sortVariable;
 
@@ -135,16 +136,15 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
       List<SortVal> lst = new ArrayList<>(buckets.size());
       List<FacetBucket> nulls = new ArrayList<>(buckets.size()>>1);
-      for (int i=0; i<sortedBuckets.size(); i++) {
-        FacetBucket bucket = sortedBuckets.get(i);
+      for (FacetBucket bucket : sortedBuckets) {
         FacetMerger merger = bucket.getExistingMerger(key);
         if (merger == null) {
           nulls.add(bucket);
         }
         if (merger != null) {
-          SortVal sv = new SortVal();
+          var sv = new SortVal();
           sv.bucket = bucket;
-          sv.merger = (FacetModule.FacetSortableMerger)merger;
+          sv.merger = (FacetModule.FacetSortableMerger) merger;
           sv.direction = direction;
           // sv.pos = i;  // if we need position in the future...
           lst.add(sv);
@@ -153,19 +153,18 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       Collections.sort(lst);
       Collections.sort(nulls, (o1, o2) -> o1.bucketValue.compareTo(o2.bucketValue));
 
-      ArrayList<FacetBucket> out = new ArrayList<>(buckets.size());
+      ObjectArrayList<FacetBucket> out = new ObjectArrayList<>(buckets.size());
       for (SortVal sv : lst) {
         out.add( sv.bucket );
       }
       out.addAll(nulls);
       sortedBuckets = out;
     }
-    assert null != sortedBuckets;
   }
 
   boolean isBucketComplete(FacetBucket bucket, Context mcontext) {
     if (mcontext.numShards <= 1 || shardHasMoreBuckets==null) return true;
-    for (int shard=0; shard < mcontext.numShards; shard++) {
+    for (var shard=0; shard < mcontext.numShards; shard++) {
       // bucket is incomplete if we didn't see the bucket for this shard, and the shard has more buckets
       if (!mcontext.getShardFlag(bucket.bucketNumber, shard) && shardHasMoreBuckets!=null && shardHasMoreBuckets.get(shard)) {
         return false;
@@ -199,7 +198,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     shardHasMore |= thisMissing;  // if we didn't hear from the shard at all, assume it as more buckets
 
     // If we know we've seen all the buckets from a shard, then we don't have to add to leafBuckets or partialBuckets, only skipBuckets
-    boolean isCommandPartial = freq.returnsPartial() || freq.processEmpty; // TODO: should returnsPartial() check processEmpty internally?
+   // boolean isCommandPartial = freq.returnsPartial() || freq.processEmpty; // TODO: should returnsPartial() check processEmpty internally?
     boolean returnedAllBuckets = !shardHasMore && !freq.processEmpty;  // did the shard return all of the possible buckets at this level? (pretend it didn't if processEmpty is set)
 
     if (returnedAllBuckets && tags.isEmpty() && tagsWithPartial.isEmpty()) {
@@ -257,9 +256,9 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       bucketList = sortedBuckets;
     }
 
-    ArrayList<Object> leafBuckets = null;    // "_l" missing buckets specified by bucket value only (no need to specify anything further)
-    ArrayList<Object> partialBuckets = null; // "_p" missing buckets that have a partial sub-facet that need to specify those bucket values... each entry is [bucketval, subs]
-    ArrayList<Object> skipBuckets = null;    // "_s" present buckets that we need to recurse into because children facets have refinement requirements. each entry is [bucketval, subs]
+    ObjectArrayList<Object> leafBuckets = null;    // "_l" missing buckets specified by bucket value only (no need to specify anything further)
+    ObjectArrayList<Object> partialBuckets = null; // "_p" missing buckets that have a partial sub-facet that need to specify those bucket values... each entry is [bucketval, subs]
+    ObjectArrayList<Object> skipBuckets = null;    // "_s" present buckets that we need to recurse into because children facets have refinement requirements. each entry is [bucketval, subs]
 
     for (FacetBucket bucket : bucketList) {
       if (numBucketsToCheck-- <= 0) break;
@@ -277,14 +276,14 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
           mcontext.setBucketWasMissing(prev);
 
           if (bucketRefinement != null) {
-            if (partialBuckets==null) partialBuckets = new ArrayList<>();
+            if (partialBuckets==null) partialBuckets = new ObjectArrayList<>();
             partialBuckets.add( Arrays.asList(bucket.bucketValue, bucketRefinement) );
           }
         }
 
         // if we didn't add to "_p" (missing with partial sub-facets), then we should add to "_l" (missing leaf)
         if (bucketRefinement == null) {
-          if (leafBuckets == null) leafBuckets = new ArrayList<>();
+          if (leafBuckets == null) leafBuckets = new ObjectArrayList<>();
           leafBuckets.add(bucket.bucketValue);
         }
 
@@ -292,7 +291,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         // we had this bucket, but we need to recurse to certain children that have refinements
         Map<String,Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
         if (bucketRefinement != null) {
-          if (skipBuckets == null) skipBuckets = new ArrayList<>();
+          if (skipBuckets == null) skipBuckets = new ObjectArrayList<>();
           skipBuckets.add( Arrays.asList(bucket.bucketValue, bucketRefinement) );
         }
       }

@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ChaosMonkeySafeLeaderTest2" type="JUnit" factoryName="JUnit">
+    <module name="lucene-solr.solr.core.test" />
+    <useClassPathOnly />
+    <extension name="History Recorder Settings" includeConstructors="false" includeGettersSetters="false" minMethodSize="2" maxBreakpointsPerMethod="5" maxBreakpoints="200" maxDepthVariables="3" mode="1" nrCollectionItems="5" includeCollections="true" nrFieldsToShow="10" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="org.apache.solr.cloud.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="org.apache.solr.cloud" />
+    <option name="MAIN_CLASS_NAME" value="org.apache.solr.cloud.ChaosMonkeySafeLeaderTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea -Xmx14g -Djetty.insecurerandom=1 -Djava.security.egd=file:/dev/./urandom -XX:-UseBiasedLocking -XX:+UseG1GC -XX:+PerfDisableSharedMem -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=250 -XX:MaxTenuringThreshold=4 -XX:+ExplicitGCInvokesConcurrent -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManager -Dlog4j.configurationFile=logconf/$ClipboardContent$ -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -Dtests.nightly=true -Dsolr.default.collection_op_timeout=120000 -Xss256k -Dzookeeper.jmx.log4j.disable=true -Dlog4j2.disable.jmx=true -Ddisable.v2.api=true -XX:+MaxFDLimit -DtempDir=/data3-ext3/solr-tmp-tests -XX:G1ReservePercent=15 -XX:InitiatingHeapOccupancyPercent=30 -XX:ConcGCThreads=8 -XX:ParallelGCThreads=16 -XX:+UseG1GC -Dlogs.home=/data3-ext3 -Djava.net.preferIPv4Stack=true -Dtests.nightly=true -Dsolr.tests.zkmondir=/data3-ext3/zkmon" />
+    <option name="PARAMETERS" value="" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

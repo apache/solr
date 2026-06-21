@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -38,16 +39,17 @@ public class RankEvaluator extends RecursiveNumericEvaluator implements OneValue
   }
 
   @Override
-  public Object doWork(Object value){
-    if(null == value){
-      return null;
-    }
-    else if(value instanceof List){
-      NaturalRanking rank = new NaturalRanking();      
-      return Arrays.stream(rank.rank(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).boxed().collect(Collectors.toList());
-    }
-    else{
-      return doWork(Arrays.asList((Number)value));
+  public Object doWork(Object value) {
+    while (true) {
+      if (null == value) {
+        return null;
+      } else if (value instanceof List) {
+        NaturalRanking rank = new NaturalRanking();
+        return Arrays.stream(rank.rank(((List<?>) value).stream().mapToDouble(innerValue -> ((Number) innerValue).doubleValue()).toArray())).boxed()
+            .collect(Collectors.toList());
+      } else {
+        value = Collections.singletonList((Number) value);
+      }
     }
   }
 }

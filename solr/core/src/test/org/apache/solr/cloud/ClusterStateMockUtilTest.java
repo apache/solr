@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -36,10 +37,10 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
     try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csr", "baseUrl1_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
-      assertEquals(1, clusterState.getCollectionStates().size());
+      assertEquals(1, clusterState.getCollectionCount());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
-      assertEquals(DocRouter.DEFAULT, collection1.getRouter());
+      assertEquals(CompositeIdRouter.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());
       assertEquals(1, collection1.getSlices().size());
       Slice slice1 = collection1.getSlice("slice1");
@@ -48,9 +49,14 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       Replica replica1 = slice1.getReplica("replica1");
       assertNotNull(replica1);
       assertEquals("baseUrl1_", replica1.getNodeName());
-      assertEquals("slice1_replica1", replica1.getCoreName());
-      assertEquals("http://baseUrl1", replica1.getBaseUrl());
-      assertEquals("http://baseUrl1/slice1_replica1/", replica1.getCoreUrl());
+      assertEquals("replica1", replica1.getName());
+      // Replica.getBaseUrl() derives the scheme from the JVM-global ZkStateReader.urlScheme,
+      // which co-resident SSL cloud tests legitimately flip to "https" (it is never reset per
+      // forked JVM). Assert against the ambient scheme rather than a hardcoded "http" so this
+      // pure-mock unit test does not flake based on which tests share its JVM.
+      String scheme = ZkStateReader.getUrlScheme();
+      assertEquals(scheme + "://baseUrl1", replica1.getBaseUrl());
+      assertEquals(scheme + "://baseUrl1/replica1", replica1.getCoreUrl());
       assertEquals(Replica.State.ACTIVE, replica1.getState());
       assertEquals(Replica.Type.NRT, replica1.getType());
     }
@@ -61,10 +67,10 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
     try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csntp", "baseUrl1_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
-      assertEquals(1, clusterState.getCollectionStates().size());
+      assertEquals(1, clusterState.getCollectionCount());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
-      assertEquals(DocRouter.DEFAULT, collection1.getRouter());
+      assertEquals(CompositeIdRouter.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());
       assertEquals(1, collection1.getSlices().size());
       Slice slice1 = collection1.getSlice("slice1");
@@ -81,10 +87,10 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
     try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csrStRpDnF", "baseUrl1_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
-      assertEquals(1, clusterState.getCollectionStates().size());
+      assertEquals(1, clusterState.getCollectionCount());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
-      assertEquals(DocRouter.DEFAULT, collection1.getRouter());
+      assertEquals(CompositeIdRouter.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());
       assertEquals(1, collection1.getSlices().size());
       Slice slice1 = collection1.getSlice("slice1");

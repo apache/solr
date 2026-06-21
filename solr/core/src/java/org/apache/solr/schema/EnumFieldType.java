@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -172,11 +173,7 @@ public class EnumFieldType extends AbstractEnumField {
     
     byte[] bytes = new byte[Integer.BYTES];
     NumericUtils.intToSortableBytes(intValue, bytes, 0);         
-    return new Field(field.getName(), bytes, newType) {
-      @Override public Number numericValue() {
-        return NumericUtils.sortableBytesToInt(((BytesRef)fieldsData).bytes, 0);
-      }
-    };
+    return new MyField(field, bytes, newType);
   }
 
   @Override
@@ -220,5 +217,15 @@ public class EnumFieldType extends AbstractEnumField {
       result.setMissingValue(Integer.MIN_VALUE);
     }
     return result;
+  }
+
+  private static class MyField extends Field {
+    public MyField(SchemaField field, byte[] bytes, FieldType newType) {
+      super(field.getName(), bytes, newType);
+    }
+
+    @Override public Number numericValue() {
+      return NumericUtils.sortableBytesToInt(((BytesRef)fieldsData).bytes, 0);
+    }
   }
 }

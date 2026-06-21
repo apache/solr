@@ -61,7 +61,7 @@ public class PlotStream extends TupleStream implements Expressible {
     fieldLabels.put("plot","plot");
     fieldLabels.put("data", "data");
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
     //Get all the named params
     for(StreamExpressionNamedParameter np : namedParams) {
       String name = np.getName();

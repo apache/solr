@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
  * contain custom overrides for environment name (label) and color to be shown in Admin UI
  */
 public class SolrEnvironment {
+  private static final Pattern COMPILE = Pattern.compile("\\+");
   private String code = "unknown";
   private String label;
   private String color;
@@ -40,7 +41,7 @@ public class SolrEnvironment {
   }
 
   public String getLabel() {
-    return label == null ? null : label.replaceAll("\\+", " ");
+    return label == null ? null : COMPILE.matcher(label).replaceAll(" ");
   }
 
   public String getColor() {

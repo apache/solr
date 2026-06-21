@@ -26,9 +26,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -46,27 +49,34 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
 @LogLevel("org.apache.solr.cloud.api.collections.ReindexCollectionCmd=DEBUG")
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class ReindexCollectionTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.default.collection_op_timeout", "15000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "15000");
+    System.setProperty("solr.test.socketTimeout.default", "15000");
+    System.setProperty("distribUpdateSoTimeout", "15000");
+
     configureCluster(2)
         // only *_s
-        .addConfig("conf1", configset("cloud-minimal"))
+        .addConfig("conf1", SolrTestUtil.configset("cloud-minimal"))
         // every combination of field flags
-        .addConfig("conf2", configset("cloud-dynamic"))
+        .addConfig("conf2", SolrTestUtil.configset("cloud-dynamic"))
         // catch-all * field, indexed+stored
-        .addConfig("conf3", configset("cloud-minimal-inplace-updates"))
+        .addConfig("conf3", SolrTestUtil.configset("cloud-minimal-inplace-updates"))
         .configure();
   }
 
-  private CloudSolrClient solrClient;
+  private CloudHttp2SolrClient solrClient;
   private SolrCloudManager cloudManager;
   private DistribStateManager stateManager;
 
@@ -75,7 +85,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     stateManager = cloudManager.getDistribStateManager();
-    solrClient = new CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
+    solrClient = new SolrTestCaseJ4.CloudHttp2SolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
         Optional.empty()).build();
   }
 
@@ -149,9 +159,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   @Test
   public void testSameTargetReindexing() throws Exception {
     doTestSameTargetReindexing(false, false);
-    doTestSameTargetReindexing(false, true);
+    if (TEST_NIGHTLY) doTestSameTargetReindexing(false, true);
     doTestSameTargetReindexing(true, false);
-    doTestSameTargetReindexing(true, true);
+    if (TEST_NIGHTLY) doTestSameTargetReindexing(true, true);
   }
 
   private void doTestSameTargetReindexing(boolean sourceRemove, boolean followAliases) throws Exception {
@@ -280,7 +290,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     assertNotNull("foo", coll.getSlice("foo"));
     assertNotNull("bar", coll.getSlice("bar"));
     assertNotNull("baz", coll.getSlice("baz"));
-    assertEquals(Integer.valueOf(1), coll.getReplicationFactor());
+    // 3 implicit shards, replication factor 1 -> exactly one replica per shard
+    coll.getSlices().forEach(s -> assertEquals("expected 1 replica per shard", 1, s.getReplicas().size()));
     assertEquals(ImplicitDocRouter.NAME, coll.getRouter().getName());
   }
 
@@ -322,8 +333,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
     // verify that the target and checkpoint collections don't exist
     cloudManager.getClusterStateProvider().getClusterState().forEachCollection(coll -> {
-      assertFalse(coll.getName() + " still exists", coll.getName().startsWith(ReindexCollectionCmd.TARGET_COL_PREFIX));
-      assertFalse(coll.getName() + " still exists", coll.getName().startsWith(ReindexCollectionCmd.CHK_COL_PREFIX));
+      DocCollection docColl = coll.join();
+      assertFalse(docColl.getName() + " still exists", docColl.getName().startsWith(ReindexCollectionCmd.TARGET_COL_PREFIX));
+      assertFalse(docColl.getName() + " still exists", docColl.getName().startsWith(ReindexCollectionCmd.CHK_COL_PREFIX));
     });
     // verify that the source collection is read-write and has no reindexing flags
     CloudUtil.waitForState(cloudManager, "collection state is incorrect", sourceCollection,
@@ -378,10 +390,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
   private void createCollection(String name, String config, int numShards, int numReplicas) throws Exception {
     CollectionAdminRequest.createCollection(name, config, numShards, numReplicas)
-        .setMaxShardsPerNode(-1)
+        .setMaxShardsPerNode(3)
         .process(solrClient);
-
-    cluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 
   private void indexDocs(String collection, int numDocs, Function<Integer, SolrInputDocument> generator) throws Exception {

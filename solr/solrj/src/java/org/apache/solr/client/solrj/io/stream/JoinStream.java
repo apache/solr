@@ -64,7 +64,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression,
         Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter onExpression = factory.getNamedOperand(expression, "on");
+    StreamExpressionNamedParameter onExpression = StreamFactory.getNamedOperand(expression, "on");
     
     // validate expression contains only what we want.
     if (expression.getParameters().size() != streamExpressions.size() + 1) {
@@ -88,7 +88,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
           expression));
     }
     
-    this.eq = factory.constructEqualitor(((StreamExpressionValue) onExpression.getParameter()).getValue(),
+    this.eq = StreamFactory.constructEqualitor(((StreamExpressionValue) onExpression.getParameter()).getValue(),
         FieldEqualitor.class);
   }
   
@@ -113,7 +113,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
     
     // on
     if (eq instanceof Expressible) {
-      expression.addParameter(new StreamExpressionNamedParameter("on", ((Expressible) eq).toExpression(factory)));
+      expression.addParameter(new StreamExpressionNamedParameter("on", eq.toExpression(factory)));
     } else {
       throw new IOException(
           "This JoinStream contains a non-expressible equalitor - it cannot be converted to an expression");
@@ -158,10 +158,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
   }
   
   public List<TupleStream> children() {
-    List<TupleStream> list = new ArrayList<TupleStream>();
-    for (TupleStream stream : streams) {
-      list.add(stream);
-    }
+    List<TupleStream> list = new ArrayList<TupleStream>(streams);
     return list;
   }
   
@@ -196,7 +193,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
    * @param group
    *          - should be empty
    */
-  protected Tuple loadEqualTupleGroup(PushBackStream stream, LinkedList<Tuple> group, StreamComparator groupComparator)
+  protected static Tuple loadEqualTupleGroup(PushBackStream stream, LinkedList<Tuple> group, StreamComparator groupComparator)
       throws IOException {
     // Find next set of same tuples from the stream
     Tuple firstMember = stream.read();

@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -45,6 +46,7 @@ import org.junit.Test;
  * <code>facet.pivot</code> so the assertions in this test vary from that test.
  * </p>
  */
+@LuceneTestCase.Nightly // can be slow
 public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTestCase {
   
   private String STAT_FIELD = null; // will be randomized single value vs multivalued
@@ -131,7 +133,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     List<PivotField> pivots = null;
     PivotField pivot = null;
     pivots = queryServer( params( "q", "*:*",
-                                  "shards", getShardsString(),
+                                  "shards", shardsWithDead,
                                   FacetParams.FACET_OVERREQUEST_COUNT, "0",
                                   FacetParams.FACET_OVERREQUEST_RATIO, "0",
                                   "facet", "true",
@@ -173,7 +175,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
                "f.bar_s.facet.overrequest.count","0")      }) {
       
       q.add( params( "q", "*:*",
-                     "shards", getShardsString(),
+                     "shards", shardsWithDead,
                      "facet", "true",
                      "facet.limit", "6",
                      "facet.pivot", "foo_s,bar_s" ));
@@ -205,7 +207,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     // that we get the correct top5 including "tailB"
 
     pivots = queryServer( params( "q", "*:*",
-                                  "shards", getShardsString(),
+                                  "shards", shardsWithDead,
                                   "facet", "true",
                                   "facet.limit", "6",
                                   "f.bar_s.facet.limit", "5",
@@ -236,7 +238,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     // we're going to miss out on tailB
 
     pivots = queryServer( params( "q", "*:*",
-                                  "shards", getShardsString(),
+                                  "shards", shardsWithDead,
                                   "facet", "true",
                                   "facet.limit", "6",
                                   "f.bar_s.facet.overrequest.ratio", "0",
@@ -269,7 +271,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
 
     List<PivotField> pivots = 
       query("q", "*:*",
-            "shards", getShardsString(),
+            "shards", shardsWithDead,
             "facet", "true",
             "rows" , "0",
             "facet.pivot","{!stats=s1}foo_s,bar_s",

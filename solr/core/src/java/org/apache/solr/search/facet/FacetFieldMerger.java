@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 
@@ -45,7 +46,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public void merge(Object facetResult, Context mcontext) {
     super.merge(facetResult, mcontext);
     if (numReturnedPerShard == null) {
@@ -100,7 +101,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Object getMergedResult() {
-    SimpleOrderedMap result = new SimpleOrderedMap();
+    var result = new SimpleOrderedMap(4);
 
     if (numBuckets != null) {
       result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue());
@@ -112,7 +113,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
     long last = Math.min(sortedBuckets.size(), end);
 
-    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(Math.max(0, (int)(last - first)));
+    List<SimpleOrderedMap> resultBuckets = new ObjectArrayList<>(Math.max(0, (int)(last - first)));
 
     /** this only works if there are no filters (like mincount)
     for (int i=first; i<last; i++) {
@@ -125,13 +126,13 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
     boolean refine = freq.refine != null && freq.refine != FacetRequest.RefineMethod.NONE;
 
-    int off = (int)freq.offset;
-    int lim = freq.limit >= 0 ? (int)freq.limit : Integer.MAX_VALUE;
+    int off = (int) freq.offset;
+    int lim = freq.limit >= 0 ? (int) freq.limit : Integer.MAX_VALUE;
     for (FacetBucket bucket : sortedBuckets) {
       if (bucket.getCount() < freq.mincount) {
         continue;
       }
-      if (refine && !isBucketComplete(bucket,mcontext)) {
+      if (refine && !isBucketComplete(bucket, mcontext)) {
         continue;
       }
 
@@ -144,7 +145,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
         break;
       }
 
-      resultBuckets.add( bucket.getMergedBucket() );
+      resultBuckets.add(bucket.getMergedBucket());
     }
 
 
@@ -186,7 +187,8 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     return refinement;
   }
 
-  private Map<String, Object> getRefinementSpecial(Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial, FacetBucket bucket, String label) {
+  private static Map<String, Object> getRefinementSpecial(Context mcontext, Map<String,Object> refinement, Collection<String> tagsWithPartial,
+      FacetBucket bucket, String label) {
     // boolean prev = mcontext.setBucketWasMissing(true); // the special buckets should have the same "missing" status as this facet, so no need to set it again
     Map<String, Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
     if (bucketRefinement != null) {
@@ -203,7 +205,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     Set<Object> values;
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     public void merge(Object facetResult, Context mcontext) {
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       long numBuckets = ((Number)map.get("numBuckets")).longValue();

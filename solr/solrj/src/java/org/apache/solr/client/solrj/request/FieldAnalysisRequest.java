@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A request for the org.apache.solr.handler.FieldAnalysisRequestHandler.
@@ -58,14 +59,14 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
 
 
   @Override
-  protected FieldAnalysisResponse createResponse(SolrClient client) {
+  protected FieldAnalysisResponse createResponse(SolrClient client, NamedList<Object> nl) {
     if (fieldTypes == null && fieldNames == null) {
       throw new IllegalStateException("At least one field type or field name need to be specified");
     }
     if (fieldValue == null) {
       throw new IllegalStateException("The field value must be set");
     }
-    return new FieldAnalysisResponse();
+    return new FieldAnalysisResponse(nl);
   }
 
   @Override
@@ -100,7 +101,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     StringBuilder result = new StringBuilder();
     for (String str : list) {
       if (result.length() > 0) {
-        result.append(",");
+        result.append(',');
       }
       result.append(str);
     }

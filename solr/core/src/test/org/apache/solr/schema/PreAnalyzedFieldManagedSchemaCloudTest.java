@@ -19,16 +19,16 @@ package org.apache.solr.schema;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.DocCollection;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
@@ -38,12 +38,9 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig(CONFIG, configset(CONFIG)).configure();
+    configureCluster(2).addConfig(CONFIG, SolrTestUtil.configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, 2, 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
   }
 
   @Test
@@ -53,7 +50,7 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
   }
 
   private void addField(Map<String,Object> field) throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     UpdateResponse addFieldResponse = new SchemaRequest.AddField(field).process(client, COLLECTION);
     assertNotNull(addFieldResponse);
     assertEquals(0, addFieldResponse.getStatus());

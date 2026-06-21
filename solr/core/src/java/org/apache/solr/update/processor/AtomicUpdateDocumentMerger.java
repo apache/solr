@@ -43,6 +43,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -80,6 +81,9 @@ public class AtomicUpdateDocumentMerger {
    */
   public static boolean isAtomicUpdate(final AddUpdateCommand cmd) {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    if (sdoc == null) {
+      return false;
+    }
     for (SolrInputField sif : sdoc.values()) {
       Object val = sif.getValue();
       if (val instanceof Map && !(val instanceof SolrDocumentBase)) {
@@ -268,7 +272,7 @@ public class AtomicUpdateDocumentMerger {
       String collectionName = cloudDescriptor.getCollectionName();
       ZkController zkController = core.getCoreContainer().getZkController();
       DocCollection collection = zkController.getClusterState().getCollection(collectionName);
-      result = collection.getRouter().getRouteField(collection);
+      result = DocRouter.getRouteField(collection);
     }
     return result;
   }
@@ -487,7 +491,7 @@ public class AtomicUpdateDocumentMerger {
     if (numericField != null || sf.getDefaultValue() != null) {
       // TODO: fieldtype needs externalToObject?
       String oldValS = (numericField != null) ?
-          numericField.getFirstValue().toString(): sf.getDefaultValue().toString();
+          numericField.getFirstValue().toString(): sf.getDefaultValue();
       BytesRefBuilder term = new BytesRefBuilder();
       sf.getType().readableToIndexed(oldValS, term);
       Object oldVal = sf.getType().toObject(sf, term.get());
@@ -528,7 +532,7 @@ public class AtomicUpdateDocumentMerger {
     toDoc.setField(name, original);
   }
 
-  protected void doRemoveRegex(SolrInputDocument toDoc, SolrInputField sif, Object valuePatterns) {
+  protected static void doRemoveRegex(SolrInputDocument toDoc, SolrInputField sif, Object valuePatterns) {
     final String name = sif.getName();
     final SolrInputField existingField = toDoc.get(name);
     if (existingField != null) {
@@ -548,7 +552,7 @@ public class AtomicUpdateDocumentMerger {
     }
   }
 
-  private Collection<Pattern> preparePatterns(Object fieldVal) {
+  private static Collection<Pattern> preparePatterns(Object fieldVal) {
     final Collection<Pattern> patterns = new LinkedHashSet<>(1);
     if (fieldVal instanceof Collection) {
       @SuppressWarnings({"unchecked"})

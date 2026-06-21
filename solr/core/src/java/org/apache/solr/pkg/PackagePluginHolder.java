@@ -19,9 +19,15 @@ package org.apache.solr.pkg;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.*;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +85,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   }
 
 
-  private synchronized void reload(PackageLoader.Package pkg) {
+  private void reload(PackageLoader.Package pkg) {
     String lessThan = maxVersion();
     PackageLoader.Package.Version newest = pkg.getLatest(lessThan);
     if (newest == null) {
@@ -112,11 +118,27 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
   }
 
+  public static void initInstance(Object inst, PluginInfo info) {
+    if (inst instanceof PluginInfoInitialized) {
+      ((PluginInfoInitialized) inst).init(info);
+    } else if (inst instanceof NamedListInitializedPlugin) {
+      ((NamedListInitializedPlugin) inst).init(info.initArgs);
+    } else if (inst instanceof SolrRequestHandler) {
+      ((SolrRequestHandler) inst).init(info.initArgs);
+    }
+    if (inst instanceof SearchComponent) {
+      ((SearchComponent) inst).setName(info.name);
+    }
+    if (inst instanceof RequestHandlerBase) {
+      ((RequestHandlerBase) inst).setPluginInfo(info);
+    }
+  }
+
   @SuppressWarnings({"unchecked"})
   protected void initNewInstance(PackageLoader.Package.Version newest) {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
-    PluginBag.initInstance(instance, pluginInfo);
+    initInstance(instance, pluginInfo);
     handleAwareCallbacks(newest.getLoader(), instance);
     T old = inst;
     inst = (T) instance;

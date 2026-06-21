@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import org.apache.solr.common.util.NamedList;
 
 /**
  * TODO -- mostly a stub until we have a defined output format
@@ -25,5 +26,9 @@ package org.apache.solr.client.solrj.response;
  */
 public class UpdateResponse extends SolrResponseBase
 {
+  public UpdateResponse(NamedList<Object> response) {
+    super(response);
+  }
+
   // nothing special now...
 }

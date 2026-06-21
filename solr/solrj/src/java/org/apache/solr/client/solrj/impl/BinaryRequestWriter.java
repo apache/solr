@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 
 import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
 
@@ -43,17 +44,7 @@ public class BinaryRequestWriter extends RequestWriter {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
-      return new ContentWriter() {
-        @Override
-        public void write(OutputStream os) throws IOException {
-          new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
-        }
-
-        @Override
-        public String getContentType() {
-          return JAVABIN_MIME;
-        }
-      };
+      return new MyContentWriter(updateRequest);
     } else {
       return req.getContentWriter(JAVABIN_MIME);
     }
@@ -77,19 +68,50 @@ public class BinaryRequestWriter extends RequestWriter {
   }
 
   @Override
-  public void write(SolrRequest request, OutputStream os) throws IOException {
+  public void write(SolrRequest request, ExpandableDirectBufferOutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
       new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+      os.flush();
     }
   }
-  
+
+  @Override
+  public void write(SolrRequest request, org.apache.solr.common.util.FastOutputStream os) throws IOException {
+    // ConcurrentUpdateSolrClient streams update bodies through a FastOutputStream; without this override
+    // the base RequestWriter would emit XML while getUpdateContentType() advertises javabin, producing a
+    // content-type/body mismatch and a 500 from the server.
+    if (request instanceof UpdateRequest) {
+      UpdateRequest updateRequest = (UpdateRequest) request;
+      new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+      os.flush();
+    }
+  }
+
   /*
    * A hack to get access to the protected internal buffer and avoid an additional copy
    */
   public static class BAOS extends ByteArrayOutputStream {
     public byte[] getbuf() {
       return super.buf;
+    }
+  }
+
+  private static class MyContentWriter implements ContentWriter {
+    private final UpdateRequest updateRequest;
+
+    public MyContentWriter(UpdateRequest updateRequest) {
+      this.updateRequest = updateRequest;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+    }
+
+    @Override
+    public String getContentType() {
+      return JAVABIN_MIME;
     }
   }
 }

@@ -21,10 +21,12 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
+
   public SolrParams params;
-  public SimpleSolrResponse response = new SimpleSolrResponse();
+
   public ContentWriter contentWriter;
 
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
@@ -48,7 +50,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   }
 
   @Override
-  protected SimpleSolrResponse createResponse(SolrClient client) {
-    return response;
+  public SimpleSolrResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new SimpleSolrResponse(nl);
   }
 }

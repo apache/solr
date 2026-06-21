@@ -49,7 +49,7 @@ public class MainEndResultTransformer implements EndResultTransformer {
       }
     }
     Object value = result.get(entries[0]);
-    if (TopGroups.class.isInstance(value)) {
+    if (value instanceof TopGroups) {
       @SuppressWarnings("unchecked")
       TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
       SolrDocumentList docList = new SolrDocumentList();

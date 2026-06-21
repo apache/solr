@@ -28,6 +28,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -43,9 +44,9 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrPaths;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -55,7 +56,8 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /**
@@ -71,31 +73,33 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
  *
  */
 public class TestHarness extends BaseTestHarness {
-  public String coreName;
+  public volatile String coreName;
   protected volatile CoreContainer container;
   public UpdateRequestHandler updater;
- 
+  //private Map<String,SolrCore> cores = new ConcurrentHashMap<>();
+
   /**
    * Creates a SolrConfig object for the specified coreName assuming it 
    * follows the basic conventions of being a relative path in the solrHome 
    * dir. (ie: <code>${solrHome}/${coreName}/conf/${confFile}</code>
    */
-  public static SolrConfig createConfig(Path solrHome, String coreName, String confFile) {
+  public static SolrConfig createConfig(Path solrHome, String coreName, String confFile, SolrResourceLoader loader) {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile);
+      return new SolrConfig(loader, confFile);
     } catch (Exception xany) {
+      ParWork.propagateInterrupt(xany);
       throw new RuntimeException(xany);
     }
   }
   
   /**
-   * Creates a SolrConfig object for the default test core using {@link #createConfig(Path,String,String)}
+   * Creates a SolrConfig object for the default test core using {@link #createConfig(Path,String,String,SolrResourceLoader)}
    */
-  public static SolrConfig createConfig(Path solrHome, String confFile) {
-    return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
+  public static SolrConfig createConfig(Path solrHome, String confFile, SolrResourceLoader loader) {
+    return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile, loader);
   }
 
   /**
@@ -126,7 +130,7 @@ public class TestHarness extends BaseTestHarness {
     * @param solrConfig solrconfig instance
     * @param indexSchema schema instance
     */
-  public TestHarness( String dataDirectory,
+  public TestHarness(String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
       this(SolrTestCaseJ4.DEFAULT_TEST_CORENAME, dataDirectory, solrConfig, indexSchema);
@@ -139,9 +143,8 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(SolrPaths.locateSolrHome()),
+    this(coreName, buildTestNodeConfig(SolrPaths.locateSolrHome()),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
-    this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
 
   public TestHarness(String coreName, String dataDir, SolrConfig solrConfig, IndexSchema indexSchema) {
@@ -154,52 +157,39 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(SolrXmlConfig.fromString(solrHome, solrXml));
+    this(new SolrXmlConfig().fromString(solrHome, solrXml));
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+    this(null, nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+  }
+
+  public TestHarness(NodeConfig config, CoresLocator coresLocator) {
+    this(null, config, coresLocator);
   }
 
   /**
    * Create a TestHarness using a specific config
    * @param config the ConfigSolr to use
    */
-  public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, coresLocator);
+  public TestHarness(String coreName, NodeConfig config, CoresLocator coresLocator) {
+    super(config.getSolrResourceLoader());
+    this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
+    container = new CoreContainer(config, coresLocator, false);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
-    CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
-                                                                 Integer.getInteger("hostPort", 8983),
-                                                                 System.getProperty("hostContext", ""))
-        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
-        .build();
-    if (System.getProperty("zkHost") == null)
-      cloudConfig = null;
-    UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
-        HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-        30000, 30000,
+    CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"), Integer.getInteger("hostPort", 8983), System.getProperty("hostContext", ""))
+        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000)).build();
+    if (System.getProperty("zkHost") == null) cloudConfig = null;
+    UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(HttpClientUtil.DEFAULT_MAXCONNECTIONS, HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, 30000, 30000,
         UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
-    // universal default metric reporter
-    Map<String,Object> attributes = new HashMap<>();
-    attributes.put("name", "default");
-    attributes.put("class", SolrJmxReporter.class.getName());
-    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
-        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
-        .build();
 
-    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
-        .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
-        .setCloudConfig(cloudConfig)
-        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-        .setMetricsConfig(metricsConfig)
-        .build();
+
+    return new NodeConfig.NodeConfigBuilder("testNode", solrHome).setUseSchemaCache(Boolean.getBoolean("shareSchema")).setCloudConfig(cloudConfig).setUpdateShardHandlerConfig(updateShardHandlerConfig).build();
   }
 
   public static class TestCoresLocator extends ReadOnlyCoresLocator {
@@ -232,16 +222,8 @@ public class TestHarness extends BaseTestHarness {
     return container;
   }
 
-  /** Gets a core that does not have its refcount incremented (i.e. there is no need to
-   * close when done).  This is not MT safe in conjunction with reloads!
-   */
   public SolrCore getCore() {
-    // get the core & decrease its refcount:
-    // the container holds the core for the harness lifetime
-    SolrCore core = container.getCore(coreName);
-    if (core != null)
-      core.close();
-    return core;
+    return container.getCore(coreName);
   }
 
   /** Gets the core with its reference count incremented.
@@ -250,7 +232,6 @@ public class TestHarness extends BaseTestHarness {
   public SolrCore getCoreInc() {
     return container.getCore(coreName);
   }
-
 
   public void reload() throws Exception {
     container.reload(coreName);
@@ -264,18 +245,37 @@ public class TestHarness extends BaseTestHarness {
    * @return The XML response to the update
    */
   public String update(String xml) {
-    try (SolrCore core = getCoreInc()) {
-      DirectSolrConnection connection = new DirectSolrConnection(core);
+    try (SolrCore core = getCore()) {
       SolrRequestHandler handler = core.getRequestHandler("/update");
-      // prefer the handler mapped to /update, but use our generic backup handler
-      // if that lookup fails
       if (handler == null) {
         handler = updater;
       }
-      return connection.request(handler, null, xml);
+      java.util.List<org.apache.solr.common.util.ContentStream> streams = new java.util.ArrayList<>(1);
+      if (xml != null && xml.length() > 0) {
+        streams.add(new ContentStreamBase.StringStream(xml));
+      }
+      SolrQueryRequest req = new SolrRequestParsers(core.getSolrConfig()).buildRequestFrom(core, null, streams);
+      try {
+        SolrQueryResponse rsp = new SolrQueryResponse();
+        SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+        core.execute(handler, req, rsp);
+        if (rsp.getException() != null) {
+          Throwable e = rsp.getException();
+          if (e instanceof Exception) throw (Exception) e;
+          throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+        }
+        QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
+        StringWriter out = new StringWriter();
+        responseWriter.write(out, req, rsp);
+        return out.toString();
+      } finally {
+        req.close();
+        SolrRequestInfo.clearRequestInfo();
+      }
     } catch (SolrException e) {
-      throw (SolrException)e;
-    } catch (Exception e) {
+      throw e;
+    } catch (Throwable e) {
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
@@ -294,7 +294,7 @@ public class TestHarness extends BaseTestHarness {
     throws Exception {
                 
     String res = query(req);
-    return validateXPath(res, tests);
+    return validateXPathWithEntities(loader, res, tests);
   }
             
   /**
@@ -306,7 +306,7 @@ public class TestHarness extends BaseTestHarness {
    * @exception IOException if there is a problem writing the XML
    * @see LocalSolrQueryRequest
    */
-  public String query(SolrQueryRequest req) throws Exception {
+  public static String query(SolrQueryRequest req) throws Exception {
     return query(req.getParams().get(CommonParams.QT), req);
   }
 
@@ -320,29 +320,32 @@ public class TestHarness extends BaseTestHarness {
    * @exception IOException if there is a problem writing the XML
    * @see LocalSolrQueryRequest
    */
-  public String query(String handler, SolrQueryRequest req) throws Exception {
+  public static String query(String handler, SolrQueryRequest req) throws Exception {
     try {
       SolrCore core = req.getCore();
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       core.execute(core.getRequestHandler(handler),req,rsp);
       if (rsp.getException() != null) {
-        throw rsp.getException();
+        Throwable e = rsp.getException();
+        if (e instanceof  Exception) {
+          throw (Exception) e;
+        }
+        throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
       }
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
       if (responseWriter instanceof BinaryQueryResponseWriter) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(32000);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(768);
         BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) responseWriter;
         writer.write(byteArrayOutputStream, req, rsp);
-        return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
+        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
       } else {
-        StringWriter sw = new StringWriter(32000);
+        StringWriter sw = new StringWriter(768);
         responseWriter.write(sw,req,rsp);
         return sw.toString();
       }
 
     } finally {
-      req.close();
       SolrRequestInfo.clearRequestInfo();
     }
   }
@@ -354,7 +357,11 @@ public class TestHarness extends BaseTestHarness {
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute(core.getRequestHandler(handler), req, rsp);
       if (rsp.getException() != null) {
-        throw rsp.getException();
+        Throwable e = rsp.getException();
+        if (e instanceof Exception) {
+          throw (Exception) e;
+        }
+        throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
       }
       return rsp;
     }
@@ -365,8 +372,12 @@ public class TestHarness extends BaseTestHarness {
    */
   public void close() {
     if (container != null) {
-      container.shutdown();
-      container = null;
+      try {
+        container.shutdown();
+      } finally {
+        container = null;
+      }
+
     }
   }
 
@@ -439,7 +450,7 @@ public class TestHarness extends BaseTestHarness {
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {
         return new LocalSolrQueryRequest(TestHarness.this.getCore(),
-                                       q[0], qtype, start, limit, args);
+                                       q[0], qtype, start, limit, args, true);
       }
       if (q.length%2 != 0) { 
         throw new RuntimeException("The length of the string array (query arguments) needs to be even");
@@ -450,7 +461,7 @@ public class TestHarness extends BaseTestHarness {
       }
       NamedList nl = new NamedList(entries);
       if(nl.get("wt" ) == null) nl.add("wt","xml");
-      return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);
+      return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl, true);
     }
   }
 

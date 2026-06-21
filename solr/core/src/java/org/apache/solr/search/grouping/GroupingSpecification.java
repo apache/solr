@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.grouping;
 
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.SortSpec;
 
@@ -26,9 +27,9 @@ import org.apache.solr.search.SortSpec;
  */
 public class GroupingSpecification {
 
-  private String[] fields = new String[]{};
-  private String[] queries = new String[]{};
-  private String[] functions = new String[]{};
+  private String[] fields = Utils.EMPTY_STRINGS;
+  private String[] queries = Utils.EMPTY_STRINGS;
+  private String[] functions = Utils.EMPTY_STRINGS;
   private SortSpec groupSortSpec;
   private SortSpec withinGroupSortSpec;
   private boolean includeGroupCount;

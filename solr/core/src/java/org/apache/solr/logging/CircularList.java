@@ -17,6 +17,7 @@
 package org.apache.solr.logging;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -99,9 +100,8 @@ public class CircularList<T> implements Iterable<T>
   }
 
   public synchronized void clear() {
-    for( int i=0; i<data.length; i++ ) {
-      data[i] = null;  // for GC
-    }
+    // for GC
+    Arrays.fill(data, null);
     head = tail = size = 0;
   }
 

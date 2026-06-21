@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.SkyHook;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -38,12 +39,24 @@ import org.apache.solr.schema.SchemaField;
  * may be involved in the event of nested documents.
  */
 public class AddUpdateCommand extends UpdateCommand {
+  public final static ThreadLocal<AddUpdateCommand> THREAD_LOCAL_AddUpdateCommand = new ThreadLocal<>(){
+    protected AddUpdateCommand initialValue() {
+      return new AddUpdateCommand(null);
+    }
+  };
+
+  public final static ThreadLocal<AddUpdateCommand> THREAD_LOCAL_AddUpdateCommand_TLOG = new ThreadLocal<>(){
+    protected AddUpdateCommand initialValue() {
+      return new AddUpdateCommand(null);
+    }
+  };
+
 
   /**
    * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)
    * to index.
    */
-  public SolrInputDocument solrDoc;
+  public volatile SolrInputDocument solrDoc;
 
   /**
    * This is the version of a document, previously indexed, on which the current
@@ -51,25 +64,25 @@ public class AddUpdateCommand extends UpdateCommand {
    * or a full update. A negative value here, e.g. -1, indicates that this add
    * update does not depend on a previous update.
    */
-  public long prevVersion = -1;
+  public volatile long prevVersion = -1;
 
-  public boolean overwrite = true;
+  public volatile boolean overwrite = true;
 
   /**
    * The term to use to delete an existing document (for dedupe). (optional)
    */
-  public Term updateTerm;
+  public volatile Term updateTerm;
 
-  public int commitWithin = -1;
+  public volatile int commitWithin = -1;
 
-  public boolean isLastDocInBatch = false;
+  public volatile boolean isLastDocInBatch = false;
 
   /** Is this a nested update, null means not yet calculated. */
-  public Boolean isNested = null;
+  public volatile Boolean isNested = null;
 
   // optional id in "internal" indexed form... if it is needed and not supplied,
   // it will be obtained from the doc.
-  private BytesRef indexedId;
+  private volatile BytesRef indexedId;
 
   public AddUpdateCommand(SolrQueryRequest req) {
     super(req);
@@ -83,11 +96,18 @@ public class AddUpdateCommand extends UpdateCommand {
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {
      solrDoc = null;
+     flags = 0;
+     route = null;
      indexedId = null;
+     isNested = false;
      updateTerm = null;
      isLastDocInBatch = false;
      version = 0;
      prevVersion = -1;
+     overwrite = true;
+     commitWithin = -1;
+     isIndexChanged = null;
+     req = null;
    }
 
    public SolrInputDocument getSolrInputDocument() {
@@ -102,7 +122,7 @@ public class AddUpdateCommand extends UpdateCommand {
    * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.*/
    public Document getLuceneDocument() {
      final boolean ignoreNestedDocs = false; // throw an exception if found
-     SolrInputDocument solrInputDocument = getSolrInputDocument();
+     SolrInputDocument solrInputDocument = solrDoc;
      if (!isInPlaceUpdate() && getReq().getSchema().isUsableForChildDocs()) {
        addRootField(solrInputDocument, getRootIdUsingRouteParam());
      }
@@ -111,7 +131,7 @@ public class AddUpdateCommand extends UpdateCommand {
 
   /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
    public BytesRef getIndexedId() {
-     if (indexedId == null) {
+     if (indexedId == null && req != null) {
        IndexSchema schema = req.getSchema();
        SchemaField sf = schema.getUniqueKeyField();
        if (sf != null) {
@@ -121,14 +141,18 @@ public class AddUpdateCommand extends UpdateCommand {
            int count = field==null ? 0 : field.getValueCount();
            if (count == 0) {
              if (overwrite) {
-               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + sf.getName());
+               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Document is missing mandatory uniqueKey field: " + sf.getName());
              }
            } else if (count  > 1) {
-             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
+             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Document contains multiple values for uniqueKey field: " + field);
            } else {
              BytesRefBuilder b = new BytesRefBuilder();
              sf.getType().readableToIndexed(field.getFirstValue().toString(), b);
              indexedId = b.get();
+
+             if (SkyHook.skyHookDoc != null) {
+               SkyHook.register(field.getFirstValue().toString());
+             }
            }
          }
        }
@@ -177,7 +201,7 @@ public class AddUpdateCommand extends UpdateCommand {
           if (overwrite) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Document is missing mandatory uniqueKey field: "
-                    + sf.getName());
+                    + sf.getName() + " doc=" + solrDoc);
           }
         } else if (count > 1) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -199,7 +223,7 @@ public class AddUpdateCommand extends UpdateCommand {
    */
   public Iterable<Document> getLuceneDocsIfNested() {
     assert ! isInPlaceUpdate() : "We don't expect this to happen."; // but should "work"?
-    if (!req.getSchema().isUsableForChildDocs()) {
+    if (req.getSchema() != null && !req.getSchema().isUsableForChildDocs()) {
       // note if the doc is nested despite this, we'll throw an exception elsewhere
       return null;
     }
@@ -224,11 +248,11 @@ public class AddUpdateCommand extends UpdateCommand {
     return () -> all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
   }
 
-  private void addRootField(SolrInputDocument sdoc, String rootId) {
+  private static void addRootField(SolrInputDocument sdoc, String rootId) {
     sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
   }
 
-  private void addVersionField(SolrInputDocument sdoc, SolrInputField versionSif) {
+  private static void addVersionField(SolrInputDocument sdoc, SolrInputField versionSif) {
     // Reordered delete-by-query assumes all documents have a version, see SOLR-10114
     // all docs in hierarchy should have the same version.
     // Either fetch the version from the root doc or compute it and propagate it.
@@ -236,7 +260,7 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
-    List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
+    List<SolrInputDocument> unwrappedDocs = new ArrayList<>(16);
     flattenAnonymous(unwrappedDocs, root, true);
     flattenLabelled(unwrappedDocs, root, true);
     unwrappedDocs.add(root);

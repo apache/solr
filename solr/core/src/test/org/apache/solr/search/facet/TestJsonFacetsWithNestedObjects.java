@@ -16,19 +16,28 @@
  */
 package org.apache.solr.search.facet;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTestJsonFacetsWithNestedObjects() throws Exception {
     initCore("solrconfig-tlog.xml","schema_latest.xml");
     indexBooksAndReviews();
   }
+
+  @After
+  public void afterTestJsonFacetsWithNestedObjects() throws Exception {
+    deleteCore();
+  }
+
 
   private static void indexBooksAndReviews() throws Exception {
     final Client client = Client.localClient();
@@ -61,7 +70,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "author_s", "dan",
             "comment_t", "This book was too long."));
     client.add(book1, null);
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       client.commit();
     }
     SolrInputDocument book2 = sdoc(
@@ -285,6 +294,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
     );
   }
 
+  @Test
   public void testDomainFilterExclusionsInFilters() throws Exception {
     final Client client = Client.localClient();
     ModifiableSolrParams p = params("rows","10");

@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,11 +28,13 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -47,14 +48,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.SORT;
@@ -70,6 +69,8 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 public class CloudSolrStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
+  public static final Slice[] SLICES = new Slice[0];
+  private static final Pattern COMPILE = Pattern.compile("\\s+");
 
   protected String zkHost;
   protected String collection;
@@ -77,10 +78,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected Map<String, String> fieldMappings;
   protected StreamComparator comp;
   private boolean trace;
-  protected transient Map<String, Tuple> eofTuples;
-  protected transient CloudSolrClient cloudSolrClient;
-  protected transient List<TupleStream> solrStreams;
-  protected transient TreeSet<TupleWrapper> tuples;
+  protected transient volatile Map<String, Tuple> eofTuples;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
+  protected transient volatile List<TupleStream> solrStreams;
+  protected transient volatile TreeSet<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
 
   // Used by parallel stream
@@ -100,10 +101,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
   public CloudSolrStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
+    StreamExpressionNamedParameter aliasExpression = StreamFactory.getNamedOperand(expression, "aliases");
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if(null == collectionName){
@@ -152,11 +153,6 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
       zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
     }
-    /*
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
-    }
-    */
 
     // We've got all the required items
     init(collectionName, zkHost, mParams);
@@ -237,7 +233,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     // If the comparator is null then it was not explicitly set so we will create one using the sort parameter
     // of the query. While doing this we will also take into account any aliases such that if we are sorting on
-    // fieldA but fieldA is aliased to alias.fieldA then the comparater will be against alias.fieldA.
+    // fieldA but fieldA is aliased to alias.fieldA then the comparator will be against alias.fieldA.
 
     if (params.get("q") == null) {
       throw new IOException("q param expected for search function");
@@ -271,10 +267,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   * Opens the CloudSolrStream
   *
   ***/
-  public void open() throws IOException {
+  public synchronized void open() throws IOException {
     this.tuples = new TreeSet();
-    this.solrStreams = new ArrayList();
-    this.eofTuples = Collections.synchronizedMap(new HashMap());
+    this.solrStreams = Collections.synchronizedList(new ArrayList());
+    this.eofTuples = new ConcurrentHashMap<>();
     constructStreams();
     openStreams();
   }
@@ -301,7 +297,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     for(int i=0; i<sorts.length; i++) {
       String s = sorts[i];
 
-      String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+      String[] spec = COMPILE.split(s.trim()); //This should take into account spaces in the sort spec.
 
       if (spec.length != 2) {
         throw new IOException("Invalid sort spec:" + s);
@@ -330,16 +326,15 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   public static Slice[] getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
-    ClusterState clusterState = zkStateReader.getClusterState();
 
-    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
+    Map<String,ClusterState.CollectionRef> collectionsMap = zkStateReader.getCollectionRefs();
 
     //TODO we should probably split collection by comma to query more than one
     //  which is something already supported in other parts of Solr
 
     // check for alias or collection
 
-    List<String> allCollections = new ArrayList();
+    List<String> allCollections = new ArrayList<>();
     String[] collectionNames = collectionName.split(",");
     for(String col : collectionNames) {
       List<String> collections = checkAlias
@@ -352,16 +347,16 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     List<Slice> slices = allCollections.stream()
         .map(collectionsMap::get)
         .filter(Objects::nonNull)
-        .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
+        .flatMap(docCol -> docCol.get().join().getActiveSlices().stream())
         .collect(Collectors.toList());
     if (!slices.isEmpty()) {
-      return slices.toArray(new Slice[slices.size()]);
+      return slices.toArray(new Slice[0]);
     }
 
     // Check collection case insensitive
-    for(Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
+    for(Entry<String,ClusterState.CollectionRef> entry : collectionsMap.entrySet()) {
       if(entry.getKey().equalsIgnoreCase(collectionName)) {
-        return entry.getValue().getActiveSlicesArr();
+        return entry.getValue().get().join().getActiveSlices().toArray(SLICES);
       }
     }
 
@@ -394,12 +389,12 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  private void openStreams() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("CloudSolrStream"));
-    try {
+  void openStreams() throws IOException {
+    ExecutorService service = ParWork.getRootSharedIOExecutor();
+
       List<Future<TupleWrapper>> futures = new ArrayList();
       for (TupleStream solrStream : solrStreams) {
-        StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
+        StreamOpener so = new StreamOpener((SolrStream) solrStream, comp, eofTuples);
         Future<TupleWrapper> future = service.submit(so);
         futures.add(future);
       }
@@ -408,15 +403,16 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         for (Future<TupleWrapper> f : futures) {
           TupleWrapper w = f.get();
           if (w != null) {
+            System.err.println("XCJF_DEBUG shard added: " + w.stream.getBaseUrl());
             tuples.add(w);
+          } else {
+            System.err.println("XCJF_DEBUG shard returned null (no docs or EOF)");
           }
         }
       } catch (Exception e) {
         throw new IOException(e);
       }
-    } finally {
-      service.shutdown();
-    }
+      System.err.println("XCJF_DEBUG tuples.size after open=" + tuples.size() + " solrStreams.size=" + solrStreams.size());
   }
 
   /**
@@ -453,6 +449,12 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
       return t;
     } else {
+      // Check if any shards finished with an EXCEPTION tuple and propagate it.
+      for (Tuple eofTuple : eofTuples.values()) {
+        if (eofTuple.EXCEPTION) {
+          throw new IOException(eofTuple.getException());
+        }
+      }
       Tuple tuple = Tuple.EOF();
       if(trace) {
         tuple.put("_COLLECTION_", this.collection);
@@ -461,12 +463,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class TupleWrapper implements Comparable<TupleWrapper> {
-    private Tuple tuple;
-    private SolrStream stream;
-    private StreamComparator comp;
+  protected static class TupleWrapper implements Comparable<TupleWrapper> {
+    private final Map<String,Tuple> eofTuples;
+    private volatile Tuple tuple;
+    private final SolrStream stream;
+    private final StreamComparator comp;
 
-    public TupleWrapper(SolrStream stream, StreamComparator comp) {
+    public TupleWrapper(SolrStream stream, StreamComparator comp, Map<String, Tuple> eofTuples) {
+      this.eofTuples = eofTuples;
       this.stream = stream;
       this.comp = comp;
     }
@@ -488,6 +492,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       return this == o;
     }
 
+    @Override
+    public int hashCode() {
+      return Objects.hash(tuple);
+    }
+
     public Tuple getTuple() {
       return tuple;
     }
@@ -497,25 +506,30 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
       if(tuple.EOF) {
         eofTuples.put(stream.getBaseUrl(), tuple);
+        System.err.println("XCJF_DEBUG shard EOF: " + stream.getBaseUrl());
+      } else {
+        System.err.println("XCJF_DEBUG shard tuple from " + stream.getBaseUrl() + ": " + tuple.getMap());
       }
 
       return !tuple.EOF;
     }
   }
 
-  protected class StreamOpener implements Callable<TupleWrapper> {
+  protected static class StreamOpener implements Callable<TupleWrapper> {
 
-    private SolrStream stream;
-    private StreamComparator comp;
+    private final SolrStream stream;
+    private final StreamComparator comp;
+    Map<String, Tuple> eofTuples;
 
-    public StreamOpener(SolrStream stream, StreamComparator comp) {
+    public StreamOpener(SolrStream stream, StreamComparator comp, Map<String, Tuple> eofTuples) {
       this.stream = stream;
       this.comp = comp;
+      this.eofTuples = eofTuples;
     }
 
     public TupleWrapper call() throws Exception {
       stream.open();
-      TupleWrapper wrapper = new TupleWrapper(stream, comp);
+      TupleWrapper wrapper = new TupleWrapper(stream, comp, eofTuples);
       if(wrapper.next()) {
         return wrapper;
       } else {

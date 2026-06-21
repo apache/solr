@@ -22,18 +22,23 @@ import java.util.Date;
 import java.util.List;
 
 import junit.framework.AssertionFailedError;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCase {
   
   public static final String SPECIAL = ""; 
@@ -41,6 +46,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   public DistributedFacetPivotLargeTest() {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
   }
   
   @Test
@@ -146,7 +152,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         rsp = query( p );
         pivots = rsp.getFacetPivot().get("place_s,company_t");
         assertEquals(20, pivots.size()); // limit
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < (TEST_NIGHTLY ? 10 : 5); i++) {
           PivotField place = pivots.get(i); 
           assertTrue(place.toString(), place.getValue().toString().endsWith("placeholder"));
           assertEquals(3, place.getPivot().size());
@@ -157,7 +163,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         assertPivot("place_s", "cardiff", 257, pivots.get(10));
         assertPivot("place_s", "krakaw", 1, pivots.get(11));
         assertPivot("place_s", "medical staffing network holdings, inc.", 51, pivots.get(12));
-        for (int i = 13; i < 20; i++) {
+        for (int i = 13; i <  (TEST_NIGHTLY ? 20 : 15); i++) {
           PivotField place = pivots.get(i); 
           assertTrue(place.toString(), place.getValue().toString().startsWith("placeholder"));
           assertEquals(1, place.getPivot().size());
@@ -331,7 +337,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
                             "facet","true",
                             "facet.pivot","place_s,company_t",
                             // the (50) Nplaceholder place_s values exist in 6 each on oneShard
-                            FacetParams.FACET_PIVOT_MINCOUNT, ""+(6 * shardsArr.length),
+                            FacetParams.FACET_PIVOT_MINCOUNT, ""+(6 * shardsArr.length()),
                             FacetParams.FACET_LIMIT, "4",
                             "facet.sort", "index");
       rsp = null;
@@ -981,7 +987,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   }
 
   private void setupDistributedPivotFacetDocuments() throws Exception{
-    
+
     //Clear docs
     del("*:*");
     commit();
@@ -1014,17 +1020,91 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     }
 
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft","pay_i",4367,"hiredate_dt", "2012-11-01T12:30:00Z");
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft bbc","pay_i",8742,"hiredate_dt", "2012-11-01T12:30:00Z");
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft polecat","pay_i",5824,"hiredate_dt", "2012-11-01T12:30:00Z");
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft ","pay_i",6539,"hiredate_dt", "2012-11-01T12:30:00Z"); 
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "medical staffing network holdings, inc.", "company_t", "microsoft ","pay_i",6539,"hiredate_dt", "2012-11-01T12:30:00Z", "special_s", "xxx");
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "polecat","pay_i",4352,"hiredate_dt", "2012-01-01T12:30:00Z", "special_s", "xxx");
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "krakaw", "company_t", "polecat","pay_i",4352,"hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL); 
-    
-    addPivotDoc(twoShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft","pay_i",12,"hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
-    addPivotDoc(twoShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft","pay_i",543,"hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
+    try (ParWork adder = new ParWork(this)) {
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft", "pay_i", 4367, "hiredate_dt", "2012-11-01T12:30:00Z");
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft bbc", "pay_i", 8742, "hiredate_dt", "2012-11-01T12:30:00Z");
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
 
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft polecat", "pay_i", 5824, "hiredate_dt", "2012-11-01T12:30:00Z");
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft ", "pay_i", 6539, "hiredate_dt", "2012-11-01T12:30:00Z");
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(oneShard, "id", getDocNum(), "place_s", "medical staffing network holdings, inc.", "company_t", "microsoft ", "pay_i", 6539, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", "xxx");
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "polecat", "pay_i", 4352, "hiredate_dt", "2012-01-01T12:30:00Z", "special_s", "xxx");
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(oneShard, "id", getDocNum(), "place_s", "krakaw", "company_t", "polecat", "pay_i", 4352, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(twoShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft", "pay_i", 12, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      adder.collect("", () -> {
+        try {
+          addPivotDoc(twoShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft", "pay_i", 543, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } catch (SolrServerException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    }
 
     // two really trivial documents, unrelated to the rest of the tests, 
     // for the purpose of demoing the porblem with mincount=0

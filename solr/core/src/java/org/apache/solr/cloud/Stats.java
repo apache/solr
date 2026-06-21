@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.jctools.maps.NonBlockingHashMap;
 
 /**
  * Used to hold statistics about some SolrCloud operations.
@@ -36,7 +37,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 public class Stats {
   static final int MAX_STORED_FAILURES = 10;
 
-  final Map<String, Stat> stats = new ConcurrentHashMap<>();
+  final Map<String, Stat> stats = new ConcurrentHashMap<>(64);
   private volatile int queueLength;
 
   public Map<String, Stat> getStats() {

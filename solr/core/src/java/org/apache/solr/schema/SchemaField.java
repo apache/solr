@@ -26,6 +26,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -185,13 +186,13 @@ public final class SchemaField extends FieldProperties implements IndexableField
       
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                               "can not sort on multivalued field: " 
-                              + getName() + " of type: " + this.type.getTypeName());
+                              + name + " of type: " + this.type.getTypeName());
     }
     if (! hasDocValues() ) {
       if ( ! ( indexed() && isUninvertible() && null != this.type.getUninversionType(this) ) ) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                                 "can not sort on a field w/o docValues unless it is indexed=true uninvertible=true and the type supports Uninversion: " 
-                                + getName());
+                                + name);
       }
     }
   }
@@ -208,13 +209,13 @@ public final class SchemaField extends FieldProperties implements IndexableField
     if ( multiValued() ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                               "can not use FieldCache on multivalued field: " 
-                              + getName());
+                              + name);
     }
     if (! hasDocValues() ) {
       if ( ! ( indexed() && isUninvertible() && null != this.type.getUninversionType(this) ) ) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                                 "can not use FieldCache on a field w/o docValues unless it is indexed uninvertible=true and the type supports Uninversion: " 
-                                + getName());
+                                + name);
       }
     }
   }
@@ -339,11 +340,11 @@ public final class SchemaField extends FieldProperties implements IndexableField
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
     SimpleOrderedMap<Object> properties = new SimpleOrderedMap<>();
-    properties.add(FIELD_NAME, getName());
-    properties.add(TYPE_NAME, getType().getTypeName());
+    properties.add(FIELD_NAME, name);
+    properties.add(TYPE_NAME, type.getTypeName());
     if (showDefaults) {
-      if (null != getDefaultValue()) {
-        properties.add(DEFAULT_VALUE, getDefaultValue());
+      if (null != defaultValue) {
+        properties.add(DEFAULT_VALUE, defaultValue);
       }
       properties.add(getPropertyName(INDEXED), indexed());
       properties.add(getPropertyName(STORED), stored());
@@ -364,7 +365,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
       } else if (sortMissingLast()) {
         properties.add(getPropertyName(SORT_MISSING_LAST), sortMissingLast());
       }
-      properties.add(getPropertyName(REQUIRED), isRequired());
+      properties.add(getPropertyName(REQUIRED), required);
       properties.add(getPropertyName(TOKENIZED), isTokenized());
       properties.add(getPropertyName(USE_DOCVALUES_AS_STORED), useDocValuesAsStored());
       // The BINARY property is always false
@@ -445,6 +446,16 @@ public final class SchemaField extends FieldProperties implements IndexableField
   @Override
   public int pointNumBytes() {
     return 0;
+  }
+
+  @Override
+  public int vectorDimension() {
+    return 0;
+  }
+
+  @Override
+  public VectorSimilarityFunction vectorSimilarityFunction() {
+    return VectorSimilarityFunction.EUCLIDEAN;
   }
 
   @Override

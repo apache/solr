@@ -17,8 +17,9 @@
 
 package org.apache.solr.common.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -34,17 +34,22 @@ import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
+import org.apache.solr.response.SolrQueryResponse;
 
 import static org.apache.solr.common.util.Utils.NEW_ARRAYLIST_FUN;
 import static org.apache.solr.common.util.Utils.NEW_LINKED_HASHMAP_FUN;
 
+import org.junit.Test;
+
 public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
+  @Test
   public void testTagRead() throws Exception {
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-    FastOutputStream faos = FastOutputStream.wrap(baos);
 
-    try (JavaBinCodec codec = new JavaBinCodec(faos, null)) {
+    FastOutputStream faos = new FastOutputStream(baos);
+
+    try (JavaBinCodec codec = new JavaBinCodec(faos)) {
       codec.writeVal(10);
       codec.writeVal(100);
       codec.writeVal("Hello!");
@@ -54,21 +59,23 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     faos.close();
 
 
-    FastInputStream fis = new FastInputStream(null, baos.getbuf(), 0, baos.size());
+    byte[] encoded = baos.toByteArray();
+    FastInputStream fis = new FastInputStream(new ByteArrayInputStream(encoded), 0);
     try (FastJavaBinDecoder.StreamCodec scodec = new FastJavaBinDecoder.StreamCodec(fis)) {
       scodec.start();
       Tag tag = scodec.getTag();
-      assertEquals(Tag._SINT, tag);
-      assertEquals(10, scodec.readSmallInt(scodec.dis));
+      assertEquals(Tag._INT, tag);
+      assertEquals(10, scodec.dis.readInt());
       tag = scodec.getTag();
-      assertEquals(Tag._SINT, tag);
-      assertEquals(100, scodec.readSmallInt(scodec.dis));
+      assertEquals(Tag._INT, tag);
+      assertEquals(100, scodec.dis.readInt());
       tag = scodec.getTag();
       assertEquals(Tag._STR, tag);
-      assertEquals("Hello!", scodec.readStr(fis));
+      assertEquals("Hello!", JavaBinCodec.readStr(fis, scodec.dis.readInt()));
     }
   }
 
+  @Test
   public void testSimple() throws IOException {
     String sampleObj = "{k : v , " +
         "mapk : {k1: v1, k2 : [v2_1 , v2_2 ]}," +
@@ -85,16 +92,15 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
     Map m2;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      m2 = (Map) jbc.unmarshal(new FastInputStream(null, baos.getbuf(), 0, baos.size()));
+      m2 = (Map) jbc.unmarshal(new FastInputStream(new ByteArrayInputStream(baos.toByteArray()),  0));
     }
-    LinkedHashMap fastMap = (LinkedHashMap) new FastJavaBinDecoder()
-        .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
+    Map fastMap = (Map) new FastJavaBinDecoder()
+        .withInputStream(new FastInputStream(new ByteArrayInputStream(baos.toByteArray()),  0))
         .decode(FastJavaBinDecoder.getEntryListener());
-    assertEquals(Utils.writeJson(m2, new StringWriter(), true).toString(),
-        Utils.writeJson(fastMap, new StringWriter(), true).toString());
+    assertEquals(m2, fastMap);
 
     Object newMap = new FastJavaBinDecoder()
-        .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
+        .withInputStream(new FastInputStream(new ByteArrayInputStream(baos.toByteArray()),  0))
         .decode(e -> {
           e.listenContainer(new LinkedHashMap<>(), e_ -> {
             Map rootMap = (Map) e_.ctx();
@@ -116,23 +122,47 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
           });
         });
     ((Map) m2.get("mapk")).remove("k2");
-    assertEquals(Utils.writeJson(m2, new StringWriter(), true).toString(),
-        Utils.writeJson(newMap, new StringWriter(), true).toString());
+    assertEquals(m2, newMap);
   }
 
+  @Test
   public void testFastJavabinStreamingDecoder() throws IOException {
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-    try (InputStream is = getClass().getResourceAsStream("/solrj/javabin_sample.bin")) {
-      IOUtils.copy(is, baos);
+//    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+//    try (InputStream is = getClass().getResourceAsStream("/solrj/javabin_sample.bin")) {
+//      IOUtils.copy(is, baos);
+//    }
+
+    SolrDocument doc = new SolrDocument();
+    doc.addField("id", "bar");
+    doc.addField("inStock", true);
+    doc.addField("price", 0.5f);
+
+
+    //
+    SolrDocumentList solrDocs = new SolrDocumentList();
+    solrDocs.setMaxScore(1.0f);
+    solrDocs.setNumFound(1);
+    solrDocs.setNumFoundExact(Boolean.TRUE);
+    solrDocs.setStart(0);
+    solrDocs.add(0, doc);
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    resp.addResponse(solrDocs);
+
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (JavaBinCodec javabin = new JavaBinCodec();) {
+      javabin.marshal(resp.getValues(), baos);
     }
+
 
     SolrDocumentList list;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       SimpleOrderedMap o = (SimpleOrderedMap) jbc.unmarshal(baos.toByteArray());
       list = (SolrDocumentList) o.get("response");
     }
+    byte[] encoded = baos.toByteArray();
 
-    System.out.println(" " + list.getNumFound() + " , " + list.getStart() + " , " + list.getMaxScore());
     class Pojo {
       long _idx;
       CharSequence id;
@@ -161,13 +191,12 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       public void field(DataEntry field, Object docObj) {
         Pojo pojo = (Pojo) docObj;
         if ("id".equals(field.name())) {
-          pojo.id = ((Utf8CharSequence) field.val()).clone();
+          pojo.id = field.strValue();
         } else if (field.type() == DataEntry.Type.BOOL && "inStock".equals(field.name())) {
           pojo.inStock = field.boolVal();
         } else if (field.type() == DataEntry.Type.FLOAT && "price".equals(field.name())) {
           pojo.price = field.floatVal();
         }
-
       }
 
       @Override
@@ -181,9 +210,10 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
           assertEquals((Float) doc.get("price"), pojo.price, 0.001);
       }
     });
-    parser.processResponse(new FastInputStream(null, baos.getbuf(), 0, baos.size()), null);
+    parser.processResponse(new FastInputStream(new ByteArrayInputStream(encoded),  0), null);
   }
 
+  @Test
   public void testParsingWithChildDocs() throws IOException {
     SolrDocument d1 = TestJavaBinCodec.generateSolrDocumentWithChildDocs();
     d1.setField("id", "101");
@@ -285,7 +315,9 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
         return child;
       }
     });
-    binaryResponseParser.processResponse(new FastInputStream(null, baos.getbuf(), 0, baos.size()), null);
+    byte[] encoded = baos.toByteArray();
+
+    binaryResponseParser.processResponse(new FastInputStream(new ByteArrayInputStream(encoded),  0), null);
     for (int i = 0; i < sdocs.size(); i++) {
       l.get(i).compare(sdocs.get(i));
     }
@@ -293,7 +325,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     l.clear();
 
     useListener[0] = false;
-    binaryResponseParser.processResponse(new FastInputStream(null, baos.getbuf(), 0, baos.size()), null);
+    binaryResponseParser.processResponse(new FastInputStream(new ByteArrayInputStream(encoded),  0), null);
     for (int i = 0; i < sdocs.size(); i++) {
       l.get(i).compare(sdocs.get(i));
     }

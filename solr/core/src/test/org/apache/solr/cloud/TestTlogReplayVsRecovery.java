@@ -30,10 +30,13 @@ import java.util.concurrent.TimeoutException;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -73,7 +76,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     System.setProperty("leaderVoteWait", "60000");
 
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
 
     NODE0 = cluster.getJettySolrRunner(0);
@@ -87,7 +90,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
       jetty.setProxyPort(proxy.getListenPort());
       cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
-      proxy.open(jetty.getBaseUrl().toURI());
+      proxy.open(new URI(jetty.getBaseUrl()));
       if (log.isInfoEnabled()) {
         log.info("Adding proxy for URL: {}. Proxy: {}", jetty.getBaseUrl(), proxy.getUrl());
       }
@@ -136,16 +139,13 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
                  .setNode(NODE0.getNodeName())
                  .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT));
     
-    waitForState("Timeout waiting for shard leader", COLLECTION, clusterShape(1, 1));
 
+    cluster.waitForActiveCollection(COLLECTION, 1, 2);
     assertEquals(RequestStatusState.COMPLETED,
                  CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
                  .setNode(NODE1.getNodeName())
                  .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT));
-    
-    cluster.waitForActiveCollection(COLLECTION, 1, 2);
-    
-    waitForState("Timeout waiting for 1x2 collection", COLLECTION, clusterShape(1, 2));
+
     
     final Replica leader = getCollectionState(COLLECTION).getSlice("shard1").getLeader();
     assertEquals("Sanity check failed", NODE0.getNodeName(), leader.getNodeName());
@@ -174,19 +174,17 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
                  -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     // Sanity check that a new (out of sync) replica doesn't come up in our place...
-    expectThrows(TimeoutException.class,
-                 "Did not time out waiting for new leader, out of sync replica became leader",
-                 () -> {
-                   cluster.getSolrClient().waitForState(COLLECTION, 10, TimeUnit.SECONDS, (state) -> {
-            Replica newLeader = state.getSlice("shard1").getLeader();
-            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-              // this is is the bad case, our "bad" state was found before timeout
-              log.error("WTF: New Leader={}", newLeader);
-              return true;
-            }
-            return false; // still no bad state, wait for timeout
-          });
+    SolrTestCaseUtil.expectThrows(TimeoutException.class, "Did not time out waiting for new leader, out of sync replica became leader", () -> {
+      cluster.getSolrClient().waitForState(COLLECTION, 10, TimeUnit.SECONDS, (l, state) -> {
+        Replica newLeader = state.getSlice("shard1").getLeader();
+        if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+          // this is is the bad case, our "bad" state was found before timeout
+          log.error("WTF: New Leader={}", newLeader);
+          return true;
+        }
+        return false; // still no bad state, wait for timeout
       });
+    });
 
     log.info("Enabling TestInjection.updateLogReplayRandomPause");
     TestInjection.updateLogReplayRandomPause = "true:100";
@@ -196,13 +194,11 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     NODE0.start();
 
     log.info("Waiting for all nodes and active collection...");
-    
-    cluster.waitForAllNodes(30);;
+
     waitForState("Timeout waiting for leader", COLLECTION, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
-    waitForState("Timeout waiting for active collection", COLLECTION, clusterShape(1, 2));
     
     cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
@@ -226,7 +222,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     }
     // For simplicity, we always add out docs directly to NODE0
     // (where the leader should be) and bypass the proxy...
-    try (HttpSolrClient client = getHttpSolrClient(NODE0.getBaseUrl().toString())) {
+    try (Http2SolrClient client = SolrTestCaseJ4
+        .getHttpSolrClient(NODE0.getBaseUrl().toString())) {
       assertEquals(0, client.add(COLLECTION, docs).getStatus());
       if (commit) {
         assertEquals(0, client.commit(COLLECTION).getStatus());
@@ -240,8 +237,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    */
   private void assertDocsExistInBothReplicas(int firstDocId,
                                              int lastDocId) throws Exception {
-    try (HttpSolrClient leaderSolr = getHttpSolrClient(NODE0.getBaseUrl().toString());
-         HttpSolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
+    try (Http2SolrClient leaderSolr = SolrTestCaseJ4.getHttpSolrClient(NODE0.getBaseUrl().toString());
+         Http2SolrClient replicaSolr = SolrTestCaseJ4.getHttpSolrClient(NODE1.getBaseUrl().toString())) {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists("leader", leaderSolr, docId);
@@ -254,7 +251,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * uses distrib=false RTG requests to verify that the specified docId can be found using the 
    * specified solr client
    */
-  private void assertDocExists(final String clientName, final HttpSolrClient client, final String docId) throws Exception {
+  private void assertDocExists(final String clientName, final Http2SolrClient client, final String docId) throws Exception {
     final QueryResponse rsp = (new QueryRequest(params("qt", "/get",
                                                        "id", docId,
                                                        "_trace", clientName,

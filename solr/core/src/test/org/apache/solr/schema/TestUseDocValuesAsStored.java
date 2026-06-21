@@ -16,11 +16,22 @@
  */
 package org.apache.solr.schema;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.DOMUtil;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -30,20 +41,9 @@ import java.time.Month;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.apache.solr.util.DOMUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 /**
  * Tests the useDocValuesAsStored functionality.
@@ -74,15 +74,15 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(11000, Month.DECEMBER, 31, 23, 59, 59, 999_000_000) // AD, 5 digit year
         .toInstant(ZoneOffset.UTC).toEpochMilli();
     try {
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+
       InputStream stream = TestUseDocValuesAsStored.class.getResourceAsStream("/solr/collection1/conf/enumsConfig.xml");
-      Document doc = builder.parse(new InputSource(IOUtils.getDecodingReader(stream, StandardCharsets.UTF_8)));
-      XPath xpath = XPathFactory.newInstance().newXPath();
-      NodeList nodes = (NodeList)xpath.evaluate
+      TinyDocumentImpl doc = h.getTinyDocument(IOUtils.toString(stream, StandardCharsets.UTF_8), null);
+      XPath xpath = SolrResourceLoader.getXPath();
+      List<NodeInfo> nodes = (List)xpath.evaluate
           ("/enumsConfig/enum[@name='severity']/value", doc, XPathConstants.NODESET);
-      SEVERITY = new String[nodes.getLength()];
-      for (int i = 0 ; i < nodes.getLength() ; ++i) {
-        SEVERITY[i] = DOMUtil.getText(nodes.item(i));
+      SEVERITY = new String[nodes.size()];
+      for (int i = 0 ; i < nodes.size() ; ++i) {
+        SEVERITY[i] = DOMUtil.getText(nodes.get(i));
       }
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -91,9 +91,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    File testHomeConfDir = new File(SolrTestUtil.TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "enumsConfig.xml"), tmpConfDir);
@@ -176,22 +176,24 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
-    for (int c = 0 ; c < 10 * RANDOM_MULTIPLIER ; ++c) {
+    for (int c = 0; c < (TEST_NIGHTLY ? 10 : 2) * LuceneTestCase.RANDOM_MULTIPLIER ; ++c) {
       clearIndex();
-      int[] arity = new int[9];
+      int[] arity = new int[TEST_NIGHTLY ? 9 : 4];
       for (int a = 0 ; a < arity.length ; ++a) {
         // Single-valued 50% of the time; other 50%: 2-10 values equally likely
-        arity[a] = random().nextBoolean() ? 1 : TestUtil.nextInt(random(), 2, 10);
+        arity[a] = random().nextBoolean() ? 1 : TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 10 : 3);
       }
       doTest("check string value is correct", dvStringFieldName(arity[0], true, false), "str", nextValues(arity[0], "str"));
       doTest("check int value is correct", "test_i" + plural(arity[1]) + "_dvo", "int", nextValues(arity[1], "int"));
       doTest("check double value is correct", "test_d" + plural(arity[2]) + "_dvo", "double", nextValues(arity[2], "double"));
       doTest("check long value is correct", "test_l" + plural(arity[3]) + "_dvo", "long", nextValues(arity[3], "long"));
-      doTest("check float value is correct", "test_f" + plural(arity[4]) + "_dvo", "float", nextValues(arity[4], "float"));
-      doTest("check date value is correct", "test_dt" + plural(arity[5]) + "_dvo", "date", nextValues(arity[5], "date"));
-      doTest("check stored and docValues value is correct", dvStringFieldName(arity[6], true, true), "str", nextValues(arity[6], "str"));
-      doTest("check non-stored and non-indexed is accessible", dvStringFieldName(arity[7], false, false), "str", nextValues(arity[7], "str"));
-      doTest("enumField", "enum" + plural(arity[8]) + "_dvo", "str", nextValues(arity[8], "enum"));
+      if (TEST_NIGHTLY) {
+        doTest("check float value is correct", "test_f" + plural(arity[4]) + "_dvo", "float", nextValues(arity[4], "float"));
+        doTest("check date value is correct", "test_dt" + plural(arity[5]) + "_dvo", "date", nextValues(arity[5], "date"));
+        doTest("check stored and docValues value is correct", dvStringFieldName(arity[6], true, true), "str", nextValues(arity[6], "str"));
+        doTest("check non-stored and non-indexed is accessible", dvStringFieldName(arity[7], false, false), "str", nextValues(arity[7], "str"));
+        doTest("enumField", "enum" + plural(arity[8]) + "_dvo", "str", nextValues(arity[8], "enum"));
+      }
     }
   }
 
@@ -334,9 +336,11 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
       // See SOLR-10924...
       // Trie/String based Docvalues are sets, but stored values & Point DVs are ordered multisets,
-      // so cardinality depends on the value source
+      // so cardinality depends on the value source.
+      // EnumFieldType uses SortedNumericDocValues (same as numeric points) — does not deduplicate.
+      final boolean isEnumField = h.getCore().getLatestSchema().getFieldType(field) instanceof EnumFieldType;
       final int expectedCardinality =
-        (isStoredField(field) || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
+        (isStoredField(field) || isEnumField || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
                                   && ! field.startsWith("test_s")))
         ? value.length : valueSet.size();
       xpaths[value.length] = "*[count(//arr[@name='"+field+"']/"+type+")="+expectedCardinality+"]";

@@ -54,7 +54,7 @@ public class MyCrazyCustomField extends TextField {
     }
 
     PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    query.setRewriteMethod(FieldType.getRewriteMethod(parser, sf));
     return query;
   }
 }

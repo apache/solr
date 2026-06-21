@@ -29,6 +29,7 @@ import org.apache.solr.update.RollbackUpdateCommand;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 
 /**
  * This Factory can optionally save references to the commands it receives in 
@@ -39,13 +40,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 public final class RecordingUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory {
 
-  private boolean recording = false;
+  private volatile boolean recording = false;
 
   /** The queue containing commands that were recorded
    * @see #startRecording
    */
   public final BlockingQueue<UpdateCommand> commandQueue 
-    = new LinkedBlockingQueue<UpdateCommand>();
+    = new LinkedTransferQueue<>();
 
   /** 
    * @see #stopRecording 
@@ -80,7 +81,7 @@ public final class RecordingUpdateProcessorFactory
     }
 
     private void record(UpdateCommand cmd) {
-      if (! commandQueue.offer(cmd) ) {
+      if (!commandQueue.offer(cmd) ) {
         throw new RuntimeException
           ("WTF: commandQueue should be unbounded but offer failed: " + cmd.toString());
       }

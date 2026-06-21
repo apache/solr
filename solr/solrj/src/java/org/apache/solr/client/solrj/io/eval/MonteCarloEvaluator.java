@@ -42,14 +42,14 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
   public MonteCarloEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
     //Get all the named params
     Set<String> echo = null;
     boolean echoAll = false;
-    for(StreamExpressionParameter np : namedParams) {
-      String name = ((StreamExpressionNamedParameter)np).getName();
+    for(StreamExpressionNamedParameter np : namedParams) {
+      String name = np.getName();
 
-      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+      StreamExpressionParameter param = np.getParameter();
       if(factory.isEvaluator((StreamExpression)param)) {
         StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
         variables.put(name, evaluator);

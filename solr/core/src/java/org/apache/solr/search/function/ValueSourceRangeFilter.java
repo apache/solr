@@ -109,16 +109,12 @@ public class ValueSourceRangeFilter extends SolrFilter {
 
   @Override
   public String toString(String field) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("frange(");
-    sb.append(valueSource);
-    sb.append("):");
-    sb.append(includeLower ? '[' : '{');
-    sb.append(lowerVal == null ? "*" : lowerVal);
-    sb.append(" TO ");
-    sb.append(upperVal == null ? "*" : upperVal);
-    sb.append(includeUpper ? ']' : '}');
-    return sb.toString();
+    String sb =
+        "frange(" + valueSource + "):" + (includeLower ? '[' : '{') + (lowerVal == null ? "*" : lowerVal) + " TO " + (upperVal == null ? "*" : upperVal) + (
+            includeUpper ?
+                ']' :
+                '}');
+    return sb;
   }
 
   @Override

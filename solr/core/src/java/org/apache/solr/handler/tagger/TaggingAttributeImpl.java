@@ -73,7 +73,7 @@ public class TaggingAttributeImpl extends AttributeImpl implements TaggingAttrib
 
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    reflector.reflect(TaggingAttribute.class, "taggable", isTaggable());
+    reflector.reflect(TaggingAttribute.class, "taggable", taggable);
   }
 
 }

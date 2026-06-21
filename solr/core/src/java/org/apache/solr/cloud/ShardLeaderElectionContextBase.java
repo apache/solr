@@ -17,178 +17,148 @@
 
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.ArrayList;
-
-import org.apache.hadoop.fs.Path;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.RetryUtil;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
-import org.apache.zookeeper.OpResult.SetDataResult;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+
 class ShardLeaderElectionContextBase extends ElectionContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Suffix appended to {@code leaderPath} (.../leaders/&lt;shard&gt;/leader) to form the single-leader
+   * mutual-exclusion node (.../leaders/&lt;shard&gt;/leader_lock). It is a SIBLING of leaderPath -- not a
+   * child -- so it never appears among leaderPath's children (which the fork reads back as the winning
+   * replica's internal id). Created EPHEMERAL; exactly one replica per shard can hold it.
+   */
+  static final String LEADER_SINGLETON_SUFFIX = "_lock";
+
   protected final SolrZkClient zkClient;
-  protected String shardId;
-  protected String collection;
-  protected LeaderElector leaderElector;
-  protected ZkStateReader zkStateReader;
-  protected ZkController zkController;
-  private Integer leaderZkNodeParentVersion;
+  protected final LeaderElector leaderElector;
+  protected volatile boolean closed;
+  private final Integer id;
+  private volatile boolean wasleader;
+  private volatile boolean heldSingleton;
 
-  // Prevents a race between cancelling and becoming leader.
-  private final Object lock = new Object();
-
-  public ShardLeaderElectionContextBase(LeaderElector leaderElector,
-                                        final String shardId, final String collection, final String coreNodeName,
-                                        ZkNodeProps props, ZkController zkController) {
-    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
-        + "/leader_elect/" + shardId, ZkStateReader.getShardLeadersPath(
-        collection, shardId), props, zkController.getZkClient());
+  public ShardLeaderElectionContextBase(LeaderElector leaderElector, String electionPath, String leaderPath, Replica replica, CoreDescriptor cd,
+      SolrZkClient zkClient) {
+    super(electionPath, leaderPath, replica, cd);
+    this.zkClient = zkClient;
+    this.id = replica.getInternalId();
     this.leaderElector = leaderElector;
-    this.zkStateReader = zkController.getZkStateReader();
-    this.zkClient = zkStateReader.getZkClient();
-    this.zkController = zkController;
-    this.shardId = shardId;
-    this.collection = collection;
-
-    String parent = new Path(leaderPath).getParent().toString();
-    ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
-    // only if /collections/{collection} exists already do we succeed in creating this path
-    log.info("make sure parent is created {}", parent);
-    try {
-      zcmd.ensureExists(parent, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
-    } catch (KeeperException e) {
-      throw new RuntimeException(e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
-    }
   }
 
-  @Override
-  public void cancelElection() throws InterruptedException, KeeperException {
-    super.cancelElection();
-    synchronized (lock) {
-      if (leaderZkNodeParentVersion != null) {
-        // no problem
-        // no problem
+  @Override protected void cancelElection() throws InterruptedException, KeeperException {
+    log.debug("cancel election for {}", replica);
+
+    if (!zkClient.isAlive()) return;
+
+    try {
+
+      log.debug("Removing leader registration node on cancel");
+      String leaderSeqPath = getLeaderSeqPath();
+      if (leaderSeqPath != null) {
+        zkClient.delete(leaderSeqPath, -1);
+      }
+
+      if (wasleader) {
+        zkClient.delete(leaderPath + "/" + id, -1);
+      }
+
+      if (heldSingleton) {
+        heldSingleton = false;
         try {
-          // We need to be careful and make sure we *only* delete our own leader registration node.
-          // We do this by using a multi and ensuring the parent znode of the leader registration node
-          // matches the version we expect - there is a setData call that increments the parent's znode
-          // version whenever a leader registers.
-          log.debug("Removing leader registration node on cancel: {} {}", leaderPath, leaderZkNodeParentVersion);
-          List<Op> ops = new ArrayList<>(2);
-          ops.add(Op.check(new Path(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
-          ops.add(Op.delete(leaderPath, -1));
-          zkClient.multi(ops, true);
-        } catch (InterruptedException e) {
-          throw e;
-        } catch (IllegalArgumentException e) {
-          SolrException.log(log, e);
-        }
-        leaderZkNodeParentVersion = null;
-      } else {
-        log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
+          zkClient.delete(leaderPath + LEADER_SINGLETON_SUFFIX, -1);
+        } catch (NoNodeException ignore) {}
       }
-    }
-  }
 
-  @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-      throws KeeperException, InterruptedException, IOException {
-    // register as leader - if an ephemeral is already there, wait to see if it goes away
-
-    String parent = new Path(leaderPath).getParent().toString();
-    try {
-      RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
-        synchronized (lock) {
-          log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
-          List<Op> ops = new ArrayList<>(2);
-
-          // We use a multi operation to get the parent nodes version, which will
-          // be used to make sure we only remove our own leader registration node.
-          // The setData call used to get the parent version is also the trigger to
-          // increment the version. We also do a sanity check that our leaderSeqPath exists.
-
-          ops.add(Op.check(leaderSeqPath, -1));
-          ops.add(Op.create(leaderPath, Utils.toJSON(leaderProps), zkClient.getZkACLProvider().getACLsToAdd(leaderPath), CreateMode.EPHEMERAL));
-          ops.add(Op.setData(parent, null, -1));
-          List<OpResult> results;
-
-          results = zkClient.multi(ops, true);
-          for (OpResult result : results) {
-            if (result.getType() == ZooDefs.OpCode.setData) {
-              SetDataResult dresult = (SetDataResult) result;
-              Stat stat = dresult.getStat();
-              leaderZkNodeParentVersion = stat.getVersion();
-              return;
-            }
-          }
-          assert leaderZkNodeParentVersion != null;
-        }
-      });
     } catch (NoNodeException e) {
-      log.info("Will not register as leader because it seems the election is no longer taking place.");
-      return;
-    } catch (Throwable t) {
-      if (t instanceof OutOfMemoryError) {
-        throw (OutOfMemoryError) t;
-      }
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", t);
+
+    } catch (Exception e) {
+      log.info("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
     }
 
-    assert shardId != null;
-    boolean isAlreadyLeader = false;
-    if (zkStateReader.getClusterState() != null &&
-        zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() < 2) {
-      Replica leader = zkStateReader.getLeader(collection, shardId);
-      if (leader != null
-          && leader.getBaseUrl().equals(leaderProps.get(ZkStateReader.BASE_URL_PROP))
-          && leader.getCoreName().equals(leaderProps.get(ZkStateReader.CORE_NAME_PROP))) {
-        isAlreadyLeader = true;
-      }
-    }
-    if (!isAlreadyLeader) {
-      ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
-          ZkStateReader.SHARD_ID_PROP, shardId,
-          ZkStateReader.COLLECTION_PROP, collection,
-          ZkStateReader.BASE_URL_PROP, leaderProps.get(ZkStateReader.BASE_URL_PROP),
-          ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP),
-          ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
-      assert zkController != null;
-      assert zkController.getOverseer() != null;
-      zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
-    }
+    super.cancelElection();
   }
 
-  public LeaderElector getLeaderElector() {
-    return leaderElector;
+  @Override boolean runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs)
+      throws KeeperException, InterruptedException, IOException {
+    wasleader = true;
+    String leaderSeqPath = null;
+    try {
+
+      if (leaderElector.isLeader()) {
+        return true;
+      }
+
+      leaderSeqPath = getLeaderSeqPath();
+
+      if (leaderSeqPath == null) {
+        log.warn("We have won as leader, but we have no leader election node known to us leaderPath {}", leaderPath);
+        return true;
+      }
+
+      log.debug("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
+
+      // Single-leader mutual exclusion. The election queue is supposed to guarantee one head, but a
+      // queue race (e.g. a recovering replica re-joining concurrently) can let two replicas of the
+      // same shard both believe they are head and both reach this point. The fork's per-replica
+      // registration node (leaderPath + '/' + internalId) is UNIQUE per replica, so it provides no
+      // mutual exclusion -- both creates succeed and both replicas publish LEADER into the StateUpdates
+      // channel, producing a two-leader slice state {1=L,2=L}. getLeader() then returns whichever
+      // replica iterates first and, crucially, that stale LEADER entry is NOT ephemeral, so it survives
+      // the leader's ZK-session loss and permanently wedges leader migration
+      // (HttpPartitionTest.testLeaderZkSessionLoss: kill the leader, the survivor can never take over).
+      // Guard with a single fixed-name EPHEMERAL node under leaderPath: only one replica per shard can
+      // hold it at a time and it is released automatically when that replica's session ends, allowing a
+      // clean re-election. A replica that loses this race must NOT become leader. The lock is a SIBLING
+      // of leaderPath (.../leaders/<shard>/leader_lock), never a child, so it does not pollute the
+      // leaderPath children that identify the winning replica.
+      String singletonPath = leaderPath + LEADER_SINGLETON_SUFFIX;
+      try {
+        zkClient.mkdir(singletonPath, null, CreateMode.EPHEMERAL);
+        heldSingleton = true;
+      } catch (KeeperException.NodeExistsException e) {
+        boolean ours = false;
+        try {
+          Stat stat = new Stat();
+          zkClient.getData(singletonPath, null, stat, true);
+          ours = stat.getEphemeralOwner() == zkClient.getSessionId();
+        } catch (NoNodeException nne) {
+          // released in the race gap; fail this pass so we rejoin the election and retry cleanly
+        }
+        if (!ours) {
+          log.warn("Another replica already holds leadership for shard (path {}); not becoming leader {}", leaderPath, replica.getName());
+          return false;
+        }
+        heldSingleton = true; // re-running while we still legitimately hold leadership
+      }
+
+      zkClient.mkdir(leaderPath + '/' + id, null, CreateMode.EPHEMERAL);
+
+    } catch (NoNodeException e) {
+      log.warn("No node exists for election {} {}", leaderSeqPath, leaderPath, e);
+      return true;
+    } catch (KeeperException.NodeExistsException e) {
+      log.warn("Node already exists for election node={}", e.getPath(), e);
+
+      return true;
+    } catch (Exception e) {
+      log.warn("Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", e);
+      return false;
+    }
+    return true;
   }
 
-  Integer getLeaderZkNodeParentVersion() {
-    synchronized (lock) {
-      return leaderZkNodeParentVersion;
-    }
+  @Override public boolean isClosed() {
+    return closed;
   }
 }

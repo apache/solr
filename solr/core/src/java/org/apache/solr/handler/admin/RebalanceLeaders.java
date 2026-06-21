@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
@@ -48,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
@@ -173,10 +174,8 @@ class RebalanceLeaders {
 
     collectionName = req.getParams().get(COLLECTION_PROP);
     if (StringUtils.isBlank(collectionName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "The " + COLLECTION_PROP + " is required for the Rebalance Leaders command."));
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The " + COLLECTION_PROP + " is required for the Rebalance Leaders command.");
     }
-    coreContainer.getZkController().getZkStateReader().forceUpdateCollection(collectionName);
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
 
     DocCollection dc = clusterState.getCollection(collectionName);
@@ -191,7 +190,7 @@ class RebalanceLeaders {
   private void checkLeaderStatus() throws InterruptedException, KeeperException {
     for (int idx = 0; pendingOps.size() > 0 && idx < 600; ++idx) {
       ClusterState clusterState = coreContainer.getZkController().getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getLiveNodes();
       DocCollection dc = clusterState.getCollection(collectionName);
       for (Slice slice : dc.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
@@ -208,7 +207,6 @@ class RebalanceLeaders {
         }
       }
       TimeUnit.MILLISECONDS.sleep(100);
-      coreContainer.getZkController().getZkStateReader().forciblyRefreshAllClusterStateSlow();
     }
     addAnyFailures();
   }
@@ -234,7 +232,7 @@ class RebalanceLeaders {
       }
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
       // We're the preferred leader, but someone else is leader. Only become leader if we're active.
-      if (replica.isActive(zkStateReader.getClusterState().getLiveNodes()) == false) {
+      if (replica.isActive(zkStateReader.getLiveNodes()) == false) {
         addInactiveToResults(slice, replica);
         return; // Don't try to become the leader if we're not active!
       }
@@ -276,7 +274,7 @@ class RebalanceLeaders {
 
   // Check that the election queue has some members! There really should be two or more for this to make any sense,
   // if there's only one we can't change anything.
-  private boolean electionQueueInBadState(List<String> electionNodes, Slice slice, Replica replica) {
+  private static boolean electionQueueInBadState(List<String> electionNodes, Slice slice, Replica replica) {
     if (electionNodes.size() < 2) { // if there's only one node in the queue, should already be leader and we shouldn't be here anyway.
       log.warn("Rebalancing leaders and slice {} has less than two elements in the leader election queue, but replica {} doesn't think it's the leader."
           , slice.getName(), replica.getName());
@@ -393,7 +391,6 @@ class RebalanceLeaders {
         }
       }
       TimeUnit.MILLISECONDS.sleep(100);
-      zkStateReader.forciblyRefreshAllClusterStateSlow();
     }
     return -1;
   }
@@ -403,13 +400,12 @@ class RebalanceLeaders {
   private void rejoinElectionQueue(Slice slice, String electionNode, String core, boolean rejoinAtHead)
       throws KeeperException, InterruptedException {
     Replica replica = slice.getReplica(LeaderElector.getNodeName(electionNode));
-    Map<String, Object> propMap = new HashMap<>();
+    Object2ObjectMap<String, Object> propMap = new Object2ObjectLinkedOpenHashMap<>();
     propMap.put(COLLECTION_PROP, collectionName);
     propMap.put(SHARD_ID_PROP, slice.getName());
     propMap.put(QUEUE_OPERATION, REBALANCELEADERS.toLower());
     propMap.put(CORE_NAME_PROP, core);
-    propMap.put(CORE_NODE_NAME_PROP, replica.getName());
-    propMap.put(ZkStateReader.BASE_URL_PROP, replica.getProperties().get(ZkStateReader.BASE_URL_PROP));
+    propMap.put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
     propMap.put(REJOIN_AT_HEAD_PROP, Boolean.toString(rejoinAtHead)); // Get ourselves to be first in line.
     propMap.put(ELECTION_NODE_PROP, electionNode);
     String asyncId = REBALANCELEADERS.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());

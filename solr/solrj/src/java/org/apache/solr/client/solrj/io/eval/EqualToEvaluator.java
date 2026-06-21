@@ -36,38 +36,46 @@ public class EqualToEvaluator extends RecursiveBooleanEvaluator implements ManyV
   
   protected Checker constructChecker(Object fromValue) throws IOException{
     if(null == fromValue){
-      return new NullChecker() {
-        @Override
-        public boolean test(Object left, Object right) {
-          return null == left && null == right;
-        }
-      };
+      return new MyNullChecker();
     }
     else if(fromValue instanceof Boolean){
-      return new BooleanChecker(){
-        @Override
-        public boolean test(Object left, Object right) {
-          return (boolean)left == (boolean)right;
-        }
-      };
+      return new MyBooleanChecker();
     }
     else if(fromValue instanceof Number){
-      return new NumberChecker(){
-        @Override
-        public boolean test(Object left, Object right) {
-          return 0 == (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString()));
-        }
-      };
+      return new MyNumberChecker();
     }
     else if(fromValue instanceof String){
-      return new StringChecker(){
-        @Override
-        public boolean test(Object left, Object right) {
-          return left.equals(right);
-        }
-      };
+      return new MyStringChecker();
     }
     
     throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) for values of type '%s'", constructingFactory.getFunctionName(getClass()), fromValue.getClass().getSimpleName()));
+  }
+
+  private static class MyNullChecker implements NullChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      return null == left && null == right;
+    }
+  }
+
+  private static class MyBooleanChecker implements BooleanChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      return (boolean)left == (boolean)right;
+    }
+  }
+
+  private static class MyNumberChecker implements NumberChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      return 0 == (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString()));
+    }
+  }
+
+  private static class MyStringChecker implements StringChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      return left.equals(right);
+    }
   }
 }

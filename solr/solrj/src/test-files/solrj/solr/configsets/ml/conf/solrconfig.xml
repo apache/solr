@@ -24,6 +24,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
@@ -41,6 +42,17 @@
   </requestDispatcher>
 
   <requestHandler name="/select" class="solr.SearchHandler"/>
+
+  <requestHandler name="/export" class="solr.ExportHandler" useParms="_EXPORT">
+    <arr name="components">
+      <str>query</str>
+    </arr>
+    <lst name="invariants">
+      <str name="rq">{!xport}</str>
+      <str name="distrib">false</str>
+    </lst>
+  </requestHandler>
+
 
   <!-- config for the admin interface -->
   <admin>

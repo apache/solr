@@ -23,13 +23,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -40,21 +39,22 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 
-public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
+public class TestSolrConfigHandlerCloud extends SolrCloudBridgeTestCase {
 
   private static final long TIMEOUT_S = 10;
 
   @Test
   public void test() throws Exception {
     setupRestTestHarnesses();
+
     testReqHandlerAPIs();
     testReqParams();
     testAdminPath();
   }
 
   private void testAdminPath() throws Exception{
-    String testServerBaseUrl = getRandomServer(cloudClient,"collection1");
-    RestTestHarness writeHarness = randomRestTestHarness();
+    String testServerBaseUrl = getRandomServer(cloudClient, COLLECTION);
+    RestTestHarness writeHarness = randomRestTestHarness(random());
     String payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/admin/luke', " +
         "'class': 'org.apache.solr.handler.DumpRequestHandler'}}";
@@ -71,34 +71,33 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         TIMEOUT_S);
 
    NamedList<Object> rsp = cloudClient.request(new LukeRequest());
-   System.out.println(rsp);
   }
 
   private void testReqHandlerAPIs() throws Exception {
-    String testServerBaseUrl = getRandomServer(cloudClient,"collection1");
-    RestTestHarness writeHarness = randomRestTestHarness();
+    String testServerBaseUrl = getRandomServer(cloudClient, COLLECTION);
+    RestTestHarness writeHarness = randomRestTestHarness(random());
     TestSolrConfigHandler.reqhandlertests(writeHarness, testServerBaseUrl , cloudClient);
   }
 
-  public static String getRandomServer(CloudSolrClient cloudClient, String collName) {
+  public static String getRandomServer(CloudHttp2SolrClient cloudClient, String collName) {
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(collName);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add(""+replica.getCoreUrl());
     }
     return urls.get(random().nextInt(urls.size()));
   }
 
   private void testReqParams() throws Exception{
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add(""+replica.getCoreUrl());
     }
 
-    RestTestHarness writeHarness = randomRestTestHarness();
+    RestTestHarness writeHarness = randomRestTestHarness(random());
     String payload = " {\n" +
         "  'set' : {'x': {" +
         "                    'a':'A val',\n" +
@@ -173,7 +172,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
 
 
-    writeHarness = randomRestTestHarness();
+    writeHarness = randomRestTestHarness(random());
     payload = " {\n" +
         "  'set' : {'y':{\n" +
         "                'c':'CY val',\n" +

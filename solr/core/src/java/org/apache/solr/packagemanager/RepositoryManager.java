@@ -40,14 +40,13 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.core.BlobRepository;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
@@ -70,9 +69,9 @@ public class RepositoryManager {
 
   public static final String systemVersion = Version.LATEST.toString();
 
-  final HttpSolrClient solrClient;
+  final Http2SolrClient solrClient;
 
-  public RepositoryManager(HttpSolrClient solrClient, PackageManager packageManager) {
+  public RepositoryManager(Http2SolrClient solrClient, PackageManager packageManager) {
     this.packageManager = packageManager;
     this.solrClient = solrClient;
   }
@@ -124,7 +123,7 @@ public class RepositoryManager {
 
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(repoName, uri));
-    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
+    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH) == false) {
       packageManager.zkClient.create(PackageUtils.REPOSITORIES_ZK_PATH, getMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
     } else {
       packageManager.zkClient.setData(PackageUtils.REPOSITORIES_ZK_PATH, getMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
@@ -136,18 +135,18 @@ public class RepositoryManager {
   public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
     // get solr_home directory from info servlet
     String systemInfoUrl = solrClient.getBaseURL() + "/solr/admin/info/system";
-    Map<String,Object> systemInfo = SolrCLI.getJson(solrClient.getHttpClient(), systemInfoUrl, 2, true);
+    Map<String,Object> systemInfo = SolrCLI.getJson(solrClient, systemInfoUrl, 2, true);
     String solrHome = (String) systemInfo.get("solr_home");
     
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Paths.get(solrHome), solrClient);
-    PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
+    PackageUtils.uploadKey(key, path, Paths.get(solrHome));
+    PackageUtils.getJsonStringFromUrl(solrClient, solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
   }
 
-  private String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
-    if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
-      return new String(zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), "UTF-8");
+  private static String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
+    if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH)) {
+      return new String(zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null), "UTF-8");
     }
     return "[]";
   }
@@ -181,7 +180,7 @@ public class RepositoryManager {
         release.manifest = getMapper().readValue(manifestJson, SolrPackage.Manifest.class);
       }
       String manifestJson = getMapper().writeValueAsString(release.manifest);
-      String manifestSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
+      String manifestSHA512 = PackageUtils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
       PackageUtils.postFile(solrClient, ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
           String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"), null);
 
@@ -269,7 +268,7 @@ public class RepositoryManager {
     return getLastPackageRelease(pkg);
   }
 
-  private SolrPackageRelease getLastPackageRelease(SolrPackage pkg) {
+  private static SolrPackageRelease getLastPackageRelease(SolrPackage pkg) {
     SolrPackageRelease latest = null;
     for (SolrPackageRelease release: pkg.versions) {
       if (latest == null) {

@@ -213,10 +213,11 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   }
 
   public static Object convertCharSeq(Object o) {
-    if (o == null) return null;
-    if (o instanceof Utf8CharSequence) return ((Utf8CharSequence) o).toString();
-    if (o instanceof Collection) return convertCharSeq((Collection) o);
-    return o;
+    return 0;
+//    if (o == null) return null;
+//    if (o instanceof Utf8CharSequence) return ((Utf8CharSequence) o).toString();
+//    if (o instanceof Collection) return convertCharSeq((Collection) o);
+//    return o;
   }
 
 

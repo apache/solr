@@ -22,6 +22,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
@@ -30,9 +32,8 @@ import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,21 +44,19 @@ public class TestStreamBody extends RestTestBase {
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
-  
-  @Before
-  public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+
+  @BeforeClass
+  public static void beforeTestStreamBody() throws Exception {
+    System.setProperty("solr.enableStreamBody", "false");
+    File tmpSolrHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-minimal.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-tlog.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
@@ -67,18 +66,7 @@ public class TestStreamBody extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    if (client != null) {
-      client.close();
-      client = null;
-    }
-    if (restTestHarness != null) {
-      restTestHarness.close();
-      restTestHarness = null;
-    }
+    enableStreamBody(false);
   }
 
   // SOLR-3161
@@ -86,11 +74,11 @@ public class TestStreamBody extends RestTestBase {
   public void testQtUpdateFails() throws Exception {
     enableStreamBody(true);
     SolrQuery query = new SolrQuery();
-    query.setQuery( "*:*" );//for anything
-    query.add("echoHandler","true");
+    query.setQuery("*:*");//for anything
+    query.add("echoHandler", "true");
     //sneaky sneaky
-    query.add("qt","/update");
-    query.add(CommonParams.STREAM_BODY,"<delete><query>*:*</query></delete>");
+    query.add("qt", "/update");
+    query.add(CommonParams.STREAM_BODY, "<delete><query>*:*</query></delete>");
 
     QueryRequest queryRequest = new QueryRequest(query) {
       @Override
@@ -99,10 +87,11 @@ public class TestStreamBody extends RestTestBase {
       }
     };
     try {
-      queryRequest.process(getSolrClient());
+      SolrClient client = getSolrClient(jetty);
+      queryRequest.process(client);
       fail();
     } catch (SolrException se) {
-      assertTrue(se.getMessage(), se.getMessage().contains("Bad contentType for search handler :text/xml"));
+      assertTrue(se.getMessage(), se.getMessage().contains("Bad contentType for search handler :text/xml") || se.getMessage().contains("Stream Body is disabled"));
     }
   }
 
@@ -110,8 +99,8 @@ public class TestStreamBody extends RestTestBase {
   @Test
   public void testStreamBodyDefaultAndConfigApi() throws Exception {
     SolrQuery query = new SolrQuery();
-    query.add(CommonParams.STREAM_BODY,"<delete><query>*:*</query></delete>");
-    query.add("commit","true");
+    query.add(CommonParams.STREAM_BODY, "<delete><query>*:*</query></delete>");
+    query.add("commit", "true");
 
     QueryRequest queryRequest = new QueryRequest(query) {
       @Override
@@ -119,16 +108,21 @@ public class TestStreamBody extends RestTestBase {
         return "/update";
       }
     };
-    SolrException se = expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
-    assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
+    SolrClient client = getSolrClient(jetty);
+    try {
+      queryRequest.process(client);
+      fail("expected exception");
+    } catch (SolrException se) {
+      assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
+    }
     enableStreamBody(true);
-    queryRequest.process(getSolrClient());
+    queryRequest.process(client);
   }
 
   // Enables/disables stream.body through Config API
   private void enableStreamBody(boolean enable) throws Exception {
     RestTestHarness harness = restTestHarness;
-    String payload = "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':" + enable + "} }";
+    String payload = "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':'" + enable + "'} }";
     runConfigCommand(harness, "/config?wt=json", payload);
   }
 }

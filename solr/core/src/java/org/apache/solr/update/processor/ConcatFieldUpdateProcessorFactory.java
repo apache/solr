@@ -65,7 +65,6 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
 
   String delimiter = ", ";
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     Object d = args.remove("delimiter");
@@ -98,8 +97,8 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
       FieldType type = schema.getFieldTypeNoEx(fieldName);
       if (null == type) return false;
 
-      if (! (TextField.class.isInstance(type)
-             || StrField.class.isInstance(type))) {
+      if (! (type instanceof TextField
+             || type instanceof StrField)) {
         return false;
       }
 

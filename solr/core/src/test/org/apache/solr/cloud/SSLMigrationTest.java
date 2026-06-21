@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -51,9 +50,11 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * off in the cluster.
  */
 @Slow
-@SuppressSSL
+@SolrTestCase.SuppressSSL
 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
+
+  public static final String[] STRINGS = {};
 
   @Test
   public void test() throws Exception {
@@ -103,7 +104,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     assertEquals("Wrong number of replicas found", 4, replicas.size());
     for(Replica replica : replicas) {
       assertTrue("Replica didn't have the proper urlScheme in the ClusterState",
-          StringUtils.startsWith(replica.getStr(ZkStateReader.BASE_URL_PROP), urlScheme));
+          StringUtils.startsWith(replica.getBaseUrl(), urlScheme));
     }
   }
   
@@ -128,10 +129,10 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     
     List<String> urls = new ArrayList<String>();
     for(Replica replica : getReplicas()) {
-      urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
+      urls.add(replica.getBaseUrl());
     }
     //Create new SolrServer to configure new HttpClient w/ SSL config
-    try (SolrClient client = getLBHttpSolrClient(urls.toArray(new String[]{}))) {
+    try (SolrClient client = getLBHttpSolrClient(urls.toArray(STRINGS))) {
       client.request(request);
     }
   }

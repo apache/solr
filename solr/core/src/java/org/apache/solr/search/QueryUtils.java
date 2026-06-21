@@ -105,10 +105,13 @@ public class QueryUtils {
    * lucene.
    */
   public static Query makeQueryable(Query q) {
-    if (q instanceof WrappedQuery) {
-      return makeQueryable(((WrappedQuery)q).getWrappedQuery());
+    while (true) {
+      if (q instanceof WrappedQuery) {
+        q = ((WrappedQuery) q).getWrappedQuery();
+        continue;
+      }
+      return isNegative(q) ? fixNegativeQuery(q) : q;
     }
-    return isNegative(q) ? fixNegativeQuery(q) : q;
   }
 
   /** Fixes a negative query by adding a MatchAllDocs query clause.

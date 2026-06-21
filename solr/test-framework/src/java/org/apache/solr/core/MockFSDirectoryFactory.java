@@ -23,9 +23,10 @@ import java.nio.file.Path;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.filestore.NRTCachingDirectory;
 
 /**
  * Opens a directory with {@link LuceneTestCase#newFSDirectory(Path)}
@@ -35,7 +36,7 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
   @Override
   public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-    Directory dir = LuceneTestCase.newFSDirectory(new File(path).toPath(), lockFactory);
+    Directory dir = SolrTestUtil.newFSDirectory(new File(path).toPath(), lockFactory);
     // we can't currently do this check because of how
     // Solr has to reboot a new Directory sometimes when replicating
     // or rolling back - the old directory is closed and the following
@@ -60,7 +61,7 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
     return new File(path).isAbsolute();
   }
   
-  private Directory reduce(Directory dir) {
+  private static Directory reduce(Directory dir) {
     Directory cdir = dir;
     if (dir instanceof NRTCachingDirectory) {
       cdir = ((NRTCachingDirectory)dir).getDelegate();

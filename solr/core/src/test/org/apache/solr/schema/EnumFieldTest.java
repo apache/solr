@@ -22,11 +22,16 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrQueryParser;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class EnumFieldTest extends SolrTestCaseJ4 {
@@ -35,26 +40,29 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   private final String MV_FIELD_NAME = "severity_mv";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeEnumFieldTest() throws Exception {
     System.setProperty("solr.tests.EnumFieldTest.indexed", Boolean.toString(random().nextBoolean()));
-    doInitCore();
+    initCore("solrconfig-minimal.xml", "schema-enums.xml");
 
 //    System.out.println("solr.tests.numeric.dv: " + System.getProperty("solr.tests.numeric.dv"));
 //    System.out.println("solr.tests.EnumFieldTest.indexed: " + System.getProperty("solr.tests.EnumFieldTest.indexed"));
 //    System.out.println("solr.tests.EnumFieldType: " + System.getProperty("solr.tests.EnumFieldType"));
   }
-  
-  private static void doInitCore() throws Exception {
-    initCore("solrconfig-minimal.xml", "schema-enums.xml");
+
+  @AfterClass
+  public static void afterEnumFieldTest() {
+    deleteCore();
   }
 
   @Test
   public void testEnumSchema() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
-    IndexSchema schema = h.getCore().getLatestSchema();
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
 
     SchemaField enumField = schema.getField(FIELD_NAME);
     assertNotNull(enumField);
@@ -64,10 +72,10 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   
   @Test
   public void testEnumRangeSearch() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
-    assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumField")
             && System.getProperty("solr.tests.EnumFieldTest.indexed").equals("false")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
@@ -141,10 +149,10 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultivaluedEnumRangeSearch() {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
-    assumeFalse("Skipping testing of range searching over multivalued EnumField - see SOLR-11193",
+    LuceneTestCase.assumeFalse("Skipping testing of range searching over multivalued EnumField - see SOLR-11193",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumField"));
 
     clearIndex();
@@ -211,7 +219,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBogusEnumSearch() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
@@ -242,7 +250,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultivaluedBogusEnumSearch() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
@@ -273,7 +281,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBogusEnumIndexing() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
@@ -290,7 +298,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultivaluedBogusEnumIndexing() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
@@ -307,7 +315,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testKnownIntegerEnumIndexing() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
@@ -325,7 +333,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultivaluedKnownIntegerEnumIndexing() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
@@ -345,10 +353,10 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEnumSort() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
-    assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumField")
             && System.getProperty("solr.tests.EnumFieldTest.indexed").equals("false")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
@@ -405,10 +413,10 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultivaluedEnumSort() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
-    assumeFalse("Skipping testing of sorting over multivalued EnumField - see SOLR-11193",
+    LuceneTestCase.assumeFalse("Skipping testing of sorting over multivalued EnumField - see SOLR-11193",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumField"));
 
     clearIndex();
@@ -454,17 +462,18 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   
   @Test
   public void testSetQuery() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
-    assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumField")
             && System.getProperty("solr.tests.EnumFieldTest.indexed").equals("false")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
     clearIndex();
-
-    SchemaField sf = h.getCore().getLatestSchema().getField(FIELD_NAME);
+    SolrCore core = h.getCore();
+    SchemaField sf = core.getLatestSchema().getField(FIELD_NAME);
+    core.close();
     Set<String> enumStrs = ((AbstractEnumField)sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
     assertTrue(enumStrs.size() > SolrQueryParser.TERMS_QUERY_THRESHOLD);
 
@@ -480,16 +489,6 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
       
     if (sf.indexed()) { // SolrQueryParser should also be generating a TermInSetQuery if indexed
       String setQuery = sf.getType().getSetQuery(null, sf, enumStrs).toString();
-      if (sf.getType() instanceof EnumField) { // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
-        Pattern nonXMLCharPattern = Pattern.compile("[\u0000-\u0008\u000B\u000C\u000E-\u0019]");
-        StringBuffer munged = new StringBuffer();
-        Matcher matcher = nonXMLCharPattern.matcher(setQuery);
-        while (matcher.find()) {
-          matcher.appendReplacement(munged, "#" + (int)matcher.group(0).charAt(0) + ";");
-        }
-        matcher.appendTail(munged);
-        setQuery = munged.toString();
-      }
       assertQ(req(CommonParams.DEBUG, CommonParams.QUERY, "q", "*:*", "fq", builder.toString(),
           "fl", "id," + FIELD_NAME, "rows", "" + enumStrs.size(), "indent", "on"),
           "//*[@numFound='" + enumStrs.size() + "']",
@@ -503,17 +502,18 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultivaluedSetQuery() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
-    assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
+    LuceneTestCase.assumeFalse("Skipping testing of unindexed EnumField without docValues, which is unsupported.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumField")
             && System.getProperty("solr.tests.EnumFieldTest.indexed").equals("false")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
     clearIndex();
-
-    SchemaField sf = h.getCore().getLatestSchema().getField(MV_FIELD_NAME);
+    SolrCore core = h.getCore();
+    SchemaField sf = core.getLatestSchema().getField(MV_FIELD_NAME);
+    core.close();
     Set<String> enumStrs = ((AbstractEnumField)sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
     assertTrue(enumStrs.size() > SolrQueryParser.TERMS_QUERY_THRESHOLD);
 
@@ -532,16 +532,6 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     if (sf.indexed()) { // SolrQueryParser should also be generating a TermInSetQuery if indexed
       String setQuery = sf.getType().getSetQuery(null, sf, enumStrs).toString();
-      if (sf.getType() instanceof EnumField) { // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
-        Pattern nonXMLCharPattern = Pattern.compile("[\u0000-\u0008\u000B\u000C\u000E-\u0019]");
-        StringBuffer munged = new StringBuffer();
-        Matcher matcher = nonXMLCharPattern.matcher(setQuery);
-        while (matcher.find()) {
-          matcher.appendReplacement(munged, "#" + (int)matcher.group(0).charAt(0) + ";");
-        }
-        matcher.appendTail(munged);
-        setQuery = munged.toString();
-      }
       assertQ(req(CommonParams.DEBUG, CommonParams.QUERY, "q", "*:*", "fq", builder.toString(),
           "fl", "id," + MV_FIELD_NAME, "rows", "" + enumStrs.size(), "indent", "on"),
           "//*[@numFound='" + enumStrs.size() + "']",
@@ -555,19 +545,18 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEnumFieldTypeWithoutDocValues() throws Exception {
-    assumeTrue("Only testing EnumFieldType without docValues.",
+    LuceneTestCase.assumeTrue("Only testing EnumFieldType without docValues.",
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
     try {
       deleteCore();
       initCore("solrconfig-minimal.xml", "bad-schema-enums.xml");
-      SolrException e = expectThrows(SolrException.class, 
-          () -> assertU(adoc("id", "0", FIELD_NAME, "Not Available")));
+      SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> assertU(adoc("id", "0", FIELD_NAME, "Not Available")));
       assertTrue(e.getMessage().contains("EnumFieldType requires docValues=\"true\""));
     } finally { // put back the core expected by other tests
       deleteCore();
-      doInitCore();
+      initCore("solrconfig-minimal.xml", "schema-enums.xml");
     }
   }
 }

@@ -16,67 +16,84 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
-import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * This class may change in future and customisations are not supported between versions in terms of API or back compat
  * behaviour.
- * 
+ *
  * @lucene.experimental
  */
 public class RecoveryStrategy implements Runnable, Closeable {
+
+  private volatile ReplicationHandler replicationHandler;
+  private final Http2SolrClient recoveryOnlyClient;
+  private volatile boolean firstTime = true;
+  private volatile Replica firstLeader;
+
+  final public void unclose() {
+    close = false;
+  }
+
+  public final void setFirstLeader(Replica firstLeader) {
+    this.firstLeader = firstLeader;
+  }
 
   public static class Builder implements NamedListInitializedPlugin {
     private NamedList args;
@@ -102,42 +119,44 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private int waitForUpdatesWithStaleStatePauseMilliSeconds = Integer
-      .getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 2500);
-  private int maxRetries = 500;
-  private int startingRecoveryDelayMilliSeconds = 2000;
+  private volatile int waitForUpdatesWithStaleStatePauseMilliSeconds = Integer
+      .getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 0);
+  private volatile int maxRetries = Integer.getInteger("solr.recovery.maxretries", 500);
+  private volatile int startingRecoveryDelayMilliSeconds = Integer
+      .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 100);
 
-  public static interface RecoveryListener {
+  public interface RecoveryListener {
     public void recovered();
 
     public void failed();
   }
 
   private volatile boolean close = false;
-
-  private RecoveryListener recoveryListener;
-  private ZkController zkController;
-  private String baseUrl;
-  private String coreZkNodeName;
-  private ZkStateReader zkStateReader;
-  private volatile String coreName;
-  private int retries;
+  private final RecoveryListener recoveryListener;
+  private final ZkController zkController;
+  private final String baseUrl;
+  private final ZkStateReader zkStateReader;
+  private final String coreName;
+  private final AtomicInteger retries = new AtomicInteger(0);
   private boolean recoveringAfterStartup;
-  private CoreContainer cc;
-  private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
-  private final Replica.Type replicaType;
+  private volatile Cancellable prevSendPreRecoveryRequest;
+  private volatile Replica.Type replicaType;
 
-  private CoreDescriptor coreDescriptor;
+  private final CoreContainer cc;
 
   protected RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
+    // ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
+    String collection = cd.getCloudDescriptor().getCollectionName();
+    String shard = cd.getCloudDescriptor().getShardId();
+
     this.recoveryListener = recoveryListener;
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
-    coreZkNodeName = cd.getCloudDescriptor().getCoreNodeName();
-    replicaType = cd.getCloudDescriptor().getReplicaType();
+
+    recoveryOnlyClient = cc.getUpdateShardHandler().getRecoveryOnlyClient();
   }
 
   final public int getWaitForUpdatesWithStaleStatePauseMilliSeconds() {
@@ -173,34 +192,40 @@ public class RecoveryStrategy implements Runnable, Closeable {
     this.recoveringAfterStartup = recoveringAfterStartup;
   }
 
-  /** Builds a new HttpSolrClient for use in recovery.  Caller must close */
-  private final HttpSolrClient buildRecoverySolrClient(final String leaderUrl) {
-    // workaround for SOLR-13605: get the configured timeouts & set them directly
-    // (even though getRecoveryOnlyHttpClient() already has them set)
-    final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
-    return (new HttpSolrClient.Builder(leaderUrl)
-            .withConnectionTimeout(cfg.getDistributedConnectionTimeout())
-            .withSocketTimeout(cfg.getDistributedSocketTimeout())
-            .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient())
-            ).build();
-  }
-  
   // make sure any threads stop retrying
   @Override
   final public void close() {
     close = true;
-    if (prevSendPreRecoveryHttpUriRequest != null) {
-      prevSendPreRecoveryHttpUriRequest.abort();
+
+    if (log.isDebugEnabled()) log.debug("Stopping recovery for core=[{}]", coreName);
+
+
+    try {
+      if (prevSendPreRecoveryRequest != null) {
+       // prevSendPreRecoveryRequest.cancel();
+      }
+      prevSendPreRecoveryRequest = null;
+    } catch (Exception e) {
+      // expected
     }
-    log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
+
+    ReplicationHandler finalReplicationHandler = replicationHandler;
+    if (finalReplicationHandler != null) {
+
+      finalReplicationHandler.abortFetch();
+    }
+
+    //IOUtils.closeQuietly(recoveryOnlyClient);
+
+    //ObjectReleaseTracker.release(this);
   }
 
-  final private void recoveryFailed(final SolrCore core,
-      final ZkController zkController, final String baseUrl,
-      final String shardZkNodeName, final CoreDescriptor cd) throws Exception {
+  final private void recoveryFailed(final ZkController zkController, final String baseUrl, final CoreDescriptor cd) throws Exception {
     SolrException.log(log, "Recovery failed - I give up.");
     try {
-      zkController.publish(cd, Replica.State.RECOVERY_FAILED);
+      if (zkController.getZkClient().isAlive()) {
+        zkController.publish(cd, Replica.State.RECOVERY_FAILED);
+      }
     } finally {
       close();
       recoveryListener.failed();
@@ -210,30 +235,30 @@ public class RecoveryStrategy implements Runnable, Closeable {
   /**
    * This method may change in future and customisations are not supported between versions in terms of API or back
    * compat behaviour.
-   * 
+   *
    * @lucene.experimental
    */
-  protected String getReplicateLeaderUrl(ZkNodeProps leaderprops) {
-    return new ZkCoreNodeProps(leaderprops).getCoreUrl();
+  protected String getReplicateLeaderUrl(Replica leaderprops, ZkStateReader zkStateReader) {
+    return leaderprops.getCoreUrl();
   }
 
-  final private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
+  final private IndexFetcher.IndexFetchResult replicate(Replica leader)
       throws SolrServerException, IOException {
 
-    final String leaderUrl = getReplicateLeaderUrl(leaderprops);
+    log.info("Attempting to replicate from [{}].", leader);
 
-    log.info("Attempting to replicate from [{}].", leaderUrl);
-
+    String leaderUrl;
     // send commit
-    commitOnLeader(leaderUrl);
+    try {
+      leaderUrl = leader.getCoreUrl();
+      commitOnLeader(leaderUrl);
+    } catch (Exception e) {
+      if (e instanceof  SolrException && ((SolrException) e).getRootCause() instanceof RejectedExecutionException) {
+       throw new AlreadyClosedException("An executor is shutdown already");
+      }
 
-    // use rep handler directly, so we can do this sync rather than async
-    SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
-    ReplicationHandler replicationHandler = (ReplicationHandler) handler;
-
-    if (replicationHandler == null) {
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
+      log.error("Commit on leader failed", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
@@ -241,101 +266,230 @@ public class RecoveryStrategy implements Runnable, Closeable {
     solrParams.set(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
     // always download the tlogs from the leader when running with cdcr enabled. We need to have all the tlogs
     // to ensure leader failover doesn't cause missing docs on the target
-    if (core.getUpdateHandler().getUpdateLog() != null
-        && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
-      solrParams.set(ReplicationHandler.TLOG_FILES, true);
-    }
 
-    if (isClosed()) return; // we check closed on return
-    boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
 
-    if (!success) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
-    }
+    log.info("do replication fetch [{}].", solrParams);
+
+    // Force a full copy (fresh tmp index dir + modifyIndexProps swap) for TLOG replicas. A TLOG
+    // follower replays its tlog into its OWN local IndexWriter, producing segments whose names
+    // (_0, _1, ...) collide with the leader's segments but hold DIFFERENT content. A partial,
+    // in-place fetch (fetchFromLeader skips the searcher-close/IW-rollback that the NRT path does)
+    // then moves a leader segment over a local one while an open reader still holds it, so the
+    // subsequent openNewSearcher throws "unclosed IndexInput" / reads a corrupt segment, the new
+    // searcher never opens, and the follower's visible doc count stays stale (TestTlogReplica
+    // testRecovery expected:5 was:4). A full copy downloads into a fresh dir and switches via
+    // modifyIndexProps, so nothing in the live dir is overwritten under an open reader. The local
+    // replayed segments are not authoritative, so discarding them via full copy is always safe.
+    boolean forceFullCopy = retries.get() > 3 || replicaType == Replica.Type.TLOG;
+    return replicationHandler.doFetch(solrParams, forceFullCopy);
 
     // solrcloud_debug
-    if (log.isDebugEnabled()) {
-      try {
-        RefCounted<SolrIndexSearcher> searchHolder = core
-            .getNewestSearcher(false);
-        SolrIndexSearcher searcher = searchHolder.get();
-        Directory dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.META_DATA, null);
-        try {
-          final IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
-          if (log.isDebugEnabled()) {
-            log.debug("{} replicated {} from {} gen: {} data: {} index: {} newIndex: {} files: {}"
-                , core.getCoreContainer().getZkController().getNodeName()
-                , searcher.count(new MatchAllDocsQuery())
-                , leaderUrl
-                , (null == commit ? "null" : commit.getGeneration())
-                , core.getDataDir()
-                , core.getIndexDir()
-                , core.getNewIndexDir()
-                , Arrays.asList(dir.listAll()));
-          }
-        } finally {
-          core.getDirectoryFactory().release(dir);
-          searchHolder.decref();
-        }
-      } catch (Exception e) {
-        log.debug("Error in solrcloud_debug block", e);
-      }
-    }
+//    if (log.isDebugEnabled()) {
+//      try {
+//        RefCounted<SolrIndexSearcher> searchHolder = core
+//            .getNewestSearcher(false);
+//        SolrIndexSearcher searcher = searchHolder.get();
+//        Directory dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.META_DATA, null);
+//        try {
+//          final IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
+//          if (log.isDebugEnabled()) {
+//            log.debug("{} replicated {} from {} gen: {} data: {} index: {} newIndex: {} files: {}"
+//                , core.getCoreContainer().getZkController().getNodeName()
+//                , searcher.count(new MatchAllDocsQuery())
+//                , leaderUrl
+//                , (null == commit ? "null" : commit.getGeneration())
+//                , core.getDataDir()
+//                , core.getIndexDir()
+//                , core.getNewIndexDir()
+//                , Arrays.asList(dir.listAll()));
+//          }
+//        } finally {
+//          core.getDirectoryFactory().release(dir);
+//          searchHolder.decref();
+//        }
+//      } catch (Exception e) {
+//        ParWork.propagateInterrupt(e);
+//        log.debug("Error in solrcloud_debug block", e);
+//      }
+//    }
 
+  }
+
+  /**
+   * Asks the leader core for its recent update-log versions. Used to distinguish a genuinely
+   * empty shard from a restarted leader that has not finished replaying its tlog yet (its
+   * reported index version is 0 in both cases, but its tlog is on disk and survives restarts).
+   */
+  final private boolean leaderHasUpdateVersions(String leaderUrl) {
+    try {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", "/get");
+      params.set("distrib", false);
+      params.set("getVersions", 1);
+      QueryRequest req = new QueryRequest(params);
+      req.setBasePath(leaderUrl);
+      @SuppressWarnings({"rawtypes"})
+      List versions = (List) recoveryOnlyClient.request(req).get("versions");
+      return versions != null && !versions.isEmpty();
+    } catch (Exception e) {
+      log.warn("Failed asking leader for update versions while evaluating empty-leader fetch result", e);
+      return false; // cannot tell — do not block recovery
+    }
   }
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = buildRecoverySolrClient(leaderUrl)) {
-      UpdateRequest ureq = new UpdateRequest();
-      ureq.setParams(new ModifiableSolrParams());
-      // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
-      // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);// Why do we need to open searcher if
-      // "onlyLeaderIndexes"?
-      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
-          client);
-    }
+
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setBasePath(leaderUrl);
+    ureq.setParams(new ModifiableSolrParams());
+    ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, "terminal");
+    ureq.getParams().set(UpdateParams.OPEN_SEARCHER, true); // opensearcher=true to ensure we have it for replicate
+    // Hard total deadline for this control request. recoveryOnlyClient's idleTimeout only bounds a
+    // stream that sees no data; a wedged HTTP/2 stream to a leader that died/partitioned behind a
+    // still-open proxy can leave that idle timer unfired, and Http2SolrClient's synchronous get()
+    // otherwise blocks up to 10 minutes -- far past any recovery retry window, stranding the replica
+    // BUFFERING. A scheduler-enforced Request.timeout() aborts it regardless so the retry loop can
+    // re-resolve the (restarted) leader. Generous default: commit-on-leader acks in well under a
+    // second normally, so 2 minutes never aborts a healthy commit but caps the wedged case.
+    ureq.getParams().set("requestTimeoutMs", Integer.getInteger("solr.recovery.commitOnLeader.timeout", 120000));
+
+    log.debug("send commit to leader {} {}", leaderUrl, ureq.getParams());
+    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false).process(recoveryOnlyClient);
+    log.debug("done send commit to leader {}", leaderUrl);
   }
 
   @Override
   final public void run() {
-
     // set request info for logging
-    try (SolrCore core = cc.getCore(coreName)) {
+    log.debug("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
+    try {
+      try (SolrCore core = cc.getCore(coreName)) {
+        if (core == null) {
+          log.warn("SolrCore is null, won't do recovery");
+          throw new AlreadyClosedException("SolrCore is null, won't do recovery");
+        }
 
-      if (core == null) {
-        SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
-        return;
+        CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+        replicaType = coreDescriptor.getCloudDescriptor().getReplicaType();
+
+        SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
+        replicationHandler = (ReplicationHandler) handler;
+
+        doRecovery(core, coreDescriptor, firstLeader);
       }
+    } catch (InterruptedException e) {
+      log.info("InterruptedException, won't do recovery", e);
+    } catch (AlreadyClosedException e) {
+      log.info("AlreadyClosedException, won't do recovery", e);
+    } catch (RejectedExecutionException e) {
+      log.info("RejectedExecutionException, won't do recovery", e);
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      log.error("Exception during recovery", e);
+    }
+  }
 
-      log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
+  final public void doRecovery(SolrCore core, CoreDescriptor coreDescriptor, Replica leader) throws Exception {
 
+    int tries = 0;
+    while (true) {
       try {
-        doRecovery(core);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        final boolean closed = isClosed();
+
+        final boolean closing = core.isClosing();
+
+        final boolean coreContainerClosed = cc.isShutDown();
+
+        if (closed || closing || coreContainerClosed) {
+          close = true;
+          return;
+        }
+
+        if (tries == 0) {
+
+          tries++;
+        }
+
+        if (tries > 1) {
+          waitForRetry(core);
+        }
+
+        LeaderElector leaderElector = zkController.getLeaderElector(coreName);
+
+        if (leaderElector != null && leaderElector.isLeader()) {
+          log.warn("We are the leader, STOP recovery", new SolrException(ErrorCode.INVALID_STATE, "Leader in recovery"));
+          ZkNodeProps zkNodes = ZkNodeProps
+              .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.CORE_NAME_PROP, core.getName(), "id",
+                  core.getCoreDescriptor().getCoreProperty("collId", null) + "-" + core.getCoreDescriptor().getCoreProperty("id", null),
+                  ZkStateReader.COLLECTION_PROP, core.getCoreDescriptor().getCollectionName(), ZkStateReader.STATE_PROP, Replica.State.LEADER);
+          zkController.publish(zkNodes);
+          close = true;
+          return;
+        }
+
+        if (tries > 1) {
+          leader = zkController.getZkStateReader()
+              .getLeaderRetry(recoveryOnlyClient, coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(),
+                  Integer.getInteger("solr.getleader.looptimeout", 8000), true);
+        }
+
+        if (leaderElector != null && leaderElector.isLeader()) {
+          log.warn("We are the leader, STOP recovery", new SolrException(ErrorCode.INVALID_STATE, "Leader in recovery"));
+          //          ZkNodeProps zkNodes = ZkNodeProps
+          //              .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.CORE_NAME_PROP, core.getName(), "id",
+          //                  core.getCoreDescriptor().getCoreProperty("collId", null)+ "-" +  core.getCoreDescriptor().getCoreProperty("id", null),
+          //                  ZkStateReader.COLLECTION_PROP, core.getCoreDescriptor().getCollectionName(), ZkStateReader.STATE_PROP, Replica.State.LEADER);
+          //          zkController.publish(zkNodes);
+          close = true;
+          return;
+        }
+
+        if (leader != null && leader.getName().equals(coreName)) {
+          log.warn("We are the leader in cluster state, REPEAT recovery");
+          Thread.sleep(50);
+          continue;
+        }
+
+        if (core.getCoreContainer().isShutDown()) {
+          log.info("We are closing, STOP recovery");
+          close = true;
+          return;
+        }
+
+        boolean successfulRecovery;
+        if (coreDescriptor.getCloudDescriptor().requiresTransactionLog()) {
+          if (log.isDebugEnabled()) log.debug("Sync or replica recovery");
+          successfulRecovery = doSyncOrReplicateRecovery(core, leader);
+        } else {
+          if (log.isDebugEnabled()) log.debug("Replicate only recovery");
+          successfulRecovery = doReplicateOnlyRecovery(core, leader);
+        }
+
+        if (successfulRecovery) {
+          close = true;
+          break;
+        } else {
+          final boolean coreClosed = core.isClosing() || core.isClosing();
+          if (isClosed() || coreClosed || core.getCoreContainer().isShutDown()) {
+            log.info("We are already coreClosed, stopping recovery");
+            close = true;
+            return;
+          }
+
+          log.info("Trying another loop to recover after failing try={}", tries);
+        }
+
       } catch (Exception e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        if (close) {
+          return;
+        }
+        log.info("Exception trying to recover, try again try={}", tries, e);
       }
     }
   }
 
-  final public void doRecovery(SolrCore core) throws Exception {
-    // we can lose our core descriptor, so store it now
-    this.coreDescriptor = core.getCoreDescriptor();
-
-    if (this.coreDescriptor.getCloudDescriptor().requiresTransactionLog()) {
-      doSyncOrReplicateRecovery(core);
-    } else {
-      doReplicateOnlyRecovery(core);
-    }
-  }
-
-  final private void doReplicateOnlyRecovery(SolrCore core) throws InterruptedException {
+  final private boolean doReplicateOnlyRecovery(SolrCore core, Replica leader) throws Exception {
     boolean successfulRecovery = false;
 
     // if (core.getUpdateHandler().getUpdateLog() != null) {
@@ -344,201 +498,143 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // + core.getUpdateHandler().getUpdateLog());
     // return;
     // }
-    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) { // don't use interruption or
-                                                                                            // it will close channels
-                                                                                            // though
+
+    try {
+      if (isClosed()) {
+        throw new AlreadyClosedException();
+      }
+      log.info("Starting Replication Recovery. [{}] leader is [{}] and I am [{}]", coreName, leader.getName(), Replica.getCoreUrl(baseUrl, coreName));
+
       try {
-        CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
-            cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        final String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
-        final String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
+        log.info("Stopping background replicate from leader process");
+        zkController.stopReplicationFromLeader(coreName);
+        IndexFetcher.IndexFetchResult result = replicate(leader);
 
-        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
-
-        String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-
-        boolean isLeader = leaderUrl.equals(ourUrl); // TODO: We can probably delete most of this code if we say this
-                                                     // strategy can only be used for pull replicas
-        if (isLeader && !cloudDesc.isLeader()) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
-        }
-        if (cloudDesc.isLeader()) {
-          assert cloudDesc.getReplicaType() != Replica.Type.PULL;
-          // we are now the leader - no one else must have been suitable
-          log.warn("We have not yet recovered - but we are now the leader!");
-          log.info("Finished recovery process.");
-          zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          return;
+        if (result.getSuccessful()) {
+          log.info("replication fetch reported as success");
+        } else {
+          log.error("replication fetch reported as failed: {} {}", result.getMessage(), result, result.getException());
+          successfulRecovery = false;
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Replication fetch reported as failed");
         }
 
-        if (log.isInfoEnabled()) {
-          log.info("Publishing state of core [{}] as recovering, leader is [{}] and I am [{}]", core.getName(), leaderUrl,
-              ourUrl);
-        }
-        zkController.publish(this.coreDescriptor, Replica.State.RECOVERING);
-
-        if (isClosed()) {
-          if (log.isInfoEnabled()) {
-            log.info("Recovery for core {} has been closed", core.getName());
-          }
-          break;
-        }
-        log.info("Starting Replication Recovery.");
-
-        try {
-          log.info("Stopping background replicate from leader process");
-          zkController.stopReplicationFromLeader(coreName);
-          replicate(zkController.getNodeName(), core, leaderprops);
-
-          if (isClosed()) {
-            if (log.isInfoEnabled()) {
-              log.info("Recovery for core {} has been closed", core.getName());
-            }
-            break;
-          }
-
-          log.info("Replication Recovery was successful.");
-          successfulRecovery = true;
-        } catch (Exception e) {
-          SolrException.log(log, "Error while trying to recover", e);
-        }
-
+        log.info("Replication Recovery was successful.");
+        successfulRecovery = true;
       } catch (Exception e) {
-        SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
-      } finally {
-        if (successfulRecovery) {
-          log.info("Restarting background replicate from leader process");
-          zkController.startReplicationFromLeader(coreName, false);
-          log.info("Registering as Active after recovery.");
-          try {
-            zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          } catch (Exception e) {
-            log.error("Could not publish as ACTIVE after succesful recovery", e);
-            successfulRecovery = false;
-          }
-
-          if (successfulRecovery) {
-            close = true;
-            recoveryListener.recovered();
-          }
-        }
+        log.error("Error while trying to recover", e);
+        successfulRecovery = false;
       }
 
-      if (!successfulRecovery) {
-        // lets pause for a moment and we need to try again...
-        // TODO: we don't want to retry for some problems?
-        // Or do a fall off retry...
+    } catch (Exception e) {
+      log.error("Error while trying to recover. core={}", coreName, e);
+      successfulRecovery = false;
+    } finally {
+      if (successfulRecovery) {
+        log.info("Restarting background replicate from leader process");
+        zkController.startReplicationFromLeader(coreName, false);
+        log.debug("Registering as Active after recovery.");
         try {
-
-          if (isClosed()) {
-            if (log.isInfoEnabled()) {
-              log.info("Recovery for core {} has been closed", core.getName());
-            }
-            break;
-          }
-
-          log.error("Recovery failed - trying again... ({})", retries);
-
-          retries++;
-          if (retries >= maxRetries) {
-            SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
-            try {
-              recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
-            } catch (Exception e) {
-              SolrException.log(log, "Could not publish that recovery failed", e);
-            }
-            break;
-          }
+          zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
         } catch (Exception e) {
-          SolrException.log(log, "An error has occurred during recovery", e);
+          log.error("Could not publish as ACTIVE after succesful recovery", e);
+          successfulRecovery = false;
         }
 
-        try {
-          // Wait an exponential interval between retries, start at 5 seconds and work up to a minute.
-          // If we're at attempt >= 4, there's no point computing pow(2, retries) because the result
-          // will always be the minimum of the two (12). Since we sleep at 5 seconds sub-intervals in
-          // order to check if we were closed, 12 is chosen as the maximum loopCount (5s * 12 = 1m).
-          int loopCount = retries < 4 ? (int) Math.min(Math.pow(2, retries), 12) : 12;
-          if (log.isInfoEnabled()) {
-            log.info("Wait [{}] seconds before trying to recover again (attempt={})",
-                TimeUnit.MILLISECONDS.toSeconds(loopCount * startingRecoveryDelayMilliSeconds), retries);
-          }
-          for (int i = 0; i < loopCount; i++) {
-            if (isClosed()) {
-              if (log.isInfoEnabled()) {
-                log.info("Recovery for core {} has been closed", core.getName());
-              }
-              break; // check if someone closed us
-            }
-            Thread.sleep(startingRecoveryDelayMilliSeconds);
-          }
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.warn("Recovery was interrupted.", e);
-          close = true;
+        if (successfulRecovery) {
+          recoveryListener.recovered();
         }
       }
-
     }
+
+    if (!successfulRecovery) {
+      // lets pause for a moment and we need to try again...
+      // TODO: we don't want to retry for some problems?
+      // Or do a fall off retry...
+      try {
+
+        log.error("Recovery failed - trying again... ({})", retries);
+
+        if (retries.incrementAndGet() >= maxRetries) {
+          close = true;
+          log.error("Recovery failed - max retries exceeded ({}).", retries);
+          try {
+            recoveryFailed(zkController, baseUrl, core.getCoreDescriptor());
+          } catch (InterruptedException e) {
+
+          } catch (Exception e) {
+            log.error("Could not publish that recovery failed", e);
+          }
+        }
+      } catch (Exception e) {
+        log.error("An error has occurred during recovery", e);
+      }
+    }
+
     // We skip core.seedVersionBuckets(); We don't have a transaction log
+    if (successfulRecovery) {
+      close = true;
+    }
+
     log.info("Finished recovery process, successful=[{}]", successfulRecovery);
+
+    return successfulRecovery;
   }
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
-    boolean successfulRecovery = false;
+  public final boolean doSyncOrReplicateRecovery(SolrCore core, Replica leader) throws Exception {
+    log.debug("Do peersync or replication recovery core={} collection={}", coreName, core.getCoreDescriptor().getCollectionName());
 
+    boolean successfulRecovery = false;
+    boolean publishedActive = false;
     UpdateLog ulog;
+
     ulog = core.getUpdateHandler().getUpdateLog();
-    if (ulog == null) {
-      SolrException.log(log, "No UpdateLog found - cannot recover.");
-      recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
-          this.coreDescriptor);
-      return;
-    }
 
     // we temporary ignore peersync for tlog replicas
-    boolean firstTime = replicaType != Replica.Type.TLOG;
+    if (firstTime) {
+      firstTime = replicaType != Replica.Type.TLOG;
+    }
+
+    boolean didReplication = false;
 
     List<Long> recentVersions;
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     } catch (Exception e) {
-      SolrException.log(log, "Corrupt tlog - ignoring.", e);
-      recentVersions = new ArrayList<>(0);
+      log.error("Corrupt tlog - ignoring.", e);
+      recentVersions = Collections.emptyList();
     }
 
     List<Long> startingVersions = ulog.getStartingVersions();
 
-    if (startingVersions != null && recoveringAfterStartup) {
+    if (startingVersions != null && recentVersions.size() > 0 && recoveringAfterStartup) {
       try {
         int oldIdx = 0; // index of the start of the old list in the current list
         long firstStartingVersion = startingVersions.size() > 0 ? startingVersions.get(0) : 0;
 
-        for (; oldIdx < recentVersions.size(); oldIdx++) {
+        final int size = recentVersions.size();
+        for (; oldIdx < size; oldIdx++) {
           if (recentVersions.get(oldIdx) == firstStartingVersion) break;
         }
 
         if (oldIdx > 0) {
           log.info("Found new versions added after startup: num=[{}]", oldIdx);
           if (log.isInfoEnabled()) {
-            log.info("currentVersions size={} range=[{} to {}]", recentVersions.size(), recentVersions.get(0),
-                recentVersions.get(recentVersions.size() - 1));
+            log.info("currentVersions size={} range=[{} to {}]", size, recentVersions.get(0), recentVersions.get(size - 1));
           }
         }
 
         if (startingVersions.isEmpty()) {
-          log.info("startupVersions is empty");
+          log.debug("startupVersions is empty");
         } else {
-          if (log.isInfoEnabled()) {
-            log.info("startupVersions size={} range=[{} to {}]", startingVersions.size(), startingVersions.get(0),
+          if (log.isDebugEnabled()) {
+            log.debug("startupVersions size={} range=[{} to {}]", startingVersions.size(), startingVersions.get(0),
                 startingVersions.get(startingVersions.size() - 1));
           }
         }
       } catch (Exception e) {
-        SolrException.log(log, "Error getting recent versions.", e);
-        recentVersions = new ArrayList<>(0);
+        log.error("Error getting recent versions.", e);
+        recentVersions = Collections.emptyList();
       }
     }
 
@@ -555,305 +651,296 @@ public class RecoveryStrategy implements Runnable, Closeable {
           firstTime = false; // skip peersync
         }
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Error trying to get ulog starting operation.", e);
         firstTime = false; // skip peersync
       }
     }
 
     if (replicaType == Replica.Type.TLOG) {
+      log.debug("Stopping replication from leader for {}", coreName);
       zkController.stopReplicationFromLeader(coreName);
     }
 
-    final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-    Future<RecoveryInfo> replayFuture = null;
-    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) { // don't use interruption or
-                                                                                            // it will close channels
-                                                                                            // though
-      try {
-        CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        final Replica leader = pingLeader(ourUrl, this.coreDescriptor, true);
-        if (isClosed()) {
-          log.info("RecoveryStrategy has been closed");
-          break;
-        }
+    LeaderElector leaderElector = zkController.getLeaderElector(coreName);
 
-        boolean isLeader = leader.getCoreUrl().equals(ourUrl);
-        if (isLeader && !cloudDesc.isLeader()) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
-        }
-        if (cloudDesc.isLeader()) {
-          // we are now the leader - no one else must have been suitable
-          log.warn("We have not yet recovered - but we are now the leader!");
-          log.info("Finished recovery process.");
-          zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          return;
-        }
+    if (leaderElector != null && leaderElector.isLeader()) {
+      log.warn("We are the leader, STOP recovery", new SolrException(ErrorCode.INVALID_STATE, "Leader in recovery"));
+      //      ZkNodeProps zkNodes = ZkNodeProps
+      //          .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.CORE_NAME_PROP, core.getName(), "id",
+      //              core.getCoreDescriptor().getCoreProperty("collId", null)+ "-" +  core.getCoreDescriptor().getCoreProperty("id", null),
+      //              ZkStateReader.COLLECTION_PROP, core.getCoreDescriptor().getCollectionName(), ZkStateReader.STATE_PROP, Replica.State.LEADER);
+      //      zkController.publish(zkNodes);
+      close = true;
+      return false;
+    }
 
-        log.info("Begin buffering updates. core=[{}]", coreName);
-        // recalling buffer updates will drop the old buffer tlog
-        ulog.bufferUpdates();
+    try {
 
-        if (log.isInfoEnabled()) {
-          log.info("Publishing state of core [{}] as recovering, leader is [{}] and I am [{}]", core.getName(),
-              leader.getCoreUrl(),
-              ourUrl);
-        }
-        zkController.publish(this.coreDescriptor, Replica.State.RECOVERING);
+      // first thing we just try to sync
+      if (firstTime) {
+        firstTime = false; // only try sync the first time through the loop
 
-        final Slice slice = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName())
-            .getSlice(cloudDesc.getShardId());
+        log.debug("Attempting to PeerSync from [{}] - recoveringAfterStartup=[{}]", leader.getCoreUrl(), recoveringAfterStartup);
 
+        // System.out.println("Attempting to PeerSync from " + leaderUrl
+        // + " i am:" + zkController.getNodeName());
         try {
-          prevSendPreRecoveryHttpUriRequest.abort();
-        } catch (NullPointerException e) {
-          // okay
-        }
-
-        if (isClosed()) {
-          log.info("RecoveryStrategy has been closed");
-          break;
-        }
-
-        sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getCoreName(), slice);
-
-        if (isClosed()) {
-          log.info("RecoveryStrategy has been closed");
-          break;
-        }
-
-        // we wait a bit so that any updates on the leader
-        // that started before they saw recovering state
-        // are sure to have finished (see SOLR-7141 for
-        // discussion around current value)
-        // TODO since SOLR-11216, we probably won't need this
-        try {
-          Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-
-        // first thing we just try to sync
-        if (firstTime) {
-          firstTime = false; // only try sync the first time through the loop
-          if (log.isInfoEnabled()) {
-            log.info("Attempting to PeerSync from [{}] - recoveringAfterStartup=[{}]", leader.getCoreUrl(),
-                recoveringAfterStartup);
-          }
-          // System.out.println("Attempting to PeerSync from " + leaderUrl
-          // + " i am:" + zkController.getNodeName());
           boolean syncSuccess;
-          try (PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core,
-              leader.getCoreUrl(), ulog.getNumRecordsToKeep())) {
-            syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
+          boolean noNewSearcher = false;
+          try (PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core, leader.getCoreUrl(), ulog.getNumRecordsToKeep())) {
+            PeerSync.PeerSyncResult syncResult = peerSyncWithLeader.sync(recentVersions);
+            syncSuccess = syncResult.isSuccess();
+
+            if (!syncSuccess && recentVersions.size() == 0 && syncResult.getOtherHasVersions().isPresent() && !syncResult.getOtherHasVersions().get()) {
+              syncSuccess = true;
+            }
           }
+
           if (syncSuccess) {
-            SolrQueryRequest req = new LocalSolrQueryRequest(core,
-                new ModifiableSolrParams());
-            // force open a new searcher
-            core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-            req.close();
-            log.info("PeerSync stage of recovery was successful.");
-
             // solrcloud_debug
-            cloudDebugLog(core, "synced");
-
-            log.info("Replaying updates buffered during PeerSync.");
-            replayFuture = replay(core);
+            // cloudDebugLog(core, "synced");
+            if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+              log.info("Bailing on recovery due to close");
+              close = true;
+              return false;
+            }
+            // log.debug("Replaying updates buffered during PeerSync.");
+            //ulog.bufferUpdates();
+            // exit buffering state
+            replay(core);
 
             // sync success
             successfulRecovery = true;
-            break;
-          }
-
-          log.info("PeerSync Recovery was not successful - trying replication.");
-        }
-
-        if (isClosed()) {
-          log.info("RecoveryStrategy has been closed");
-          break;
-        }
-
-        log.info("Starting Replication Recovery.");
-
-        try {
-
-          replicate(zkController.getNodeName(), core, leader);
-
-          if (isClosed()) {
-            log.info("RecoveryStrategy has been closed");
-            break;
-          }
-
-          replayFuture = replay(core);
-
-          if (isClosed()) {
-            log.info("RecoveryStrategy has been closed");
-            break;
-          }
-
-          log.info("Replication Recovery was successful.");
-          successfulRecovery = true;
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.warn("Recovery was interrupted", e);
-          close = true;
-        } catch (Exception e) {
-          SolrException.log(log, "Error while trying to recover", e);
-        }
-
-      } catch (Exception e) {
-        SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
-      } finally {
-        if (successfulRecovery) {
-          log.info("Registering as Active after recovery.");
-          try {
-            if (replicaType == Replica.Type.TLOG) {
-              zkController.startReplicationFromLeader(coreName, true);
-            }
-            zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          } catch (Exception e) {
-            log.error("Could not publish as ACTIVE after succesful recovery", e);
+          } else {
             successfulRecovery = false;
           }
 
-          if (successfulRecovery) {
-            close = true;
-            recoveryListener.recovered();
-          }
-        }
-      }
-
-      if (!successfulRecovery) {
-        // lets pause for a moment and we need to try again...
-        // TODO: we don't want to retry for some problems?
-        // Or do a fall off retry...
-        try {
-
-          if (isClosed()) {
-            log.info("RecoveryStrategy has been closed");
-            break;
-          }
-
-          log.error("Recovery failed - trying again... ({})", retries);
-
-          retries++;
-          if (retries >= maxRetries) {
-            SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
-            try {
-              recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
-            } catch (Exception e) {
-              SolrException.log(log, "Could not publish that recovery failed", e);
-            }
-            break;
-          }
         } catch (Exception e) {
-          SolrException.log(log, "An error has occurred during recovery", e);
+          log.error("PeerSync exception", e);
+          successfulRecovery = false;
         }
 
-        try {
-          // Wait an exponential interval between retries, start at 2 seconds and work up to a minute.
-          // Since we sleep at 2 seconds sub-intervals in
-          // order to check if we were closed, 30 is chosen as the maximum loopCount (2s * 30 = 1m).
-          double loopCount = Math.min(Math.pow(2, retries - 1), 30);
-          log.info("Wait [{}] seconds before trying to recover again (attempt={})",
-              loopCount * startingRecoveryDelayMilliSeconds, retries);
-          for (int i = 0; i < loopCount; i++) {
-            if (isClosed()) {
-              log.info("RecoveryStrategy has been closed");
-              break; // check if someone closed us
-            }
-            Thread.sleep(startingRecoveryDelayMilliSeconds);
-          }
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.warn("Recovery was interrupted.", e);
-          close = true;
+        if (!successfulRecovery) {
+          log.info("PeerSync Recovery was not successful - trying replication.");
         }
       }
+      if (!successfulRecovery) {
+        log.info("Starting Replication Recovery.");
+        didReplication = true;
+        try {
 
+          if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+            log.info("Bailing on recovery due to close");
+            close = true;
+            return false;
+          }
+          // recalling buffer updates will drop the old buffer tlog
+          //if (ulog.getState() != UpdateLog.State.BUFFERING) {
+            ulog.bufferUpdates();
+         // }
+
+          log.debug("Begin buffering updates. core=[{}]", coreName);
+
+          IndexFetcher.IndexFetchResult result = replicate(leader);
+
+          boolean shardHadData = recentVersions != null && !recentVersions.isEmpty();
+          if (result == IndexFetcher.IndexFetchResult.MASTER_VERSION_ZERO && !shardHadData) {
+            // The leader's reported index version is 0 — but that is also what a restarted leader
+            // reports while it is still replaying its tlog (its commit is a no-op until replay
+            // finishes). Ask the leader for its update-log versions: tlogs live on disk, so they
+            // survive restarts even when the index does not.
+            shardHadData = leaderHasUpdateVersions(leader.getCoreUrl());
+          }
+          if (result == IndexFetcher.IndexFetchResult.MASTER_VERSION_ZERO && shardHadData) {
+            // Treating empty-leader as success here would publish us ACTIVE with an empty index
+            // and lose RTG visibility — retry until the leader has its data back.
+            log.warn("Leader reports an empty index but the shard has update history — leader likely still recovering; will retry. core={}", coreName);
+            successfulRecovery = false;
+          } else if (result.getSuccessful()) {
+            log.info("replication fetch reported as success");
+
+            replay(core);
+
+            log.info("Replication Recovery was successful.");
+            successfulRecovery = true;
+          } else {
+            log.error("replication fetch reported as failed: {} {}", result.getMessage(), result, result.getException());
+            successfulRecovery = false;
+          }
+
+          if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+            log.info("Bailing on recovery due to close");
+            close = true;
+            return false;
+          }
+
+        } catch (InterruptedException | AlreadyClosedException | RejectedExecutionException e) {
+          log.info("{} bailing on recovery", e.getClass().getSimpleName());
+          close = true;
+          return false;
+        } catch (Exception e) {
+          successfulRecovery = false;
+          log.error("Error while trying to recover", e);
+        }
+      }
+    } catch (Exception e) {
+      log.error("Error while trying to recover. core={}", coreName, e);
+      successfulRecovery = false;
+    }
+    if (successfulRecovery) {
+      log.info("Registering as Active after recovery {}", coreName);
+      try {
+        // if replay was skipped (possibly to due pulling a full index from the leader),
+        // then we still need to update version bucket seeds after recovery
+        if (didReplication) {
+          if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+            log.info("Bailing on recovery due to close");
+            return false;
+          }
+          log.info("Updating version bucket highest from index after successful recovery.");
+          try {
+            core.seedVersionBuckets();
+          } catch (Exception e) {
+            log.error("Exception seeding version buckets");
+          }
+        }
+
+        if (replicaType == Replica.Type.TLOG) {
+          zkController.startReplicationFromLeader(coreName, true);
+        }
+
+        if (isClosed() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+          log.info("Bailing on recovery due to close");
+          return false;
+        }
+        zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+        recoveryListener.recovered();
+        return true;
+      } catch (AlreadyClosedException | RejectedExecutionException e) {
+        log.error("Already closed");
+        close = true;
+        return false;
+      } catch (Exception e) {
+        log.error("Could not publish as ACTIVE after successful recovery", e);
+        successfulRecovery = false;
+      }
+
+    } else {
+      log.info("Recovery was not successful, will not register as ACTIVE {}", coreName);
     }
 
-    // if replay was skipped (possibly to due pulling a full index from the leader),
-    // then we still need to update version bucket seeds after recovery
-    if (successfulRecovery && replayFuture == null) {
-      log.info("Updating version bucket highest from index after successful recovery.");
-      core.seedVersionBuckets();
+    if (!isClosed()) {
+      // lets pause for a moment and we need to try again...
+      // TODO: we don't want to retry for some problems?
+      // Or do a fall off retry...
+      try {
+
+        if (close || cc.isShutDown() || core.isClosing() || core.isClosed()) {
+          close = true;
+          throw new AlreadyClosedException();
+        }
+        log.error("Recovery failed - trying again... ({})", retries);
+
+        if (retries.incrementAndGet() >= maxRetries) {
+          SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
+          close = true;
+          try {
+            recoveryFailed(zkController, baseUrl, core.getCoreDescriptor());
+          } catch (InterruptedException e) {
+
+          } catch (Exception e) {
+            log.error("Could not publish that recovery failed", e);
+          }
+        }
+      } catch (Exception e) {
+        log.error("An error has occurred during recovery", e);
+      }
     }
 
-    log.info("Finished recovery process, successful=[{}]", successfulRecovery);
+    if (!isClosed() && !core.isClosing() && !core.isClosed()) {
+      waitForRetry(core);
+    } else {
+      close = true;
+      return false;
+    }
+
+    log.debug("Finished doSyncOrReplicateRecovery process, successful=[{}]", successfulRecovery);
+
+    return false;
   }
 
-  private final Replica pingLeader(String ourUrl, CoreDescriptor coreDesc, boolean mayPutReplicaAsDown)
-      throws Exception {
-    int numTried = 0;
-    while (true) {
-      CloudDescriptor cloudDesc = coreDesc.getCloudDescriptor();
-      DocCollection docCollection = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
-      if (!isClosed() && mayPutReplicaAsDown && numTried == 1 &&
-          docCollection.getReplica(coreDesc.getCloudDescriptor().getCoreNodeName())
-              .getState() == Replica.State.ACTIVE) {
-        // this operation may take a long time, by putting replica into DOWN state, client won't query this replica
-        zkController.publish(coreDesc, Replica.State.DOWN);
-      }
-      numTried++;
-      Replica leaderReplica = null;
+  private final void waitForRetry(SolrCore core) {
+    try {
+      if (close) throw new AlreadyClosedException();
+      long wait;
 
-      if (isClosed()) {
-        return leaderReplica;
+      if (retries.get() >= 0 && retries.get() < 3) {
+        wait = this.startingRecoveryDelayMilliSeconds;
+      } else if (retries.get() < 5) {
+        wait = 1000;
+      } else {
+        wait = 15000;
       }
 
-      try {
-        leaderReplica = zkStateReader.getLeaderRetry(
-            cloudDesc.getCollectionName(), cloudDesc.getShardId());
-      } catch (SolrException e) {
-        Thread.sleep(500);
-        continue;
-      }
+      log.info("Wait [{}] ms before trying to recover again (attempt={})", wait, retries);
 
-      if (leaderReplica.getCoreUrl().equals(ourUrl)) {
-        return leaderReplica;
-      }
-
-      try (HttpSolrClient httpSolrClient = buildRecoverySolrClient(leaderReplica.getCoreUrl())) {
-        SolrPingResponse resp = httpSolrClient.ping();
-        return leaderReplica;
-      } catch (IOException e) {
-        log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
-        Thread.sleep(500);
-      } catch (Exception e) {
-        if (e.getCause() instanceof IOException) {
-          log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
-          Thread.sleep(500);
+      TimeOut timeout = new TimeOut(wait, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      while (true) {
+        final boolean hasTimedOut = timeout.hasTimedOut();
+        if (hasTimedOut) break;
+        if (isClosed() && !core.isClosing() && !core.isClosed()) {
+          log.info("RecoveryStrategy has been closed");
+          return;
+        }
+        if (wait > 1000) {
+          Thread.sleep(1000);
         } else {
-          return leaderReplica;
+          Thread.sleep(wait);
         }
       }
+
+    } catch (InterruptedException e) {
+
     }
+
   }
 
   public static Runnable testing_beforeReplayBufferingUpdates;
 
-  final private Future<RecoveryInfo> replay(SolrCore core)
+  private void replay(SolrCore core)
       throws InterruptedException, ExecutionException {
     if (testing_beforeReplayBufferingUpdates != null) {
       testing_beforeReplayBufferingUpdates.run();
     }
+
     if (replicaType == Replica.Type.TLOG) {
       // roll over all updates during buffering to new tlog, make RTG available
-      SolrQueryRequest req = new LocalSolrQueryRequest(core,
-          new ModifiableSolrParams());
-      core.getUpdateHandler().getUpdateLog().copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
-      req.close();
-      return null;
+      try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+        core.getUpdateHandler().getUpdateLog().copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
+      }
+      // Do NOT fall through to applyBufferedUpdates()/openRealtimeSearcher() for a TLOG follower:
+      // the copied-over updates live only in the ulog RTG maps (adds bypass the IndexWriter), and
+      // openRealtimeSearcher() clears those maps — losing RTG visibility for every doc newer than
+      // the last fetched commit until the next segment replication.
+      return;
     }
     Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
     if (future == null) {
       // no replay needed\
-      log.info("No replay needed.");
+      log.debug("No replay needed.");
+      return;
     } else {
       log.info("Replaying buffered documents.");
       // wait for replay
-      RecoveryInfo report = future.get();
+      RecoveryInfo report;
+      try {
+        report = future.get(10, TimeUnit.MINUTES); // MRM TODO: - how long? make configurable too
+      } catch (InterruptedException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
+      } catch (TimeoutException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
       if (report.failed) {
         SolrException.log(log, "Replay failed");
         throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
@@ -861,15 +948,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     // the index may ahead of the tlog's caches after recovery, by calling this tlog's caches will be purged
-    core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    if (ulog != null) {
+      ulog.openRealtimeSearcher();
+    }
 
     // solrcloud_debug
-    cloudDebugLog(core, "replayed");
-
-    return future;
+    // cloudDebugLog(core, "replayed");
   }
 
-  final private void cloudDebugLog(SolrCore core, String op) {
+  static private void cloudDebugLog(SolrCore core, String op) {
     if (!log.isDebugEnabled()) {
       return;
     }
@@ -884,6 +972,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         searchHolder.decref();
       }
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       log.debug("Error in solrcloud_debug block", e);
     }
   }
@@ -892,32 +981,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     return close || cc.isShutDown();
   }
 
-  final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
-      throws SolrServerException, IOException, InterruptedException, ExecutionException {
 
-    WaitForState prepCmd = new WaitForState();
-    prepCmd.setCoreName(leaderCoreName);
-    prepCmd.setNodeName(zkController.getNodeName());
-    prepCmd.setCoreNodeName(coreZkNodeName);
-    prepCmd.setState(Replica.State.RECOVERING);
-    prepCmd.setCheckLive(true);
-    prepCmd.setOnlyIfLeader(true);
-    final Slice.State state = slice.getState();
-    if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY && state != Slice.State.RECOVERY_FAILED) {
-      prepCmd.setOnlyIfLeaderActive(true);
-    }
 
-    int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-    // timeout after 5 seconds more than the max timeout (conflictWait + 3 seconds) on the server side
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
-    try (HttpSolrClient client = buildRecoverySolrClient(leaderBaseUrl)) {
-      client.setSoTimeout(readTimeout);
-      HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
-      prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
 
-      log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
-
-      mrr.future.get();
-    }
-  }
 }

@@ -54,23 +54,21 @@ public class AddEvaluator extends RecursiveNumericEvaluator implements ManyValue
     return result;
   }
   
-  private BigDecimal add(BigDecimal left, Object right) throws IOException{
-    if(null == left || null == right){
-      return null;
-    }
-    else if(right instanceof BigDecimal){
-      return left.add((BigDecimal)right);
-    }
-    else if(right instanceof Number){
-      return add(left, new BigDecimal(right.toString()));
-    }
-    else if(right instanceof List){
-      return add(left, doWork(((List<?>)right).toArray()));
-    }
-    else{
-      throw new StreamEvaluatorException("Numeric value expected but found type %s for value %s", right.getClass().getName(), right.toString());
-    }
+  private BigDecimal add(BigDecimal left, Object right) throws IOException {
+    while (true) {
+      if (null == left || null == right) {
+        return null;
+      } else if (right instanceof BigDecimal) {
+        return left.add((BigDecimal) right);
+      } else if (right instanceof Number) {
+        right = new BigDecimal(right.toString());
+      } else if (right instanceof List) {
+        right = doWork(((List<?>) right).toArray());
+      } else {
+        throw new StreamEvaluatorException("Numeric value expected but found type %s for value %s", right.getClass().getName(), right.toString());
+      }
 
+    }
   }
   
 }

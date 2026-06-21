@@ -59,7 +59,7 @@ import static java.math.RoundingMode.CEILING;
  */
 // TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
 public class LatLonPointSpatialField extends AbstractSpatialFieldType implements SchemaAware {
-  private IndexSchema schema;
+  private volatile IndexSchema schema;
 
   // TODO handle polygons
 

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import javax.script.ScriptEngineManager;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,32 +32,33 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import javax.script.ScriptEngineManager;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -64,6 +66,7 @@ import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -77,17 +80,13 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
-import org.apache.solr.core.TestDynamicLoading;
+import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.security.BasicAuthIntegrationTest;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,28 +104,37 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private MiniSolrCloudCluster solrCluster;
 
+  @BeforeClass
+  public static void beforTestConfigSetsAPI() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+    System.setProperty("solr.enablePublicKeyHandler", "true");
+    disableReuseOfCryptoKeys();
+    useFactory(null);
+  }
+
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
+        buildJettyConfig("/solr"), null, Optional.empty(),  false, true);
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
+    super.tearDown();
     if (null != solrCluster) {
       solrCluster.shutdown();
       solrCluster = null;
     }
-    super.tearDown();
   }
 
   @Test
   public void testCreateErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    solrCluster.uploadConfigSet(configset("configset-2"), "configSet");
+    solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), "configSet");
 
     // no action
     CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
@@ -173,44 +181,44 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps) throws Exception {
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
+    final File configDir = SolrTestUtil.getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+    final File tmpConfigDir = SolrTestUtil.createTempDir().toFile();
     tmpConfigDir.deleteOnExit();
     FileUtils.copyDirectory(configDir, tmpConfigDir);
-    if (oldProps != null) {
+    if (oldProps != null && oldProps.size() > 0) {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps), StandardCharsets.UTF_8);
     }
-    solrCluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
+    ZkConfigManager configManager = new ZkConfigManager(zkClient());
+    configManager.uploadConfigDir(tmpConfigDir.toPath(), baseConfigSetName);
   }
 
   private void verifyCreate(String baseConfigSetName, String configSetName,
       Map<String, String> oldProps, Map<String, String> newProps) throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    setupBaseConfigSet(baseConfigSetName, oldProps);
-
-    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
-    try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertFalse(configManager.configExists(configSetName));
-
-      Create create = new Create();
-      create.setBaseConfigSetName(baseConfigSetName).setConfigSetName(configSetName);
-      if (newProps != null) {
-        Properties p = new Properties();
-        p.putAll(newProps);
-        create.setNewConfigSetProperties(p);
-      }
-      ConfigSetAdminResponse response = create.process(solrClient);
-      assertNotNull(response.getResponse());
-      assertTrue(configManager.configExists(configSetName));
-
-      verifyProperties(configSetName, oldProps, newProps, zkClient);
-    } finally {
-      zkClient.close();
+    if (baseConfigSetName != null) {
+      setupBaseConfigSet(baseConfigSetName, oldProps);
     }
+
+    SolrZkClient zkClient = zkClient();
+
+    ZkConfigManager configManager = new ZkConfigManager(zkClient);
+    assertFalse(configManager.configExists(configSetName));
+
+    Create create = new Create();
+    create.setBaseConfigSetName(baseConfigSetName).setConfigSetName(configSetName);
+    if (newProps != null) {
+      Properties p = new Properties();
+      p.putAll(newProps);
+      create.setNewConfigSetProperties(p);
+    }
+    ConfigSetAdminResponse response = create.process(solrClient);
+    assertNotNull(response.getResponse());
+    assertTrue(configManager.configExists(configSetName));
+
+    verifyProperties(configSetName, oldProps, newProps, zkClient);
+
     solrClient.close();
   }
 
@@ -218,7 +226,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       SolrZkClient zkClient, String path) throws Exception {
     byte [] oldPropsData = null;
     try {
-      oldPropsData = zkClient.getData(path, null, null, true);
+      oldPropsData = zkClient.getData(path, null, null);
     } catch (KeeperException.NoNodeException e) {
       // okay, properties just don't exist
     }
@@ -241,7 +249,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     // let's check without merging the maps, since that's what the MessageHandler does
     // (since we'd probably repeat any bug in the MessageHandler here)
     if (oldProps == null && newProps == null) {
-      assertNull(properties);
+      assertTrue(properties == null || properties.size() == 0);
       return;
     }
     assertNotNull(properties);
@@ -249,7 +257,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     // check all oldProps are in props
     if (oldProps != null) {
       for (Map.Entry<String, String> entry : oldProps.entrySet()) {
-        assertNotNull(properties.get(entry.getKey()));
+        assertNotNull("Could not find " + entry.getKey() + " in " + properties, properties.get(entry.getKey()));
       }
     }
     // check all newProps are in props
@@ -278,60 +286,41 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   @Test
   public void testUploadErrors() throws Exception {
-    final SolrClient solrClient = getHttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
     // Checking error when no configuration name is specified in request
-    Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
-        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-        + "/admin/configs?action=UPLOAD", emptyData, null, null);
+    Map map = postDataAndGetResponse(solrCluster.getSolrClient(), solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD", emptyData, null, null);
     assertNotNull(map);
-    long statusCode = (long) getObjectByPath(map, false,
-        Arrays.asList("responseHeader", "status"));
+    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
 
-    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null);
+    SolrZkClient zkClient = zkClient();
 
     // Create dummy config files in zookeeper
-    zkClient.makePath("/configs/myconf", true);
-    zkClient.create("/configs/myconf/firstDummyFile",
-        "first dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-    zkClient.create("/configs/myconf/anotherDummyFile",
-        "second dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+    zkClient.mkdir("/configs/myconf");
+    zkClient.create("/configs/myconf/firstDummyFile", "first dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+    zkClient.create("/configs/myconf/anotherDummyFile", "second dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
 
     // Checking error when configuration name specified already exists
-    map = postDataAndGetResponse(solrCluster.getSolrClient(),
-        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-        + "/admin/configs?action=UPLOAD&name=myconf", emptyData, null, null);
+    map = postDataAndGetResponse(solrCluster.getSolrClient(), solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name=myconf", emptyData, null, null);
     assertNotNull(map);
-    statusCode = (long) getObjectByPath(map, false,
-        Arrays.asList("responseHeader", "status"));
+    statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
-    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten",
-        zkClient.exists("/configs/myconf/firstDummyFile", true));
-    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten",
-        zkClient.exists("/configs/myconf/anotherDummyFile", true));
-
-    zkClient.close();
-    solrClient.close();
+    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten", zkClient.exists("/configs/myconf/firstDummyFile"));
+    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten", zkClient.exists("/configs/myconf/anotherDummyFile"));
   }
 
   @Test
   public void testUploadDisabled() throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null)) {
-
-      for (boolean enabled: new boolean[] {true, false}) {
-        System.setProperty("configset.upload.enabled", String.valueOf(enabled));
-        try {
-          long statusCode = uploadConfigSet("regular", "test-enabled-is-" + enabled, null, null, zkClient);
-          assertEquals("ConfigSet upload enabling/disabling not working as expected for enabled=" + enabled + ".",
-              enabled? 0l: 400l, statusCode);
-        } finally {
-          System.clearProperty("configset.upload.enabled");
-        }
+    SolrZkClient zkClient = zkClient();
+    for (boolean enabled : new boolean[]{true, false}) {
+      System.setProperty("configset.upload.enabled", String.valueOf(enabled));
+      try {
+        long statusCode = uploadConfigSet("regular", "test-enabled-is-" + enabled, null, null, zkClient);
+        assertEquals("ConfigSet upload enabling/disabling not working as expected for enabled=" + enabled + ".",
+                enabled ? 0l : 400l, statusCode);
+      } finally {
+        System.clearProperty("configset.upload.enabled");
       }
     }
   }
@@ -354,9 +343,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       final String untrustedSuffix = "-untrusted";
       uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
-      Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-        createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
-      1, 1, solrCluster.getSolrClient());
+      Throwable thrown = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+        createCollection("newcollection2", "with-script-processor" + untrustedSuffix, 1, 1, solrCluster.getSolrClient());
       });
 
     assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
@@ -373,33 +361,31 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // enable this back when the sleep is removed from protectConfigsHandler() call
   public void testUploadWithLibDirective() throws Exception {
     // Authorization off
     unprotectConfigsHandler();
     final String untrustedSuffix = "-untrusted";
     uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null, null);
     // try to create a collection with the uploaded configset
-    Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-      createCollection("newcollection3", "with-lib-directive" + untrustedSuffix,
-          1, 1, solrCluster.getSolrClient());
+    Throwable thrown = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+      createCollection("newcollection3", "with-lib-directive" + untrustedSuffix, 1, 1, solrCluster.getSolrClient());
     });
 
     assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
 
+    // MRM TODO: - work out using newcollection3 and dealing with it finding the collection after first create fails - instead of using newCollection4
     // Authorization on
     final String trustedSuffix = "-trusted";
     protectConfigsHandler();
     uploadConfigSetWithAssertions("with-lib-directive", trustedSuffix, "solr", "SolrRocks");
     // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp = createCollection("newcollection3", "with-lib-directive" + trustedSuffix,
-        1, 1, solrCluster.getSolrClient());
-    
+    CollectionAdminResponse resp = createCollection("newcollection4", "with-lib-directive" + trustedSuffix, 1, 1, solrCluster.getSolrClient());
+
     SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    solrCluster.getSolrClient().add("newcollection3", doc);
-    solrCluster.getSolrClient().commit("newcollection3");
-    assertEquals("4055", solrCluster.getSolrClient().query("newcollection3",
-        params("q", "*:*")).getResults().get(0).get("id"));
+    solrCluster.getSolrClient().add("newcollection4", doc);
+    solrCluster.getSolrClient().commit("newcollection4");
+
+    assertEquals("4055", solrCluster.getSolrClient().query("newcollection4", params("q", "*:*")).getResults().get(0).get("id"));
   }
 
   protected SolrZkClient zkClient() {
@@ -419,7 +405,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         HttpClientUtil.close(cl);
       }
     }
-    Thread.sleep(1000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
   
   private void protectConfigsHandler() throws Exception {
@@ -443,45 +428,41 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       String baseUrl = randomJetty.getBaseUrl().toString();
 
       zkClient().setData("/security.json", securityJson.replaceAll("'", "\"").getBytes(UTF_8), true);
-      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 50);
-      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/class", "solr.RuleBasedAuthorizationPlugin", 50);
+      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 100);
+      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/class", "solr.RuleBasedAuthorizationPlugin", 100);
     } finally {
       if (cl != null) {
         HttpClientUtil.close(cl);
       }
     }
-    Thread.sleep(1000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
 
   private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username, String password) throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null);
-    try {
-      long statusCode = uploadConfigSet(configSetName, suffix, username, password, zkClient);
-      assertEquals(0l, statusCode);
+    SolrZkClient zkClient = zkClient();
 
-      assertTrue("managed-schema file should have been uploaded",
-          zkClient.exists("/configs/"+configSetName+suffix+"/managed-schema", true));
-      assertTrue("managed-schema file contents on zookeeper are not exactly same as that of the file uploaded in config",
-          Arrays.equals(zkClient.getData("/configs/"+configSetName+suffix+"/managed-schema", null, null, true),
-              readFile("solr/configsets/upload/"+configSetName+"/managed-schema")));
+    long statusCode = uploadConfigSet(configSetName, suffix, username, password, zkClient);
+    assertEquals(0l, statusCode);
 
-      assertTrue("solrconfig.xml file should have been uploaded",
-          zkClient.exists("/configs/"+configSetName+suffix+"/solrconfig.xml", true));
-      byte data[] = zkClient.getData("/configs/"+configSetName+suffix, null, null, true);
-      //assertEquals("{\"trusted\": false}", new String(data, StandardCharsets.UTF_8));
-      assertTrue("solrconfig.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
-          Arrays.equals(zkClient.getData("/configs/"+configSetName+suffix+"/solrconfig.xml", null, null, true),
-              readFile("solr/configsets/upload/"+configSetName+"/solrconfig.xml")));
-    } finally {
-      zkClient.close();
-    }
+    assertTrue("managed-schema file should have been uploaded",
+            zkClient.exists("/configs/" + configSetName + suffix + "/managed-schema"));
+    assertTrue("managed-schema file contents on zookeeper are not exactly same as that of the file uploaded in config",
+            Arrays.equals(zkClient.getData("/configs/" + configSetName + suffix + "/managed-schema", null, null),
+                    readFile("solr/configsets/upload/" + configSetName + "/managed-schema")));
+
+    assertTrue("solrconfig.xml file should have been uploaded",
+            zkClient.exists("/configs/" + configSetName + suffix + "/solrconfig.xml"));
+    byte data[] = zkClient.getData("/configs/" + configSetName + suffix, null, null);
+    //assertEquals("{\"trusted\": false}", new String(data, StandardCharsets.UTF_8));
+    assertTrue("solrconfig.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
+            Arrays.equals(zkClient.getData("/configs/" + configSetName + suffix + "/solrconfig.xml", null, null),
+                    readFile("solr/configsets/upload/" + configSetName + "/solrconfig.xml")));
+
   }
 
   private long uploadConfigSet(String configSetName, String suffix, String username, String password,
       SolrZkClient zkClient) throws IOException {
     // Read zipped sample config
-    ByteBuffer sampleZippedConfig = TestDynamicLoading
+    ByteBuffer sampleZippedConfig = TestSolrConfigHandler
         .getFileContent(
             createTempZipFile("solr/configsets/upload/"+configSetName), false);
 
@@ -504,7 +485,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     File zipFile = new File(solrCluster.getBaseDir().toFile().getAbsolutePath() +
         File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
 
-    File directory = TestDynamicLoading.getFile(directoryPath);
+    File directory = SolrTestUtil.getFile(directoryPath);
     if (log.isInfoEnabled()) {
       log.info("Directory: {}", directory.getAbsolutePath());
     }
@@ -580,42 +561,38 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    CollectionAdminResponse res = new CollectionAdminResponse();
-    res.setResponse(client.request(request));
+    CollectionAdminResponse res = new CollectionAdminResponse(client.request(request));
+
     return res;
   }
   
-  public static Map postDataAndGetResponse(CloudSolrClient cloudClient,
-      String uri, ByteBuffer bytarr, String username, String password) throws IOException {
-    HttpPost httpPost = null;
-    HttpEntity entity;
-    String response = null;
+  public static Map postDataAndGetResponse(CloudHttp2SolrClient cloudClient,
+                                           String uri, ByteBuffer bytarr, String username, String password) throws IOException {
+
+    log.info("postDataAndGetResponse {}", uri);
     Map m = null;
-    
     try {
-      httpPost = new HttpPost(uri);
-      
+
+      Map<String, String> headers = new HashMap<>(1);
       if (username != null) {
-        String userPass = username + ":" + password;
+        String userPass = username + ':' + password;
         String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
-        BasicHeader header = new BasicHeader("Authorization", "Basic " + encoded);
-        httpPost.setHeader(header);
+
+        headers.put("Authorization", "Basic " + encoded);
       }
 
-      httpPost.setHeader("Content-Type", "application/octet-stream");
-      httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr
-          .arrayOffset(), bytarr.limit()));
-      entity = cloudClient.getLbClient().getHttpClient().execute(httpPost)
-          .getEntity();
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.POST(uri, cloudClient.getHttpClient(), bytarr, "application/octet-stream", headers);
       try {
-        response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-        m = (Map) Utils.fromJSONString(response);
+
+        m = (Map) Utils.fromJSONString(resp.asString);
       } catch (JSONParser.ParseException e) {
-        System.err.println("err response: " + response);
+        System.err.println("err response: " + resp.asString);
         throw new AssertionError(e);
       }
-    } finally {
-      httpPost.releaseConnection();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+    } catch (ExecutionException | TimeoutException e) {
+      log.error("", e);
     }
     return m;
   }
@@ -642,7 +619,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private byte[] readFile(String fname) throws IOException {
     byte[] buf = null;
-    try (FileInputStream fis = new FileInputStream(getFile(fname))) {
+    try (FileInputStream fis = new FileInputStream(SolrTestUtil.getFile(fname))) {
       buf = new byte[fis.available()];
       fis.read(buf);
     }
@@ -653,8 +630,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   public void testDeleteErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
+    final File configDir = SolrTestUtil.getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+    final File tmpConfigDir = SolrTestUtil.createTempDir().toFile();
     tmpConfigDir.deleteOnExit();
     // Ensure ConfigSet is immutable
     FileUtils.copyDirectory(configDir, tmpConfigDir);
@@ -679,7 +656,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private void verifyException(SolrClient solrClient, ConfigSetAdminRequest request,
       String errorContains) throws Exception {
-    Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
+    Exception e = SolrTestCaseUtil.expectThrows(Exception.class, () -> solrClient.request(request));
     assertTrue("Expected exception message to contain: " + errorContains
         + " got: " + e.getMessage(), e.getMessage().contains(errorContains));
   }
@@ -689,22 +666,18 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "configSet";
-    solrCluster.uploadConfigSet(configset("configset-2"), configSet);
+    solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), configSet);
 
-    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
-    try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertTrue(configManager.configExists(configSet));
+    SolrZkClient zkClient = zkClient();
+    ZkConfigManager configManager = new ZkConfigManager(zkClient);
+    assertTrue(configManager.configExists(configSet));
 
-      Delete delete = new Delete();
-      delete.setConfigSetName(configSet);
-      ConfigSetAdminResponse response = delete.process(solrClient);
-      assertNotNull(response.getResponse());
-      assertFalse(configManager.configExists(configSet));
-    } finally {
-      zkClient.close();
-    }
+    Delete delete = new Delete();
+    delete.setConfigSetName(configSet);
+    ConfigSetAdminResponse response = delete.process(solrClient);
+    assertNotNull(response.getResponse());
+    assertFalse(configManager.configExists(configSet));
+
 
     solrClient.close();
   }
@@ -714,29 +687,23 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
-    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
-    try {
-      // test empty
-      ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
-      ConfigSetAdminResponse.List response = list.process(solrClient);
-      Collection<String> actualConfigSets = response.getConfigSets();
-      assertEquals(1, actualConfigSets.size()); // only the _default configset
+    // test empty
+    ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
+    ConfigSetAdminResponse.List response = list.process(solrClient);
+    Collection<String> actualConfigSets = response.getConfigSets();
+    assertEquals(1, actualConfigSets.size()); // _default configset suppressed
 
-      // test multiple
-      Set<String> configSets = new HashSet<String>();
-      for (int i = 0; i < 5; ++i) {
-        String configSet = "configSet" + i;
-        solrCluster.uploadConfigSet(configset("configset-2"), configSet);
-        configSets.add(configSet);
-      }
-      response = list.process(solrClient);
-      actualConfigSets = response.getConfigSets();
-      assertEquals(configSets.size() + 1, actualConfigSets.size());
-      assertTrue(actualConfigSets.containsAll(configSets));
-    } finally {
-      zkClient.close();
+    // test multiple
+    Set<String> configSets = new HashSet<String>();
+    for (int i = 0; i < 5; ++i) {
+      String configSet = "configSet" + i;
+      solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), configSet);
+      configSets.add(configSet);
     }
+    response = list.process(solrClient);
+    actualConfigSets = response.getConfigSets();
+    assertEquals(configSets.size() + 1, actualConfigSets.size());
+    assertTrue(actualConfigSets.containsAll(configSets));
 
     solrClient.close();
   }
@@ -754,7 +721,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
    * {@link ExternalPaths#DEFAULT_CONFIGSET}
    *
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
-   * @see #setDefaultConfigDirSysPropIfNotSet
    * @see ZkController#getDefaultConfigDirPath
    */
   @Test

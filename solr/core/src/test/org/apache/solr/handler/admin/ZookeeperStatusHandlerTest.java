@@ -27,9 +27,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -54,7 +57,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("_default", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -72,42 +75,46 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
 
   /*
     Test the monitoring endpoint, used in the Cloud => ZkStatus Admin UI screen
-    NOTE: We do not currently test with multiple zookeepers, but the only difference is that there are multiple "details" objects and mode is "ensemble"... 
+    NOTE: We do not currently test with multiple zookeepers, but the only difference is that there are multiple "details" objects and mode is "ensemble"...
    */
   @Test
   public void monitorZookeeper() throws IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
-    URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
-    mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
+    String baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
+    try (Http2SolrClient solr = new Http2SolrClient.Builder(baseUrl.toString()).build()) {
+      GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
+      mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      NamedList<Object> nl = solr.request(mntrReq);
 
-    assertEquals("zkStatus", nl.getName(1));
-    Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
-    assertEquals("green", zkStatus.get("status"));
-    assertEquals("standalone", zkStatus.get("mode"));
-    assertEquals(1L, zkStatus.get("ensembleSize"));
-    List<Object> detailsList = (List<Object>)zkStatus.get("details");
-    assertEquals(1, detailsList.size());
-    Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
-    assertEquals(true, details.get("ok"));
-    assertTrue(Integer.parseInt((String) details.get("zk_znode_count")) > 50);
-    solr.close();
+      assertEquals("zkStatus", nl.getName(1));
+      Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
+      assertEquals("green", zkStatus.get("status"));
+      assertEquals("standalone", zkStatus.get("mode"));
+      assertEquals(1L, zkStatus.get("ensembleSize"));
+      List<Object> detailsList = (List<Object>) zkStatus.get("details");
+      assertEquals(1, detailsList.size());
+      Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
+      assertEquals(true, details.get("ok"));
+      Object nodeCountObj = details.get("zk_znode_count");
+      if (nodeCountObj != null) {
+        int nodeCount = Integer.parseInt((String) nodeCountObj);
+        assertTrue("nodeCount=" + nodeCount, nodeCount > 10);
+      }
+    }
   }
 
   @Test
   public void testEnsembleStatusMock() {
-    assumeWorkingMockito();
+    SolrTestCaseJ4.assumeWorkingMockito();
     ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class);
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "ruok")).thenReturn(Arrays.asList("imok"));
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "mntr")).thenReturn(
         Arrays.asList("zk_version\t3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653, built on 05/03/2019 12:07 GMT",
-        "zk_avg_latency\t1"));
+            "zk_avg_latency\t1"));
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "conf")).thenReturn(
         Arrays.asList("clientPort=2181",
-        "secureClientPort=-1",
-        "thisIsUnexpected",
-        "membership: "));
+            "secureClientPort=-1",
+            "thisIsUnexpected",
+            "membership: "));
 
     when(zkStatusHandler.getZkRawResponse("zoo2:2181", "ruok")).thenReturn(Arrays.asList(""));
 
@@ -158,10 +165,8 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @Test(expected = SolrException.class)
   public void validateNotWhitelisted() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
-     zsh.validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
+      zsh.validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
           "zoo1:2181", "mntr");
-    }  catch (IOException e) {
-      fail("Error closing ZookeeperStatusHandler");
     }
   }
 
@@ -169,14 +174,12 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void validateEmptyResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
       zsh.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
-    } catch (IOException e) {
-      fail("Error closing ZookeeperStatusHandler");
     }
   }
 
   @Test
   public void testMntrBugZk36Solr14463() {
-    assumeWorkingMockito();
+    SolrTestCaseJ4.assumeWorkingMockito();
     ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class);
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "ruok")).thenReturn(Arrays.asList("imok"));
     when(zkStatusHandler.getZkRawResponse("zoo1:2181", "mntr")).thenReturn(

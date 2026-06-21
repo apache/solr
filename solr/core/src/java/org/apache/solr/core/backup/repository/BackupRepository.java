@@ -48,7 +48,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    *         Otherwise return the default configuration value for the {@linkplain CoreAdminParams#BACKUP_LOCATION} parameter.
    */
   default String getBackupLocation(String override) {
-    return Optional.ofNullable(override).orElse(getConfigProperty(CoreAdminParams.BACKUP_LOCATION));
+    return Optional.ofNullable(override).orElseGet(() -> getConfigProperty(CoreAdminParams.BACKUP_LOCATION));
   }
 
   /**

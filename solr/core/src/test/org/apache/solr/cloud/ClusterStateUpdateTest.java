@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -42,20 +43,19 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
+    configureCluster(3).formatZk(true)
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClusterStateUpdateTest() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException, IOException {
-    System.clearProperty("solrcloud.skip.autorecovery");
-    System.clearProperty("genericCoreNodeNames");
+  public static void afterClusterStateUpdateTest() throws InterruptedException, IOException {
+
   }
   
   @Test
@@ -79,18 +79,18 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
       DocCollection docCollection = clusterState2.getCollectionOrNull("testcore");
       slices = docCollection == null ? null : docCollection.getSlicesMap();
       
-      if (slices != null && slices.containsKey("shard1")
-          && slices.get("shard1").getReplicasMap().size() > 0) {
+      if (slices != null && slices.containsKey("s1")
+          && slices.get("s1").getReplicasMap().size() > 0) {
         break;
       }
-      Thread.sleep(500);
+      Thread.sleep(200);
     }
 
     assertNotNull(slices);
-    assertTrue(slices.containsKey("shard1"));
+    assertTrue(slices.containsKey("s1"));
 
-    Slice slice = slices.get("shard1");
-    assertEquals("shard1", slice.getName());
+    Slice slice = slices.get("s1");
+    assertEquals("s1", slice.getName());
 
     Map<String,Replica> shards = slice.getReplicasMap();
 
@@ -103,11 +103,11 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
 
     assertEquals(host + ":" +cluster.getJettySolrRunner(0).getLocalPort()+"_solr", zkProps.getStr(ZkStateReader.NODE_NAME_PROP));
 
-    assertTrue(zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("http://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr")
-      || zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("https://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr") );
+    assertTrue(zkProps.getCoreUrl().contains("http://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr")
+      || zkProps.getBaseUrl().contains("https://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr") );
 
     // assert there are 3 live nodes
-    Set<String> liveNodes = clusterState2.getLiveNodes();
+    Set<String> liveNodes = zkController2.getZkStateReader().getLiveNodes();
     assertNotNull(liveNodes);
     assertEquals(3, liveNodes.size());
 
@@ -116,7 +116,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
 
     // slight pause (15s timeout) for watch to trigger
     for(int i = 0; i < (5 * 15); i++) {
-      if(zkController2.getClusterState().getLiveNodes().size() == 2) {
+      if(zkController2.getZkStateReader().getLiveNodes().size() == 2) {
         break;
       }
       Thread.sleep(200);
@@ -124,21 +124,21 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
     
     cluster.waitForJettyToStop(j);
 
-    assertEquals(2, zkController2.getClusterState().getLiveNodes().size());
+    assertEquals(2, zkController2.getZkStateReader().getLiveNodes().size());
 
     cluster.getJettySolrRunner(1).stop();
     cluster.getJettySolrRunner(1).start();
     
     // pause for watch to trigger
     for(int i = 0; i < 200; i++) {
-      if (cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getClusterState().liveNodesContain(
+      if (cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getZkStateReader().isNodeLive(
           cluster.getJettySolrRunner(1).getCoreContainer().getZkController().getNodeName())) {
         break;
       }
       Thread.sleep(100);
     }
 
-    assertTrue(cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getClusterState().liveNodesContain(
+    assertTrue(cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getZkStateReader().isNodeLive(
         cluster.getJettySolrRunner(1).getCoreContainer().getZkController().getNodeName()));
 
     // core.close();  // don't close - this core is managed by container1 now

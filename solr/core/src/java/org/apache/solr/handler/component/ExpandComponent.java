@@ -129,7 +129,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void process(ResponseBuilder rb) throws IOException {
 
@@ -219,7 +218,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        @SuppressWarnings("resource")
         LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -265,7 +263,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       globalDocs[++docsIndex] = idit.nextDoc();
     }
 
-    Arrays.sort(globalDocs);
+    Arrays.parallelSort(globalDocs);
     Query groupQuery = null;
 
     /*
@@ -385,12 +383,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       sort = sort.rewrite(searcher);
 
 
-    Collector groupExpandCollector = null;
+    GroupCollector groupExpandCollector = null;
 
     if(values != null) {
       //Get The Top Level SortedDocValues again so we can re-iterate:
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        @SuppressWarnings("resource")
         LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -418,7 +415,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
 
     ReturnFields returnFields = rb.rsp.getReturnFields();
-    LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();
+    LongObjectMap<Collector> groups = groupExpandCollector.getGroups();
 
     @SuppressWarnings({"rawtypes"})
     NamedList outMap = new SimpleOrderedMap();
@@ -426,7 +423,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     for (LongObjectCursor<Collector> cursor : groups) {
       long groupValue = cursor.key;
       if (cursor.value instanceof TopDocsCollector) {
-        TopDocsCollector<?> topDocsCollector = TopDocsCollector.class.cast(cursor.value);
+        TopDocsCollector<?> topDocsCollector = (TopDocsCollector) cursor.value;
         TopDocs topDocs = topDocsCollector.topDocs();
         ScoreDoc[] scoreDocs = topDocs.scoreDocs;
         if (scoreDocs.length > 0) {
@@ -458,8 +455,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
 
   @SuppressWarnings({"unchecked"})
-  private void addGroupSliceToOutputMap(FieldType fieldType, IntObjectHashMap<BytesRef> ordBytes,
-                                        @SuppressWarnings({"rawtypes"})NamedList outMap, CharsRefBuilder charsRef, long groupValue, DocSlice slice) {
+  private static void addGroupSliceToOutputMap(FieldType fieldType, IntObjectHashMap<BytesRef> ordBytes, @SuppressWarnings({"rawtypes"}) NamedList outMap,
+      CharsRefBuilder charsRef, long groupValue, DocSlice slice) {
     if(fieldType instanceof StrField) {
       final BytesRef bytesRef = ordBytes.get((int)groupValue);
       fieldType.indexedToReadable(bytesRef, charsRef);
@@ -578,46 +575,56 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       for (LongObjectCursor<Collector> entry : groups) {
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
-      return new LeafCollector() {
-
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
-            c.value.setScorer(scorer);
-          }
-        }
-
-        @Override
-        public void collect(int docId) throws IOException {
-          int globalDoc = docId + docBase;
-          int ord = -1;
-          if(ordinalMap != null) {
-            if (docId > segmentValues.docID()) {
-              segmentValues.advance(docId);
-            }
-            if (docId == segmentValues.docID()) {
-              ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
-            } else {
-              ord = -1;
-            }
-          } else {
-            if (docValues.advanceExact(globalDoc)) {
-              ord = docValues.ordValue();
-            } else {
-              ord = -1;
-            }
-          }
-
-          if (ord > -1 && groupBits.get(ord) && !collapsedSet.contains(globalDoc)) {
-            LeafCollector c = leafCollectors.get(ord);
-            c.collect(docId);
-          }
-        }
-      };
+      return new MyLeafCollector(leafCollectors, docBase);
     }
 
     public LongObjectMap<Collector> getGroups() {
       return groups;
+    }
+
+    private class MyLeafCollector implements LeafCollector {
+
+      private final LongObjectMap<LeafCollector> leafCollectors;
+      private final int docBase;
+
+      public MyLeafCollector(LongObjectMap<LeafCollector> leafCollectors, int docBase) {
+        this.leafCollectors = leafCollectors;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public void setScorer(Scorable scorer) throws IOException {
+        for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
+          c.value.setScorer(scorer);
+        }
+      }
+
+      @Override
+      public void collect(int docId) throws IOException {
+        int globalDoc = docId + docBase;
+        int ord = -1;
+        if(ordinalMap != null) {
+          if (docId > segmentValues.docID()) {
+            segmentValues.advance(docId);
+          }
+          if (docId == segmentValues.docID()) {
+            ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
+          } else {
+            ord = -1;
+          }
+        } else {
+          if (docValues.advanceExact(globalDoc)) {
+            ord = docValues.ordValue();
+          } else {
+            ord = -1;
+          }
+        }
+
+        if (ord > -1 && groupBits.get(ord) && !collapsedSet.contains(globalDoc)) {
+          LeafCollector c = leafCollectors.get(ord);
+          c.collect(docId);
+        }
+      }
     }
   }
 
@@ -652,37 +659,46 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
 
-      return new LeafCollector() {
-
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
-            c.value.setScorer(scorer);
-          }
-        }
-
-        @Override
-        public void collect(int docId) throws IOException {
-          long value;
-          if (docValues.advanceExact(docId)) {
-            value = docValues.longValue();
-          } else {
-            value = 0;
-          }
-          final int index;
-          if (value != nullValue && 
-              (index = leafCollectors.indexOf(value)) >= 0 && 
-              !collapsedSet.contains(docId + docBase)) {
-            leafCollectors.indexGet(index).collect(docId);
-          }
-        }
-      };
+      return new MyLeafCollector2(leafCollectors, docBase);
     }
 
     public LongObjectHashMap<Collector> getGroups() {
       return groups;
     }
 
+    private class MyLeafCollector2 implements LeafCollector {
+
+      private final LongObjectHashMap<LeafCollector> leafCollectors;
+      private final int docBase;
+
+      public MyLeafCollector2(LongObjectHashMap<LeafCollector> leafCollectors, int docBase) {
+        this.leafCollectors = leafCollectors;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public void setScorer(Scorable scorer) throws IOException {
+        for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
+          c.value.setScorer(scorer);
+        }
+      }
+
+      @Override
+      public void collect(int docId) throws IOException {
+        long value;
+        if (docValues.advanceExact(docId)) {
+          value = docValues.longValue();
+        } else {
+          value = 0;
+        }
+        final int index;
+        if (value != nullValue &&
+            (index = leafCollectors.indexOf(value)) >= 0 &&
+            !collapsedSet.contains(docId + docBase)) {
+          leafCollectors.indexGet(index).collect(docId);
+        }
+      }
+    }
   }
 
   //TODO lets just do simple abstract base class -- a fine use of inheritance
@@ -712,10 +728,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
-  private Query getGroupQuery(String fname,
-                           FieldType ft,
-                           int size,
-                           LongHashSet groupSet) {
+  private static Query getGroupQuery(String fname, FieldType ft, int size, LongHashSet groupSet) {
 
     BytesRef[] bytesRefs = new BytesRef[size];
     int index = -1;
@@ -732,9 +745,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     return new TermInSetQuery(fname, bytesRefs);
   }
 
-  private Query getPointGroupQuery(SchemaField sf,
-                                   int size,
-                                   LongHashSet groupSet) {
+  private static Query getPointGroupQuery(SchemaField sf, int size, LongHashSet groupSet) {
 
     Iterator<LongCursor> it = groupSet.iterator();
     List<String> values = new ArrayList<>(size);
@@ -747,7 +758,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     return sf.getType().getSetQuery(null, sf, values);
   }
 
-  private String numericToString(FieldType fieldType, long val) {
+  private static String numericToString(FieldType fieldType, long val) {
     if (fieldType.getNumberType() != null) {
       switch (fieldType.getNumberType()) {
         case INTEGER:
@@ -764,9 +775,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     throw new IllegalArgumentException("FieldType must be INT,LONG,FLOAT,DOUBLE found " + fieldType);
   }
 
-  private Query getGroupQuery(String fname,
-                              int size,
-                              IntObjectHashMap<BytesRef> ordBytes) {
+  private static Query getGroupQuery(String fname, int size, IntObjectHashMap<BytesRef> ordBytes) {
     BytesRef[] bytesRefs = new BytesRef[size];
     int index = -1;
     Iterator<IntObjectCursor<BytesRef>>it = ordBytes.iterator();

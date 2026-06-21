@@ -20,17 +20,20 @@ package org.apache.solr.client.solrj.request.json;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 import org.apache.solr.common.util.Utils;
+import org.jctools.maps.NonBlockingHashMap;
 
 /**
  * Represents a query using the <a href="https://lucene.apache.org/solr/guide/json-request-api.html">JSON Query DSL</a>
@@ -53,7 +56,7 @@ public class JsonQueryRequest extends QueryRequest {
    */
   public JsonQueryRequest(SolrParams params) {
     super(params, METHOD.POST);
-    this.jsonRequestMap = new HashMap<>();
+    this.jsonRequestMap = new NonBlockingHashMap<>();
   }
 
   /**
@@ -162,7 +165,7 @@ public class JsonQueryRequest extends QueryRequest {
     }
 
     if (! jsonRequestMap.containsKey("facet")) {
-      jsonRequestMap.put("facet", new HashMap<String, Object>());
+      jsonRequestMap.put("facet", new Object2ObjectLinkedOpenHashMap<String, Object>());
     }
 
     final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
@@ -201,8 +204,8 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'facetWriter' parameter must be non-null");
     }
 
-    if (! jsonRequestMap.containsKey("facet")) {
-      jsonRequestMap.put("facet", new HashMap<String, Object>());
+    if (!jsonRequestMap.containsKey("facet")) {
+      jsonRequestMap.put("facet", new Object2ObjectLinkedOpenHashMap<String, Object>());
     }
 
     final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
@@ -235,8 +238,8 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'facetValue' parameter must be non-null");
     }
 
-    if (! jsonRequestMap.containsKey("facet")) {
-      jsonRequestMap.put("facet", new HashMap<String, Object>());
+    if (!jsonRequestMap.containsKey("facet")) {
+      jsonRequestMap.put("facet", new Object2ObjectLinkedOpenHashMap<String, Object>());
     }
 
     final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
@@ -342,11 +345,9 @@ public class JsonQueryRequest extends QueryRequest {
    * @param fieldNames the field names that should be returned by the request
    */
   public JsonQueryRequest returnFields(String... fieldNames) {
-    jsonRequestMap.putIfAbsent("fields", new ArrayList<String>());
+    jsonRequestMap.computeIfAbsent("fields", k -> new ArrayList<String>());
     final List<String> fields = (List<String>) jsonRequestMap.get("fields");
-    for (String fieldName : fieldNames) {
-      fields.add(fieldName);
-    }
+    Collections.addAll(fields, fieldNames);
     return this;
   }
 
@@ -363,7 +364,7 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'fieldNames' parameter must be non-null");
     }
 
-    jsonRequestMap.putIfAbsent("fields", new ArrayList<String>());
+    jsonRequestMap.computeIfAbsent("fields", k -> new ArrayList<String>());
     final List<String> fields = (List<String>) jsonRequestMap.get("fields");
     for (String fieldName : fieldNames) {
       fields.add(fieldName);
@@ -395,7 +396,7 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'value' parameter must be non-null");
     }
 
-    ((Map<String, Object>)jsonRequestMap.computeIfAbsent("params", s -> new HashMap<String, Object>())).put(name, value);
+    ((Map<String, Object>)jsonRequestMap.computeIfAbsent("params", s -> new Object2ObjectLinkedOpenHashMap<String, Object>())).put(name, value);
     return this;
   }
 

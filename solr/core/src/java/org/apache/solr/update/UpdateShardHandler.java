@@ -16,26 +16,21 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -43,9 +38,6 @@ import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
-import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
-import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,56 +48,34 @@ public class UpdateShardHandler implements SolrInfoBean {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /*
-   * A downside to configuring an upper bound will be big update reorders (when that upper bound is hit)
-   * and then undetected shard inconsistency as a result.
-   * Therefore this thread pool is left unbounded. See SOLR-8205
-   */
-  private ExecutorService updateExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-      60L, TimeUnit.SECONDS,
-      new SynchronousQueue<>(),
-      new SolrNamedThreadFactory("updateExecutor"),
-      // the Runnable added to this executor handles all exceptions so we disable stack trace collection as an optimization
-      // see SOLR-11880 for more details
-      false);
-  
+  private CloseTracker closeTracker;
+
+  private final Http2SolrClient sharedHttpClient;
+
+  private final Http2SolrClient solrCmdDistributorClient;
+
+  private final Http2SolrClient searchOnlyClient;
+
+  private final Http2SolrClient recoveryOnlyClient;
+
   private ExecutorService recoveryExecutor;
-  
-  private final Http2SolrClient updateOnlyClient;
-  
-  private final CloseableHttpClient recoveryOnlyClient;
-  
-  private final CloseableHttpClient defaultClient;
 
-  private final InstrumentedPoolingHttpClientConnectionManager updateOnlyConnectionManager;
-  
-  private final InstrumentedPoolingHttpClientConnectionManager recoveryOnlyConnectionManager;
-  
-  private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
+ // private final InstrumentedHttpRequestExecutor httpRequestExecutor;
 
-  private final InstrumentedHttpRequestExecutor httpRequestExecutor;
-
-  private final InstrumentedHttpListenerFactory updateHttpListenerFactory;
+  //private final InstrumentedHttpListenerFactory updateHttpListenerFactory;
 
 
-  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  //private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private SolrMetricsContext solrMetricsContext;
 
   private int socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    updateOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
-    recoveryOnlyConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
-    defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
+    assert ObjectReleaseTracker.getInstance().track(this);
+    assert (closeTracker = new CloseTracker()) != null;
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null ) {
-      updateOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      updateOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
-      recoveryOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      recoveryOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
-      defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
       // following is done only for logging complete configuration.
@@ -115,40 +85,75 @@ public class UpdateShardHandler implements SolrInfoBean {
       socketTimeout = cfg.getDistributedSocketTimeout();
       connectionTimeout = cfg.getDistributedConnectionTimeout();
     }
-    log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
-
-    httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
-    updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-    recoveryOnlyClient = HttpClientUtil.createClient(clientParams, recoveryOnlyConnectionManager, false, httpRequestExecutor);
-    defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
-
-    Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
-    if (cfg != null) {
-      updateOnlyClientBuilder
-          .connectionTimeout(cfg.getDistributedConnectionTimeout())
-          .idleTimeout(cfg.getDistributedSocketTimeout())
-          .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
+    if (log.isDebugEnabled()) {
+      log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
     }
-    updateOnlyClient = updateOnlyClientBuilder.build();
-    updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
+
+   // httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
+
+    Http2SolrClient.Builder sharedClientBuilder = new Http2SolrClient.Builder();
+    if (cfg != null) {
+      sharedClientBuilder
+          .connectionTimeout(cfg.getDistributedConnectionTimeout())
+          .idleTimeout(cfg.getDistributedSocketTimeout());
+    }
+    sharedHttpClient = sharedClientBuilder.name("Update").markInternalRequest().strictEventOrdering(false).maxOutstandingAsyncRequests(-1).build();
+    sharedHttpClient.enableCloseLock();
+   // updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
     Set<String> queryParams = new HashSet<>(2);
     queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
     queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
-    updateOnlyClient.setQueryParams(queryParams);
+    sharedHttpClient.setQueryParams(queryParams);
 
-    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
-    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
-      if (log.isDebugEnabled()) {
-        log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
-      }
-      recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
-    } else {
-      log.debug("Creating recoveryExecutor with unbounded pool");
-      recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(recoveryThreadFactory);
-    }
+    solrCmdDistributorClient = sharedClientBuilder.name("SolrCmdDistributor").markInternalRequest().strictEventOrdering(false).maxOutstandingAsyncRequests(500).build();
+    solrCmdDistributorClient.enableCloseLock();
+    // updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
+    queryParams = new HashSet<>(2);
+    queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
+    queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
+    solrCmdDistributorClient.setQueryParams(queryParams);
+
+
+    Http2SolrClient.Builder recoveryOnlyClientBuilder = new Http2SolrClient.Builder();
+    // recoveryOnlyClient is used ONLY for recovery CONTROL requests (commit-on-leader, fetch
+    // versions, leader lookup) -- the bulk index transfer goes through ReplicationHandler/IndexFetcher.
+    // The idle timeout therefore bounds how long such a control request may block with no response.
+    // It was 30s, which means a recovery whose leader DIES mid-request (crash / partition / a node
+    // that stops behind a still-open proxy, leaving a half-open connection) hangs ~30s before the
+    // recovery retry loop can re-resolve the new leader. There is no leader-change-driven
+    // cancelRecovery on followers in this fork, so this timeout is the ONLY thing that unblocks such
+    // a stuck recovery -- 30s is far too slow for failover and outlives test waits
+    // (TestCloudConsistency: leader returns within ~1s but waitForActiveCollection only allows 10s,
+    // so the stale 30s commit never got a chance to retry against the restarted leader). Bound it to
+    // 10s (configurable); the retry loop then re-resolves the live leader and converges quickly.
+    int recoveryIdleTimeout = Integer.getInteger("solr.recovery.idleTimeout", 10000);
+    recoveryOnlyClientBuilder = recoveryOnlyClientBuilder.connectionTimeout(5000).idleTimeout(recoveryIdleTimeout);
+
+
+    recoveryOnlyClient = recoveryOnlyClientBuilder.name("Recover").markInternalRequest().maxOutstandingAsyncRequests(Integer.getInteger("solr.maxRecoveryHttpRequestsOut", 30)).build();
+    recoveryOnlyClient.enableCloseLock();
+
+    Http2SolrClient.Builder searchOnlyClientBuilder = new Http2SolrClient.Builder();
+    searchOnlyClientBuilder.connectionTimeout(5000).maxOutstandingAsyncRequests(-1).idleTimeout(60000);
+
+
+    searchOnlyClient = searchOnlyClientBuilder.name("search").markInternalRequest().build();
+    searchOnlyClient.enableCloseLock();
+
+
+//    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
+//    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
+//      if (log.isDebugEnabled()) {
+//        log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
+//      }
+//      recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
+//    } else {
+
+      recoveryExecutor = ParWork.getExecutorService("recoveryExecutor", SysStats.PROC_COUNT, true);
+ //   }
   }
 
-  private HttpClientMetricNameStrategy getMetricNameStrategy(UpdateShardHandlerConfig cfg) {
+  private static HttpClientMetricNameStrategy getMetricNameStrategy(UpdateShardHandlerConfig cfg) {
     HttpClientMetricNameStrategy metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
     if (cfg != null)  {
       metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
@@ -160,19 +165,19 @@ public class UpdateShardHandler implements SolrInfoBean {
     return metricNameStrategy;
   }
 
-  private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(UpdateShardHandlerConfig cfg) {
-    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
-        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
-
-    if (cfg != null)  {
-      nameStrategy = InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
-      if (nameStrategy == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
-      }
-    }
-    return nameStrategy;
-  }
+//  private HttpListenerFactory.NameStrategy getNameStrategy(UpdateShardHandlerConfig cfg) {
+//    HttpListenerFactory.NameStrategy nameStrategy =
+//        HttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+//
+//    if (cfg != null)  {
+//      nameStrategy = HttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
+//      if (nameStrategy == null) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+//      }
+//    }
+//    return nameStrategy;
+//  }
 
   @Override
   public String getName() {
@@ -183,12 +188,9 @@ public class UpdateShardHandler implements SolrInfoBean {
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    updateHttpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
-    defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);
-    updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, solrMetricsContext.getMetricRegistry(),
-        SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
+    //.initializeMetrics(solrMetricsContext, expandedScope);
     recoveryExecutor = MetricUtils.instrumentedExecutorService(recoveryExecutor, this, solrMetricsContext.getMetricRegistry(),
-        SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
+            SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
   }
 
   @Override
@@ -206,37 +208,21 @@ public class UpdateShardHandler implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  // if you are looking for a client to use, it's probably this one.
-  public HttpClient getDefaultHttpClient() {
-    return defaultClient;
+  public Http2SolrClient getTheSharedHttpClient() {
+    return sharedHttpClient;
   }
-  
-  // don't introduce a bug, this client is for sending updates only!
-  public Http2SolrClient getUpdateOnlyHttpClient() {
-    return updateOnlyClient;
+
+  public Http2SolrClient getSolrCmdDistributorClient() {
+    return solrCmdDistributorClient;
   }
-  
-  // don't introduce a bug, this client is for recovery ops only!
-  public HttpClient getRecoveryOnlyHttpClient() {
+
+  public Http2SolrClient getRecoveryOnlyClient() {
     return recoveryOnlyClient;
   }
-  
 
-   /**
-   * This method returns an executor that is meant for non search related tasks.
-   * 
-   * @return an executor for update side related activities.
-   */
-  public ExecutorService getUpdateExecutor() {
-    return updateExecutor;
-  }
 
-  public PoolingHttpClientConnectionManager getDefaultConnectionManager() {
-    return defaultConnectionManager;
-  }
-  
-  public PoolingHttpClientConnectionManager getRecoveryOnlyConnectionManager() {
-    return recoveryOnlyConnectionManager;
+  public Http2SolrClient getSearchOnlyClient() {
+    return searchOnlyClient;
   }
 
   /**
@@ -248,24 +234,25 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void close() {
-    try {
-      // do not interrupt, do not interrupt
-      ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
-      ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    } finally {
-      try {
-        SolrInfoBean.super.close();
-      } catch (Exception e) {
-        // do nothing
-      }
-      IOUtils.closeQuietly(updateOnlyClient);
-      HttpClientUtil.close(recoveryOnlyClient);
-      HttpClientUtil.close(defaultClient);
-      defaultConnectionManager.close();
-      recoveryOnlyConnectionManager.close();
+    assert closeTracker != null ? closeTracker.close() : true;
+    if (sharedHttpClient != null) sharedHttpClient.disableCloseLock();
+    if (recoveryOnlyClient != null) recoveryOnlyClient.disableCloseLock();
+    if (solrCmdDistributorClient != null) solrCmdDistributorClient.disableCloseLock();
+    if (searchOnlyClient != null) searchOnlyClient.disableCloseLock();
+
+
+    try (ParWork closer = new ParWork(this, false)) {
+      closer.collect(recoveryOnlyClient);
+      closer.collect(searchOnlyClient);
+      closer.collect(sharedHttpClient);
+      closer.collect(solrCmdDistributorClient);
     }
+    try {
+      SolrInfoBean.super.close();
+    } catch (IOException e) {
+      log.warn("Error closing", e);
+    }
+    assert ObjectReleaseTracker.getInstance().release(this);
   }
 
   @VisibleForTesting
@@ -279,6 +266,10 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void setSecurityBuilder(HttpClientBuilderPlugin builder) {
-    builder.setup(updateOnlyClient);
+    builder.setup(sharedHttpClient);
+    builder.setup(recoveryOnlyClient);
+    builder.setup(solrCmdDistributorClient);
+    builder.setup(recoveryOnlyClient);
+    builder.setup(searchOnlyClient);
   }
 }

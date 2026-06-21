@@ -222,13 +222,13 @@ public abstract class PointField extends NumericFieldType {
 
   @Override
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    if ("".equals(termStr)) {
+    if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't run prefix queries on numeric fields");
   }
   
-  protected boolean isFieldUsed(SchemaField field) {
+  protected static boolean isFieldUsed(SchemaField field) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
     boolean docValues = field.hasDocValues();

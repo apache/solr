@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
 import org.apache.solr.common.Callable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.util.CommandOperation;
@@ -65,7 +66,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       }
     }
     //The following APIs have only V2 implementations
-    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes()));
+    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkStateReader().getLiveNodes()));
     addApi(result, Meta.SET_CLUSTER_PROPERTY_OBJ, params -> {
       List<CommandOperation> commands = params.req.getCommands(true);
       if (commands == null || commands.isEmpty()) throw new RuntimeException("Empty commands");
@@ -74,6 +75,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       try {
         clusterProperties.setClusterProperties(commands.get(0).getDataMap());
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
     });

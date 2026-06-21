@@ -18,10 +18,12 @@ package org.apache.solr.core;
 
 import java.util.Map;
 
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,9 +42,16 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   static final String sleep = "2";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeExitableDirectoryReaderTest() throws Exception {
     initCore("solrconfig-delaying-component.xml", "schema_latest.xml");
     createIndex();
+  }
+
+  @AfterClass
+  public static void afterExitableDirectoryReaderTest() throws Exception {
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    deleteCore();
+    TimeLimitingCollector.getGlobalTimerThread().join();
   }
 
   public static void createIndex() {
@@ -93,6 +102,8 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     MetricsMap filterCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache")).getGauge();
     long fqInserts = (long) filterCacheStats.getValue().get("inserts");
 
+    core.close();
+
     MetricsMap queryCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
     long qrInserts = (long) queryCacheStats.getValue().get("inserts");
 
@@ -133,6 +144,8 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     String q = "name:e*";
     SolrCore core = h.getCore();
     MetricsMap queryCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
+
+    core.close();
     Map<String,Object> nl = queryCacheStats.getValue();
     long inserts = (long) nl.get("inserts");
 

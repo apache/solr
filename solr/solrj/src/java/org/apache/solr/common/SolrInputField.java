@@ -18,6 +18,7 @@ package org.apache.solr.common;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -47,9 +48,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
     if( v instanceof Object[] ) {
       Object[] arr = (Object[])v;
       Collection<Object> c = new ArrayList<>( arr.length );
-      for( Object o : arr ) {
-        c.add( o );
-      }
+      c.addAll(Arrays.asList(arr));
       value = c;
     }
     else {
@@ -66,9 +65,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
     if( value == null ) {
       if ( v instanceof Collection ) {
         Collection<Object> c = new ArrayList<>( 3 );
-        for ( Object o : (Collection<Object>)v ) {
-          c.add( o );
-        }
+        c.addAll((Collection<Object>) v);
         setValue(c);
       } else {
         setValue(v);
@@ -94,9 +91,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
       }
     }
     else if( v instanceof Object[] ) {
-      for( Object o : (Object[])v ) {
-        vals.add( o );
-      }
+      vals.addAll(Arrays.asList((Object[]) v));
     }
     else {
       vals.add( v );

@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.cloud.ZkController;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -42,6 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.locks.ReentrantLock;
+
 /** Factory for ManagedIndexSchema */
 public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,20 +53,25 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   public static final String DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME = "managed-schema";
   public static final String MANAGED_SCHEMA_RESOURCE_NAME = "managedSchemaResourceName";
 
-  private boolean isMutable = true;
-  private String managedSchemaResourceName = DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
+  private volatile boolean isMutable = true;
+  private volatile String managedSchemaResourceName = DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
+
+  private volatile String collection;
+  private volatile CoreContainer cc;
+
+  private volatile SolrCore core;
+
+  private final ReentrantLock schemaUpdateLock = new ReentrantLock();
+
   public String getManagedSchemaResourceName() { return managedSchemaResourceName; }
-  private SolrConfig config;
-  private SolrResourceLoader loader;
-  public SolrResourceLoader getResourceLoader() { return loader; }
-  private String resourceName;
-  private ManagedIndexSchema schema;
-  private SolrCore core;
-  private ZkIndexSchemaReader zkIndexSchemaReader;
+  private volatile SolrConfig config;
+  private volatile ResourceLoader loader;
+  public ResourceLoader getResourceLoader() { return loader; }
+  private volatile String resourceName;
+  private volatile ManagedIndexSchema schema;
 
-
-  private String loadedResource;
-  private boolean shouldUpgrade = false;
+  private volatile String loadedResource;
+  private volatile boolean shouldUpgrade = false;
 
   @Override
   public void init(NamedList args) {
@@ -114,73 +121,75 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     this.config = config;
     this.loader = config.getResourceLoader();
     InputStream schemaInputStream = null;
-
-    if (null == resourceName) {
-      resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
-    }
-
-    int schemaZkVersion = -1;
-    if ( ! (loader instanceof ZkSolrResourceLoader)) {
-      schemaInputStream = readSchemaLocally();
-    } else { // ZooKeeper
-      final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
-      final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
-      final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
-      Stat stat = new Stat();
-      try {
-        // Attempt to load the managed schema
-        byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
-        schemaZkVersion = stat.getVersion();
-        schemaInputStream = new ByteArrayInputStream(data);
-        loadedResource = managedSchemaResourceName;
-        warnIfNonManagedSchemaExists();
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("", e);
-      } catch (KeeperException.NoNodeException e) {
-        log.info("The schema is configured as managed, but managed schema resource {} not found - loading non-managed schema {} instead"
-            , managedSchemaResourceName, resourceName);
-      } catch (KeeperException e) {
-        String msg = "Error attempting to access " + managedSchemaPath;
-        log.error(msg, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+    try {
+      if (null == resourceName) {
+        resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
       }
-      if (null == schemaInputStream) {
-        // The managed schema file could not be found - load the non-managed schema
+
+      int schemaZkVersion = 0;
+      if (!(loader instanceof ZkSolrResourceLoader)) {
+        schemaInputStream = readSchemaLocally();
+      } else { // ZooKeeper
+        final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+        final SolrZkClient zkClient = zkLoader.getZkClient();
+        final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+        Stat stat = new Stat();
         try {
-          schemaInputStream = loader.openResource(resourceName);
-          loadedResource = resourceName;
-          shouldUpgrade = true;
-        } catch (Exception e) {
+          // Attempt to load the managed schema
+          byte[] data = zkClient.getData(managedSchemaPath, null, stat);
+          schemaZkVersion = stat.getVersion();
+          if (log.isDebugEnabled()) {
+            log.debug("Found schema version on load {}", schemaZkVersion);
+          }
+          schemaInputStream = new ByteArrayInputStream(data);
+          loadedResource = managedSchemaResourceName;
+          warnIfNonManagedSchemaExists();
+        } catch (InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } catch (KeeperException.NoNodeException e) {
+          log.info("The schema is configured as managed, but managed schema resource {} not found - loading non-managed schema {} instead", managedSchemaResourceName, resourceName);
+        } catch (KeeperException e) {
+          String msg = "Error attempting to access " + managedSchemaPath;
+          log.error(msg, e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+        }
+        if (null == schemaInputStream) {
+          // The managed schema file could not be found - load the non-managed schema
           try {
-            // Retry to load the managed schema, in case it was created since the first attempt
-            byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
-            schemaZkVersion = stat.getVersion();
-            schemaInputStream = new ByteArrayInputStream(data);
-            loadedResource = managedSchemaPath;
-            warnIfNonManagedSchemaExists();
-          } catch (Exception e1) {
-            if (e1 instanceof InterruptedException) {
-              Thread.currentThread().interrupt(); // Restore the interrupted status
+            schemaInputStream = loader.openResource(resourceName);
+            loadedResource = resourceName;
+            shouldUpgrade = true;
+          } catch (IOException e) {
+            try {
+              // Retry to load the managed schema, in case it was created since the first attempt
+              byte[] data = zkClient.getData(managedSchemaPath, null, stat);
+              schemaZkVersion = stat.getVersion();
+              log.info("Found schema version on load after exception {}", schemaZkVersion, e);
+              schemaInputStream = new ByteArrayInputStream(data);
+              loadedResource = managedSchemaPath;
+              warnIfNonManagedSchemaExists();
+            } catch (Exception e1) {
+              if (e1 instanceof InterruptedException) {
+                Thread.currentThread().interrupt(); // Restore the interrupted status
+                throw new SolrException(ErrorCode.SERVER_ERROR, e);
+              }
+              final String msg = "Error loading both non-managed schema '" + resourceName + "' and managed schema '" + managedSchemaResourceName + "'";
+              log.error(msg, e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
             }
-            final String msg = "Error loading both non-managed schema '" + resourceName + "' and managed schema '"
-                             + managedSchemaResourceName + "'";
-            log.error(msg, e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
           }
         }
       }
-    }
-    InputSource inputSource = new InputSource(schemaInputStream);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
-    schema = new ManagedIndexSchema(config, loadedResource, inputSource, isMutable,
-                                    managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
-    if (shouldUpgrade) {
-      // Persist the managed schema if it doesn't already exist
-      synchronized (schema.getSchemaUpdateLock()) {
+      InputSource inputSource = new InputSource(schemaInputStream);
+      inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
+      schema = new ManagedIndexSchema(this, collection, config, loadedResource, inputSource, isMutable, managedSchemaResourceName, schemaZkVersion, schemaUpdateLock);
+
+      if (shouldUpgrade) {
+        // Persist the managed schema if it doesn't already exist
         upgradeToManagedSchema();
       }
+    } finally {
+      org.apache.solr.common.util.IOUtils.closeQuietly(schemaInputStream);
     }
 
     return schema;
@@ -219,35 +228,68 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private void warnIfNonManagedSchemaExists() {
     if ( ! resourceName.equals(managedSchemaResourceName)) {
       boolean exists = false;
-      SolrResourceLoader loader = config.getResourceLoader();
+      ResourceLoader loader = config.getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
         ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
         String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
         try {
-          exists = zkLoader.getZkController().pathExists(nonManagedSchemaPath);
+          exists = zkLoader.getZkClient().exists(nonManagedSchemaPath);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt(); // Restore the interrupted status
-          log.warn("", e); // Log as warning and suppress the exception 
+          ParWork.propagateInterrupt(e);
         } catch (KeeperException e) {
           // log as warning and suppress the exception
           log.warn("Error checking for the existence of the non-managed schema {}", resourceName, e);
         }
       } else { // Config is not in ZooKeeper
-        InputStream nonManagedSchemaInputStream = null;
-        try {
-          nonManagedSchemaInputStream = loader.openResource(resourceName);
+
+        try (InputStream nonManagedSchemaInputStream = loader.openResource(resourceName)) {
           if (null != nonManagedSchemaInputStream) {
             exists = true;
           }
         } catch (IOException e) {
           // This is expected when the non-managed schema does not exist
-        } finally {
-          IOUtils.closeQuietly(nonManagedSchemaInputStream);
         }
       }
       if (exists) {
-        log.warn("The schema has been upgraded to managed, but the non-managed schema {} is still loadable.  PLEASE REMOVE THIS FILE."
-            , resourceName);
+        if (loader instanceof ZkSolrResourceLoader) {
+
+          final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+
+          log.warn("The schema has been upgraded to managed, but the non-managed schema {} is still loadable.  RENAMING IT TO {}",
+              zkLoader.getConfigSetZkPath() + "/" + resourceName, zkLoader.getConfigSetZkPath() + "/" + resourceName + UPGRADED_SCHEMA_EXTENSION);
+
+          final SolrZkClient zkClient = zkLoader.getZkClient();
+          try {
+            byte[] bytes = zkClient.getData(zkLoader.getConfigSetZkPath() + "/" + resourceName, null, null);
+            zkClient.makePath(zkLoader.getConfigSetZkPath() + "/" + resourceName + UPGRADED_SCHEMA_EXTENSION, bytes, true);
+            // Then delete the non-managed schema znode
+
+            try {
+              zkClient.delete(zkLoader.getConfigSetZkPath() + "/" + resourceName, -1, true, true);
+
+            } catch (KeeperException.NoNodeException ex) {
+              // ignore - someone beat us to it
+            }
+          } catch (Exception e) {
+            // Don't throw an exception for failure to rename the non-managed schema
+            log.warn("Can't rename {} to {} - PLEASE REMOVE THIS FILE.", resourceName, zkLoader.getConfigSetZkPath() + "/" + resourceName);
+          }
+
+        } else {
+          if (!new File(managedSchemaResourceName).getName().equals(new File(resourceName).getName())) {
+            File upgradedSchemaFile = new File(resourceName + UPGRADED_SCHEMA_EXTENSION);
+
+            log.warn("The schema has been upgraded to managed, but the non-managed schema {} is still loadable.  RENAMING IT TO {}", resourceName, upgradedSchemaFile);
+
+            if (new File(resourceName).renameTo(upgradedSchemaFile)) {
+              // Set the resource name to the managed schema so that the CoreAdminHandler returns a findable filename
+              if (schema != null) schema.setResourceName(managedSchemaResourceName);
+            } else {
+              // Don't throw an exception for failure to rename the non-managed schema
+              log.warn("Can't rename {} to {} - PLEASE REMOVE THIS FILE.", resourceName, upgradedSchemaFile);
+            }
+          }
+        }
       }
     }
   }
@@ -260,43 +302,43 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    * and no exception will be thrown.
    */
   private void upgradeToManagedSchema() {
-    SolrResourceLoader loader = config.getResourceLoader();
-    if (loader instanceof ZkSolrResourceLoader) {
-      zkUgradeToManagedSchema();
-    } else {
-      // Configs are not on ZooKeeper
-      schema.persistManagedSchema(true);  // Only create it - don't update it if it already exists
-
-      // After successfully persisting the managed schema, rename the non-managed
-      // schema file by appending UPGRADED_SCHEMA_EXTENSION to its name.
-
-      if (resourceName.equals(managedSchemaResourceName)) {
-        log.info("On upgrading to managed schema, did not rename non-managed schema '{}' because it's the same as the managed schema's name."
-            , resourceName);
+    ReentrantLock lock = schema.getSchemaUpdateLock();
+    lock.lock();
+    try {
+      SolrResourceLoader loader = config.getResourceLoader();
+      if (loader instanceof ZkSolrResourceLoader) {
+        zkUgradeToManagedSchema();
       } else {
-        final File nonManagedSchemaFile = locateConfigFile(resourceName);
-        if (null == nonManagedSchemaFile) {
-          // Don't throw an exception for failure to rename the non-managed schema
-          log.warn("On upgrading to managed schema, did not rename non-managed schema {} {}{}{}"
-              , resourceName
-              , "because it's neither an absolute file "
-              , "nor under SolrConfig.getConfigDir() or the current directory. "
-              , "PLEASE REMOVE THIS FILE.");
-        } else {
-          File upgradedSchemaFile = new File(nonManagedSchemaFile + UPGRADED_SCHEMA_EXTENSION);
-          if (nonManagedSchemaFile.renameTo(upgradedSchemaFile)) {
-            // Set the resource name to the managed schema so that the CoreAdminHandler returns a findable filename 
-            schema.setResourceName(managedSchemaResourceName);
+        // Configs are not on ZooKeeper
+        schema.persistManagedSchema(true);  // Only create it - don't update it if it already exists
 
-            log.info("After upgrading to managed schema, renamed the non-managed schema {} to {}"
-                , nonManagedSchemaFile, upgradedSchemaFile);
-          } else {
+        // After successfully persisting the managed schema, rename the non-managed
+        // schema file by appending UPGRADED_SCHEMA_EXTENSION to its name.
+
+        if (resourceName.equals(managedSchemaResourceName)) {
+          log.info("On upgrading to managed schema, did not rename non-managed schema '{}' because it's the same as the managed schema's name.", resourceName);
+        } else {
+          final File nonManagedSchemaFile = locateConfigFile(resourceName);
+          if (null == nonManagedSchemaFile) {
             // Don't throw an exception for failure to rename the non-managed schema
-            log.warn("Can't rename {} to {} - PLEASE REMOVE THIS FILE."
-                , nonManagedSchemaFile, upgradedSchemaFile);
+            log.warn("On upgrading to managed schema, did not rename non-managed schema {} {}{}{}", resourceName, "because it's neither an absolute file ",
+                "nor under SolrConfig.getConfigDir() or the current directory. ", "PLEASE REMOVE THIS FILE.");
+          } else {
+            File upgradedSchemaFile = new File(nonManagedSchemaFile + UPGRADED_SCHEMA_EXTENSION);
+            if (nonManagedSchemaFile.renameTo(upgradedSchemaFile)) {
+              // Set the resource name to the managed schema so that the CoreAdminHandler returns a findable filename
+              log.info("After upgrading to managed schema, renamed the non-managed schema {} to {}", nonManagedSchemaFile, upgradedSchemaFile);
+              schema.setResourceName(managedSchemaResourceName);
+            } else {
+              // Don't throw an exception for failure to rename the non-managed schema
+              log.warn("Can't rename {} to {} - PLEASE REMOVE THIS FILE.", nonManagedSchemaFile, upgradedSchemaFile);
+            }
           }
         }
+
       }
+    } finally {
+      lock.unlock();
     }
   }
 
@@ -328,10 +370,27 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       return;
     }
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
-    final ZkController zkController = zkLoader.getZkController();
-    final SolrZkClient zkClient = zkController.getZkClient();
+    final SolrZkClient zkClient = zkLoader.getZkClient();
+
+
+    final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
+    final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
+    String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+
+//    try {
+//      if (zkClient.exists(managedSchemaPath)) {
+//        return;
+//      }
+//    } catch (KeeperException e) {
+//      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//    } catch (InterruptedException e) {
+//      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//    }
+
     final String lockPath = zkLoader.getConfigSetZkPath() + "/schemaUpgrade.lock";
     boolean locked = false;
+    ReentrantLock lock = schemaUpdateLock;
+    lock.lock();
     try {
       try {
         zkClient.makePath(lockPath, null, CreateMode.EPHEMERAL, null, true, true);
@@ -340,38 +399,29 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         // some other node already started the upgrade, or an error occurred - bail out
         return;
       }
-      schema.persistManagedSchemaToZooKeeper(true); // Only create, don't update it if it already exists
 
+      schema.persistManagedSchemaToZooKeeper(true); // Only create, don't update it if it already exists
       // After successfully persisting the managed schema, rename the non-managed
       // schema znode by appending UPGRADED_SCHEMA_EXTENSION to its name.
 
-      // Rename the non-managed schema znode in ZooKeeper
-      final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
       try {
-        ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkController.getClientTimeout());
-        if (zkController.pathExists(nonManagedSchemaPath)) {
+        if (zkClient.exists(nonManagedSchemaPath)) {
           // First, copy the non-managed schema znode content to the upgraded schema znode
-          byte[] bytes = zkController.getZkClient().getData(nonManagedSchemaPath, null, null, true);
-          final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
-          zkCmdExecutor.ensureExists(upgradedSchemaPath, zkController.getZkClient());
-          zkController.getZkClient().setData(upgradedSchemaPath, bytes, true);
+          byte[] bytes = zkClient.getData(nonManagedSchemaPath, null, null);
+          zkClient.makePath(upgradedSchemaPath, bytes, true);
           // Then delete the non-managed schema znode
-          if (zkController.getZkClient().exists(nonManagedSchemaPath, true)) {
-            try {
-              zkController.getZkClient().delete(nonManagedSchemaPath, -1, true);
-            } catch (KeeperException.NoNodeException ex) {
-              // ignore - someone beat us to it
-            }
+          try {
+            zkClient.delete(nonManagedSchemaPath, -1, true, true);
+          } catch (KeeperException.NoNodeException ex) {
+            // ignore - someone beat us to it
           }
 
           // Set the resource name to the managed schema so that the CoreAdminHandler returns a findable filename
           schema.setResourceName(managedSchemaResourceName);
 
-          log.info("After upgrading to managed schema in ZooKeeper, renamed the non-managed schema {} to {}"
-              , nonManagedSchemaPath, upgradedSchemaPath);
+          log.info("After upgrading to managed schema in ZooKeeper, renamed the non-managed schema {} to {}", nonManagedSchemaPath, upgradedSchemaPath);
         } else {
-          log.info("After upgrading to managed schema in ZooKeeper, the non-managed schema {} no longer exists."
-              , nonManagedSchemaPath);
+          log.info("After upgrading to managed schema in ZooKeeper, the non-managed schema {} no longer exists.", nonManagedSchemaPath);
         }
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
@@ -381,34 +431,37 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         log.warn(msg, e); // Log as warning and suppress the exception
       }
     } finally {
-      if (locked) {
-        // unlock
-        try {
-          zkClient.delete(lockPath, -1, true);
-        } catch (KeeperException.NoNodeException nne) {
-          // ignore - someone else deleted it
-        } catch (Exception e) {
-          log.warn("Unable to delete schema upgrade lock file {}", lockPath, e);
+      try {
+        if (locked) {
+          // unlock
+          try {
+            zkClient.delete(lockPath, -1, true, false);
+          } catch (KeeperException.NoNodeException nne) {
+            // ignore - someone else deleted it
+          } catch (Exception e) {
+            log.warn("Unable to delete schema upgrade lock file {}", lockPath, e);
+          }
         }
+      } finally {
+        lock.unlock();
       }
     }
   }
-
-  private Object schemaUpdateLock = new Object();
-  public Object getSchemaUpdateLock() { return schemaUpdateLock; }
+  public ReentrantLock getSchemaUpdateLock() { return schemaUpdateLock; }
 
   @Override
   public void inform(SolrCore core) {
     this.core = core;
+    this.collection = core.getCoreDescriptor().getCollectionName();
+    this.cc = core.getCoreContainer();
+
     if (loader instanceof ZkSolrResourceLoader) {
-      this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
-      ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
-      zkLoader.setZkIndexSchemaReader(this.zkIndexSchemaReader);
+
       try {
-        zkIndexSchemaReader.refreshSchemaFromZk(-1); // update immediately if newer is available
-        core.setLatestSchema(getSchema());
+        core.getZkIndexSchemaReader().updateSchema(false);
+        core.setLatestSchema(schema);
       } catch (KeeperException e) {
-        String msg = "Error attempting to access " + zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+        String msg = "Error attempting to update schema to latest on inform";
         log.error(msg, e);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
       } catch (InterruptedException e) {
@@ -416,9 +469,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         Thread.currentThread().interrupt();
         log.warn("", e);
       }
-    } else {
-      this.zkIndexSchemaReader = null;
     }
+
+    core.setLatestSchema(schema);
   }
 
   public ManagedIndexSchema getSchema() {
@@ -426,8 +479,14 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   }
 
   public void setSchema(ManagedIndexSchema schema) {
-    this.schema = schema;
-    core.setLatestSchema(schema);
+    if (schema.getSchemaZkVersion() > this.schema.getSchemaZkVersion()) {
+      if (this.schema != null) {
+        this.schema = schema;
+      }
+      if (core != null) {
+        core.setLatestSchema(schema);
+      }
+    }
   }
   
   public boolean isMutable() {

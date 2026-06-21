@@ -239,7 +239,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
   private void createWeights(IndexSearcher searcher, boolean needsScores,
       List<Feature.FeatureWeight > featureWeights, Collection<Feature> features) throws IOException {
-    final SolrQueryRequest req = getRequest();
+    final SolrQueryRequest req = request;
     // since the feature store is a linkedhashmap order is preserved
     for (final Feature f : features) {
       try{
@@ -283,7 +283,7 @@ public class LTRScoringQuery extends Query implements Accountable {
   private void createWeightsParallel(IndexSearcher searcher, boolean needsScores,
       List<Feature.FeatureWeight > featureWeights, Collection<Feature> features) throws RuntimeException {
 
-    final SolrQueryRequest req = getRequest();
+    final SolrQueryRequest req = request;
     List<Future<Feature.FeatureWeight> > futures = new ArrayList<>(features.size());
     try{
       for (final Feature f : features) {

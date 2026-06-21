@@ -19,11 +19,10 @@ package org.apache.solr.search.stats;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.junit.Ignore;
 
 import java.util.Iterator;
 
-@Ignore("Abstract calls should not executed as test")
+// Abstract base — Gradle test scanning skips abstract classes; no @Ignore needed.
 public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
 
   protected abstract String getStatsCacheClassName();
@@ -43,13 +42,13 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
   // remain identical
   @Override
   protected void checkResponse(QueryResponse controlRsp, QueryResponse shardRsp) {
-    System.out.println("======================= Control Response =======================");
-    System.out.println(controlRsp);
-    System.out.println("");
-    System.out.println("");
-    System.out.println("======================= Shard Response =======================");
-    System.out.println("");
-    System.out.println(shardRsp);
+    //System.out.println("======================= Control Response =======================");
+    //System.out.println(controlRsp);
+    //System.out.println("");
+    //System.out.println("");
+    //System.out.println("======================= Shard Response =======================");
+    //System.out.println("");
+    //System.out.println(shardRsp);
     SolrDocumentList shardList = shardRsp.getResults();
     SolrDocumentList controlList = controlRsp.getResults();
     

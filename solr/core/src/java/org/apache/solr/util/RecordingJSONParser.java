@@ -32,7 +32,7 @@ public class RecordingJSONParser extends JSONParser {
   //global position is the global position at the beginning of my buffer
   private long globalPosition = 0;
 
-  private StringBuilder sb = new StringBuilder();
+  private StringBuilder sb = new StringBuilder(64);
   private boolean objectStarted = false;
   private long lastMarkedPosition = 0;
   private long lastGlobalPosition = 0;

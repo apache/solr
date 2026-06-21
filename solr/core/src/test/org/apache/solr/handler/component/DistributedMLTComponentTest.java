@@ -57,7 +57,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeDistributedMLTComponentTest() {
     int statsType = TestUtil.nextInt(random(), 1, 3);
     if (statsType == 1) {
       System.setProperty("solr.statsCache", ExactStatsCache.class.getName());
@@ -69,7 +69,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   }
 
   @AfterClass
-  public static void afterClass() {
+  public static void afterDistributedMLTComponentTest() {
     System.clearProperty("solr.statsCache");
   }
   
@@ -77,7 +77,6 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   @ShardsFixed(num = 3)
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void test() throws Exception {
-    del("*:*");
     index(id, "1", "lowerfilt", "toyota", "lowerfilt1", "x");
     index(id, "2", "lowerfilt", "chevrolet", "lowerfilt1", "x");
     index(id, "3", "lowerfilt", "suzuki", "lowerfilt1", "x");

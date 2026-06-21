@@ -23,7 +23,6 @@
 package org.apache.solr.handler.tagger;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -40,34 +39,31 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 
 public class XmlInterpolationTest extends TaggerTestCase {
 
-  private static DocumentBuilder xmlDocBuilder;
+  private DocumentBuilder xmlDocBuilder;
 
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    DocumentBuilderFactory xmlDocBuilderFactory = DocumentBuilderFactory.newInstance();
-    xmlDocBuilderFactory.setValidating(true);
-    xmlDocBuilderFactory.setNamespaceAware(true);
-    xmlDocBuilder = xmlDocBuilderFactory.newDocumentBuilder();
-
-    initCore("solrconfig-tagger.xml", "schema-tagger.xml");
-  }
-
-  @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
-    xmlDocBuilder = null;
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    xmlDocBuilder = FieldTypeXmlAdapter.getDocumentBuilder();
+
+    initCore("solrconfig-tagger.xml", "schema-tagger.xml");
+
     baseParams.set("field", "name_tagXml");
     baseParams.set("overlaps", "LONGEST_DOMINANT_RIGHT");
     baseParams.set("xmlOffsetAdjust", "true");
@@ -114,6 +110,11 @@ public class XmlInterpolationTest extends TaggerTestCase {
         final TestTag tag = testTags[0];
         validateXml(insertAnchorAtOffsets(docText, tag.startOffset, tag.endOffset, tag.docName));
       }
+    } catch (Throwable throwable) {
+      if (throwable instanceof  Exception) {
+        throw (Exception) throwable;
+      }
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, throwable);
     } finally {
       req.close();
     }

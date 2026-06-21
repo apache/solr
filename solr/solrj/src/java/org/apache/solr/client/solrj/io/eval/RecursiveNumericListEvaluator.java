@@ -43,7 +43,7 @@ public abstract class RecursiveNumericListEvaluator extends RecursiveEvaluator {
     }
   }
   
-  private BigDecimal convertToNumber(Object value){
+  private static BigDecimal convertToNumber(Object value){
     if(null == value){
       return null;
     }

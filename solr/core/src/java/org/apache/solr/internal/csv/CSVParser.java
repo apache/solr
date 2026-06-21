@@ -16,6 +16,8 @@
  */
 package org.apache.solr.internal.csv;
 
+import org.apache.solr.common.util.Utils;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -61,9 +63,6 @@ public class CSVParser {
   protected static final int TT_EOF = 1;
   /** Token with content when end of a line is reached. */
   protected static final int TT_EORECORD = 2;
-
-  /** Immutable empty String array. */
-  private static final String[] EMPTY_STRING_ARRAY = new String[0];
    
   // the input stream
   private final ExtendedBufferedReader in;
@@ -190,7 +189,7 @@ public class CSVParser {
    * @throws IOException on parse error or input read-failure
    */
   public String[] getLine() throws IOException {
-    String[] ret = EMPTY_STRING_ARRAY;
+    String[] ret = Utils.EMPTY_STRINGS;
     record.clear();
     while (true) {
         reusableToken.reset();
@@ -220,7 +219,7 @@ public class CSVParser {
         }
     }
     if (!record.isEmpty()) {
-      ret = (String[]) record.toArray(new String[record.size()]);
+      ret = (String[]) record.toArray(new String[0]);
     }
     return ret;
   }
@@ -555,7 +554,7 @@ public class CSVParser {
   /**
    * @return true if the given character indicates end of file
    */
-  private boolean isEndOfFile(int c) {
+  private static boolean isEndOfFile(int c) {
     return c == ExtendedBufferedReader.END_OF_STREAM;
   }
 }

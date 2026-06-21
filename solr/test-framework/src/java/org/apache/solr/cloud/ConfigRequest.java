@@ -23,13 +23,14 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A class for making a request to the config handler. Tests can use this
  * e.g. to add custom components, handlers, parsers, etc. to an otherwise
  * generic configset.
  */
-public class ConfigRequest extends SolrRequest {
+public class ConfigRequest<T extends SolrResponse> extends SolrRequest<SolrResponse> {
 
   protected final String message;
 
@@ -49,7 +50,7 @@ public class ConfigRequest extends SolrRequest {
   }
 
   @Override
-  public SolrResponse createResponse(SolrClient client) {
-    return new SolrResponseBase();
+  public SolrResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new SolrResponseBase(nl);
   }
 }

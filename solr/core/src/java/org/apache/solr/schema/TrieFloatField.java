@@ -50,6 +50,7 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
  * @see Float
  * @see <a href="http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3">Java Language Specification, s4.2.3</a>
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see FloatPointField
  */
 @Deprecated
 public class TrieFloatField extends TrieField implements FloatValueFieldType {
@@ -70,12 +71,12 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
     
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-        
+
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-        
+
         return new FloatDocValues(thisAsSortedSetFieldSource) {
           private int lastDocID;
 
@@ -89,11 +90,11 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
               return docID == view.docID();
             }
           }
-          
+
           @Override
           public float floatVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes));
             } else {
@@ -110,17 +111,17 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
           public ValueFiller getValueFiller() {
             return new ValueFiller() {
               private final MutableValueFloat mval = new MutableValueFloat();
-              
+
               @Override
               public MutableValue getValue() {
                 return mval;
               }
-              
+
               @Override
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(view.binaryValue()));
+                  mval.value = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue())));
                 } else {
                   mval.exists = false;
                   mval.value = 0F;

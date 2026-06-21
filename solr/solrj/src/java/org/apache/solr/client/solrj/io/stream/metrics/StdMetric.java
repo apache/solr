@@ -47,8 +47,8 @@ public class StdMetric extends Metric {
   public StdMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
-    String columnName = factory.getValueOperand(expression, 0);
-    String outputLong = factory.getValueOperand(expression, 1);
+    String columnName = StreamFactory.getValueOperand(expression, 0);
+    String outputLong = StreamFactory.getValueOperand(expression, 1);
 
 
     // validate expression contains only what we want.

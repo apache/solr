@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -49,7 +50,7 @@ public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implement
     List<?> sourceValues;
 
     if(values.length == 1){
-      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]);
+      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Collections.singletonList(values[0]);
     }
     else
     {
@@ -71,7 +72,7 @@ public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implement
     while(iterator.hasNext()){
       Long value = (Long)iterator.next();
       Tuple tuple = new Tuple();
-      tuple.put("value", value.longValue());
+      tuple.put("value", value);
       tuple.put("count", frequency.getCount(value));
       tuple.put("cumFreq", frequency.getCumFreq(value));
       tuple.put("cumPct", frequency.getCumPct(value));

@@ -113,8 +113,8 @@
     -->
   <fieldType name="text" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.ClassicTokenizerFactory"/>
-      <filter class="solr.ClassicFilterFactory"/>
+      <tokenizer class="org.apache.lucene.analysis.classic.ClassicTokenizerFactory"/>
+      <filter class="org.apache.lucene.analysis.classic.ClassicFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -161,14 +161,14 @@
   </fieldType>
   <fieldType name="standardtokfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.ClassicTokenizerFactory"/>
-      <filter class="solr.ClassicFilterFactory"/>
+      <tokenizer class="org.apache.lucene.analysis.classic.ClassicTokenizerFactory"/>
+      <filter class="org.apache.lucene.analysis.classic.ClassicFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="standardfilt" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.ClassicFilterFactory"/>
+      <filter class="org.apache.lucene.analysis.classic.ClassicFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="lowerfilt" class="solr.TextField">

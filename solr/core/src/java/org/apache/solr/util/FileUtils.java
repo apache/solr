@@ -22,11 +22,16 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.apache.commons.io.FileExistsException;
+import org.apache.solr.common.ParWork;
 
 /**
  *
@@ -49,10 +54,7 @@ public class FileUtils {
   }
 
   public static void copyFile(File src , File destination) throws IOException {
-    try (FileChannel in = new FileInputStream(src).getChannel();
-         FileChannel out = new FileOutputStream(destination).getChannel()) {
-      in.transferTo(0, in.size(), out);
-    }
+    Files.copy(src.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
   }
 
   /**
@@ -80,7 +82,8 @@ public class FileUtils {
           // Pause 5 msec
           Thread.sleep(5);
         } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
+          ParWork.propagateInterrupt(ie);
+          break;
         }
       }
     }
@@ -104,7 +107,7 @@ public class FileUtils {
     if (Files.exists(path) && Files.isSymbolicLink(path)) {
       Path real = path.toRealPath();
       if (Files.isDirectory(real)) return real;
-      throw new FileExistsException("Tried to create a directory at to an existing non-directory symlink: " + path.toString());
+      throw new FileExistsException("Tried to create a directory to an existing non-directory symlink: " + path.toString());
     }
     return Files.createDirectories(path);
   }

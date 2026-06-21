@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
@@ -47,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
+
+@LuceneTestCase.Nightly // slow test
 public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -209,8 +212,8 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
   public void testRandomJoin() throws Exception {
-    int indexIter=50 * RANDOM_MULTIPLIER;
-    int queryIter=50 * RANDOM_MULTIPLIER;
+    int indexIter=50 * LuceneTestCase.RANDOM_MULTIPLIER;
+    int queryIter=50 * LuceneTestCase.RANDOM_MULTIPLIER;
 
     // groups of fields that have any chance of matching... used to
     // increase test effectiveness by avoiding 0 resultsets much of the time.
@@ -221,7 +224,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
 
     while (--indexIter >= 0) {
-      int indexSize = random().nextInt(20 * RANDOM_MULTIPLIER);
+      int indexSize = random().nextInt(20 * LuceneTestCase.RANDOM_MULTIPLIER);
 
       List<FldType> types = new ArrayList<FldType>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));

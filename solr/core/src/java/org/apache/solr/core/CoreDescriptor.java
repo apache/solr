@@ -60,7 +60,6 @@ public class CoreDescriptor {
   public static final String CORE_ROLES = "roles";
   public static final String CORE_PROPERTIES = "properties";
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
-  public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
   public static final String CORE_CONFIGSET = "configSet";
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
@@ -97,7 +96,6 @@ public class CoreDescriptor {
       .put(CORE_SCHEMA, "schema.xml")
       .put(CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME)
       .put(CORE_DATADIR, "data" + File.separator)
-      .put(CORE_TRANSIENT, "false")
       .put(CORE_LOADONSTARTUP, "true")
       .build();
 
@@ -114,14 +112,15 @@ public class CoreDescriptor {
       CORE_PROPERTIES,
       CORE_CONFIGSET_PROPERTIES,
       CORE_LOADONSTARTUP,
-      CORE_TRANSIENT,
       CORE_CONFIGSET,
       // cloud props
       CORE_SHARD,
       CORE_COLLECTION,
       CORE_ROLES,
       CORE_NODE_NAME,
-      CloudDescriptor.NUM_SHARDS
+      CloudDescriptor.NUM_SHARDS,
+      "id",
+      "collId"
   );
 
   private final CloudDescriptor cloudDesc;
@@ -148,7 +147,8 @@ public class CoreDescriptor {
   private static Map<String, String> toMap(String... properties) {
     Map<String, String> props = new HashMap<>();
     assert properties.length % 2 == 0;
-    for (int i = 0; i < properties.length; i += 2) {
+    int sz = properties.length;
+    for (int i = 0; i < sz; i += 2) {
       props.put(properties[i], properties[i+1]);
     }
     return props;
@@ -186,25 +186,28 @@ public class CoreDescriptor {
 
     originalCoreProperties.setProperty(CORE_NAME, name);
 
+
     name = PropertiesUtil.substituteProperty(checkPropertyIsNotEmpty(name, CORE_NAME),
                                              containerProperties);
 
     coreProperties.putAll(defaultProperties);
     coreProperties.put(CORE_NAME, name);
 
-    for (Map.Entry<String, String> entry : coreProps.entrySet()) {
-      String propname = entry.getKey();
-      String propvalue = entry.getValue();
+    coreProps.forEach((propname, propvalue) -> {
 
-      if (isUserDefinedProperty(propname))
-        originalExtraProperties.put(propname, propvalue);
-      else
+      if (isUserDefinedProperty(propname)) originalExtraProperties.put(propname, propvalue);
+      else if (propvalue != null) {
         originalCoreProperties.put(propname, propvalue);
+      }
 
-      if (!requiredProperties.contains(propname))   // Required props are already dealt with
-        coreProperties.setProperty(propname,
-            PropertiesUtil.substituteProperty(propvalue, containerProperties));
-    }
+      String value = null;
+      if (!requiredProperties.contains(propname)) {   // Required props are already dealt with
+        value = PropertiesUtil.substituteProperty(propvalue, containerProperties);
+        if (value != null) {
+          coreProperties.setProperty(propname, value);
+        }
+      }
+    });
 
     loadExtraProperties();
     buildSubstitutableProperties();
@@ -332,11 +335,6 @@ public class CoreDescriptor {
     return Boolean.parseBoolean(tmp);
   }
 
-  public boolean isTransient() {
-    String tmp = coreProperties.getProperty(CORE_TRANSIENT, "false");
-    return PropertiesUtil.toBoolean(tmp);
-  }
-
   public String getUlogDir() {
     return coreProperties.getProperty(CORE_ULOGDIR);
   }
@@ -361,7 +359,7 @@ public class CoreDescriptor {
 
   @Override
   public String toString() {
-    return "CoreDescriptor[name=" + this.getName() + ";instanceDir=" + this.getInstanceDir() + "]";
+    return "CoreDescriptor[name=" + this.getName() + ";instanceDir=" + this.instanceDir + "]";
   }
 
   public String getConfigSet() {

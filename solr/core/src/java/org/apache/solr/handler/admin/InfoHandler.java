@@ -73,7 +73,7 @@ public class InfoHandler extends RequestHandlerBase  {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Make sure the cores is enabled
-    CoreContainer cores = getCoreContainer();
+    CoreContainer cores = coreContainer;
     if (cores == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Core container instance missing");
@@ -85,7 +85,7 @@ public class InfoHandler extends RequestHandlerBase  {
 
   private void handle(SolrQueryRequest req, SolrQueryResponse rsp, String path) {
     int i = path.lastIndexOf('/');
-    String name = path.substring(i + 1, path.length());
+    String name = path.substring(i + 1);
     RequestHandlerBase handler = handlers.get(name.toLowerCase(Locale.ROOT));
     if(handler == null) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No handler by name "+name + " available names are "+ handlers.keySet());

@@ -21,12 +21,16 @@ package org.apache.solr.response;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.JavabinTupleStreamParser;
@@ -37,9 +41,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.*;
+import org.apache.zookeeper.server.ByteBufferInputStream;
 
 import static org.apache.solr.response.SmileWriterTest.constructSolrDocList;
 
@@ -74,7 +77,7 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
       assertEquals("2", map.get("id"));
       map = parser.next();
       assertEquals("3", map.get("id"));
-      System.out.println();
+      //System.out.println();
       map = parser.next();
       assertNull(map);
     }
@@ -171,7 +174,7 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
     SolrQueryResponse response = new SolrQueryResponse();
     SolrDocumentList l = constructSolrDocList(response);
     try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-      jbc.marshal(response.getValues(), baos);
+      jbc.marshal(response.getValues(), new FastOutputStream(baos));
     }
     byte[] bytes = serialize(response.getValues());
     try (JavaBinCodec jbc = new JavaBinCodec()) {
@@ -186,7 +189,7 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
     }
     assertEquals(l.size(), list.size());
     for(int i =0;i<list.size();i++){
-      compareSolrDocument(l.get(i),new SolrDocument((Map<String, Object>) list.get(i)));
+      SolrTestUtil.compareSolrDocument(l.get(i), new SolrDocument((Map<String,Object>) list.get(i)));
     }
 
   }
@@ -195,7 +198,7 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
     response.getValues().add("results", o);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      jbc.marshal(response.getValues(), baos);
+      jbc.marshal(response.getValues(), new FastOutputStream(baos));
     }
     return baos.toByteArray();
   }

@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -60,6 +60,10 @@ public class MockTokenizerFactory extends TokenizerFactory {
 
   @Override
   public MockTokenizer create(AttributeFactory factory) {
+    // MockTokenizer's ctor requires a RandomizedContext on the current thread. In this fork,
+    // analysis can run on long-lived shared pool threads orphaned from the suite that created
+    // them; self-register the calling thread against the captured suite context if needed.
+    MockRandomizedContextAnchor.ensureContext();
     MockTokenizer t = new MockTokenizer(factory, pattern, false);
     t.setEnableChecks(enableChecks);
     return t;

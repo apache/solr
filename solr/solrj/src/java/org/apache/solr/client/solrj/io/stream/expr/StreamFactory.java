@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -39,24 +40,26 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.zookeeper.common.StringUtils;
 
 /**
  * Used to convert strings into stream expressions
  */
 public class StreamFactory implements Serializable {
-  
+
+  private static final Pattern COMPILE = Pattern.compile("[ =]");
   private transient HashMap<String, String> collectionZkHosts;
-  private transient HashMap<String, Supplier<Class<? extends Expressible>>> functionNames;
+  private transient volatile Map<String, Supplier<Class<? extends Expressible>>> functionNames;
   private transient String defaultZkHost;
   private transient String defaultCollection;
   private transient String defaultSort;
   
   public StreamFactory(){
     collectionZkHosts = new HashMap<>();
-    functionNames = new HashMap<>();
+    functionNames = new HashMap<>(200);
   }
 
-  public StreamFactory(HashMap<String, Supplier<Class<? extends Expressible>>> functionNames) {
+  public StreamFactory(Map<String, Supplier<Class<? extends Expressible>>> functionNames) {
     this.functionNames = functionNames;
     collectionZkHosts = new HashMap<>();
   }
@@ -121,19 +124,19 @@ public class StreamFactory implements Serializable {
     return this;
   }
 
-  public StreamExpressionParameter getOperand(StreamExpression expression, int parameterIndex) {
+  public static StreamExpressionParameter getOperand(StreamExpression expression, int parameterIndex) {
     if (null == expression.getParameters() || parameterIndex >= expression.getParameters().size()) {
       return null;
     }
     return expression.getParameters().get(parameterIndex);
   }
   
-  public List<String> getValueOperands(StreamExpression expression) {
+  public static List<String> getValueOperands(StreamExpression expression) {
     return getOperandsOfType(expression, StreamExpressionValue.class).stream().map(item -> ((StreamExpressionValue) item).getValue()).collect(Collectors.toList());
   }
   
   /** Given an expression, will return the value parameter at the given index, or null if doesn't exist */
-  public String getValueOperand(StreamExpression expression, int parameterIndex) {
+  public static String getValueOperand(StreamExpression expression, int parameterIndex) {
     StreamExpressionParameter parameter = getOperand(expression, parameterIndex);
     if (null != parameter) {
       if (parameter instanceof StreamExpressionValue) {
@@ -145,7 +148,7 @@ public class StreamFactory implements Serializable {
     return null;
   }
   
-  public List<StreamExpressionNamedParameter> getNamedOperands(StreamExpression expression) {
+  public static List<StreamExpressionNamedParameter> getNamedOperands(StreamExpression expression) {
     List<StreamExpressionNamedParameter> namedParameters = new ArrayList<>();
     for (StreamExpressionParameter parameter : getOperandsOfType(expression, StreamExpressionNamedParameter.class)) {
       namedParameters.add((StreamExpressionNamedParameter) parameter);
@@ -153,7 +156,7 @@ public class StreamFactory implements Serializable {
     return namedParameters;
   }
 
-  public StreamExpressionNamedParameter getNamedOperand(StreamExpression expression, String name) {
+  public static StreamExpressionNamedParameter getNamedOperand(StreamExpression expression, String name) {
     List<StreamExpressionNamedParameter> namedParameters = getNamedOperands(expression);
     for (StreamExpressionNamedParameter param : namedParameters) {
       if (param.getName().equals(name)) {
@@ -163,7 +166,7 @@ public class StreamFactory implements Serializable {
     return null;
   }
   
-  public List<StreamExpression> getExpressionOperands(StreamExpression expression) {
+  public static List<StreamExpression> getExpressionOperands(StreamExpression expression) {
     List<StreamExpression> namedParameters = new ArrayList<>();
     for (StreamExpressionParameter parameter : getOperandsOfType(expression, StreamExpression.class)) {
       namedParameters.add((StreamExpression) parameter);
@@ -171,7 +174,7 @@ public class StreamFactory implements Serializable {
     return namedParameters;
   }
 
-  public List<StreamExpression> getExpressionOperands(StreamExpression expression, String functionName) {
+  public static List<StreamExpression> getExpressionOperands(StreamExpression expression, String functionName) {
     List<StreamExpression> namedParameters = new ArrayList<>();
     for (StreamExpressionParameter parameter : getOperandsOfType(expression, StreamExpression.class)) {
       StreamExpression expressionOperand = (StreamExpression) parameter;
@@ -182,7 +185,7 @@ public class StreamFactory implements Serializable {
     return namedParameters;
   }
 
-  public List<StreamExpressionParameter> getOperandsOfType(StreamExpression expression, Class ... clazzes) {
+  public static List<StreamExpressionParameter> getOperandsOfType(StreamExpression expression, Class... clazzes) {
     List<StreamExpressionParameter> parameters = new ArrayList<>();
     
     parameterLoop:
@@ -229,7 +232,7 @@ public class StreamFactory implements Serializable {
     return false;    
   }
   
-  public int getIntOperand(StreamExpression expression, String paramName, Integer defaultValue) throws IOException {
+  public static int getIntOperand(StreamExpression expression, String paramName, Integer defaultValue) throws IOException {
     StreamExpressionNamedParameter param = getNamedOperand(expression, paramName);
 
     if (null == param || null == param.getParameter() || !(param.getParameter() instanceof StreamExpressionValue)) {
@@ -249,7 +252,7 @@ public class StreamFactory implements Serializable {
     }
   }
 
-  public boolean getBooleanOperand(StreamExpression expression, String paramName, Boolean defaultValue) throws IOException {
+  public static boolean getBooleanOperand(StreamExpression expression, String paramName, Boolean defaultValue) throws IOException {
     StreamExpressionNamedParameter param = getNamedOperand(expression, paramName);
     
     if (null == param || null == param.getParameter() || !(param.getParameter() instanceof StreamExpressionValue)) {
@@ -296,7 +299,7 @@ public class StreamFactory implements Serializable {
     throw new IOException(String.format(Locale.ROOT, "Invalid metric expression %s - function '%s' is unknown (not mapped to a valid Metric)", expression, expression.getFunctionName()));
   }
 
-  public StreamComparator constructComparator(String comparatorString, Class comparatorType) throws IOException {
+  public static StreamComparator constructComparator(String comparatorString, Class comparatorType) throws IOException {
     if (comparatorString.contains(",")) {
       String[] parts = comparatorString.split(",");
       StreamComparator[] comps = new StreamComparator[parts.length];
@@ -306,7 +309,7 @@ public class StreamFactory implements Serializable {
       return new MultipleFieldComparator(comps);
     } else if (comparatorString.contains("=")) {
       // expected format is "left=right order"
-      String[] parts = comparatorString.split("[ =]");
+      String[] parts = COMPILE.split(comparatorString);
       
       if (parts.length < 3) {
         throw new IOException(String.format(Locale.ROOT, "Invalid comparator expression %s - expecting 'left=right order'",comparatorString));
@@ -317,7 +320,7 @@ public class StreamFactory implements Serializable {
       String order = null;
       for (String part : parts) {
         // skip empty
-        if (null == part || 0 == part.trim().length()) { continue; }
+        if (StringUtils.isBlank(part)) { continue; }
         
         // assign each in order
         if (null == leftFieldName) {
@@ -349,7 +352,7 @@ public class StreamFactory implements Serializable {
     }
   }
     
-  public StreamEqualitor constructEqualitor(String equalitorString, Class equalitorType) throws IOException {
+  public static StreamEqualitor constructEqualitor(String equalitorString, Class equalitorType) throws IOException {
     if (equalitorString.contains(",")) {
       String[] parts = equalitorString.split(",");
       StreamEqualitor[] eqs = new StreamEqualitor[parts.length];
@@ -394,18 +397,18 @@ public class StreamFactory implements Serializable {
     throw new IOException(String.format(Locale.ROOT, "Invalid operation expression %s - function '%s' is unknown (not mapped to a valid StreamOperation)", expression, expression.getFunctionName()));
   }
   
-  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
+  public StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
     return constructEvaluator(StreamExpressionParser.parse(expressionClause));
   }
 
-  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException {
+  public StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException {
     String function = expression.getFunctionName();
     Supplier<Class<? extends Expressible>> classSupplier = functionNames.get(function);
 
     if (classSupplier != null) {
       Class<? extends Expressible> clazz = classSupplier.get();
       if (Expressible.class.isAssignableFrom(clazz) && StreamEvaluator.class.isAssignableFrom(clazz)) {
-        return (org.apache.solr.client.solrj.io.eval.StreamEvaluator)createInstance(clazz, new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+        return (StreamEvaluator)createInstance(clazz, new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
       }
     }
     
@@ -438,7 +441,7 @@ public class StreamFactory implements Serializable {
     return false;
   }
 
-  public <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException {
+  public static <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException {
     Constructor<T> ctor;
     try {
       ctor = clazz.getConstructor(paramTypes);
@@ -464,7 +467,7 @@ public class StreamFactory implements Serializable {
     throw new IOException(String.format(Locale.ROOT, "Unable to find function name for class '%s'", clazz.getName()));
   }
 
-  public Object constructPrimitiveObject(String original) {
+  public static Object constructPrimitiveObject(String original) {
     String lower = original.trim().toLowerCase(Locale.ROOT);
 
     if ("null".equals(lower)) { return null; }
@@ -474,5 +477,10 @@ public class StreamFactory implements Serializable {
 
     // is a string
     return original;
+  }
+
+  public void setFunctionNames(Map<String,Supplier<Class<? extends Expressible>>> functionNames) {
+    functionNames.putAll(this.functionNames);
+    this.functionNames = functionNames;
   }
 }

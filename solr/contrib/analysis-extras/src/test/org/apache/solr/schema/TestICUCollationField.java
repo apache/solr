@@ -16,20 +16,23 @@
  */
 package org.apache.solr.schema;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.BeforeClass;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
+import org.mockito.Mockito;
 
 /**
  * Tests {@link ICUCollationField} with TermQueries, RangeQueries, and sort order.
@@ -37,7 +40,7 @@ import com.ibm.icu.util.ULocale;
 public class TestICUCollationField extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestICUCollationField() throws Exception {
     String home = setupSolrHome();
     initCore("solrconfig.xml","schema.xml", home);
     // add some docs
@@ -63,15 +66,15 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
    * So it's preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    String tmpFile = createTempDir().toFile().getAbsolutePath();
+    String tmpFile = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     // make data and conf dirs
     new File(tmpFile  + "/collection1", "data").mkdirs();
     File confDir = new File(tmpFile + "/collection1", "conf");
     confDir.mkdirs();
     
     // copy over configuration files
-    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/schema-icucollate.xml"), new File(confDir, "schema.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("analysis-extras/solr/collection1/conf/schema-icucollate.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator = (RuleBasedCollator) Collator.getInstance(new ULocale("de", "DE"));
@@ -88,11 +91,15 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
     IOUtils.write(tailoredRules, os, "UTF-8");
     os.close();
 
+    assumeWorkingMockito();
+
     final ResourceLoader loader;
     if (random().nextBoolean()) {
-      loader = new StringMockResourceLoader(tailoredRules);
+      loader = Mockito.mock(ResourceLoader.class);
+      Mockito.when(loader.openResource(Mockito.anyString()))
+             .thenReturn(new ByteArrayInputStream(tailoredRules.getBytes(StandardCharsets.UTF_8)));
     } else {
-      loader = new FilesystemResourceLoader(confDir.toPath());
+      loader = new FilesystemResourceLoader(confDir.toPath(), TestICUCollationField.class.getClassLoader());
     }
     final Collator readCollator = ICUCollationField.createFromRules(osFileName, loader);
     assertEquals(tailoredCollator, readCollator);

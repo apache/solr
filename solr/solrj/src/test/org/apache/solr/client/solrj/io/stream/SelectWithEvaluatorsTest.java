@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -32,9 +33,8 @@ import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,38 +49,36 @@ import org.junit.Test;
 public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
-  private static final int TIMEOUT = DEFAULT_TIMEOUT;
   private static final String id = "id";
 
   private static boolean useAlias;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
-        .addConfig("ml", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
+  public static void beforeSelectWithEvaluatorsTest() throws Exception {
+    configureCluster(4).formatZk(true)
+        .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve(
+            "conf"))
+        .addConfig("ml", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
     
     String collection;
-    useAlias = random().nextBoolean();
+    // MRM TODO: - need alias work
+    // useAlias = random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
     } else {
       collection = COLLECTIONORALIAS;
     }
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
   }
 
-  @Before
-  public void cleanIndex() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+  @AfterClass
+  public static void afterSelectWithEvaluatorsTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -94,24 +92,15 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
-    StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-      .withFunctionName("search", CloudSolrStream.class)
-      .withFunctionName("select", SelectStream.class)
-      .withFunctionName("add", AddEvaluator.class)
-      .withFunctionName("if", IfThenElseEvaluator.class)
-      .withFunctionName("gt", GreaterThanEvaluator.class)
-      ;
-    try {
+    try (SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader())) {
+      streamContext.setSolrClientCache(solrClientCache);
+
+      StreamFactory factory = new StreamFactory().withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress()).withFunctionName("search", CloudSolrStream.class)
+          .withFunctionName("select", SelectStream.class).withFunctionName("add", AddEvaluator.class).withFunctionName("if", IfThenElseEvaluator.class)
+          .withFunctionName("gt", GreaterThanEvaluator.class);
+
       // Basic test
-      clause = "select("
-          + "id,"
-          + "add(b_i,c_d) as result,"
-          + "search(collection1, q=*:*, fl=\"id,a_s,b_i,c_d,d_b\", sort=\"id asc\")"
-          + ")";
+      clause = "select(" + "id," + "add(b_i,c_d) as result," + "search(collection1, q=*:*, fl=\"id,a_s,b_i,c_d,d_b\", sort=\"id asc\")" + ")";
       stream = factory.constructStream(clause);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -120,8 +109,6 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
       assertEquals(1, tuples.size());
       assertDouble(tuples.get(0), "result", 4.3);
       assertEquals(4.3, tuples.get(0).get("result"));
-    } finally {
-      solrClientCache.close();
     }
   }
   

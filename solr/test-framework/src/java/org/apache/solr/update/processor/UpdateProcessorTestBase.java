@@ -40,8 +40,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
    * document used when the chain is completed (NOTE: some chains may
    * modify the document in place
    */
-  protected SolrInputDocument processAdd(final String chain,
-                                         final SolrInputDocument docIn)
+  protected static SolrInputDocument processAdd(final String chain, final SolrInputDocument docIn)
     throws IOException {
 
     return processAdd(chain, new ModifiableSolrParams(), docIn);
@@ -52,9 +51,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
    * document used when the chain is completed (NOTE: some chains may
    * modify the document in place
    */
-  protected SolrInputDocument processAdd(final String chain,
-                                         final SolrParams requestParams,
-                                         final SolrInputDocument docIn)
+  protected static SolrInputDocument processAdd(final String chain, final SolrParams requestParams, final SolrInputDocument docIn)
     throws IOException {
 
     SolrCore core = h.getCore();
@@ -63,16 +60,22 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams, true);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = docIn;
 
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
-      if (null != processor) {
-        // test chain might be empty or short circuited.
-        processor.processAdd(cmd);
+      try {
+        if (null != processor) {
+          // test chain might be empty or short circuited.
+          processor.processAdd(cmd);
+        }
+      } finally {
+        if (null != processor) {
+          processor.close();
+        }
       }
 
       return cmd.solrDoc;
@@ -82,14 +85,14 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
     }
   }
 
-  protected void processCommit(final String chain) throws IOException {
+  protected static void processCommit(final String chain) throws IOException {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
 
     CommitUpdateCommand cmd = new CommitUpdateCommand(req,false);
     UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
@@ -97,17 +100,18 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
       processor.processCommit(cmd);
     } finally {
       req.close();
+      processor.close();
     }
   }
 
-  protected void processDeleteById(final String chain, String id) throws IOException {
+  protected static void processDeleteById(final String chain, String id) throws IOException {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
     cmd.setId(id);
@@ -116,16 +120,18 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
       processor.processDelete(cmd);
     } finally {
       req.close();
+      processor.close();
     }
   }
 
-  protected void finish(final String chain) throws IOException {
+  protected static void finish(final String chain) throws IOException {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
+
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
 
     UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
     try {
@@ -140,7 +146,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   /**
    * Convenience method for building up SolrInputDocuments
    */
-  final SolrInputDocument doc(SolrInputField... fields) {
+  static SolrInputDocument doc(SolrInputField... fields) {
     SolrInputDocument d = new SolrInputDocument();
     for (SolrInputField f : fields) {
       d.put(f.getName(), f);
@@ -151,7 +157,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   /**
    * Convenience method for building up SolrInputFields
    */
-  final SolrInputField field(String name, Object... values) {
+  static SolrInputField field(String name, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
       f.addValue(v);
@@ -162,7 +168,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   /**
    * Convenience method for building up SolrInputFields with default boost
    */
-  final SolrInputField f(String name, Object... values) {
+  static SolrInputField f(String name, Object... values) {
     return field(name, values);
   }
 }

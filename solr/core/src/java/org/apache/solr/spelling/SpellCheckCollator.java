@@ -17,7 +17,7 @@
 package org.apache.solr.spelling;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -77,7 +77,7 @@ public class SpellCheckCollator {
       maxTries = 1;
       verifyCandidateWithQuery = false;
     }
-    docCollectionLimit = docCollectionLimit > 0 ? docCollectionLimit : 0;
+    docCollectionLimit = Math.max(docCollectionLimit, 0);
     int maxDocId = -1;
     if (verifyCandidateWithQuery && docCollectionLimit > 0) {
       IndexReader reader = ultimateResponse.req.getSearcher().getIndexReader();
@@ -138,11 +138,11 @@ public class SpellCheckCollator {
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse = new ResponseBuilder(
             new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
-            new SolrQueryResponse(), Arrays.asList(queryComponent));
+            new SolrQueryResponse(), Collections.singletonList(queryComponent), null);
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
-        checkResponse.components = Arrays.asList(queryComponent);
+        checkResponse.components = Collections.singletonList(queryComponent);
 
         try {
           queryComponent.prepare(checkResponse);
@@ -165,8 +165,6 @@ public class SpellCheckCollator {
           }
         } catch (Exception e) {
           log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
-        } finally {
-          checkResponse.req.close();  
         }
       }
       if (hits > 0 || !verifyCandidateWithQuery) {
@@ -190,8 +188,7 @@ public class SpellCheckCollator {
     return collations;
   }
 
-  private String getCollation(String origQuery,
-                              List<SpellCheckCorrection> corrections) {
+  private static String getCollation(String origQuery, List<SpellCheckCorrection> corrections) {
     StringBuilder collation = new StringBuilder(origQuery);
     int offset = 0;
     String corr = "";

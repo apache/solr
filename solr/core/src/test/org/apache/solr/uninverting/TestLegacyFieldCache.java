@@ -31,7 +31,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.legacy.LegacyDoubleField;
 import org.apache.solr.legacy.LegacyFloatField;
 import org.apache.solr.legacy.LegacyIntField;
@@ -47,6 +50,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,10 +65,10 @@ public class TestLegacyFieldCache extends SolrTestCase {
   private static Directory directory;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    NUM_DOCS = atLeast(500);
-    directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+  public static void beforeTestLegacyFieldCache() throws Exception {
+    NUM_DOCS = SolrTestUtil.atLeast(500);
+    directory = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter writer= new SolrRandomIndexWriter(SolrTestCase.random(), directory, SolrTestUtil.newIndexWriterConfig().setMergePolicy(LuceneTestCase.newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     int theInt = Integer.MAX_VALUE;
@@ -94,7 +98,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterTestLegacyFieldCache() throws Exception {
     if (null != reader) {
       reader.close();
       reader = null;
@@ -151,8 +155,8 @@ public class TestLegacyFieldCache extends SolrTestCase {
   }
 
   public void testEmptyIndex() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(500));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter writer= new IndexWriter(dir, SolrTestUtil.newIndexWriterConfig(new MockAnalyzer(SolrTestCase.random())).setMaxBufferedDocs(500));
     writer.close();
     IndexReader r = DirectoryReader.open(dir);
     LeafReader reader = SlowCompositeReaderWrapper.wrap(r);
@@ -205,7 +209,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     Thread[] threads = new Thread[NUM_THREADS];
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicInteger iters = new AtomicInteger();
-    final int NUM_ITER = 200 * RANDOM_MULTIPLIER;
+    final int NUM_ITER = 200 * LuceneTestCase.RANDOM_MULTIPLIER;
     final CyclicBarrier restart = new CyclicBarrier(NUM_THREADS,
                                                     new Runnable() {
                                                       @Override
@@ -220,8 +224,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
           public void run() {
 
             try {
+              Random random = SolrTestCase.random();
               while(!failed.get()) {
-                final int op = random().nextInt(3);
+                final int op = random.nextInt(3);
                 if (op == 0) {
                   // Purge all caches & resume, once all
                   // threads get here:
@@ -261,9 +266,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
   }
   
   public void testDocValuesIntegration() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(null);
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriterConfig iwc = SolrTestUtil.newIndexWriterConfig(null);
+    SolrRandomIndexWriter iw = new SolrRandomIndexWriter(SolrTestCase.random(), dir, iwc);
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("binary", new BytesRef("binary value")));
     doc.add(new SortedDocValuesField("sorted", new BytesRef("sorted value")));
@@ -273,15 +278,15 @@ public class TestLegacyFieldCache extends SolrTestCase {
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
-    LeafReader ar = getOnlyLeafReader(ir);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ir);
     
     // Binary type: can be retrieved via getTerms()
-    expectThrows(IllegalStateException.class, () -> {
+    SolrTestCaseUtil.expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.LEGACY_INT_PARSER);
     });
     
     // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
-    expectThrows(IllegalStateException.class, () -> {
+    SolrTestCaseUtil.expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.LEGACY_INT_PARSER);
     });
     
@@ -291,7 +296,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     assertEquals(42, numeric.longValue());
        
     // SortedSet type: can be retrieved via getDocTermOrds() 
-    expectThrows(IllegalStateException.class, () -> {
+    SolrTestCaseUtil.expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.LEGACY_INT_PARSER);
     });
     
@@ -300,14 +305,14 @@ public class TestLegacyFieldCache extends SolrTestCase {
   }
   
   public void testNonexistantFields() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter iw = new SolrRandomIndexWriter(random(), dir);
     Document doc = new Document();
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    LeafReader ar = getOnlyLeafReader(ir);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ir);
     
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
@@ -332,8 +337,8 @@ public class TestLegacyFieldCache extends SolrTestCase {
   }
   
   public void testNonIndexedFields() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter iw = new SolrRandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(new StoredField("bogusbytes", "bogus"));
     doc.add(new StoredField("bogusshorts", "bogus"));
@@ -346,7 +351,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    LeafReader ar = getOnlyLeafReader(ir);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ir);
     
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
@@ -372,10 +377,10 @@ public class TestLegacyFieldCache extends SolrTestCase {
 
   // Make sure that the use of GrowableWriter doesn't prevent from using the full long range
   public void testLongFieldCache() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
-    cfg.setMergePolicy(newLogMergePolicy());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriterConfig cfg = SolrTestUtil.newIndexWriterConfig(new MockAnalyzer(SolrTestCase.random()));
+    cfg.setMergePolicy(SolrTestUtil.newLogMergePolicy());
+    SolrRandomIndexWriter iw = new SolrRandomIndexWriter(SolrTestCase.random(), dir, cfg);
     Document doc = new Document();
     LegacyLongField field = new LegacyLongField("f", 0L, Store.YES);
     doc.add(field);
@@ -409,7 +414,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     }
     iw.forceMerge(1);
     final DirectoryReader reader = iw.getReader();
-    final NumericDocValues longs = FieldCache.DEFAULT.getNumerics(getOnlyLeafReader(reader), "f", FieldCache.LEGACY_LONG_PARSER);
+    final NumericDocValues longs = FieldCache.DEFAULT.getNumerics(LuceneTestCase.getOnlyLeafReader(reader), "f", FieldCache.LEGACY_LONG_PARSER);
     for (int i = 0; i < values.length; ++i) {
       if (missing.contains(i) == false) {
         assertEquals(i, longs.nextDoc());
@@ -424,10 +429,10 @@ public class TestLegacyFieldCache extends SolrTestCase {
 
   // Make sure that the use of GrowableWriter doesn't prevent from using the full int range
   public void testIntFieldCache() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
-    cfg.setMergePolicy(newLogMergePolicy());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriterConfig cfg = SolrTestUtil.newIndexWriterConfig(new MockAnalyzer(SolrTestCase.random()));
+    cfg.setMergePolicy(LuceneTestCase.newLogMergePolicy());
+    SolrRandomIndexWriter iw = new SolrRandomIndexWriter(SolrTestCase.random(), dir, cfg);
     Document doc = new Document();
     LegacyIntField field = new LegacyIntField("f", 0, Store.YES);
     doc.add(field);
@@ -461,7 +466,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     }
     iw.forceMerge(1);
     final DirectoryReader reader = iw.getReader();
-    final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(getOnlyLeafReader(reader), "f", FieldCache.LEGACY_INT_PARSER);
+    final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(LuceneTestCase.getOnlyLeafReader(reader), "f", FieldCache.LEGACY_INT_PARSER);
     for (int i = 0; i < values.length; ++i) {
       if (missing.contains(i) == false) {
         assertEquals(i, ints.nextDoc());

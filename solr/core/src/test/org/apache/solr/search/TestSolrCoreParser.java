@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.spans.*;
 import org.apache.lucene.queryparser.xml.CoreParser;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.search.BooleanQuery;
@@ -32,11 +33,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.spans.SpanBoostQuery;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -119,9 +115,12 @@ public class TestSolrCoreParser extends SolrTestCase {
   }
 
   private static SpanQuery unwrapSpanBoostQuery(Query query) {
-    assertTrue(query instanceof SpanBoostQuery);
-    final SpanBoostQuery spanBoostQuery = (SpanBoostQuery)query;
-    return spanBoostQuery.getQuery();
+    // SpanBoostQuery was removed in Lucene 9.0; a span query with a default boost is no longer wrapped.
+    if (query instanceof org.apache.lucene.search.BoostQuery) {
+      query = ((org.apache.lucene.search.BoostQuery) query).getQuery();
+    }
+    assertTrue(query instanceof SpanQuery);
+    return (SpanQuery) query;
   }
 
   // test custom query (HandyQueryBuilder) wrapping a SpanQuery

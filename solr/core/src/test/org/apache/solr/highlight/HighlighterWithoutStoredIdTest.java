@@ -22,13 +22,13 @@ import org.junit.BeforeClass;
 public class HighlighterWithoutStoredIdTest extends HighlighterTest {
 
   @BeforeClass
-  public static void beforeClassProps() {
+  public static void beforeHighlighterWithoutStoredIdTest() {
     System.setProperty("solr.tests.id.stored", "false");
     System.setProperty("solr.tests.id.docValues", "true");
   }
 
   @AfterClass
-  public static void afterClassProps() {
+  public static void afterHighlighterWithoutStoredIdTest() {
     System.clearProperty("solr.tests.id.stored");
     System.clearProperty("solr.tests.id.docValues");
   }

@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -95,10 +96,7 @@ public class ListStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
-    for(TupleStream stream : streams) {
-      l.add(stream);
-    }
+    List<TupleStream> l = new ArrayList<TupleStream>(Arrays.asList(streams));
     return l;
   }
 

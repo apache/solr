@@ -27,12 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -45,32 +48,34 @@ import org.apache.solr.search.TestPseudoReturnFields;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /** 
  * @see TestPseudoReturnFields 
  * @see TestRandomFlRTGCloud
  */
+@LuceneTestCase.Nightly // this test can be slow in parallel tests - measure beforeClass - test - afterClass, not just test
 public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
   
   /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  private static CloudHttp2SolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<Http2SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     // multi replicas should matter...
-    final int repFactor = usually() ? 1 : 2;;
+    final int repFactor = LuceneTestCase.usually() ? 1 : 2;;
     // ... but we definitely want to ensure forwarded requests to other shards work ...
     final int numShards = 2;
     // ... including some forwarded requests from nodes not hosting a shard
     final int numNodes = 1 + (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -84,37 +89,32 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
-
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(SolrTestCaseJ4.getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "43", "val_i", "9", "ssto", "X", "subject", "bbb")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "44", "val_i", "4", "ssto", "X", "subject", "aaa")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "45", "val_i", "6", "ssto", "X", "subject", "aaa")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4
+        .sdoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "43", "val_i", "9", "ssto", "X", "subject", "bbb")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "44", "val_i", "4", "ssto", "X", "subject", "aaa")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "45", "val_i", "6", "ssto", "X", "subject", "aaa")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg")).getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());;
     
   }
   
   @Before
-  private void addUncommittedDoc99() throws Exception {
+  public void addUncommittedDoc99() throws Exception {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "99", "val_i", "1", "ssto", "X",
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "99", "val_i", "1", "ssto", "X",
                                           "subject", "uncommitted")).getStatus());
   }
   
   @AfterClass
-  private static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
-    for (HttpSolrClient client : CLIENTS) {
+  public static void afterClass() throws Exception {
+    for (Http2SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();
@@ -729,7 +729,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     final List<String> fl = Arrays.asList
       ("id","[docid]","[explain]","score","val_*","subj*");
     
-    final int iters = atLeast(random, 10);
+    final int iters = LuceneTestCase.atLeast(random, 10);
     for (int i = 0; i< iters; i++) {
       
       Collections.shuffle(fl, random);
@@ -764,7 +764,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     final List<String> fl = Arrays.asList
       ("id","[docid]","[explain]","score","val_*","subj*");
     
-    final int iters = atLeast(random, 10);
+    final int iters = LuceneTestCase.atLeast(random, 10);
     for (int i = 0; i< iters; i++) {
       
       Collections.shuffle(fl, random);
@@ -824,20 +824,13 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   /** 
-   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed 
+   * returns a random SolrClient -- either a CloudHttp2SolrClient, or an Http2SolrClient pointed 
    * at a node in our cluster 
    */
   public static SolrClient getRandClient(Random rand) {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
     return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
-  }
-
-  public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
   }
 
 }

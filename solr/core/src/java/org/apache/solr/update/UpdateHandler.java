@@ -16,12 +16,8 @@
  */
 package org.apache.solr.update;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Vector;
-
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -33,6 +29,11 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 /**
  * <code>UpdateHandler</code> handles requests to change the index
  * (adds, deletes, commits, optimizes, etc).
@@ -40,7 +41,8 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-public abstract class UpdateHandler implements SolrInfoBean {
+public abstract class
+UpdateHandler implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore core;
@@ -48,13 +50,14 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected final SchemaField idField;
   protected final FieldType idFieldType;
 
-  protected Vector<SolrEventListener> commitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
+  protected CopyOnWriteArrayList<SolrEventListener> commitCallbacks = new CopyOnWriteArrayList<>();
+  protected CopyOnWriteArrayList<SolrEventListener> softCommitCallbacks = new CopyOnWriteArrayList<>();
+  protected CopyOnWriteArrayList<SolrEventListener> optimizeCallbacks = new CopyOnWriteArrayList<>();
 
   protected final UpdateLog ulog;
 
   protected SolrMetricsContext solrMetricsContext;
+  protected volatile boolean closed;
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -89,6 +92,13 @@ public abstract class UpdateHandler implements SolrInfoBean {
     }
   }
 
+  @Override
+  public void close() throws IOException {
+    this.closed = true;
+    SolrInfoBean.super.close();
+    assert ObjectReleaseTracker.getInstance().release(this);
+  }
+
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
       listener.postCommit();
@@ -114,7 +124,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
     idField = core.getLatestSchema().getUniqueKeyField();
-    idFieldType = idField!=null ? idField.getType() : null;
+    idFieldType = idField != null ? idField.getType() : null;
     parseEventListeners();
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
@@ -122,25 +132,30 @@ public abstract class UpdateHandler implements SolrInfoBean {
     boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
     if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
       DirectoryFactory dirFactory = core.getDirectoryFactory();
-      if (dirFactory instanceof HdfsDirectoryFactory) {
-        ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
-      } else {
+      // MRM TODO
+//      if (dirFactory instanceof HdfsDirectoryFactory) {
+//        ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
+//      } else {
         String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
         ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
-      }
+ //     }
 
       if (!core.isReloaded() && !dirFactory.isPersistent()) {
         ulog.clearLog(core, ulogPluginInfo);
       }
 
-      if (log.isInfoEnabled()) {
-        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
-      }
+      log.debug("Using UpdateLog implementation: {}", ulog.getClass().getName());
+
       ulog.init(ulogPluginInfo);
       ulog.init(this, core);
     } else {
       ulog = updateLog;
+      if (ulog != null) {
+        ulog.init(this, core);
+      }
     }
+    // assert skipUpdateLog || ulog != null;
+    assert ObjectReleaseTracker.getInstance().track(this);
   }
 
   /**

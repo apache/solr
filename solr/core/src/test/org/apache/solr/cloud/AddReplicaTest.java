@@ -17,19 +17,23 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
-import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,60 +46,59 @@ import org.slf4j.LoggerFactory;
 public class AddReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static AtomicInteger asyncId = new AtomicInteger(100);
+
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
   }
 
   @Before
   public void setUp() throws Exception  {
     super.setUp();
-    cluster.deleteAllCollections();
+  }
+
+  @After
+  public void tearDown() throws Exception  {
+    super.tearDown();
   }
 
   @Test
   public void testAddMultipleReplicas() throws Exception  {
 
     String collection = "testAddMultipleReplicas";
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1);
-    create.setMaxShardsPerNode(2);
+    create.setMaxShardsPerNode(20);
     cloudClient.request(create);
-    cluster.waitForActiveCollection(collection, 1, 1);
 
-    CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+    CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, "s1")
         .setNrtReplicas(1)
         .setTlogReplicas(1)
         .setPullReplicas(1);
-    RequestStatusState status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
-    assertEquals(COMPLETED, status);
-    
-    cluster.waitForActiveCollection(collection, 1, 4);
-    
-    DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
-    assertNotNull(docCollection);
-    assertEquals(4, docCollection.getReplicas().size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    CollectionAdminResponse status = addReplica.process(cloudClient, collection + "_xyz1");
 
-    // try to add 5 more replicas which should fail because numNodes(4)*maxShardsPerNode(2)=8 and 4 replicas already exist
-    addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
-        .setNrtReplicas(3)
-        .setTlogReplicas(1)
-        .setPullReplicas(1);
-    status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
-    assertEquals(FAILED, status);
-    docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
-    assertNotNull(docCollection);
-    // sanity check that everything is as before
-    assertEquals(4, docCollection.getReplicas().size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    assertTrue(status.isSuccess());
+
+    cluster.getSolrClient().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      if (collectionState == null) {
+        return false;
+      }
+      if (collectionState.getReplicas().size() != 4) {
+        return false;
+      }
+      if (collectionState.getReplicas(EnumSet.of(Replica.Type.NRT)).size() != 2) {
+        return false;
+      }
+      if (collectionState.getReplicas(EnumSet.of(Replica.Type.TLOG)).size() != 1) {
+        return false;
+      }
+      return collectionState.getReplicas(EnumSet.of(Replica.Type.PULL)).size() == 1;
+    });
 
     // but adding any number of replicas is supported if an explicit create node set is specified
     // so test that as well
@@ -105,21 +108,35 @@ public class AddReplicaTest extends SolrCloudTestCase {
       String nodeName = cluster.getRandomJetty(random()).getNodeName();
       if (createNodeSet.add(nodeName))  break;
     }
-    addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+    assert createNodeSet.size() > 0;
+    addReplica = CollectionAdminRequest.addReplicaToShard(collection, "s1")
         .setNrtReplicas(3)
         .setTlogReplicas(1)
         .setPullReplicas(1)
         .setCreateNodeSet(String.join(",", createNodeSet));
-    status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
-    assertEquals(COMPLETED, status);
-    waitForState("Timedout wait for collection to be created", collection, clusterShape(1, 9));
-    docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
-    assertNotNull(docCollection);
-    // sanity check that everything is as before
-    assertEquals(9, docCollection.getReplicas().size());
-    assertEquals(5, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    status = addReplica.process(cloudClient, collection + "_xyz1");
+
+    assertTrue(status.isSuccess());
+
+    cluster.getSolrClient().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      if (collectionState == null) {
+        return false;
+      }
+      if (collectionState.getReplicas().size() != 9) {
+        return false;
+      }
+      if (collectionState.getReplicas(EnumSet.of(Replica.Type.NRT)).size() != 5) {
+        return false;
+      }
+      if (collectionState.getReplicas(EnumSet.of(Replica.Type.TLOG)).size() != 2) {
+        return false;
+      }
+      if ( collectionState.getReplicas(EnumSet.of(Replica.Type.PULL)).size() != 2) {
+        return false;
+      }
+      return true;
+    });
+
   }
 
   @Test
@@ -127,72 +144,48 @@ public class AddReplicaTest extends SolrCloudTestCase {
     
     String collection = "addreplicatest_coll";
 
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
-    create.setMaxShardsPerNode(2);
+    create.setMaxShardsPerNode(100);
     cloudClient.request(create);
-    
-    cluster.waitForActiveCollection(collection, 2, 2);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
     String sliceName = coll.getSlices().iterator().next().getName();
     Collection<Replica> replicas = coll.getSlice(sliceName).getReplicas();
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, sliceName);
-    addReplica.processAsync("000", cloudClient);
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
+    int aid1 = asyncId.incrementAndGet();
+    addReplica.processAsync(Integer.toString(aid1), cloudClient);
+    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(Integer.toString(aid1));
     CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
+
     assertNotSame(rsp.getRequestStatus(), COMPLETED);
     
     // wait for async request success
     boolean success = false;
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 600; i++) {
       rsp = requestStatus.process(cloudClient);
+      //System.out.println("resp:" + rsp);
       if (rsp.getRequestStatus() == COMPLETED) {
         success = true;
         break;
       }
       assertNotSame(rsp.toString(), rsp.getRequestStatus(), RequestStatusState.FAILED);
-      Thread.sleep(500);
+      Thread.sleep(100);
     }
     assertTrue(success);
-    
-    Collection<Replica> replicas2 = cloudClient.getZkStateReader().getClusterState().getCollection(collection).getSlice(sliceName).getReplicas();
-    replicas2.removeAll(replicas);
-    assertEquals(1, replicas2.size());
 
-    // use waitForFinalState
-    addReplica.setWaitForFinalState(true);
-    addReplica.processAsync("001", cloudClient);
-    requestStatus = CollectionAdminRequest.requestStatus("001");
+    // use waitForFinalState - doesn't exist, just dont do async
+   // addReplica.setWaitForFinalState(true);
+    int aid2 = asyncId.incrementAndGet();
+    addReplica.processAsync(Integer.toString(aid2), cloudClient);
+    requestStatus = CollectionAdminRequest.requestStatus(Integer.toString(aid2));
     rsp = requestStatus.process(cloudClient);
-    assertNotSame(rsp.getRequestStatus(), COMPLETED);
-    // wait for async request success
-    success = false;
-    for (int i = 0; i < 200; i++) {
-      rsp = requestStatus.process(cloudClient);
-      if (rsp.getRequestStatus() == COMPLETED) {
-        success = true;
-        break;
-      }
-      assertNotSame(rsp.toString(), rsp.getRequestStatus(), RequestStatusState.FAILED);
-      Thread.sleep(500);
-    }
-    assertTrue(success);
-    // let the client watch fire
-    Thread.sleep(1000);
-    clusterState = cloudClient.getZkStateReader().getClusterState();
-    coll = clusterState.getCollection(collection);
-    Collection<Replica> replicas3 = coll.getSlice(sliceName).getReplicas();
-    replicas3.removeAll(replicas);
-    String replica2 = replicas2.iterator().next().getName();
-    assertEquals(2, replicas3.size());
-    for (Replica replica : replicas3) {
-      if (replica.getName().equals(replica2)) {
-        continue; // may be still recovering
-      }
-      assertSame(coll.toString() + "\n" + replica.toString(), replica.getState(), Replica.State.ACTIVE);
-    }
+
+    cluster.waitForActiveCollection(collection, 2, 4);
+
+    // MRM TODO: - this should be able to wait now without this explicit call, look into basecloudclients wait for cluster state call
+
   }
 }

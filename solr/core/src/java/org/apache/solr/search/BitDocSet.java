@@ -299,7 +299,7 @@ public class BitDocSet extends DocSet {
                 // if it's already been computed, we use it (pro-rated for the segment)
                 int maxDoc = max-base;
                 if (size != -1) {
-                  return (long)(size * ((FixedBitSet.bits2words(maxDoc)<<6) / (float)bs.length()));
+                  return (long)(size * (((long) FixedBitSet.bits2words(maxDoc) <<6) / (float)bs.length()));
                 } else {
                   return maxDoc;
                 }

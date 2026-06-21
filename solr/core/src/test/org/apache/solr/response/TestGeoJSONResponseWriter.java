@@ -22,7 +22,8 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.io.SupportedFormats;
@@ -37,10 +38,17 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
 
   final ObjectMapper jsonmapper = new ObjectMapper();
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig-basic.xml","schema-spatial.xml");
     createIndex();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   public static void createIndex() {
@@ -107,7 +115,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     
     // Make sure we select the field
     try {
-      h.query(req(
+      query(req(
         "q","*:*", 
         "wt","geojson", 
         "fl","*"));
@@ -118,7 +126,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
 
     // non-spatial fields *must* be stored as JSON
     try {
-      h.query(req(
+      query(req(
         "q","id:S.X", 
         "wt","geojson", 
         "fl","*",
@@ -133,7 +141,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
   public void testGeoJSONAtRoot() throws Exception {
     
     // Try reading the whole resposne
-    String json = h.query(req(
+    String json = query(req(
         "q","*:*", 
         "wt","geojson", 
         "rows","2", 
@@ -146,7 +154,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     assertNotNull(rsp.get("responseHeader"));
     assertNotNull(rsp.get("response"));
     
-    json = h.query(req(
+    json = query(req(
         "q","*:*", 
         "wt","geojson", 
         "rows","2", 
@@ -167,7 +175,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
   public void testGeoJSONOutput() throws Exception {
     
     // Try reading the whole resposne
-    readJSON(h.query(req(
+    readJSON(query(req(
         "q","*:*", 
         "wt","geojson", 
         "fl","*", 
@@ -175,7 +183,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
         "indent","true")));
     
     // Multivalued Valued Point
-    Map<String,Object> json = readJSON(h.query(req(
+    Map<String,Object> json = readJSON(query(req(
         "q","id:H.B", 
         "wt","geojson", 
         "fl","*", 
@@ -199,7 +207,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     };
     
     for(String[] args : check) {
-      json = readJSON(h.query(req(
+      json = readJSON(query(req(
           "q",args[0], 
           "wt","geojson", 
           "fl","*", 
@@ -256,7 +264,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
       
       
       for(String fmt : checkFormats) {
-        String json = h.query(req(
+        String json = query(req(
             "q","id:test", 
             "wt","json", 
             "indent", "true",

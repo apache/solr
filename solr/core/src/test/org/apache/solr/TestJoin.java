@@ -16,6 +16,18 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,21 +39,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.SolrQueryRequest;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TestJoin extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
 
     if (System.getProperty("solr.tests.IntegerFieldType").contains("Point")) { // all points change at the same time
@@ -50,6 +53,11 @@ public class TestJoin extends SolrTestCaseJ4 {
     }
 
     initCore("solrconfig.xml","schema12.xml");
+  }
+
+  @After
+  public void afterTests() {
+    deleteCore();
   }
 
   private static final String PRIMARY_DEPT_FIELD = "primary_dept_indexed_sdv";
@@ -147,13 +155,13 @@ public class TestJoin extends SolrTestCaseJ4 {
     ModifiableSolrParams p = params("sort","id asc");
 
     // "from" field missing docValues
-    expectThrows(SolrException.class, () -> {
-      h.query(req(p, "q", "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*", "fl","id"));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(req(p, "q", "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*", "fl", "id"));
     });
 
     // "to" field missing docValues
-    expectThrows(SolrException.class, () -> {
-      h.query(req(p, "q", "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*", "fl","id"));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(req(p, "q", "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*", "fl", "id"));
     });
   }
 
@@ -178,8 +186,8 @@ public class TestJoin extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomJoin() throws Exception {
-    int indexIter=50 * RANDOM_MULTIPLIER;
-    int queryIter=50 * RANDOM_MULTIPLIER;
+    int indexIter= TEST_NIGHTLY ? 50 : 5 * LuceneTestCase.RANDOM_MULTIPLIER;
+    int queryIter= TEST_NIGHTLY ? 50 : 5 * LuceneTestCase.RANDOM_MULTIPLIER;
 
     // groups of fields that have any chance of matching... used to
     // increase test effectiveness by avoiding 0 resultsets much of the time.
@@ -190,7 +198,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
 
     while (--indexIter >= 0) {
-      int indexSize = random().nextInt(20 * RANDOM_MULTIPLIER);
+      int indexSize = random().nextInt(20 * LuceneTestCase.RANDOM_MULTIPLIER);
 
       List<FldType> types = new ArrayList<>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
@@ -233,16 +241,19 @@ public class TestJoin extends SolrTestCaseJ4 {
           pivot = createJoinMap(model, fromField, toField);
           pivots.put(fromField+"/"+toField, pivot);
         }
-
-        Collection<Doc> fromDocs = model.values();
-        Set<Comparable> docs = join(fromDocs, pivot);
-        List<Doc> docList = new ArrayList<>(docs.size());
-        for (Comparable id : docs) docList.add(model.get(id));
-        Collections.sort(docList, createComparator("_docid_",true,false,false,false));
-        List sortedDocs = new ArrayList();
-        for (Doc doc : docList) {
-          if (sortedDocs.size() >= 10) break;
-          sortedDocs.add(doc.toObject(h.getCore().getLatestSchema()));
+        List<Doc> docList;
+        List sortedDocs;
+        try (SolrCore core = h.getCore()) {
+          Collection<Doc> fromDocs = model.values();
+          Set<Comparable> docs = join(fromDocs, pivot);
+          docList = new ArrayList<>(docs.size());
+          for (Comparable id : docs) docList.add(model.get(id));
+          Collections.sort(docList, createComparator("_docid_", true, false, false, false));
+          sortedDocs = new ArrayList();
+          for (Doc doc : docList) {
+            if (sortedDocs.size() >= 10) break;
+            sortedDocs.add(doc.toObject(core.getLatestSchema()));
+          }
         }
 
         Map<String,Object> resultSet = new LinkedHashMap<>();
@@ -259,7 +270,7 @@ public class TestJoin extends SolrTestCaseJ4 {
                 +"}*:*"
         );
 
-        String strResponse = h.query(req);
+        String strResponse = query(req);
 
         Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/response", realResponse, resultSet);
@@ -269,7 +280,7 @@ public class TestJoin extends SolrTestCaseJ4 {
           );
 
           // re-execute the request... good for putting a breakpoint here for debugging
-          String rsp = h.query(req);
+          String rsp = query(req);
 
           fail(err);
         }

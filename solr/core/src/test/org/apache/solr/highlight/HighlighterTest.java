@@ -28,12 +28,14 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.spans.SpanTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.params.HighlightParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -48,14 +50,14 @@ import org.junit.Test;
 
 public class HighlighterTest extends SolrTestCaseJ4 {
 
-  private static String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is " +
+  private String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is " +
           "is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is " +
           "is is is is is is is is is is is is is " +
           "is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated " +
           "at all--we want two disjoint long fragments.";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeHighlighterTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
  
@@ -71,7 +73,8 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testConfig()
   {
-    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());
+    SolrCore core = h.getCore();
+    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(core);
 
     // Make sure we loaded the one formatter
     SolrFormatter fmt1 = highlighter.formatters.get( null );
@@ -87,6 +90,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     assertSame( gap, frag );
     assertTrue(gap instanceof GapFragmenter);
     assertTrue(regex instanceof RegexFragmenter);
+    core.close();
   }
 
   @Test
@@ -96,8 +100,8 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "id", "1"));
     assertU(commit());
 
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-      h.query(req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
+    IllegalArgumentException e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+      query(req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
     });
     assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
     // note: the default schema.xml has no offsets in postings to test the PostingsHighlighter. Leave that for another
@@ -629,7 +633,10 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testVariableFragsize() {
-     assertU(adoc("tv_text", "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all", 
+     assertU(adoc("tv_text", "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is "
+             + "is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is "
+             + "is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all...oh is it? always and forever?  is is is is is is is is is is is is is is is"
+             + " is is is is is is is is is is is is is is is is is is is is is is is is",
            "id", "1"));
      assertU(commit());
      assertU(optimize());
@@ -649,7 +656,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
      // 25
      args.put("hl.fragsize","25");
      sumLRF = h.getRequestFactory(
-           "", 0, 200, args);
+           "", 0, 300, args);
      assertQ("Basic summarization",
            sumLRF.makeRequest("tv_text:long"),
            "//lst[@name='highlighting']/lst[@name='1']",
@@ -663,7 +670,10 @@ public class HighlighterTest extends SolrTestCaseJ4 {
      assertQ("Basic summarization",
            sumLRF.makeRequest("tv_text:long"),
            "//lst[@name='highlighting']/lst[@name='1']",
-           "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all']"
+           "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which is is is is is is is is is is"
+               + " is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is"
+               + " is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all...oh is it? always and forever?  is is is is is "
+               + "is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is']"
            );
   }
   
@@ -861,6 +871,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testGetHighlightFields() {
+    SolrCore core = h.getCore();
     HashMap<String, String> args = new HashMap<>();
     args.put("fl", "id score");
     args.put("hl", "true");
@@ -880,7 +891,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         10, args);
 
     SolrQueryRequest request = lrf.makeRequest("test");
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+    SolrHighlighter highlighter = HighlightComponent.getHighlighter(core);
     List<String> highlightFieldNames = Arrays.asList(highlighter
         .getHighlightFields(null, request, new String[] {}));
     assertTrue("Expected to highlight on field \"title\"", highlightFieldNames
@@ -894,7 +905,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     args.put("hl.fl", "foo_*");
     lrf = h.getRequestFactory("", 0, 10, args);
     request = lrf.makeRequest("test");
-    highlighter = HighlightComponent.getHighlighter(h.getCore());
+    highlighter = HighlightComponent.getHighlighter(core);
     highlightFieldNames = Arrays.asList(highlighter.getHighlightFields(null,
         request, new String[] {}));
     assertEquals("Expected one field to highlight on", 1, highlightFieldNames
@@ -911,7 +922,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     highlightedSetExpected.add("foo_s");
     highlightedSetExpected.add("bar_s");
     try (LocalSolrQueryRequest localRequest = lrf.makeRequest("test")) {
-      highlighter = HighlightComponent.getHighlighter(h.getCore());
+      highlighter = HighlightComponent.getHighlighter(core);
       final Set<String> highlightedSetActual = new HashSet<String>(
           Arrays.asList(highlighter.getHighlightFields(null,
               localRequest, new String[] {})));
@@ -922,7 +933,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     args.put("hl.fl", "title, text"); // comma then space
     lrf = h.getRequestFactory("", 0, 10, args);
     request = lrf.makeRequest("test");
-    highlighter = HighlightComponent.getHighlighter(h.getCore());
+    highlighter = HighlightComponent.getHighlighter(core);
     highlightFieldNames = Arrays.asList(highlighter.getHighlightFields(null,
         request, new String[] {}));
     assertEquals("Expected one field to highlight on", 2, highlightFieldNames
@@ -935,6 +946,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         highlightFieldNames.contains(""));
 
     request.close();
+    core.close();
   }
 
   @Test
@@ -1231,6 +1243,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
 
   @Test
   public void payloadFilteringSpanQuery() throws IOException {
+    SolrCore core = h.getCore();
     clearIndex();
 
     String FIELD_NAME = "payloadDelimited";
@@ -1244,11 +1257,11 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         Collections.singletonList(new BytesRef(new byte[]{0, 0, 0, 7})));//bytes for integer 7
 
     //invoke highlight component... the hard way
-    final SearchComponent hlComp = h.getCore().getSearchComponent("highlight");
+    final SearchComponent hlComp = core.getSearchComponent("highlight");
     SolrQueryRequest req = req("hl", "true", "hl.fl", FIELD_NAME, HighlightParams.USE_PHRASE_HIGHLIGHTER, "true");
     try {
       SolrQueryResponse resp = new SolrQueryResponse();
-      ResponseBuilder rb = new ResponseBuilder(req, resp, Collections.singletonList(hlComp));
+      ResponseBuilder rb = new ResponseBuilder(req, resp, Collections.singletonList(hlComp), null);
       rb.setHighlightQuery(query);
       rb.setResults(req.getSearcher().getDocListAndSet(query, (DocSet) null, null, 0, 1));
       //highlight:
@@ -1260,5 +1273,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     } finally {
       req.close();
     }
+    core.close();
   }
 }

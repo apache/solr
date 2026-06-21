@@ -21,7 +21,8 @@ import org.apache.solr.common.util.NamedList;
 
 public class HealthCheckResponse extends SolrResponseBase {
 
-  public HealthCheckResponse() {
+  public HealthCheckResponse(NamedList nl) {
+    super(nl);
   }
 
   public NamedList<String> getErrorMessages() {

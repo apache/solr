@@ -27,7 +27,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
@@ -38,6 +38,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 
 public class TestFilteredDocIdSet extends SolrTestCase {
   public void testFilteredDocIdSet() throws Exception {
@@ -106,8 +107,8 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     int[] answer = new int[]{4,6,8};
     boolean same = Arrays.equals(answer, docs);
     if (!same) {
-      System.out.println("answer: " + Arrays.toString(answer));
-      System.out.println("gotten: " + Arrays.toString(docs));
+      //System.out.println("answer: " + Arrays.toString(answer));
+      //System.out.println("gotten: " + Arrays.toString(docs));
       fail();
     }
   }
@@ -115,16 +116,16 @@ public class TestFilteredDocIdSet extends SolrTestCase {
   public void testNullDocIdSet() throws Exception {
     // Tests that if a Filter produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter writer = new SolrRandomIndexWriter(random(), dir, SolrTestUtil.newIndexWriterConfig());
     Document doc = new Document();
-    doc.add(newStringField("c", "val", Field.Store.NO));
+    doc.add(SolrTestUtil.newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
     
     // First verify the document is searchable.
-    IndexSearcher searcher = newSearcher(reader);
+    IndexSearcher searcher = SolrTestUtil.newSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
     // Now search w/ a Filter which returns a null DocIdSet
@@ -159,16 +160,16 @@ public class TestFilteredDocIdSet extends SolrTestCase {
   }
 
   public void testNullIteratorFilteredDocIdSet() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Directory dir = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter writer = new SolrRandomIndexWriter(random(), dir, SolrTestUtil.newIndexWriterConfig());
     Document doc = new Document();
-    doc.add(newStringField("c", "val", Field.Store.NO));
+    doc.add(SolrTestUtil.newStringField("c", "val", Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
     
     // First verify the document is searchable.
-    IndexSearcher searcher = newSearcher(reader);
+    IndexSearcher searcher = SolrTestUtil.newSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
       // Now search w/ a Filter which returns a null DocIdSet

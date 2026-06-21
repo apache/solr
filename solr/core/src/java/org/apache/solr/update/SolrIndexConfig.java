@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
@@ -29,10 +28,13 @@ import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigXpathExpressions;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.PluginInfo;
@@ -94,8 +96,9 @@ public class SolrIndexConfig implements MapSerializable {
     mergedSegmentWarmerInfo = null;
     // enable coarse-grained metrics by default
     metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
+
   }
-  
+
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
    * @param solrConfig the overall SolrConfig object
@@ -112,30 +115,31 @@ public class SolrIndexConfig implements MapSerializable {
       def = new SolrIndexConfig(solrConfig);
     }
 
+    SolrResourceLoader loader = solrConfig.getResourceLoader();
     // sanity check: this will throw an error for us if there is more then one
     // config section
-    Object unused = solrConfig.getNode(prefix, false);
+    Object unused = solrConfig.getNode(SolrResourceLoader.configXpathExpressions.indexConfigExp, ConfigXpathExpressions.indexConfigPath, false);
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        !((solrConfig.getNode(prefix + "/mergeScheduler", false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
+        !((solrConfig.getNode(SolrResourceLoader.configXpathExpressions.mergeSchedulerExp, ConfigXpathExpressions.mergeSchedulerPath, false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergePolicy>myclass</mergePolicy> is no longer supported, use <mergePolicyFactory> instead.",
-        !((solrConfig.getNode(prefix + "/mergePolicy", false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
+        !((solrConfig.getNode(SolrResourceLoader.configXpathExpressions.mergePolicyExp,  ConfigXpathExpressions.mergePolicyPath, false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
         solrConfig.get(prefix + "/luceneAutoCommit", null) == null,
         true);
 
-    useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
-    maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
-    ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
+    useCompoundFile = solrConfig.getBool(SolrResourceLoader.configXpathExpressions.useCompoundFileExp, ConfigXpathExpressions.useCompoundFilePath, def.useCompoundFile);
+    maxBufferedDocs = solrConfig.getInt(SolrResourceLoader.configXpathExpressions.maxBufferedDocsExp, ConfigXpathExpressions.maxBufferedDocsPath, def.maxBufferedDocs);
+    ramBufferSizeMB = solrConfig.getDouble(SolrResourceLoader.configXpathExpressions.ramBufferSizeMBExp, ConfigXpathExpressions.ramBufferSizeMBPath, def.ramBufferSizeMB);
 
     // how do we validate the value??
-    ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
+    ramPerThreadHardLimitMB = solrConfig.getInt(SolrResourceLoader.configXpathExpressions.ramPerThreadHardLimitMBExp, ConfigXpathExpressions.ramPerThreadHardLimitMBPath, def.ramPerThreadHardLimitMB);
 
-    writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
+    writeLockTimeout=solrConfig.getInt(SolrResourceLoader.configXpathExpressions.writeLockTimeoutExp, ConfigXpathExpressions.writeLockTimeoutPath, def.writeLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
 
     List<PluginInfo> infos = solrConfig.readPluginInfos(prefix + "/metrics", false, false);
@@ -151,10 +155,10 @@ public class SolrIndexConfig implements MapSerializable {
         getPluginInfo(prefix + "/mergePolicy", solrConfig, null) == null,
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <maxMergeDocs> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        solrConfig.getInt(prefix+"/maxMergeDocs", 0) == 0,
+        solrConfig.getInt(SolrResourceLoader.configXpathExpressions.maxMergeDocsExp, ConfigXpathExpressions.maxMergeDocPath, 0) == 0,
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergeFactor> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        solrConfig.getInt(prefix+"/mergeFactor", 0) == 0,
+        solrConfig.getInt(SolrResourceLoader.configXpathExpressions.mergeFactorExp, ConfigXpathExpressions.mergeFactorPath, 0) == 0,
         true);
 
     String val = solrConfig.get(prefix + "/termIndexInterval", null);
@@ -162,7 +166,7 @@ public class SolrIndexConfig implements MapSerializable {
       throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
     }
 
-    boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
+    boolean infoStreamEnabled = solrConfig.getBool(SolrResourceLoader.configXpathExpressions.infoStreamExp, ConfigXpathExpressions.infoStreamPath, false);
     if(infoStreamEnabled) {
       String infoStreamFile = solrConfig.get(prefix + "/infoStream/@file", null);
       if (infoStreamFile == null) {
@@ -175,7 +179,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
 
     assertWarnOrFail("Beginning with Solr 5.0, <checkIntegrityAtMerge> option is no longer supported and should be removed from solrconfig.xml (these integrity checks are now automatic)",
-        (null == solrConfig.getNode(prefix + "/checkIntegrityAtMerge", false)),
+        (null == solrConfig.getNode(SolrResourceLoader.configXpathExpressions.checkIntegrityAtMergeExp, ConfigXpathExpressions.checkIntegrityAtMergePath, false)),
         true);
   }
 
@@ -199,7 +203,7 @@ public class SolrIndexConfig implements MapSerializable {
     return m;
   }
 
-  private PluginInfo getPluginInfo(String path, SolrConfig solrConfig, PluginInfo def)  {
+  private static PluginInfo getPluginInfo(String path, SolrConfig solrConfig, PluginInfo def)  {
     List<PluginInfo> l = solrConfig.readPluginInfos(path, false, true);
     return l.isEmpty() ? def : l.get(0);
   }
@@ -218,7 +222,7 @@ public class SolrIndexConfig implements MapSerializable {
     }
   }
 
-  public IndexWriterConfig toIndexWriterConfig(SolrCore core) throws IOException {
+  public IndexWriterConfig toIndexWriterConfig(SolrCore core) {
     IndexSchema schema = core.getLatestSchema();
     IndexWriterConfig iwc = new IndexWriterConfig(new DelayedSchemaAnalyzer(core));
     if (maxBufferedDocs != -1)
@@ -234,8 +238,15 @@ public class SolrIndexConfig implements MapSerializable {
     iwc.setSimilarity(schema.getSimilarity());
     MergePolicy mergePolicy = buildMergePolicy(core.getResourceLoader(), schema);
     iwc.setMergePolicy(mergePolicy);
-    MergeScheduler mergeScheduler = buildMergeScheduler(core.getResourceLoader());
-    iwc.setMergeScheduler(mergeScheduler);
+
+    if (mergePolicy == NoMergePolicy.INSTANCE) {
+      iwc.setMergeScheduler(NoMergeScheduler.INSTANCE);
+    } else {
+      MergeScheduler mergeScheduler = buildMergeScheduler(core.getResourceLoader());
+      iwc.setMergeScheduler(mergeScheduler);
+    }
+
+
     iwc.setInfoStream(infoStream);
 
     if (mergePolicy instanceof SortingMergePolicy) {
@@ -247,7 +258,6 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (mergedSegmentWarmerInfo != null) {
       // TODO: add infostream -> normal logging system (there is an issue somewhere)
-      @SuppressWarnings({"rawtypes"})
       IndexReaderWarmer warmer = core.getResourceLoader().newInstance(mergedSegmentWarmerInfo.className,
                                                                         IndexReaderWarmer.class,
                                                                         null,
@@ -256,6 +266,8 @@ public class SolrIndexConfig implements MapSerializable {
       iwc.setMergedSegmentWarmer(warmer);
     }
 
+    iwc.setCommitOnClose(false);
+
     return iwc;
   }
 
@@ -263,7 +275,7 @@ public class SolrIndexConfig implements MapSerializable {
    * Builds a MergePolicy using the configured MergePolicyFactory
    * or if no factory is configured uses the configured mergePolicy PluginInfo.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   private MergePolicy buildMergePolicy(SolrResourceLoader resourceLoader, IndexSchema schema) {
 
     final String mpfClassName;

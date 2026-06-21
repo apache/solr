@@ -52,7 +52,7 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -79,10 +79,15 @@ public class CreateAliasCmd extends AliasCmd {
     // We could levy this requirement on the client but they would probably always add an obligatory sleep, which is
     // just kicking the can down the road.  Perhaps ideally at this juncture here we could somehow wait until all
     // Solr nodes in the cluster have the latest aliases?
-    Thread.sleep(100);
+    // Thread.sleep(100);
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 
-  private void callCreatePlainAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {
+  private static void callCreatePlainAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {
     final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
     if (canonicalCollectionList.isEmpty()) {
       throw new SolrException(BAD_REQUEST, "'collections' parameter doesn't contain any collection names.");
@@ -98,7 +103,7 @@ public class CreateAliasCmd extends AliasCmd {
    * maintain support for the legacy format, a comma-separated list (e.g. a,b).
    */
   @SuppressWarnings("unchecked")
-  private List<String> parseCollectionsParameter(Object colls) {
+  private static List<String> parseCollectionsParameter(Object colls) {
     if (colls == null) throw new SolrException(BAD_REQUEST, "missing collections param");
     if (colls instanceof List) return (List<String>) colls;
     return StrUtils.splitSmart(colls.toString(), ",", true).stream()
@@ -107,10 +112,9 @@ public class CreateAliasCmd extends AliasCmd {
         .collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
   private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
     // Validate we got a basic minimum
-    if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
+    if (!message.keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
       throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + RoutedAlias.MINIMAL_REQUIRED_PARAMS
       + " plus some create-collection prefixed ones.");
     }
@@ -146,7 +150,7 @@ public class CreateAliasCmd extends AliasCmd {
     validateAllCollectionsExistAndNoDuplicates(Collections.singletonList(initialCollectionName), zkStateReader);
   }
 
-  private void validateAllCollectionsExistAndNoDuplicates(List<String> collectionList, ZkStateReader zkStateReader) {
+  private static void validateAllCollectionsExistAndNoDuplicates(List<String> collectionList, ZkStateReader zkStateReader) {
     final String collectionStr = StrUtils.join(collectionList, ',');
 
     if (new HashSet<>(collectionList).size() != collectionList.size()) {

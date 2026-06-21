@@ -16,11 +16,18 @@
  */
 package org.apache.solr;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExpandableBuffers;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
@@ -50,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+@LuceneTestCase.Nightly // slow test
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -75,7 +83,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
+    deleteCore();
   }
 
   @Before
@@ -125,7 +133,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
     );
 
-    SolrException exception = expectThrows(SolrException.class, () -> {
+    SolrException exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       h.query(req("q", "title:title", "group", "true", "group.field", "group_i", "group.offset", "-1"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
@@ -282,7 +290,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         req("q", "*:*","group", "true", "group.field", "nullfirst", "group.main", "true", "wt", "javabin", "start", "4", "rows", "10");
 
     SolrQueryResponse response = new SolrQueryResponse();
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer();
+    ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
       String handlerName = request.getParams().get(CommonParams.QT);
@@ -295,8 +304,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     }
 
     assertEquals(6, ((ResultContext) response.getResponse()).getDocList().matches());
-    new BinaryResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
-    out.close();
+    new BinaryResponseParser().processResponse(new ByteArrayInputStream(expandableBuffer1.byteArray(), 0, out.position() + expandableBuffer1.wrapAdjustment()), "");
   }
 
   @Test
@@ -750,12 +758,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
      assertJQ(req("q","id:"+doc.id), "/response/numFound==1");
     **/
 
-    int indexIter=atLeast(10);  // make >0 to enable test
-    int queryIter=atLeast(50);
+    int indexIter= SolrTestUtil.atLeast(10);  // make >0 to enable test
+    int queryIter= SolrTestUtil.atLeast(50);
 
     while (--indexIter >= 0) {
 
-      int indexSize = random().nextInt(25 * RANDOM_MULTIPLIER);
+      int indexSize = random().nextInt(25 * LuceneTestCase.RANDOM_MULTIPLIER);
 //indexSize=2;
       List<FldType> types = new ArrayList<>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
@@ -977,7 +985,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     if (includeNGroups) {
       result.put("ngroups", sortedGroups.size());
     }
-    List<Map<String,Object>> groupList = new ArrayList<>();
+    ObjectList<Map<String,Object>> groupList = new ObjectArrayList<>();
     result.put("groups", groupList);
 
     for (int i=start; i<sortedGroups.size(); i++) {

@@ -27,7 +27,7 @@ public class DefaultStreamFactory extends StreamFactory {
 
   public DefaultStreamFactory() {
     super();
-    Lang.register(this);
+    Lang.getInstance().register(this);
   }
 
 }

@@ -18,22 +18,20 @@ package org.apache.solr.common.params;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.google.api.client.util.escape.CharEscapers;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -70,7 +68,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   }
 
   @Override
-  public void writeMap(EntryWriter ew) throws IOException {
+  public void writeMap(EntryWriter ew) {
     //TODO don't call toNamedList; more efficiently implement here
     //note: multiple values, if present, are a String[] under 1 key
     toNamedList().forEach((k, v) -> {
@@ -87,33 +85,28 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   @Override
   public Iterator<Map.Entry<String, String[]>> iterator() {
     Iterator<String> it = getParameterNamesIterator();
-    return new Iterator<Map.Entry<String, String[]>>() {
-      @Override
-      public boolean hasNext() {
+    return new Iterator<>() {
+      @Override public boolean hasNext() {
         return it.hasNext();
       }
-      @Override
-      public Map.Entry<String, String[]> next() {
+
+      @Override public Map.Entry<String,String[]> next() {
         String key = it.next();
-        return new Map.Entry<String, String[]>() {
-          @Override
-          public String getKey() {
+        return new Map.Entry<>() {
+          @Override public String getKey() {
             return key;
           }
 
-          @Override
-          public String[] getValue() {
+          @Override public String[] getValue() {
             return getParams(key);
           }
 
-          @Override
-          public String[] setValue(String[] newValue) {
+          @Override public String[] setValue(String[] newValue) {
             throw new UnsupportedOperationException("read-only");
           }
 
-          @Override
-          public String toString() {
-            return getKey() + "=" + Arrays.toString(getValue());
+          @Override public String toString() {
+            return getKey() + '=' + Arrays.toString(getValue());
           }
         };
       }
@@ -134,7 +127,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
     return new RequiredSolrParams(this);
   }
 
-  protected String fpname(String field, String param) {
+  protected static String fpname(String field, String param) {
     return "f."+field+'.'+param;
   }
 
@@ -268,6 +261,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
     try {
       return val == null ? null : Long.valueOf(val);
     } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex);
     }
   }
@@ -278,6 +272,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
     try {
       return val == null ? def : Long.parseLong(val);
     } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex);
     }
   }
@@ -445,7 +440,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
       return defaults;
     if (defaults == null)
       return params;
-    return new DefaultSolrParams(params,defaults);
+    return new DefaultSolrParams(params, defaults);
   }
 
   public static SolrParams wrapAppended(SolrParams params, SolrParams defaults) {
@@ -459,8 +454,9 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
   @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
   public static Map<String,String> toMap(@SuppressWarnings({"rawtypes"})NamedList params) {
-    HashMap<String,String> map = new HashMap<>();
-    for (int i=0; i<params.size(); i++) {
+    Map<String,String> map = new Object2ObjectLinkedOpenHashMap<>(16, 0.5f);
+    final int size = params.size();
+    for (int i = 0; i< size; i++) {
       map.put(params.getName(i), params.getVal(i).toString());
     }
     return map;
@@ -469,8 +465,10 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   /** Create a Map&lt;String,String[]&gt; from a NamedList */
   @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
   public static Map<String,String[]> toMultiMap(@SuppressWarnings({"rawtypes"})NamedList params) {
-    HashMap<String,String[]> map = new HashMap<>();
-    for (int i=0; i<params.size(); i++) {
+    final int size = params.size();
+    Map<String,String[]> map = new Object2ObjectLinkedOpenHashMap<>(16, 0.5f);
+
+    for (int i = 0; i< size; i++) {
       String name = params.getName(i);
       Object val = params.getVal(i);
       if (val instanceof String[]) {
@@ -478,8 +476,9 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
       } else if (val instanceof List) {
         @SuppressWarnings({"rawtypes"})
         List l = (List) val;
-        String[] s = new String[l.size()];
-        for (int j = 0; j < l.size(); j++) {
+        final int size1 = l.size();
+        String[] s = new String[size1];
+        for (int j = 0; j < size1; j++) {
           s[j] = l.get(j) == null ? null : String.valueOf(l.get(j));
         }
         MultiMapSolrParams.addParam(name, s, map);
@@ -541,7 +540,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   //  And SolrParams now implements MapWriter.toMap(Map) (a default method).  So what do we do?
   @Deprecated
   public Map<String, Object> getAll(Map<String, Object> sink, Collection<String> params) {
-    if (sink == null) sink = new LinkedHashMap<>();
+    if (sink == null) sink = new Object2ObjectLinkedOpenHashMap<>(8, 0.5f);
     for (String param : params) {
       String[] v = getParams(param);
       if (v != null && v.length > 0) {
@@ -566,22 +565,16 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   
   /** Returns this SolrParams as a properly URL encoded string, starting with {@code "?"}, if not empty. */
   public String toQueryString() {
-    try {
-      final String charset = StandardCharsets.UTF_8.name();
-      final StringBuilder sb = new StringBuilder(128);
-      boolean first = true;
-      for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
-        final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
-        for (String val : getParams(name)) {
-          sb.append(first ? '?' : '&').append(nameEnc).append('=').append(URLEncoder.encode(val, charset));
-          first = false;
-        }
+    final StringBuilder sb = new StringBuilder(128);
+    boolean first = true;
+    for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
+      final String name = it.next(), nameEnc = CharEscapers.escapeUri(name);
+      for (String val : getParams(name)) {
+        sb.append(first ? '?' : '&').append(nameEnc).append('=').append(CharEscapers.escapeUri(val));
+        first = false;
       }
-      return sb.toString();
-    } catch (UnsupportedEncodingException e) {
-      // impossible!
-      throw new AssertionError(e);
     }
+    return sb.toString();
   }
 
   /**

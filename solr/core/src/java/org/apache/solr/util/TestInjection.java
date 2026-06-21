@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.common.NonExistentCoreException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * Set static strings to "true" or "false" or "true:60" for true 60% of the time.
  * 
  * All methods are No-Ops unless <code>LuceneTestCase</code> is loadable via the ClassLoader used 
- * to load this class.  <code>LuceneTestCase.random()</code> is used as the source of all entropy.
+ * to load this class.  <code>SolrTestCase.random()</code> is used as the source of all entropy.
  * 
  * @lucene.internal
  */
@@ -62,9 +63,9 @@ public class TestInjection {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
+  private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?::(\\d+))?$", Pattern.CASE_INSENSITIVE);
   
-  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.util.LuceneTestCase";
+  private static final String LUCENE_TEST_CASE_FQN = "org.apache.solr.SolrTestCase";
 
   /** 
    * If null, then we are not being run as part of a test, and all TestInjection events should be No-Ops.
@@ -97,7 +98,8 @@ public class TestInjection {
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
-        throw new IllegalStateException("Unable to use reflection to invoke LuceneTestCase.random()", e);
+        ParWork.propagateInterrupt(e);
+        throw new IllegalStateException("Unable to use reflection to invoke SolrTestCase.random()", e);
       }
     }
   }
@@ -111,14 +113,14 @@ public class TestInjection {
   public volatile static String nonExistentCoreExceptionAfterUnload = null;
 
   public volatile static String updateLogReplayRandomPause = null;
-  
+
   public volatile static String updateRandomPause = null;
 
   public volatile static String prepRecoveryOpPauseForever = null;
 
   public volatile static String randomDelayInCoreCreation = null;
   
-  public volatile static int randomDelayMaxInCoreCreationInSec = 10;
+  public volatile static int randomDelayMaxInCoreCreationInSec = 5;
 
   public volatile static String splitFailureBeforeReplicaCreation = null;
 
@@ -236,9 +238,9 @@ public class TestInjection {
         int delay = rand.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
         try {
-          Thread.sleep(delay * 1000);
+          Thread.sleep(delay * 1000L);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propagateInterrupt(e);
         }
       }
     }
@@ -272,7 +274,7 @@ public class TestInjection {
                 Random taskRand = random();
                 Thread.sleep(taskRand.nextInt(1000));
               } catch (InterruptedException e) {
-              
+                ParWork.propagateInterrupt(e);
               }
               
               cthread.interrupt();
@@ -365,7 +367,7 @@ public class TestInjection {
         try {
           Thread.sleep(rndTime);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propagateInterrupt(e);
         }
       }
     }
@@ -393,7 +395,7 @@ public class TestInjection {
         try {
           Thread.sleep(rndTime);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propagateInterrupt(e);
         }
       }
     }
@@ -417,7 +419,7 @@ public class TestInjection {
         try {
           notifyPauseForeverDone.await();
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          ParWork.propagateInterrupt(e);
         }
       } else {
         countPrepRecoveryOpPauseForever.set(0);
@@ -457,7 +459,7 @@ public class TestInjection {
         log.info("Waiting in ReplicaMutator for up to 60s");
         return splitLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;
@@ -469,7 +471,7 @@ public class TestInjection {
         log.info("Waiting in DirectUpdateHandler2 for up to 60s");
         return directUpdateLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;
@@ -498,7 +500,7 @@ public class TestInjection {
         log.info("Waiting in ReindexCollectionCmd for up to 60s");
         return reindexLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;
@@ -524,7 +526,7 @@ public class TestInjection {
         log.info("Pausing IndexFetcher for {}ms", delayBeforeSlaveCommitRefresh);
         Thread.sleep(delayBeforeSlaveCommitRefresh);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;
@@ -538,10 +540,11 @@ public class TestInjection {
   }
 
   static Set<Hook> newSearcherHooks = ConcurrentHashMap.newKeySet();
-  
+
   public interface Hook {
     public void newSearcher(String collectionName);
-    public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout) throws InterruptedException;
+    public void insertHook(String collection, int cnt);
+    public void waitForSearcher(int timeoutms, boolean failOnTimeout) throws InterruptedException;
   }
   
   public static boolean newSearcherHook(Hook hook) {

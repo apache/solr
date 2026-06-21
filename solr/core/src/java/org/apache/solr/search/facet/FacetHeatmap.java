@@ -211,6 +211,30 @@ public class FacetHeatmap extends FacetRequest {
     return new FacetHeatmapProcessor(fcontext);
   }
 
+  private static class IntegerAbstractList extends AbstractList<Integer> {
+    private final int[] counts;
+    private final int rows;
+    private final int y;
+    private final int columns;
+
+    public IntegerAbstractList(int[] counts, int rows, int y, int columns) {
+      this.counts = counts;
+      this.rows = rows;
+      this.y = y;
+      this.columns = columns;
+    }
+
+    @Override
+    public Integer get(int columnIdx) {
+      return counts[columnIdx * rows + y];
+    }
+
+    @Override
+    public int size() {
+      return columns;
+    }
+  }
+
   // don't use an anonymous class since the getSimpleName() isn't friendly in debug output
   @SuppressWarnings({"rawtypes"})
   private class FacetHeatmapProcessor extends FacetProcessor {
@@ -328,7 +352,7 @@ public class FacetHeatmap extends FacetRequest {
       @Override
       public Object getMergedResult() {
         mergedResult.add("counts_" + format, formatCountsVal(
-            format, (Integer) mergedResult.get("columns"), (Integer) mergedResult.get("rows"), counts, null));//TODO where debugInfo?
+            format, (Integer) mergedResult.get("columns"), (int) mergedResult.get("rows"), counts, null));//TODO where debugInfo?
         return mergedResult;
       }
     };
@@ -376,17 +400,7 @@ public class FacetHeatmap extends FacetRequest {
           return null;
         }
 
-        return new AbstractList<Integer>() {
-          @Override
-          public Integer get(int columnIdx) {
-            return counts[columnIdx * rows + y];
-          }
-
-          @Override
-          public int size() {
-            return columns;
-          }
-        };
+        return new IntegerAbstractList(counts, rows, y, columns);
       }
 
       @Override

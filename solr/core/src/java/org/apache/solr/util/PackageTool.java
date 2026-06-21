@@ -16,9 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.packagemanager.PackageUtils.print;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
@@ -28,12 +25,11 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
@@ -46,6 +42,9 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 public class PackageTool extends SolrCLI.ToolBase {
 
@@ -64,24 +63,24 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   public static String solrUrl = null;
   public static String solrBaseUrl = null;
-  public PackageManager packageManager;
-  public RepositoryManager repositoryManager;
+  public volatile PackageManager packageManager;
+  public volatile RepositoryManager repositoryManager;
 
   @Override
   @SuppressForbidden(reason = "We really need to print the stacktrace here, otherwise "
       + "there shall be little else information to debug problems. Other SolrCLI tools "
       + "don't print stack traces, hence special treatment is needed here.")
-  protected void runImpl(CommandLine cli) throws Exception {
+  protected void runImpl(CommandLine cli, Http2SolrClient httpClient) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
-      solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
+      solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
 
       log.info("ZK: {}", zkHost);
       String cmd = cli.getArgList().size() == 0? "help": cli.getArgs()[0];
 
-      try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
+      try (Http2SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).markInternalRequest().build()) {
         if (cmd != null) {
           packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost); 
           try {
@@ -118,16 +117,16 @@ public class PackageTool extends SolrCLI.ToolBase {
                   String collection = cli.getArgs()[1];
                   Map<String, SolrPackageInstance> packages = packageManager.getPackagesDeployed(collection);
                   PackageUtils.printGreen("Packages deployed on " + collection + ":");
-                  for (String packageName: packages.keySet()) {
-                    PackageUtils.printGreen("\t" + packages.get(packageName));                 
+                  for (SolrPackageInstance solrPackageInstance : packages.values()) {
+                    PackageUtils.printGreen("\t" + solrPackageInstance);
                   }
                 } else {
                   String packageName = cli.getArgs()[1];
                   Map<String, String> deployedCollections = packageManager.getDeployedCollections(packageName);
-                  if (deployedCollections.isEmpty() == false) {
+                  if (!deployedCollections.isEmpty()) {
                     PackageUtils.printGreen("Collections on which package " + packageName + " was deployed:");
-                    for (String collection: deployedCollections.keySet()) {
-                      PackageUtils.printGreen("\t" + collection + "("+packageName+":"+deployedCollections.get(collection)+")");
+                    for (Map.Entry<String,String> entry : deployedCollections.entrySet()) {
+                      PackageUtils.printGreen("\t" + entry.getKey() + "("+packageName+":"+ entry.getValue() +")");
                     }
                   } else {
                     PackageUtils.printGreen("Package "+packageName+" not deployed on any collection.");
@@ -136,7 +135,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                 break;
               case "install":
               {
-                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                 String packageName = parsedVersion.first();
                 String version = parsedVersion.second();
                 repositoryManager.install(packageName, version);
@@ -145,7 +144,7 @@ public class PackageTool extends SolrCLI.ToolBase {
               }
               case "deploy":
               {
-                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                 String packageName = parsedVersion.first();
                 String version = parsedVersion.second();
                 boolean noprompt = cli.hasOption('y');
@@ -155,7 +154,7 @@ public class PackageTool extends SolrCLI.ToolBase {
               }
               case "undeploy":
               {
-                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                 if (parsedVersion.second() != null) {
                   throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
                 }
@@ -205,6 +204,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       log.info("Finished: {}", cmd);
 
     } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
       ex.printStackTrace(); // We need to print this since SolrCLI drops the stack trace in favour of brevity. Package tool should surely print full stacktraces!
       throw ex;
     }
@@ -214,7 +214,7 @@ public class PackageTool extends SolrCLI.ToolBase {
    * Parses package name and version in the format "name:version" or "name"
    * @return A pair of package name (first) and version (second)
    */
-  private Pair<String, String> parsePackageVersion(String arg) {
+  private static Pair<String, String> parsePackageVersion(String arg) {
     String splits[] = arg.split(":");
     if (splits.length > 2) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid package name: " + arg +
@@ -271,20 +271,20 @@ public class PackageTool extends SolrCLI.ToolBase {
     };
   }
 
-  private String getZkHost(CommandLine cli) throws Exception {
+  private static String getZkHost(CommandLine cli) throws Exception {
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null)
       return zkHost;
 
     String systemInfoUrl = solrUrl+"/admin/info/system";
-    CloseableHttpClient httpClient = SolrCLI.getHttpClient();
+    Http2SolrClient httpClient = SolrCLI.getHttpClient();
     try {
       // hit Solr to get system info
       Map<String,Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
 
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
-      Map<String,Object> status = statusTool.reportStatus(solrUrl+"/", systemInfo, httpClient);
+      Map<String,Object> status = StatusTool.reportStatus(solrUrl+"/", systemInfo, httpClient);
       Map<String,Object> cloud = (Map<String, Object>)status.get("cloud");
       if (cloud != null) {
         String zookeeper = (String) cloud.get("ZooKeeper");
@@ -294,7 +294,7 @@ public class PackageTool extends SolrCLI.ToolBase {
         zkHost = zookeeper;
       }
     } finally {
-      HttpClientUtil.close(httpClient);
+      httpClient.close();
     }
 
     return zkHost;

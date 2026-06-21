@@ -20,11 +20,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -142,7 +140,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * </p>
  *
  * <pre class="prettyprint">
- * &lt;processor class="solr.processor.DocExpirationUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.DocExpirationUpdateProcessorFactory"&gt;
  *   &lt;null name="ttlFieldName"/&gt;
  *   &lt;null name="ttlParamName"/&gt;
  *   &lt;int name="autoDeletePeriodSeconds"&gt;300&lt;/int&gt;
@@ -158,7 +156,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * </p>
  *
  * <pre class="prettyprint">
- * &lt;processor class="solr.processor.DocExpirationUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.DocExpirationUpdateProcessorFactory"&gt;
  *   &lt;int name="autoDeletePeriodSeconds"&gt;300&lt;/int&gt;
  *   &lt;str name="ttlFieldName"&gt;my_ttl&lt;/str&gt;
  *   &lt;null name="ttlParamName"/&gt;
@@ -209,7 +207,6 @@ public final class DocExpirationUpdateProcessorFactory
     throw confErr(arg + " " + errMsg);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
@@ -260,12 +257,7 @@ public final class DocExpirationUpdateProcessorFactory
 
   private void initDeleteExpiredDocsScheduler(SolrCore core) {
     executor = new ScheduledThreadPoolExecutor
-      (1, new SolrNamedThreadFactory("autoExpireDocs"),
-       new RejectedExecutionHandler() {
-        public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
-          log.warn("Skipping execution of '{}' using '{}'", r, e);
-        }
-      });
+      (1, new SolrNamedThreadFactory("autoExpireDocs"), new RejectedExecutionHandler());
 
     core.addCloseHook(new CloseHook() {
       public void postClose(SolrCore core) {
@@ -481,22 +473,22 @@ public final class DocExpirationUpdateProcessorFactory
     String col = desc.getCollectionName();
 
     DocCollection docCollection = zk.getClusterState().getCollection(col);
-    if (docCollection.getActiveSlicesArr().length == 0) {
+    if (docCollection.getActiveSlices().size() == 0) {
       log.error("Collection {} has no active Slices?", col);
       return false;
     }
-    List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
+    List<Slice> slices = new ArrayList<>(docCollection.getActiveSlices());
     Collections.sort(slices, COMPARE_SLICES_BY_NAME);
-    Replica firstSliceLeader = slices.get(0).getLeader();
+    Replica firstSliceLeader = slices.get(0).getLeader(zk.zkStateReader.getLiveNodes());
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader",
                col);
       return false;
     }
     String leaderInCharge = firstSliceLeader.getName();
-    String myCoreNodeName = desc.getCoreNodeName();
+    String myCoreName = core.getCoreDescriptor().getName();
     
-    boolean inChargeOfDeletesRightNow = leaderInCharge.equals(myCoreNodeName);
+    boolean inChargeOfDeletesRightNow = leaderInCharge.equals(myCoreName);
 
     if (previouslyInChargeOfDeletes && ! inChargeOfDeletesRightNow) {
       // don't spam the logs constantly, just log when we know that we're not the guy
@@ -514,6 +506,11 @@ public final class DocExpirationUpdateProcessorFactory
 
   private static final Comparator<Slice> COMPARE_SLICES_BY_NAME = (a, b) -> a.getName().compareTo(b.getName());
 
+  private static class RejectedExecutionHandler implements java.util.concurrent.RejectedExecutionHandler {
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+      log.warn("Skipping execution of '{}' using '{}'", r, e);
+    }
+  }
 }
 
 

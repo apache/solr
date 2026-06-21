@@ -16,6 +16,28 @@
  */
 package org.apache.solr.handler;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrConfig;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.util.Arrays.asList;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -24,31 +46,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.SolrConfig;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
-
-public class TestConfigReload extends AbstractFullDistribZkTestBase {
+@LuceneTestCase.Nightly
+public class TestConfigReload extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -65,9 +64,9 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   private void reloadTest() throws Exception {
     SolrZkClient client = cloudClient.getZkStateReader().getZkClient();
     if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getLiveNodes());
     }
-    String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/conf1/";
+    String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/_default/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
     checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
 
@@ -77,7 +76,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     Stat stat =  new Stat();
     byte[] data = null;
     try {
-      data = client.getData(resPath, null, stat, true);
+      data = client.getData(resPath, null, stat);
     } catch (KeeperException.NoNodeException e) {
       data = "{}".getBytes(StandardCharsets.UTF_8);
       log.info("creating_node {}",resPath);
@@ -85,23 +84,23 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     }
     long startTime = System.nanoTime();
     Stat newStat = client.setData(resPath, data, true);
-    client.setData("/configs/conf1", new byte[]{1}, true);
+    client.setData("/configs/_default", new byte[]{1}, true);
     assertTrue(newStat.getVersion() > stat.getVersion());
     if (log.isInfoEnabled()) {
       log.info("new_version {}", newStat.getVersion());
     }
     Integer newVersion = newStat.getVersion();
-    long maxTimeoutSeconds = 60;
+    long maxTimeoutSeconds = 10;
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add(""+replica.getCoreUrl());
     }
     HashSet<String> succeeded = new HashSet<>();
 
     while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds){
-      Thread.sleep(50);
+      Thread.sleep(250);
       for (String url : urls) {
         MapWriter respMap = getAsMap(url + uri);
         if (String.valueOf(newVersion).equals(respMap._getStr(asList(name, "znodeVersion"), null))) {
@@ -115,15 +114,8 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   }
 
   private LinkedHashMapWriter getAsMap(String uri) throws Exception {
-    HttpGet get = new HttpGet(uri) ;
-    HttpEntity entity = null;
-    try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(response))).getVal();
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
+    Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(uri, cloudClient.getHttpClient());
+    return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(resp.asString))).getVal();
   }
 
 

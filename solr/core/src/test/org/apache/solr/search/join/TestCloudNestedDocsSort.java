@@ -16,6 +16,20 @@
  */
 package org.apache.solr.search.join;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,60 +40,46 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
-  private static ArrayList<String> vals = new ArrayList<>();
-  private static CloudSolrClient client;
+  private static ArrayList<String> vals;
+  private static CloudHttp2SolrClient client;
   private static int maxDocs;
   private static String matchingParent;
   private static String matchingChild;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    final int numVals = atLeast(10);
+    vals = new ArrayList<>();
+    final int numVals = SolrTestUtil.atLeast(10);
     for (int i=0; i < numVals; i++) {
-      vals.add(""+Integer.toString(random().nextInt(1000000), Character.MAX_RADIX));
+      vals.add(""+Integer.toString(random().nextInt(100000), Character.MAX_RADIX));
     }
     
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
     configureCluster(nodeCount)
-       .addConfig(configName, configDir)
+       .addConfig(configName, configDir).formatZk(true)
        .configure();
     
     int shards = 2;
     int replicas = 2 ;
     CollectionAdminRequest.createCollection("collection1", configName, shards, replicas)
-        .withProperty("config", "solrconfig-minimal.xml")
+        .withProperty("config", "solrconfig-tlog.xml")
         .withProperty("schema", "schema.xml")
         .process(cluster.getSolrClient());
 
     client = cluster.getSolrClient();
     client.setDefaultCollection("collection1");
-    
-    ZkStateReader zkStateReader = client.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("collection1", zkStateReader, true, true, 30);
+
+    cluster.waitForActiveCollection("collection1", shards, shards * replicas);
     
     {
       int id = 42;
       final List<SolrInputDocument> docs = new ArrayList<>();
-      final int parentsNum = atLeast(20);
+      final int parentsNum = SolrTestUtil.atLeast(20);
           ;
       for (int i=0; i<parentsNum || (matchingParent==null ||matchingChild==null); i++) {
         final String parentTieVal = "" + random().nextInt(5);
@@ -90,14 +90,14 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
             "parent_id_s1", parentId
             );
         final List<String> parentFilter = addValsField(parent, "parentFilter_s");
-        final int kids = usually() ? atLeast(20) : 0;
+        final int kids = LuceneTestCase.usually() ? SolrTestUtil.atLeast(20) : 0;
         for(int c = 0; c< kids; c++){
           SolrInputDocument child = new SolrInputDocument("id", ""+(id++),
               "type_s", "child",
               "parentTie_s1", parentTieVal,
               "parent_id_s1", parentId);
           child.addField("parentFilter_s", parentFilter);
-          if (usually()) {
+          if (LuceneTestCase.usually()) {
             child.addField( "val_s1", Integer.toString(random().nextInt(1000), Character.MAX_RADIX)+"" );
           }
           final List<String> chVals = addValsField(child, "childFilter_s");
@@ -106,7 +106,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           // let's pickup at least matching child
           final boolean canPickMatchingChild = !chVals.isEmpty() && !parentFilter.isEmpty();
           final boolean haveNtPickedMatchingChild = matchingParent==null ||matchingChild==null;
-          if (canPickMatchingChild && haveNtPickedMatchingChild && usually()) {
+          if (canPickMatchingChild && haveNtPickedMatchingChild && LuceneTestCase.usually()) {
             matchingParent = (String) parentFilter.iterator().next();
             matchingChild = (String) chVals.iterator().next();
           }
@@ -124,6 +124,10 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   @AfterClass
   public static void cleanUpAfterClass() throws Exception {
     client = null;
+    vals = null;
+    maxDocs = 0;
+    matchingParent = null;
+    matchingChild = null;
   }
 
   @Test 
@@ -134,7 +138,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     String childFilter = "+childFilter_s:("+matchingChild+" "+anyValsSpaceDelim(4)+")^=0";
     final String fl = "id,type_s,parent_id_s1,val_s1,score,parentFilter_s,childFilter_s,parentTie_s1";
     String sortClause = "val_s1 "+dir+", "+"parent_id_s1 "+ascDesc();
-    if(rarely()) {
+    if(LuceneTestCase.rarely()) {
       sortClause ="parentTie_s1 "+ascDesc()+","+sortClause;
     }
     final SolrQuery q = new SolrQuery("q", "+type_s:child^=0 "+parentFilter+" "+
@@ -171,9 +175,9 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           final String actParentId = ""+ parent.get("id");
           if (!actParentId.equals(parentId)) {
             final String chDump = children.toString().replace("SolrDocument","\nSolrDocument");
-            System.out.println("\n\n"+chDump+"\n\n");
-            System.out.println("\n\n"+parents.toString().replace("SolrDocument","\nSolrDocument")
-                +"\n\n");
+            //System.out.println("\n\n"+chDump+"\n\n");
+            //System.out.println("\n\n"+parents.toString().replace("SolrDocument","\nSolrDocument")
+             //   +"\n\n");
           }
           assertEquals(""+child+"\n"+parent,actParentId, parentId);
         }

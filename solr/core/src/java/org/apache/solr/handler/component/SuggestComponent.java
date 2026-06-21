@@ -43,6 +43,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -103,9 +104,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     static final String SUGGESTION_PAYLOAD = "payload";
   }
   
-  @Override
-  @SuppressWarnings("unchecked")
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  @Override public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
     this.initParams = args;
   }
@@ -115,7 +114,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     if (initParams != null) {
       log.info("Initializing SuggestComponent");
       boolean hasDefault = false;
-      for (int i = 0; i < initParams.size(); i++) {
+      final int size = initParams.size();
+      for (int i = 0; i < size; i++) {
         if (initParams.getName(i).equals(CONFIG_PARAM_LABEL)) {
           @SuppressWarnings({"rawtypes"})
           NamedList suggesterParams = (NamedList) initParams.getVal(i);
@@ -298,7 +298,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     }
     
     // Merge Shard responses
-    SuggesterResult suggesterResult = merge(suggesterResults, count);
+    SuggesterResult suggesterResult = merge(suggesterResults, count, rb.req.getParams().getBool(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, false));
     Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults = 
         new HashMap<>();
     toNamedList(suggesterResult, namedListResults);
@@ -312,16 +312,35 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
    * number of {@link LookupResult}, sorted by their associated 
    * weights
    * */
-  private static SuggesterResult merge(List<SuggesterResult> suggesterResults, int count) {
+  private static SuggesterResult merge(List<SuggesterResult> suggesterResults, int count, boolean extended) {
     SuggesterResult result = new SuggesterResult();
     Set<String> allTokens = new HashSet<>();
     Set<String> suggesterNames = new HashSet<>();
-    
+    Map<String,LookupResult> keys = new HashMap<>();
     // collect all tokens
     for (SuggesterResult shardResult : suggesterResults) {
       for (String suggesterName : shardResult.getSuggesterNames()) {
-        allTokens.addAll(shardResult.getTokens(suggesterName));
         suggesterNames.add(suggesterName);
+        Set<String> tokens = shardResult.getTokens(suggesterName);
+        allTokens.addAll(tokens);
+        for (String token : tokens) {
+          List<LookupResult> removeLookupResults = new ArrayList<>();
+           List<LookupResult> lookupResults = shardResult.getLookupResult(suggesterName, token);
+          for (LookupResult lresult : lookupResults) {
+            LookupResult oldLookupResult = keys.put(lresult.toString(), lresult);
+            if (oldLookupResult != null) {
+              removeLookupResults.add(lresult);
+              if (extended) {
+                for (BytesRef context : lresult.contexts) {
+                  //System.out.println("context:" + context.utf8ToString());
+                }
+              }
+            }
+          }
+          for (LookupResult lresult : removeLookupResults) {
+            lookupResults.remove(lresult);
+          }
+        }
       }
     }
     
@@ -358,10 +377,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
 
     this.solrMetricsContext.gauge(() -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());
     MetricsMap suggestersMap = new MetricsMap((detailed, map) -> {
-      for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
-        SolrSuggester suggester = entry.getValue();
-        map.put(entry.getKey(), suggester.toString());
-      }
+      suggesters.forEach((key, suggester) -> map.put(key, suggester.toString()));
     });
     this.solrMetricsContext.gauge(suggestersMap, true, "suggesters", getCategory().toString(), scope);
   }
@@ -398,21 +414,19 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     
   }
   
-  private Set<String> getSuggesterNames(SolrParams params) {
+  private static Set<String> getSuggesterNames(SolrParams params) {
     Set<String> suggesterNames = new HashSet<>();
     String[] suggesterNamesFromParams = params.getParams(SUGGEST_DICT);
     if (suggesterNamesFromParams == null) {
       suggesterNames.add(DEFAULT_DICT_NAME);
     } else {
-      for (String name : suggesterNamesFromParams) {
-        suggesterNames.add(name);
-      }
+      Collections.addAll(suggesterNames, suggesterNamesFromParams);
     }
     return suggesterNames;   
   }
   
   /** Convert {@link SuggesterResult} to NamedList for constructing responses */
-  private void toNamedList(SuggesterResult suggesterResult, Map<String, SimpleOrderedMap<NamedList<Object>>> resultObj) {
+  private static void toNamedList(SuggesterResult suggesterResult, Map<String,SimpleOrderedMap<NamedList<Object>>> resultObj) {
     for(String suggesterName : suggesterResult.getSuggesterNames()) {
       SimpleOrderedMap<NamedList<Object>> results = new SimpleOrderedMap<>();
       for (String token : suggesterResult.getTokens(suggesterName)) {
@@ -442,26 +456,26 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   /** Convert NamedList (suggester response) to {@link SuggesterResult} */
-  private SuggesterResult toSuggesterResult(Map<String, SimpleOrderedMap<NamedList<Object>>> suggestionsMap) {
+  private static SuggesterResult toSuggesterResult(Map<String,SimpleOrderedMap<NamedList<Object>>> suggestionsMap) {
     SuggesterResult result = new SuggesterResult();
     if (suggestionsMap == null) {
       return result;
     }
+
     // for each token
-    for(Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> entry : suggestionsMap.entrySet()) {
-      String suggesterName = entry.getKey();
-      for (Iterator<Map.Entry<String, NamedList<Object>>> suggestionsIter = entry.getValue().iterator(); suggestionsIter.hasNext();) {
-        Map.Entry<String, NamedList<Object>> suggestions = suggestionsIter.next(); 
+    suggestionsMap.forEach((suggesterName, value) -> {
+      for (Iterator<Map.Entry<String,NamedList<Object>>> suggestionsIter = value.iterator(); suggestionsIter.hasNext(); ) {
+        Map.Entry<String,NamedList<Object>> suggestions = suggestionsIter.next();
         String tokenString = suggestions.getKey();
         List<LookupResult> lookupResults = new ArrayList<>();
         NamedList<Object> suggestion = suggestions.getValue();
         // for each suggestion
-        for (int j = 0; j < suggestion.size(); j++) {
+        final int size = suggestion.size();
+        for (int j = 0; j < size; j++) {
           String property = suggestion.getName(j);
           if (property.equals(SuggesterResultLabels.SUGGESTIONS)) {
-            @SuppressWarnings("unchecked")
-            List<NamedList<Object>> suggestionEntries = (List<NamedList<Object>>) suggestion.getVal(j);
-            for(NamedList<Object> suggestionEntry : suggestionEntries) {
+            @SuppressWarnings("unchecked") List<NamedList<Object>> suggestionEntries = (List<NamedList<Object>>) suggestion.getVal(j);
+            for (NamedList<Object> suggestionEntry : suggestionEntries) {
               String term = (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_TERM);
               Long weight = (Long) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_WEIGHT);
               String payload = (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_PAYLOAD);
@@ -472,7 +486,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           result.add(suggesterName, tokenString, lookupResults);
         }
       }
-    }
+    });
     return result;
   }
   
@@ -507,17 +521,26 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher,
                             SolrIndexSearcher currentSearcher) {
+      if (core.getCoreContainer().isShutDown()) return;
       long thisCallCount = callCount.incrementAndGet();
-      if (isCoreReload && thisCallCount == 1) {
-        log.info("Skipping first newSearcher call for suggester {} in core reload", suggester);
-        return;
-      } else if (thisCallCount == 1 || (isCoreReload && thisCallCount == 2)) {
+      if (thisCallCount == 1) {
+        // First searcher of this core (fresh load OR reload). On reload this is the firstSearcher event,
+        // fired with a null currentSearcher, so it runs in the searcher-warming task that completes BEFORE
+        // the searcher is registered/visible to queries. Build here (when requested) so the suggester is
+        // ready before any query can hit the reloaded core. The previous logic skipped this first event on
+        // reload and built on the second (newSearcher) event instead, which races registration: the
+        // reloaded searcher became queryable before the async build finished, yielding intermittent
+        // numFound=0 (SuggestComponentTest.testDefaultBuildOnStartup*).
         if (buildOnStartup) {
           if (log.isInfoEnabled()) {
             log.info("buildOnStartup: {}", suggester.getName());
           }
           buildSuggesterIndex(newSearcher);
         }
+      } else if (isCoreReload && thisCallCount == 2) {
+        // The second searcher event during a reload is spurious for build purposes -- we already built on
+        // the first event above. Ignore it so we neither double-build nor misfire buildOnCommit here.
+        log.info("Skipping second newSearcher call for suggester {} in core reload", suggester.getName());
       } else {
         if (buildOnCommit)  {
           if (log.isInfoEnabled()) {

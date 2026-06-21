@@ -28,8 +28,9 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * The original test for {@link TaggerRequestHandler}.
@@ -37,9 +38,15 @@ import org.junit.Ignore;
 public class TaggerTest extends TaggerTestCase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTaggerTest() throws Exception {
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
   }
+
+  @AfterClass
+  public static void afterTaggerTest() {
+    deleteCore();
+  }
+
 
   private void indexAndBuild() throws Exception {
     N[] names = N.values();
@@ -125,44 +132,6 @@ public class TaggerTest extends TaggerTestCase {
     String rspStr = h.query(req);
     req.close();
     return rspStr;
-  }
-
-  /** Partial matching, no sub-tags */
-  @Ignore //TODO ConcatenateGraphFilter uses a special separator char that we can't put into XML (invalid char)
-  public void testPartialMatching() throws Exception {
-    baseParams.set("field", "name_tagPartial");
-    baseParams.set("overlaps", "NO_SUB");
-    baseParams.set("fq", "NOT name:(of the)");//test filtering
-    indexAndBuild();
-
-    //these match nothing
-    assertTags(reqDoc("") );
-    assertTags(reqDoc(" ") );
-    assertTags(reqDoc("the") );
-
-    String doc;
-
-    //just London Business School via "school" substring
-    doc = "school";
-    assertTags(reqDoc(doc), tt(doc,"school", 0, N.London_Business_School));
-
-    doc = "a school";
-    assertTags(reqDoc(doc), tt(doc,"school", 0, N.London_Business_School));
-
-    doc = "school a";
-    assertTags(reqDoc(doc), tt(doc,"school", 0, N.London_Business_School));
-
-    //More interesting
-
-    doc = "school City";
-    assertTags(reqDoc(doc),
-        tt(doc, "school", 0, N.London_Business_School),
-        tt(doc, "City", 0, N.City_of_London) );
-
-    doc = "City of London Business School";
-    assertTags(reqDoc(doc),   //no plain London (sub-tag)
-        tt(doc, "City of London", 0, N.City_of_London),
-        tt(doc, "London Business School", 0, N.London_Business_School));
   }
 
   /** whole matching, no sub-tags */

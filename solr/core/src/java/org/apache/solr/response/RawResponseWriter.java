@@ -71,7 +71,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     Object obj = response.getValues().get( CONTENT );
-    if( obj != null && (obj instanceof ContentStream ) ) {
+    if((obj instanceof ContentStream)) {
       return ((ContentStream)obj).getContentType();
     }
     return getBaseWriter( request ).getContentType( request, response );
@@ -80,11 +80,11 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     Object obj = response.getValues().get( CONTENT );
-    if( obj != null && (obj instanceof ContentStream ) ) {
+    if((obj instanceof ContentStream)) {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
-      try(Reader reader = content.getReader()) {
-        IOUtils.copy( reader, writer );
+      try (Reader reader = content.getReader()) {
+        IOUtils.copy(reader, writer );
       }
     } else {
       getBaseWriter( request ).write( writer, request, response );
@@ -94,14 +94,16 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     Object obj = response.getValues().get( CONTENT );
-    if( obj != null && (obj instanceof ContentStream ) ) {
+    if((obj instanceof ContentStream)) {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
-      try(InputStream in = content.getStream()) {
-        IOUtils.copy( in, out );
-      }
+      InputStream in;
+
+      in = content.getStream();
+      IOUtils.copy(in, out);
+
     } else {
-      QueryResponseWriterUtil.writeQueryResponse(out, 
+      QueryResponseWriterUtil.writeQueryResponse(out,
           getBaseWriter(request), request, response, getContentType(request, response));
     }
   }

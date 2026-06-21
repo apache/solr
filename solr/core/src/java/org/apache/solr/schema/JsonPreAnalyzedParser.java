@@ -70,7 +70,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
   public ParseResult parse(Reader reader, AttributeSource parent)
       throws IOException {
     ParseResult res = new ParseResult();
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(128);
     char[] buf = new char[128];
     int cnt;
     while ((cnt = reader.read(buf)) > 0) {
@@ -81,7 +81,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
     if (val.length() == 0) {
       return res;
     }
-    Object o = ObjectBuilder.fromJSONStrict(val);
+    Object o = ObjectBuilder.fromJSON(val);
     if (!(o instanceof Map)) {
       throw new IOException("Invalid JSON type " + o.getClass().getName() + ", expected Map");
     }

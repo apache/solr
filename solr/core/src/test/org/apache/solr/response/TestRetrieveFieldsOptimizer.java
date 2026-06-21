@@ -17,26 +17,9 @@
 
 package org.apache.solr.response;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -55,129 +38,149 @@ import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RefCounted;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 import static junit.framework.Assert.fail;
-import static org.apache.lucene.util.LuceneTestCase.random;
+import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
-import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  @BeforeClass
-  public static void initManagedSchemaCore() throws Exception {
+  @Before
+  public void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
     System.setProperty("enable.update.log", "false");
-
+    typesHolder = new FieldTypeHolder();
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+      setupAllFields();
 
-    IndexSchema schema = h.getCore().getLatestSchema();
-    setupAllFields();
-
-    h.getCore().setLatestSchema(schema);
+      core.setLatestSchema(schema);
+    }
   }
 
-  static String storedNotDvSv = "_s_ndv_sv";
-  static String storedAndDvSv = "_s_dv_sv";
-  static String notStoredDvSv = "_ns_dv_sv";
+  @After
+  public void afterTest() {
+    deleteCore();
+    allFieldValuesInput.clear();
+    typesHolder = null;
+  }
 
-  static String storedNotDvMv = "_s_ndv_mv";
-  static String storedAndDvMv = "_s_dv_mv";
-  static String notStoredDvMv = "_ns_dv_mv";
+  String storedNotDvSv = "_s_ndv_sv";
+  String storedAndDvSv = "_s_dv_sv";
+  String notStoredDvSv = "_ns_dv_sv";
+
+  String storedNotDvMv = "_s_ndv_mv";
+  String storedAndDvMv = "_s_dv_mv";
+  String notStoredDvMv = "_ns_dv_mv";
 
   // Each doc needs a field I can use to identify it for value comparison
-  static String idStoredNotDv = "id_s_ndv_sv";
-  static String idNotStoredDv = "id_ns_dv_sv";
+  String idStoredNotDv = "id_s_ndv_sv";
+  String idNotStoredDv = "id_ns_dv_sv";
 
-  static FieldTypeHolder typesHolder = new FieldTypeHolder();
+  FieldTypeHolder typesHolder;
 
-  static FieldHolder fieldsHolder = new FieldHolder();
-  static Map<String, Map<String, List<String>>> allFieldValuesInput = new HashMap<>();
+  FieldHolder fieldsHolder = new FieldHolder();
+  Map<String, Map<String, List<String>>> allFieldValuesInput = new HashMap<>();
 
   //TODO, how to generalize?
 
-  private static void setupAllFields() throws IOException {
+  private void setupAllFields() throws IOException {
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
 
-    IndexSchema schema = h.getCore().getLatestSchema();
+      // Add all the types before the fields.
+      Map<String,Map<String,String>> fieldsToAdd = new HashMap<>();
 
-    // Add all the types before the fields.
-    Map<String, Map<String, String>> fieldsToAdd = new HashMap<>();
+      // We need our special id fields to find the docs later.
+      typesHolder.addFieldType(schema, idNotStoredDv, RetrieveFieldType.TEST_TYPE.STRING);
+      fieldsToAdd.put(idNotStoredDv, map("stored", "false", "docValues", "true", "multiValued", "false"));
 
-    // We need our special id fields to find the docs later.
-    typesHolder.addFieldType(schema, idNotStoredDv, RetrieveFieldType.TEST_TYPE.STRING);
-    fieldsToAdd.put(idNotStoredDv, map("stored", "false", "docValues", "true", "multiValued", "false"));
+      typesHolder.addFieldType(schema, idStoredNotDv, RetrieveFieldType.TEST_TYPE.STRING);
+      fieldsToAdd.put(idStoredNotDv, map("stored", "true", "docValues", "false", "multiValued", "false"));
 
-    typesHolder.addFieldType(schema, idStoredNotDv, RetrieveFieldType.TEST_TYPE.STRING);
-    fieldsToAdd.put(idStoredNotDv, map("stored", "true", "docValues", "false", "multiValued", "false"));
+      for (RetrieveFieldType.TEST_TYPE type : RetrieveFieldType.solrClassMap.keySet()) {
+        // We happen to be naming the fields and types identically.
+        String myName = type.toString() + storedNotDvSv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "false"));
 
-    for (RetrieveFieldType.TEST_TYPE type : RetrieveFieldType.solrClassMap.keySet()) {
-      // We happen to be naming the fields and types identically.
-      String myName = type.toString() + storedNotDvSv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "false"));
+        myName = type.toString() + storedAndDvSv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + storedAndDvSv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "false"));
+        myName = type.toString() + notStoredDvSv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + notStoredDvSv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "false"));
+        myName = type.toString() + storedNotDvMv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "true"));
 
-      myName = type.toString() + storedNotDvMv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "true"));
+        myName = type.toString() + storedAndDvMv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "true"));
 
-      myName = type.toString() + storedAndDvMv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "true"));
-
-      myName = type.toString() + notStoredDvMv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "true"));
-    }
-
-    schema = typesHolder.addFieldTypes(schema);
-
-    for (Map.Entry<String, Map<String, String>> ent : fieldsToAdd.entrySet()) {
-      fieldsHolder.addField(schema, ent.getKey(), ent.getKey(), ent.getValue());
-    }
-    schema = fieldsHolder.addFields(schema);
-
-    h.getCore().setLatestSchema(schema);
-
-    // All that setup work and we're only going to add a very few docs!
-    for (int idx = 0; idx < 10; ++idx) {
-      addDocWithAllFields(idx);
-    }
-    assertU(commit());
-    // Now we need to massage the expected values returned based on the docValues type 'cause it's weird.
-    final RefCounted<SolrIndexSearcher> refCounted = h.getCore().getNewestSearcher(true);
-    try {
-      //static Map<String, Map<String, List<String>>>
-      for (Map<String, List<String>> docFieldsEnt : allFieldValuesInput.values()) {
-        for (Map.Entry<String, List<String>> oneField : docFieldsEnt.entrySet()) {
-          RetrieveField field = fieldsHolder.getTestField(oneField.getKey());
-          field.expectedValsAsStrings(refCounted.get().getSlowAtomicReader().getFieldInfos().fieldInfo(field.name),
-              oneField.getValue());
-        }
+        myName = type.toString() + notStoredDvMv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "true"));
       }
-    } finally {
-      refCounted.decref();
-    }
-   }
 
-  static void addDocWithAllFields(int idx) {
+      schema = typesHolder.addFieldTypes(schema);
+
+      for (Map.Entry<String,Map<String,String>> ent : fieldsToAdd.entrySet()) {
+        fieldsHolder.addField(schema, ent.getKey(), ent.getKey(), ent.getValue(), typesHolder);
+      }
+      schema = fieldsHolder.addFields(schema);
+
+      core.setLatestSchema(schema);
+
+      // All that setup work and we're only going to add a very few docs!
+      for (int idx = 0; idx < 10; ++idx) {
+        addDocWithAllFields(idx);
+      }
+      assertU(commit());
+      // Now we need to massage the expected values returned based on the docValues type 'cause it's weird.
+      final RefCounted<SolrIndexSearcher> refCounted = core.getNewestSearcher(true);
+      try {
+        //static Map<String, Map<String, List<String>>>
+        for (Map<String,List<String>> docFieldsEnt : allFieldValuesInput.values()) {
+          for (Map.Entry<String,List<String>> oneField : docFieldsEnt.entrySet()) {
+            RetrieveField field = fieldsHolder.getTestField(oneField.getKey());
+            field.expectedValsAsStrings(refCounted.get().getSlowAtomicReader().getFieldInfos().fieldInfo(field.name), oneField.getValue());
+          }
+        }
+      } finally {
+        refCounted.decref();
+      }
+    }
+  }
+
+   void addDocWithAllFields(int idx) {
 
     // for each doc, add a doc with all the fields with values and store the expected return.
     Map<String, List<String>> fieldsExpectedVals = new HashMap<>();
@@ -263,9 +266,9 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
         .collect(Collectors.joining(","));
 
     // Even a single multiValued and stored field should cause stored fields to be visited.
-
+    Random random = SolrTestCase.random();
     List<Integer> shuffled = Arrays.asList(0, 1, 2);
-    Collections.shuffle(shuffled, random());
+    Collections.shuffle(shuffled, random);
     for (int which : shuffled) {
       switch (which) {
         case 0:
@@ -278,7 +281,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
         case 2:
           List<RetrieveField> toCheckPlusMv = new ArrayList<>(toCheck);
-          toCheckPlusMv.add(fieldsHolder.storedMvFields.get(random().nextInt(fieldsHolder.storedMvFields.size())));
+          toCheckPlusMv.add(fieldsHolder.storedMvFields.get(random.nextInt(fieldsHolder.storedMvFields.size())));
 
           String flWithMv = idField + toCheckPlusMv.stream()
               .map(RetrieveField::getName) // This will call testField.getName()
@@ -305,12 +308,11 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     Set<String> setDedupe = new HashSet<>(Arrays.asList(flIn.split(",")));
     String fl = String.join(",", setDedupe);
 
-    SolrCore core = h.getCore();
-
     SolrQueryRequest req = lrf.makeRequest("q", "*:*", CommonParams.FL, fl);
     SolrQueryResponse rsp = h.queryAndResponse("", req);
 
-    BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) core.getQueryResponseWriter("javabin");
+    BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) req.getCore().getQueryResponseWriter("javabin");
+
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
 
@@ -421,8 +423,8 @@ class FieldHolder {
 
   Map<String, RetrieveField> fields = new HashMap<>();
 
-  void addField(IndexSchema schema, String name, String type, Map<String, String> opts) {
-    fields.put(name, new RetrieveField(schema, name, type, opts));
+  void addField(IndexSchema schema, String name, String type, Map<String, String> opts, FieldTypeHolder typesHolder) {
+    fields.put(name, new RetrieveField(schema, name, type, opts, typesHolder));
   }
 
   List<RetrieveField> dvNotStoredFields = new ArrayList<>();
@@ -470,7 +472,7 @@ class RetrieveField {
   final SchemaField schemaField;
   final RetrieveFieldType testFieldType;
 
-  RetrieveField(IndexSchema schema, String name, String type, Map<String, String> opts) {
+  RetrieveField(IndexSchema schema, String name, String type, Map<String, String> opts, FieldTypeHolder typesHolder) {
 
     Map<String, String> fullOpts = new HashMap<>(opts);
     fullOpts.put("name", name);
@@ -479,7 +481,7 @@ class RetrieveField {
     this.name = name;
     this.type = type;
     this.schemaField = schema.newField(name, type, opts);
-    this.testFieldType = TestRetrieveFieldsOptimizer.typesHolder.getTestType(type);
+    this.testFieldType = typesHolder.getTestType(type);
 
   }
 
@@ -518,26 +520,27 @@ class RetrieveField {
     sb.setLength(0);
 
     for (int idx = 0; idx < 10; ++idx) {
-      sb.append(chars.charAt(random().nextInt(chars.length())));
+      sb.append(chars.charAt(SolrTestCase.random().nextInt(chars.length())));
     }
     return sb.toString();
   }
 
   private String randDate() {
-    return new Date(Math.abs(random().nextLong()) % 3_000_000_000_000L).toInstant().toString();
+    return new Date(Math.abs(SolrTestCase.random().nextLong()) % 3_000_000_000_000L).toInstant().toString();
   }
 
   List<String> getValsForField() {
+    Random random = SolrTestCase.random();
     List<String> valsAsStrings = new ArrayList<>();
     switch (testFieldType.getSolrTypeClass()) {
       case "solr.TrieIntField":
       case "solr.TrieLongField":
       case "solr.IntPointField":
       case "solr.LongPointField":
-        valsAsStrings.add(Integer.toString(random().nextInt(10_000)));
+        valsAsStrings.add(Integer.toString(random.nextInt(10_000)));
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
-          valsAsStrings.add(Integer.toString(random().nextInt(10_000)));
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
+          valsAsStrings.add(Integer.toString(random.nextInt(10_000)));
         }
         break;
 
@@ -545,10 +548,10 @@ class RetrieveField {
       case "solr.TrieDoubleField":
       case "solr.FloatPointField":
       case "solr.DoublePointField":
-        valsAsStrings.add(Float.toString(random().nextFloat()));
+        valsAsStrings.add(Float.toString(random.nextFloat()));
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
-          valsAsStrings.add(Float.toString(random().nextFloat()));
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
+          valsAsStrings.add(Float.toString(random.nextFloat()));
         }
         break;
 
@@ -556,7 +559,7 @@ class RetrieveField {
       case "solr.DatePointField":
         valsAsStrings.add(randDate());
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
           valsAsStrings.add(randDate());
         }
         break;
@@ -564,16 +567,16 @@ class RetrieveField {
       case "solr.StrField":
         valsAsStrings.add(randString());
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
           valsAsStrings.add(randString());
         }
         break;
 
       case "solr.BoolField":
-        valsAsStrings.add(Boolean.toString(random().nextBoolean()));
+        valsAsStrings.add(Boolean.toString(random.nextBoolean()));
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
-          valsAsStrings.add(Boolean.toString(random().nextBoolean()));
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
+          valsAsStrings.add(Boolean.toString(random.nextBoolean()));
         }
         break;
 
@@ -583,8 +586,8 @@ class RetrieveField {
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that obey set
     // semantics so be sure we include at least one duplicate in a multValued field sometimes
-    if (random().nextBoolean() && valsAsStrings.size() > 1) {
-      valsAsStrings.add(valsAsStrings.get(random().nextInt(valsAsStrings.size())));
+    if (random.nextBoolean() && valsAsStrings.size() > 1) {
+      valsAsStrings.add(valsAsStrings.get(random.nextInt(valsAsStrings.size())));
 
     }
 

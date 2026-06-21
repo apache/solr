@@ -16,15 +16,19 @@
  */
 package org.apache.solr.core;
 
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,22 +58,25 @@ public class ConfigSetProperties {
    */
   @SuppressWarnings({"rawtypes"})
   public static NamedList readFromResourceLoader(SolrResourceLoader loader, String name) {
-    InputStreamReader reader;
-    try {
-      reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
+
+    try (InputStream resource = loader.openResource(name)) {
+      try (InputStreamReader reader = new InputStreamReader(resource, StandardCharsets.UTF_8)) {
+        try {
+          return readFromInputStream(reader);
+        } finally {
+          org.apache.solr.common.util.IOUtils.closeQuietly(reader);
+        }
+      }
+    } catch (AlreadyClosedException e) {
+      throw e;
     } catch (SolrResourceNotFoundException ex) {
       if (log.isDebugEnabled()) {
         log.debug("Did not find ConfigSet properties, assuming default properties: {}", ex.getMessage());
       }
-      return null;
+      return new NamedList();
     } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex, false);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
-    }
-
-    try {
-      return readFromInputStream(reader);
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
   }
 
@@ -82,6 +89,8 @@ public class ConfigSetProperties {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
       return new NamedList((Map) object);
+    } catch (JSONParser.ParseException e) {
+      return new NamedList();
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
     } finally {

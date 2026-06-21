@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.response;
 
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -26,6 +27,7 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,11 +42,16 @@ import junit.framework.Assert;
 public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestSpellCheckResponse() throws Exception {
     initCore();
   }
 
-  static String field = "name";
+  @AfterClass
+  public static void afterTestSpellCheckResponse() {
+    deleteCore();
+  }
+
+  String field = "name";
 
   @Test
   public void testSpellCheckResponse() throws Exception {
@@ -106,6 +113,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
   }
 
   @Test
+  @LuceneTestCase.Nightly // TODO: look at perf
   public void testSpellCheckCollationResponse() throws Exception {
     getSolrClient();
     client.deleteByQuery("*:*");

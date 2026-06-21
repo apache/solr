@@ -272,7 +272,7 @@ import java.util.Locale;
         return null;
       }
       int val_start = ++pos;
-      StringBuilder sb = new StringBuilder(); // needed for escaping
+      StringBuilder sb = new StringBuilder(32); // needed for escaping
       for (; ;) {
         if (pos >= end) {
           throw new SyntaxError("Missing end quote for string at pos " + (val_start - 1) + " str='" + val + "'");

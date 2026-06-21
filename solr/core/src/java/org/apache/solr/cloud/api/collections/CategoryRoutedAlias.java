@@ -72,6 +72,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
   public static final Set<String> OPTIONAL_ROUTER_PARAMS = Set.of(
       ROUTER_MAX_CARDINALITY,
       ROUTER_MUST_MATCH);
+  private static final Pattern COMPILE = Pattern.compile("\\W");
 
   private Aliases aliases;
   private final String aliasName;
@@ -93,7 +94,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
     if (this.aliases != aliases) {
       if (this.aliases != null) {
         if (log.isDebugEnabled()) {
-          log.debug("Observing possibly updated alias: {}", getAliasName());
+          log.debug("Observing possibly updated alias: {}", aliasName);
         }
       }
       // slightly inefficient, but not easy to make changes to the return value of parseCollections
@@ -156,7 +157,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
     if (cols.stream()
         .filter(x -> !x.contains(UNINITIALIZED)).count() >= maxCardinality) {
       throw new SolrException(BAD_REQUEST, "Max cardinality " + maxCardinality
-          + " reached for Category Routed Alias: " + getAliasName());
+          + " reached for Category Routed Alias: " + aliasName);
     }
   }
 
@@ -167,8 +168,8 @@ public class CategoryRoutedAlias extends RoutedAlias {
    * @param dataValue a value from the route field for a particular document
    * @return the suffix value for it's corresponding collection name.
    */
-  private String safeKeyValue(String dataValue) {
-    return dataValue.trim().replaceAll("\\W", "_");
+  private static String safeKeyValue(String dataValue) {
+    return COMPILE.matcher(dataValue.trim()).replaceAll("_");
   }
 
   String buildCollectionNameFromValue(String value) {
@@ -176,7 +177,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
   }
 
 
-  private Integer parseMaxCardinality(String maxCardinality) {
+  private static Integer parseMaxCardinality(String maxCardinality) {
     try {
       return Integer.valueOf(maxCardinality);
     } catch (NumberFormatException e) {
@@ -185,7 +186,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
     }
   }
 
-  private Pattern compileMustMatch(String mustMatch) {
+  private static Pattern compileMustMatch(String mustMatch) {
     try {
       return Pattern.compile(mustMatch);
     } catch (PatternSyntaxException e) {

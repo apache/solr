@@ -29,7 +29,7 @@ public class SolrContentHandlerFactory {
 
   public SolrContentHandlerFactory() { }
 
-  public SolrContentHandler createSolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
+  public static SolrContentHandler createSolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
     return new SolrContentHandler(metadata, params, schema);
   }
 }

@@ -71,7 +71,7 @@ public class ZookeeperReadAPI {
     if (path == null || path.isEmpty()) path = "/";
     byte[] d = null;
     try {
-      d = coreContainer.getZkController().getZkClient().getData(path, null, null, false);
+      d = coreContainer.getZkController().getZkClient().getData(path, null, null);
     } catch (KeeperException.NoNodeException e) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: " + path);
     } catch (Exception e) {
@@ -107,7 +107,7 @@ public class ZookeeperReadAPI {
       Map<String , Stat> stats = new LinkedHashMap<>();
       for (String s : l) {
         try {
-          stats.put(s, coreContainer.getZkController().getZkClient().exists(prefix + s, null, false));
+          stats.put(s, coreContainer.getZkController().getZkClient().exists(prefix + s, null));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -126,7 +126,7 @@ public class ZookeeperReadAPI {
     }
   }
 
-  private void printStat(MapWriter.EntryWriter ew, String s, Stat stat) throws IOException {
+  private static void printStat(MapWriter.EntryWriter ew, String s, Stat stat) throws IOException {
     ew.put(s, (MapWriter) ew1 -> {
       ew1.put("version", stat.getVersion());
       ew1.put("aversion", stat.getAversion());

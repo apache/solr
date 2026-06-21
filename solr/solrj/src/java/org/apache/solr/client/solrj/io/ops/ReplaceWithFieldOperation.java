@@ -49,20 +49,20 @@ public class ReplaceWithFieldOperation implements StreamOperation {
       wasBuiltWithFieldName = false;
       
       this.originalFieldName = forField;
-      this.originalValue = factory.constructPrimitiveObject(factory.getValueOperand(expression, 0));
+      this.originalValue = StreamFactory.constructPrimitiveObject(StreamFactory.getValueOperand(expression, 0));
 
     }
     else if(3 == expression.getParameters().size()){
       wasBuiltWithFieldName = true;
       
-      this.originalFieldName = factory.getValueOperand(expression, 0);
-      this.originalValue = factory.constructPrimitiveObject(factory.getValueOperand(expression, 1));
+      this.originalFieldName = StreamFactory.getValueOperand(expression, 0);
+      this.originalValue = StreamFactory.constructPrimitiveObject(StreamFactory.getValueOperand(expression, 1));
     }
     else{
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
     }
     
-    StreamExpressionNamedParameter replacementParameter = factory.getNamedOperand(expression, "withField");
+    StreamExpressionNamedParameter replacementParameter = StreamFactory.getNamedOperand(expression, "withField");
     if(null == replacementParameter){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a parameter named 'withField' but didn't find one.", expression));
     }

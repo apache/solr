@@ -40,7 +40,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
   public KmeansEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
 
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(namedParam.getName().equals("maxIterations")) {

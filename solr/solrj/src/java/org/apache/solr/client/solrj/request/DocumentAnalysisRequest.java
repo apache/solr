@@ -31,6 +31,8 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
+import org.apache.solr.common.util.NamedList;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -69,11 +71,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
       @Override
       public void write(OutputStream os) throws IOException {
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(os, UTF_8);
-        try {
-          getXML(outputStreamWriter);
-        } finally {
-          outputStreamWriter.flush();
-        }
+        getXML(outputStreamWriter);
       }
 
       @Override
@@ -85,8 +83,8 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
   }
 
   @Override
-  protected DocumentAnalysisResponse createResponse(SolrClient client) {
-    return new DocumentAnalysisResponse();
+  protected DocumentAnalysisResponse createResponse(SolrClient client, NamedList<Object> nl) {
+    return new DocumentAnalysisResponse(nl);
   }
 
   @Override
@@ -115,7 +113,6 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
       ClientUtils.writeXML(document, writer);
     }
     writer.write("</docs>");
-    writer.flush();
 
     String xml = writer.toString();
     return (xml.length() > 0) ? xml : null;

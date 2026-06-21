@@ -18,11 +18,13 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +35,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   private final static long HARDCODED_TEST_TIMESTAMP = 1332070464L;
 
   OpenExchangeRatesOrgProvider oerp;
-  ResourceLoader loader;
+  SolrResourceLoader loader;
   private final Map<String,String> mockParams = new HashMap<>();
 
 
@@ -47,7 +49,14 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     mockParams.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, 
                    "open-exchange-rates.json");  
     oerp = new OpenExchangeRatesOrgProvider();
-    loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"));
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    IOUtils.closeQuietly(loader);
   }
   
   @Test

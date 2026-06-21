@@ -16,32 +16,29 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.junit.BeforeClass;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the binary 
  * codec for communication. 
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly
 public class SolrExampleBinaryTest extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
 
-  @Override
-  public SolrClient createNewSolrClient()
+  public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     try {
       // setup the server...
       String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
+      Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+      //client.setUseMultiPartPost(random().nextBoolean());
 
       // where the magic happens
       client.setParser(new BinaryResponseParser());

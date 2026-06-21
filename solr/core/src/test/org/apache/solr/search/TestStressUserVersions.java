@@ -23,12 +23,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
+import org.apache.solr.util.TimeOut;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,8 +46,13 @@ public class TestStressUserVersions extends TestRTGBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestStressUserVersions() throws Exception {
     initCore("solrconfig-externalversionconstraint.xml","schema15.xml");
+  }
+
+  @AfterClass
+  public static void afterTestStressUserVersions() {
+    deleteCore();
   }
 
   private static String vfield = "my_version_l";
@@ -67,19 +78,19 @@ public class TestStressUserVersions extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random().nextInt(20);
+    final int commitPercent = 5 + random().nextInt(TEST_NIGHTLY ? 20 : 3);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = random().nextInt(8);
-    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    int nWriteThreads = 5 + random().nextInt(25);
+    final int ndocs = 5 + (TEST_NIGHTLY ? (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200)) : 7);
+    int nWriteThreads = 1 + random().nextInt(TEST_NIGHTLY ? 12 : 2);
 
     final int maxConcurrentCommits = nWriteThreads;
 
     // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong(10000);  // number of query operations to perform in total - ramp up for a longer test
-    int nReadThreads = 5 + random().nextInt(25);
+    final AtomicLong operations = new AtomicLong( TEST_NIGHTLY ? 10000 : 75);  // number of query operations to perform in total - ramp up for a longer test
+    int nReadThreads = 1 + random().nextInt(TEST_NIGHTLY ? 12 : 2);
 
 
     /** // testing
@@ -105,35 +116,35 @@ public class TestStressUserVersions extends TestRTGBase {
     initModel(ndocs);
 
     final AtomicInteger numCommitting = new AtomicInteger();
-
-    List<Thread> threads = new ArrayList<>();
-
-
+    TimeOut timeout = new TimeOut(TEST_NIGHTLY ? 8 : 2, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     final AtomicLong testVersion = new AtomicLong(0);
-
+    List<Callable<Object>> threads = new ArrayList<>();
     for (int i=0; i<nWriteThreads; i++) {
-      Thread thread = new Thread("WRITER"+i) {
+      Callable<Object> thread = new Callable<>() {
         Random rand = new Random(random().nextInt());
 
         @Override
-        public void run() {
+        public Object call() {
           try {
             while (operations.get() > 0) {
+              if (timeout.hasTimedOut()) {
+                return null;
+              }
               int oper = rand.nextInt(100);
 
               if (oper < commitPercent) {
                 if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                  Map<Integer,DocInfo> newCommittedModel;
+                  Map<Integer, DocInfo> newCommittedModel;
                   long version;
 
-                  synchronized(TestStressUserVersions.this) {
+                  synchronized (TestStressUserVersions.this) {
                     newCommittedModel = new HashMap<>(model);  // take a snapshot
-                    version = snapshotCount++;
+                    version = snapshotCount.incrementAndGet();
                   }
 
                   if (rand.nextInt(100) < softCommitPercent) {
                     verbose("softCommit start");
-                    assertU(TestHarness.commit("softCommit","true"));
+                    assertU(TestHarness.commit("softCommit", "true"));
                     verbose("softCommit end");
                   } else {
                     verbose("hardCommit start");
@@ -141,14 +152,14 @@ public class TestStressUserVersions extends TestRTGBase {
                     verbose("hardCommit end");
                   }
 
-                  synchronized(TestStressUserVersions.this) {
+                  synchronized (TestStressUserVersions.this) {
                     // install this model snapshot only if it's newer than the current one
-                    if (version >= committedModelClock) {
+                    if (version >= committedModelClock.get()) {
                       if (VERBOSE) {
-                        verbose("installing new committedModel version="+committedModelClock);
+                        verbose("installing new committedModel version=" + committedModelClock);
                       }
                       committedModel = newCommittedModel;
-                      committedModelClock = version;
+                      committedModelClock.set(version);
                     }
                   }
                 }
@@ -175,18 +186,15 @@ public class TestStressUserVersions extends TestRTGBase {
               DocInfo info = model.get(id);
 
               long val = info.val;
-              long nextVal = Math.abs(val)+1;
+              long nextVal = Math.abs(val) + 1;
 
               // the version we set on the update should determine who wins
               // These versions are not derived from the actual leader update handler hand hence this
               // test may need to change depending on how we handle version numbers.
               long version = testVersion.incrementAndGet();
 
-              // yield after getting the next version to increase the odds of updates happening out of order
-              if (rand.nextBoolean()) Thread.yield();
-
               if (oper < commitPercent + deletePercent) {
-                verbose("deleting id",id,"val=",nextVal,"version",version);
+                verbose("deleting id", id, "val=", nextVal, "version", version);
 
                 Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params(dversion, Long.toString(version)));
 
@@ -198,10 +206,10 @@ public class TestStressUserVersions extends TestRTGBase {
                   }
                 }
 
-                verbose("deleting id", id, "val=",nextVal,"version",version,"DONE");
+                verbose("deleting id", id, "val=", nextVal, "version", version, "DONE");
 
               } else {
-                verbose("adding id", id, "val=", nextVal,"version",version);
+                verbose("adding id", id, "val=", nextVal, "version", version);
 
                 Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal), vfield, Long.toString(version)), null);
 
@@ -214,7 +222,7 @@ public class TestStressUserVersions extends TestRTGBase {
                 }
 
                 if (VERBOSE) {
-                  verbose("adding id", id, "val=", nextVal,"version",version,"DONE");
+                  verbose("adding id", id, "val=", nextVal, "version", version, "DONE");
                 }
 
               }
@@ -226,22 +234,25 @@ public class TestStressUserVersions extends TestRTGBase {
             }
           } catch (Throwable e) {
             operations.set(-1L);
-            log.error("",e);
+            log.error("", e);
             throw new RuntimeException(e);
           }
-        }
-      };
 
+          return null;
+        }
+
+        ;
+      };
       threads.add(thread);
     }
 
 
     for (int i=0; i<nReadThreads; i++) {
-      Thread thread = new Thread("READER"+i) {
+      Callable<Object> thread = new Callable<>() {
         Random rand = new Random(random().nextInt());
 
         @Override
-        public void run() {
+        public Object call() {
           try {
             while (operations.decrementAndGet() >= 0) {
               // bias toward a recently changed doc
@@ -264,14 +275,19 @@ public class TestStressUserVersions extends TestRTGBase {
               if (VERBOSE) {
                 verbose("querying id", id);
               }
-              SolrQueryRequest sreq;
-              if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
-              } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              }
+              SolrQueryRequest sreq = null;
+              String response;
+              try {
+                if (realTime) {
+                  sreq = req("wt", "json", "qt", "/get", "ids", Integer.toString(id));
+                } else {
+                  sreq = req("wt", "json", "q", "id:" + Integer.toString(id), "omitHeader", "true");
+                }
 
-              String response = h.query(sreq);
+                response = h.query(sreq);
+              } finally {
+                IOUtils.closeQuietly(sreq);
+              }
               Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
@@ -286,7 +302,7 @@ public class TestStressUserVersions extends TestRTGBase {
                   if (foundVer < Math.abs(info.version)
                       || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
                     log.error("ERROR, id={} found={} model {}", id, response, info);
-                    assertTrue(false);
+                    assertTrue("ERROR, id=" + id + " found=" + response + " model " + info, false);
                   }
                 } else {
                   // if the doc is deleted (via tombstone), it shouldn't have a value on it.
@@ -294,7 +310,7 @@ public class TestStressUserVersions extends TestRTGBase {
 
                   if (foundVer < Math.abs(info.version)) {
                     log.error("ERROR, id={} found={} model {}", id, response, info);
-                    assertTrue(false);
+                    assertTrue("ERROR, id=" + id + " found=" + response + " model " + info, false);
                   }
                 }
 
@@ -305,21 +321,14 @@ public class TestStressUserVersions extends TestRTGBase {
             log.error("",e);
             throw new RuntimeException(e);
           }
+          return null;
         }
       };
 
       threads.add(thread);
     }
 
-
-    for (Thread thread : threads) {
-      thread.start();
-    }
-
-    for (Thread thread : threads) {
-      thread.join();
-    }
-
+    getTestExecutor().invokeAll(threads);
   }
 
 }

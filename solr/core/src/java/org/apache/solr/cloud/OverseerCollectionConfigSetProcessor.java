@@ -16,16 +16,14 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
-
-import java.io.IOException;
-
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.handler.component.HttpShardHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.core.CoreContainer;
+import org.apache.zookeeper.KeeperException;
+
+import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
+import java.io.IOException;
 
 /**
  * An {@link OverseerTaskProcessor} that handles:
@@ -34,64 +32,25 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
  */
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
-   public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
-                                               final HttpShardHandler shardHandler,
-                                               String adminPath, Stats stats, Overseer overseer,
-                                               OverseerNodePrioritizer overseerNodePrioritizer) {
-    this(
-        zkStateReader,
-        myId,
-        (HttpShardHandlerFactory) shardHandler.getShardHandlerFactory(),
-        adminPath,
-        stats,
-        overseer,
-        overseerNodePrioritizer,
-        overseer.getCollectionQueue(zkStateReader.getZkClient(), stats),
-        Overseer.getRunningMap(zkStateReader.getZkClient()),
-        Overseer.getCompletedMap(zkStateReader.getZkClient()),
-        Overseer.getFailureMap(zkStateReader.getZkClient())
-    );
+  public OverseerCollectionConfigSetProcessor(CoreContainer cc, String myId, LBHttp2SolrClient overseerLbClient, String adminPath, Stats stats, Overseer overseer) throws KeeperException {
+    this(cc, myId, overseerLbClient, adminPath, stats, overseer, Overseer.getCollectionQueue(cc.getZkController().getZkClient(), stats),
+        Overseer.getRunningMap(cc.getZkController().getZkClient()), Overseer.getCompletedMap(cc.getZkController().getZkClient()),
+        Overseer.getFailureMap(cc.getZkController().getZkClient()));
   }
 
-  protected OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
-                                        final HttpShardHandlerFactory shardHandlerFactory,
-                                        String adminPath,
-                                        Stats stats,
-                                        Overseer overseer,
-                                        OverseerNodePrioritizer overseerNodePrioritizer,
-                                        OverseerTaskQueue workQueue,
-                                        DistributedMap runningMap,
-                                        DistributedMap completedMap,
-                                        DistributedMap failureMap) {
-    super(
-        zkStateReader,
-        myId,
-        stats,
-        getOverseerMessageHandlerSelector(zkStateReader, myId, shardHandlerFactory,
-            adminPath, stats, overseer, overseerNodePrioritizer),
-        overseerNodePrioritizer,
-        workQueue,
-        runningMap,
-        completedMap,
-        failureMap);
+  protected OverseerCollectionConfigSetProcessor(CoreContainer cc, String myId, LBHttp2SolrClient overseerLbClient, String adminPath, Stats stats, Overseer overseer, OverseerTaskQueue workQueue,
+      DistributedMap runningMap, DistributedMap completedMap, DistributedMap failureMap) {
+    super(cc, myId, stats, getOverseerMessageHandlerSelector(cc, myId, overseerLbClient, adminPath, stats, overseer), workQueue, runningMap, completedMap, failureMap);
   }
 
-  private static OverseerMessageHandlerSelector getOverseerMessageHandlerSelector(
-      ZkStateReader zkStateReader,
-      String myId,
-      final HttpShardHandlerFactory shardHandlerFactory,
-      String adminPath,
-      Stats stats,
-      Overseer overseer,
-      OverseerNodePrioritizer overseerNodePrioritizer) {
-    final OverseerCollectionMessageHandler collMessageHandler = new OverseerCollectionMessageHandler(
-        zkStateReader, myId, shardHandlerFactory, adminPath, stats, overseer, overseerNodePrioritizer);
-    final OverseerConfigSetMessageHandler configMessageHandler = new OverseerConfigSetMessageHandler(
-        zkStateReader);
+  private static OverseerMessageHandlerSelector getOverseerMessageHandlerSelector(CoreContainer cc, String myId, LBHttp2SolrClient overseerLbClient, String adminPath, Stats stats, Overseer overseer) {
+
+    final OverseerConfigSetMessageHandler configMessageHandler = new OverseerConfigSetMessageHandler(cc, overseer);
     return new OverseerMessageHandlerSelector() {
       @Override
       public void close() throws IOException {
-        IOUtils.closeQuietly(collMessageHandler);
+
+        IOUtils.closeQuietly(configMessageHandler);
       }
 
       @Override
@@ -100,8 +59,13 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
           return configMessageHandler;
         }
-        return collMessageHandler;
+        throw new IllegalArgumentException("No handler for " + operation + " " + message);
       }
     };
+  }
+
+  @Override
+  public void close(boolean closeAndDone) {
+
   }
 }

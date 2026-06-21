@@ -115,7 +115,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return AnalysisRequest containing all the information about what needs to be analyzed, and using what
    *         fields/types
    */
-  FieldAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) throws SolrException {
+  static FieldAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) throws SolrException {
     SolrParams solrParams = req.getParams();
     FieldAnalysisRequest analysisRequest = new FieldAnalysisRequest();
 
@@ -176,7 +176,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return The analysis breakdown as a named list.
    */
   @SuppressWarnings({"rawtypes"})
-  protected NamedList<NamedList> handleAnalysisRequest(FieldAnalysisRequest request, IndexSchema schema) {
+  protected static NamedList<NamedList> handleAnalysisRequest(FieldAnalysisRequest request, IndexSchema schema) {
     NamedList<NamedList> analysisResults = new SimpleOrderedMap<>();
 
     NamedList<NamedList> fieldTypeAnalysisResults = new SimpleOrderedMap<>();
@@ -212,8 +212,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return NamedList containing the tokens produced by the analyzers of the given field, separated into an index and
    *         a query group
    */ // package access for testing
-  @SuppressWarnings({"rawtypes"})
-  NamedList<NamedList> analyzeValues(FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
+  @SuppressWarnings({"rawtypes"}) static NamedList<NamedList> analyzeValues(FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
 
     final String queryValue = analysisRequest.getQuery();
     final Set<BytesRef> termsToMatch = (queryValue != null && analysisRequest.isShowMatch())

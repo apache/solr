@@ -62,7 +62,7 @@ public enum RequestStatusState {
     try {
       return RequestStatusState.valueOf(key.toUpperCase(Locale.ENGLISH));
     } catch (final IllegalArgumentException e) {
-      if (key.equalsIgnoreCase(RequestStatusState.NOT_FOUND.getKey())) {
+      if (key.equalsIgnoreCase(RequestStatusState.NOT_FOUND.key)) {
         return RequestStatusState.NOT_FOUND;
       } else {
         throw e;

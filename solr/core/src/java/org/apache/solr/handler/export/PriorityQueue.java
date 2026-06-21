@@ -213,6 +213,6 @@ public abstract class PriorityQueue<T> {
    * @lucene.internal
    */
   public final Object[] getHeapArray() {
-    return (Object[]) heap;
+    return heap;
   }
 }

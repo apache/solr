@@ -96,7 +96,7 @@ public class ClusterProperties {
   @SuppressWarnings("unchecked")
   public Map<String, Object> getClusterProperties() throws IOException {
     try {
-      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
       return convertCollectionDefaultsToNestedFormat(properties);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
@@ -128,7 +128,7 @@ public class ClusterProperties {
     if (properties.containsKey(COLLECTION_DEF)) {
       Map<String, Object> values = (Map<String, Object>) properties.remove(COLLECTION_DEF);
       if (values != null) {
-        properties.putIfAbsent(CollectionAdminParams.DEFAULTS, new LinkedHashMap<>());
+        properties.computeIfAbsent(CollectionAdminParams.DEFAULTS, k1 -> new LinkedHashMap<>());
         Map<String, Object> defaults = (Map<String, Object>) properties.get(CollectionAdminParams.DEFAULTS);
         defaults.compute(CollectionAdminParams.COLLECTION, (k, v) -> {
           if (v == null) return values;
@@ -139,7 +139,7 @@ public class ClusterProperties {
         });
       } else {
         // explicitly set to null, so set null in the nested format as well
-        properties.putIfAbsent(CollectionAdminParams.DEFAULTS, new LinkedHashMap<>());
+        properties.computeIfAbsent(CollectionAdminParams.DEFAULTS, k -> new LinkedHashMap<>());
         Map<String, Object> defaults = (Map<String, Object>) properties.get(CollectionAdminParams.DEFAULTS);
         defaults.put(CollectionAdminParams.COLLECTION, null);
       }
@@ -162,9 +162,9 @@ public class ClusterProperties {
     for (; ; ) {
       Stat s = new Stat();
       try {
-        if (client.exists(ZkStateReader.CLUSTER_PROPS, true)) {
+        if (client.exists(ZkStateReader.CLUSTER_PROPS)) {
           @SuppressWarnings({"rawtypes"})
-          Map properties = (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s, true));
+          Map properties = (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s));
           if (propertyValue == null) {
             //Don't update ZK unless absolutely necessary.
             if (properties.get(propertyName) != null) {
@@ -202,7 +202,7 @@ public class ClusterProperties {
    * 
    * @param propertyName The property name to validate
    */
-  private void validatePropertyName(String propertyName) {
+  private static void validatePropertyName(String propertyName) {
     if (!ZkStateReader.KNOWN_CLUSTER_PROPS.contains(propertyName)
         && !propertyName.startsWith(EXT_PROPRTTY_PREFIX)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Not a known cluster property or starts with prefix "

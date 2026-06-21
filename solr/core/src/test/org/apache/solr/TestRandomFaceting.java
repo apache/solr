@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -44,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
+@LuceneTestCase.Nightly // slow
 public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   private static final Pattern trieFields = Pattern.compile(".*_t.");
@@ -150,8 +153,9 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomFaceting() throws Exception {
+    IndexSearcher.setMaxClauseCount(2046);
     Random rand = random();
-    int iter = atLeast(100);
+    int iter = SolrTestUtil.atLeast(100);
     init();
     addMoreDocs(0);
     
@@ -183,12 +187,11 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
 
   void doFacetTests(FldType ftype) throws Exception {
-    SolrQueryRequest req = req();
-    try {
+    try (SolrQueryRequest req = req()) {
       Random rand = random();
-      ModifiableSolrParams params = params("facet","true", "wt","json", "indent","true", "omitHeader","true");
-      params.add("q","*:*");  // TODO: select subsets
-      params.add("rows","0");
+      ModifiableSolrParams params = params("facet", "true", "wt", "json", "indent", "true", "omitHeader", "true");
+      params.add("q", "*:*");  // TODO: select subsets
+      params.add("rows", "0");
 
       SchemaField sf = req.getSchema().getField(ftype.fname);
       boolean multiValued = sf.getType().multiValuedFieldCache();
@@ -196,7 +199,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       int offset = 0;
       if (rand.nextInt(100) < 20) {
         if (rand.nextBoolean()) {
-          offset = rand.nextInt(100) < 10 ? rand.nextInt(indexSize*2) : rand.nextInt(indexSize/3+1);
+          offset = rand.nextInt(100) < 10 ? rand.nextInt(indexSize * 2) : rand.nextInt(indexSize / 3 + 1);
         }
         params.add("facet.offset", Integer.toString(offset));
       }
@@ -204,7 +207,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       int limit = 100;
       if (rand.nextInt(100) < 20) {
         if (rand.nextBoolean()) {
-          limit = rand.nextInt(100) < 10 ? rand.nextInt(indexSize/2+1) : rand.nextInt(indexSize*2);
+          limit = rand.nextInt(100) < 10 ? rand.nextInt(indexSize / 2 + 1) : rand.nextInt(indexSize * 2);
         }
         params.add("facet.limit", Integer.toString(limit));
       }
@@ -216,8 +219,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       if ((ftype.vals instanceof SVal) && rand.nextInt(100) < 20) {
         // validate = false;
         String prefix = ftype.createValue().toString();
-        if (rand.nextInt(100) < 5) prefix =  TestUtil.randomUnicodeString(rand);
-        else if (rand.nextInt(100) < 10) prefix = Character.toString((char)rand.nextInt(256));
+        if (rand.nextInt(100) < 5) prefix = TestUtil.randomUnicodeString(rand);
+        else if (rand.nextInt(100) < 10) prefix = Character.toString((char) rand.nextInt(256));
         else if (prefix.length() > 0) prefix = prefix.substring(0, rand.nextInt(prefix.length()));
         params.add("facet.prefix", prefix);
       }
@@ -231,77 +234,70 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       }
 
       if (rand.nextBoolean()) {
-        params.add("facet.enum.cache.minDf",""+ rand.nextInt(indexSize));
+        params.add("facet.enum.cache.minDf", "" + rand.nextInt(indexSize));
       }
-      
+
       // TODO: randomly add other facet params
       String key = ftype.fname;
       String facet_field = ftype.fname;
       if (random().nextBoolean()) {
         key = "alternate_key";
-        facet_field = "{!key="+key+"}"+ftype.fname;
+        facet_field = "{!key=" + key + "}" + ftype.fname;
       }
       params.set("facet.field", facet_field);
 
       List<String> methods = multiValued ? multiValuedMethods : singleValuedMethods;
       List<String> responses = new ArrayList<>(methods.size());
-      
+
       for (String method : methods) {
-        for (boolean exists : new boolean[]{false, true}) {
+        for (boolean exists : new boolean[] {false, true}) {
           // params.add("facet.field", "{!key="+method+"}" + ftype.fname);
           // TODO: allow method to be passed on local params?
-          if (method!=null) {
+          if (method != null) {
             params.set("facet.method", method);
           } else {
             params.remove("facet.method");
           }
-          params.set("facet.exists", ""+exists);
+          params.set("facet.exists", "" + exists);
           if (!exists && rand.nextBoolean()) {
             params.remove("facet.exists");
           }
-          
+
           // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test that validation fails
-          if (!(params.getInt("facet.limit", 100) == 0 &&
-              !params.getBool("facet.missing", false))) {
+          if (!(params.getInt("facet.limit", 100) == 0 && !params.getBool("facet.missing", false))) {
             // it bypasses all processing, and we can go to empty validation
-            if (exists && params.getInt("facet.mincount", 0)>1) {
-              assertQEx("no mincount on facet.exists",
-                  rand.nextBoolean() ? "facet.exists":"facet.mincount",
-                  req(params), ErrorCode.BAD_REQUEST);
+            if (exists && params.getInt("facet.mincount", 0) > 1) {
+              assertQEx("no mincount on facet.exists", rand.nextBoolean() ? "facet.exists" : "facet.mincount", req(params), ErrorCode.BAD_REQUEST);
               continue;
             }
             // facet.exists can't be combined with non-enum nor with enum requested for tries, because it will be flipped to FC/FCS
             final boolean notEnum = method != null && !method.equals("enum");
             final boolean trieField = trieFields.matcher(ftype.fname).matches();
             if ((notEnum || trieField) && exists) {
-              assertQEx("facet.exists only when enum or ommitted",
-                  "facet.exists", req(params), ErrorCode.BAD_REQUEST);
+              assertQEx("facet.exists only when enum or ommitted", "facet.exists", req(params), ErrorCode.BAD_REQUEST);
               continue;
             }
             if (exists && sf.getType().isPointField()) {
               // PointFields don't yet support "enum" method or the "facet.exists" parameter
-              assertQEx("Expecting failure, since ",
-                  "facet.exists=true is requested, but facet.method=enum can't be used with " + sf.getName(),
-                  req(params), ErrorCode.BAD_REQUEST);
+              assertQEx("Expecting failure, since ", "facet.exists=true is requested, but facet.method=enum can't be used with " + sf.getName(), req(params),
+                  ErrorCode.BAD_REQUEST);
               continue;
             }
           }
           String strResponse = h.query(req(params));
           responses.add(strResponse);
-          
-          if (responses.size()>1) {
+
+          if (responses.size() > 1) {
             validateResponse(responses.get(0), strResponse, params, method, methods);
           }
         }
-        
+
       }
-      
+
       /**
-      String strResponse = h.query(req(params));
-      Object realResponse = ObjectBuilder.fromJSON(strResponse);
-      **/
-    } finally {
-      req.close();
+       String strResponse = h.query(req(params));
+       Object realResponse = ObjectBuilder.fromJSON(strResponse);
+       **/
     }
   }
   private void validateResponse(String expected, String actual, ModifiableSolrParams params, String method,
@@ -318,7 +314,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     if (err != null) {
       log.error("ERROR: mismatch facet response: {}\n expected ={}\n response = {}\n request = {}"
           , err, expected, actual, params);
-      fail(err);
+      fail(err + " method=" + method);
     }
   }
 

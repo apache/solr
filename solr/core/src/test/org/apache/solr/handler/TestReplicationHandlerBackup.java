@@ -41,10 +41,11 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +71,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static JettySolrRunner createAndStartJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
@@ -83,7 +84,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
+      Http2SolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
       return client;
     }
     catch (Exception ex) {
@@ -94,6 +95,8 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   @Before
   public void setUp() throws Exception {
+    System.setProperty("solr.skipCommitOnClose", "false");
+    useFactory(null);
     super.setUp();
     String configFile = "solrconfig-master1.xml";
 
@@ -102,7 +105,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       addNumberToKeepInRequest = false;
       backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
     }
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
+    master = new TestReplicationHandler.SolrInstance(SolrTestUtil.createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
@@ -205,7 +208,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       // Only the last two should still exist.
       final List<String> remainingBackups = new ArrayList<>();
       
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot\\.*")) { // careful, could be snapshot_metadata
         Iterator<Path> iter = stream.iterator();
         while (iter.hasNext()) {
           remainingBackups.add(iter.next().getFileName().toString());
@@ -248,17 +251,10 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     
   }
 
-  public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
+  public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws Exception {
     String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
         + ReplicationHandler.PATH+"?wt=xml&command=" + cmd + params;
-    InputStream stream = null;
-    try {
-      URL url = new URL(masterUrl);
-      stream = url.openStream();
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
-    }
+    Http2SolrClient.GET(masterUrl);
   }
 
 }

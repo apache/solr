@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 
@@ -32,14 +34,14 @@ public class RoutingRule extends ZkNodeProps {
   private final String targetCollectionName;
   private final Long expireAt;
 
-  public RoutingRule(String routeKey, Map<String, Object> propMap)  {
+  public RoutingRule(String routeKey, Object2ObjectMap<String, Object> propMap)  {
     super(propMap);
     this.routeRangesStr = (String) propMap.get("routeRanges");
     String[] rangesArr = this.routeRangesStr.split(",");
     if (rangesArr != null && rangesArr.length > 0)  {
       this.routeRanges = new ArrayList<>();
       for (String r : rangesArr) {
-        routeRanges.add(DocRouter.DEFAULT.fromString(r));
+        routeRanges.add(DocRouter.fromString(r));
       }
     } else  {
       this.routeRanges = null;
@@ -72,6 +74,6 @@ public class RoutingRule extends ZkNodeProps {
 
   @Override
   public String toString() {
-    return Utils.toJSONString(propMap);
+    return Utils.toJSONString(this);
   }
 }

@@ -145,11 +145,11 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
     }
 
     public int compareTo(Neighbor neighbor) {
-      if(this.distance.compareTo(neighbor.getDistance()) == 0) {
-        return row-neighbor.getRow();
+      if(this.distance.compareTo(neighbor.distance) == 0) {
+        return row- neighbor.row;
       }
 
-      return this.distance.compareTo(neighbor.getDistance());
+      return this.distance.compareTo(neighbor.distance);
     }
   }
 }

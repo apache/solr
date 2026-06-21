@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FacetField;
@@ -32,6 +34,7 @@ import org.junit.Before;
 
 import static org.hamcrest.CoreMatchers.is;
 
+@LuceneTestCase.Nightly // slow test
 public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCase {
 
   public static final String FLD = "t_s";
@@ -42,8 +45,6 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
 
   @Before
   public void prepareIndex() throws Exception {
-    del("*:*");
-
     final Random rnd = random();
     index(id, maxId=rnd.nextInt(5), FLD, "AAA");
     index(id, maxId+=1+rnd.nextInt(5), FLD, "B");
@@ -151,7 +152,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.set("f."+FLD+".facet.mincount",  ""+(2+random().nextInt(100)) );
     }
 
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       if (random().nextBoolean()) {
         setDistributedParams(params);
         queryServer(params);

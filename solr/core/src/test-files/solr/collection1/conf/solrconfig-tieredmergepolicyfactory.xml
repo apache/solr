@@ -25,7 +25,6 @@
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
-      <int name="maxMergeAtOnceExplicit">19</int>
       <int name="maxMergeAtOnce">7</int>
       <int name="segmentsPerTier">9</int>
       <double name="noCFSRatio">0.1</double>
@@ -34,6 +33,7 @@
       <int name="maxMergeCount">987</int>
       <int name="maxThreadCount">42</int>
     </mergeScheduler>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>

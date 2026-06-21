@@ -148,7 +148,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * @see #releaseCommitPoint
    */
   public synchronized IndexCommit getAndSaveLatestCommit() {
-    final IndexCommit commit = getLatestCommit();
+    final IndexCommit commit = latestCommit;
     if (null != commit) {
       saveCommitPoint(commit.getGeneration());
     }
@@ -346,7 +346,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
              (null != latestCommit && gen.longValue() == latestCommit.getGeneration()) ) {
           return; // skip deletion
         }
-        log.debug("Deleting generation={}", gen);
+        if (log.isDebugEnabled()) log.debug("Deleting generation={}", gen);
         delegate.delete(); // delegate deletion
       }
     }

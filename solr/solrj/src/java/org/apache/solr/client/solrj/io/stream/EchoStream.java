@@ -43,11 +43,11 @@ public class EchoStream extends TupleStream implements Expressible {
   }
 
   public EchoStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    this.echo = stripQuotes(factory.getValueOperand(expression, 0));
+    this.echo = stripQuotes(StreamFactory.getValueOperand(expression, 0));
     this.echo = echo.replace("\\\"", "\"");
   }
 
-  private String stripQuotes(String s){
+  private static String stripQuotes(String s){
     if(s.startsWith("\"")) {
       return s.substring(1, s.length()-1);
     } else {

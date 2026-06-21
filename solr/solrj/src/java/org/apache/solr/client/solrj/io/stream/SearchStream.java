@@ -25,9 +25,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -45,6 +46,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -52,11 +54,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 
 public class SearchStream extends TupleStream implements Expressible  {
 
+  private static final Pattern COMPILE = Pattern.compile("\\s+");
   private String zkHost;
   private ModifiableSolrParams params;
   private String collection;
   protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
   private Iterator<SolrDocument> documentIterator;
   protected StreamComparator comp;
 
@@ -65,9 +68,9 @@ public class SearchStream extends TupleStream implements Expressible  {
 
   public SearchStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
 
 
     // Collection Name
@@ -180,11 +183,12 @@ public class SearchStream extends TupleStream implements Expressible  {
 
   public void open() throws IOException {
     if(cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+      cloudSolrClient = cache.getCloudSolrClient();
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
-      cloudSolrClient = new CloudSolrClient.Builder(hosts, Optional.empty()).build();
+      cloudSolrClient = new CloudHttp2SolrClient.Builder(hosts, Optional.empty()).markInternalRequest().build();
+      cloudSolrClient.connect();
     }
 
 
@@ -194,6 +198,7 @@ public class SearchStream extends TupleStream implements Expressible  {
       SolrDocumentList docs = response.getResults();
       documentIterator = docs.iterator();
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -227,7 +232,7 @@ public class SearchStream extends TupleStream implements Expressible  {
     return comp;
   }
 
-  private StreamComparator parseComp(String sort, String fl) throws IOException {
+  private static StreamComparator parseComp(String sort, String fl) throws IOException {
 
     HashSet fieldSet = null;
 
@@ -244,7 +249,7 @@ public class SearchStream extends TupleStream implements Expressible  {
     for(int i=0; i<sorts.length; i++) {
       String s = sorts[i];
 
-      String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+      String[] spec = COMPILE.split(s.trim()); //This should take into account spaces in the sort spec.
 
       if (spec.length != 2) {
         throw new IOException("Invalid sort spec:" + s);

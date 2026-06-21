@@ -16,19 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
-
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -51,6 +38,18 @@ import org.xml.sax.SAXException;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 public class ZkCLI implements CLIO {
 
@@ -195,10 +194,9 @@ public class ZkCLI implements CLIO {
         zkServer.start();
       }
       SolrZkClient zkClient = null;
+      CoreContainer cc = null;
       try {
-        zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
-            () -> {
-            });
+        zkClient = new SolrZkClient(zkServerAddress, 30000, 10000).start();
 
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
@@ -207,7 +205,7 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+          cc = new CoreContainer(Paths.get(solrHome), new Properties());
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
@@ -284,7 +282,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
-          zkClient.makePath(arglist.get(0).toString(), true);
+          zkClient.mkdir(arglist.get(0).toString());
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
@@ -292,7 +290,7 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
           String path = arglist.get(0).toString();
-          if (zkClient.exists(path, true)) {
+          if (zkClient.exists(path)) {
             zkClient.setData(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), true);
           } else {
             zkClient.create(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
@@ -307,7 +305,7 @@ public class ZkCLI implements CLIO {
           String path = arglist.get(0).toString();
           InputStream is = new FileInputStream(arglist.get(1).toString());
           try {
-            if (zkClient.exists(path, true)) {
+            if (zkClient.exists(path)) {
               zkClient.setData(path, IOUtils.toByteArray(is), true);
             } else {
               zkClient.create(path, IOUtils.toByteArray(is), CreateMode.PERSISTENT, true);
@@ -322,7 +320,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + GET + " requires one arg - the path to get");
             System.exit(1);
           }
-          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
           List arglist = line.getArgList();
@@ -330,7 +328,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
             System.exit(1);
           }
-          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
           List arglist = line.getArgList();
@@ -361,10 +359,13 @@ public class ZkCLI implements CLIO {
         }
       } finally {
         if (solrPort != null) {
-          zkServer.stop();
+          zkServer.close();
         }
         if (zkClient != null) {
           zkClient.close();
+        }
+        if (cc != null) {
+          cc.shutdown();
         }
       }
     } catch (ParseException exp) {

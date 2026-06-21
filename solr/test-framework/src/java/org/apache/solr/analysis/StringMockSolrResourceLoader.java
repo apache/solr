@@ -21,7 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.solr.common.ParWork;
 
 class StringMockSolrResourceLoader implements ResourceLoader {
   String text;
@@ -35,6 +36,7 @@ class StringMockSolrResourceLoader implements ResourceLoader {
     try {
       return Class.forName(cname).asSubclass(expectedType);
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException("Cannot load class: " + cname, e);
     }
   }
@@ -45,6 +47,7 @@ class StringMockSolrResourceLoader implements ResourceLoader {
     try {
       return clazz.getConstructor().newInstance();
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException("Cannot create instance: " + cname, e);
     }
   }

@@ -52,18 +52,18 @@ public class LetStream extends TupleStream implements Expressible {
   public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
     //Get all the named params
     Set<String> echo = null;
     boolean echoAll = false;
     String currentName = null;
-    for(StreamExpressionParameter np : namedParams) {
-      String name = ((StreamExpressionNamedParameter)np).getName();
+    for(StreamExpressionNamedParameter np : namedParams) {
+      String name = np.getName();
       currentName = name;
 
       if(name.equals("echo")) {
         echo = new HashSet();
-        String echoString = ((StreamExpressionNamedParameter) np).getParameter().toString().trim();
+        String echoString = np.getParameter().toString().trim();
         if(echoString.equalsIgnoreCase("true")) {
           echoAll = true;
         } else {
@@ -76,11 +76,11 @@ public class LetStream extends TupleStream implements Expressible {
         continue;
       }
 
-      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+      StreamExpressionParameter param = np.getParameter();
 
       if(param instanceof StreamExpressionValue) {
         String paramValue = ((StreamExpressionValue) param).getValue();
-        letParams.put(name, factory.constructPrimitiveObject(paramValue));
+        letParams.put(name, StreamFactory.constructPrimitiveObject(paramValue));
       } else if(factory.isEvaluator((StreamExpression)param)) {
         StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
         letParams.put(name, evaluator);

@@ -21,9 +21,10 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,7 +37,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   private static final String BIG_FIELD = "bigField";
 
   @BeforeClass
-  public static void initManagedSchemaCore() throws Exception {
+  public static void beforeLargeFieldTest() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
@@ -45,26 +46,20 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     System.setProperty("enableLazyFieldLoading", "true");
 
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
+    try (SolrCore core = h.getCore()) {
+      // TODO SOLR-10229 will make this easier
+      boolean PERSIST_FALSE = false; // don't write to test resource dir
+      IndexSchema schema = core.getLatestSchema();
+      schema = schema.addFieldTypes(Collections.singletonList(schema.newFieldType("textType", "solr.TextField", // redundant; TODO improve api
+          map("name", "textType", "class", "solr.TextField", "analyzer", map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")))), PERSIST_FALSE);
+      schema = schema.addFields(Arrays.asList(schema.newField(LAZY_FIELD, "textType", map()), schema.newField(BIG_FIELD, "textType", map("large", true))), Collections.emptyMap(), PERSIST_FALSE);
 
-    // TODO SOLR-10229 will make this easier
-    boolean PERSIST_FALSE = false; // don't write to test resource dir
-    IndexSchema schema = h.getCore().getLatestSchema();
-    schema = schema.addFieldTypes(Collections.singletonList(
-        schema.newFieldType("textType", "solr.TextField", // redundant; TODO improve api
-            map("name", "textType",   "class", "solr.TextField",
-                "analyzer", map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")))),
-        PERSIST_FALSE);
-    schema = schema.addFields(Arrays.asList(
-        schema.newField(LAZY_FIELD, "textType", map()),
-        schema.newField(BIG_FIELD, "textType", map("large", true))),
-        Collections.emptyMap(),
-        PERSIST_FALSE);
-
-    h.getCore().setLatestSchema(schema);
+      core.setLatestSchema(schema);
+    }
   }
 
   @AfterClass
-  public static void afterClass() {
+  public static void afterLargeFieldTest() {
     System.clearProperty("documentCache.enabled");
     System.clearProperty("enableLazyFieldLoading");
   }
@@ -79,23 +74,25 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     assertQ(req("q", "101", "df", ID_FLD, "fl", ID_FLD)); // eager load ID_FLD; rest are lazy
 
     // fetch the document; we know it will be from the documentCache, docId 0
-    final Document d = h.getCore().withSearcher(searcher -> searcher.doc(0));
+    try (SolrCore core = h.getCore()) {
+      final Document d = core.withSearcher(searcher -> searcher.doc(0));
 
-    assertEager(d, ID_FLD);
-    assertLazyNotLoaded(d, LAZY_FIELD);
-    assertLazyNotLoaded(d, BIG_FIELD);
+      assertEager(d, ID_FLD);
+      assertLazyNotLoaded(d, LAZY_FIELD);
+      assertLazyNotLoaded(d, BIG_FIELD);
 
-    assertQ(req("q", "101", "df", ID_FLD, "fl", LAZY_FIELD)); // trigger load of LAZY_FIELD
+      assertQ(req("q", "101", "df", ID_FLD, "fl", LAZY_FIELD)); // trigger load of LAZY_FIELD
 
-    assertEager(d, ID_FLD);
-    assertLazyLoaded(d, LAZY_FIELD); // loaded now
-    assertLazyNotLoaded(d, BIG_FIELD); // because big fields are handled separately
+      assertEager(d, ID_FLD);
+      assertLazyLoaded(d, LAZY_FIELD); // loaded now
+      assertLazyNotLoaded(d, BIG_FIELD); // because big fields are handled separately
 
-    assertQ(req("q", "101", "df", ID_FLD, "fl", BIG_FIELD)); // trigger load of BIG_FIELD
+      assertQ(req("q", "101", "df", ID_FLD, "fl", BIG_FIELD)); // trigger load of BIG_FIELD
 
-    assertEager(d, ID_FLD);
-    assertLazyLoaded(d, LAZY_FIELD);
-    assertLazyLoaded(d, BIG_FIELD); // loaded now
+      assertEager(d, ID_FLD);
+      assertLazyLoaded(d, LAZY_FIELD);
+      assertLazyLoaded(d, BIG_FIELD); // loaded now
+    }
   }
 
   private void assertEager(Document d, String fieldName) {

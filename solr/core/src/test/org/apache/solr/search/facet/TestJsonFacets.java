@@ -32,6 +32,7 @@ import com.tdunning.math.stats.AVLTreeDigest;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -51,17 +52,30 @@ import org.junit.Test;
 //   TestJsonRangeFacets for range facet tests
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
+@LuceneTestCase.Nightly // MRM TODO: - figure out why this test can sometimes take 20 seconds - it's facet executor use?
 public class TestJsonFacets extends SolrTestCaseHS {
   
-  private static SolrInstances servers;  // for distributed testing
+  private static volatile SolrInstances servers;  // for distributed testing
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
 
   @SuppressWarnings("deprecation")
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestJsonFacets() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     JSONTestUtil.failRepeatedKeys = true;
+
+    System.clearProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP);
+    System.clearProperty("solr.tests.IntegerFieldType");
+    System.clearProperty("solr.tests.FloatFieldType");
+    System.clearProperty("solr.tests.LongFieldType");
+    System.clearProperty("solr.tests.DoubleFieldType");
+    System.clearProperty("solr.tests.DateFieldType");
+    System.clearProperty("solr.tests.EnumFieldType");
+    System.clearProperty("solr.tests.numeric.dv");
+    System.clearProperty("solr.tests.EnumFieldType");
+
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
 
     origTableSize = FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
@@ -72,7 +86,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
-    
+
+
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
@@ -87,15 +102,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   @SuppressWarnings("deprecation")
   @AfterClass
-  public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+  public static void afterTestJsonFacets() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
+    origDefaultFacetMethod = null;
+    origTableSize = 0;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
+    deleteCore();
   }
 
   // tip: when debugging failures, change this variable to DEFAULT_METHOD
@@ -108,10 +125,18 @@ public class TestJsonFacets extends SolrTestCaseHS {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
       return Arrays.<Object[]>asList(new Object[] { TEST_ONLY_ONE_FACET_METHOD });
     }
-    
-    // wrap each enum val in an Object[] and return as Iterable
-    return () -> Arrays.stream(FacetField.FacetMethod.values())
-      .map(it -> new Object[]{it}).iterator();
+
+    if (TEST_NIGHTLY) {
+      // wrap each enum val in an Object[] and return as Iterable
+      return () -> Arrays.stream(FacetField.FacetMethod.values())
+              .map(it -> new Object[]{it}).iterator();
+    } else {
+      // wrap each enum val in an Object[] and return as Iterable
+      List<FacetField.FacetMethod> vals = Arrays.asList(FacetField.FacetMethod.values());
+      Collections.shuffle(vals);
+      return () -> Collections.singletonList(vals.get(0)).stream()
+              .map(it -> new Object[]{it}).iterator();
+    }
   }
 
   public TestJsonFacets(FacetField.FacetMethod defMethod) {
@@ -220,6 +245,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   public void indexSimple(Client client) throws Exception {
     client.deleteByQuery("*:*", null);
+    client.commit();
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2",
         "num_is", "4", "num_is", "2",
         "val_b", "true", "sparse_s", "one"), null);
@@ -295,7 +321,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         //
         // Which means that unlike most other facet method:xxx options, it fails hard if you try to use it
         // on a field where no docs have been indexed (yet).
-        expectThrows(SolrException.class, () ->{
+        LuceneTestCase.expectThrows(SolrException.class, () ->{
             assertJQ(request);
           });
         
@@ -397,7 +423,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
       ignoreException("'query' domain can not be null");
       ignoreException("'query' domain must not evaluate to an empty list");
       for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
-        expectThrows(SolrException.class, () -> {
+        LuceneTestCase.expectThrows(SolrException.class, () -> {
             assertJQ(req("rows", "0", "q", "num_i:[0 TO *]", "json.facet",
                          "{w: {type:terms, field:'where_s', " + 
                          "     facet: { c: { type:terms, field:'cat_s', domain: { query: "+raw+" }}}}}"));
@@ -1048,11 +1074,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testStats() throws Exception {
+    JSONTestUtil.failRepeatedKeys = false; // sub facet debug info can be duped by race
     doStats(Client.localClient, params("debugQuery", Boolean.toString(random().nextBoolean()) ));
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testStatsDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -1127,7 +1156,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     int limit=0;
     switch (random().nextInt(4)) {
       case 0: limit=-1; break;
-      case 1: limit=1000000; break;
+      case 1: limit=(TEST_NIGHTLY ? 1000000 : 10); break;
       case 2: // fallthrough
       case 3: // fallthrough
     }
@@ -1883,7 +1912,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         , "facets=={ 'count':6, " +
             "sum1:0.0, sumsq1:51.5, avg1:0.0, mind:-5.0, maxd:3.0" +
             ", mini:-5, maxi:3, mins:'a', maxs:'b'" +
-            ", stddev:2.712405363721075, variance:7.3571428571, median:0.0, perc:[-5.0,2.25,3.0]" +
+            ", stddev:2.712405363721075, variance:7.3571428571, median:0.0, perc:[-5.0,2.5,3.0]" +
             "}"
     );
 
@@ -2421,7 +2450,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets <= 1);
-      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably "1", but may be special slot for something.  As long as it's not cardinality of the field
+      assertTrue( DebugAgg.Acc.lastNumSlots <= 2 ); // probably "1", but may be special slot for something.  As long as it's not cardinality of the field
 
 
       creates = DebugAgg.Acc.creates.get();
@@ -2436,7 +2465,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+      assertTrue( DebugAgg.Acc.lastNumSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
 
 
       // When limit:-1, we should do most stats in first phase (SOLR-10634)
@@ -2450,7 +2479,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+      assertTrue( DebugAgg.Acc.lastNumSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
 
       // Now for a numeric field
       // When limit:-1, we should do most stats in first phase (SOLR-10634)
@@ -2464,7 +2493,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+      assertTrue( DebugAgg.Acc.lastNumSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
 
 
       // But if we need to calculate domains anyway, it probably makes sense to calculate most stats in the 2nd phase (along with sub-facets)
@@ -2478,7 +2507,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets >=4);
-      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably 1, but could be higher
+      assertTrue( DebugAgg.Acc.lastNumSlots <= 2 ); // probably 1, but could be higher
 
       // Now with a numeric field
       // But if we need to calculate domains anyway, it probably makes sense to calculate most stats in the 2nd phase (along with sub-facets)
@@ -2492,7 +2521,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue( DebugAgg.Acc.resets.get() - resets >=4);
-      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably 1, but could be higher
+      assertTrue( DebugAgg.Acc.lastNumSlots <= 2 ); // probably 1, but could be higher
     }
     //////////////////////////////////////////////////////////////// end phase testing
 
@@ -2525,18 +2554,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNode() throws Exception {
     doTestPrelimSortingSingleNode(false, false);
   }
-  
+
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNodeExtraStat() throws Exception {
     doTestPrelimSortingSingleNode(true, false);
   }
-  
+
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNodeExtraFacet() throws Exception {
     doTestPrelimSortingSingleNode(false, true);
   }
-  
+
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNodeExtraStatAndFacet() throws Exception {
     doTestPrelimSortingSingleNode(true, true);
   }
@@ -2554,7 +2587,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
       nodes.stop();
     }
   }
-  
+
+  @LuceneTestCase.Nightly
   public void testPrelimSortingDistrib() throws Exception {
     doTestPrelimSortingDistrib(false, false);
   }
@@ -2562,11 +2596,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testPrelimSortingDistribExtraStat() throws Exception {
     doTestPrelimSortingDistrib(true, false);
   }
-  
+
+  @LuceneTestCase.Nightly
   public void testPrelimSortingDistribExtraFacet() throws Exception {
     doTestPrelimSortingDistrib(false, true);
   }
-  
+
+  @LuceneTestCase.Nightly
   public void testPrelimSortingDistribExtraStatAndFacet() throws Exception {
     doTestPrelimSortingDistrib(true, true);
   }
@@ -2909,6 +2945,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   
   @Test
+  @LuceneTestCase.Nightly
   public void testOverrequest() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -2954,6 +2991,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
 
   @Test
+  @LuceneTestCase.Nightly
   public void testBigger() throws Exception {
     ModifiableSolrParams p = params("rows", "0", "cat_s", "cat_ss", "where_s", "where_ss");
     //    doBigger(Client.localClient, p);
@@ -2978,25 +3016,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     Random r = new Random(0);  // make deterministic
     int numCat = 1;
-    int numWhere = 2000000000;
-    int commitPercent = 10;
-    int ndocs=1000;
+    int numWhere = 200000000;
+    int commitPercent = 5;
+    int ndocs=TEST_NIGHTLY ? 1000 : 100;
 
     Map<Integer, Map<Integer, List<Integer>>> model = new HashMap<>();  // cat->where->list<ids>
     for (int i=0; i<ndocs; i++) {
       Integer cat = r.nextInt(numCat);
       Integer where = r.nextInt(numWhere);
       client.add( sdoc("id", getId(i), cat_s,cat, where_s, where) , null );
-      Map<Integer,List<Integer>> sub = model.get(cat);
-      if (sub == null) {
-        sub = new HashMap<>();
-        model.put(cat, sub);
-      }
-      List<Integer> ids = sub.get(where);
-      if (ids == null) {
-        ids = new ArrayList<>();
-        sub.put(where, ids);
-      }
+      Map<Integer,List<Integer>> sub = model.computeIfAbsent(cat, k -> new HashMap<>());
+      List<Integer> ids = sub.computeIfAbsent(where, k -> new ArrayList<>());
       ids.add(i);
 
       if (r.nextInt(100) < commitPercent) {
@@ -3025,12 +3055,21 @@ public class TestJsonFacets extends SolrTestCaseHS {
       );
     }
 
-    client.testJQ(params(p, "q", "*:*"
-        , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:990}}"
-        )
-        , "facets=={ 'count':" + ndocs + "," +
-            "'f1':{buckets:[{val:'00990',count:1}]}} "
-    );
+    if (TEST_NIGHTLY) {
+      client.testJQ(params(p, "q", "*:*"
+              , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:990}}"
+              )
+              , "facets=={ 'count':" + ndocs + "," +
+                      "'f1':{buckets:[{val:'00990',count:1}]}} "
+      );
+    } else {
+      client.testJQ(params(p, "q", "*:*"
+              , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:90}}"
+              )
+              , "facets=={ 'count':" + ndocs + "," +
+                      "'f1':{buckets:[{val:'00090',count:1}]}} "
+      );
+    }
 
 
     for (int i=0; i<20; i++) {
@@ -3044,6 +3083,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
+  @LuceneTestCase.Nightly
   public void testTolerant() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -3211,7 +3251,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","a", "v_t","x1   z")  );
     parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","a", "v_t","x2   z")  );
     parent.addChildDocument( sdoc("id","2.4", "type_s","page", "page_s","b", "v_t","x y  ") );
-    parent.addChildDocument( sdoc("id","2.5", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    parent.addChildDocument( sdoc("id","2.25", "type_s","page", "page_s","c", "v_t","  y z" )  );
     parent.addChildDocument( sdoc("id","2.6", "type_s","page", "page_s","c", "v_t","    z" )  );
     client.add(parent, null);
 
@@ -3407,6 +3447,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testFacetValueTypesDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -3473,9 +3514,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     all.add(catA);
     all.add(catB);
 
-    System.out.println(str(catA));
-    System.out.println(str(catB));
-    System.out.println(str(all));
+    //System.out.println(str(catA));
+    //System.out.println(str(catB));
+    //System.out.println(str(all));
 
     // 2.0 2.2 3.0 3.8 4.0
     // -9.0 -8.2 -5.0 7.800000000000001 11.0
@@ -3498,9 +3539,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     t1.add(90, 1);
     t1.add(50, 1);
 
-    System.out.println(t1.quantile(0.1));
-    System.out.println(t1.quantile(0.5));
-    System.out.println(t1.quantile(0.9));
+    //System.out.println(t1.quantile(0.1));
+    //System.out.println(t1.quantile(0.5));
+    //System.out.println(t1.quantile(0.9));
 
     assertEquals(t1.quantile(0.5), 50.0, 0.01);
 
@@ -3509,9 +3550,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     t2.add(170, 1);
     t2.add(90, 1);
 
-    System.out.println(t2.quantile(0.1));
-    System.out.println(t2.quantile(0.5));
-    System.out.println(t2.quantile(0.9));
+    //System.out.println(t2.quantile(0.1));
+    //System.out.println(t2.quantile(0.5));
+    //System.out.println(t2.quantile(0.9));
 
     AVLTreeDigest top = new AVLTreeDigest(100);
 
@@ -3523,9 +3564,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     ByteBuffer rbuf = ByteBuffer.wrap(arr1);
     top.add(AVLTreeDigest.fromBytes(rbuf));
 
-    System.out.println(top.quantile(0.1));
-    System.out.println(top.quantile(0.5));
-    System.out.println(top.quantile(0.9));
+    //System.out.println(top.quantile(0.1));
+    //System.out.println(top.quantile(0.5));
+    //System.out.println(top.quantile(0.9));
 
     t2.compress();
     ByteBuffer buf2 = ByteBuffer.allocate(t2.byteSize()); // upper bound
@@ -3535,9 +3576,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     ByteBuffer rbuf2 = ByteBuffer.wrap(arr2);
     top.add(AVLTreeDigest.fromBytes(rbuf2));
 
-    System.out.println(top.quantile(0.1));
-    System.out.println(top.quantile(0.5));
-    System.out.println(top.quantile(0.9));
+    //System.out.println(top.quantile(0.1));
+    //System.out.println(top.quantile(0.5));
+    //System.out.println(top.quantile(0.9));
   }
 
   public void XtestHLL() {

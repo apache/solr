@@ -82,6 +82,7 @@ public class FacetDebugInfo {
       for (FacetDebugInfo child : children) {
         subfacet.add(child.getFacetDebugInfo());
       }
+
     }     
     return info;
   } 

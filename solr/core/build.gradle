@@ -20,25 +20,27 @@ apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
 
+
+
 dependencies {
-  api project(':lucene:core')
-  api project(':lucene:analysis:common')
-  api project(':lucene:analysis:kuromoji')
-  api project(':lucene:analysis:nori')
-  api project(':lucene:analysis:phonetic')
-  api project(':lucene:backward-codecs')
-  api project(':lucene:classification')
-  api project(':lucene:codecs')
-  api project(':lucene:expressions')
-  api project(':lucene:grouping')
-  api project(':lucene:highlighter')
-  api project(':lucene:join')
-  api project(':lucene:misc')
-  api project(':lucene:queries')
-  api project(':lucene:queryparser')
-  api project(':lucene:sandbox')
-  api project(':lucene:spatial-extras')
-  api project(':lucene:suggest')
+  api "org.apache.lucene:lucene-core"
+  api "org.apache.lucene:lucene-analysis-common"
+  api "org.apache.lucene:lucene-analysis-kuromoji"
+  api "org.apache.lucene:lucene-analysis-nori"
+  api "org.apache.lucene:lucene-analysis-phonetic"
+  api "org.apache.lucene:lucene-backward-codecs"
+  api "org.apache.lucene:lucene-classification"
+  api "org.apache.lucene:lucene-codecs"
+  api "org.apache.lucene:lucene-expressions"
+  api "org.apache.lucene:lucene-grouping"
+  api "org.apache.lucene:lucene-highlighter"
+  api "org.apache.lucene:lucene-join"
+  api "org.apache.lucene:lucene-misc"
+  api "org.apache.lucene:lucene-queries"
+  api "org.apache.lucene:lucene-queryparser"
+  api "org.apache.lucene:lucene-sandbox"
+  api "org.apache.lucene:lucene-spatial-extras"
+  api "org.apache.lucene:lucene-suggest"
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
@@ -56,9 +58,21 @@ dependencies {
   api 'org.apache.commons:commons-lang3'
   api 'com.carrotsearch:hppc'
   api 'com.fasterxml.jackson.core:jackson-databind'
+  api 'com.fasterxml.woodstox:woodstox-core'
   api 'commons-cli:commons-cli'
   api 'commons-codec:commons-codec'
   api 'commons-collections:commons-collections'
+  api 'org.apache.commons:commons-collections4'
+
+  api 'io.prometheus:simpleclient_servlet'
+  api 'net.sf.saxon:Saxon-HE'
+
+  implementation 'com.netflix.concurrency-limits:concurrency-limits-core'
+  implementation 'com.netflix.concurrency-limits:concurrency-limits-servlet'
+
+  implementation 'com.fasterxml:aalto-xml'
+  implementation 'xerces:xercesImpl'
+  implementation 'com.fasterxml.staxmate:staxmate'
 
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
 
@@ -66,6 +80,8 @@ dependencies {
     exclude group: "org.checkerframework", module: "checker-qual"
     exclude group: "com.google.errorprone", module: "error_prone_annotations"
   })
+
+  implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru'
 
   implementation 'com.github.zafarkhaja:java-semver'
   implementation 'com.google.re2j:re2j'
@@ -88,53 +104,30 @@ dependencies {
 
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
-  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+  implementation 'org.apache.logging.log4j:log4j-slf4j18-impl'
+  implementation 'com.vlkan.log4j2:log4j2-logstash-layout'
 
   api 'org.bitbucket.b_c:jose4j'
   implementation 'org.codehaus.janino:commons-compiler'
   implementation 'org.codehaus.janino:janino'
 
-  api 'org.restlet.jee:org.restlet'
   implementation 'org.rrd4j:rrd4j'
-  implementation 'org.restlet.jee:org.restlet.ext.servlet'
 
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
   implementation ('org.apache.curator:curator-client') { transitive = false }
   implementation ('org.apache.curator:curator-framework') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
-  testImplementation 'org.apache.commons:commons-compress' // required for customized hadoop classes
-
   implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
 
   runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
-  runtimeOnly ('org.apache.kerby:kerb-core')
-  runtimeOnly ('org.apache.kerby:kerb-util')
-  runtimeOnly ('org.apache.kerby:kerby-asn1')
-  runtimeOnly ('org.apache.kerby:kerby-pkix')
   runtimeOnly ('com.google.protobuf:protobuf-java')
 
-  testImplementation project(':lucene:analysis:icu')
+  testImplementation "org.apache.lucene:lucene-analysis-icu"
   testImplementation project(':solr:contrib:analysis-extras')
   testImplementation project(':solr:test-framework')
 
-  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
   testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
-
-  testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-identity') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-server') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-simplekdc') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-admin') { transitive = false }
-  testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false }
 
   testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
 
@@ -143,5 +136,8 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+
+  testRuntimeOnly 'org.eclipse.jetty:jetty-util'
+
 }
 

@@ -88,24 +88,24 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     @Override
     public void write(JSONWriter arg0) {
       LinkedHashMap<String, Object> info = new LinkedHashMap<String, Object>();
-      info.put(CoreAdminParams.CORE, getCoreName());
-      info.put(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
-      info.put(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
-      info.put(SolrSnapshotManager.SHARD_ID, getShardId());
-      info.put(SolrSnapshotManager.LEADER, isLeader());
-      info.put(SolrSnapshotManager.FILE_LIST, getFiles());
+      info.put(CoreAdminParams.CORE, coreName);
+      info.put(SolrSnapshotManager.INDEX_DIR_PATH, indexDirPath);
+      info.put(SolrSnapshotManager.GENERATION_NUM, generationNumber);
+      info.put(SolrSnapshotManager.SHARD_ID, shardId);
+      info.put(SolrSnapshotManager.LEADER, leader);
+      info.put(SolrSnapshotManager.FILE_LIST, files);
       arg0.write(info);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public NamedList toNamedList() {
       NamedList result = new NamedList();
-      result.add(CoreAdminParams.CORE, getCoreName());
-      result.add(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
-      result.add(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
-      result.add(SolrSnapshotManager.SHARD_ID, getShardId());
-      result.add(SolrSnapshotManager.LEADER, isLeader());
-      result.add(SolrSnapshotManager.FILE_LIST, getFiles());
+      result.add(CoreAdminParams.CORE, coreName);
+      result.add(SolrSnapshotManager.INDEX_DIR_PATH, indexDirPath);
+      result.add(SolrSnapshotManager.GENERATION_NUM, generationNumber);
+      result.add(SolrSnapshotManager.SHARD_ID, shardId);
+      result.add(SolrSnapshotManager.LEADER, leader);
+      result.add(SolrSnapshotManager.FILE_LIST, files);
       return result;
     }
   }
@@ -199,7 +199,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
 
   public boolean isSnapshotExists(String shardId, Replica r) {
     for (CoreSnapshotMetaData d : replicaSnapshots) {
-      if (d.getShardId().equals(shardId) && d.getCoreName().equals(r.getCoreName())) {
+      if (d.getShardId().equals(shardId) && d.getCoreName().equals(r.getName())) {
         return true;
       }
     }
@@ -219,7 +219,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     LinkedHashMap<String, Object> result = new LinkedHashMap<>();
     result.put(CoreAdminParams.NAME, this.name);
     result.put(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
-    result.put(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
+    result.put(SolrSnapshotManager.CREATION_DATE, this.creationDate.getTime());
     result.put(SolrSnapshotManager.SNAPSHOT_REPLICAS, this.replicaSnapshots);
     arg0.write(result);
   }
@@ -229,7 +229,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     NamedList result = new NamedList();
     result.add(CoreAdminParams.NAME, this.name);
     result.add(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
-    result.add(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
+    result.add(SolrSnapshotManager.CREATION_DATE, this.creationDate.getTime());
 
     NamedList replicas = new NamedList();
     for (CoreSnapshotMetaData x : replicaSnapshots) {

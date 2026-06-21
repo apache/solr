@@ -202,7 +202,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       }
     }
 
-    private double binaryEntropy(double prob) {
+    private static double binaryEntropy(double prob) {
       if (prob == 0 || prob == 1) return 0;
       return (-1 * prob * Math.log(prob)) + (-1 * (1.0 - prob) * Math.log(1.0 - prob));
     }

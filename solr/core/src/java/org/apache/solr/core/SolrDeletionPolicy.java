@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -43,9 +44,9 @@ import org.slf4j.LoggerFactory;
 public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String maxCommitAge = null;
-  private int maxCommitsToKeep = 1;
-  private int maxOptimizedCommitsToKeep = 0;
+  private volatile String maxCommitAge = null;
+  private volatile int maxCommitsToKeep = 1;
+  private volatile int maxOptimizedCommitsToKeep = 0;
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
@@ -177,6 +178,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
             }
           }
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           log.warn("Exception while checking commit point's age for deletion", e);
         }
 

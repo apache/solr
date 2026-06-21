@@ -390,14 +390,14 @@
     <fieldType name="managed_en" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
         <tokenizer name="standard"/>
-        <filter name="managedStop" managed="english" />
-        <filter name="managedSynonymGraph" managed="english" />
+        <filter class="solr.ManagedStopFilterFactory" managed="english" />
+        <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english" />
         <filter name="flattenGraph"/>
       </analyzer>
       <analyzer type="query">
         <tokenizer name="standard"/>
-        <filter name="managedStop" managed="english" />
-        <filter name="managedSynonymGraph" managed="english" />
+        <filter class="solr.ManagedStopFilterFactory" managed="english" />
+        <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english" />
       </analyzer>
     </fieldType>
 
@@ -411,8 +411,8 @@
         <tokenizer name="standard"/>
         <filter name="stop" ignoreCase="true" words="stopwords.txt" />
         <!-- in this example, we will only use synonyms at query time
-        <filter name="synonymGraph" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
-        <filter name="flattenGraph"/>
+        <filter class="solr.ManagedSynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="flattenGraph"/>
         -->
         <filter name="lowercase"/>
       </analyzer>
@@ -567,7 +567,7 @@
         <tokenizer name="standard"/>
         <filter name="stop" ignoreCase="true" words="stopwords.txt" />
         <filter name="lowercase"/>
-        <filter name="reversedWildcard" withOriginal="true"
+        <filter class="solr.ReversedWildcardFilter" withOriginal="true"
            maxPosAsterisk="3" maxPosQuestion="2" maxFractionAsterisk="0.33"/>
       </analyzer>
       <analyzer type="query">

@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Query;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.handler.component.MergeStrategy;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ public abstract class RankQuery extends ExtendedQueryBase {
 
   @SuppressWarnings({"rawtypes"})
   public abstract TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException;
-  public abstract MergeStrategy getMergeStrategy();
+  public abstract MergeStrategy getMergeStrategy(SolrClient client);
   public abstract RankQuery wrap(Query mainQuery);
 
 }

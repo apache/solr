@@ -139,38 +139,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     /*
      * This comparator sorts the intervals by start value from lower to greater
      */
-    Arrays.sort(sortedIntervals, new Comparator<FacetInterval>() {
-
-      @Override
-      public int compare(FacetInterval o1, FacetInterval o2) {
-        assert o1 != null;
-        assert o2 != null;
-        return compareStart(o1, o2);
-      }
-
-      private int compareStart(FacetInterval o1, FacetInterval o2) {
-        if (o1.start == null) {
-          if (o2.start == null) {
-            return 0;
-          }
-          return -1;
-        }
-        if (o2.start == null) {
-          return 1;
-        }
-        int startComparison = o1.start.compareTo(o2.start);
-        if (startComparison == 0) {
-          if (o1.startOpen != o2.startOpen) {
-            if (!o1.startOpen) {
-              return -1;
-            } else {
-              return 1;
-            }
-          }
-        }
-        return startComparison;
-      }
-    });
+    Arrays.sort(sortedIntervals, new FacetIntervalComparator());
     return sortedIntervals;
   }
 
@@ -213,21 +182,11 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             break;
           case FLOAT:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-                return NumericUtils.sortableFloatBits((int)super.longValue());
-              }
-            };
+            longs = new MyFilterNumericDocValues(ctx, fieldName);
             break;
           case DOUBLE:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-               return NumericUtils.sortableDoubleBits(super.longValue());
-              }
-            };
+            longs = new DoubleFilterNumericDocValues(ctx, fieldName);
             break;
           default:
             throw new AssertionError();
@@ -699,7 +658,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       }
     }
 
-    private BytesRef getLimitFromString(SchemaField schemaField, StringBuilder builder) throws SyntaxError {
+    private static BytesRef getLimitFromString(SchemaField schemaField, StringBuilder builder) throws SyntaxError {
       String value = builder.toString().trim();
       if (value.length() == 0) {
         throw new SyntaxError("Empty interval limit");
@@ -707,7 +666,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       return getLimitFromString(schemaField, value);
     }
     
-    private BytesRef getLimitFromString(SchemaField schemaField, String value) {
+    private static BytesRef getLimitFromString(SchemaField schemaField, String value) {
       if ("*".equals(value)) {
         return null;
       }
@@ -873,7 +832,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
 
     /* Fill in sb with a string from i to the first unescaped comma, or n.
        Return the index past the unescaped comma, or n if no unescaped comma exists */
-    private int unescape(String s, int i, int n, StringBuilder sb) throws SyntaxError {
+    private static int unescape(String s, int i, int n, StringBuilder sb) throws SyntaxError {
       for (; i < n; ++i) {
         char c = s.charAt(i);
         if (c == '\\') {
@@ -932,4 +891,58 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     return new ArrayList<FacetInterval>(Arrays.asList(intervals)).iterator();
   }
 
+  private static class FacetIntervalComparator implements Comparator<FacetInterval> {
+
+    @Override
+    public int compare(FacetInterval o1, FacetInterval o2) {
+      assert o1 != null;
+      assert o2 != null;
+      return compareStart(o1, o2);
+    }
+
+    private static int compareStart(FacetInterval o1, FacetInterval o2) {
+      if (o1.start == null) {
+        if (o2.start == null) {
+          return 0;
+        }
+        return -1;
+      }
+      if (o2.start == null) {
+        return 1;
+      }
+      int startComparison = o1.start.compareTo(o2.start);
+      if (startComparison == 0) {
+        if (o1.startOpen != o2.startOpen) {
+          if (!o1.startOpen) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+      }
+      return startComparison;
+    }
+  }
+
+  private static class MyFilterNumericDocValues extends FilterNumericDocValues {
+    public MyFilterNumericDocValues(LeafReaderContext ctx, String fieldName) throws IOException {
+      super(DocValues.getNumeric(ctx.reader(), fieldName));
+    }
+
+    @Override
+    public long longValue() throws IOException {
+      return NumericUtils.sortableFloatBits((int)super.longValue());
+    }
+  }
+
+  private static class DoubleFilterNumericDocValues extends FilterNumericDocValues {
+    public DoubleFilterNumericDocValues(LeafReaderContext ctx, String fieldName) throws IOException {
+      super(DocValues.getNumeric(ctx.reader(), fieldName));
+    }
+
+    @Override
+    public long longValue() throws IOException {
+     return NumericUtils.sortableDoubleBits(super.longValue());
+    }
+  }
 }

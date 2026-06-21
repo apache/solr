@@ -25,16 +25,10 @@ package org.apache.solr.util;
  */
 public interface DynamicMap {
 
-  default boolean useArrayBased(int expectedKeyMax) {
-    boolean assertsEnabled = false;
-    assert assertsEnabled = true; // Intentional side-effect!
-    if (assertsEnabled) {
-      // avoid using array based up-front on testing
-      return false;
-    }
+  default boolean useArrayBased(int maxDoc, int expectedKeyMax) {
 
-    // for small size, prefer using array based
-    return expectedKeyMax < (1 << 12);
+    return expectedKeyMax > maxDoc * .75f || maxDoc < 150000;
+    //return false;
   }
 
   /**

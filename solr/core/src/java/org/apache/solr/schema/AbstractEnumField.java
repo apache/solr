@@ -20,32 +20,36 @@ package org.apache.solr.schema;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.s9api.SaxonApiException;
+import net.sf.saxon.trans.XPathException;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
+import net.sf.saxon.tree.tiny.TinyElementImpl;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
+import org.xml.sax.InputSource;
 
 /***
  * Abstract Field type for support of string values with custom sort order.
@@ -109,12 +113,24 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
       final SolrResourceLoader loader = schema.getResourceLoader(); 
       try {
         log.debug("Reloading enums config file from {}", enumsConfigFile);
-        Document doc = SafeXMLParsing.parseConfigXML(log, loader, enumsConfigFile);
-        final XPathFactory xpathFactory = XPathFactory.newInstance();
-        final XPath xpath = xpathFactory.newXPath();
+        InputStream in = null;
+
+        in = loader.openResource(enumsConfigFile);
+
+        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+
+          int zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+          if (log.isDebugEnabled()) {
+            log.debug("loaded config {} with version {} ", enumsConfigFile, zkVersion);
+          }
+        }
+
+        InputSource is = new InputSource(in);
+        TinyDocumentImpl doc = XmlConfigFile.parseXml(loader, is, null);
+        final XPath xpath = SolrResourceLoader.getXPath();
         final String xpathStr = String.format(Locale.ROOT, "/enumsConfig/enum[@name='%s']", enumName);
-        final NodeList nodes = (NodeList) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);
-        final int nodesLength = nodes.getLength();
+        ArrayList<NodeInfo> nodes = (ArrayList<NodeInfo>) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);
+        final int nodesLength = nodes.size();
         if (nodesLength == 0) {
           String exceptionMessage = String.format
             (Locale.ENGLISH, "%s: No enum configuration found for enum '%s' in %s.",
@@ -125,11 +141,11 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
           log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken."
               , ftName, enumName, enumsConfigFile);
         }
-        final Node enumNode = nodes.item(nodesLength - 1);
-        final NodeList valueNodes = (NodeList) xpath.evaluate("value", enumNode, XPathConstants.NODESET);
-        for (int i = 0; i < valueNodes.getLength(); i++) {
-          final Node valueNode = valueNodes.item(i);
-          final String valueStr = valueNode.getTextContent();
+        TinyElementImpl enumNode = (TinyElementImpl) nodes.get(nodesLength - 1);
+        final ArrayList<NodeInfo>  valueNodes = (ArrayList<NodeInfo>) xpath.evaluate("value", enumNode, XPathConstants.NODESET);
+        for (int i = 0; i < valueNodes.size(); i++) {
+          NodeInfo valueNode = valueNodes.get(i);
+          final String valueStr = valueNode.getStringValue();
           if ((valueStr == null) || (valueStr.length() == 0)) {
             final String exceptionMessage = String.format
               (Locale.ENGLISH, "%s: A value was defined with an no value in enum '%s' in %s.",
@@ -145,7 +161,7 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
           enumIntToStringMap.put(i, valueStr);
           enumStringToIntMap.put(valueStr, i);
         }
-      } catch (IOException | SAXException | XPathExpressionException e) {
+      } catch (IOException | XPathExpressionException | XPathException | SaxonApiException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                 ftName + ": Error while parsing enums config.", e);
       }

@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +38,15 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A point type that indexes a point in an n-dimensional space as separate fields and supports range queries.
  * See {@link LatLonType} for geo-spatial queries.
  */
 public class PointType extends CoordinateFieldType implements SpatialQueryable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -76,7 +80,14 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
         SchemaField sf = subField(field, i, schema);
-        f.addAll(sf.createFields(point[i]));
+        List<IndexableField> sub = null;
+        try {
+          sub = sf.createFields(point[i]);
+        } catch (SolrException e) {
+          log.error("Could not create field", e);
+          continue;
+        }
+        f.addAll(sub);
       }
     }
 

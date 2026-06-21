@@ -93,38 +93,46 @@ public class FieldEqualitor implements StreamEqualitor {
   }
   
   @Override
-  public boolean isDerivedFrom(StreamEqualitor base){
-    if(null == base){ return false; }
-    if(base instanceof FieldEqualitor){
-      FieldEqualitor baseEq = (FieldEqualitor)base;
-      return leftFieldName.equals(baseEq.leftFieldName) && rightFieldName.equals(baseEq.rightFieldName);
-    }
-    else if(base instanceof MultipleFieldEqualitor){
-      // must equal the first one
-      MultipleFieldEqualitor baseEqs = (MultipleFieldEqualitor)base;
-      if(baseEqs.getEqs().length > 0){
-        return isDerivedFrom(baseEqs.getEqs()[0]);
+  public boolean isDerivedFrom(StreamEqualitor base) {
+    while (true) {
+      if (null == base) {
+        return false;
       }
+      if (base instanceof FieldEqualitor) {
+        FieldEqualitor baseEq = (FieldEqualitor) base;
+        return leftFieldName.equals(baseEq.leftFieldName) && rightFieldName.equals(baseEq.rightFieldName);
+      } else if (base instanceof MultipleFieldEqualitor) {
+        // must equal the first one
+        MultipleFieldEqualitor baseEqs = (MultipleFieldEqualitor) base;
+        if (baseEqs.getEqs().length > 0) {
+          base = baseEqs.getEqs()[0];
+          continue;
+        }
+      }
+
+      return false;
     }
-    
-    return false;
   }
   
   @Override
-  public boolean isDerivedFrom(StreamComparator base){
-    if(null == base){ return false; }
-    if(base instanceof FieldComparator){
-      FieldComparator baseComp = (FieldComparator)base;
-      return leftFieldName.equals(baseComp.getLeftFieldName()) || rightFieldName.equals(baseComp.getRightFieldName());
-    }
-    else if(base instanceof MultipleFieldComparator){
-      // must equal the first one
-      MultipleFieldComparator baseComps = (MultipleFieldComparator)base;
-      if(baseComps.getComps().length > 0){
-        return isDerivedFrom(baseComps.getComps()[0]);
+  public boolean isDerivedFrom(StreamComparator base) {
+    while (true) {
+      if (null == base) {
+        return false;
       }
+      if (base instanceof FieldComparator) {
+        FieldComparator baseComp = (FieldComparator) base;
+        return leftFieldName.equals(baseComp.getLeftFieldName()) || rightFieldName.equals(baseComp.getRightFieldName());
+      } else if (base instanceof MultipleFieldComparator) {
+        // must equal the first one
+        MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
+        if (baseComps.getComps().length > 0) {
+          base = baseComps.getComps()[0];
+          continue;
+        }
+      }
+
+      return false;
     }
-    
-    return false;
   }
 }

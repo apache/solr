@@ -25,9 +25,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.noggit.JSONParser;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -88,8 +88,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
 
     reloadIfExpired();
 
-    Double source = (Double) rates.getRates().get(sourceCurrencyCode);
-    Double target = (Double) rates.getRates().get(targetCurrencyCode);
+    Double source = rates.getRates().get(sourceCurrencyCode);
+    Double target = rates.getRates().get(targetCurrencyCode);
 
     if (source == null || target == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
@@ -135,9 +135,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     return rates.getRates().keySet();
   }
 
-  @Override
-  @SuppressWarnings("resource")
-  public boolean reload() throws SolrException {
+  @Override public boolean reload() throws SolrException {
     InputStream ratesJsonStream = null;
     try {
       log.debug("Reloading exchange rates from {}", ratesFileLocation);
@@ -195,7 +193,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     reload();
   }
   
-  private String getParam(String param, String defaultParam) {
+  private static String getParam(String param, String defaultParam) {
     return param == null ? defaultParam : param;
   }
   

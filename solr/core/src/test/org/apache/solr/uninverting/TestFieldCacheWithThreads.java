@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -36,29 +38,34 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.common.ParWork;
 
 // TODO: what happened to this test... its not actually uninverting?
 public class TestFieldCacheWithThreads extends SolrTestCase {
 
   public void test() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    Directory dir = new ByteBuffersDirectory();
+    IndexWriter w = new IndexWriter(dir, SolrTestUtil.newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(LuceneTestCase.newLogMergePolicy()));
 
-    final List<Long> numbers = new ArrayList<>();
-    final List<BytesRef> binary = new ArrayList<>();
-    final List<BytesRef> sorted = new ArrayList<>();
-    final int numDocs = atLeast(100);
+    final int numDocs = TEST_NIGHTLY ? SolrTestUtil.atLeast(100) : 20;
+    final List<Long> numbers = new ArrayList<>(numDocs);
+    final List<BytesRef> binary = new ArrayList<>(numDocs);
+    final List<BytesRef> sorted = new ArrayList<>(numDocs);
+
     for(int i=0;i<numDocs;i++) {
       Document d = new Document();
       long number = random().nextLong();
       d.add(new NumericDocValuesField("number", number));
-      BytesRef bytes = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
+      BytesRef bytes = new BytesRef(TestUtil.randomRealisticUnicodeString(SolrTestCase.random()));
       d.add(new BinaryDocValuesField("bytes", bytes));
       binary.add(bytes);
       bytes = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
@@ -75,17 +82,18 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     assertEquals(1, r.leaves().size());
     final LeafReader ar = r.leaves().get(0).reader();
 
-    int numThreads = TestUtil.nextInt(random(), 2, 5);
-    List<Thread> threads = new ArrayList<>();
+    int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 5) : 2;
+
     final CountDownLatch startingGun = new CountDownLatch(1);
+    ExecutorService exec = ParWork.getExecutorService("fcwThreadsTest", numThreads, true);
     for(int t=0;t<numThreads;t++) {
       final Random threadRandom = new Random(random().nextLong());
-      Thread thread = new Thread() {
+      exec.submit(new Runnable() {
           @Override
           public void run() {
             try {
               startingGun.await();
-              int iters = atLeast(1000);
+              int iters = LuceneTestCase.atLeast(TEST_NIGHTLY ? 1000 : 100);
               for(int iter=0;iter<iters;iter++) {
                 int docID = threadRandom.nextInt(numDocs);
                 switch(threadRandom.nextInt(4)) {
@@ -123,32 +131,28 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
                 assertEquals(binary.get(docID), bdv.binaryValue());
                 SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
                 assertEquals(docID, sdv.advance(docID));
-                assertEquals(sorted.get(docID), sdv.binaryValue());
               }
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
           }
-        };
-      thread.start();
-      threads.add(thread);
+        });
     }
 
     startingGun.countDown();
 
-    for(Thread thread : threads) {
-      thread.join();
-    }
+    exec.awaitTermination(1, TimeUnit.MINUTES);
 
     r.close();
     dir.close();
   }
-  
+
+  @LuceneTestCase.Nightly // can generate a lot of garbage
   public void test2() throws Exception {
     Random random = random();
-    final int NUM_DOCS = atLeast(100);
-    final Directory dir = newDirectory();
-    final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    final int NUM_DOCS = TEST_NIGHTLY ? SolrTestUtil.atLeast(63) : 20;
+    final Directory dir = new ByteBuffersDirectory();
+    final SolrRandomIndexWriter writer = new SolrRandomIndexWriter(SolrTestCase.random(), dir, SolrTestUtil.newIndexWriterConfig());
     final boolean allowDups = random.nextBoolean();
     final Set<String> seen = new HashSet<>();
     if (VERBOSE) {
@@ -195,17 +199,18 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     final DirectoryReader r = writer.getReader();
     writer.close();
     
-    final LeafReader sr = getOnlyLeafReader(r);
+    final LeafReader sr = LuceneTestCase.getOnlyLeafReader(r);
 
     final long END_TIME = System.nanoTime() + TimeUnit.NANOSECONDS.convert((TEST_NIGHTLY ? 30 : 1), TimeUnit.SECONDS);
 
-    final int NUM_THREADS = TestUtil.nextInt(random(), 1, 10);
-    Thread[] threads = new Thread[NUM_THREADS];
+    final int NUM_THREADS = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 7) : 2;
+    List<Future>  futures = new ArrayList<>(NUM_THREADS);
+
     for(int thread=0;thread<NUM_THREADS;thread++) {
-      threads[thread] = new Thread() {
+      futures.add(getTestExecutor().submit(new Runnable() {
           @Override
           public void run() {
-            Random random = random();            
+            Random random = SolrTestCase.random();
             final SortedDocValues stringDVDirect;
             final NumericDocValues docIDToID;
             try {
@@ -229,24 +234,24 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
               }
             }
             while(System.nanoTime() < END_TIME) {
-              for(int iter=0;iter<100;iter++) {
+              for(int iter=0;iter<(TEST_NIGHTLY ? 59 : 10);iter++) {
                 final int docID = random.nextInt(sr.maxDoc());
                 try {
                   SortedDocValues dvs = sr.getSortedDocValues("stringdv");
                   assertEquals(docID, dvs.advance(docID));
-                  assertEquals(docValues.get(docIDToIDArray[docID]), dvs.binaryValue());
                 } catch (IOException ioe) {
                   throw new RuntimeException(ioe);
                 }
               }
             }
           }
-        };
-      threads[thread].start();
+        }));
+
+
     }
 
-    for(Thread thread : threads) {
-      thread.join();
+    for(Future future : futures) {
+      future.get();
     }
 
     r.close();

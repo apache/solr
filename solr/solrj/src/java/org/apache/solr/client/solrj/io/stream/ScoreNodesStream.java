@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
@@ -80,7 +81,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   public ScoreNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter nodeFreqParam = factory.getNamedOperand(expression, "termFreq");
+    StreamExpressionNamedParameter nodeFreqParam = StreamFactory.getNamedOperand(expression, "termFreq");
 
     String docFreqField = "count(*)";
     if(nodeFreqParam != null) {
@@ -206,7 +207,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
       builder.append(nodeId);
     }
 
-    CloudSolrClient client = clientCache.getCloudSolrClient(zkHost);
+    CloudHttp2SolrClient client = clientCache.getCloudSolrClient();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS, "true");
@@ -247,6 +248,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
         }
       }
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
 
@@ -257,7 +259,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     stream.close();
   }
 
-  public StreamComparator getComparator(){
+  public static StreamComparator getComparator(){
     return null;
   }
 

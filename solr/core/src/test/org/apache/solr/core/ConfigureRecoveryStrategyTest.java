@@ -21,9 +21,9 @@ import java.lang.reflect.Modifier;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -37,36 +37,40 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
   private static String solrConfigFileName;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeConfigureRecoveryStrategyTest() throws Exception {
     solrConfigFileName = (random().nextBoolean()
         ? solrConfigFileNameConfigure : solrConfigFileNameCustom);
     initCore(solrConfigFileName, "schema.xml");
   }
 
+  @AfterClass
+  public static void afterConfigureRecoveryStrategyTest() throws Exception {
+    solrConfigFileName = null;
+  }
+
   public void testBuilder() throws Exception {
-    final RecoveryStrategy.Builder recoveryStrategyBuilder =
-        h.getCore().getSolrCoreState().getRecoveryStrategyBuilder();
-    assertNotNull("recoveryStrategyBuilder is null", recoveryStrategyBuilder);
+    try (SolrCore core = h.getCore()) {
+      final RecoveryStrategy.Builder recoveryStrategyBuilder = core.getSolrCoreState().getRecoveryStrategyBuilder();
+      assertNotNull("recoveryStrategyBuilder is null", recoveryStrategyBuilder);
 
-    final String expectedClassName;
+      final String expectedClassName;
 
-    if (solrConfigFileName.equals(solrConfigFileNameConfigure)) {
-      expectedClassName = RecoveryStrategy.Builder.class.getName();
-    } else if (solrConfigFileName.equals(solrConfigFileNameCustom)) {
-      assertTrue("recoveryStrategyBuilder is wrong class (instanceof)",
-          recoveryStrategyBuilder instanceof CustomRecoveryStrategyBuilder);
-      expectedClassName = ConfigureRecoveryStrategyTest.CustomRecoveryStrategyBuilder.class.getName();
-    } else {
-      expectedClassName = null;
+      if (solrConfigFileName.equals(solrConfigFileNameConfigure)) {
+        expectedClassName = RecoveryStrategy.Builder.class.getName();
+      } else if (solrConfigFileName.equals(solrConfigFileNameCustom)) {
+        assertTrue("recoveryStrategyBuilder is wrong class (instanceof)", recoveryStrategyBuilder instanceof CustomRecoveryStrategyBuilder);
+        expectedClassName = ConfigureRecoveryStrategyTest.CustomRecoveryStrategyBuilder.class.getName();
+      } else {
+        expectedClassName = null;
+      }
+
+      assertEquals("recoveryStrategyBuilder is wrong class (name)", expectedClassName, recoveryStrategyBuilder.getClass().getName());
     }
-
-    assertEquals("recoveryStrategyBuilder is wrong class (name)",
-        expectedClassName, recoveryStrategyBuilder.getClass().getName());
   }
 
   public void testAlmostAllMethodsAreFinal() throws Exception {
     for (Method m : RecoveryStrategy.class.getDeclaredMethods()) {
-      if (Modifier.isStatic(m.getModifiers())) continue;
+      if (Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers()) || m.getName().contains("lambda$")) continue;
       final String methodName = m.getName();
       if ("getReplicateLeaderUrl".equals(methodName)) {
         assertFalse(m.toString(), Modifier.isFinal(m.getModifiers()));
@@ -94,8 +98,8 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected String getReplicateLeaderUrl(ZkNodeProps leaderprops) {
-      return ZkCoreNodeProps.getCoreUrl(
+    protected String getReplicateLeaderUrl(Replica leaderprops, ZkStateReader zkStateReader) {
+      return Replica.getCoreUrl(
           leaderprops.getStr(alternativeBaseUrlProp),
           leaderprops.getStr(ZkStateReader.CORE_NAME_PROP));
     }

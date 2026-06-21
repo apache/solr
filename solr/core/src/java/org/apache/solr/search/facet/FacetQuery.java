@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.agrona.collections.Object2ObjectHashMap;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -40,8 +41,10 @@ public class FacetQuery extends FacetRequest {
   
   @Override
   public Map<String, Object> getFacetDescription() {
-    Map<String, Object> descr = new HashMap<String, Object>();
-    descr.put("query", q);
+    Map<String, Object> descr = new Object2ObjectHashMap<>();
+    if (q != null) {
+      descr.put("query", q);
+    }
     return descr;
   }
 }

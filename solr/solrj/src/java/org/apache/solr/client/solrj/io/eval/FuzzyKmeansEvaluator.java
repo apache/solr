@@ -42,7 +42,7 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
   public FuzzyKmeansEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
 
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(namedParam.getName().equals("fuzziness")){

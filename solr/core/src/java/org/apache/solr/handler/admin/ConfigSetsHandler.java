@@ -27,9 +27,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.Path;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponse;
@@ -126,10 +128,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), req.getParamString());
     }
     Map<String, Object> result = operation.call(req, rsp, this);
-    sendToZk(rsp, operation, result);
+    sendToZk(rsp, operation, result == null ? null : new Object2ObjectLinkedOpenHashMap<>(result, 0.25f));
   }
 
-  protected void sendToZk(SolrQueryResponse rsp, ConfigSetOperation operation, Map<String, Object> result)
+  protected void sendToZk(SolrQueryResponse rsp, ConfigSetOperation operation, Object2ObjectMap<String, Object> result)
       throws KeeperException, InterruptedException {
     if (result != null) {
       // We need to differentiate between collection and configsets actions since they currently
@@ -153,9 +155,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
 
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
-    String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + configSetName;
+    String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName;
 
-    if (zkClient.exists(configPathInZk, true)) {
+    if (zkClient.exists(configPathInZk)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The configuration " + configSetName + " already exists in zookeeper");
     }
@@ -167,25 +169,30 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
           "No stream found for the config data to be uploaded");
     }
 
-    InputStream inputStream = contentStreamsIterator.next().getStream();
+    InputStream inputStream = new CloseShieldInputStream(contentStreamsIterator.next().getStream());
+    try {
+      // Create a node for the configuration in zookeeper
+      boolean trusted = getTrusted(req);
+      zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
+          getBytes(StandardCharsets.UTF_8), true);
 
-    // Create a node for the configuration in zookeeper
-    boolean trusted = getTrusted(req);
-    zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
-        getBytes(StandardCharsets.UTF_8), true);
-
-    ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
-    ZipEntry zipEntry = null;
-    while ((zipEntry = zis.getNextEntry()) != null) {
-      String filePathInZk = configPathInZk + "/" + zipEntry.getName();
-      if (zipEntry.isDirectory()) {
-        zkClient.makePath(filePathInZk, true);
-      } else {
-        createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk,
-            IOUtils.toByteArray(zis));
+      ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
+      ZipEntry zipEntry = null;
+      while ((zipEntry = zis.getNextEntry()) != null) {
+        String filePathInZk = configPathInZk + "/" + zipEntry.getName();
+        if (zipEntry.isDirectory()) {
+          if (filePathInZk.endsWith("/")) {
+            filePathInZk = filePathInZk.substring(0, filePathInZk.length() - 1);
+          }
+          zkClient.mkdir(filePathInZk);
+        } else {
+          createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk, IOUtils.toByteArray(zis));
+        }
       }
+      zis.close();
+    } finally {
+      Utils.readFully(inputStream);
     }
-    zis.close();
   }
 
   boolean getTrusted(SolrQueryRequest req) {
@@ -200,9 +207,8 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     return false;
   }
 
-  private void createZkNodeIfNotExistsAndSetData(SolrZkClient zkClient,
-                                                 String filePathInZk, byte[] data) throws Exception {
-    if (!zkClient.exists(filePathInZk, true)) {
+  private static void createZkNodeIfNotExistsAndSetData(SolrZkClient zkClient, String filePathInZk, byte[] data) throws Exception {
+    if (!zkClient.exists(filePathInZk)) {
       zkClient.create(filePathInZk, data, CreateMode.PERSISTENT, true);
     } else {
       zkClient.setData(filePathInZk, data, true);
@@ -237,8 +243,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
             + event.getWatchedEvent().getState() + " type "
             + event.getWatchedEvent().getType() + "]");
       } else {
-        throw new SolrException(ErrorCode.SERVER_ERROR, operation
-            + " the configset unknown case");
+        // unknown case, we have  to assume success, it was too fast for us to see
       }
     }
   }
@@ -289,7 +294,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
         NamedList<Object> results = new NamedList<>();
-        SolrZkClient zk = h.coreContainer.getZkController().getZkStateReader().getZkClient();
+        SolrZkClient zk = h.coreContainer.getZkController().getZkClient();
         ZkConfigManager zkConfigManager = new ZkConfigManager(zk);
         List<String> configSetsList = zkConfigManager.listConfigs();
         results.add("configSets", configSetsList);

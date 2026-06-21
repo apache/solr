@@ -80,12 +80,11 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node4",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node4",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ), "c1","s1"
-        )
+                ZkStateReader.REPLICA_TYPE, "TLOG",
+                "id", -1
+            ), "c1",-1, "s1")
     );
 
     // Add a PULL replica so that there's a tie for "last place"
@@ -93,12 +92,11 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node5",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node5",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ), "c1","s1"
-        )
+                ZkStateReader.REPLICA_TYPE, "PULL",
+                "id", -1
+            ), "c1",-1, "s1")
     );
 
     // replicaType and replicaBase combined rule param
@@ -133,34 +131,31 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node1",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host1:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node1",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "NRT"
-            ),"c1","s1"
-        )
+                ZkStateReader.REPLICA_TYPE, "NRT",
+                "id", -1
+            ),"c1",-1, "s1")
     );
     replicas.add(
         new Replica(
             "node2",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node2",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ),"c1","s1"
-        )
+                ZkStateReader.REPLICA_TYPE, "TLOG",
+                "id", -1
+            ),"c1",-1, "s1")
     );
     replicas.add(
         new Replica(
             "node3",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node3",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ),"c1","s1"
-        )
+                ZkStateReader.REPLICA_TYPE, "PULL",
+                "id", -1
+            ),"c1",-1, "s1")
     );
     return replicas;
   }

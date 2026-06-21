@@ -49,6 +49,7 @@ import static org.apache.solr.security.AuditEvent.EventType.ERROR;
  */
 public class AuditEvent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Pattern COMPILE = Pattern.compile("^/____v2");
   private String baseUrl;
   private String nodeName;
   private String message;
@@ -137,9 +138,9 @@ public class AuditEvent {
     this.headers = getHeadersFromRequest(httpRequest);
     this.baseUrl = httpRequest.getRequestURL().toString();
     this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
-    SolrRequestParsers.parseQueryString(httpQueryString).forEach(sp -> {
-      this.solrParams.put(sp.getKey(), Arrays.asList(sp.getValue()));
-    });
+//    SolrRequestParsers.getInstance().parseQueryString(httpQueryString).forEach(sp -> {
+//      this.solrParams.put(sp.getKey(), Arrays.asList(sp.getValue()));
+//    });
 
     setResource(ServletUtils.getPathAfterContext(httpRequest));
     setRequestType(findRequestType());
@@ -193,7 +194,7 @@ public class AuditEvent {
     setException(exception);
   }
 
-  private HashMap<String, String> getHeadersFromRequest(HttpServletRequest httpRequest) {
+  private static HashMap<String, String> getHeadersFromRequest(HttpServletRequest httpRequest) {
     HashMap<String, String> h = new HashMap<>();
     Enumeration<String> headersEnum = httpRequest.getHeaderNames();
     while (headersEnum != null && headersEnum.hasMoreElements()) {
@@ -355,7 +356,7 @@ public class AuditEvent {
    * @return String value of the first value, regardless of number of valies
    */
   public String getSolrParamAsString(String key) {
-    List<String> v = getSolrParams().get(key);
+    List<String> v = solrParams.get(key);
     if (v != null && v.size() > 0) {
       return String.valueOf((v).get(0));
     }
@@ -399,8 +400,11 @@ public class AuditEvent {
   }
 
   /**
-   * In case of ERROR event, find the exception causing the error
+   * In case of ERROR event, find the exception causing the error.
+   * Excluded from JSON serialization: Throwable is not safely serializable (SolrException.getRootCause()
+   * returns {@code this} when cause==null, producing a circular reference under Jackson 2.12.x).
    */
+  @JsonIgnore
   public Throwable getException() {
     return exception;
   }
@@ -565,9 +569,9 @@ public class AuditEvent {
     return RequestType.UNKNOWN;
   }
 
-  protected String normalizeResourcePath(String resourcePath) {
+  protected static String normalizeResourcePath(String resourcePath) {
     if (resourcePath == null) return "";
-    return resourcePath.replaceFirst("^/____v2", "/api");
+    return COMPILE.matcher(resourcePath).replaceFirst("/api");
   }
 
   private static final List<String> ADMIN_PATH_REGEXES = Arrays.asList(

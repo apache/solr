@@ -209,7 +209,7 @@ public class RangeFacetProcessor extends SimpleFacets {
       intervals.add(after);
     }
 
-    IntervalFacets.FacetInterval[] intervalsArray = intervals.toArray(new IntervalFacets.FacetInterval[intervals.size()]);
+    IntervalFacets.FacetInterval[] intervalsArray = intervals.toArray(new IntervalFacets.FacetInterval[0]);
     // don't use the ArrayList anymore
     intervals = null;
 

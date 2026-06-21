@@ -89,7 +89,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
     factory = createFactory();
   }
 
-  protected SolrContentHandlerFactory createFactory() {
+  protected static SolrContentHandlerFactory createFactory() {
     return new SolrContentHandlerFactory();
   }
 

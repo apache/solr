@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -123,7 +124,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
               Expressible.class);
           streamFactory.withFunctionName(key, clazz);
         } else {
-          @SuppressWarnings("resource")
           StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
           streamFactory.withFunctionName(key, () -> holder.getClazz());
         }
@@ -145,6 +145,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     try {
       tupleStream = this.streamFactory.constructStream(params.get("expr"));
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
       @SuppressWarnings({"rawtypes"})
@@ -169,7 +170,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     return "GraphHandler";
   }
 
-  public String getSource() {
+  public static String getSource() {
     return null;
   }
 
@@ -212,7 +213,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   }
 
 
-  private SolrParams adjustParams(SolrParams params) {
+  private static SolrParams adjustParams(SolrParams params) {
     ModifiableSolrParams adjustedParams = new ModifiableSolrParams();
     adjustedParams.add(params);
     adjustedParams.add(CommonParams.OMIT_HEADER, "true");
@@ -254,7 +255,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return null;
     }
 
-    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if(tuple.EOF) {

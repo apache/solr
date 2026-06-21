@@ -72,7 +72,7 @@
        The example below can be used to load a solr-contrib along
        with their external dependencies.
     -->
-    <!-- <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" /> -->
+  <!-- <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" /> -->
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
@@ -96,7 +96,7 @@
 
        solr.StandardDirectoryFactory is filesystem
        based and tries to pick the best implementation for the current
-       JVM and platform.  solr.NRTCachingDirectoryFactory, the default,
+       JVM and platform.  solr.NRTCachingDirectoryFactory
        wraps solr.StandardDirectoryFactory and caches small files in memory
        for better NRT performance.
 
@@ -106,7 +106,7 @@
        solr.RAMDirectoryFactory is memory based and not persistent.
     -->
   <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+                    class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene
@@ -149,7 +149,7 @@
          before flushing.
          If both ramBufferSizeMB and maxBufferedDocs is set, then
          Lucene will flush based on whichever limit is hit first.  -->
-    <!-- <ramBufferSizeMB>100</ramBufferSizeMB> -->
+    <ramBufferSizeMB>${solr.ramBufferSizeMB:300}</ramBufferSizeMB>
     <!-- <maxBufferedDocs>1000</maxBufferedDocs> -->
 
     <!-- Expert: ramPerThreadHardLimitMB sets the maximum amount of RAM that can be consumed
@@ -181,10 +181,15 @@
          can perform merges in the background using separate threads.
          The SerialMergeScheduler (Lucene 2.2 default) does not.
      -->
-    <!--
-       <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
-       -->
 
+    <!--  <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
+      <int name="maxThreadCount">6</int>
+      <int name="maxMergeCount">8</int>
+      <bool name="ioThrottle">false</bool>
+
+
+    </mergeScheduler>
+  -->
     <!-- LockFactory
 
          This option specifies which Lucene LockFactory implementation
@@ -309,7 +314,7 @@
          have some sort of hard autoCommit to limit the log size.
       -->
     <autoCommit>
-      <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
+      <maxTime>${solr.autoCommit.maxTime:30000}</maxTime>
       <openSearcher>false</openSearcher>
     </autoCommit>
 
@@ -368,11 +373,11 @@
   <query>
 
     <!-- Maximum number of clauses allowed when parsing a boolean query string.
-         
+
          This limit only impacts boolean queries specified by a user as part of a query string,
          and provides per-collection controls on how complex user specified boolean queries can
          be.  Query strings that specify more clauses then this will result in an error.
-         
+
          If this per-collection limit is greater then the global `maxBooleanClauses` limit
          specified in `solr.xml`, it will have no effect, as that setting also limits the size
          of user specified boolean queries.
@@ -686,10 +691,10 @@
       <str name="echoParams">explicit</str>
       <int name="rows">10</int>
       <!-- Default search field
-         <str name="df">text</str> 
+         <str name="df">text</str>
         -->
       <!-- Change from JSON to XML format (the default prior to Solr 7.0)
-         <str name="wt">xml</str> 
+         <str name="wt">xml</str>
         -->
     </lst>
     <!-- In addition to defaults, "appends" params can be specified
@@ -921,7 +926,7 @@
       <!-- This could most likely be commented out in the "default" case -->
       <fragmenter name="gap"
                   default="true"
-                  class="solr.highlight.GapFragmenter">
+                  class="org.apache.solr.highlight.GapFragmenter">
         <lst name="defaults">
           <int name="hl.fragsize">100</int>
         </lst>
@@ -931,7 +936,7 @@
            (for sentence extraction)
         -->
       <fragmenter name="regex"
-                  class="solr.highlight.RegexFragmenter">
+                  class="org.apache.solr.highlight.RegexFragmenter">
         <lst name="defaults">
           <!-- slightly smaller fragsizes work better because of slop -->
           <int name="hl.fragsize">70</int>
@@ -945,7 +950,7 @@
       <!-- Configure the standard formatter -->
       <formatter name="html"
                  default="true"
-                 class="solr.highlight.HtmlFormatter">
+                 class="org.apache.solr.highlight.HtmlFormatter">
         <lst name="defaults">
           <str name="hl.simple.pre"><![CDATA[<em>]]></str>
           <str name="hl.simple.post"><![CDATA[</em>]]></str>
@@ -954,25 +959,25 @@
 
       <!-- Configure the standard encoder -->
       <encoder name="html"
-               class="solr.highlight.HtmlEncoder" />
+               class="org.apache.solr.highlight.HtmlEncoder" />
 
       <!-- Configure the standard fragListBuilder -->
       <fragListBuilder name="simple"
-                       class="solr.highlight.SimpleFragListBuilder"/>
+                       class="org.apache.solr.highlight.SimpleFragListBuilder"/>
 
       <!-- Configure the single fragListBuilder -->
       <fragListBuilder name="single"
-                       class="solr.highlight.SingleFragListBuilder"/>
+                       class="org.apache.solr.highlight.SimpleFragListBuilder"/>
 
       <!-- Configure the weighted fragListBuilder -->
       <fragListBuilder name="weighted"
                        default="true"
-                       class="solr.highlight.WeightedFragListBuilder"/>
+                       class="org.apache.solr.highlight.SimpleFragListBuilder"/>
 
       <!-- default tag FragmentsBuilder -->
       <fragmentsBuilder name="default"
                         default="true"
-                        class="solr.highlight.ScoreOrderFragmentsBuilder">
+                        class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder">
         <!--
         <lst name="defaults">
           <str name="hl.multiValuedSeparatorChar">/</str>
@@ -982,7 +987,7 @@
 
       <!-- multi-colored tag FragmentsBuilder -->
       <fragmentsBuilder name="colored"
-                        class="solr.highlight.ScoreOrderFragmentsBuilder">
+                        class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder">
         <lst name="defaults">
           <str name="hl.tag.pre"><![CDATA[
                <b style="background:yellow">,<b style="background:lawgreen">,
@@ -996,7 +1001,7 @@
 
       <boundaryScanner name="default"
                        default="true"
-                       class="solr.highlight.SimpleBoundaryScanner">
+                       class="org.apache.solr.highlight.SimpleBoundaryScanner">
         <lst name="defaults">
           <str name="hl.bs.maxScan">10</str>
           <str name="hl.bs.chars">.,!? &#9;&#10;&#13;</str>
@@ -1004,7 +1009,7 @@
       </boundaryScanner>
 
       <boundaryScanner name="breakIterator"
-                       class="solr.highlight.BreakIteratorBoundaryScanner">
+                       class="org.apache.solr.highlight.BreakIteratorBoundaryScanner">
         <lst name="defaults">
           <!-- type should be one of CHARACTER, WORD(default), LINE and SENTENCE -->
           <str name="hl.bs.type">WORD</str>
@@ -1092,8 +1097,8 @@
   </updateProcessor>
 
   <!-- The update.autoCreateFields property can be turned to false to disable schemaless mode -->
-  <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="${update.autoCreateFields:true}"
-           processor="uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date,add-schema-fields">
+  <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="${update.autoCreateFields:false}"
+                               processor="uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date,add-schema-fields">
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>

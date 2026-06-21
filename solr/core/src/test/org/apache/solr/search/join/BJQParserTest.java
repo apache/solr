@@ -24,22 +24,27 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.xpath.XPathConstants;
 
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -50,9 +55,14 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   private static final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeBJQParserTest() throws Exception {
     initCore("solrconfig.xml", "schema15.xml");
     createIndex();
+  }
+
+  @AfterClass
+  public static void afterBJQParserTest() throws Exception {
+    deleteCore();
   }
   
   public static void createIndex() throws IOException, Exception {
@@ -187,7 +197,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   public void testScoreNoneScoringForParent() throws Exception {
     assertQ("score=none yields 0.0 score",
         req("q", "{!parent which=\"parent_s:[* TO *]\" "+(
-            rarely()? "":(rarely()? "score=None":"score=none")
+            LuceneTestCase.rarely()? "":(LuceneTestCase.rarely()? "score=None":"score=none")
             )+"}child_s:l","fl","score"),
         "//*[@numFound='6']",
         "(//float[@name='score'])["+(random().nextInt(6)+1)+"]=0.0");
@@ -195,8 +205,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   public void testWrongScoreExceptionForParent() throws Exception {
     final String aMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)].name();
-    final String wrongMode = rarely()? "":(rarely()? " ":
-      rarely()? aMode.substring(1):aMode.toUpperCase(Locale.ROOT));
+    final String wrongMode = LuceneTestCase.rarely()? "":(LuceneTestCase.rarely()? "":
+        LuceneTestCase.rarely()? aMode.substring(1):aMode.toUpperCase(Locale.ROOT) + "k");
     assertQEx("wrong score mode", 
         req("q", "{!parent which=\"parent_s:[* TO *]\" score="+wrongMode+"}child_s:l","fl","score")
         , SolrException.ErrorCode.BAD_REQUEST.code);
@@ -223,11 +233,12 @@ public class BJQParserTest extends SolrTestCaseJ4 {
           "//*[@numFound='6']","(//float[@name='score'])["+(random().nextInt(6)+1)+"]>='"+leastScore+"'");
   }
   
-  private String getLeastScore(String query) throws Exception {
-    final String resp = h.query(req("q",query, "sort","score asc", "fl","score"));
-    return (String) BaseTestHarness.
-        evaluateXPath(resp,"(//float[@name='score'])[1]/text()", 
-            XPathConstants.STRING);
+  private static String getLeastScore(String query) throws Exception {
+    try (SolrQueryRequest req = req("q",query, "sort","score asc", "fl","score")) {
+      final String resp = h.query(req);
+      return (String) BaseTestHarness.
+          evaluateXPath(req.getCore().getResourceLoader(), resp, "(//float[@name='score'])[1]/text()", XPathConstants.STRING);
+    }
   }
 
   @Test
@@ -289,45 +300,39 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCacheHit() throws IOException {
+    try (SolrCore core = h.getCore()) {
+      Gauge parentFilterCache = null;
+      Gauge filterCache = null;
+      TimeOut timeout = new TimeOut(4, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeout.hasTimedOut()) {
+        parentFilterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegFilter"));
+        filterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache"));
+        if (parentFilterCache != null && filterCache != null) {
+          break;
+        }
+      }
 
-    MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.perSegFilter")).getGauge();
-    MetricsMap filterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.filterCache")).getGauge();
+      Map<String,Object> parentsBefore = (Map<String,Object>) parentFilterCache.getValue();
 
-    Map<String,Object> parentsBefore = parentFilterCache.getValue();
+      Map<String,Object> filtersBefore = (Map<String,Object>) filterCache.getValue();
 
-    Map<String,Object> filtersBefore = filterCache.getValue();
+      // it should be weird enough to be uniq
+      String parentFilter = "parent_s:([a TO c] [d TO f])";
 
-    // it should be weird enough to be uniq
-    String parentFilter = "parent_s:([a TO c] [d TO f])";
+      assertQ("search by parent filter", req("q", "{!parent which=\"" + parentFilter + "\"}"), "//*[@numFound='6']");
 
-    assertQ("search by parent filter",
-        req("q", "{!parent which=\"" + parentFilter + "\"}"),
-        "//*[@numFound='6']");
+      assertQ("filter by parent filter", req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}"), "//*[@numFound='6']");
 
-    assertQ("filter by parent filter",
-        req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}"),
-        "//*[@numFound='6']");
+      assertEquals("didn't hit fqCache yet ", 0L, delta("hits", (Map<String,Object>) filterCache.getValue(), filtersBefore));
 
-    assertEquals("didn't hit fqCache yet ", 0L,
-        delta("hits", filterCache.getValue(), filtersBefore));
+      assertQ("filter by join", req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}child_s:l"), "//*[@numFound='6']");
 
-    assertQ(
-        "filter by join",
-        req("q", "*:*", "fq", "{!parent which=\"" + parentFilter
-            + "\"}child_s:l"), "//*[@numFound='6']");
+      assertEquals("in cache mode every request lookups", 3, delta("lookups", (Map<String,Object>) parentFilterCache.getValue(), parentsBefore));
+      assertEquals("last two lookups causes hits", 2, delta("hits", (Map<String,Object>) parentFilterCache.getValue(), parentsBefore));
+      assertEquals("the first lookup gets insert", 1, delta("inserts", (Map<String,Object>) parentFilterCache.getValue(), parentsBefore));
 
-    assertEquals("in cache mode every request lookups", 3,
-        delta("lookups", parentFilterCache.getValue(), parentsBefore));
-    assertEquals("last two lookups causes hits", 2,
-        delta("hits", parentFilterCache.getValue(), parentsBefore));
-    assertEquals("the first lookup gets insert", 1,
-        delta("inserts", parentFilterCache.getValue(), parentsBefore));
-
-
-    assertEquals("true join query is cached in fqCache", 1L,
-        delta("lookups", filterCache.getValue(), filtersBefore));
+      assertEquals("true join query is cached in fqCache", 1L, delta("lookups", (Map<String,Object>) filterCache.getValue(), filtersBefore));
+    }
   }
   
   private long delta(String key, Map<String,Object> a, Map<String,Object> b) {

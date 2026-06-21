@@ -45,12 +45,6 @@
     <double name="maxWriteMBPerSecFlush">2000000</double>
     <double name="maxWriteMBPerSecMerge">3000000</double>
     <double name="maxWriteMBPerSecRead">4000000</double>
-    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
-    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool> 
-    <bool name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</bool>
-    <bool name="solr.hdfs.blockcache.write.enabled">${solr.hdfs.blockcache.write.enabled:false}</bool>
-    <int name="solr.hdfs.blockcache.blocksperbank">${solr.hdfs.blockcache.blocksperbank:10}</int>
-    <int name="solr.hdfs.blockcache.slab.count">${solr.hdfs.blockcache.slab.count:1}</int>
   </directoryFactory>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>
@@ -59,7 +53,33 @@
 
   <statsCache class="${solr.statsCache:}"/>
 
-  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    <indexConfig>
+        <!-- this sys property is not set by SolrTestCaseJ4 because we ideally want to use
+             the RandomMergePolicy in all tests - but some tests expect very specific
+             Merge behavior, so those tests can set it as needed.
+        -->
+        <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
+
+        <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+
+        <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+        <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+        <ramPerThreadHardLimitMB>${solr.tests.ramPerThreadHardLimitMB}</ramPerThreadHardLimitMB>
+
+        <mergeScheduler class="${solr.tests.mergeScheduler}" />
+
+        <writeLockTimeout>1000</writeLockTimeout>
+        <commitLockTimeout>10000</commitLockTimeout>
+
+        <!-- this sys property is not set by SolrTestCaseJ4 because almost all tests should
+             use the single process lockType for speed - but tests that explicitly need
+             to vary the lockType canset it as needed.
+        -->
+        <lockType>${solr.tests.lockType:single}</lockType>
+
+        <infoStream>${solr.tests.infostream:false}</infoStream>
+
+    </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
@@ -174,6 +194,13 @@
 
   <!-- requestHandler plugins
   -->
+  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a" registerPath="/solr,/v2">
+    <lst name="defaults">
+      <str name="a">${my.custom.variable.a:A}</str>
+      <str name="b">${my.custom.variable.b:B}</str>
+    </lst>
+  </requestHandler>
+
   <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
@@ -221,7 +248,7 @@
 
 
 
-  <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
+  <searchComponent name="spellcheck" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->
     <str name="queryAnalyzerFieldType">lowerpunctfilt</str>
 
@@ -309,7 +336,7 @@
    -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
 
-  <requestHandler name="/spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -322,7 +349,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH_Direct" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -333,7 +360,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckWithWordbreak" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">default</str>
       <str name="spellcheck.dictionary">wordbreak</str>
@@ -343,7 +370,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckWithWordbreak_Direct" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckWithWordbreak_Direct" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.dictionary">wordbreak</str>
@@ -353,7 +380,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="/spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH1" enable="${solr.spellcheck.enabled:true}" class="org.apache.solr.handler.component.SearchHandler">
       <lst name="defaults">
         <str name="defType">dismax</str>
         <str name="qf">lowerfilt1^1</str>
@@ -411,14 +438,14 @@
    <fragmentsBuilder name="simple" class="org.apache.solr.highlight.SimpleFragmentsBuilder" default="true"/>
    <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder"/>
 
-   <boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
+   <boundaryScanner name="simple" class="org.apache.solr.highlight.SimpleBoundaryScanner" default="true">
      <lst name="defaults">
        <str name="hl.bs.maxScan">10</str>
        <str name="hl.bs.chars">.,!? &#9;&#10;&#13;</str>
      </lst>
    </boundaryScanner>
 
-   <boundaryScanner name="breakIterator" class="solr.highlight.BreakIteratorBoundaryScanner">
+   <boundaryScanner name="breakIterator" class="org.apache.solr.highlight.BreakIteratorBoundaryScanner">
      <lst name="defaults">
        <str name="hl.bs.type">WORD</str>
        <str name="hl.bs.language">en</str>

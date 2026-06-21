@@ -82,7 +82,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
         return super.isRangeShouldBeProtectedFromReverse(field, part1);
       }
 
-      public String getLowerBoundForReverse() {
+      public static String getLowerBoundForReverse() {
         return REVERSE_WILDCARD_LOWER_BOUND;
       }
     }
@@ -111,6 +111,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
 
       String defaultField = getParam(CommonParams.DF);
 
+
       SolrQueryParserDelegate reverseAwareParser = new SolrQueryParserDelegate(this, defaultField);
       
       lparser = new ComplexPhraseQueryParser(defaultField, getReq().getSchema().getQueryAnalyzer())
@@ -137,7 +138,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
                   boolean endInclusive) {
                 boolean reverse = reverseAwareParser.isRangeShouldBeProtectedFromReverse(field, part1);
                 return super.newRangeQuery(field, 
-                                            reverse ? reverseAwareParser.getLowerBoundForReverse() : part1, 
+                                            reverse ? SolrQueryParserDelegate.getLowerBoundForReverse() : part1,
                                             part2,
                                             startInclusive || reverse, 
                                             endInclusive);
@@ -159,7 +160,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
         lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.AND);
       else
         lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.OR);
-
+      lparser.setAnalyzer(req.getSchema().getQueryAnalyzer());
       try {
         return lparser.parse(qstr);
       } catch (ParseException pe) {

@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -27,6 +28,7 @@ import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Class for making Solr delegation token requests.
@@ -50,7 +52,7 @@ public abstract class DelegationTokenRequest
   protected abstract Q getThis();
 
   @Override
-  protected abstract R createResponse(SolrClient client);
+  protected abstract R createResponse(SolrClient client, NamedList<Object> nl);
 
   public static class Get extends DelegationTokenRequest<Get, DelegationTokenResponse.Get> {
     protected String renewer;
@@ -63,7 +65,7 @@ public abstract class DelegationTokenRequest
       super(METHOD.GET);
       this.renewer = renewer;
       setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-      setQueryParams(new TreeSet<String>(Arrays.asList(OP_KEY)));
+      setQueryParams(new TreeSet<String>(Collections.singletonList(OP_KEY)));
     }
 
     @Override
@@ -80,7 +82,7 @@ public abstract class DelegationTokenRequest
     }
 
     @Override
-    public DelegationTokenResponse.Get createResponse(SolrClient client) { return new DelegationTokenResponse.Get(); }
+    public DelegationTokenResponse.Get createResponse(SolrClient client, NamedList<Object> nl) { return new DelegationTokenResponse.Get(nl); }
   }
 
   public static class Renew extends DelegationTokenRequest<Renew, DelegationTokenResponse.Renew> {
@@ -107,7 +109,7 @@ public abstract class DelegationTokenRequest
     }
 
     @Override
-    public DelegationTokenResponse.Renew createResponse(SolrClient client) { return new DelegationTokenResponse.Renew(); }
+    public DelegationTokenResponse.Renew createResponse(SolrClient client, NamedList<Object> nl) { return new DelegationTokenResponse.Renew(nl); }
   }
 
   public static class Cancel extends DelegationTokenRequest<Cancel, DelegationTokenResponse.Cancel> {
@@ -135,6 +137,6 @@ public abstract class DelegationTokenRequest
     }
 
     @Override
-    public DelegationTokenResponse.Cancel createResponse(SolrClient client) { return new DelegationTokenResponse.Cancel(); }
+    public DelegationTokenResponse.Cancel createResponse(SolrClient client, NamedList<Object> nl) { return new DelegationTokenResponse.Cancel(nl); }
   }
 }

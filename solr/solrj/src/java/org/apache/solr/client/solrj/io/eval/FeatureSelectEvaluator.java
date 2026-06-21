@@ -80,7 +80,7 @@ public class FeatureSelectEvaluator extends RecursiveObjectEvaluator implements 
     }
   }
 
-  private void loadFeatures(Object o, Set<String> features) {
+  private static void loadFeatures(Object o, Set<String> features) {
     @SuppressWarnings({"rawtypes"})
     List list = (List)o;
     for(Object v : list) {

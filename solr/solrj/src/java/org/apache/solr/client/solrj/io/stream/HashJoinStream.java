@@ -63,8 +63,8 @@ public class HashJoinStream extends TupleStream implements Expressible {
   public HashJoinStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter hashStreamExpression = factory.getNamedOperand(expression, "hashed");
-    StreamExpressionNamedParameter onExpression = factory.getNamedOperand(expression, "on");
+    StreamExpressionNamedParameter hashStreamExpression = StreamFactory.getNamedOperand(expression, "hashed");
+    StreamExpressionNamedParameter onExpression = StreamFactory.getNamedOperand(expression, "on");
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 2){
@@ -214,7 +214,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
     }
   }
   
-  protected String computeHash(Tuple tuple, List<String> hashOn){
+  protected static String computeHash(Tuple tuple, List<String> hashOn){
     StringBuilder sb = new StringBuilder();
     for(String part : hashOn){
       Object obj = tuple.get(part);

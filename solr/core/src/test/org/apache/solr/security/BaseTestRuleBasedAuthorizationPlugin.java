@@ -322,9 +322,9 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
     Map<String, Object> customRules = (Map<String, Object>) Utils.fromJSONString(
         "{permissions:[" +
-        "      {name:update, role:[admin_role,update_role]}," +
-        "      {name:read, role:[admin_role,update_role,read_role]}" +
-        "]}");
+            "      {name:update, role:[admin_role,update_role]}," +
+            "      {name:read, role:[admin_role,update_role,read_role]}" +
+            "]}");
 
     clearUserRoles();
     setUserRole("admin", "admin_role");

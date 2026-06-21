@@ -25,10 +25,10 @@ import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.DateMathParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class AtomicUpdatesTest extends SolrTestCaseJ4 {
@@ -50,6 +50,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
+    doc.setField("id", "1");
     doc.setField("id", "1");
     doc.setField("cat", new String[]{"aaa", "bbb", "ccc", "ccc", "ddd"});
     assertU(adoc(doc));
@@ -566,7 +567,9 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    boolean isPointField = h.getCore().getLatestSchema().getField("dateRemove").getType().isPointField();
+    SolrCore core = h.getCore();
+    boolean isPointField = core.getLatestSchema().getField("dateRemove").getType().isPointField();
+    core.close();
     if (isPointField) {
       assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     } else {
@@ -623,56 +626,51 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertQ(req("q", "dateRemove:\"2014-09-01T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
   }
   
-  @Ignore("Remove Date is not supported in other formats than UTC")
   @Test
   public void testRemoveDateUsingDateType() throws Exception {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    Date tempDate = DateMathParser.parseMath(null, "2014-02-01T12:00:00Z");
-    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-07-02T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-09-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10002");
-    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-07-02T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-02T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-09-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10020");
-    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-09-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-02T12:00:00Z"),
-        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-09-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-09-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     assertU(commit());
 
     assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
-    String dateString = DateMathParser.parseMath(null, "2014-02-02T12:00:00Z").toString();
-//    assertQ(req("q", "dateRemove:"+URLEncoder.encode(dateString, "UTF-8"), "indent", "true"), "//result[@numFound = '3']");
-//    assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
-//    assertQ(req("q", "dateRemove:"+dateString, "indent", "true"), "//result[@numFound = '3']"); //Sun Feb 02 10:00:00 FNT 2014
-    assertQ(req("q", "dateRemove:\"Sun Feb 02 10:00:00 FNT 2014\"", "indent", "true"), "//result[@numFound = '3']"); //Sun Feb 02 10:00:00 FNT 2014
+    assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "dateRemove:\"2014-09-03T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();

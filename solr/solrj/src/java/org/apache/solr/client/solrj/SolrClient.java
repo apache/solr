@@ -16,15 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
@@ -44,12 +35,21 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 /**
  * Abstraction through which all communication with a Solr server may be routed
  *
  * @since 5.0, replaced {@code SolrServer}
  */
-public abstract class SolrClient implements Serializable, Closeable {
+public abstract class SolrClient implements Closeable {
 
   private static final long serialVersionUID = 1L;
 
@@ -1304,5 +1304,4 @@ public abstract class SolrClient implements Serializable, Closeable {
     }
     return binder;
   }
-
 }

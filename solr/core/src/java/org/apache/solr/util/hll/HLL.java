@@ -178,11 +178,7 @@ public class HLL implements Cloneable {
             final long fullRepresentationSize = (this.regwidth * (long)this.m + 7/*round up to next whole byte*/)/Byte.SIZE;
             final int numLongs = (int)(fullRepresentationSize / 8/*integer division to round down*/);
 
-            if(numLongs > MAXIMUM_EXPLICIT_THRESHOLD) {
-                this.explicitThreshold = MAXIMUM_EXPLICIT_THRESHOLD;
-            } else {
-                this.explicitThreshold = numLongs;
-            }
+          this.explicitThreshold = Math.min(numLongs, MAXIMUM_EXPLICIT_THRESHOLD);
         } else if(expthresh == 0) {
             this.explicitAuto = false;
             this.explicitOff = true;
@@ -203,7 +199,7 @@ public class HLL implements Cloneable {
             // TODO improve this cutoff to include the cost overhead of Java
             //      members/objects
             final int largestPow2LessThanCutoff =
-                    (int)NumberUtil.log2((this.m * this.regwidth) / this.shortWordLength);
+                    (int)NumberUtil.log2((this.m * this.regwidth) / (double) this.shortWordLength);
             this.sparseThreshold = (1 << largestPow2LessThanCutoff);
         }
 
@@ -615,7 +611,7 @@ public class HLL implements Cloneable {
      */
     public void union(final HLL other) {
         // TODO: verify HLLs are compatible
-        final HLLType otherType = other.getType();
+        final HLLType otherType = other.type;
 
         if(type.equals(otherType)) {
             homogeneousUnion(other);
@@ -654,7 +650,7 @@ public class HLL implements Cloneable {
             // NOTE:  The union of empty with non-empty HLL is just a
             //        clone of the non-empty.
 
-            switch(other.getType()) {
+            switch(other.type) {
                 case EXPLICIT: {
                     // src:  EXPLICIT
                     // dest: EMPTY
@@ -700,7 +696,7 @@ public class HLL implements Cloneable {
                     return;
                 }
             }
-        } else if (HLLType.EMPTY.equals(other.getType())) {
+        } else if (HLLType.EMPTY.equals(other.type)) {
             // source is empty, so just return destination since it is unchanged
             return;
         } /* else -- both of the sets are not empty */
@@ -719,7 +715,7 @@ public class HLL implements Cloneable {
                 // Determine source and destination storage.
                 // NOTE:  destination storage may change through promotion if
                 //        source is SPARSE.
-                if(HLLType.SPARSE.equals(other.getType())) {
+                if(HLLType.SPARSE.equals(other.type)) {
                     if(!sparseOff) {
                         type = HLLType.SPARSE;
                         sparseProbabilisticStorage = other.sparseProbabilisticStorage.clone();
@@ -742,7 +738,7 @@ public class HLL implements Cloneable {
                 return;
             }
             case SPARSE: {
-                if(HLLType.EXPLICIT.equals(other.getType())) {
+                if(HLLType.EXPLICIT.equals(other.type)) {
                     // src:  EXPLICIT
                     // dest: SPARSE
                     // Add the raw values from the source to the destination.
@@ -771,7 +767,7 @@ public class HLL implements Cloneable {
                 return;
             }
             default/*destination is HLLType.FULL*/: {
-                if(HLLType.EXPLICIT.equals(other.getType())) {
+                if(HLLType.EXPLICIT.equals(other.type)) {
                     // src:  EXPLICIT
                     // dest: FULL
                     // Add the raw values from the source to the destination.
@@ -896,7 +892,7 @@ public class HLL implements Cloneable {
                     assert sparseProbabilisticStorage.containsKey(registerIndex);
                     final long registerValue = sparseProbabilisticStorage.get(registerIndex);
                     // pack index and value into "short word"
-                    final long shortWord = ((registerIndex << regwidth) | registerValue);
+                    final long shortWord = (((long) registerIndex << regwidth) | registerValue);
                     serializer.writeWord(shortWord);
                 }
 

@@ -18,58 +18,94 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.SuppressCodecs({"MockRandom", "Direct", "SimpleText"})
+@LuceneTestCase.Nightly
 public class TestCloudRecovery2 extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String COLLECTION = "collection1";
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+  public static void beforeTestCloudRecovery2() throws Exception {
+    useFactory(null);
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
 
-    configureCluster(2)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    configureCluster(3)
+        .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 3);
+
+    // 2 replicas will not ensure we don't lose an update here, so 3
     CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 1,2)
-        .setMaxShardsPerNode(2)
+        .createCollection(COLLECTION, "config", 1,3)
+        .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, 30);
+  }
+
+  @AfterClass
+  public static void afterTestCloudRecovery2() throws Exception {
+    shutdownCluster();
   }
 
   @Test
   public void test() throws Exception {
     JettySolrRunner node1 = cluster.getJettySolrRunner(0);
     JettySolrRunner node2 = cluster.getJettySolrRunner(1);
-    try (HttpSolrClient client1 = getHttpSolrClient(node1.getBaseUrl().toString())) {
 
-      node2.stop();
-      waitForState("", COLLECTION, (liveNodes, collectionState) -> liveNodes.size() == 1);
+    cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 10, TimeUnit.SECONDS, false, 1, 3, true, true);
+
+
+    try (Http2SolrClient client1 = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl())) {
+
+      node2.stop().await(15, TimeUnit.SECONDS);
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+      cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 10, TimeUnit.SECONDS, false, 1, 2, true, true);
 
       UpdateRequest req = new UpdateRequest();
       for (int i = 0; i < 100; i++) {
         req = req.add("id", i+"", "num", i+"");
       }
-      req.commit(client1, COLLECTION);
 
-      node2.start();
-      waitForState("", COLLECTION, clusterShape(1, 2));
+      try {
+        req.commit(client1, COLLECTION);
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+        Thread.sleep(250);
+        try {
+          req.commit(client1, COLLECTION);
+        } catch (BaseHttpSolrClient.RemoteSolrException e2) {
+          Thread.sleep(500);
+        }
+      }
 
-      try (HttpSolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      node2.start().await(15, TimeUnit.SECONDS);
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 3);
+
+      log.info("wait for active collection before query");
+      cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 15, TimeUnit.SECONDS, false, 1, 3, true, true);
+
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
         long numFound = client.query(COLLECTION, new SolrQuery("q","*:*", "distrib", "false")).getResults().getNumFound();
         assertEquals(100, numFound);
       }
@@ -79,61 +115,174 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       new UpdateRequest().add("id", "1", "num", "10")
           .commit(client1, COLLECTION);
 
-      try (HttpSolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
-        Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
-        assertEquals("10", v.toString());
+      // can be stale (eventually consistent) but should catch up
+      for (int i = 0; i < 20; i++) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
+          Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "true")).getResults().get(0).get("num");
+          try {
+            assertEquals("10  i="+ i, "10", v.toString());
+            break;
+          } catch (AssertionError error) {
+            if (i == 29) {
+              throw error;
+            }
+            Thread.sleep(100);
+          }
+        }
       }
-      Object v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
+
+      Object v = client1.query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("10", v.toString());
 
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
+        client.commit(COLLECTION, true, true);
+      }
+
+      // can be stale (eventually consistent) but should catch up
+      for (int i = 0; i < 30; i ++) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
+          v = client.query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "true")).getResults().get(0).get("num");
+          try {
+            assertEquals("node requested=" + node2.getBaseUrl() + " 10  i="+ i, "10", v.toString());
+            break;
+          } catch (AssertionError error) {
+            if (i == 29) {
+              throw error;
+            }
+            Thread.sleep(250);
+          }
+        }
+      }
+
       //
-      node2.stop();
-      waitForState("", COLLECTION, (liveNodes, collectionState) -> liveNodes.size() == 1);
+      node2.stop().await(5, TimeUnit.SECONDS);
+
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+
+      log.info("wait for active collection before query");
+      cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 10, TimeUnit.SECONDS, false, 1, 2, true, true);
 
       new UpdateRequest().add("id", "1", "num", "20")
           .commit(client1, COLLECTION);
+
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("20", v.toString());
 
-      node2.start();
-      waitForState("", COLLECTION, clusterShape(1, 2));
-      try (HttpSolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
-        v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
-        assertEquals("20", v.toString());
+      node2.start().await(5, TimeUnit.SECONDS);
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 3);
+      log.info("wait for active collection before query");
+      cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 10, TimeUnit.SECONDS, false, 1, 3, true, true);
+
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
+        client.commit(COLLECTION, true, true);
       }
 
-      node2.stop();
-      waitForState("", COLLECTION, (liveNodes, collectionState) -> liveNodes.size() == 1);
+      // can be stale (eventually consistent) but should catch up
+      for (int i = 0; i < 30; i ++) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
+          v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
+          try {
+            assertEquals("20", v.toString());
+            break;
+          } catch (AssertionError error) {
+            if (i == 29) {
+              throw error;
+            }
+            Thread.sleep(200);
+            try (Http2SolrClient client2 = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
+              client2.commit(COLLECTION, true, true);
+            }
+          }
+        }
+      }
+
+      node2.stop().await(5, TimeUnit.SECONDS);
+
+     // cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+      log.info("wait for active collection before query");
+      cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 10, TimeUnit.SECONDS, false, 1, 2, true, false);
 
       new UpdateRequest().add("id", "1", "num", "30")
           .commit(client1, COLLECTION);
-      v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
-      assertEquals("30", v.toString());
 
-      node2.start();
-      waitForState("", COLLECTION, clusterShape(1, 2));
+      for (int i = 0; i < 30; i ++) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl())) {
+          try {
+            v = client.query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "false")).getResults().get(0).get("num");
+          } catch (Exception e) {
+            if (i == 29) {
+              throw e;
+            }
+            Thread.sleep(250);
+            continue;
+          }
 
-      try (HttpSolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+          try {
+            SolrTestCaseJ4.assertEquals("30", v.toString());
+            break;
+          } catch (AssertionError error) {
+            if (i == 29) {
+              throw error;
+            }
+            Thread.sleep(250);
+          }
+        }
+      }
+
+
+      node2.start().await(5, TimeUnit.SECONDS);
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 3);
+
+      cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 5, TimeUnit.SECONDS, false, 1, 3, true, false);
+
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
+        client.commit(COLLECTION, true, true);
+      }
+
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
         v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
         assertEquals("30", v.toString());
       }
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());
     }
+    Replica oldLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(cluster.getSolrClient().getHttpClient(), COLLECTION,"s1", 5000, false);
 
-    node1.stop();
-    waitForState("", COLLECTION, (liveNodes, collectionState) -> {
-      Replica leader = collectionState.getLeader("shard1");
-      return leader != null && leader.getNodeName().equals(node2.getNodeName());
-    });
+    node1.stop().await(5, TimeUnit.SECONDS);
 
-    node1.start();
-    waitForState("", COLLECTION, clusterShape(1, 2));
-    try (HttpSolrClient client = getHttpSolrClient(node1.getBaseUrl().toString())) {
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+
+   // cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 5, TimeUnit.SECONDS, false, 1, 2, true, false);
+
+    AtomicReference<Replica> newLeader = new AtomicReference<>(
+        cluster.getSolrClient().getZkStateReader().getLeaderRetry(cluster.getSolrClient().getHttpClient(), COLLECTION, "s1", 5000, true));
+
+    if (oldLeader.getNodeName().equals(node1.getNodeName())) {
+      waitForState("", COLLECTION, (liveNodes, collectionState) -> {
+        try {
+          newLeader.set(cluster.getSolrClient().getZkStateReader().getLeaderRetry(cluster.getSolrClient().getHttpClient(), COLLECTION, "s1", 5000, false));
+        } catch (Exception e) {
+          log.error("failed", e);
+        }
+        return newLeader.get() != null && !newLeader.get().getName().equals(oldLeader.getName());
+      });
+    }
+
+    node1.start().await(5, TimeUnit.SECONDS);
+
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 3);
+
+    cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 30, TimeUnit.SECONDS, false, 1, 3, true, false);
+
+    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl())) {
       Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());
     }
-    try (HttpSolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl())) {
       Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());
     }

@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
@@ -28,27 +29,41 @@ import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
 
 public final class RevertDefaultThreadHandlerRule implements TestRule {
   private final static AtomicBoolean applied = new AtomicBoolean();
-  
+  private static volatile UncaughtExceptionHandler previous;
   @Override
   public Statement apply(Statement s, Description d) {
-    return new StatementAdapter(s) {
-      @Override
-      protected void before() throws Throwable {
-        if (!applied.getAndSet(true)) {
-          UncaughtExceptionHandler p = Thread.getDefaultUncaughtExceptionHandler();
-          try {
-            // Try to initialize a zookeeper class that reinitializes default exception handler.
-            Class<?> cl = NIOServerCnxnFactory.class;
-            // Make sure static initializers have been called.
-            Class.forName(cl.getName(), true, cl.getClassLoader());
-          } finally {
-            if (p == Thread.getDefaultUncaughtExceptionHandler()) {
-            //  throw new RuntimeException("Zookeeper no longer resets default thread handler.");
-            }
-            Thread.setDefaultUncaughtExceptionHandler(p);
+    previous = Thread.getDefaultUncaughtExceptionHandler();
+    return new MyStatementAdapter(s);
+  }
+
+  private static class MyStatementAdapter extends StatementAdapter {
+
+
+    public MyStatementAdapter(Statement s) {
+      super(s);
+    }
+
+    @Override
+    protected void before() throws Throwable {
+      if (!applied.getAndSet(true)) {
+        UncaughtExceptionHandler prev = Thread.getDefaultUncaughtExceptionHandler();
+        try {
+          // Try to initialize a zookeeper class that reinitializes default exception handler.
+          Class<?> cl = NIOServerCnxnFactory.class;
+          // Make sure static initializers have been called.
+          Class.forName(cl.getName(), true, cl.getClassLoader());
+        } finally {
+          if (prev == Thread.getDefaultUncaughtExceptionHandler()) {
+            throw new RuntimeException("Solr no longer resets default thread handler.");
           }
+          Thread.setDefaultUncaughtExceptionHandler(prev);
         }
       }
-    };
+    }
+
+    @Override
+    protected void afterAlways(List<Throwable> errors) throws Throwable {
+      Thread.setDefaultUncaughtExceptionHandler(previous);
+    }
   }
 }

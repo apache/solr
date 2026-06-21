@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -53,7 +54,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 public class CloudMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
-  private static final Pattern splitList = Pattern.compile(",| ");
+  private static final Pattern splitList = Pattern.compile("[, ]");
 
   public CloudMLTQParser(String qstr, SolrParams localParams,
                          SolrParams params, SolrQueryRequest req) {
@@ -64,7 +65,7 @@ public class CloudMLTQParser extends QParser {
     String id = localParams.get(QueryParsing.V);
     // Do a Real Time Get for the document
     SolrDocument doc = getDocument(id);
-    if(doc == null) {
+    if (doc == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request. Could not fetch " +
           "document with id [" + id + "]");
@@ -82,7 +83,7 @@ public class CloudMLTQParser extends QParser {
     mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
     mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
 
-    Boolean boost = localParams.getBool("boost", MoreLikeThis.DEFAULT_BOOST);
+    boolean boost = localParams.getBool("boost", MoreLikeThis.DEFAULT_BOOST);
     mlt.setBoost(boost);
 
     mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
@@ -104,8 +105,8 @@ public class CloudMLTQParser extends QParser {
         }
       }
       // Parse field names and boosts from the fields
-      boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(new String[0]));
-      fieldNames = boostFields.keySet().toArray(new String[0]);
+      boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(Utils.EMPTY_STRINGS));
+      fieldNames = boostFields.keySet().toArray(Utils.EMPTY_STRINGS);
     } else {
       @SuppressWarnings({"unchecked", "rawtypes"})
       ArrayList<String> fields = new ArrayList();
@@ -118,7 +119,7 @@ public class CloudMLTQParser extends QParser {
           fields.add(field);
         }
       }
-      fieldNames = fields.toArray(new String[0]);
+      fieldNames = fields.toArray(Utils.EMPTY_STRINGS);
     }
 
     if (fieldNames.length < 1) {
@@ -186,8 +187,7 @@ public class CloudMLTQParser extends QParser {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(ID, id);
 
-    SolrQueryRequestBase request = new SolrQueryRequestBase(core, params) {
-    };
+    SolrQueryRequestBase request = new MySolrQueryRequestBase(core, params);
 
     core.getRequestHandler("/get").handleRequest(request, rsp);
     @SuppressWarnings({"rawtypes"})
@@ -202,11 +202,16 @@ public class CloudMLTQParser extends QParser {
         : new Term(defaultField, uniqueValue));
   }
 
-  private Term createNumericTerm(String field, String uniqueValue) {
+  private static Term createNumericTerm(String field, String uniqueValue) {
     BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
     bytesRefBuilder.grow(LegacyNumericUtils.BUF_SIZE_INT);
     LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);
     return new Term(field, bytesRefBuilder.toBytesRef());
   }
 
+  private static class MySolrQueryRequestBase extends SolrQueryRequestBase {
+    public MySolrQueryRequestBase(SolrCore core, ModifiableSolrParams params) {
+      super(core, params);
+    }
+  }
 }

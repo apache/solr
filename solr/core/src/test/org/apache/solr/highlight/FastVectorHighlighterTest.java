@@ -19,21 +19,32 @@ package org.apache.solr.highlight;
 import java.util.HashMap;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.util.TestHarness;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig.xml","schema.xml");
   }
-  
+
+  @After
+  public void tearDown() throws Exception {
+    deleteCore();
+    super.tearDown();
+  }
+
   @Test
   public void testConfig(){
-    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());
+    SolrCore core = h.getCore();
+    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(core);
+    core.close();
 
     // Make sure we loaded one fragListBuilder
     SolrFragListBuilder solrFlbNull = highlighter.fragListBuilders.get( null );

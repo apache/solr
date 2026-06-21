@@ -44,12 +44,15 @@ import org.noggit.ObjectBuilder;
 public class JSONTupleStream implements TupleStreamParser {
   private List<String> path;  // future... for more general stream handling
   private Reader reader;
+
+  private InputStream stream;
   private JSONParser parser;
   private boolean atDocs;
 
-  public JSONTupleStream(Reader reader) {
-    this.reader = reader;
+  public JSONTupleStream(InputStream stream) {
+    this.reader = new InputStreamReader(stream, StandardCharsets.UTF_8);;
     this.parser = new JSONParser(reader);
+    this.stream = stream;
   }
 
   // temporary...
@@ -62,12 +65,11 @@ public class JSONTupleStream implements TupleStreamParser {
 
     QueryRequest query = new QueryRequest( requestParams );
     query.setPath(p);
-    query.setResponseParser(new InputStreamResponseParser("json"));
+    query.setResponseParser(new InputStreamResponseParser("filestream"));
     query.setMethod(SolrRequest.METHOD.POST);
     NamedList<Object> genericResponse = server.request(query);
     InputStream stream = (InputStream)genericResponse.get("stream");
-    InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-    return new JSONTupleStream(reader);
+    return new JSONTupleStream(stream);
   }
 
 
@@ -90,6 +92,12 @@ public class JSONTupleStream implements TupleStreamParser {
   }
 
   public void close() throws IOException {
+    try {
+      if (stream != null) while (stream.read() != -1) {
+      }
+    } catch (IOException ioException) {
+
+    }
     reader.close();
   }
 
@@ -99,11 +107,6 @@ public class JSONTupleStream implements TupleStreamParser {
     if (event != parserEventType) {
       throw new IOException("JSONTupleStream: expected " + JSONParser.getEventString(parserEventType) + " but got " + JSONParser.getEventString(event) );
     }
-  }
-
-  private void expect(String mapKey) {
-
-
   }
 
   private boolean advanceToMapKey(String key, boolean deepSearch) throws IOException {

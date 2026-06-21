@@ -1,0 +1,24 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ChaosMonkeySafeLeaderTest3" type="JUnit" factoryName="JUnit">
+    <useClassPathOnly />
+    <extension name="History Recorder Settings" includeConstructors="false" includeGettersSetters="false" minMethodSize="2" maxBreakpointsPerMethod="5" maxBreakpoints="200" maxDepthVariables="3" mode="1" nrCollectionItems="5" includeCollections="true" nrFieldsToShow="10" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="org.apache.solr.cloud.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <option name="ALTERNATIVE_JRE_PATH" value="11 (2)" />
+    <option name="PACKAGE_NAME" value="org.apache.solr.cloud" />
+    <option name="MAIN_CLASS_NAME" value="org.apache.solr.cloud.ChaosMonkeySafeLeaderTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea -Xmx512m -Djetty.testMode=1 -Djetty.insecurerandom=1 -Djava.security.egd=file:/dev/./urandom -XX:-UseBiasedLocking -XX:TieredStopAtLevel=1 -XX:-UseBiasedLocking -XX:+UseG1GC -XX:+PerfDisableSharedMem -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=250 -XX:MaxTenuringThreshold=4 -XX:+ExplicitGCInvokesConcurrent -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManager -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -Djava.net.preferIPv4Stack=true -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -Dlog4j.configurationFile=logconf/log4j2-collection-create-debug.xml -DtempDir=/data3-ext3/solr-tmp-tests -Dlogs.home=/data3-ext3 -Dtests.nightly=true -Dzookeeper.jmx.log4j.disable=true -Dlog4j2.disable.jmx=true -Dsolr.tests.zkmondir=/data3-ext3/zkmon -XX:+FlightRecorder -XX:StartFlightRecording=filename=$USER_HOME$/jfr_results2.jfr,dumponexit=true,settings=profile,path-to-gc-roots=true" />
+    <option name="PARAMETERS" value="" />
+    <dir value="$PROJECT_DIR$/solr/core/src" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

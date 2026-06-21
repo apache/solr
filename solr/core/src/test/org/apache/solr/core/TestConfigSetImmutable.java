@@ -17,14 +17,12 @@
 package org.apache.solr.core;
 
 import java.io.File;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
 import org.junit.After;
@@ -43,9 +41,9 @@ public class TestConfigSetImmutable extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
+    File tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     File tmpConfDir = new File(tmpSolrHome, confDir);
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
     // make the ConfigSet immutable
     FileUtils.write(new File(tmpConfDir, "configsetprops.json"), new StringBuilder("{\"immutable\":\"true\"}"), StandardCharsets.UTF_8);
 
@@ -57,15 +55,6 @@ public class TestConfigSetImmutable extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    client = null;
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test
@@ -103,19 +92,18 @@ public class TestConfigSetImmutable extends RestTestBase {
   public void testAddSchemaFieldsImmutable() throws Exception {
     final String error = "error";
 
-    // check writing an existing field is okay
+    // check writing an existing field is okay (response is JSON in this fork)
     String updateXMLSafe = "<add><doc><field name=\"id\">\"testdoc\"</field></doc></add>";
     String response = restTestHarness.update(updateXMLSafe);
-    XMLResponseParser parser = new XMLResponseParser();
-    NamedList<Object> listResponse = parser.processResponse(new StringReader(response));
-    assertNull(listResponse.get(error));
+    Map safeMap = (Map) Utils.fromJSONString(response);
+    assertNull(safeMap.get(error));
 
-    // check writing a new field is not okay
+    // check writing a new field is not okay; error response is JSON (default wt)
     String updateXMLNotSafe = "<add><doc><field name=\"id\">\"testdoc\"</field>" +
         "<field name=\"newField67\">\"foobar\"</field></doc></add>";
     response = restTestHarness.update(updateXMLNotSafe);
-    listResponse = parser.processResponse(new StringReader(response));
-    assertNotNull(listResponse.get(error));
-    assertTrue(listResponse.get(error).toString().contains("immutable"));
+    Map errorMap = (Map) Utils.fromJSONString(response);
+    assertNotNull("No errors", errorMap.get(error));
+    assertTrue(errorMap.get(error).toString().contains("immutable"));
   }
 }

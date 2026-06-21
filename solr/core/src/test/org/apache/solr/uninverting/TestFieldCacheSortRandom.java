@@ -28,16 +28,12 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -55,8 +51,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** random sorting tests with uninversion */
@@ -71,11 +69,11 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
   }
 
   private void testRandomStringSort(SortField.Type type) throws Exception {
-    Random random = new Random(random().nextLong());
+    Random random = new Random(SolrTestCase.random().nextLong());
 
-    final int NUM_DOCS = atLeast(100);
-    final Directory dir = newDirectory();
-    final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    final int NUM_DOCS = SolrTestUtil.atLeast(100);
+    final Directory dir = SolrTestUtil.newDirectory();
+    final SolrRandomIndexWriter writer = new SolrRandomIndexWriter(random, dir);
     final boolean allowDups = random.nextBoolean();
     final Set<String> seen = new HashSet<>();
     final int maxLength = TestUtil.nextInt(random, 5, 100);
@@ -110,7 +108,12 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
           System.out.println("  " + numDocs + ": s=" + s);
         }
 
-        doc.add(new StringField("stringdv", s, Field.Store.NO));
+        if (type == SortField.Type.STRING) {
+          doc.add(new StringField("stringdv", s, Field.Store.NO));
+        } else {
+          assert type == SortField.Type.STRING_VAL;
+          doc.add(new BinaryDocValuesField("stringdv", new BytesRef(s)));
+        }
         docValues.add(new BytesRef(s));
 
       } else {
@@ -141,8 +144,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       System.out.println("  reader=" + r);
     }
     
-    final IndexSearcher s = newSearcher(r, false);
-    final int ITERS = atLeast(100);
+    final IndexSearcher s = SolrTestUtil.newSearcher(r, false);
+    final int ITERS = SolrTestUtil.atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
       final boolean reverse = random.nextBoolean();
 

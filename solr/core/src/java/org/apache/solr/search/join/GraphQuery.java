@@ -117,7 +117,7 @@ public class GraphQuery extends Query {
   
   @Override
   public String toString(String field) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(128);
     sb.append("[[").append(q.toString()).append("],").append(fromField).append('=').append(toField).append(']');
     if (traversalFilter != null) {
       sb.append(" [TraversalFilter: ").append(traversalFilter.toString()).append(']');

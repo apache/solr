@@ -46,18 +46,15 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings("unchecked")
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
     Stat stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/queue",null, stat);
     results.add("overseer_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue-work",null, stat, true);
-    results.add("overseer_work_queue_size", stat.getNumChildren());
-    stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
     @SuppressWarnings({"rawtypes"})
@@ -66,8 +63,6 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     NamedList collectionStats = new NamedList();
     @SuppressWarnings({"rawtypes"})
     NamedList stateUpdateQueueStats = new NamedList();
-    @SuppressWarnings({"rawtypes"})
-    NamedList workQueueStats = new NamedList();
     @SuppressWarnings({"rawtypes"})
     NamedList collectionQueueStats = new NamedList();
     Stats stats = ocmh.stats;
@@ -85,7 +80,7 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
           List<SimpleOrderedMap<Object>> failures = new ArrayList<>();
           for (Stats.FailedOp failedOp : failureDetails) {
             SimpleOrderedMap<Object> fail = new SimpleOrderedMap<>();
-            fail.add("request", failedOp.req.getProperties());
+            fail.add("request", failedOp.req);
             fail.add("response", failedOp.resp.getResponse());
             failures.add(fail);
           }
@@ -93,8 +88,6 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       } else if (key.startsWith("/overseer/queue_"))  {
         stateUpdateQueueStats.add(key.substring(16), lst);
-      } else if (key.startsWith("/overseer/queue-work_"))  {
-        workQueueStats.add(key.substring(21), lst);
       } else if (key.startsWith("/overseer/collection-queue-work_"))  {
         collectionQueueStats.add(key.substring(32), lst);
       } else  {
@@ -111,8 +104,13 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);
     results.add("overseer_queue", stateUpdateQueueStats);
-    results.add("overseer_internal_queue", workQueueStats);
     results.add("collection_queue", collectionQueueStats);
 
+
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 }

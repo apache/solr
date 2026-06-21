@@ -77,7 +77,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
           }
         }
         throw new IllegalArgumentException("Configured status code " + statusCode +
-            " not supported! Please choose one of: " + validCodes.toString());
+            " not supported! Please choose one of: " + validCodes);
       }
 
       // must always have a response message if sending an error code

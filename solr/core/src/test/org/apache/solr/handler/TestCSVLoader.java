@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -33,12 +34,13 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestCSVLoader extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestCSVLoader() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml","schema12.xml");
   }
@@ -52,10 +54,9 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-    File tempDir = createTempDir("TestCSVLoader").toFile();
+    File tempDir = SolrTestUtil.createTempDir("TestCSVLoader").toFile();
     file = new File(tempDir, "solr_tmp.csv");
     filename = file.getPath();
-    cleanup();
   }
   
   @Override
@@ -64,6 +65,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
+    cleanup();
     if (null != file) {
       Files.delete(file.toPath());
       file = null;
@@ -93,7 +95,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     f.setContentType("text/csv");
     cs.add(f);
     req.setContentStreams(cs);
-    h.query("/update",req);
+    query("/update",req);
   }
 
   @Test

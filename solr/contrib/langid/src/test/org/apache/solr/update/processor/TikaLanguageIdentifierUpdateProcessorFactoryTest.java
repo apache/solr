@@ -18,12 +18,15 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.junit.Test;
 
 public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters) throws Exception {
-    return new TikaLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(h.getCore(), parameters, null), resp, null);
+    try (SolrCore core = h.getCore()) {
+      return new TikaLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(core, parameters, null), resp, null);
+    }
   }
 
 
@@ -46,6 +49,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxFieldValueChars", "6");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals("Apache", p.concatFields(doc).trim());
 
@@ -55,6 +59,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.fl", "foo_s,bar_s");
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals(valueF1 + " " + valueF2, p.concatFields(doc).trim());
 
@@ -63,6 +68,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxFieldValueChars", "6");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals("Apache" + " " + "An ope", p.concatFields(doc).trim());
 
@@ -71,9 +77,10 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxFieldValueChars", "100000");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals(valueF1 + " " + valueF2, p.concatFields(doc).trim());
-
+    p.close();
 }
 
   @Test
@@ -95,6 +102,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxTotalChars", "6");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals("Apache", p.concatFields(doc).trim());
 
@@ -104,6 +112,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.fl", "foo_s,bar_s");
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals(valueF1 + " " + valueF2, p.concatFields(doc).trim());
 
@@ -112,6 +121,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxTotalChars", "6");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals("Apache", p.concatFields(doc).trim());
 
@@ -120,9 +130,10 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxTotalChars", "100000");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals(valueF1 + " " + valueF2, p.concatFields(doc).trim());
-
+    p.close();
   }
 
 
@@ -146,6 +157,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxFieldValueChars", "8");
     parameters.add("langid.maxTotalChars", "6");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals("Apache", p.concatFields(doc).trim());
 
@@ -155,6 +167,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.fl", "foo_s,bar_s");
     parameters.add("langid.langField", "language");
     parameters.add("langid.enforceSchema", "false");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals(valueF1 + " " + valueF2, p.concatFields(doc).trim());
 
@@ -164,6 +177,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxFieldValueChars", "3");
     parameters.add("langid.maxTotalChars", "8");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals("Apa An", p.concatFields(doc).trim());
 
@@ -173,9 +187,10 @@ public class TikaLanguageIdentifierUpdateProcessorFactoryTest extends LanguageId
     parameters.add("langid.enforceSchema", "false");
     parameters.add("langid.maxFieldValueChars", "10000");
     parameters.add("langid.maxTotalChars", "100000");
+    p.close();
     p = (TikaLanguageIdentifierUpdateProcessor) createLangIdProcessor(parameters);
     assertEquals(valueF1 + " " + valueF2, p.concatFields(doc).trim());
-
+    p.close();
   }
 
 }

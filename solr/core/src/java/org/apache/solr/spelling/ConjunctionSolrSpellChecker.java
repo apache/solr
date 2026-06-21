@@ -133,7 +133,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   
   //TODO: This just interleaves the results.  In the future, we might want to let users give each checker its
   //      own weight and use that in combination to score & frequency to sort the results ?
-  private SpellingResult mergeCheckers(SpellingResult[] results, int numSug) {
+  private static SpellingResult mergeCheckers(SpellingResult[] results, int numSug) {
     Map<Token, Integer> combinedTokenFrequency = new HashMap<>();
     Map<Token, List<LinkedHashMap<String, Integer>>> allSuggestions = new LinkedHashMap<>();
     for(SpellingResult result : results) {

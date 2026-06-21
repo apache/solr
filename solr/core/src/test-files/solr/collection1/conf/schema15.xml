@@ -40,12 +40,13 @@
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
+  <fieldType name="currency" class="solr.CurrencyFieldType" currencyConfig="currency.xml" multiValued="false"
+             amountLongSuffix="_currency_l" codeStrSuffix="_currency_s"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
               catenateNumbers="0" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
@@ -56,14 +57,14 @@
   <!-- Demonstrating ignoreCaseChange -->
   <fieldType name="wdf_nocase" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
@@ -72,14 +73,14 @@
 
   <fieldType name="wdf_preserve" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
@@ -101,7 +102,7 @@
 
   <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
@@ -114,7 +115,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
@@ -132,7 +133,7 @@
   <!-- field type that doesn't generate phrases from unquoted multiple tokens per analysis unit -->
   <fieldType name="text_np" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
@@ -145,7 +146,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
@@ -166,7 +167,7 @@
   <!-- fieldTypes in this section isolate tokenizers and tokenfilters for testing -->
   <fieldType name="keywordtok" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
+      <tokenizer class="org.apache.lucene.analysis.core.KeywordTokenizerFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="standardtok" class="solr.TextField">
@@ -181,7 +182,7 @@
   </fieldType>
   <fieldType name="whitetok" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="HTMLstandardtok" class="solr.TextField">
@@ -193,7 +194,7 @@
   <fieldType name="HTMLwhitetok" class="solr.TextField">
     <analyzer>
       <charFilter class="solr.HTMLStripCharFilterFactory"/>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="standardtokfilt" class="solr.TextField">
@@ -203,73 +204,73 @@
   </fieldType>
   <fieldType name="standardfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="lowerfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="patternreplacefilt" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
+      <tokenizer class="org.apache.lucene.analysis.core.KeywordTokenizerFactory"/>
       <filter class="solr.PatternReplaceFilterFactory"
               pattern="([^a-zA-Z])" replacement="_" replace="all"
       />
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
+      <tokenizer class="org.apache.lucene.analysis.core.KeywordTokenizerFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="porterfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="engporterfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="custengporterfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="stopfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true"/>
     </analyzer>
   </fieldType>
   <fieldType name="custstopfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
     </analyzer>
   </fieldType>
   <fieldType name="lengthfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LengthFilterFactory" min="2" max="5"/>
     </analyzer>
   </fieldType>
   <fieldType name="limitfilt" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="100"/>
     </analyzer>
   </fieldType>
 
   <fieldType name="subword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
@@ -278,7 +279,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
@@ -289,7 +290,7 @@
 
   <fieldType name="numericsubword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" protected="protwords.txt" splitOnNumerics="0"
               splitOnCaseChange="0" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0"
@@ -299,7 +300,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" protected="protwords.txt" splitOnNumerics="0"
               splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1"
@@ -311,7 +312,7 @@
 
   <fieldType name="protectedsubword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" protected="protwords.txt" splitOnNumerics="0"
               splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0"
@@ -319,7 +320,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -328,14 +329,14 @@
   <!-- more flexible in matching skus, but more chance of a false match -->
   <fieldType name="skutype1" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
@@ -345,14 +346,14 @@
   <!-- less flexible in matching skus, but less chance of a false match -->
   <fieldType name="skutype2" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
@@ -362,12 +363,12 @@
   <!-- less flexible in matching skus, but less chance of a false match -->
   <fieldType name="syn" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
     </analyzer>
   </fieldType>
@@ -376,7 +377,7 @@
    -->
   <fieldType name="text_sw" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <!-- in this example, we will only use synonyms at query time
       <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
       -->
@@ -388,7 +389,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
@@ -404,7 +405,7 @@
     -->
   <fieldType name="dedup" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory"
               synonyms="synonyms.txt" expand="true"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -412,7 +413,7 @@
       <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory"
               synonyms="synonyms.txt" expand="true"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -425,7 +426,7 @@
 
   <fieldType name="textgap" class="solr.TextField" multiValued="true" positionIncrementGap="100">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -588,11 +589,14 @@
   <dynamicField name="*_sw" type="text_sw" indexed="true" stored="true" multiValued="true"/>
 
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
+  <dynamicField name="*_i1" type="int" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
   <!-- :TODO: why are these identical?!?!?! -->
   <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_currency_l" type="long" indexed="true" stored="false" multiValued="false"/>
+  <dynamicField name="*_currency_s" type="string" indexed="true" stored="false" multiValued="false"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_ll" type="long" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
@@ -619,7 +623,7 @@
   <dynamicField name="*_dpf" type="delimited_payloads_float" indexed="true"  stored="true"/>
   <fieldType name="delimited_payloads_float" class="solr.TextField" positionIncrementGap="100">
     <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
     </analyzer>
   </fieldType>

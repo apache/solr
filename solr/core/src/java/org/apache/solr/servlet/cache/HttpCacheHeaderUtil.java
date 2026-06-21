@@ -54,7 +54,7 @@ public final class HttpCacheHeaderUtil {
    *
    * @see #calcEtag
    */
-  private static WeakIdentityMap<SolrCore, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
+  private static WeakIdentityMap<String, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
 
   /** @see #etagCoreCache */
   private static class EtagCacheVal {
@@ -71,8 +71,8 @@ public final class HttpCacheHeaderUtil {
       if (currentIndexVersion != indexVersionCache) {
         indexVersionCache=currentIndexVersion;
         etagCache = "\""
-            + new String(Base64.encodeBase64((Long.toHexString(Long.reverse(indexVersionCache)) + etagSeed)
-            .getBytes(StandardCharsets.US_ASCII)), StandardCharsets.US_ASCII) + "\"";
+            + Base64.encodeBase64String((Long.toHexString(Long.reverse(indexVersionCache)) + etagSeed)
+            .getBytes(StandardCharsets.US_ASCII)) + "\"";
       }
       
       return etagCache;
@@ -89,12 +89,12 @@ public final class HttpCacheHeaderUtil {
     final long currentIndexVersion
       = solrReq.getSearcher().getIndexReader().getVersion();
 
-    EtagCacheVal etagCache = etagCoreCache.get(core);
+    EtagCacheVal etagCache = etagCoreCache.get(core.toString());
     if (null == etagCache) {
       final String etagSeed
         = core.getSolrConfig().getHttpCachingConfig().getEtagSeed();
       etagCache = new EtagCacheVal(etagSeed);
-      etagCoreCache.put(core, etagCache);
+      etagCoreCache.put(core.toString(), etagCache);
     }
     
     return etagCache.calcEtag(currentIndexVersion);
@@ -233,7 +233,6 @@ public final class HttpCacheHeaderUtil {
    * 
    * @return true if no request processing is necessary and HTTP response status has been set, false otherwise.
    */
-  @SuppressWarnings("unchecked")
   public static boolean checkETagValidators(final HttpServletRequest req,
                                             final HttpServletResponse resp,
                                             final Method reqMethod,

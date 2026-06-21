@@ -1,106 +1,67 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.solr.common.util;
 
-import java.io.Closeable;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ObjectReleaseTracker {
+import java.lang.invoke.MethodHandles;
+
+public abstract class ObjectReleaseTracker {
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>();
-  
-  public static boolean track(Object object) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
-    OBJECTS.put(object, sw.toString());
-    return true;
+
+  public static class ObjectReleaseTrackerHolder {
+    public static ObjectReleaseTracker HOLDER_INSTANCE;
+
+    static {
+      try {
+        HOLDER_INSTANCE = (ObjectReleaseTracker) Class.forName(System.getProperty("solr.objectReleaseTracker", NoOpObjectReleaseTracker.class.getName())).getDeclaredConstructor().newInstance();
+      } catch (Exception e) {
+        log.warn("Could not find object release tracker class", e);
+      }
+    }
   }
-  
-  public static boolean release(Object object) {
-    OBJECTS.remove(object);
-    return true;
+
+  public static ObjectReleaseTracker getInstance() {
+    return ObjectReleaseTrackerHolder.HOLDER_INSTANCE;
   }
-  
-  public static void clear() {
-    OBJECTS.clear();
+
+  private static class NoOpObjectReleaseTracker extends ObjectReleaseTracker {
+    @Override public boolean track(Object object) {
+      return true;
+    }
+
+    @Override public boolean release(Object object) {
+      return true;
+    }
+
+    @Override public void clear() {
+
+    }
+
+    @Override public String checkEmpty() {
+      return null;
+    }
+
+    @Override public String checkEmpty(String object) {
+      return null;
+    }
   }
-  
+
+  public abstract boolean track(Object object);
+
+  public abstract boolean release(Object object);
+
+  public abstract void clear();
+
   /**
    * @return null if ok else error message
    */
-  public static String checkEmpty() {
-    String error = null;
-    Set<Entry<Object,String>> entries = OBJECTS.entrySet();
+  public abstract String checkEmpty();
 
-    if (entries.size() > 0) {
-      List<String> objects = new ArrayList<>();
-      for (Entry<Object,String> entry : entries) {
-        objects.add(entry.getKey().getClass().getSimpleName());
-      }
-      
-      error = "ObjectTracker found " + entries.size() + " object(s) that were not released!!! " + objects + "\n";
-      for (Entry<Object,String> entry : entries) {
-        error += entry.getValue() + "\n";
-      }
-    }
-    
-    return error;
-  }
-  
-  public static void tryClose() {
-    Set<Entry<Object,String>> entries = OBJECTS.entrySet();
-
-    if (entries.size() > 0) {
-      for (Entry<Object,String> entry : entries) {
-        if (entry.getKey() instanceof Closeable) {
-          try {
-            ((Closeable)entry.getKey()).close();
-          } catch (Throwable t) {
-            log.error("", t);
-          }
-        } else if (entry.getKey() instanceof ExecutorService) {
-          try {
-            ExecutorUtil.shutdownAndAwaitTermination((ExecutorService)entry.getKey());
-          } catch (Throwable t) {
-            log.error("", t);
-          }
-        }
-      }
-    }
-  }
-  
-  private static class ObjectTrackerException extends RuntimeException {
-    ObjectTrackerException(String msg) {
-      super(msg);
-    }
-  }
-
+  /**
+   * @param object tmp feature allowing to ignore and close an object
+   * @return null if ok else error message
+   */
+  public abstract String checkEmpty(String object);
 }

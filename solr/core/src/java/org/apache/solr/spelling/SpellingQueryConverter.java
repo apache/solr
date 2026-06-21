@@ -85,7 +85,7 @@ public class SpellingQueryConverter extends QueryConverter  {
       sb.append(part);
     for (String part : ADDITIONAL_NAMECHAR_PARTS)
       sb.append(part);
-    NMTOKEN = "([" + sb.toString() + "]|" + SURROGATE_PAIR + ")+";
+    NMTOKEN = "([" + sb + "]|" + SURROGATE_PAIR + ")+";
   }
 
   final static String PATTERN = "(?:(?!(" + NMTOKEN + ":|[\\^.]\\d+)))[^^.:(\\s][\\p{L}_\\-0-9]+";
@@ -134,8 +134,8 @@ public class SpellingQueryConverter extends QueryConverter  {
       // treat "AND NOT" as "NOT"...
       if ("AND".equals(nextWord)
           && original.length() > nextStartIndex + 7
-          && original.substring(nextStartIndex, nextStartIndex + 7).equals(
-              "AND NOT")) {
+          && original.startsWith(
+              "AND NOT", nextStartIndex)) {
         nextWord = "NOT";
       }
       
@@ -153,10 +153,7 @@ public class SpellingQueryConverter extends QueryConverter  {
           && ("AND".equals(nextWord) || "OR".equals(nextWord) || "NOT".equals(nextWord))) {
         flagValue = TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
       //...unless the 1st boolean operator is a NOT, because only AND/OR can be default.
-      } else if (nextWord != null
-          && lastBooleanOp == null
-          && !nextWord.equals(lastBooleanOp)
-          && ("NOT".equals(nextWord))) {
+      } else if (lastBooleanOp == null && "NOT".equals(nextWord)) {
         flagValue = TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
       }
       try {

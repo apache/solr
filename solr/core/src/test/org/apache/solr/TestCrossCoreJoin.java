@@ -16,10 +16,14 @@
  */
 package org.apache.solr;
 
+import java.io.File;
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.concurrent.TimeoutException;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -31,23 +35,26 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.join.TestScoreJoinQPNoScore;
-import org.apache.solr.servlet.DirectSolrConnection;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrRequestParsers;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
-  private static SolrCore fromCore;
+  private SolrCore fromCore;
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-//    initCore("solrconfig.xml","schema12.xml"); 
 
-    // File testHome = createTempDir().toFile();
-    // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
-    initCore("solrconfig.xml", "schema12.xml", TEST_HOME(), "collection1");
+    File testHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(SolrTestUtil.getFile(SolrTestUtil.TEST_HOME()), testHome);
+    initCore("solrconfig.xml", "schema12.xml", testHome.getAbsolutePath(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
 
     fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal"));
@@ -69,9 +76,20 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
 
   public static String update(SolrCore core, String xml) throws Exception {
-    DirectSolrConnection connection = new DirectSolrConnection(core);
     SolrRequestHandler handler = core.getRequestHandler("/update");
-    return connection.request(handler, null, xml);
+    java.util.List<org.apache.solr.common.util.ContentStream> streams = new java.util.ArrayList<>(1);
+    if (xml != null && xml.length() > 0) streams.add(new ContentStreamBase.StringStream(xml));
+    SolrQueryRequest req = new SolrRequestParsers(core.getSolrConfig()).buildRequestFrom(core, null, streams);
+    try {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      core.execute(handler, req, rsp);
+      if (rsp.getException() != null) { Throwable e = rsp.getException(); if (e instanceof Exception) throw (Exception)e; throw new org.apache.solr.common.SolrException(org.apache.solr.common.SolrException.ErrorCode.UNKNOWN, e); }
+      QueryResponseWriter w = core.getQueryResponseWriter(req);
+      java.io.StringWriter out = new java.io.StringWriter();
+      w.write(out, req, rsp);
+      return out.toString();
+    } finally { req.close(); SolrRequestInfo.clearRequestInfo(); }
   }
 
   @Test
@@ -122,7 +140,11 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
     core.execute(core.getRequestHandler(handler), req, rsp);
     if (rsp.getException() != null) {
-      throw rsp.getException();
+      Throwable e = rsp.getException();
+      if (e instanceof Exception) {
+        throw (Exception) e;
+      }
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
     }
     StringWriter sw = new StringWriter(32000);
     QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
@@ -132,8 +154,9 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     return sw.toString();
   }
 
-  @AfterClass
-  public static void nukeAll() {
+  @After
+  public void nukeAll() throws TimeoutException {
+    deleteCore();
     fromCore = null;
   }
 }

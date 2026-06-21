@@ -16,36 +16,38 @@
  */
 package org.apache.solr.update;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
+import it.unimi.dsi.fastutil.longs.Long2LongAVLTreeMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMaps;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.MappedResizeableBuffer;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.*;
+import org.eclipse.jetty.io.RuntimeIOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.DataInputInputStream;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.FastOutputStream;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *  Log Format: List{Operation, Version, ...}
@@ -66,79 +68,98 @@ import org.slf4j.LoggerFactory;
  */
 public class TransactionLog implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private boolean debug = log.isDebugEnabled();
-  private boolean trace = log.isTraceEnabled();
+  private final boolean debug = log.isDebugEnabled();
+  private final boolean trace = log.isTraceEnabled();
 
   public final static String END_MESSAGE = "SOLR_TLOG_END";
+  private MappedResizeableBuffer buffer;
 
   long id;
-  File tlogFile;
+  volatile File tlogFile;
   RandomAccessFile raf;
   FileChannel channel;
-  OutputStream os;
-  FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
-  int numRecords;
+  // OutputStream os;
+  DirectMemBufferOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
+
+  //GetChannelInputStream cis;
+
+  final ReentrantLock fosLock = new ReentrantLock(true);
+
+  // The memory-mapped tlog buffer (Agrona MappedResizeableBuffer) starts at INITIAL_BUFFER_SIZE and is
+  // grown geometrically by ensureCapacity() whenever a record would be written past the current mapping.
+  // Agrona's resize() only re-maps the address window (it does NOT change the file length - the existing
+  // raf.setLength(fos.size()) calls grow the file), so the file keeps reflecting the logical content size
+  // and readers keep bounding themselves by fos.size(). mapLock makes the rare re-map safe against
+  // concurrent buffer access: every read/write of the buffer that happens OUTSIDE fosLock takes the shared
+  // (read) lock, and the re-map in ensureCapacity (always invoked under fosLock) takes the exclusive
+  // (write) lock. Lock order is always fosLock-before-mapLock; no thread holds mapLock while acquiring
+  // fosLock, so there is no deadlock.
+  static final long INITIAL_BUFFER_SIZE = 6_400_000L;
+  private final ReentrantReadWriteLock mapLock = new ReentrantReadWriteLock();
+  private final LongAdder numRecords = new LongAdder();
   boolean isBuffer;
 
   protected volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
   AtomicInteger refcount = new AtomicInteger(1);
-  Map<String, Integer> globalStringMap = new HashMap<>();
-  List<String> globalStringList = new ArrayList<>();
+
+
+  Object2IntMap<String> globalStringMap =  Object2IntMaps.synchronize(new Object2IntOpenHashMap<>());
+
+  List<String> globalStringList = ObjectLists.synchronize(new ObjectArrayList<>());
 
   // write a BytesRef as a byte array
-  static final JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
-    @Override
-    public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-      if (o instanceof BytesRef) {
-        BytesRef br = (BytesRef) o;
-        codec.writeByteArray(br.bytes, br.offset, br.length);
-        return null;
-      }
-      // Fallback: we have no idea how to serialize this.  Be noisy to prevent insidious bugs
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "TransactionLog doesn't know how to serialize " + o.getClass() + "; try implementing ObjectResolver?");
+  static final JavaBinCodec.ObjectResolver resolver = (o, codec) -> {
+    if (o instanceof BytesRef) {
+      BytesRef br = (BytesRef)o;
+      codec.writeByteArray(br.bytes, br.offset, br.length);
+      return null;
     }
+    // Fallback: we have no idea how to serialize this.  Be noisy to prevent insidious bugs
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "TransactionLog doesn't know how to serialize " + o.getClass() + "; try implementing ObjectResolver?");
   };
+  private boolean wroteHeader;
 
   public class LogCodec extends JavaBinCodec {
 
     public LogCodec(JavaBinCodec.ObjectResolver resolver) {
+
       super(resolver);
+      stdStrings = false;
     }
 
     @Override
     public void writeExternString(CharSequence s) throws IOException {
+      log.trace("tlog writeExternString s={}", s);
       if (s == null) {
         writeTag(NULL);
         return;
       }
-
-      // no need to synchronize globalStringMap - it's only updated before the first record is written to the log
-      Integer idx = globalStringMap.get(s.toString());
-      if (idx == null) {
-        // write a normal string
-        writeStr(s);
-      } else {
-        // write the extern string
-        writeTag(EXTERN_STRING, idx);
-      }
+      // Always write tlog field names INLINE rather than as extern-string references into
+      // globalStringList. The global-string list is only a snapshot taken when the log header
+      // is written (and is reset from the header on reopen), but field names are accumulated
+      // across records and tlog rollovers, so extern indices can point past the snapshot
+      // (IndexOutOfBounds) or at the wrong string. Inline strings make each record fully
+      // self-contained, which is what realtime-get, recovery and peersync replay all require.
+      writeStr(s);
     }
 
     @Override
-    public CharSequence readExternString(DataInputInputStream fis) throws IOException {
+    public CharSequence readExternString(JavaBinInputStream fis) throws IOException {
       int idx = readSize(fis);
-      if (idx != 0) {// idx != 0 is the index of the extern string
-        // no need to synchronize globalStringList - it's only updated before the first record is written to the log
+      if (idx > 0) {// idx != 0 is the index of the extern string
+        //   no need to synchronize globalStringList - it's only updated before the first record is written to the log
         return globalStringList.get(idx - 1);
       } else {// idx == 0 means it has a string value
-        // this shouldn't happen with this codec subclass.
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Corrupt transaction log");
+        //   this shouldn't happen with this codec subclass.
+        return readStr(fis, fis.readInt());
+        //   throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Corrupt transaction log");
       }
     }
 
     @Override
-    protected Object readObject(DataInputInputStream dis) throws IOException {
+    protected Object readObject(JavaBinInputStream dis) throws IOException {
       if (UUID == tagByte) {
         return new java.util.UUID(dis.readLong(), dis.readLong());
       }
@@ -149,7 +170,7 @@ public class TransactionLog implements Closeable {
     public boolean writePrimitive(Object val) throws IOException {
       if (val instanceof java.util.UUID) {
         java.util.UUID uuid = (java.util.UUID) val;
-        daos.writeByte(UUID);
+        daos.write(UUID);
         daos.writeLong(uuid.getMostSignificantBits());
         daos.writeLong(uuid.getLeastSignificantBits());
         return true;
@@ -167,8 +188,10 @@ public class TransactionLog implements Closeable {
     try {
       if (debug) {
         log.debug("New TransactionLog file= {}, exists={}, size={} openExisting={}"
-                , tlogFile, tlogFile.exists(), tlogFile.length(), openExisting);
+            , tlogFile, tlogFile.exists(), tlogFile.length(), openExisting);
       }
+
+      globalStringMap.defaultReturnValue(-1);
 
       // Parse tlog id from the filename
       String filename = tlogFile.getName();
@@ -178,17 +201,24 @@ public class TransactionLog implements Closeable {
       raf = new RandomAccessFile(this.tlogFile, "rw");
       long start = raf.length();
       channel = raf.getChannel();
-      os = Channels.newOutputStream(channel);
-      fos = new FastOutputStream(os, new byte[65536], 0);
-      // fos = FastOutputStream.wrap(os);
+      //os = Channels.newOutputStream(channel);
+      buffer = new MappedResizeableBuffer(channel, 0, Math.max(INITIAL_BUFFER_SIZE, start));
+      fos = new DirectMemBufferOutputStream(buffer);//new BufferedChannel(channel, 8192);
+      if (start > 0) {
+        wroteHeader = true;
+      }
+
+
+      // cis = new GetChannelInputStream(channel, Channels.newInputStream(channel));
 
       if (openExisting) {
         if (start > 0) {
           readHeader(null);
-          raf.seek(start);
-          assert channel.position() == start;
-          fos.setWritten(start);    // reflect that we aren't starting at the beginning
-          assert fos.size() == channel.size();
+          //       raf.seek(start);
+          fos.position((int) start);
+          //assert channel.position() == start;
+          //  fos.setWritten((int) start);    // reflect that we aren't starting at the beginning
+          //  assert fos.size() == channel.size();
         } else {
           addGlobalStrings(globalStrings);
         }
@@ -198,15 +228,17 @@ public class TransactionLog implements Closeable {
           return;
         }
 
-        if (start > 0) {
-          raf.setLength(0);
-        }
+        //        if (start > 0) {
+        //          raf.setLength(0);
+        //        }
         addGlobalStrings(globalStrings);
       }
 
       success = true;
 
-      assert ObjectReleaseTracker.track(this);
+      // TODO: like updatelog, this is currently very hard to nail 1000% as
+      // updates can spawn a new one,.l
+      // assert ObjectReleaseTracker.track(this);
 
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -222,128 +254,224 @@ public class TransactionLog implements Closeable {
   }
 
   // for subclasses
-  protected TransactionLog() {
-  }
+  protected TransactionLog() {}
 
   /** Returns the number of records in the log (currently includes the header and an optional commit).
    * Note: currently returns 0 for reopened existing log files.
    */
   public int numRecords() {
-    synchronized (this) {
-      return this.numRecords;
-    }
+    return this.numRecords.intValue();
   }
 
   public boolean endsWithCommit() throws IOException {
     long size;
-    synchronized (this) {
-      fos.flush();
-      size = fos.size();
+    fosLock.lock();
+    try {
+      // fos.flushBuffer();
+      size = fos.length();
+    } finally {
+      fosLock.unlock();
     }
 
     // the end of the file should have the end message (added during a commit) plus a 4 byte size
     byte[] buf = new byte[END_MESSAGE.length()];
     long pos = size - END_MESSAGE.length() - 4;
     if (pos < 0) return false;
-    @SuppressWarnings("resource") final ChannelFastInputStream is = new ChannelFastInputStream(channel, pos);
-    is.read(buf);
+    // channel.position(pos);
+    //final InputStream is = new ChannelFastInputStream(channel, pos);
+    // is.position(pos);
+    mapLock.readLock().lock();
+    try {
+      buffer.getBytes(pos, buf);
+    } finally {
+      mapLock.readLock().unlock();
+    }
     for (int i = 0; i < buf.length; i++) {
       if (buf[i] != END_MESSAGE.charAt(i)) return false;
     }
     return true;
   }
 
-  public long writeData(Object o) {
-    @SuppressWarnings("resource") final LogCodec codec = new LogCodec(resolver);
-    try {
-      long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-      codec.init(fos);
-      codec.writeVal(o);
-      return pos;
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-
   @SuppressWarnings({"unchecked"})
-  private void readHeader(FastInputStream fis) throws IOException {
+  private void readHeader(DirectMemBufferedInputStream fis) throws IOException {
+    log.info("read header fileSize={}", raf.length());
     // read existing header
-    fis = fis != null ? fis : new ChannelFastInputStream(channel, 0);
+    fis = fis != null ? fis : new DirectMemBufferedInputStream(buffer, raf.length());
     @SuppressWarnings("resource") final LogCodec codec = new LogCodec(resolver);
+
+    fis.position(0);
+
+    //    fis.flush();
+
     @SuppressWarnings({"rawtypes"})
     Map header = (Map) codec.unmarshal(fis);
 
-    fis.readInt(); // skip size
+    //  fis.readInt(); // skip size
 
     // needed to read other records
 
-    synchronized (this) {
+    fosLock.lock();
+    try {
       globalStringList = (List<String>) header.get("strings");
-      globalStringMap = new HashMap<>(globalStringList.size());
-      for (int i = 0; i < globalStringList.size(); i++) {
+      globalStringMap = new Object2IntOpenHashMap<>(globalStringList.size());
+      for (var i = 0; i < globalStringList.size(); i++) {
         globalStringMap.put(globalStringList.get(i), i + 1);
       }
+    } finally {
+      fosLock.unlock();
     }
   }
 
   protected void addGlobalStrings(Collection<String> strings) {
     if (strings == null) return;
-    int origSize = globalStringMap.size();
-    for (String s : strings) {
-      Integer idx = null;
-      if (origSize > 0) {
-        idx = globalStringMap.get(s);
+    fosLock.lock();
+    try {
+      int origSize = globalStringMap.size();
+      for (String s : strings) {
+        Integer idx = null;
+        if (origSize > 0) {
+          idx = globalStringMap.getInt(s);
+        }
+        if (idx != null) continue;  // already in list
+        globalStringList.add(s);
+        globalStringMap.put(s, globalStringList.size());
       }
-      if (idx != null) continue;  // already in list
-      globalStringList.add(s);
-      globalStringMap.put(s, globalStringList.size());
+      assert globalStringMap.size() == globalStringList.size();
+    } finally {
+      fosLock.unlock();
     }
-    assert globalStringMap.size() == globalStringList.size();
   }
 
   Collection<String> getGlobalStrings() {
-    synchronized (this) {
+    fosLock.lock();
+    try {
       return new ArrayList<>(globalStringList);
+    } finally {
+      fosLock.unlock();
     }
   }
 
   @SuppressWarnings({"unchecked"})
   protected void writeLogHeader(LogCodec codec) throws IOException {
-    long pos = fos.size();
-    assert pos == 0;
 
-    @SuppressWarnings({"rawtypes"})
-    Map header = new LinkedHashMap<String, Object>();
-    header.put("SOLR_TLOG", 1); // a magic string + version number
-    header.put("strings", globalStringList);
-    codec.marshal(header, fos);
 
-    endRecord(pos);
+    MutableDirectBuffer expandableBuffer1 = ExpandableBuffers.getInstance().acquire(-1, true);
+    try {
+      //   fos.flush(); // flush since this will be the last record in a log fill
+      long pos = raf.length();   // if we had flushed, this should be equal to channel.position()
+
+      if (pos == 0) {
+        fos.flush();
+        pos = fos.size();
+      } else {
+        return;
+      }
+
+
+      //    fos.flush();
+      //   pos = fos.size();
+
+      //     MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(32); // MRM TODO:
+
+      ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
+      codec.init(out);
+      Map header = new Object2ObjectLinkedOpenHashMap<String, Object>(2, 0.25f);
+      header.put("SOLR_TLOG", 1); // a magic string + version number
+      header.put("strings", globalStringList);
+
+      log.info("write header={}", header);
+      codec.marshal(header, out);
+      //codec.writeSInt((int) (pos - fos.size()));
+
+      int lastSize = out.position();
+
+
+      raf.setLength(fos.length() + out.position() + 4);
+      ensureCapacity(pos + lastSize + 4);
+      log.info("headerSize={} fileSize={}", out.position(), raf.length());
+
+      //   fos.flushBuffer();
+      expandableBuffer1.byteBuffer().position(0 +  expandableBuffer1.wrapAdjustment());
+      expandableBuffer1.byteBuffer().limit(out.position() + expandableBuffer1.wrapAdjustment());
+
+      fos.putBytes( pos, expandableBuffer1.byteBuffer(), lastSize);
+
+      fos.putInt((int) (pos + lastSize), lastSize);
+
+      // advance past the header record + its 4-byte size trailer
+      fos.position((int) (pos + lastSize + 4));
+
+      numRecords.increment();
+
+
+
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      ExpandableBuffers.getInstance().release(expandableBuffer1);
+    }
+
   }
 
   protected void endRecord(long startRecordPosition) throws IOException {
     fos.writeInt((int) (fos.size() - startRecordPosition));
-    numRecords++;
+    numRecords.increment();
   }
 
-  protected void checkWriteHeader(LogCodec codec, SolrInputDocument optional) throws IOException {
-
+  protected void  checkWriteHeader(LogCodec codec, SolrInputDocument optional, long pos) throws IOException {
+    log.info("check write fileSize={} wroteHeader={} pos={}", raf.length(), wroteHeader, pos);
     // Unsynchronized access. We can get away with an unsynchronized access here
     // since we will never get a false non-zero when the position is in fact 0.
     // rollback() is the only function that can reset to zero, and it blocks updates.
-    if (fos.size() != 0) return;
+      if (wroteHeader || pos > 0) return;
 
-    synchronized (this) {
-      if (fos.size() != 0) return;  // check again while synchronized
+    fosLock.lock();
+    try {
+      if (raf.length() > 0) return;  // check again while synchronized
+      wroteHeader = true;
       if (optional != null) {
         addGlobalStrings(optional.getFieldNames());
       }
-      writeLogHeader(codec);
+         writeLogHeader(codec);
+    } finally {
+      fosLock.unlock();
     }
   }
 
-  int lastAddSize;
+  /**
+   * Ensure the memory-mapped buffer covers at least {@code requiredEnd} bytes, growing it geometrically
+   * if needed. MUST be called while holding {@link #fosLock} (so only one re-map happens at a time and it
+   * is serialized with all the under-lock buffer writes). The actual re-map takes mapLock's write lock so
+   * it cannot run while another thread is reading/writing the buffer outside fosLock under mapLock's read
+   * lock. Cheap no-op (a single capacity comparison) on the overwhelmingly common path where the record
+   * already fits.
+   */
+  private void ensureCapacity(long requiredEnd) {
+    if (requiredEnd <= buffer.capacity()) return;
+    long newCap = buffer.capacity();
+    if (newCap < INITIAL_BUFFER_SIZE) newCap = INITIAL_BUFFER_SIZE;
+    while (newCap < requiredEnd) {
+      long doubled = newCap << 1;
+      if (doubled <= newCap) { // overflow guard
+        newCap = requiredEnd;
+        break;
+      }
+      newCap = doubled;
+    }
+    mapLock.writeLock().lock();
+    try {
+      if (requiredEnd > buffer.capacity()) {
+        if (log.isInfoEnabled()) {
+          log.info("Growing tlog mmap buffer for {} from {} to {} (requiredEnd={})", tlogFile, buffer.capacity(), newCap, requiredEnd);
+        }
+        buffer.resize(newCap);
+      }
+    } finally {
+      mapLock.writeLock().unlock();
+    }
+  }
+
+  volatile int lastAddSize;
 
   /**
    * Writes an add update command to the transaction log. This is not applicable for
@@ -362,9 +490,9 @@ public class TransactionLog implements Closeable {
   /**
    * Writes an add update command to the transaction log. This should be called only for
    * writing in-place updates, or else pass -1 as the prevPointer.
-   * @param cmd         The add update command to be written
+   * @param cmd The add update command to be written
    * @param prevPointer The pointer in the transaction log which this update depends
-   *                    on (applicable for in-place updates)
+   * on (applicable for in-place updates)
    * @return Returns the position pointer of the written update command
    */
   public long write(AddUpdateCommand cmd, long prevPointer) {
@@ -372,47 +500,91 @@ public class TransactionLog implements Closeable {
 
     LogCodec codec = new LogCodec(resolver);
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
-
+    MutableDirectBuffer expandableBuffer1 = ExpandableBuffers.getInstance().acquire(-1, true);
     try {
-      checkWriteHeader(codec, sdoc);
+
 
       // adaptive buffer sizing
-      int bufSize = lastAddSize;    // unsynchronized access of lastAddSize should be fine
+     // int bufSize = lastAddSize;
       // at least 256 bytes and at most 1 MB
-      bufSize = Math.min(1024 * 1024, Math.max(256, bufSize + (bufSize >> 3) + 256));
+      //bufSize = Math.min(1024 * 1024, Math.max(256, bufSize + (bufSize >> 3) + 256));
 
-      MemOutputStream out = new MemOutputStream(new byte[bufSize]);
-      codec.init(out);
-      if (cmd.isInPlaceUpdate()) {
-        codec.writeTag(JavaBinCodec.ARR, 5);
-        codec.writeInt(UpdateLog.UPDATE_INPLACE);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        codec.writeLong(prevPointer);
-        codec.writeLong(cmd.prevVersion);
-        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
-      } else {
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.ADD);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
-      }
-      lastAddSize = (int) out.size();
+      try {
 
-      synchronized (this) {
-        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-        assert pos != 0;
+        ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
 
-        /***
+        codec.init(out);
+        if (cmd.isInPlaceUpdate()) {
+          codec.writeTag(JavaBinCodec.ARR, 5);
+          codec.writeSInt(UpdateLog.UPDATE_INPLACE);  // should just take one byte
+          codec.writeLong(cmd.getVersion());
+          codec.writeLong(prevPointer);
+          codec.writeLong(cmd.prevVersion);
+          codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+        } else {
+          codec.writeTag(JavaBinCodec.ARR, 3);
+          codec.writeSInt(UpdateLog.ADD);  // should just take one byte
+          codec.writeLong(cmd.getVersion());
+          codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+        }
+        int lastAddSize = (int) (out.position());
+
+        long pos;
+
+        fosLock.lock();
+        try {
+          checkWriteHeader(codec, sdoc, raf.length());
+
+          pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+
+          // Reserve this record's region [pos, pos+lastAddSize+4) by advancing the write
+          // position under the lock, so concurrent writers get distinct, non-overlapping
+          // offsets. The actual buffer copy below can then happen outside the lock.
+          fos.position((int) (pos + lastAddSize + 4));
+
+          raf.setLength(fos.size());
+          ensureCapacity(fos.size());
+
+        } finally {
+          fosLock.unlock();
+        }
+        //   fos.flushBuffer();
+
+        expandableBuffer1.byteBuffer().position(0 +  expandableBuffer1.wrapAdjustment());
+        expandableBuffer1.byteBuffer().limit(lastAddSize + expandableBuffer1.wrapAdjustment());
+
+        mapLock.readLock().lock();
+        try {
+          fos.putBytes( pos, expandableBuffer1.byteBuffer(), lastAddSize);
+
+          fos.putInt((int) (pos + lastAddSize), lastAddSize);
+        } finally {
+          mapLock.readLock().unlock();
+        }
+
+        numRecords.increment();
+        //  assert pos != 0;
+
+        /*
          System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
          if (pos != fos.size()) {
          throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
          }
-         ***/
+         */
+        //   ByteBuffer buffer = out.buffer().byteBuffer().asReadOnlyBuffer();
+        //   codec.writeInt((int) lastAddSize);
+        //   expandableBuffer1.byteBuffer().position(0);
+        //   expandableBuffer1.byteBuffer().limit(out.position() + out.buffer().wrapAdjustment());
+        //  fos.write(expandableBuffer1.byteBuffer());
+        //  numRecords.increment();
+        // fos.flushBuffer();
 
-        out.writeAll(fos);
-        endRecord(pos);
-        // fos.flushBuffer();  // flush later
+        //   endRecord(pos);
+        // fos.flushBuffer();
         return pos;
+
+      } finally {
+        ExpandableBuffers.getInstance().release(expandableBuffer1);
       }
 
     } catch (IOException e) {
@@ -425,24 +597,46 @@ public class TransactionLog implements Closeable {
     LogCodec codec = new LogCodec(resolver);
 
     try {
-      checkWriteHeader(codec, null);
+
 
       BytesRef br = cmd.getIndexedId();
+      MutableDirectBuffer expandableBuffer1 = ExpandableBuffers.getInstance().acquire(-1, true);
+      fosLock.lock();
+      try {
 
-      MemOutputStream out = new MemOutputStream(new byte[20 + br.length]);
-      codec.init(out);
-      codec.writeTag(JavaBinCodec.ARR, 3);
-      codec.writeInt(UpdateLog.DELETE);  // should just take one byte
-      codec.writeLong(cmd.getVersion());
-      codec.writeByteArray(br.bytes, br.offset, br.length);
+    //    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(20 + (br.length));
+        long pos = fos.size();
+        checkWriteHeader(codec, null, pos);
+        pos = fos.size();   // re-read: checkWriteHeader may have written the log header and advanced fos
+        ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
+        codec.init(out);
+        codec.writeTag(JavaBinCodec.ARR, 3);
+        codec.writeSInt(UpdateLog.DELETE);  // should just take one byte
+        codec.writeLong(cmd.getVersion());
+        codec.writeByteArray(br.bytes, br.offset, br.length);
 
-      synchronized (this) {
-        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-        assert pos != 0;
-        out.writeAll(fos);
-        endRecord(pos);
-        // fos.flushBuffer();  // flush later
+        int lastSize = (int) (out.position());
+
+        raf.setLength(raf.length() + out.position() + 4);
+        ensureCapacity(pos + lastSize + 4);
+
+        //   fos.flushBuffer();
+
+        expandableBuffer1.byteBuffer().position(0 +  expandableBuffer1.wrapAdjustment());
+        expandableBuffer1.byteBuffer().limit(lastSize + expandableBuffer1.wrapAdjustment());
+
+        fos.putBytes(pos, expandableBuffer1.byteBuffer(), lastSize);
+
+        fos.putInt((int) (pos + lastSize), lastSize);
+
+        fos.position((int) (pos + lastSize + 4));
+
+        numRecords.increment();
+        //     fos.flushBuffer();  // flush later
         return pos;
+      } finally {
+        fosLock.unlock();
+        ExpandableBuffers.getInstance().release(expandableBuffer1);
       }
 
     } catch (IOException e) {
@@ -454,21 +648,46 @@ public class TransactionLog implements Closeable {
   public long writeDeleteByQuery(DeleteUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
     try {
-      checkWriteHeader(codec, null);
 
-      MemOutputStream out = new MemOutputStream(new byte[20 + (cmd.query.length())]);
-      codec.init(out);
-      codec.writeTag(JavaBinCodec.ARR, 3);
-      codec.writeInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
-      codec.writeLong(cmd.getVersion());
-      codec.writeStr(cmd.query);
+      //   long initSize = fos.size();
+      //MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(20 + (cmd.query.length()));
+      MutableDirectBuffer expandableBuffer1 = ExpandableBuffers.getInstance().acquire(-1, true);
+      fosLock.lock();
 
-      synchronized (this) {
-        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
-        out.writeAll(fos);
-        endRecord(pos);
-        // fos.flushBuffer();  // flush later
+      try {
+        ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
+        long pos = fos.length();   // if we had flushed, this should be equal to channel.position()
+        codec.init(out);
+        codec.writeTag(JavaBinCodec.ARR, 3);
+        codec.writeSInt(UpdateLog.DELETE_BY_QUERY);  // should just take one byte
+        codec.writeLong(cmd.getVersion());
+        codec.writeStr(cmd.query);
+
+        int lastSize = (int) (out.position());
+        checkWriteHeader(codec, null, pos);
+        pos = fos.size();   // re-read: checkWriteHeader may have written the log header and advanced fos
+        raf.setLength(raf.length() +  lastSize + 4);
+        ensureCapacity(pos + lastSize + 4);
+
+        //   fos.flushBuffer();
+
+        expandableBuffer1.byteBuffer().position(0 +  expandableBuffer1.wrapAdjustment());
+        expandableBuffer1.byteBuffer().limit(out.position() + expandableBuffer1.wrapAdjustment());
+
+        fos.putBytes( pos, expandableBuffer1.byteBuffer(), lastSize);
+
+        fos.putInt((int) (pos + lastSize), lastSize);
+
+        fos.position((int) (pos + lastSize + 4));
+
+        numRecords.increment();
+        //  fos.flushBuffer();  // flush later
         return pos;
+      } finally {
+        fosLock.unlock();
+
+          ExpandableBuffers.getInstance().release(expandableBuffer1);
+
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -479,29 +698,56 @@ public class TransactionLog implements Closeable {
 
   public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
-    synchronized (this) {
+    fosLock.lock();
+    try {
+      MutableDirectBuffer expandableBuffer1 = ExpandableBuffers.getInstance().acquire(-1, true);
       try {
+     //   fos.flush(); // flush since this will be the last record in a log fill
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
 
         if (pos == 0) {
           writeLogHeader(codec);
+        //  fos.flush();
           pos = fos.size();
         }
-        codec.init(fos);
+
+        //    fos.flush();
+        //   pos = fos.size();
+
+       //     MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(32); // MRM TODO:
+
+        ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
+        codec.init(out);
         codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.COMMIT);  // should just take one byte
+        codec.writeSInt(UpdateLog.COMMIT);  // should just take one byte
         codec.writeLong(cmd.getVersion());
         codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
 
-        endRecord(pos);
+        int lastSize = (int) (out.position());
 
-        fos.flush();  // flush since this will be the last record in a log fill
-        assert fos.size() == channel.size();
+        raf.setLength(raf.length() + out.position() + 4);
+        ensureCapacity(pos + lastSize + 4);
+
+        //   fos.flushBuffer();
+        expandableBuffer1.byteBuffer().position(0 +  expandableBuffer1.wrapAdjustment());
+        expandableBuffer1.byteBuffer().limit(out.position() + expandableBuffer1.wrapAdjustment());
+
+        fos.putBytes(pos, expandableBuffer1.byteBuffer(), lastSize);
+
+        fos.putInt((int) (pos + lastSize), lastSize);
+
+        fos.position((int) (pos + lastSize + 4));
+
+        numRecords.increment();
 
         return pos;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } finally {
+        ExpandableBuffers.getInstance().release(expandableBuffer1);
       }
+    } finally {
+      fosLock.unlock();
     }
   }
 
@@ -515,20 +761,28 @@ public class TransactionLog implements Closeable {
 
     try {
       // make sure any unflushed buffer has been flushed
-      synchronized (this) {
+      fosLock.lock();
+      try {
         // TODO: optimize this by keeping track of what we have flushed up to
-        fos.flushBuffer();
+        //fos.flushBuffer();
         /***
          System.out.println("###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
          if (fos.size() != raf.length() || pos >= fos.size() ) {
          throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
          }
          ***/
+      } finally {
+        fosLock.unlock();
       }
+      // channel.position(pos);
+      DirectMemBufferedInputStream fis = new DirectMemBufferedInputStream(buffer, raf.length());
 
-      ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);
+      fis.position(pos);
+      mapLock.readLock().lock();
       try (LogCodec codec = new LogCodec(resolver)) {
         return codec.readVal(fis);
+      } finally {
+        mapLock.readLock().unlock();
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -536,26 +790,47 @@ public class TransactionLog implements Closeable {
   }
 
   public void incref() {
-    int result = refcount.incrementAndGet();
-    if (result <= 1) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "incref on a closed log: " + this);
-    }
+    refcount.updateAndGet(operand -> {
+      if (operand == 0) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "incref on a closed log: " + this);
+      }
+      return operand + 1;
+    });
   }
 
-  public boolean try_incref() {
-    return refcount.incrementAndGet() > 1;
+  public boolean tryIncref() {
+    AtomicBoolean result = new AtomicBoolean();
+    refcount.updateAndGet(operand -> {
+      if (operand == 0) {
+        result.set(false);
+        return 0;
+      }
+      result.set(true);
+      return operand + 1;
+    });
+
+    return result.get();
   }
 
   public void decref() {
-    if (refcount.decrementAndGet() == 0) {
-      close();
-    }
+    refcount.updateAndGet(operand -> {
+      if (operand == 0) {
+        return 0;
+      }
+      if (operand == 1) {
+        close();
+      }
+      return  operand - 1;
+    });
   }
 
   /** returns the current position in the log file */
   public long position() {
-    synchronized (this) {
+    fosLock.lock();
+    try {
       return fos.size();
+    } finally {
+      fosLock.unlock();
     }
   }
 
@@ -567,8 +842,11 @@ public class TransactionLog implements Closeable {
   public void finish(UpdateLog.SyncLevel syncLevel) {
     if (syncLevel == UpdateLog.SyncLevel.NONE) return;
     try {
-      synchronized (this) {
-        fos.flushBuffer();
+      fosLock.lock();
+      try {
+        //  fos.flushBuffer();
+      } finally {
+        fosLock.unlock();
       }
 
       if (syncLevel == UpdateLog.SyncLevel.FSYNC) {
@@ -589,9 +867,14 @@ public class TransactionLog implements Closeable {
         log.debug("Closing tlog {}", this);
       }
 
-      synchronized (this) {
-        fos.flush();
+      fosLock.lock();
+      try {
+
         fos.close();
+
+        channel.close();
+      } finally {
+        fosLock.unlock();
       }
 
       if (deleteOnClose) {
@@ -605,21 +888,37 @@ public class TransactionLog implements Closeable {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
-      assert ObjectReleaseTracker.release(this);
+      assert ObjectReleaseTracker.getInstance().release(this);
     }
   }
 
   public void forceClose() {
     if (refcount.get() > 0) {
-      log.error("Error: Forcing close of {}", this);
-      refcount.set(0);
-      close();
+      // Readers (e.g. a LogReplayer mid-read) hold increfs. Closing unmaps the memory-mapped
+      // buffer, so unmapping while a reader is active causes a native SIGSEGV in
+      // DirectMemBufferedInputStream.read(), not a catchable Java exception. Wait (bounded)
+      // for readers to drain — the core close aborts the replayer via AlreadyClosedException
+      // and its LogReader.close() decrefs — before releasing the mapping.
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+      while (refcount.get() > 0 && System.nanoTime() < deadline) {
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          break;
+        }
+      }
+      if (refcount.get() > 0) {
+        log.error("Error: Forcing close of {}", this);
+        refcount.set(0);
+        close();
+      }
     }
   }
 
   @Override
   public String toString() {
-    return "tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + "}";
+    return "tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + " size=" + fos.size() + '}';
   }
 
   public long getLogSize() {
@@ -632,14 +931,18 @@ public class TransactionLog implements Closeable {
   /**
    * @return the FastOutputStream size
    */
-  public synchronized long getLogSizeFromStream() {
-    return fos.size();
+  public long getLogSizeFromStream() {
+    fosLock.lock();
+    try {
+      return fos.size();
+    } finally {
+      fosLock.unlock();
+    }
   }
 
   /** Returns a reader that can be used while a log is still in use.
    * Currently only *one* LogReader may be outstanding, and that log may only
-   * be used from a single thread.
-   */
+   * be used from a single thread. */
   public LogReader getReader(long startingPos) {
     return new LogReader(startingPos);
   }
@@ -654,12 +957,24 @@ public class TransactionLog implements Closeable {
   }
 
   public class LogReader {
-    protected ChannelFastInputStream fis;
-    private LogCodec codec = new LogCodec(resolver);
+    protected DirectMemBufferedInputStream fis;
+    private final LogCodec codec = new LogCodec(resolver);
 
     public LogReader(long startingPos) {
       incref();
-      fis = new ChannelFastInputStream(channel, startingPos);
+      fosLock.lock();
+      try {
+        //fos.flushBuffer();
+     //   channel.position(startingPos);
+        fis = new DirectMemBufferedInputStream(buffer,  raf.length());
+
+        // fos.flushBuffer();
+      } catch (IOException ioException) {
+        throw new RuntimeIOException(ioException);
+      } finally {
+        fosLock.unlock();
+      }
+
     }
 
     // for classes that extend
@@ -672,36 +987,55 @@ public class TransactionLog implements Closeable {
      */
     public Object next() throws IOException, InterruptedException {
       long pos = fis.position();
+            fosLock.lock();
+            try {
+      //        fos.flushBuffer();
+      //        pos = fis.position();
+      //      //  if (log.isDebugEnabled()) {
+      //          log.info("Reading log record.  pos={} currentSize={}", pos, fos.size());
+      //      //  }
+      //
+              if (pos >= fos.size()) {
+                return null;
+              }
 
-      synchronized (TransactionLog.this) {
-        if (trace) {
-          log.trace("Reading log record.  pos={} currentSize={}", pos, fos.size());
-        }
-
-        if (pos >= fos.size()) {
-          return null;
-        }
-
-        fos.flushBuffer();
-      }
-
+         //     fos.flushBuffer();
+            } finally {
+              fosLock.unlock();
+            }
       if (pos == 0) {
-        readHeader(fis);
-
-        // shouldn't currently happen - header and first record are currently written at the same time
-        synchronized (TransactionLog.this) {
+        // The log file begins with a marshalled header record ([version][header map] followed by a
+        // 4-byte size trailer, written by writeLogHeader). It must be consumed before the first real
+        // record is read: next() reads records with raw readVal(), which would otherwise misinterpret
+        // the version-framed header as data and desync the stream (replaying zero records). readHeader
+        // also repopulates globalStringList when replaying a log freshly opened from disk.
+        fosLock.lock();
+        try {
           if (fis.position() >= fos.size()) {
             return null;
           }
+          readHeader(fis);   // reads version byte + header map, advancing fis past the header map
+          fis.readInt();     // skip the header record's 4-byte size trailer
           pos = fis.position();
+          if (pos >= fos.size()) {
+            return null;
+          }
+        } finally {
+          fosLock.unlock();
         }
       }
 
-      Object o = codec.readVal(fis);
+      mapLock.readLock().lock();
+      Object o;
+      try {
+        o = codec.readVal(fis);
 
-      // skip over record size
-      int size = fis.readInt();
-      assert size == fis.position() - pos - 4;
+        // skip over record size
+        int size = fis.readInt();
+        //  assert size == fis.position() - pos - 4 : "size=" + size + " pos-4=" + (fis.position() - pos - 4);
+      } finally {
+        mapLock.readLock().unlock();
+      }
 
       return o;
     }
@@ -713,28 +1047,30 @@ public class TransactionLog implements Closeable {
     @Override
     public String toString() {
       synchronized (TransactionLog.this) {
-        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+
+        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + '}';
+
       }
     }
 
-    // returns best effort current position
-    // for info purposes
     public long currentPos() {
+
       return fis.position();
+
     }
 
     // returns best effort current size
     // for info purposes
     public long currentSize() throws IOException {
-      return channel.size();
+      return fos.size();
     }
 
   }
 
   public class SortedLogReader extends LogReader {
-    private long startingPos;
+    private final long startingPos;
     private boolean inOrder = true;
-    private TreeMap<Long, Long> versionToPos;
+    private Map<Long, Long> versionToPos;
     Iterator<Long> iterator;
 
     public SortedLogReader(long startingPos) {
@@ -745,7 +1081,7 @@ public class TransactionLog implements Closeable {
     @Override
     public Object next() throws IOException, InterruptedException {
       if (versionToPos == null) {
-        versionToPos = new TreeMap<>();
+        versionToPos = new Long2LongAVLTreeMap();
         Object o;
         long pos = startingPos;
 
@@ -761,7 +1097,7 @@ public class TransactionLog implements Closeable {
           if (version < lastVersion) inOrder = false;
           lastVersion = version;
         }
-        fis.seek(startingPos);
+        fis.position(startingPos);
       }
 
       if (inOrder) {
@@ -770,13 +1106,13 @@ public class TransactionLog implements Closeable {
         if (iterator == null) iterator = versionToPos.values().iterator();
         if (!iterator.hasNext()) return null;
         long pos = iterator.next();
-        if (pos != currentPos()) fis.seek(pos);
+        if (pos != currentPos()) fis.position(pos);
         return super.next();
       }
     }
   }
 
-  public abstract class ReverseReader {
+  public abstract static class ReverseReader {
 
     /** Returns the next object from the log, or null if none available.
      *
@@ -796,10 +1132,10 @@ public class TransactionLog implements Closeable {
   }
 
   public class FSReverseReader extends ReverseReader {
-    ChannelFastInputStream fis;
-    private LogCodec codec = new LogCodec(resolver) {
+    DirectMemBufferedInputStream fis;
+    private final LogCodec codec = new LogCodec(resolver) {
       @Override
-      public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) {
+      public SolrInputDocument readSolrInputDocument(JavaBinInputStream dis, int sz) {
         // Given that the SolrInputDocument is last in an add record, it's OK to just skip
         // reading it completely.
         return null;
@@ -813,18 +1149,26 @@ public class TransactionLog implements Closeable {
       incref();
 
       long sz;
-      synchronized (TransactionLog.this) {
-        fos.flushBuffer();
+      fosLock.lock();
+      try {
+        //  fos.flushBuffer();
+        //  channel.position(0);
+        fis = new DirectMemBufferedInputStream(buffer,  raf.length());
+
         sz = fos.size();
-        assert sz == channel.size();
+        log.info("reverse reader size={} filesz={}", sz, raf.length());
+        //  assert sz == channel.size() : "sz:" + sz + " ch:" + channel.size();
+      } finally {
+        fosLock.unlock();
       }
 
-      fis = new ChannelFastInputStream(channel, 0);
+
       if (sz >= 4) {
         // readHeader(fis);  // should not be needed
         prevPos = sz - 4;
-        fis.seek(prevPos);
-        nextLength = fis.readInt();
+        // fis.position(prevPos);
+        nextLength = buffer.getInt(prevPos);
+        log.info("prevPos={} nextLen={}", prevPos, nextLength);
       }
     }
 
@@ -836,37 +1180,53 @@ public class TransactionLog implements Closeable {
     public Object next() throws IOException {
       if (prevPos <= 0) return null;
 
+
       long endOfThisRecord = prevPos;
 
       int thisLength = nextLength;
 
       long recordStart = prevPos - thisLength;  // back up to the beginning of the next record
+
+      if (recordStart < 0) return null;
+
       prevPos = recordStart - 4;  // back up 4 more to read the length of the next record
+      log.info("recordStart={} prevPos={} length={}", recordStart, prevPos, thisLength);
+        if (prevPos <= 0) return null;  // this record is the header
 
-      if (prevPos <= 0) return null;  // this record is the header
+      //      long bufferPos = fis.getPositionInBuffer();
+      //      if (prevPos >= bufferPos) {
+      //        // nothing to do... we're within the current buffer
+      //      } else {
+      //        // Position buffer so that this record is at the end.
+      //        // For small records, this will cause subsequent calls to next() to be within the buffer.
+      //        long seekPos = endOfThisRecord - fis.getBufferSize();
+      //        seekPos = Math.min(seekPos, prevPos); // seek to the start of the record if it's larger then the block size.
+      //        seekPos = Math.max(seekPos, 0);
+      //        fis.position(seekPos);
+      //        fis.peek();  // cause buffer to be filled
+      //      }
 
-      long bufferPos = fis.getBufferPos();
-      if (prevPos >= bufferPos) {
-        // nothing to do... we're within the current buffer
-      } else {
-        // Position buffer so that this record is at the end.
-        // For small records, this will cause subsequent calls to next() to be within the buffer.
-        long seekPos = endOfThisRecord - fis.getBufferSize();
-        seekPos = Math.min(seekPos, prevPos); // seek to the start of the record if it's larger then the block size.
-        seekPos = Math.max(seekPos, 0);
-        fis.seek(seekPos);
-        fis.peek();  // cause buffer to be filled
+      fis.position(recordStart);
+
+      mapLock.readLock().lock();
+      Object obj;
+      try {
+        if (prevPos > -1) {
+          nextLength = buffer.getInt(prevPos);     // this is the length of the *next* record (i.e. closer to the beginning)
+        }
+
+        // TODO: optionally skip document data
+
+        // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data (and we currently skip reading SolrInputDocument
+        log.info("theNextLen={} readRecAt={}", nextLength, recordStart);
+
+        obj = codec.readVal(fis);
+      } finally {
+        mapLock.readLock().unlock();
       }
+      log.info("obj={}", obj);
 
-      fis.seek(prevPos);
-      nextLength = fis.readInt();     // this is the length of the *next* record (i.e. closer to the beginning)
-
-      // TODO: optionally skip document data
-      Object o = codec.readVal(fis);
-
-      // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data (and we currently skip reading SolrInputDocument
-
-      return o;
+      return obj;
     }
 
     /* returns the position in the log file of the last record returned by next() */
@@ -880,63 +1240,83 @@ public class TransactionLog implements Closeable {
 
     @Override
     public String toString() {
-      synchronized (TransactionLog.this) {
-        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+      fosLock.lock();
+      try {
+        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + '}';
+      } finally {
+        fosLock.unlock();
       }
     }
 
 
   }
 
-  static class ChannelFastInputStream extends FastInputStream {
-    private FileChannel ch;
+  //  static class ChannelFastInputStream extends SolrInputStream {
+  //
+  //    public ChannelFastInputStream(FileChannel ch, long chPosition) {
+  //      // super(null, new byte[10],0,0);    // a small buffer size for testing purposes
+  //  //    super(is, (int) chPosition);
+  //      super(Channels.newInputStream(ch));
+  //
+  //    }
 
-    public ChannelFastInputStream(FileChannel ch, long chPosition) {
-      // super(null, new byte[10],0,0);    // a small buffer size for testing purposes
-      super(null);
-      this.ch = ch;
-      super.readFromStream = chPosition;
-    }
+  //    public FileChannel getChannel() {
+  //      return ch;
+  //    }
 
-    @Override
-    public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
-      ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
-      int ret = ch.read(bb, readFromStream);
-      return ret;
-    }
-
-    public void seek(long position) throws IOException {
-      if (position <= readFromStream && position >= getBufferPos()) {
-        // seek within buffer
-        pos = (int) (position - getBufferPos());
-      } else {
-        // long currSize = ch.size();   // not needed - underlying read should handle (unless read never done)
-        // if (position > currSize) throw new EOFException("Read past EOF: seeking to " + position + " on file of size " + currSize + " file=" + ch);
-        readFromStream = position;
-        end = pos = 0;
-      }
-      assert position() == position;
-    }
+  //    @Override
+  //    public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
+  //      ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
+  //      return ch.read(bb, readFromStream);
+  //    }
+  //
+  //    @Override
+  //    public void readFully(byte b[], int off, int len) throws IOException {
+  //      ByteBuffer bb = ByteBuffer.wrap(b, off, len);
+  //      ((FileChannel)((GetChannelInputStream)is).getChannel()).read(bb, position());
+  //    }
 
   /** where is the start of the buffer relative to the whole file */
-    public long getBufferPos() {
-      return readFromStream - end;
-    }
+  //    public long getBufferPos() {
+  //      return g;
+  //    }
+  //
+  //    public void seek(long position) throws IOException {
+  //      if (position <= readBytes && position >= getPositionInBuffer()) {
+  //        // seek within buffer
+  //        pos = (int) (position - getPositionInBuffer());
+  //      } else {
+  //        // long currSize = ch.size();   // not needed - underlying read should handle (unless read never done)
+  //        // if (position > currSize) throw new EOFException("Read past EOF: seeking to " + position + " on file of size " + currSize + " file=" + ch);
+  //        readBytes = position;
+  //        pos = 0;
+  //      }
+  //      assert position() == position;
+  //    }
 
-    public int getBufferSize() {
-      return buf.length;
-    }
-
-    @Override
-    public void close() throws IOException {
-      ch.close();
-    }
-
-    @Override
-    public String toString() {
-      return "readFromStream=" + readFromStream + " pos=" + pos + " end=" + end + " bufferPos=" + getBufferPos() + " position=" + position();
-    }
-  }
+  //public int getBufferSize() {
+  //  return buffer.length;
 }
+//
+//    @Override
+//    public void close() throws IOException {
+//      super.close();
+//    }
+
+//    @Override
+//    public void flush() {
+//      ((FastBufferedInputStream) is).flush();
+//    }
+
+//    @Override
+//    public String toString() {
+//      try {
+//        return "readFromStream=" + readBytes + " pos=" + pos + " bufferPos=" + getPositionInBuffer() + " position=" + position();
+//      } catch (IOException e) {
+//        throw new RuntimeIOException(e);
+//      }
+//    }
+// }
+//}
 
 

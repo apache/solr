@@ -18,27 +18,29 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,39 +50,37 @@ public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClassSetup() {
+  public static void beforeForceLeaderTest() {
     System.setProperty("socketTimeout", "15000");
     System.setProperty("distribUpdateSoTimeout", "15000");
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
-    System.setProperty("solr.retries.to.followers", "0"); 
-  }
-
-  @Test
-  @Override
-  @Ignore
-  public void test() throws Exception {
-
+    System.setProperty("solr.retries.to.followers", "0");
   }
 
   /**
    * Tests that FORCELEADER can get an active leader even only replicas with term lower than leader's term are live
    */
   @Test
-  @Slow
+  @LuceneTestCase.Slow
   public void testReplicasInLowerTerms() throws Exception {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
-    
-
 
     String testCollectionName = "forceleader_lower_terms_collection";
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
-    
+    createCollection(testCollectionName, "_default", 1, 3, 1);
 
     try {
       cloudClient.setDefaultCollection(testCollectionName);
-      List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, SHARD1, 1, 3, maxWaitSecsToSeeAllActive);
+      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
+
+      ArrayList<Replica> notLeaders = new ArrayList<>();
+      List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
+      for (Replica replica : replicas) {
+        if (!replica.getBool("leader", false)) {
+          notLeaders.add(replica);
+        }
+      }
       assertEquals("Expected 2 replicas for collection " + testCollectionName
           + " but found " + notLeaders.size() + "; clusterState: "
           + printClusterStateInfo(testCollectionName), 2, notLeaders.size());
@@ -95,10 +95,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
       putNonLeadersIntoLowerTerm(testCollectionName, SHARD1, zkController, leader, notLeaders, cloudClient);
 
       for (Replica replica : notLeaders) {
-        waitForState(testCollectionName, replica.getName(), State.DOWN, 60000);
+        waitForState(testCollectionName, replica.getName(), State.DOWN, 10000);
       }
-      waitForState(testCollectionName, leader.getName(), State.DOWN, 60000);
-      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
+      waitForState(testCollectionName, leader.getName(), State.DOWN, 10000);
       ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
       int numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
       assertEquals("Expected only 0 active replica but found " + numActiveReplicas +
@@ -106,7 +105,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
       int numReplicasOnLiveNodes = 0;
       for (Replica rep : clusterState.getCollection(testCollectionName).getSlice(SHARD1).getReplicas()) {
-        if (clusterState.getLiveNodes().contains(rep.getNodeName())) {
+        if (zkController.getZkStateReader().getLiveNodes().contains(rep.getNodeName())) {
           numReplicasOnLiveNodes++;
         }
       }
@@ -116,7 +115,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       }
       // Assert there is no leader yet
       assertNull("Expected no leader right now. State: " + clusterState.getCollection(testCollectionName).getSlice(SHARD1),
-          clusterState.getCollection(testCollectionName).getSlice(SHARD1).getLeader());
+          clusterState.getCollection(testCollectionName).getSlice(SHARD1).getLeader(zkController.zkStateReader.getLiveNodes()));
 
       assertSendDocFails(3);
 
@@ -126,13 +125,12 @@ public class ForceLeaderTest extends HttpPartitionTest {
       // By now we have an active leader. Wait for recoveries to begin
       waitForRecoveriesToFinish(testCollectionName, cloudClient.getZkStateReader(), true);
 
-      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
       clusterState = cloudClient.getZkStateReader().getClusterState();
       if (log.isInfoEnabled()) {
         log.info("After forcing leader: {}", clusterState.getCollection(testCollectionName).getSlice(SHARD1));
       }
       // we have a leader
-      Replica newLeader = clusterState.getCollectionOrNull(testCollectionName).getSlice(SHARD1).getLeader();
+      Replica newLeader = clusterState.getCollectionOrNull(testCollectionName).getSlice(SHARD1).getLeader(zkController.zkStateReader.getLiveNodes());
       assertNotNull(newLeader);
       // leader is active
       assertEquals(State.ACTIVE, newLeader.getState());
@@ -151,7 +149,6 @@ public class ForceLeaderTest extends HttpPartitionTest {
       assertDocsExistInAllReplicas(notLeaders, testCollectionName, 4, 4);
 
       if (useTlogReplicas()) {
-
       }
       // Docs 1 and 4 should be here. 2 was lost during the partition, 3 had failed to be indexed.
       log.info("Checking doc counts...");
@@ -195,7 +192,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     log.info("Sending a doc during the network partition...");
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
     sendDoc(2, null, leaderJetty);
-    
+
     for (Replica replica : notLeaders) {
       waitForState(collectionName, replica.getName(), State.DOWN, 60000);
     }
@@ -236,10 +233,17 @@ public class ForceLeaderTest extends HttpPartitionTest {
   }
 
   private void assertSendDocFails(int docId) throws Exception {
-    // sending a doc in this state fails
-    expectThrows(SolrException.class,
+    // Send exactly once, with no retries. While the shard is leaderless an update must fail. Retrying for
+    // many seconds (the default sendDoc does 5 retries ~5s apart) is wrong here: the retry loop can
+    // outlast leaderVoteWait (15s), after which a lower-term replica becomes leader anyway via the
+    // intentional "become leader after timeout" data-loss bypass and would then accept the doc -- making
+    // this assertion racy/flaky. A single attempt completes well within leaderVoteWait.
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField(id, String.valueOf(docId));
+    doc.addField("a_t", "hello" + docId);
+    LuceneTestCase.expectThrows(SolrException.class,
         "Should've failed indexing during a down state.",
-        () -> sendDoc(docId));
+        () -> sendDocsWithRetry(Collections.singletonList(doc), 1, 0, 0));
   }
 
   private void bringBackOldLeaderAndSendDoc(String collection, Replica leader, List<Replica> notLeaders, int docid) throws Exception {
@@ -249,7 +253,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     getProxyForReplica(leader).reopen();
     leaderJetty.start();
     waitForRecoveriesToFinish(collection, cloudClient.getZkStateReader(), true);
-    cloudClient.getZkStateReader().forceUpdateCollection(collection);
+
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     if (log.isInfoEnabled()) {
       log.info("After bringing back leader: {}", clusterState.getCollection(collection).getSlice(SHARD1));
@@ -276,7 +280,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   private void doForceLeader(String collectionName, String shard) throws IOException, SolrServerException {
     CollectionAdminRequest.ForceLeader forceLeader = CollectionAdminRequest.forceLeaderElection(collectionName, shard);
-    try(CloudSolrClient cloudClient = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 60000)) {
+    try (CloudHttp2SolrClient cloudClient = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean())) {
       cloudClient.request(forceLeader);
     }
   }
@@ -292,4 +296,3 @@ public class ForceLeaderTest extends HttpPartitionTest {
     return numActiveReplicas;
   }
 }
-

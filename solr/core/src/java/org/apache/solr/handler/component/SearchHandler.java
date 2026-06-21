@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -24,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.LinkedTransferQueue;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
@@ -71,9 +73,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile List<SearchComponent> components;
-  private ShardHandlerFactory shardHandlerFactory;
-  private PluginInfo shfInfo;
-  private SolrCore core;
+  private volatile ShardHandlerFactory shardHandlerFactory;
+  private volatile PluginInfo shfInfo;
+  private volatile SolrCore core;
 
   protected List<String> getDefaultComponents() {
     ArrayList<String> names = new ArrayList<>(8);
@@ -258,7 +260,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       String shardsTolerant = req.getParams().get(ShardParams.SHARDS_TOLERANT);
       boolean requireZkConnected = shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
-      boolean zkConnected = zkController != null && ! zkController.getZkClient().getConnectionManager().isLikelyExpired();
+      boolean zkConnected = zkController.getZkClient().isConnected();
       if (requireZkConnected && false == zkConnected) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
       } else {
@@ -275,40 +277,41 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   /**
    * Override this method if you require a custom {@link ResponseBuilder} e.g. for use by a custom {@link SearchComponent}.
    */
-  protected ResponseBuilder newResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
-    return new ResponseBuilder(req, rsp, components);
+  protected static ResponseBuilder newResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components, SearchHandler searchHandler) {
+    return new ResponseBuilder(req, rsp, components, searchHandler);
   }
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
-  {
-    List<SearchComponent> components  = getComponents();
-    ResponseBuilder rb = newResponseBuilder(req, rsp, components);
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    List<SearchComponent> components = getComponents();
+    ResponseBuilder rb = newResponseBuilder(req, rsp, components, this);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
     }
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     rb.setDebug(dbg);
-    if (dbg == false){//if it's true, we are doing everything anyway.
+    if (dbg == false) {//if it's true, we are doing everything anyway.
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
     }
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
+
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
-    
+    rb.setShardHandler(shardHandler1);
+
     if (timer == null) {
       // non-debugging prepare phase
-      for( SearchComponent c : components ) {
+      for (SearchComponent c : components) {
         c.prepare(rb);
       }
     } else {
       // debugging prepare phase
-      RTimerTree subt = timer.sub( "prepare" );
-      for( SearchComponent c : components ) {
-        rb.setTimer( subt.sub( c.getName() ) );
+      RTimerTree subt = timer.sub("prepare");
+      for (SearchComponent c : components) {
+        rb.setTimer(subt.sub(c.getName()));
         c.prepare(rb);
         rb.getTimer().stop();
       }
@@ -325,17 +328,16 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       try {
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops
-        if(!rb.isDebug()) {
+        if (!rb.isDebug()) {
           // Process
-          for( SearchComponent c : components ) {
+          for (SearchComponent c : components) {
             c.process(rb);
           }
-        }
-        else {
+        } else {
           // Process
-          RTimerTree subt = timer.sub( "process" );
-          for( SearchComponent c : components ) {
-            rb.setTimer( subt.sub( c.getName() ) );
+          RTimerTree subt = timer.sub("process");
+          for (SearchComponent c : components) {
+            rb.setTimer(subt.sub(c.getName()));
             c.process(rb);
             rb.getTimer().stop();
           }
@@ -343,28 +345,30 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
           // add the timing info
           if (rb.isDebugTimings()) {
-            rb.addDebugInfo("timing", timer.asNamedList() );
+            rb.addDebugInfo("timing", timer.asNamedList());
           }
         }
+    //    finishResponse(req, rsp, rb);
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         log.warn("Query: {}; {}", req.getParamString(), ex.getMessage());
-        if( rb.rsp.getResponse() == null) {
+        if (rb.rsp.getResponse() == null) {
           rb.rsp.addResponse(new SolrDocumentList());
         }
-        if(rb.isDebug()) {
+        if (rb.isDebug()) {
           NamedList debug = new NamedList();
           debug.add("explain", new NamedList());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp.getResponseHeader().asShallowMap()
-              .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       } finally {
         SolrQueryTimeoutImpl.reset();
       }
+      //finishResponse(req, rsp, rb);
     } else {
       // a distributed request
 
       if (rb.outgoing == null) {
+     //   rb.outgoing = new LinkedTransferQueue<>();
         rb.outgoing = new LinkedList<>();
       }
       rb.finished = new ArrayList<>();
@@ -391,7 +395,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
             if (sreq.actualShards==ShardRequest.ALL_SHARDS) {
               sreq.actualShards = rb.shards;
             }
-            sreq.responses = new ArrayList<>(sreq.actualShards.length); // presume we'll get a response from each shard we send to
+            //sreq.responses = new ArrayList<>(sreq.actualShards.length); // presume we'll get a response from each shard we send to
 
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
@@ -430,12 +434,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           // this loop)
           boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
           while (rb.outgoing.size() == 0) {
-            ShardResponse srsp = tolerant ? 
+            ShardResponse srsp = tolerant ?
                 shardHandler1.takeCompletedIncludingErrors():
                 shardHandler1.takeCompletedOrError();
             if (srsp == null) break;  // no more requests to wait for
 
-            // Was there an exception?  
+            // Was there an exception?
             if (srsp.getException() != null) {
               // If things are not tolerant, abort everything and rethrow
               if(!tolerant) {
@@ -466,11 +470,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
     }
-    
+
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
-    if(!rb.isDistrib && req.getParams().getBool(ShardParams.SHARDS_INFO, false) && rb.shortCircuitedURL != null) {  
+    if(!rb.isDistrib && req.getParams().getBool(ShardParams.SHARDS_INFO, false) && rb.shortCircuitedURL != null) {
       NamedList<Object> shardInfo = new SimpleOrderedMap<Object>();
-      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();        
+      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
       if (rsp.getException() != null) {
         Throwable cause = rsp.getException();
         if (cause instanceof SolrServerException) {
@@ -478,7 +482,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         } else {
           if (cause.getCause() != null) {
             cause = cause.getCause();
-          }          
+          }
         }
         nl.add("error", cause.toString() );
         StringWriter trace = new StringWriter();
@@ -492,11 +496,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
       nl.add("shardAddress", rb.shortCircuitedURL);
       nl.add("time", req.getRequestTimer().getTime()); // elapsed time of this request so far
-      
-      int pos = rb.shortCircuitedURL.indexOf("://");        
+
+      int pos = rb.shortCircuitedURL.indexOf("://");
       String shardInfoName = pos != -1 ? rb.shortCircuitedURL.substring(pos+3) : rb.shortCircuitedURL;
-      shardInfo.add(shardInfoName, nl);   
-      rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);            
+      shardInfo.add(shardInfoName, nl);
+      rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);
     }
   }
 
@@ -504,7 +508,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @Override
   public String getDescription() {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     sb.append("Search using components: ");
     if( components != null ) {
       for(SearchComponent c : components){

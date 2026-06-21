@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
@@ -35,6 +36,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 /**
  *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
@@ -44,6 +46,7 @@ import org.junit.Test;
 
 @LuceneTestCase.Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LuceneTestCase.Nightly // kind of odd given the 2 node cluster, but this test can be pretty slow
 public class GraphTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
@@ -55,7 +58,8 @@ public class GraphTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve(
+            "conf"))
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
@@ -95,7 +99,7 @@ public class GraphTest extends SolrCloudTestCase {
     ShortestPathStream stream = null;
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
+    SolrClientCache cache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     context.setSolrClientCache(cache);
 
     SolrParams sParams = StreamingTest.mapParams("fq", "predicate_s:knows");

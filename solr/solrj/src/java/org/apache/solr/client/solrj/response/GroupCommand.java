@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +47,7 @@ import java.util.List;
 public class GroupCommand implements Serializable {
 
   private final String _name;
-  private final List<Group> _values = new ArrayList<>();
+  private final ObjectList<Group> _values = new ObjectArrayList<>();
   private final int _matches;
   private final Integer _ngroups;
 

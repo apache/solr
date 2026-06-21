@@ -24,6 +24,8 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -49,7 +51,9 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   public static Class<? extends SimilarityFactory> simfac2;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeChangedSchemaMergeTest() throws Exception {
+    useFactory(null);
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
 
     simfac1 = LMJelinekMercerSimilarityFactory.class;
     simfac2 = SchemaSimilarityFactory.class;
@@ -72,14 +76,16 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir().toFile();
+  private final File solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
   private File schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
-    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(core, new NamedList<>()));
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new NamedList<>(), true);
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = sdoc((Object[]) fieldValues);
     updater.addDoc(cmd);
+    req.close();
   }
 
   private CoreContainer init() throws Exception {
@@ -93,7 +99,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     File solrXml = new File(solrHomeDirectory, "solr.xml");
     FileUtils.write(solrXml, discoveryXml, StandardCharsets.UTF_8);
 
-    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties());
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties(), false);
     cores.load();
     return cores;
   }
@@ -104,7 +110,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     SchemaSimilarityFactory broken = new SchemaSimilarityFactory();
     broken.init(new ModifiableSolrParams());
     // NO INFORM
-    IllegalStateException e = expectThrows(IllegalStateException.class, broken::getSimilarity);
+    IllegalStateException e = SolrTestCaseUtil.expectThrows(IllegalStateException.class, broken::getSimilarity);
     assertTrue("GOT: " + e.getMessage(),
         e.getMessage().contains("SolrCoreAware.inform"));
   }
@@ -113,36 +119,43 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   public void testOptimizeDiffSchemas() throws Exception {
     // load up a core (why not put it on disk?)
     CoreContainer cc = init();
-    try (SolrCore changed = cc.getCore("changed")) {
 
+    try {
+      SolrCore changed = cc.getCore("changed");
       assertSimilarity(changed, simfac1);
-                       
+
       // add some documents
       addDoc(changed, "id", "1", "which", "15", "text", "some stuff with which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "2", "which", "15", "text", "some stuff with which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "3", "which", "15", "text", "some stuff with which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "4", "which", "15", "text", "some stuff with which");
-      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>());
+      changed = cc.getCore("changed");
+      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>(), true);
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-
+      req.close();
       // write the new schema out and make it current
       FileUtils.writeStringToFile(schemaFile, withoutWhich, StandardCharsets.UTF_8);
 
       IndexSchema iSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());
       changed.setLatestSchema(iSchema);
-      
+
       assertSimilarity(changed, simfac2);
       // sanity check our sanity check
-      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2)); 
-
+      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2));
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "1", "text", "some stuff without which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "5", "text", "some stuff without which");
 
+      changed = cc.getCore("changed");
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, true));
+      changed.close();
     } catch (Throwable e) {
-      log.error("Test exception, logging so not swallowed if there is a (finally) shutdown exception: {}"
-          , e.getMessage(), e);
+      log.error("Test exception, logging so not swallowed if there is a (finally) shutdown exception: {}", e.getMessage(), e);
       throw e;
     } finally {
       if (cc != null) cc.shutdown();

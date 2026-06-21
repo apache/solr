@@ -21,11 +21,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -58,12 +60,16 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
       if (core != null) {
         syncStrategy = new SyncStrategy(core.getCoreContainer());
 
-        Map<String, Object> props = new HashMap<>();
-        props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());
+        Object2ObjectMap<String, Object> props = new Object2ObjectLinkedOpenHashMap<>();
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
+        props.put("id", Integer.parseInt(core.getCoreDescriptor().getCoreProperty("id", "-1")));
+        String collection = params.get("collection");
+        String shard = params.get("shard");
 
-        boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props), true).isSuccess();
+        Replica replica = new Replica(cname, props, collection, Integer.parseInt(core.getCoreDescriptor().getCoreProperty("collId", "-1")), null);
+
+        boolean success = syncStrategy.sync(zkController, core, replica, true).isSuccess();
         // solrcloud_debug
         if (log.isDebugEnabled()) {
           try {

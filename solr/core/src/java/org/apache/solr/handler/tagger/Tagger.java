@@ -187,7 +187,7 @@ public abstract class Tagger {
     }
 
     tokenStream.end();
-    //tokenStream.close(); caller closes because caller acquired it
+    // tokenStream.close(); //caller closes because caller acquired it
   }
 
   private void advanceTagsAndProcessClusterIfDone(TagLL[] head, BytesRef term) throws IOException {
@@ -224,7 +224,7 @@ public abstract class Tagger {
    * @param docIdsKey The lookup key.
    * @return Not null
    */
-  protected IntsRef lookupDocIds(Object docIdsKey) {
+  protected static IntsRef lookupDocIds(Object docIdsKey) {
     return (IntsRef) docIdsKey;
   }
 }

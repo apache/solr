@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 
@@ -36,7 +37,13 @@ import org.apache.solr.core.SolrCore;
  */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public final static Map emptyArgs = new HashMap(0,1);
-  
+  private boolean closeCore;
+  /** Guards against repeated close() calls decrementing the core refcount more than once.
+   * Closeable.close() is contractually idempotent; without this, a request closed N times
+   * (e.g. inside a loop's finally) would call SolrCore.close() N times and drive the core
+   * refcount below its real usage, yielding spurious AlreadyClosedException. */
+  private volatile boolean closed = false;
+
   public String userPrincipalName = null;
   
   protected static SolrParams makeParams(String query, String qtype, int start, int limit, Map args) {
@@ -56,19 +63,49 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   }
 
   public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit, Map args) {
+    this(core, query, qtype, start, limit, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit, Map args, boolean closeCore) {
     super(core,makeParams(query,qtype,start,limit,args));
+    this.closeCore = closeCore;
   }
 
   public LocalSolrQueryRequest(SolrCore core, NamedList args) {
-    super(core, args.toSolrParams());
+    this(core, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, NamedList args, boolean closeCore) {
+    this(core, args.toSolrParams(), closeCore);
   }
 
   public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args) {
-    super(core, new MultiMapSolrParams(args));
+    this(core, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args, boolean closeCore) {
+    this(core, new MultiMapSolrParams(args), closeCore);
   }
   
   public LocalSolrQueryRequest(SolrCore core, SolrParams args) {
+    this(core, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, SolrParams args, boolean closeCore) {
     super(core, args);
+    this.closeCore = closeCore;
+  }
+
+  @Override
+  public void close() {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    super.close();
+    if (closeCore) {
+      IOUtils.closeQuietly(core);
+    }
   }
 
   @Override public Principal getUserPrincipal() {
@@ -87,7 +124,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public void setUserPrincipalName(String s) {
     this.userPrincipalName = s;
   }
-  private final class LocalPrincipal implements Principal {
+  private static final class LocalPrincipal implements Principal {
     private final String user;
     public LocalPrincipal(String user) {
       this.user = user;
@@ -100,7 +137,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
     }
     @Override public boolean equals(Object other) {
       return Objects.equals(this.getClass(), other.getClass())
-        && Objects.equals(this.getName(), ((LocalPrincipal)other).getName() );
+        && Objects.equals(this.user, ((LocalPrincipal) other).user);
     }
   }
 }

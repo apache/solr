@@ -39,7 +39,7 @@ public class RawValueEvaluator extends SourceEvaluator {
   
   public RawValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     // We have to do this because order of the parameters matter
-    List<StreamExpressionParameter> parameters = factory.getOperandsOfType(expression, StreamExpressionValue.class);
+    List<StreamExpressionParameter> parameters = StreamFactory.getOperandsOfType(expression, StreamExpressionValue.class);
     
     if(expression.getParameters().size() != parameters.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only raw values", expression));
@@ -49,12 +49,12 @@ public class RawValueEvaluator extends SourceEvaluator {
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - only 1 value can exist in a %s(...) evaluator", expression, factory.getFunctionName(getClass())));
     }
     
-    init(factory.constructPrimitiveObject(((StreamExpressionValue)parameters.get(0)).getValue()));
+    init(StreamFactory.constructPrimitiveObject(((StreamExpressionValue)parameters.get(0)).getValue()));
   }
   
   private void init(Object value){
     if(value instanceof Integer){
-      this.value = (Long)value;
+      this.value = value;
     }
     else if(value instanceof Float){
       this.value = ((Float)value).doubleValue();

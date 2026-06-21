@@ -93,9 +93,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
           weights[i] = Double.parseDouble(wa[i]);
         }
       } else {
-        for(int i=0; i<weights.length; i++) {
-          weights[i]= 1.0d;
-        }
+        Arrays.fill(weights, 1.0d);
       }
 
       TrainingParams input = new TrainingParams(fs, terms, idfs, outcome, weights, iteration, alpha, positiveLabel, threshold);
@@ -231,7 +229,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       }
     }
 
-    private double sigmoid(double in) {
+    private static double sigmoid(double in) {
       double d = 1.0 / (1+Math.exp(-in));
       return d;
     }
@@ -252,7 +250,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       return workingDeltas;
     }
 
-    private double sum(double[] vals) {
+    private static double sum(double[] vals) {
       double d = 0.0d;
       for(double val : vals) {
         d += val;

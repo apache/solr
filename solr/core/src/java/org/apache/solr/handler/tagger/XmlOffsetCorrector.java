@@ -22,17 +22,18 @@
 
 package org.apache.solr.handler.tagger;
 
-import javax.xml.stream.XMLResolver;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.XMLEvent;
-import java.io.InputStream;
-import java.io.StringReader;
-
 import com.ctc.wstx.stax.WstxInputFactory;
 import org.apache.commons.io.input.ClosedInputStream;
 import org.codehaus.stax2.LocationInfo;
 import org.codehaus.stax2.XMLInputFactory2;
 import org.codehaus.stax2.XMLStreamReader2;
+
+import javax.xml.stream.XMLResolver;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.events.XMLEvent;
+import java.io.InputStream;
+import java.io.StringReader;
 
 /**
  * Corrects offsets to adjust for XML formatted data. The goal is such that the caller should be
@@ -78,35 +79,38 @@ public class XmlOffsetCorrector extends OffsetCorrector {
 
     final XMLStreamReader2 xmlStreamReader =
             (XMLStreamReader2) XML_INPUT_FACTORY.createXMLStreamReader(new StringReader(docText));
+    try {
+      while (xmlStreamReader.hasNext()) {
+        int eventType = xmlStreamReader.next();
+        switch (eventType) {
+          case XMLStreamConstants.START_ELEMENT: {
+            tagInfo.ensureCapacity(tagInfo.size() + 5);
+            final int parentTag = thisTag;
+            final LocationInfo info = xmlStreamReader.getLocationInfo();
+            tagInfo.add(parentTag);
+            tagInfo.add((int) info.getStartingCharOffset(), (int) info.getEndingCharOffset());
+            tagInfo.add(-1, -1);//these 2 will be populated when we get to the close tag
+            thisTag = tagCounter++;
 
-    while (xmlStreamReader.hasNext()) {
-      int eventType = xmlStreamReader.next();
-      switch (eventType) {
-        case XMLEvent.START_ELEMENT: {
-          tagInfo.ensureCapacity(tagInfo.size() + 5);
-          final int parentTag = thisTag;
-          final LocationInfo info = xmlStreamReader.getLocationInfo();
-          tagInfo.add(parentTag);
-          tagInfo.add((int) info.getStartingCharOffset(), (int) info.getEndingCharOffset());
-          tagInfo.add(-1, -1);//these 2 will be populated when we get to the close tag
-          thisTag = tagCounter++;
+            parentChangeOffsets.add((int) info.getStartingCharOffset());
+            parentChangeIds.add(thisTag);
+            break;
+          }
+          case XMLStreamConstants.END_ELEMENT: {
+            final LocationInfo info = xmlStreamReader.getLocationInfo();
+            tagInfo.set(5 * thisTag + 3, (int) info.getStartingCharOffset());
+            tagInfo.set(5 * thisTag + 4, (int) info.getEndingCharOffset());
+            thisTag = getParentTag(thisTag);
 
-          parentChangeOffsets.add((int) info.getStartingCharOffset());
-          parentChangeIds.add(thisTag);
-          break;
+            parentChangeOffsets.add((int) info.getEndingCharOffset());
+            parentChangeIds.add(thisTag);
+            break;
+          }
+          default: //do nothing
         }
-        case XMLEvent.END_ELEMENT: {
-          final LocationInfo info = xmlStreamReader.getLocationInfo();
-          tagInfo.set(5 * thisTag + 3, (int) info.getStartingCharOffset());
-          tagInfo.set(5 * thisTag + 4, (int) info.getEndingCharOffset());
-          thisTag = getParentTag(thisTag);
-
-          parentChangeOffsets.add((int) info.getEndingCharOffset());
-          parentChangeIds.add(thisTag);
-          break;
-        }
-        default: //do nothing
       }
+    } finally {
+      xmlStreamReader.closeCompletely();
     }
   }
 

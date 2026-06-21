@@ -61,7 +61,7 @@ public class TupStream extends TupleStream implements Expressible {
 
   public TupStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
     //Get all the named params
     for(StreamExpressionNamedParameter np : namedParams) {
       String name = np.getName();

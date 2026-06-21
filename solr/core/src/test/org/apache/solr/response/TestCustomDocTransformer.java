@@ -25,7 +25,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.response. transform.TransformerFactory;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -110,7 +110,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
         String v = getAsString(s, doc);
         str.append(v).append('#');
       }
-      System.out.println( "HELLO: "+str );
+      //System.out.println( "HELLO: "+str );
       doc.setField(name, str.toString());
     }
   }

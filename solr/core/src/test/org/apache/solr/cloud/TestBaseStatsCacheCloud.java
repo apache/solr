@@ -16,16 +16,21 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -37,7 +42,6 @@ import org.apache.solr.search.similarities.CustomSimilarityFactory;
 import org.apache.solr.search.stats.StatsCache;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +49,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@Ignore("Abstract classes should not be executed as tests")
+// Abstract base — Gradle test scanning skips abstract classes; no @Ignore needed.
 public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -66,7 +70,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     return doc;
   };
 
-  protected CloudSolrClient solrClient;
+  protected CloudHttp2SolrClient solrClient;
 
   protected SolrClient control;
 
@@ -83,11 +87,13 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // create control core & client
     System.setProperty("solr.statsCache", getImplementationName());
     System.setProperty("solr.similarity", CustomSimilarityFactory.class.getName());
-    initCore("solrconfig-minimal.xml", "schema-tiny.xml");
-    control = new EmbeddedSolrServer(h.getCore());
+    // StatsCache tests query /admin/metrics to verify cache counters; enable the handler.
+    System.setProperty("solr.enableMetrics", "true");
+    SolrTestCaseJ4.initCore("solrconfig-minimal.xml", "schema-tiny.xml");
+    control = new EmbeddedSolrServer(SolrTestCaseJ4.h.getCore());
     // create cluster
     configureCluster(numNodes) // 2 + random().nextInt(3)
-        .addConfig("conf", configset(configset))
+        .addConfig("conf", SolrTestUtil.configset(configset))
         .configure();
     solrClient = cluster.getSolrClient();
     createTestCollection();
@@ -97,14 +103,18 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, numNodes)
         .setMaxShardsPerNode(2)
         .process(solrClient);
-    indexDocs(solrClient, collectionName, NUM_DOCS, 0, generator);
-    indexDocs(control, "collection1", NUM_DOCS, 0, generator);
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+    List<SolrInputDocument> docs = generateDocs(NUM_DOCS, 0, generator);
+    indexDocs(solrClient, collectionName, docs, NUM_DOCS);
+    indexDocs(control, "collection1", docs, -1);
   }
 
   @After
-  public void tearDownCluster() {
+  public void tearDownCluster() throws IOException {
+    control.close();
     System.clearProperty("solr.statsCache");
     System.clearProperty("solr.similarity");
+    System.clearProperty("solr.enableMetrics");
   }
 
   @Test
@@ -117,8 +127,9 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     assertResponses(controlRsp, cloudRsp, assertSameScores());
 
     // test after updates
-    indexDocs(solrClient, collectionName, NUM_DOCS, NUM_DOCS, generator);
-    indexDocs(control, "collection1", NUM_DOCS, NUM_DOCS, generator);
+    List<SolrInputDocument> additionalDocs = generateDocs(NUM_DOCS, NUM_DOCS, generator);
+    indexDocs(solrClient, collectionName, additionalDocs, NUM_DOCS * 2);
+    indexDocs(control, "collection1", additionalDocs, -1);
 
     cloudRsp = solrClient.query(collectionName,
         params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
@@ -129,7 +140,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+      try (SolrClient client = SolrTestCaseJ4.getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
         NamedList<Object> metricsRsp = client.request(
             new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params("group", "solr.core", "prefix", "CACHE.searcher.statsCache")));
         assertNotNull(metricsRsp);
@@ -208,14 +219,39 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     }
   }
 
-  protected void indexDocs(SolrClient client, String collectionName, int num, int start, Function<Integer, SolrInputDocument> generator) throws Exception {
+  private void waitForDocCount(String collectionName, int expectedDocCount) throws Exception {
+    QueryResponse rsp = null;
+    for (int attempt = 0; attempt < 60; attempt++) {
+      rsp = solrClient.query(collectionName, params("q", "*:*", "rows", "0"));
+      if (rsp.getResults().getNumFound() == expectedDocCount) {
+        return;
+      }
+      Thread.sleep(250);
+    }
+    assertEquals(expectedDocCount, rsp.getResults().getNumFound());
+  }
 
+  private List<SolrInputDocument> generateDocs(
+      int num, int start, Function<Integer, SolrInputDocument> generator) {
+    List<SolrInputDocument> docs = new ArrayList<>(num);
+    for (int i = start; i < start + num; i++) {
+      docs.add(generator.apply(i));
+    }
+    return docs;
+  }
+
+  protected void indexDocs(
+      SolrClient client, String collectionName, List<SolrInputDocument> docs, int expectedDocCount)
+      throws Exception {
     UpdateRequest ureq = new UpdateRequest();
-    for (int i = 0; i < num; i++) {
-      SolrInputDocument doc = generator.apply(i + start);
-      ureq.add(doc);
+    for (SolrInputDocument doc : docs) {
+      ureq.add(doc.deepCopy());
     }
     ureq.process(client, collectionName);
     client.commit(collectionName);
+    if (expectedDocCount >= 0) {
+      cluster.waitForActiveCollection(collectionName, 2, 4);
+      waitForDocCount(collectionName, expectedDocCount);
+    }
   }
 }

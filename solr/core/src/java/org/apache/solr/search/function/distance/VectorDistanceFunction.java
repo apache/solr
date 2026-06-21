@@ -166,13 +166,9 @@ public class VectorDistanceFunction extends ValueSource {
 
       @Override
       public String toString(int doc) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(name()).append('(').append(power).append(',');
         boolean firstTime = true;
-        sb.append(vals1.toString(doc)).append(',');
-        sb.append(vals2.toString(doc));
-        sb.append(')');
-        return sb.toString();
+        String sb = name() + '(' + power + ',' + vals1.toString(doc) + ',' + vals2.toString(doc) + ')';
+        return sb;
       }
     };
   }
@@ -208,12 +204,8 @@ public class VectorDistanceFunction extends ValueSource {
 
   @Override
   public String description() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(name()).append('(').append(power).append(',');
-    sb.append(source1).append(',');
-    sb.append(source2);
-    sb.append(')');
-    return sb.toString();
+    String sb = name() + '(' + power + ',' + source1 + ',' + source2 + ')';
+    return sb;
   }
 
 }

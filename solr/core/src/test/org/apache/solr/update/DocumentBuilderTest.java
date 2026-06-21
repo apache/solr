@@ -26,6 +26,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -46,12 +48,13 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   static final int save_min_len = DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeDocumentBuilderTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
 
   @AfterClass
-  public static void afterClass() {
+  public static void afterDocumentBuilderTest() {
+    deleteCore();
     DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST = save_min_len;
   }
 
@@ -67,8 +70,9 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField( "unknown field", 12345 );
 
-    SolrException ex = expectThrows(SolrException.class, () -> DocumentBuilder.toDocument( doc, core.getLatestSchema() ));
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
     assertEquals("should be bad request", 400, ex.code());
+    core.close();
   }
 
   @Test
@@ -80,6 +84,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField( "name", null );
     Document out = DocumentBuilder.toDocument( doc, core.getLatestSchema() );
     assertNull( out.get( "name" ) );
+    core.close();
   }
 
   @Test
@@ -90,19 +95,20 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "id", "123" );
     doc.addField( "unknown", "something" );
-    Exception ex = expectThrows(Exception.class, () -> DocumentBuilder.toDocument( doc, core.getLatestSchema() ));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
     assertTrue( "should have document ID", ex.getMessage().indexOf( "doc=123" ) > 0 );
     doc.remove( "unknown" );
     
 
     doc.addField( "weight", "not a number" );
-    ex = expectThrows(Exception.class, () -> DocumentBuilder.toDocument( doc, core.getLatestSchema()));
+    ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
     assertTrue( "should have document ID", ex.getMessage().indexOf( "doc=123" ) > 0 );
     assertTrue( "cause is number format", ex.getCause() instanceof NumberFormatException );
 
     // now make sure it is OK
     doc.setField( "weight", "1.34" );
     DocumentBuilder.toDocument( doc, core.getLatestSchema() );
+    core.close();
   }
 
   @Test
@@ -116,6 +122,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertNotNull( out.get( "home" ) );//contains the stored value and term vector, if there is one
     assertNotNull( out.getField( "home_0" + FieldType.POLY_FIELD_SEPARATOR + "double") );
     assertNotNull( out.getField( "home_1" + FieldType.POLY_FIELD_SEPARATOR + "double") );
+    core.close();
   }
   
   /**
@@ -152,16 +159,16 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     SolrDocument doc2 = new SolrDocument();
     doc2.addField("foo", randomString);
 
-    assertTrue(compareSolrDocument(doc1, doc2));
+    assertTrue(SolrTestUtil.compareSolrDocument(doc1, doc2));
 
     doc1.addField("foo", "bar");
 
-    assertFalse(compareSolrDocument(doc1, doc2));
+    assertFalse(SolrTestUtil.compareSolrDocument(doc1, doc2));
 
     doc1 = new SolrDocument();
     doc1.addField("bar", randomString);
 
-    assertFalse(compareSolrDocument(doc1, doc2));
+    assertFalse(SolrTestUtil.compareSolrDocument(doc1, doc2));
 
     int randomInt = random().nextInt();
     doc1 = new SolrDocument();
@@ -169,12 +176,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc2 = new SolrDocument();
     doc2.addField("foo", randomInt);
 
-    assertTrue(compareSolrDocument(doc1, doc2));
+    assertTrue(SolrTestUtil.compareSolrDocument(doc1, doc2));
 
     doc2 = new SolrDocument();
     doc2.addField("bar", randomInt);
 
-    assertFalse(compareSolrDocument(doc1, doc2));
+    assertFalse(SolrTestUtil.compareSolrDocument(doc1, doc2));
 
   }
 
@@ -246,7 +253,9 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     inDoc.addField(SUBJECT_FLD,
         "2ndplace|" + RandomStrings.randomAsciiOfLength(random(), DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
 
-    Document outDoc = DocumentBuilder.toDocument(inDoc, h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    Document outDoc = DocumentBuilder.toDocument(inDoc, core.getLatestSchema());
+    core.close();
 
     // filter outDoc by stored fields; convert to list.
     List<IndexableField> storedFields = StreamSupport.stream(outDoc.spliterator(), false)
@@ -297,6 +306,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
     assertEquals(testValue, out.get("title"));
     assertEquals(truncatedValue, out.get("max_chars"));
+    core.close();
   }
 
 }

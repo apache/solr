@@ -27,13 +27,19 @@
                     class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
+  <indexConfig>
+    <lockType>${solr.lockType:single}</lockType>
+  </indexConfig>
+
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-
+    <updateLog enable="${enable.update.log:true}">
+      <str name="dir">${solr.data.dir:}</str>
+    </updateLog>
   </updateHandler>
   <searchComponent name="testComponent" class="org.apache.solr.handler.component.ResourceSharingTestComponent" />
 

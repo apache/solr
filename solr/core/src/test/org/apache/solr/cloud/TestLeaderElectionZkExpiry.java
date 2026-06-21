@@ -18,10 +18,10 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -35,13 +35,11 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SOLRXML = "<solr></solr>";
-  private static final int MAX_NODES = 16;
-  private static final int MIN_NODES = 4;
 
   @Test
   public void testLeaderElectionWithZkExpiry() throws Exception {
-    Path zkDir = createTempDir("zkData");
-    Path ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
+    Path ccDir = SolrTestUtil.createTempDir("testLeaderElectionWithZkExpiry-solr");
     CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
     final ZkTestServer server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);
@@ -50,28 +48,30 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
       server.run();
 
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
-          .setLeaderConflictResolveWait(180000)
-          .setLeaderVoteWait(180000)
+          .setLeaderConflictResolveWait(5000)
+          .setLeaderVoteWait(5000)
           .build();
-      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
+      final ZkController zkController = new ZkController(cc, server.getZkClient(), cloudConfig);
+      zkController.start();
       try {
         Thread killer = new Thread() {
           @Override
           public void run() {
-            long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
+            long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert( TEST_NIGHTLY ? 10 : 5, TimeUnit.SECONDS);
             while (System.nanoTime() < timeout) {
-              long sessionId = zkController.getZkClient().getSolrZooKeeper().getSessionId();
+              long sessionId = zkController.getZkClient().getConnectionManager().getKeeper().getSessionId();
               server.expire(sessionId);
               try {
-                Thread.sleep(10);
+                Thread.sleep(250);
               } catch (InterruptedException e)  {}
             }
           }
         };
         killer.start();
         killer.join();
-        long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
-        zc = new SolrZkClient(server.getZkAddress(), LeaderElectionTest.TIMEOUT);
+        long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(15, TimeUnit.SECONDS);
+        zc = new SolrZkClient(server.getZkHost(), 10000);
+        zc.start();
         boolean found = false;
         while (System.nanoTime() < timeout) {
           try {

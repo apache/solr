@@ -19,15 +19,164 @@ apply plugin: 'java-library'
 
 description = 'Solr Test Framework'
 
+sourceSets {
+  // Note that just declaring this sourceset creates two configurations.
+  jmh {
+    java.srcDirs = ['src/jmh']
+   // runtimeClasspath += sourceSets.test.runtimeClasspath
+  }
+}
+
+compileJmhJava {
+  //options.annotationProcessorPath = files('/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_core/2.5.1/e20b3e0fffdea6b3b36afd3609d17e6816548741/error_prone_core-2.5.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_check_api/2.5.1/7489fa97aae48b4e0a08cbce8cd41943288a3007/error_prone_check_api-2.5.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_annotation/2.5.1/48f4b156a66e150146955fbdc9b86a05dad87bf5/error_prone_annotation-2.5.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.auto/auto-common/0.10/c8f153ebe04a17183480ab4016098055fb474364/auto-common-0.10.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/30.1-jre/d0c3ce2311c9e36e73228da25a6e99b2ab826f/guava-30.1-jre.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.github.ben-manes.caffeine/caffeine/3.0.1/a64c4dbf2dd7d5a1d1fae0cdd86ea45abcc372cf/caffeine-3.0.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.11.0/992c02b8fba83bdda5602c12b5eee31e468b3069/protobuf-java-3.11.0.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_type_annotations/2.5.1/8f90891793bce7da9dc0b797ac6f0b897586fefb/error_prone_type_annotations-2.5.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/org.pcollections/pcollections/2.1.2/15925fd6c32a29fe3f40a048d238c5ca58cb8362/pcollections-2.1.2.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jFormatString/3.0.0/d3995f9be450813bc2ccee8f0774c1a3033a0f30/jFormatString-3.0.0.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/org.checkerframework/dataflow-shaded/3.7.1/af81e48cf797b389a31fa5111952df068f636e5d/dataflow-shaded-3.7.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.auto.value/auto-value-annotations/1.7/5be124948ebdc7807df68207f35a0f23ce427f29/auto-value-annotations-1.7.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_annotations/2.5.1/562d366678b89ce5d6b6b82c1a073880341e3fba/error_prone_annotations-2.5.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.auto.service/auto-service-annotations/1.0-rc6/32c6a6313217c949396376d9caddb6b8c8f4e7c3/auto-service-annotations-1.0-rc6.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.github.kevinstern/software-and-algorithms/1.0/5e77666b72c6c5dd583c36148d17fc47f944dfb5/software-and-algorithms-1.0.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.1/1dcf1de382a0bf95a3d8b0849546c88bac1292c9/failureaccess-1.0.1.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/b421526c5f297295adef1c886e5246c39d4ac629/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/org.checkerframework/checker-qual/3.11.0/897ba3aab19f0008c21e53c3d1e66d8452ebd5ed/checker-qual-3.11.0.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/com.google.j2objc/j2objc-annotations/1.3/ba035118bc8bac37d7eff77700720999acd9986d/j2objc-annotations-1.3.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/io.github.java-diff-utils/java-diff-utils/4.0/cda66ef45db96b93c75ad7c2f85301d293f8f5c6/java-diff-utils-4.0.jar:/home/markmiller/.gradle/caches/modules-2/files-2.1/org.eclipse.jgit/org.eclipse.jgit/4.4.1.201607150455-r/63998ced66e425d9e8bcd0c59f710c98f0c021ff/org.eclipse.jgit-4.4.1.201607150455-r.jar')
+  //options.annotationProcessorGeneratedSourcesDirectory =  project.file("build/generated/src/jmh")
+  options.compilerArgs << "-Xlint" << "-verbose" << "-XprintRounds" << "-XprintProcessorInfo" << "-Xmaxerrs" << "100000"
+  source file(sourceSets.jmh.java.outputDir)
+ // options.compilerArgs += '-proc'
+  doLast {
+    println 'annopath:' + options.annotationProcessorPath
+  }
+}
+
+task generateJmhJava(type: JavaCompile) {
+  group = "benchmark"
+  classpath = compileJmhJava.classpath
+ // destinationDir = compileJmhJava.destinationDir
+  destinationDir = file(sourceSets.jmh.java.outputDir)
+  source = sourceSets.jmh.java
+  options.compilerArgs += '-proc:none'
+  options.annotationProcessorPath = compileJmhJava.options.annotationProcessorPath
+//  options.annotationProcessorGeneratedSourcesDirectory = file(sourceSets.jmh.java.srcDirs.iterator().next().getAbsolutePath() + 'generated')
+}
+
+forbiddenApisJmh {
+  bundledSignatures += [
+          'jdk-unsafe',
+          'jdk-deprecated',
+          'jdk-non-portable',
+  ]
+
+  suppressAnnotations += [
+          "**.SuppressForbidden"
+  ]
+}
+
+
+task jmh(type: JavaExec) {
+  dependsOn("jmhClasses")
+  group = "benchmark"
+  main = "org.openjdk.jmh.Main"
+  classpath = sourceSets.jmh.compileClasspath + sourceSets.jmh.runtimeClasspath
+  //args "-Dfile.encoding=UTF-8", "-Dlog4j.configurationFile=src/resources/logconf/log4j2-startup-debug.xml"
+  standardOutput(System.out)
+  errorOutput(System.err)
+
+  def include = project.properties.get('include');
+ // def exclude = project.properties.get('exclude');
+  def format = project.properties.get('format', 'json');
+  def profilers = project.properties.get('profilers');
+  def jvmArgs = project.properties.get('jvmArgs')
+  def verify = project.properties.get('verify');
+
+  def resultFile = file("build/reports/jmh/result.${format}")
+
+//  if (exclude) {
+//    args '-e', exclude
+//  }
+  if (verify != null) {
+    // execute benchmarks with the minimum amount of execution (only to check if they are working)
+    println "≥≥ Running in verify mode"
+    args '-f', 1
+    args '-wi', 1
+    args '-i', 1
+  }
+  args '-foe', 'true'   //fail-on-error
+  args '-v', 'NORMAL'   //verbosity [SILENT, NORMAL, EXTRA]
+  if (profilers) {
+    profilers.split(',').each {
+      args '-prof', it
+    }
+  }
+
+  args '-jvmArgsPrepend', '-Xms4g'
+  args '-jvmArgsPrepend', '-Djmh.separateClassLoader=true'
+  args '-jvmArgsPrepend', '-Dlog4j2.is.webapp=false'
+  args '-jvmArgsPrepend', '-Dlog4j2.garbagefreeThreadContextMap=true'
+  args '-jvmArgsPrepend', '-Dlog4j2.enableDirectEncoders=true'
+  args '-jvmArgsPrepend', '-Dlog4j2.enable.threadlocals=true'
+  args '-jvmArgsPrepend', '-XX:ConcGCThreads=2'
+  args '-jvmArgsPrepend', '-XX:ParallelGCThreads=3'
+
+  args '-jvmArgsPrepend', '-XX:+UseG1GC'
+  args '-jvmArgsPrepend', '-Djetty.insecurerandom=1'
+  args '-jvmArgsPrepend', '-Djava.security.egd=file:/dev/./urandom'
+  args '-jvmArgsPrepend', '-XX:-UseBiasedLocking'
+  args '-jvmArgsPrepend', '-XX:+PerfDisableSharedMem'
+  args '-jvmArgsPrepend', '-XX:+ParallelRefProcEnabled'
+  args '-jvmArgsPrepend', '-XX:MaxGCPauseMillis=250'
+  args '-jvmArgsPrepend', '-Dsolr.log.dir='
+
+  if (jvmArgs) {
+    for (jvmArg in jvmArgs.split(' ')) {
+      args '-jvmArgsPrepend', jvmArg
+    }
+  }
+
+  args '-rf', format
+  args '-rff', resultFile
+
+  doFirst {
+   // println "\nClasspath:" + jmh.classpath.toList()
+    println "\nExecuting JMH with: $args \n"
+
+    args '-jvmArgsPrepend', '-Djava.class.path='+ toPath(getClasspath().files)
+    resultFile.parentFile.mkdirs()
+  }
+
+  doLast {
+   // jvmArgs "java.class.path", toPath(jmh.classpath)
+  }
+
+}
+
+
+  private String toPath(Set<File> classpathUnderTest) {
+    StringBuilder sb = new StringBuilder();
+    for (File entry : classpathUnderTest) {
+      sb.append(entry.getAbsolutePath());
+      sb.append(File.pathSeparatorChar);
+    }
+    return sb.toString();
+  }
+
+
+compileJmhJava.dependsOn(generateJmhJava)
+classes.finalizedBy(jmhClasses)
+
 dependencies {
   api project(':solr:core')
   api project(':solr:solrj')
-  api project(':lucene:test-framework')
-  api project(':lucene:analysis:common')
+  api "org.apache.lucene:lucene-test-framework"
+  api "org.apache.lucene:lucene-analysis-common"
+
+  jmhImplementation project(':solr:test-framework')
+  jmhImplementation 'org.openjdk.jmh:jmh-core:1.29'
+  jmhAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.29'
+
+  api ('com.google.guava:guava', {
+    exclude group: "org.codehaus.mojo", module: "animal-sniffer-annotations"
+    exclude group: "com.google.j2objc", module: "j2objc-annotations"
+    exclude group: "com.google.errorprone", module: "error_prone_annotations"
+    exclude group: "org.checkerframework", module: "checker-qual"
+    exclude group: "com.google.code.findbugs", module: "jsr305"
+  })
+
 
   api 'org.apache.logging.log4j:log4j-core'
   api 'io.opentracing:opentracing-mock'
 
   implementation 'io.dropwizard.metrics:metrics-jetty9'
   implementation 'com.lmax:disruptor'
+  //api 'org.awaitility:awaitility'
 }
+

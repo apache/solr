@@ -66,7 +66,7 @@ class ClassificationUpdateProcessor
     Algorithm classificationAlgorithm = classificationParams.getAlgorithm();
 
     Map<String, Analyzer> field2analyzer = new HashMap<>();
-    String[] inputFieldNames = this.removeBoost(inputFieldNamesWithBoost);
+    String[] inputFieldNames = ClassificationUpdateProcessor.removeBoost(inputFieldNamesWithBoost);
     for (String fieldName : inputFieldNames) {
       SchemaField fieldFromSolrSchema = schema.getField(fieldName);
       Analyzer indexAnalyzer = fieldFromSolrSchema.getType().getQueryAnalyzer();
@@ -82,7 +82,7 @@ class ClassificationUpdateProcessor
     }
   }
 
-  private String[] removeBoost(String[] inputFieldNamesWithBoost) {
+  private static String[] removeBoost(String[] inputFieldNamesWithBoost) {
     String[] inputFieldNames = new String[inputFieldNamesWithBoost.length];
     for (int i = 0; i < inputFieldNamesWithBoost.length; i++) {
       String singleFieldNameWithBoost = inputFieldNamesWithBoost[i];

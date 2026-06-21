@@ -77,7 +77,6 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
   // by default, literalReplacementEnabled is set to true to allow backward compatibility
   private boolean literalReplacementEnabled = true;
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 

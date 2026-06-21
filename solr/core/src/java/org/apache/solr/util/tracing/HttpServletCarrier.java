@@ -32,53 +32,7 @@ public class HttpServletCarrier implements TextMap {
   private Iterator<Map.Entry<String, String>> it;
 
   public HttpServletCarrier(HttpServletRequest request) {
-    this.it = new Iterator<>() {
-
-      Enumeration<String> headerNameIt = request.getHeaderNames();
-      String headerName = null;
-      Enumeration<String> headerValue = null;
-
-      @Override
-      public boolean hasNext() {
-        if (headerValue != null && headerValue.hasMoreElements()) {
-          return true;
-        }
-
-        return headerNameIt.hasMoreElements();
-      }
-
-      @Override
-      public Map.Entry<String, String> next() {
-        if (!hasNext()) {
-          throw new NoSuchElementException();
-        }
-
-        if (headerValue == null || !headerValue.hasMoreElements()) {
-          headerName = headerNameIt.nextElement();
-          headerValue = request.getHeaders(headerName);
-        }
-
-        String key = headerName;
-        String val = headerValue.nextElement();
-
-        return new Map.Entry<>() {
-          @Override
-          public String getKey() {
-            return key;
-          }
-
-          @Override
-          public String getValue() {
-            return val;
-          }
-
-          @Override
-          public String setValue(String value) {
-            throw new UnsupportedOperationException();
-          }
-        };
-      }
-    };
+    this.it = new EntryIterator(request);
   }
 
   @Override
@@ -89,5 +43,71 @@ public class HttpServletCarrier implements TextMap {
   @Override
   public void put(String key, String value) {
     throw new UnsupportedOperationException("HttpServletCarrier should only be used with Tracer.extract()");
+  }
+
+  private static class EntryIterator implements Iterator<Map.Entry<String,String>> {
+
+    private final HttpServletRequest request;
+    Enumeration<String> headerNameIt;
+    String headerName;
+    Enumeration<String> headerValue;
+
+    public EntryIterator(HttpServletRequest request) {
+      this.request = request;
+      headerNameIt = request.getHeaderNames();
+      headerName = null;
+      headerValue = null;
+    }
+
+    @Override
+    public boolean hasNext() {
+      if (headerValue != null && headerValue.hasMoreElements()) {
+        return true;
+      }
+
+      return headerNameIt.hasMoreElements();
+    }
+
+    @Override
+    public Map.Entry<String, String> next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+
+      if (headerValue == null || !headerValue.hasMoreElements()) {
+        headerName = headerNameIt.nextElement();
+        headerValue = request.getHeaders(headerName);
+      }
+
+      String key = headerName;
+      String val = headerValue.nextElement();
+
+      return new StringStringEntry(key, val);
+    }
+
+    private static class StringStringEntry implements Map.Entry<String,String> {
+      private final String key;
+      private final String val;
+
+      public StringStringEntry(String key, String val) {
+        this.key = key;
+        this.val = val;
+      }
+
+      @Override
+      public String getKey() {
+        return key;
+      }
+
+      @Override
+      public String getValue() {
+        return val;
+      }
+
+      @Override
+      public String setValue(String value) {
+        throw new UnsupportedOperationException();
+      }
+    }
   }
 }

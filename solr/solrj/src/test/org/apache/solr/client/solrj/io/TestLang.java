@@ -94,7 +94,7 @@ public class TestLang extends SolrTestCase {
       functions.add(f);
     }
     StreamFactory factory = new StreamFactory();
-    Lang.register(factory);
+    Lang.getInstance().register(factory);
     Map<String, Supplier<Class<? extends Expressible>>> registeredFunctions = factory.getFunctionNames();
 
     //Check that each function that is expected is registered.

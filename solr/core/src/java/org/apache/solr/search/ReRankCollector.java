@@ -24,6 +24,7 @@ import java.util.Set;
 
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntIntHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMapIndex;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -129,7 +130,7 @@ public class ReRankCollector extends TopDocsCollector {
           requestContext = info.getReq().getContext();
         }
 
-        IntIntHashMap boostedDocs = QueryElevationComponent.getBoostDocs((SolrIndexSearcher)searcher, boostedPriority, requestContext);
+        Int2IntOpenHashMapIndex boostedDocs = QueryElevationComponent.getBoostDocs((SolrIndexSearcher) searcher, boostedPriority, requestContext);
 
         float maxScore = rescoredDocs.scoreDocs.length == 0 ? Float.NaN : rescoredDocs.scoreDocs[0].score;
         Arrays.sort(rescoredDocs.scoreDocs, new BoostedComp(boostedDocs, mainDocs.scoreDocs, maxScore));
@@ -160,7 +161,7 @@ public class ReRankCollector extends TopDocsCollector {
   public static class BoostedComp implements Comparator {
     IntFloatHashMap boostedMap;
 
-    public BoostedComp(IntIntHashMap boostedDocs, ScoreDoc[] scoreDocs, float maxScore) {
+    public BoostedComp(Int2IntOpenHashMapIndex boostedDocs, ScoreDoc[] scoreDocs, float maxScore) {
       this.boostedMap = new IntFloatHashMap(boostedDocs.size()*2);
 
       for(int i=0; i<scoreDocs.length; i++) {

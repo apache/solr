@@ -22,11 +22,13 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,13 +48,14 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-
-    configureCluster(4)
-        .withProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud))
-        .addConfig("conf", configset("cloud-minimal"))
+    configureCluster(2)
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
+  }
+
+  @AfterClass
+  public static void afterZkCollectionPropsCachingTest() throws Exception {
+   shutdownCluster();
   }
 
   @Before
@@ -69,29 +72,28 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
 
   @Test
   public void testReadWriteCached() throws InterruptedException, IOException {
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+   try (ZkStateReader zkStateReader = new ZkStateReader(cluster.getZkServer().getZkAddress(), 15000, 30000)) {
+     zkStateReader.createClusterStateWatchersAndUpdate();
 
-    CollectionProperties collectionProps = new CollectionProperties(zkClient());
+     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
 
-    collectionProps.setCollectionProperty(collectionName, "property1", "value1");
-    checkValue("property1", "value1"); //Should be no cache, so the change should take effect immediately
+     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
+     checkValue("property1", "value1", zkStateReader); //Should be no cache, so the change should take effect immediately
 
-    zkStateReader.getCollectionProperties(collectionName,9000);
-    zkStateReader.getZkClient().close();
-    assertFalse(zkStateReader.isClosed());
-    checkValue("property1", "value1"); //Should be cached, so the change should not try to hit zk
+     zkStateReader.getCollectionProperties(collectionName, 100);
+     zkStateReader.getZkClient().close();
+     assertFalse(zkStateReader.isClosed());
+     checkValue("property1", "value1", zkStateReader); //Should be cached, so the change should not try to hit zk
 
-    Thread.sleep(10000); // test the timeout feature
-    try {
-      checkValue("property1", "value1"); //Should not be cached anymore
-      fail("cache should have expired, prev line should throw an exception trying to access zookeeper after closed");
-    } catch (Exception e) {
-      // expected, because we killed the client in zkStateReader.
-    }
+     Thread.sleep(300); // test the timeout feature
+
+     checkValue("property1", "value1", zkStateReader); // even after cache expiration, if we are not connected to zk, we should get the cached props
+
+   }
   }
 
-  private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
-    final Object value = cluster.getSolrClient().getZkStateReader().getCollectionProperties(collectionName).get(propertyName);
+  private void checkValue(String propertyName, String expectedValue, ZkStateReader zkStateReader ) throws InterruptedException {
+    final Object value = zkStateReader.getCollectionProperties(collectionName).get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);
   }
 

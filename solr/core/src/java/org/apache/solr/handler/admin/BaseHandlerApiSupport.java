@@ -32,6 +32,7 @@ import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -54,10 +55,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   protected BaseHandlerApiSupport() {
     commandsMapping = new HashMap<>();
     for (ApiCommand cmd : getCommands()) {
-      Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.meta().getHttpMethod());
-      if (m == null) commandsMapping.put(cmd.meta().getHttpMethod(), m = new HashMap<>());
-      List<ApiCommand> list = m.get(cmd.meta().getEndPoint());
-      if (list == null) m.put(cmd.meta().getEndPoint(), list = new ArrayList<>());
+      Map<V2EndPoint,List<ApiCommand>> m = commandsMapping.computeIfAbsent(cmd.meta().getHttpMethod(), k -> new HashMap<>());
+      List<ApiCommand> list = m.computeIfAbsent(cmd.meta().getEndPoint(), k -> new ArrayList<>());
       list.add(cmd);
     }
   }
@@ -119,6 +118,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         } catch (SolrException e) {
           throw e;
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
         } finally {
           req.setParams(params);
@@ -161,7 +161,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o instanceof List) {
               @SuppressWarnings({"rawtypes"})
               List l = (List) o;
-              return l.toArray(new String[l.size()]);
+              return l.toArray(Utils.EMPTY_STRINGS);
             }
 
             return o;
@@ -201,7 +201,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
               } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
                 @SuppressWarnings({"unchecked"})
                 List<String> l = (List<String>) o;
-                suppliedMap.put( param, l.toArray(new String[0]));
+                suppliedMap.put( param, l.toArray(Utils.EMPTY_STRINGS));
               } else {
                 // Lists pass through but will require special handling downstream
                 // if they contain non-string elements.

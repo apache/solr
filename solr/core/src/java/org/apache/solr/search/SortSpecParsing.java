@@ -34,6 +34,7 @@ public class SortSpecParsing {
   
   public static final String DOCID = "_docid_";
   public static final String SCORE = "score";
+  public static final SortField[] EMPTY_SORT_FIELDS = new SortField[0];
 
   /**
    * <p>
@@ -214,7 +215,7 @@ public class SortSpecParsing {
       return newEmptySortSpec();
     }
 
-    Sort s = new Sort(sorts.toArray(new SortField[sorts.size()]));
+    Sort s = new Sort(sorts.toArray(EMPTY_SORT_FIELDS));
     return new SortSpec(s, fields);
   }
 

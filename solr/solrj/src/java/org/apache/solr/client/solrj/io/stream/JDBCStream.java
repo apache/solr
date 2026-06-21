@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.StreamParams;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
@@ -163,12 +164,12 @@ public class JDBCStream extends TupleStream implements Expressible {
   
   public JDBCStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter connectionUrlExpression = factory.getNamedOperand(expression, "connection");
-    StreamExpressionNamedParameter sqlQueryExpression = factory.getNamedOperand(expression, "sql");
-    StreamExpressionNamedParameter definedSortExpression = factory.getNamedOperand(expression, SORT);
-    StreamExpressionNamedParameter driverClassNameExpression = factory.getNamedOperand(expression, "driver");
-    StreamExpressionNamedParameter fetchSizeExpression = factory.getNamedOperand(expression, "fetchSize");
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
+    StreamExpressionNamedParameter connectionUrlExpression = StreamFactory.getNamedOperand(expression, "connection");
+    StreamExpressionNamedParameter sqlQueryExpression = StreamFactory.getNamedOperand(expression, "sql");
+    StreamExpressionNamedParameter definedSortExpression = StreamFactory.getNamedOperand(expression, SORT);
+    StreamExpressionNamedParameter driverClassNameExpression = StreamFactory.getNamedOperand(expression, "driver");
+    StreamExpressionNamedParameter fetchSizeExpression = StreamFactory.getNamedOperand(expression, "fetchSize");
 
 
     // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
@@ -211,7 +212,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     // definedSort, required
     StreamComparator definedSort = null;
     if(null != definedSortExpression && definedSortExpression.getParameter() instanceof StreamExpressionValue){
-      definedSort = factory.constructComparator(((StreamExpressionValue)definedSortExpression.getParameter()).getValue(), FieldComparator.class);
+      definedSort = StreamFactory.constructComparator(((StreamExpressionValue)definedSortExpression.getParameter()).getValue(), FieldComparator.class);
     }
     if(null == definedSort){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - sort not found", definedSortExpression));
@@ -297,8 +298,9 @@ public class JDBCStream extends TupleStream implements Expressible {
   }
 
   private ResultSetValueSelector[] constructValueSelectors(ResultSetMetaData metadata) throws SQLException{
-    ResultSetValueSelector[] valueSelectors = new ResultSetValueSelector[metadata.getColumnCount()];    
-    for (int columnIdx = 0; columnIdx < metadata.getColumnCount(); ++columnIdx) {      
+    final int columnCount = metadata.getColumnCount();
+    ResultSetValueSelector[] valueSelectors = new ResultSetValueSelector[columnCount];
+    for (int columnIdx = 0; columnIdx < columnCount; ++columnIdx) {
       ResultSetValueSelector valueSelector = determineValueSelector(columnIdx, metadata);
       if(valueSelector==null) {
         int columnNumber = columnIdx + 1;
@@ -350,84 +352,21 @@ public class JDBCStream extends TupleStream implements Expressible {
     // this makes it easier and we don't have to worry about esoteric type names in the 
     // JDBC family of types
     else if(Short.class.getName().equals(className)) {
-      valueSelector = new ResultSetValueSelector() {
-        @Override
-        public Object selectValue(ResultSet resultSet) throws SQLException {
-          Short obj = resultSet.getShort(columnNumber);
-          if(resultSet.wasNull()){ return null; }
-          return obj.longValue();
-        }
-        @Override
-        public String getColumnName() {
-          return columnName;
-        }
-      };
+      valueSelector = new ShortResultSetValueSelector(columnNumber, columnName);
     } else if(Integer.class.getName().equals(className)) {
-      valueSelector = new ResultSetValueSelector() {
-        @Override
-        public Object selectValue(ResultSet resultSet) throws SQLException {
-          Integer obj = resultSet.getInt(columnNumber);
-          if(resultSet.wasNull()){ return null; }
-          return obj.longValue();
-        }
-        @Override
-        public String getColumnName() {
-          return columnName;
-        }
-      };
+      valueSelector = new IntResultSetValueSelector(columnNumber, columnName);
     } else if(Float.class.getName().equals(className)) {
-      valueSelector = new ResultSetValueSelector() {
-        @Override
-        public Object selectValue(ResultSet resultSet) throws SQLException {
-          Float obj = resultSet.getFloat(columnNumber);
-          if(resultSet.wasNull()){ return null; }
-          return obj.doubleValue();
-        }
-        @Override
-        public String getColumnName() {
-          return columnName;
-        }
-      };
+      valueSelector = new FloatResultSetValueSelector(columnNumber, columnName);
     } 
     // Here we are switching to check against the SQL type because date/times are
     // notorious for not being consistent. We don't know if the driver is mapping
     // to a java.time.* type or some old-school type. 
     else if (jdbcType == Types.DATE) {
-      valueSelector = new ResultSetValueSelector() {
-        @Override
-        public Object selectValue(ResultSet resultSet) throws SQLException {
-          Date sqlDate = resultSet.getDate(columnNumber);
-          return resultSet.wasNull() ? null : sqlDate.toString();
-        }
-        @Override
-        public String getColumnName() {
-          return columnName;
-        }
-      };
+      valueSelector = new DateResultSetValueSelector(columnNumber, columnName);
     } else if (jdbcType == Types.TIME ) {
-      valueSelector = new ResultSetValueSelector() {
-        @Override
-        public Object selectValue(ResultSet resultSet) throws SQLException {
-          Time sqlTime = resultSet.getTime(columnNumber);
-          return resultSet.wasNull() ? null : sqlTime.toString();
-        }
-        @Override
-        public String getColumnName() {
-          return columnName;
-        }
-      };
+      valueSelector = new JDBCResultSetValueSelector(columnNumber, columnName);
     } else if (jdbcType == Types.TIMESTAMP) {
-      valueSelector = new ResultSetValueSelector() {
-        @Override
-        public Object selectValue(ResultSet resultSet) throws SQLException {
-          Timestamp sqlTimestamp = resultSet.getTimestamp(columnNumber);
-          return resultSet.wasNull() ? null : sqlTimestamp.toInstant().toString();
-        }
-        @Override
-        public String getColumnName() {
-          return columnName;
-        }
-      };
+      valueSelector = new JDBCTimeStampResultSetValueSelector(columnNumber, columnName);
     } 
     // Now we're going to start seeing if things are assignable from the returned type
     // to a more general type - this allows us to cover cases where something we weren't 
@@ -437,57 +376,18 @@ public class JDBCStream extends TupleStream implements Expressible {
       try {
         clazz = Class.forName(className, false, getClass().getClassLoader());
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
       final int scale = metadata.getScale(columnNumber);
       if (Number.class.isAssignableFrom(clazz)) {
         if (scale > 0) {
-          valueSelector = new ResultSetValueSelector() {
-            @Override
-            public Object selectValue(ResultSet resultSet) throws SQLException {
-              BigDecimal bd = resultSet.getBigDecimal(columnNumber);
-              return resultSet.wasNull() ? null : bd.doubleValue();                
-            }
-            @Override
-            public String getColumnName() {
-              return columnName;
-            }
-          };            
+          valueSelector = new NumberResultSetValueSelector(columnNumber, columnName);
         } else {
-          valueSelector = new ResultSetValueSelector() {
-            @Override
-            public Object selectValue(ResultSet resultSet) throws SQLException {
-              BigDecimal bd = resultSet.getBigDecimal(columnNumber);
-              return resultSet.wasNull() ? null : bd.longValue();
-            }
-            @Override
-            public String getColumnName() {
-              return columnName;
-            }
-          };            
+          valueSelector = new LT0ScaleResultSetValueSelector(columnNumber, columnName);
         }          
       } else if (Clob.class.isAssignableFrom(clazz)) {
-        valueSelector = new ResultSetValueSelector() {
-          @Override
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Clob c = resultSet.getClob(columnNumber);
-            if (resultSet.wasNull()) {
-              return null;
-            }
-            long length = c.length();
-            int lengthInt = (int) length;
-            if (length != lengthInt) {
-              throw new SQLException(String.format(Locale.ROOT,
-                  "Encountered a clob of length #%l in column '%s' (col #%d).  Max supported length is #%i.",
-                  length, columnName, columnNumber, Integer.MAX_VALUE));
-            }
-            return c.getSubString(1, lengthInt);
-          }
-          @Override
-          public String getColumnName() {
-            return columnName;
-          }
-        };
+        valueSelector = new ClobResultSetValueSelector(columnNumber, columnName);
       } 
     }
     return valueSelector;
@@ -616,6 +516,208 @@ public class JDBCStream extends TupleStream implements Expressible {
   public interface ResultSetValueSelector {
     String getColumnName();
     Object selectValue(ResultSet resultSet) throws SQLException;
+  }
+
+  private static class JDBCResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public JDBCResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      Time sqlTime = resultSet.getTime(columnNumber);
+      return resultSet.wasNull() ? null : sqlTime.toString();
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class JDBCTimeStampResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public JDBCTimeStampResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      Timestamp sqlTimestamp = resultSet.getTimestamp(columnNumber);
+      return resultSet.wasNull() ? null : sqlTimestamp.toInstant().toString();
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class ShortResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public ShortResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      short obj = resultSet.getShort(columnNumber);
+      if(resultSet.wasNull()){ return null; }
+      return obj;
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class IntResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public IntResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      Integer obj = resultSet.getInt(columnNumber);
+      if(resultSet.wasNull()){ return null; }
+      return obj.longValue();
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class FloatResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public FloatResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      float obj = resultSet.getFloat(columnNumber);
+      if(resultSet.wasNull()){ return null; }
+      return (double) obj;
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class DateResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public DateResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      Date sqlDate = resultSet.getDate(columnNumber);
+      return resultSet.wasNull() ? null : sqlDate.toString();
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class NumberResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public NumberResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      BigDecimal bd = resultSet.getBigDecimal(columnNumber);
+      return resultSet.wasNull() ? null : bd.doubleValue();
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class LT0ScaleResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public LT0ScaleResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      BigDecimal bd = resultSet.getBigDecimal(columnNumber);
+      return resultSet.wasNull() ? null : bd.longValue();
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
+  }
+
+  private static class ClobResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public ClobResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      Clob c = resultSet.getClob(columnNumber);
+      if (resultSet.wasNull()) {
+        return null;
+      }
+      long length = c.length();
+      int lengthInt = (int) length;
+      if (length != lengthInt) {
+        throw new SQLException(String.format(Locale.ROOT,
+            "Encountered a clob of length #%l in column '%s' (col #%d).  Max supported length is #%i.",
+            length, columnName, columnNumber, Integer.MAX_VALUE));
+      }
+      return c.getSubString(1, lengthInt);
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
   }
 }
 

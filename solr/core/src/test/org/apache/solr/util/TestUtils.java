@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -26,15 +27,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.*;
 import org.apache.solr.common.util.Utils;
 import org.junit.Assert;
 
@@ -186,20 +183,22 @@ public class TestUtils extends SolrTestCaseJ4 {
   }
 
   public void testBinaryCommands() throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(4096);
+
+    ExpandableDirectBufferOutputStream outStream = new ExpandableDirectBufferOutputStream(expandableBuffer1);
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal((MapWriter) ew -> {
         ew.put("set-user", fromJSONString("{x:y}"));
         ew.put("set-user", fromJSONString("{x:y,x1:y1}"));
         ew.put("single", asList(fromJSONString("[{x:y,x1:y1},{x2:y2}]"), fromJSONString( "{x2:y2}")));
         ew.put("multi", asList(fromJSONString("{x:y,x1:y1}"), fromJSONString( "{x2:y2}")));
-      }, baos);
+      }, outStream);
     }
 
-    ContentStream stream = new ContentStreamBase.ByteArrayStream(baos.toByteArray(),null, "application/javabin");
+    ContentStream stream = new ContentStreamBase.ByteArrayStream(outStream.buffer().byteArray(), null, "application/javabin");
     List<CommandOperation> commands = CommandOperation.readCommands(Collections.singletonList(stream), new NamedList(), Collections.singleton("single"));
 
-    assertEquals(5, commands.size());
+    assertEquals(commands.toString(), 5, commands.size());
   }
 
   private void assertNoggitJsonValues(Map m) {
@@ -316,7 +315,6 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("b1", Utils.getObjectByPath(sink, true, "k1/k11/a1"));
 
     sink = new HashMap<>();
-    sink.put("legacyCloud", "false");
     assertTrue(Utils.mergeJson(sink, (Map<String, Object>) Utils.fromJSONString("collectionDefaults:{numShards:3 , nrtReplicas:2}")));
     assertEquals(3L, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP)));
     assertEquals(2L, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS)));

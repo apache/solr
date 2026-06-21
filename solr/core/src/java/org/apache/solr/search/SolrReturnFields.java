@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -26,6 +27,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
@@ -102,10 +104,10 @@ public class SolrReturnFields extends ReturnFields {
   public SolrReturnFields(String fl, SolrQueryRequest req) {
 //    this( (fl==null)?null:SolrPluginUtils.split(fl), req );
     if( fl == null ) {
-      parseFieldList((String[])null, req);
+      parseFieldList(null, req);
     }
     else {
-      if( fl.trim().length() == 0 ) {
+      if( StringUtils.isBlank(fl) ) {
         // legacy thing to support fl='  ' => fl=*,score!
         // maybe time to drop support for this?
         // See ConvertedLegacyTest
@@ -303,9 +305,8 @@ public class SolrReturnFields extends ReturnFields {
               if(!_wantsAllFields) {
                 String[] extra = t.getExtraRequestFields();
                 if(extra!=null) {
-                  for(String f : extra) {
-                    fields.add(f); // also request this field from IndexSearcher
-                  }
+                  // also request this field from IndexSearcher
+                  fields.addAll(Arrays.asList(extra));
                 }
               }
               augmenters.addTransformer( t );
@@ -503,7 +504,8 @@ public class SolrReturnFields extends ReturnFields {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("SolrReturnFields=(");
+    final StringBuilder sb = new StringBuilder(128);
+    sb.append("SolrReturnFields=(");
     sb.append("globs="); sb.append(globs);
     sb.append(",fields="); sb.append(fields);
     sb.append(",okFieldNames="); sb.append(okFieldNames);

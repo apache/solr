@@ -26,11 +26,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -47,6 +48,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.servlet.SolrCall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +62,7 @@ public class ApiBag {
   private final boolean isCoreSpecific;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, PathTrie<Api>> apis = new ConcurrentHashMap<>();
+  private final Map<String, PathTrie<Api>> apis = new ConcurrentSkipListMap<>();
 
   public ApiBag(boolean isCoreSpecific) {
     this.isCoreSpecific = isCoreSpecific;
@@ -69,20 +71,21 @@ public class ApiBag {
   /**Register a POJO annotated with {@link EndPoint}
    * @param o the instance to be used for invocations
    */
-  public synchronized List<Api> registerObject(Object o) {
+  public List<Api> registerObject(Object o) {
     List<Api> l = AnnotatedApi.getApis(o);
     for (Api api : l) {
       register(api, Collections.EMPTY_MAP);
     }
     return l;
   }
-  public synchronized void register(Api api) {
+  public void register(Api api) {
     register(api, Collections.EMPTY_MAP);
   }
-  public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
+  public void register(Api api, Map<String, String> nameSubstitutes) {
     try {
       validateAndRegister(api, nameSubstitutes);
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       log.error("Unable to register plugin: {} with spec {} :", api.getClass().getName(), Utils.toJSONString(api.getSpec()), e);
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
@@ -98,9 +101,9 @@ public class ApiBag {
     Api introspect = new IntrospectApi(api, isCoreSpecific);
     List<String> methods = spec.getList("methods", ENUM_OF, SUPPORTED_METHODS);
     for (String method : methods) {
-      PathTrie<Api> registry = apis.get(method);
 
-      if (registry == null) apis.put(method, registry = new PathTrie<>(ImmutableSet.of("_introspect")));
+      PathTrie<Api> registry = apis.computeIfAbsent(method, r -> new PathTrie<>(ImmutableSet.of("_introspect")));
+
       ValidatingJsonMap url = spec.getMap("url", NOT_NULL);
       ValidatingJsonMap params = url.getMap("params", null);
       if (params != null) {
@@ -142,7 +145,8 @@ public class ApiBag {
   }
 
   static void registerIntrospect(List<String> l, PathTrie<Api> registry, Map<String, String> substitutes, Api introspect) {
-    ArrayList<String> copy = new ArrayList<>(l);
+    List<String> copy = Collections.synchronizedList(new ArrayList(l.size() + 1));
+    copy.addAll(l);
     copy.add("_introspect");
     registry.insert(copy, substitutes, introspect);
   }
@@ -162,9 +166,9 @@ public class ApiBag {
       String cmd = req.getParams().get("command");
       ValidatingJsonMap result = null;
       if (cmd == null) {
-        result = isCoreSpecific ? ValidatingJsonMap.getDeepCopy(baseApi.getSpec(), 5, true) : baseApi.getSpec();
+        result = isCoreSpecific ? ValidatingJsonMap.getDeepCopy(baseApi.getSpec(), 3, true) : baseApi.getSpec();
       } else {
-        ValidatingJsonMap specCopy = ValidatingJsonMap.getDeepCopy(baseApi.getSpec(), 5, true);
+        ValidatingJsonMap specCopy = ValidatingJsonMap.getDeepCopy(baseApi.getSpec(), 3, true);
         ValidatingJsonMap commands = specCopy.getMap("commands", null);
         if (commands != null) {
           ValidatingJsonMap m = commands.getMap(cmd, null);
@@ -178,7 +182,8 @@ public class ApiBag {
         result = specCopy;
       }
       if (isCoreSpecific) {
-        List<String> pieces = req.getHttpSolrCall() == null ? null : ((V2HttpCall) req.getHttpSolrCall()).pieces;
+        SolrCall httpSolrCall = req.getHttpSolrCall();
+        List<String> pieces = httpSolrCall == null ? null : ((V2HttpCall) httpSolrCall).getPieces();
         if (pieces != null) {
           String prefix = "/" + pieces.get(0) + "/" + pieces.get(1);
           List<String> paths = result.getMap("url", NOT_NULL).getList("paths", NOT_NULL);
@@ -195,12 +200,13 @@ public class ApiBag {
   }
 
   public static Map<String, JsonSchemaValidator> getParsedSchema(ValidatingJsonMap commands) {
-    Map<String, JsonSchemaValidator> validators = new HashMap<>();
+    Map<String, JsonSchemaValidator> validators = new HashMap<>(commands.size());
     for (Object o : commands.entrySet()) {
       Map.Entry cmd = (Map.Entry) o;
       try {
         validators.put((String) cmd.getKey(), new JsonSchemaValidator((Map) cmd.getValue()));
       } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in api spec", e);
       }
     }
@@ -208,14 +214,14 @@ public class ApiBag {
   }
 
 
-  private void verifyCommands(ValidatingJsonMap spec) {
+  private static void verifyCommands(ValidatingJsonMap spec) {
     ValidatingJsonMap commands = spec.getMap("commands", null);
     if (commands == null) return;
     getParsedSchema(commands);
 
   }
 
-  private Set<String> getWildCardNames(List<String> paths) {
+  private static Set<String> getWildCardNames(List<String> paths) {
     Set<String> wildCardNames = new HashSet<>();
     for (String path : paths) {
       List<String> p = PathTrie.getPathSegments(path);
@@ -290,13 +296,13 @@ public class ApiBag {
     if (specObj == null) specObj = "emptySpec";
     if (specObj instanceof Map) {
       Map map = (Map) specObj;
-      return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
+      return () -> ValidatingJsonMap.getDeepCopy(map, 3, false);
     } else {
       return Utils.getSpec((String) specObj);
     }
   }
 
-  public static List<CommandOperation> getCommandOperations(ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
+  public static List<CommandOperation> getCommandOperations(ContentStream stream, Map<Object, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
       parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList());
@@ -315,7 +321,6 @@ public class ApiBag {
       if (validator == null) {
         cmd.addError(formatString("Unknown operation ''{0}'' available ops are ''{1}''", cmd.name,
             validators.keySet()));
-        continue;
       } else {
         List<String> errs = validator.validateJson(cmd.getCommandData());
         if (errs != null){
@@ -335,10 +340,10 @@ public class ApiBag {
   }
 
   public static class ExceptionWithErrObject extends SolrException {
-    private List<Map> errs;
+    private final List<Map> errs;
 
     public ExceptionWithErrObject(ErrorCode code, String msg, List<Map> errs) {
-      super(code, msg);
+      super(code, msg + ", errors: " + errs);
       this.errs = errs;
     }
 
@@ -347,7 +352,7 @@ public class ApiBag {
     }
 
     public String toString() {
-      return super.toString() + ", errors: " + getErrs() + ", ";
+      return super.toString() + ", errors: " + errs;
     }
   }
 

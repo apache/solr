@@ -22,18 +22,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.highlight.SolrFragmentsBuilder;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class CustomHighlightComponentTest extends SolrCloudTestCase {
@@ -68,7 +70,9 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     @Override
     protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {
       SimpleOrderedMap[] mapArr = (SimpleOrderedMap[])objArr;
-      final ArrayList<SimpleOrderedMap> hlMaps = (ArrayList<SimpleOrderedMap>)obj;
+      // The distributed response value deserializes via javabin; the fork's codec yields a fastutil
+      // ObjectArrayList, so cast to the List interface rather than the concrete java.util.ArrayList.
+      final List<SimpleOrderedMap> hlMaps = (List<SimpleOrderedMap>)obj;
       for (SimpleOrderedMap hlMap : hlMaps) {
         String id = (String)hlMap.get(id_key);
         ShardDoc sdoc = resultIds.get(id);
@@ -109,25 +113,30 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     // ... and shard/replica/node numbers
     final int numShards = 3;
     final int numReplicas = 2;
-    final int maxShardsPerNode = 2;
-    final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+    final int maxShardsPerNode = 100;
+    final int nodeCount = numShards*numReplicas;
 
     // create and configure cluster
     configureCluster(nodeCount)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
 
     // create an empty collection
     CollectionAdminRequest
     .createCollection(COLLECTION, "conf", numShards, numReplicas)
     .setMaxShardsPerNode(maxShardsPerNode)
-    .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
+    .process(cluster.getSolrClient());
   }
 
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
+
+    // Ensure every replica is active BEFORE adding the custom request handler: add-requesthandler
+    // (Config API) reloads only the currently-live cores, so a replica still coming up/recovering would
+    // miss the overlay and later answer queries with "Null Request Handler". Waiting up front guarantees
+    // the reload reaches all 6 cores.
+    cluster.waitForActiveCollection(COLLECTION, 3, 6);
 
     // determine custom search handler name (the exact name should not matter)
     final String customSearchHandlerName = "/custom_select"+random().nextInt();
@@ -172,9 +181,9 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     final String t2 = "b_t";
     {
       new UpdateRequest()
-          .add(sdoc(id, 1, t1, "bumble bee", t2, "bumble bee"))
-          .add(sdoc(id, 2, t1, "honey bee", t2, "honey bee"))
-          .add(sdoc(id, 3, t1, "solitary bee", t2, "solitary bee"))
+          .add(SolrTestCaseJ4.sdoc(id, 1, t1, "bumble bee", t2, "bumble bee"))
+          .add(SolrTestCaseJ4.sdoc(id, 2, t1, "honey bee", t2, "honey bee"))
+          .add(SolrTestCaseJ4.sdoc(id, 3, t1, "solitary bee", t2, "solitary bee"))
           .commit(cluster.getSolrClient(), COLLECTION);
     }
 
@@ -199,8 +208,8 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
       // analyse the response
       final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
-      final ArrayList<SimpleOrderedMap<Object>> custom_highlighting =
-          (ArrayList<SimpleOrderedMap<Object>>)queryResponse.getResponse().get("custom_highlighting");
+      final List<SimpleOrderedMap<Object>> custom_highlighting =
+          (List<SimpleOrderedMap<Object>>)queryResponse.getResponse().get("custom_highlighting");
 
       if (defaultHighlightComponentName.equals(highlightComponentName)) {
         // regular 'highlighting' ...
@@ -256,7 +265,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     }
   }
 
-  protected void checkHighlightingResponseList(ArrayList<SimpleOrderedMap<Object>> highlightingList,
+  protected void checkHighlightingResponseList(List<SimpleOrderedMap<Object>> highlightingList,
       String highlightedField) throws Exception {
     assertEquals("too few or too many elements: "+highlightingList.size(),
         3, highlightingList.size());
@@ -293,7 +302,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
         if (highlightedField == null) {
           assertEquals(0, snippets.size());
         } else {
-          ArrayList<String> docHighlights = (ArrayList<String>)(snippets).get(highlightedField);
+          List<String> docHighlights = (List<String>)(snippets).get(highlightedField);
           assertEquals(1, docHighlights.size());
           actualHighlightText = (String)docHighlights.get(0);
           assertEquals(expectedHighlightText, actualHighlightText);

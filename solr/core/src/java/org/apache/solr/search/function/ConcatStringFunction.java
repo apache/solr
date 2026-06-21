@@ -38,7 +38,7 @@ public class ConcatStringFunction extends MultiStringFunction {
 
   @Override
   protected String func(int doc, FunctionValues[] valsArr) throws IOException {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     for (FunctionValues val : valsArr) {
       String v = val.strVal(doc);
       if(v == null){

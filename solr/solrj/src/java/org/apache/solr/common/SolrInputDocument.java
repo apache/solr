@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import org.apache.solr.common.params.CommonParams;
 
 /**
@@ -38,11 +39,18 @@ import org.apache.solr.common.params.CommonParams;
  */
 public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInputDocument> implements Iterable<SolrInputField>
 {
+
+  public final static ThreadLocal<SolrInputDocument> THREAD_LOCAL_SolrInputDocument= new ThreadLocal<>(){
+    protected SolrInputDocument initialValue() {
+      return new SolrInputDocument();
+    }
+  };
+
   private final Map<String,SolrInputField> _fields;
   private List<SolrInputDocument> _childDocuments;
 
   public SolrInputDocument(String... fields) {
-    _fields = new LinkedHashMap<>();
+    _fields = new Object2ObjectLinkedOpenHashMap<>(16, 0.5f);
     assert fields.length % 2 == 0;
     for (int i = 0; i < fields.length; i += 2) {
       addField(fields[i], fields[i + 1]);
@@ -53,10 +61,8 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   public void writeMap(EntryWriter ew) throws IOException {
     BiConsumer<CharSequence, Object> bc = ew.getBiConsumer();
     BiConsumer<CharSequence, Object> wrapper = (k, o) -> {
-      if (o instanceof SolrInputField) {
-        o = ((SolrInputField) o).getValue();
-      }
-      bc.accept(k, o);
+
+      bc.accept(((SolrInputField) o).getName(), ((SolrInputField) o).getValue());
     };
     _fields.forEach(wrapper);
     if (_childDocuments != null) {
@@ -95,6 +101,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    */
   public void addField(String name, Object value) 
   {
+    if (value == this) {
+      throw new IllegalArgumentException("Parent and child must be different instances");
+    }
     SolrInputField field = _fields.get( name );
     if( field == null || field.value == null ) {
       setField(name, value);
@@ -153,6 +162,10 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     SolrInputField field = new SolrInputField( name );
     _fields.put( name, field );
     field.setValue( value );
+
+    if (SkyHook.skyHookDoc != null && "id".equals(name)) {
+      SkyHook.register(this);
+    }
   }
 
   /**
@@ -183,9 +196,11 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   @Override
   public String toString()
   {
-    return "SolrInputDocument(fields: " + _fields.values()
+    // Render through a JDK collection so the output is the stable upstream "[...]" form
+    // regardless of the underlying (fastutil) map's own collection toString() style.
+    return "SolrInputDocument(fields: " + new java.util.ArrayList<>(_fields.values())
         + ( _childDocuments == null ? "" : (", children: " + _childDocuments) )
-        + ")";
+        + ')';
   }
 
   public SolrInputDocument deepCopy() {
@@ -198,6 +213,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     if (_childDocuments != null) {
       clone._childDocuments = new ArrayList<>(_childDocuments.size());
       for (SolrInputDocument child : _childDocuments) {
+        if (child == clone) {
+          throw new IllegalArgumentException("Document cannot be child of itself");
+        }
         clone._childDocuments.add(child.deepCopy());
       }
     }
@@ -266,6 +284,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
 
   @Override
   public void addChildDocument(SolrInputDocument child) {
+    if (child == this) {
+      throw new IllegalArgumentException("Document cannot be child of itself");
+    }
    if (_childDocuments == null) {
      _childDocuments = new ArrayList<>();
    }

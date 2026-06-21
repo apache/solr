@@ -88,7 +88,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
-    CoreContainer cores = getCoreContainer();
+    CoreContainer cores = coreContainer;
     rsp.setHttpCaching(false);
 
     // Core container should not be null and active (redundant check)
@@ -107,14 +107,14 @@ public class HealthCheckHandler extends RequestHandlerBase {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     // Check for isConnected and isClosed
-    if(zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
+    if(zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isAlive()) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not connected to zk"));
       return;
     }
 
     // Fail if not in live_nodes
-    if (!clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
+    if (!zkStateReader.getLiveNodes().contains(cores.getZkController().getNodeName())) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk"));
       return;
@@ -129,7 +129,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
           rsp.add(STATUS, FAILURE);
           rsp.add("num_cores_unhealthy", unhealthyCores);
           rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, unhealthyCores + " out of "
-              + cores.getAllCoreNames().size() + " replicas are currently initializing or recovering"));
+              + cores.getCores().size() + " replicas are currently initializing or recovering"));
           return;
       }
       rsp.add("message", "All cores are healthy");

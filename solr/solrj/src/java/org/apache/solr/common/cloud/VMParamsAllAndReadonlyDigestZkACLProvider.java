@@ -83,9 +83,8 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
   /**
    * Note: only used for tests
    */
-  protected List<ACL> createACLsToAdd(boolean includeReadOnly,
-                                      String digestAllUsername, String digestAllPassword,
-                                      String digestReadonlyUsername, String digestReadonlyPassword) {
+  protected static List<ACL> createACLsToAdd(boolean includeReadOnly, String digestAllUsername, String digestAllPassword, String digestReadonlyUsername,
+      String digestReadonlyPassword) {
 
       try {
       List<ACL> result = new ArrayList<ACL>();

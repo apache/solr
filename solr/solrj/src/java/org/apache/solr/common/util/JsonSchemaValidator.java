@@ -34,35 +34,32 @@ import java.util.function.Function;
  * It validates most aspects of json schema but it is NOT A FULLY COMPLIANT JSON schema parser or validator.
  * This validator borrow some design's idea from https://github.com/networknt/json-schema-validator
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class JsonSchemaValidator {
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private List<Validator> validators;
-  private static Set<String> KNOWN_FNAMES = new HashSet<>(Arrays.asList(
-      "description","documentation","default","additionalProperties"));
+  private final List<Validator> validators;
+  private static final Set<String> KNOWN_FNAMES = new HashSet<>(Arrays.asList(
+      "description","documentation","default","additionalProperties", "#include"));
 
 
-  @SuppressWarnings({"rawtypes"})
   public JsonSchemaValidator(String jsonString) {
     this((Map) Utils.fromJSONString(jsonString));
   }
 
-  @SuppressWarnings({"rawtypes"})
   public JsonSchemaValidator(Map jsonSchema) {
     this.validators = new LinkedList<>();
-    for (Object fname : jsonSchema.keySet()) {
+    for (Object entry : jsonSchema.entrySet()) {
+      Object fname = ((Map.Entry)entry).getKey();
       if (KNOWN_FNAMES.contains(fname.toString())) continue;
 
       Function<Pair<Map, Object>, Validator> initializeFunction = VALIDATORS.get(fname.toString());
       if (initializeFunction == null) throw new RuntimeException("Unknown key : " + fname);
 
-      this.validators.add(initializeFunction.apply(new Pair<>(jsonSchema, jsonSchema.get(fname))));
+      this.validators.add(initializeFunction.apply(new Pair<>(jsonSchema, ((Map.Entry)entry).getValue())));
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  static final Map<String, Function<Pair<Map,Object>, Validator>> VALIDATORS = new HashMap<>();
+  static final Map<String, Function<Pair<Map,Object>, Validator>> VALIDATORS = new HashMap<>(8);
 
   static {
     VALIDATORS.put("items", pair -> new ItemsValidator(pair.first(), (Map) pair.second()));
@@ -79,7 +76,6 @@ public class JsonSchemaValidator {
     return errs.isEmpty() ? null : errs;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   boolean validate(Object data, List<String> errs) {
     if (data == null) return true;
     for (Validator validator : validators) {
@@ -93,7 +89,6 @@ public class JsonSchemaValidator {
 }
 
 abstract class Validator<T> {
-  @SuppressWarnings("unused")
   Validator(@SuppressWarnings({"rawtypes"})Map schema, T properties) {};
   abstract boolean validate(Object o, List<String> errs);
 }
@@ -151,7 +146,7 @@ class TypeValidator extends Validator<Object> {
 
   TypeValidator(@SuppressWarnings({"rawtypes"})Map schema, Object type) {
     super(schema, type);
-    types = new HashSet<>(1);
+    types = new HashSet<>(32);
     if (type instanceof List) {
       for (Object t : (List)type) {
         types.add(getType(t.toString()));
@@ -161,7 +156,7 @@ class TypeValidator extends Validator<Object> {
     }
   }
 
-  private Type getType(String typeStr) {
+  private static Type getType(String typeStr) {
     try {
       return Type.valueOf(typeStr.toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
@@ -182,7 +177,7 @@ class TypeValidator extends Validator<Object> {
 @SuppressWarnings({"rawtypes"})
 class ItemsValidator extends Validator<Map> {
   private JsonSchemaValidator validator;
-  ItemsValidator(@SuppressWarnings({"rawtypes"})Map schema, @SuppressWarnings({"rawtypes"})Map properties) {
+  ItemsValidator(Map schema, Map properties) {
     super(schema, properties);
     validator = new JsonSchemaValidator(properties);
   }
@@ -239,7 +234,7 @@ class RequiredValidator extends Validator<List<String>> {
     return validate(o,errs,requiredProps);
   }
 
-  boolean validate( Object o, List<String> errs, Set<String> requiredProps) {
+  static boolean validate(Object o, List<String> errs, Set<String> requiredProps) {
     if (o instanceof Map) {
       @SuppressWarnings({"rawtypes"})
       Set fnames = ((Map) o).keySet();
@@ -249,7 +244,7 @@ class RequiredValidator extends Validator<List<String>> {
             errs.add("Illegal required attribute name (ends with '.': " + requiredProp + ").  This is a bug.");
             return false;
           }
-          String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
+          String subprop = requiredProp.substring(requiredProp.indexOf('.') + 1);
           if (!validate(((Map)o).get(requiredProp), errs, Collections.singleton(subprop))) {
             return false;
           }
@@ -282,17 +277,19 @@ class PropertiesValidator extends Validator<Map<String, Map>> {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
       @SuppressWarnings({"rawtypes"})
       Map map = (Map) o;
-      for (Object key : map.keySet()) {
+      for (Object entry : map.entrySet()) {
+        Object key = ((Map.Entry)entry).getKey();
         JsonSchemaValidator jsonSchema = jsonSchemas.get(key.toString());
         if (jsonSchema == null && !additionalProperties) {
           errs.add("Unknown field '" + key + "' in object : " + Utils.toJSONString(o));
           return false;
         }
-        if (jsonSchema != null && !jsonSchema.validate(map.get(key), errs)) {
+        if (jsonSchema != null && !jsonSchema.validate(((Map.Entry)entry).getValue(), errs)) {
           return false;
         }
       }

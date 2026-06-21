@@ -424,9 +424,7 @@ public final class LegacyNumericUtils {
       super(tenum, false);
     }
 
-    @Override
-    @SuppressWarnings("fallthrough")
-    public SeekStatus seekCeil(BytesRef term) throws IOException {
+    @Override public SeekStatus seekCeil(BytesRef term) throws IOException {
 
       // NOTE: This is not general!!  It only handles YES
       // and END, because that's all we need for the numeric

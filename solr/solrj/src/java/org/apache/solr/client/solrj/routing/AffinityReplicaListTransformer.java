@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.routing;
 
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -30,7 +31,7 @@ import org.apache.solr.common.util.Hash;
  * either explicitly configured hash routing parameter, or the hash of a query parameter (configurable, usually related
  * to the main query).
  */
-public class AffinityReplicaListTransformer implements ReplicaListTransformer {
+public class AffinityReplicaListTransformer implements ReplicaListTransformer, Closeable {
 
   private final int routingDividend;
 
@@ -83,6 +84,11 @@ public class AffinityReplicaListTransformer implements ReplicaListTransformer {
     }
   }
 
+  @Override
+  public void close() {
+
+  }
+
   private static final class SortableChoice {
 
     private final Object choice;
@@ -91,7 +97,7 @@ public class AffinityReplicaListTransformer implements ReplicaListTransformer {
     private SortableChoice(Object choice) {
       this.choice = choice;
       if (choice instanceof Replica) {
-        this.sortableCoreLabel = ((Replica)choice).getCoreUrl();
+        this.sortableCoreLabel = ((Replica)choice).getNodeName() + "_" + ((Replica)choice).getName();
       } else if (choice instanceof String) {
         this.sortableCoreLabel = (String)choice;
       } else {

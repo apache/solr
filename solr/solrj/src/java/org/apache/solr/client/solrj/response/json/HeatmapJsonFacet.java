@@ -63,7 +63,7 @@ public class HeatmapJsonFacet {
     }
   }
 
-  private int getNumCols(List<List<Integer>> grid) {
+  private static int getNumCols(List<List<Integer>> grid) {
     for (List<Integer> row : grid) {
       if (row !=null ) return row.size();
     }

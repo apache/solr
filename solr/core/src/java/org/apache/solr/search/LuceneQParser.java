@@ -20,6 +20,8 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -43,7 +45,7 @@ public class LuceneQParser extends QParser {
 
     lparser.setDefaultOperator(QueryParsing.parseOP(getParam(QueryParsing.OP)));
     lparser.setSplitOnWhitespace(StrUtils.parseBool
-      (getParam(QueryParsing.SPLIT_ON_WHITESPACE), SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
+      (getParam(QueryParsing.SPLIT_ON_WHITESPACE), QueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
     lparser.setAllowSubQueryParsing(true);
 
     return lparser.parse(qstr);
@@ -52,7 +54,7 @@ public class LuceneQParser extends QParser {
 
   @Override
   public String[] getDefaultHighlightFields() {
-    return lparser == null ? new String[]{} : new String[]{lparser.getDefaultField()};
+    return lparser == null ? Utils.EMPTY_STRINGS : new String[]{lparser.getDefaultField()};
   }
 
 }

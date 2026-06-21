@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -55,20 +56,40 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
     }
 
     URI locationUri = repository.createURI(location);
-    try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-      CloudDescriptor cd = core.getCoreDescriptor().getCloudDescriptor();
+
+    // The core may still be registering when RESTORECORE arrives (addReplica triggers async core
+    // creation). Wait up to 10s for the core to appear before giving up.
+    SolrCore core = null;
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+    while (core == null && System.nanoTime() < deadline) {
+      core = it.handler.coreContainer.getCore(cname);
+      if (core == null) {
+        Thread.sleep(200);
+      }
+    }
+    if (core == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Core not available for restore after waiting 10s: " + cname);
+    }
+    try (SolrCore c = core) {
+      CloudDescriptor cd = c.getCoreDescriptor().getCloudDescriptor();
       // this core must be the only replica in its shard otherwise
       // we cannot guarantee consistency between replicas because when we add data (or restore index) to this replica
       Slice slice = zkController.getClusterState().getCollection(cd.getCollectionName()).getSlice(cd.getShardId());
       if (slice.getReplicas().size() != 1) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Failed to restore core=" + core.getName() + ", the core must be the only replica in its shard");
+            "Failed to restore core=" + c.getName() + ", the core must be the only replica in its shard");
       }
-      RestoreCore restoreCore = new RestoreCore(repository, core, locationUri, name);
+      RestoreCore restoreCore = new RestoreCore(repository, c, locationUri, name);
       boolean success = restoreCore.doRestore();
       if (!success) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + c.getName());
       }
+      // doRestore() calls newIndexWriter which re-inits the UpdateLog and resets its state to
+      // ACTIVE.  REQUESTAPPLYUPDATES (sent by RestoreCmd after all shards are restored) requires
+      // the log to be in BUFFERING state so it can replay any updates that arrived during the
+      // restore window.  Re-enter buffering now.
+      c.getUpdateHandler().getUpdateLog().bufferUpdates();
       // other replicas to-be-created will know that they are out of date by
       // looking at their term : 0 compare to term of this core : 1
       zkController.getShardTerms(cd.getCollectionName(), cd.getShardId()).ensureHighestTermsAreNotZero();

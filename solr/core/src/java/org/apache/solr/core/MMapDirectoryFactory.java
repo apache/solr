@@ -25,6 +25,7 @@ import org.apache.lucene.store.LockFactory; // javadocs
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.filestore.UnsafeMMapDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,32 +43,23 @@ import org.slf4j.LoggerFactory;
  **/
 public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  boolean unmapHack;
+
   boolean preload;
-  private int maxChunk;
+  private int maxChunk = MMapDirectory.DEFAULT_MAX_CHUNK_SIZE;
 
   @Override
   @SuppressWarnings({"rawtypes"})
   public void init(NamedList args) {
     super.init(args);
     SolrParams params = args.toSolrParams();
-    maxChunk = params.getInt("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
-    if (maxChunk <= 0){
-      throw new IllegalArgumentException("maxChunk must be greater than 0");
-    }
-    unmapHack = params.getBool("unmap", true);
+
     preload = params.getBool("preload", false); //default turn-off
   }
 
-  @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
+  @Override public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
+    //UnsafeMMapDirectory mapDirectory = new UnsafeMMapDirectory(new File(path).toPath(), lockFactory, maxChunk);
     MMapDirectory mapDirectory = new MMapDirectory(new File(path).toPath(), lockFactory, maxChunk);
-    try {
-      mapDirectory.setUseUnmap(unmapHack);
-    } catch (IllegalArgumentException e) {
-      log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
-    }
     mapDirectory.setPreload(preload);
     return mapDirectory;
   }

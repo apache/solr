@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttribute;
+import org.junit.Ignore;
 
 /** test tokenstream reuse by DefaultIndexingChain */
 public class TestLegacyFieldReuse extends BaseTokenStreamTestCase {

@@ -30,18 +30,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -67,6 +62,7 @@ import org.apache.solr.schema.FieldType;
 public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
   public static final Set<BytesRef> EMPTY_BYTES_SET = Collections.emptySet();
+  public static final AttributeSource[] TS = new AttributeSource[0];
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -93,11 +89,11 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return NamedList containing the tokens produced by analyzing the given value
    */
-  protected NamedList<? extends Object> analyzeValue(String value, AnalysisContext context) {
+  protected static NamedList<? extends Object> analyzeValue(String value, AnalysisContext context) {
 
     Analyzer analyzer = context.getAnalyzer();
 
-    if (!TokenizerChain.class.isInstance(analyzer)) {
+    if (!(analyzer instanceof TokenizerChain)) {
 
       try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
         @SuppressWarnings({"rawtypes"})
@@ -166,7 +162,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @param query    The query to analyze.
    * @param analyzer The analyzer to use.
    */
-  protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
+  protected static Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
     try (TokenStream tokenStream = analyzer.tokenStream("", query)){
       final Set<BytesRef> tokens = new HashSet<>();
       final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
@@ -191,7 +187,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return List of tokens produced from the TokenStream
    */
-  private List<AttributeSource> analyzeTokenStream(TokenStream tokenStream) {
+  private static List<AttributeSource> analyzeTokenStream(TokenStream tokenStream) {
     final List<AttributeSource> tokens = new ArrayList<>();
     final PositionIncrementAttribute posIncrAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
     final TokenTrackingAttribute trackerAtt = tokenStream.addAttribute(TokenTrackingAttribute.class);
@@ -234,33 +230,13 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @return List of NamedLists containing the relevant information taken from the tokens
    */
   @SuppressWarnings({"rawtypes"})
-  private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
+  private static List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
     final List<NamedList> tokensNamedLists = new ArrayList<>();
     final FieldType fieldType = context.getFieldType();
-    final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
+    final AttributeSource[] tokens = tokenList.toArray(TS);
     
     // sort the tokens by absolute position
-    ArrayUtil.timSort(tokens, new Comparator<AttributeSource>() {
-      @Override
-      public int compare(AttributeSource a, AttributeSource b) {
-        return arrayCompare(
-          a.getAttribute(TokenTrackingAttribute.class).getPositions(),
-          b.getAttribute(TokenTrackingAttribute.class).getPositions()
-        );
-      }
-      
-      private int arrayCompare(int[] a, int[] b) {
-        int p = 0;
-        final int stop = Math.min(a.length, b.length);
-        while(p < stop) {
-          int diff = a[p] - b[p];
-          if (diff != 0) return diff;
-          p++;
-        }
-        // One is a prefix of the other, or, they are equal:
-        return a.length - b.length;
-      }
-    });
+    ArrayUtil.timSort(tokens, new AttributeSourceComparator());
 
     for (int i = 0; i < tokens.length; i++) {
       AttributeSource token = tokens[i];
@@ -289,32 +265,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
         tokenNamedList.add("match", true);
       }
 
-      token.reflectWith(new AttributeReflector() {
-        @Override
-        public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
-          // leave out position and bytes term
-          if (TermToBytesRefAttribute.class.isAssignableFrom(attClass))
-            return;
-          if (CharTermAttribute.class.isAssignableFrom(attClass))
-            return;
-          if (PositionIncrementAttribute.class.isAssignableFrom(attClass))
-            return;
-          
-          String k = attClass.getName() + '#' + key;
-          
-          // map keys for "standard attributes":
-          if (ATTRIBUTE_MAPPING.containsKey(k)) {
-            k = ATTRIBUTE_MAPPING.get(k);
-          }
-          
-          if (value instanceof BytesRef) {
-            final BytesRef p = (BytesRef) value;
-            value = p.toString();
-          }
-
-          tokenNamedList.add(k, value);
-        }
-      });
+      token.reflectWith(new SolrAttributeReflector(tokenNamedList));
 
       tokensNamedLists.add(tokenNamedList);
     }
@@ -322,7 +273,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     return tokensNamedLists;
   }
   
-  private String writeCharStream(NamedList<Object> out, Reader input ){
+  private static String writeCharStream(NamedList<Object> out, Reader input){
     final int BUFFER_SIZE = 1024;
     char[] buf = new char[BUFFER_SIZE];
     int len = 0;
@@ -535,6 +486,61 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     public Set<BytesRef> getTermsToMatch() {
       return termsToMatch;
+    }
+  }
+
+  private static class AttributeSourceComparator implements Comparator<AttributeSource> {
+    @Override
+    public int compare(AttributeSource a, AttributeSource b) {
+      return arrayCompare(
+        a.getAttribute(TokenTrackingAttribute.class).getPositions(),
+        b.getAttribute(TokenTrackingAttribute.class).getPositions()
+      );
+    }
+
+    private static int arrayCompare(int[] a, int[] b) {
+      int p = 0;
+      final int stop = Math.min(a.length, b.length);
+      while(p < stop) {
+        int diff = a[p] - b[p];
+        if (diff != 0) return diff;
+        p++;
+      }
+      // One is a prefix of the other, or, they are equal:
+      return a.length - b.length;
+    }
+  }
+
+  private static class SolrAttributeReflector implements AttributeReflector {
+    private final NamedList<Object> tokenNamedList;
+
+    public SolrAttributeReflector(NamedList<Object> tokenNamedList) {
+      this.tokenNamedList = tokenNamedList;
+    }
+
+    @Override
+    public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+      // leave out position and bytes term
+      if (TermToBytesRefAttribute.class.isAssignableFrom(attClass))
+        return;
+      if (CharTermAttribute.class.isAssignableFrom(attClass))
+        return;
+      if (PositionIncrementAttribute.class.isAssignableFrom(attClass))
+        return;
+
+      String k = attClass.getName() + '#' + key;
+
+      // map keys for "standard attributes":
+      if (ATTRIBUTE_MAPPING.containsKey(k)) {
+        k = ATTRIBUTE_MAPPING.get(k);
+      }
+
+      if (value instanceof BytesRef) {
+        final BytesRef p = (BytesRef) value;
+        value = p.toString();
+      }
+
+      tokenNamedList.add(k, value);
     }
   }
 }

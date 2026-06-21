@@ -24,6 +24,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -41,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLeaderNode;
 import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
 
+@LuceneTestCase.AwaitsFix(bugUrl = "These Overseer role feature is no longer supported")
 public class OverseerRolesTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -48,7 +51,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -86,7 +89,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     int hostPort = overseerUrl.getPort();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try {
-      if (jetty.getBaseUrl().getPort() == hostPort)
+      if (jetty.getLocalPort() == hostPort)
         return jetty;
       } catch (IllegalStateException e) {
         

@@ -18,9 +18,8 @@ package org.apache.solr;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -33,7 +32,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -72,12 +71,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
    * Create a new solr client. Subclasses should override for other options.
    */
   public EmbeddedSolrServer createNewSolrClient() {
-    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME) {
-      @Override
-      public void close() {
-        // do not close core container
-      }
-    };
+    return new MyEmbeddedSolrServer();
   }
 
   public void upload(final String collection, final ContentStream... contents) {
@@ -85,7 +79,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
     writeTo(base, contents);
   }
 
-  private void writeTo(final Path base, final ContentStream... contents) {
+  private static void writeTo(final Path base, final ContentStream... contents) {
     try {
       if (!Files.exists(base)) {
         Files.createDirectories(base);
@@ -94,9 +88,10 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
       for (final ContentStream content : contents) {
         final File file = new File(base.toFile(), content.getName());
         file.getParentFile().mkdirs();
-
-        try (OutputStream os = new FileOutputStream(file)) {
-          ByteStreams.copy(content.getStream(), os);
+        try (InputStream is = new CloseShieldInputStream(content.getStream())) {
+          try (OutputStream os = Files.newOutputStream(file.toPath())) {
+            ByteStreams.copy(is, os);
+          }
         }
       }
     } catch (final IOException e) {
@@ -114,7 +109,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
         if (file.exists() && file.canRead()) {
           try {
             final ByteArrayOutputStream os = new ByteArrayOutputStream();
-            ByteStreams.copy(new FileInputStream(file), os);
+            ByteStreams.copy(Files.newInputStream(file.toPath()), os);
             final ByteArrayStream stream = new ContentStreamBase.ByteArrayStream(os.toByteArray(), name);
             result.add(stream);
           } catch (final IOException e) {
@@ -139,7 +134,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
     if (sourceHome == null)
       throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");
 
-    final File tempSolrHome = LuceneTestCase.createTempDir().toFile();
+    final File tempSolrHome = SolrTestUtil.createTempDir().toFile();
     FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
     final File collectionDir = new File(tempSolrHome, DEFAULT_CORE_NAME);
     FileUtils.forceMkdir(collectionDir);
@@ -157,4 +152,14 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
     return tempSolrHome.getAbsolutePath();
   }
 
+  private static class MyEmbeddedSolrServer extends EmbeddedSolrServer {
+    public MyEmbeddedSolrServer() {
+      super(SolrTestCaseJ4.h.getCoreContainer(), EmbeddedSolrServerTestBase.DEFAULT_CORE_NAME);
+    }
+
+    @Override
+    public void close() {
+      // do not close core container
+    }
+  }
 }

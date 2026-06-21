@@ -18,11 +18,13 @@ package org.apache.solr.search;
 
 import java.util.Map;
 
+import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -169,6 +171,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test with elevation
 
+    params = new ModifiableSolrParams();
     params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6 "+ReRankQParserPlugin.RERANK_WEIGHT+"=50}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
@@ -382,9 +385,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='3']",
         "//result/doc[5]/str[@name='id'][.='2']"
     );
-
-    MetricsMap metrics = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
-    Map<String,Object> stats = metrics.getValue();
+    SolrCore core = h.getCore();
+    Gauge metrics = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    core.close();
+    Map<String,Object> stats = (Map<String,Object>) metrics.getValue();
 
     long inserts = (Long) stats.get("inserts");
 
@@ -408,7 +412,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     );
 
 
-    stats = metrics.getValue();
+    stats = (Map<String,Object>) metrics.getValue();
 
     long inserts1 = (Long) stats.get("inserts");
 
@@ -432,7 +436,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/str[@name='id'][.='1']"
     );
 
-    stats = metrics.getValue();
+    stats = (Map<String,Object>) metrics.getValue();
     long inserts2 = (Long) stats.get("inserts");
     //Last query was NOT added to the cache
     assertTrue(inserts1 == inserts2);
@@ -598,11 +602,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "2");
 
-    SolrException se = expectThrows(SolrException.class, "A syntax error should be thrown when "+ReRankQParserPlugin.RERANK_QUERY+" parameter is not specified",
-        () -> h.query(req(params))
-    );
+    SolrException se;
+    try (SolrQueryRequest req = req(params)) {
+      se = SolrTestCaseUtil.expectThrows(SolrException.class, "A syntax error should be thrown when " + ReRankQParserPlugin.RERANK_QUERY + " parameter is not specified", () -> h.query(req));
+    }
     assertTrue(se.code() == SolrException.ErrorCode.BAD_REQUEST.code);
-
   }
 
   @Test

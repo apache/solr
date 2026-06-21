@@ -74,7 +74,7 @@ public class ServletInputStreamWrapper extends ServletInputStream {
     return stream.read(b, off, len);
   }
 
-  public void mark(int readlimit) {
+  public synchronized void mark(int readlimit) {
     stream.mark(readlimit);
   }
 
@@ -86,7 +86,7 @@ public class ServletInputStreamWrapper extends ServletInputStream {
     return stream.readLine(b, off, len);
   }
 
-  public void reset() throws IOException {
+  public synchronized void reset() throws IOException {
     stream.reset();
   }
 

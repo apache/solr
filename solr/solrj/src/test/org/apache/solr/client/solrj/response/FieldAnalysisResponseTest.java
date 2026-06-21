@@ -46,14 +46,14 @@ public class FieldAnalysisResponseTest extends SolrTestCase {
     phases.add(expectedPhase);
 
     NamedList responseNL = buildResponse();
-    FieldAnalysisResponse response = new FieldAnalysisResponse() {
+    FieldAnalysisResponse response = new FieldAnalysisResponse(responseNL) {
       @Override
       protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
         return phases;
       }
     };
 
-    response.setResponse(responseNL);
+
 
     assertEquals(1, response.getFieldNameAnalysisCount());
     FieldAnalysisResponse.Analysis analysis = response.getFieldNameAnalysis("name");

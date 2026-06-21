@@ -17,45 +17,58 @@
 
 package org.apache.solr.schema;
 
-import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.Utils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class SchemaApiFailureTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "schema-api-failure";
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeSchemaApiFailureTest() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
+    // This fork's CreateCollectionCmd returns before replicas reach ACTIVE (waitForFinalState
+    // defaults to false), so an immediate schema request can fail with "Could not find a healthy
+    // node". Wait for the 2-shard collection to be fully active before the schema API calls.
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
+  }
+
+  @AfterClass
+  public static void afterSchemaApiFailureTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testAddTheSameFieldTwice() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudHttp2SolrClient client = cluster.getSolrClient();
     SchemaRequest.Update fieldAddition = new SchemaRequest.AddField
         (Utils.makeMap("name","myfield", "type","string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);
 
-    BaseHttpSolrClient.RemoteExecutionException ex = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class,
-        () -> fieldAddition.process(client, COLLECTION));
+    BaseHttpSolrClient.RemoteSolrException ex = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> fieldAddition.process(client, COLLECTION));
 
-    assertTrue("expected error message 'Field 'myfield' already exists'.",Utils.getObjectByPath(ex.getMetaData(), false, "error/details[0]/errorMessages[0]").toString().contains("Field 'myfield' already exists.") );
+    assertTrue("expected error message 'Field 'myfield' already exists'. got=" + ex.getMessage(), ex.getMessage().contains("Field 'myfield' already exists."));
 
   }
 

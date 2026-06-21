@@ -21,10 +21,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -163,7 +164,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
       final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures:false;
       if (threadManager != null) {
-        threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getRecoveryExecutor());
       }
       final LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel,
           extractEFIParams(localParams),
@@ -193,7 +194,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the rescoring
    * of the documents.
    **/
-  public class LTRQuery extends AbstractReRankQuery {
+  public static class LTRQuery extends AbstractReRankQuery {
     private final LTRScoringQuery scoringQuery;
 
     public LTRQuery(LTRScoringQuery scoringQuery, int reRankDocs) {

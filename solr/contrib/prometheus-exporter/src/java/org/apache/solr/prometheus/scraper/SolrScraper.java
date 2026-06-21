@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,11 +37,11 @@ import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsQuery;
 import org.apache.solr.prometheus.exporter.SolrExporter;
@@ -59,7 +58,7 @@ public abstract class SolrScraper implements Closeable {
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final Executor executor;
+  protected final ExecutorService executor;
 
   public abstract Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query) throws IOException;
 
@@ -69,7 +68,7 @@ public abstract class SolrScraper implements Closeable {
   public abstract MetricSamples search(MetricsQuery query) throws IOException;
   public abstract MetricSamples collections(MetricsQuery metricsQuery) throws IOException;
 
-  public SolrScraper(Executor executor) {
+  public SolrScraper(ExecutorService executor) {
     this.executor = executor;
   }
 
@@ -77,17 +76,32 @@ public abstract class SolrScraper implements Closeable {
       Collection<String> items,
       Function<String, MetricSamples> samplesCallable) throws IOException {
 
-    List<CompletableFuture<Pair<String, MetricSamples>>> futures = items.stream()
-        .map(item -> CompletableFuture.supplyAsync(() -> new Pair<>(item, samplesCallable.apply(item)), executor))
-        .collect(Collectors.toList());
-
-    Future<List<Pair<String, MetricSamples>>> allComplete = Async.waitForAllSuccessfulResponses(futures);
+    Map<String, MetricSamples> result = new HashMap<>(); // sync on this when adding to it below
 
     try {
-      return allComplete.get().stream().collect(Collectors.toMap(Pair::first, Pair::second));
-    } catch (InterruptedException | ExecutionException e) {
-      throw new IOException(e);
+      // invoke each samplesCallable with each item and putting the results in the above "result" map.
+      executor.invokeAll(
+          items.stream()
+              .map(item -> (Callable<MetricSamples>) () -> {
+                try {
+                  final MetricSamples samples = samplesCallable.apply(item);
+                  synchronized (result) {
+                    result.put(item, samples);
+                  }
+                } catch (Exception e) {
+                  // do NOT totally fail; just log and move on
+                  log.warn("Error occurred during metrics collection", e);
+                }
+                return null;//not used
+              })
+              .collect(Collectors.toList())
+      );
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
     }
+
+    return result;
   }
 
   protected MetricSamples request(SolrClient client, MetricsQuery query) throws IOException {
@@ -95,6 +109,13 @@ public abstract class SolrScraper implements Closeable {
 
     QueryRequest queryRequest = new QueryRequest(query.getParameters());
     queryRequest.setPath(query.getPath());
+    // Force the raw (unparsed) JSON response regardless of the parser configured on the
+    // underlying client. CloudHttp2SolrClient routes through internal LB sub-clients that do
+    // not inherit the wrapper client's response parser, so relying on client.setParser(...)
+    // is unreliable; setting it on the request guarantees the String body request() expects.
+    NoOpResponseParser scraperParser = new NoOpResponseParser();
+    scraperParser.setWriterType("json");
+    queryRequest.setResponseParser(scraperParser);
 
     NamedList<Object> queryResponse = null;
     try {
@@ -106,7 +127,7 @@ public abstract class SolrScraper implements Closeable {
         queryResponse = client.request(queryRequest, query.getCollection().get());
       }
     } catch (SolrServerException | IOException e) {
-      log.error("failed to request: {} {}", queryRequest.getPath(), e.getMessage());
+      log.error("failed to request: {}", queryRequest.getPath(), e);
     }
 
     JsonNode jsonNode = OBJECT_MAPPER.readTree((String) queryResponse.get("response"));
@@ -133,14 +154,14 @@ public abstract class SolrScraper implements Closeable {
           }
 
           /* Labels due to client */
-          if (client instanceof HttpSolrClient) {
+          if (client instanceof Http2SolrClient) {
             labelNames.add("base_url");
-            labelValues.add(((HttpSolrClient) client).getBaseURL());
+            labelValues.add(((Http2SolrClient) client).getBaseURL());
           }
 
-          if (client instanceof CloudSolrClient) {
+          if (client instanceof BaseCloudSolrClient) {
             labelNames.add("zk_host");
-            labelValues.add(((CloudSolrClient) client).getZkHost());
+            labelValues.add(((BaseCloudSolrClient) client).getZkHost());
           }
 
           // Deduce core if not there

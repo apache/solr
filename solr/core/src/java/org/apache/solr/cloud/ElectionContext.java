@@ -16,62 +16,53 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
+
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public abstract class ElectionContext implements Closeable {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  final String electionPath;
-  final ZkNodeProps leaderProps;
-  final String id;
-  final String leaderPath;
-  volatile String leaderSeqPath;
-  private SolrZkClient zkClient;
+public abstract class ElectionContext {
+  protected final String electionPath;
+  protected final Replica replica;
+  protected final CoreDescriptor cd;
+  protected final String leaderPath;
 
-  public ElectionContext(final String coreNodeName,
-      final String electionPath, final String leaderPath, final ZkNodeProps leaderProps, final SolrZkClient zkClient) {
-    assert zkClient != null;
-    this.id = coreNodeName;
+  private volatile String leaderSeqPath;
+
+ // protected volatile String watchedSeqPath;
+
+
+  public ElectionContext(final String electionPath, final String leaderPath, final Replica replica, CoreDescriptor cd) {
     this.electionPath = electionPath;
     this.leaderPath = leaderPath;
-    this.leaderProps = leaderProps;
-    this.zkClient = zkClient;
-  }
-  
-  public void close() {
-
-  }
-  
-  public void cancelElection() throws InterruptedException, KeeperException {
-    if (leaderSeqPath != null) {
-      try {
-        log.debug("Canceling election {}", leaderSeqPath);
-        zkClient.delete(leaderSeqPath, -1, true);
-      } catch (NoNodeException e) {
-        // fine
-        log.debug("cancelElection did not find election node to remove {}", leaderSeqPath);
-      }
-    } else {
-      log.debug("cancelElection skipped as this context has not been initialized");
-    }
+    this.replica = replica;
+    this.cd = cd;
   }
 
-  abstract void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;
+  protected void cancelElection() throws InterruptedException, KeeperException {
+  }
+
+  abstract boolean runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;
 
   public void checkIfIamLeaderFired() {}
 
   public void joinedElectionFired() {}
 
-  public  ElectionContext copy(){
+  public ElectionContext copy(){
     throw new UnsupportedOperationException("copy");
   }
+
+  public abstract boolean isClosed();
+
+  public String getLeaderSeqPath() {
+    return leaderSeqPath;
+  }
+
+  public void setLeaderSeqPath(String leaderSeqPath) {
+    this.leaderSeqPath = leaderSeqPath;
+  }
 }
+
 
 

@@ -43,12 +43,18 @@ public class BytesBlock {
   }
 
   public BytesBlock expand(int sz) {
-    if (bufSize - pos >= sz) {
-      return markPositions(sz);
+    BytesBlock result = this;
+    while (true) {
+      if (result.bufSize - result.pos >= sz) {
+        return result.markPositions(sz);
+      }
+      if (sz > (result.bufSize / 4)) { // a reasonably large block, create new
+        result = new BytesBlock(sz);
+        continue;
+      }
+      result.create();
+      return result.markPositions(sz);
     }
-    if (sz > (bufSize / 4)) return new BytesBlock(sz).expand(sz);// a reasonably large block, create new
-    create();
-    return markPositions(sz);
   }
 
   private BytesBlock markPositions(int sz) {

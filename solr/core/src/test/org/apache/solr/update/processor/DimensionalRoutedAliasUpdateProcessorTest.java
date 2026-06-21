@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateCategoryRoutedAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateTimeRoutedAlias;
@@ -59,7 +61,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
   private static final String CRA = RoutedAliasTypes.CATEGORY.getSeparatorPrefix();
   private static final String TRA = RoutedAliasTypes.TIME.getSeparatorPrefix();
 
-  private static CloudSolrClient solrClient;
+  private static CloudHttp2SolrClient solrClient;
   private int lastDocId = 0;
   private int numDocsDeletedOrFailed = 0;
 
@@ -70,7 +72,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
   @Before
   public void doBefore() throws Exception {
     configureCluster(4).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
@@ -91,7 +93,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
   }
   @Test
   public void testTimeCat() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     CreateTimeRoutedAlias TRA_Dim = createTimeRoutedAlias(getAlias(), "2019-07-01T00:00:00Z", "+1DAY",
@@ -104,7 +106,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[TIME,CATEGORY]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));
-    System.out.println(params);
+    //System.out.println(params);
     assertEquals("20", params.get("router.1.maxCardinality"));
     assertEquals("2019-07-01T00:00:00Z", params.get("router.0.start"));
 
@@ -352,7 +354,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
   @Test
   public void testCatTime() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     CreateTimeRoutedAlias TRA_Dim = createTimeRoutedAlias(getAlias(), "2019-07-01T00:00:00Z", "+1DAY",
@@ -365,7 +367,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[CATEGORY,TIME]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));
-    System.out.println(params);
+    //System.out.println(params);
     assertEquals("20", params.get("router.0.maxCardinality"));
     assertEquals("2019-07-01T00:00:00Z", params.get("router.1.start"));
 
@@ -628,7 +630,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     final int expectNumFound = lastDocId - numDocsDeletedOrFailed; //lastDocId is effectively # generated docs
     int totalNumFound = 0;
 
-    final List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(getSaferTestName());
+    final List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(SolrTestUtil.getTestName());
     assert !cols.isEmpty();
 
     for (String category : categories) {
@@ -703,7 +705,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
   private SolrInputDocument newDoc(String category, String timestamp) {
     Instant instant = Instant.parse(timestamp);
-    return sdoc("id", Integer.toString(++lastDocId),
+    return SolrTestCaseJ4.sdoc("id", Integer.toString(++lastDocId),
         getTimeField(), instant.toString(),
         getCatField(), category,
         getIntField(), "0"); // always 0
@@ -719,11 +721,11 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
   @Override
   public String getAlias() {
-    return getSaferTestName();
+    return SolrTestUtil.getTestName();
   }
 
   @Override
-  public CloudSolrClient getSolrClient() {
+  public CloudHttp2SolrClient getSolrClient() {
     return solrClient;
   }
 

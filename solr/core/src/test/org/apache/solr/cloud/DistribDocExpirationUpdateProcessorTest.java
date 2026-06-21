@@ -28,10 +28,14 @@ import java.util.concurrent.TimeUnit;
 import static java.util.Collections.singletonMap;
 import static java.util.Collections.singletonList;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -59,6 +63,7 @@ import org.slf4j.LoggerFactory;
 
 /** Test of {@link DocExpirationUpdateProcessorFactory} in a cloud setup */
 @Slow // Has to do some sleeping to wait for a future expiration
+@LuceneTestCase.Nightly // TODO speedup
 public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -70,6 +75,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   @After
   public void cleanup() throws Exception {
     shutdownCluster();
+    System.clearProperty("solr.enablePublicKeyHandler");
     COLLECTION = null;
     USER = null;
     PASS = null;
@@ -89,13 +95,14 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   public void setupCluster(boolean security) throws Exception {
     // we want at most one core per node to force lots of network traffic to try and tickle distributed bugs
     final Builder b = configureCluster(4)
-      .addConfig("conf", TEST_PATH().resolve("configsets").resolve("doc-expiry").resolve("conf"));
+      .addConfig("conf", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("doc-expiry").resolve("conf"));
 
     COLLECTION = "expiring";
     if (security) {
       USER = "solr";
       PASS = "SolrRocksAgain";
       COLLECTION += "_secure";
+      System.setProperty("solr.enablePublicKeyHandler", "true");
       
       final String SECURITY_JSON = Utils.toJSONString
         (Utils.makeMap("authorization",
@@ -114,7 +121,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     setAuthIfNeeded(CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2))
       .process(cluster.getSolrClient());
 
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 
@@ -123,26 +130,28 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     runTest();
   }
 
-
   public void testBasicAuth() throws Exception {
     setupCluster(true);
 
     // sanity check that our cluster really does require authentication
-    assertEquals("sanity check of non authenticated request",
-                 401,
-                 expectThrows(SolrException.class, () -> {
-                     final long ignored = cluster.getSolrClient().query
-                       (COLLECTION,
-                        params("q", "*:*",
-                               "rows", "0",
-                               "_trace", "no_auth_sanity_check")).getResults().getNumFound();
-                   }).code());
+    {
+      Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+        final long ignored = cluster.getSolrClient().query(COLLECTION, params("q", "*:*", "rows", "0", "_trace", "no_auth_sanity_check")).getResults().getNumFound();
+      });
+      int code = -1;
+      if (ex instanceof SolrException) {
+        code = ((SolrException) ex).code();
+      } else if (ex.getCause() instanceof SolrException) {
+        code = ((SolrException) ex.getCause()).code();
+      }
+      assertEquals("sanity check of non authenticated request", 401, code);
+    }
     
     runTest();
   }
   
   private void runTest() throws Exception {
-    final int totalNumDocs = atLeast(50);
+    final int totalNumDocs = SolrTestUtil.atLeast(50);
     
     // Add a bunch of docs; some with extremely short expiration, some with no expiration
     // these should be randomly distributed to each shard
@@ -150,7 +159,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     {
       final UpdateRequest req = setAuthIfNeeded(new UpdateRequest());
       for (int i = 1; i <= totalNumDocs; i++) {
-        final SolrInputDocument doc = sdoc("id", i);
+        final SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", i);
 
         if (random().nextBoolean()) {
           doc.addField("should_expire_s","yup");
@@ -167,7 +176,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     // NOTE: don't assume we can find exactly totalNumDocs right now, some may have already been deleted...
     
     // it should not take long for us to get to the point where all 'should_expire_s:yup' docs are gone
-    waitForNoResults(30, params("q","should_expire_s:yup","rows","0","_trace","init_batch_check"));
+    waitForNoResults(10, params("q","should_expire_s:yup","rows","0","_trace","init_batch_check"));
 
     {
       // ...*NOW* we can assert that exactly numDocsThatNeverExpire should exist...
@@ -205,7 +214,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     assertTrue("WTF? no replica data?", 0 < initReplicaData.size());
 
     // add & hard commit a special doc with a short TTL 
-    setAuthIfNeeded(new UpdateRequest()).add(sdoc("id", "special99", "should_expire_s","yup","tTl_s","+30SECONDS"))
+    setAuthIfNeeded(new UpdateRequest()).add(SolrTestCaseJ4.sdoc("id", "special99", "should_expire_s","yup","tTl_s","+5SECONDS"))
       .commit(cluster.getSolrClient(), COLLECTION);
 
     // wait for our special docId to be deleted
@@ -232,7 +241,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
       for (Replica replica : shard) {
         coresCompared++;
         assertEquals(shard.getName(), replica.getSlice()); // sanity check
-        final String core = replica.getCoreName();
+        final String core = replica.getName();
         final ReplicaData initData = initReplicaData.get(core);
         final ReplicaData finalData = finalReplicaData.get(core);
         assertNotNull(shard.getName() + ": no init data for core: " + core, initData);
@@ -277,8 +286,8 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     for (Replica replica : collectionState.getReplicas()) {
 
-      String coreName = replica.getCoreName();
-      try (HttpSolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+      String coreName = replica.getName();
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl())) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");
@@ -324,7 +333,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     
     long numFound = req.process(cluster.getSolrClient(), COLLECTION).getResults().getNumFound();
     while (0L < numFound && ! timeout.hasTimedOut()) {
-      Thread.sleep(Math.max(1, Math.min(5000, timeout.timeLeft(TimeUnit.MILLISECONDS))));
+      Thread.sleep(Math.max(1, Math.min(1500, timeout.timeLeft(TimeUnit.MILLISECONDS))));
       
       numFound = req.process(cluster.getSolrClient(), COLLECTION).getResults().getNumFound();
     }

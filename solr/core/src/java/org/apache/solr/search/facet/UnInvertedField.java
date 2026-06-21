@@ -170,12 +170,12 @@ public class UnInvertedField extends DocTermOrds {
     if (memsz!=0) return memsz;
     long sz = super.ramBytesUsed();
     sz += 8*8 + 32; // local fields
-    sz += bigTerms.size() * 64;
+    sz += bigTerms.size() * 64L;
     for (TopTerm tt : bigTerms.values()) {
       sz += tt.memSize();
     }
     if (maxTermCounts != null)
-      sz += maxTermCounts.length * 4;
+      sz += maxTermCounts.length * 4L;
     memsz = sz;
     return sz;
   }
@@ -390,7 +390,7 @@ public class UnInvertedField extends DocTermOrds {
     if (doNegative) {
       for (int i=0; i<numTermsInField; i++) {
  //       counts[i] = maxTermCounts[i] - counts[i];
-        counts.incrementCount(i, maxTermCounts[i] - (int) counts.getCount(i)*2);
+        counts.incrementCount(i, maxTermCounts[i] - (int) counts.getCount(i)* 2L);
       }
     }
 
@@ -525,7 +525,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  String getReadableValue(BytesRef termval, FieldType ft, CharsRefBuilder charsRef) {
+  static String getReadableValue(BytesRef termval, FieldType ft, CharsRefBuilder charsRef) {
     return ft.indexedToReadable(termval, charsRef).toString();
   }
 
@@ -546,7 +546,7 @@ public class UnInvertedField extends DocTermOrds {
 
   @Override
   public String toString() {
-    final long indexSize = indexedTermsArray == null ? 0 : (8+8+8+8+(indexedTermsArray.length<<3)+sizeOfIndexedStrings); // assume 8 byte references?
+    final long indexSize = indexedTermsArray == null ? 0 : (8+8+8+8+((long) indexedTermsArray.length <<3)+sizeOfIndexedStrings); // assume 8 byte references?
     return "{field=" + field
         + ",memSize="+memSize()
         + ",tindexSize="+indexSize
@@ -563,7 +563,6 @@ public class UnInvertedField extends DocTermOrds {
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
 
-  @SuppressWarnings("unchecked")
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
     SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {

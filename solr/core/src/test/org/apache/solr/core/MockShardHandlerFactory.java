@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -28,7 +29,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 /** a fake shardhandler factory that does nothing. */
 public class MockShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized {
   NamedList args;
-  
+  private volatile boolean closed;
+
   @Override
   public void init(PluginInfo info) {
     args = info.initArgs;
@@ -65,5 +67,17 @@ public class MockShardHandlerFactory extends ShardHandlerFactory implements Plug
   }
 
   @Override
-  public void close() {}
+  public ShardHandler getShardHandler(LBHttp2SolrClient lbClient) {
+    return getShardHandler();
+  }
+
+  @Override
+  public void close() {
+    this.closed = true;
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed();
+  }
 }

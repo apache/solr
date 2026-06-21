@@ -22,7 +22,9 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.LegacyLongField;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
@@ -40,6 +42,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+// Tamped down for non Nightly runs as this test generates a large amount of garbage
 public class TestNumericTerms64 extends SolrTestCase {
   // distance of entries
   private static long distance;
@@ -53,14 +56,14 @@ public class TestNumericTerms64 extends SolrTestCase {
   private static IndexSearcher searcher = null;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    noDocs = atLeast(4096);
+  public static void beforeTestNumericTerms64() throws Exception {
+    noDocs = SolrTestUtil.atLeast(TEST_NIGHTLY ? 4096 : 256);
     distance = (1L << 60) / noDocs;
-    directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
-        .setMergePolicy(newLogMergePolicy()));
+    directory = SolrTestUtil.newDirectory();
+    SolrRandomIndexWriter writer = new SolrRandomIndexWriter(SolrTestCase.random(), directory,
+        SolrTestUtil.newIndexWriterConfig(new MockAnalyzer(SolrTestCase.random()))
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), TEST_NIGHTLY ? 100 : 990, 1000))
+        .setMergePolicy(LuceneTestCase.newLogMergePolicy()));
 
     final LegacyFieldType storedLong = new LegacyFieldType(LegacyLongField.TYPE_NOT_STORED);
     storedLong.setStored(true);
@@ -105,15 +108,15 @@ public class TestNumericTerms64 extends SolrTestCase {
     map.put("field6", Type.LEGACY_LONG);
     map.put("field8", Type.LEGACY_LONG);
     reader = UninvertingReader.wrap(writer.getReader(), map);
-    searcher=newSearcher(reader);
+    searcher= SolrTestUtil.newSearcher(reader);
     writer.close();
   }
   
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterTestNumericTerms64() throws Exception {
     searcher = null;
     if (null != reader) {
-      TestUtil.checkReader(reader);
+      if (TEST_NIGHTLY) TestUtil.checkReader(reader);
       reader.close();
       reader = null;
     }
@@ -127,7 +130,7 @@ public class TestNumericTerms64 extends SolrTestCase {
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
-    int num = TestUtil.nextInt(random(), 10, 20);
+    int num = TestUtil.nextInt(random(), 10, TEST_NIGHTLY ? 20 : 14);
     for (int i = 0; i < num; i++) {
       long lower=(long)(random().nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(random().nextDouble()*noDocs*distance)+startOffset;

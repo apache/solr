@@ -19,13 +19,19 @@ package org.apache.solr.request.macro;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MacroExpander {
+  private final static Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String MACRO_START = "${";
   private static final int MAX_LEVELS = 25;
 
@@ -81,7 +87,7 @@ public class MacroExpander {
       }
 
       if (newValues != null) {
-        values = newValues.toArray(new String[newValues.size()]);
+        values = newValues.toArray(new String[0]);
         changed = true;
       }
 
@@ -95,8 +101,13 @@ public class MacroExpander {
     return changed;
   }
 
-  private Boolean isExpandingExpr() {
-    return Boolean.valueOf(System.getProperty("StreamingExpressionMacros", "false"));
+  private static Boolean isExpandingExpr() {
+    try {
+      return Boolean.valueOf(System.getProperty("StreamingExpressionMacros", "false"));
+    } catch(AccessControlException e) {
+      log.error("Cannot read property for StreamingExpressionMacros", e);
+      return false;
+    }
   }
 
   public String expand(String val) {
@@ -154,7 +165,7 @@ public class MacroExpander {
       }
 
       if (matchedStart > 0) {
-        sb.append(val.substring(start, matchedStart));
+        sb.append(val, start, matchedStart);
       }
 
       // update "start" to be at the end of ${...}
@@ -188,7 +199,7 @@ public class MacroExpander {
 
       } catch (SyntaxError syntaxError) {
         // append the part we would have skipped
-        sb.append( val.substring(matchedStart, start) );
+        sb.append(val, matchedStart, start);
         continue;
       }
 

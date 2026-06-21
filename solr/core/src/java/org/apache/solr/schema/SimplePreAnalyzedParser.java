@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -137,7 +138,8 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
  */
 public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
   static final String VERSION = "1";
-  
+  private static final Pattern COMPILE = Pattern.compile("\\s+");
+
   private static class Tok {
     StringBuilder token = new StringBuilder();
     Map<String, String> attr = new HashMap<>();
@@ -167,7 +169,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
     if (hex == null) {
       return EMPTY_BYTES;
     }
-    hex = hex.replaceAll("\\s+", "");
+    hex = COMPILE.matcher(hex).replaceAll("");
     if (hex.length() == 0) {
       return EMPTY_BYTES;
     }
@@ -309,7 +311,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
         attName.setLength(0);
         attVal.setLength(0);
         if (!tok.isEmpty() || s == S.NAME) {
-          AttributeSource.State state = createState(parent, tok, lastPos);
+          State state = createState(parent, tok, lastPos);
           if (state != null) res.states.add(state.clone());
         }
         // reset tok
@@ -403,13 +405,13 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
           tok.attr.put(attName.toString(), attVal.toString());
         }        
       }
-      AttributeSource.State state = createState(parent, tok, lastPos);
+      State state = createState(parent, tok, lastPos);
       if (state != null) res.states.add(state.clone());
     }
     return res;
   }
   
-  private static AttributeSource.State createState(AttributeSource a, Tok state, int tokenEnd) {
+  private static State createState(AttributeSource a, Tok state, int tokenEnd) {
     a.clearAttributes();
     CharTermAttribute termAtt = a.addAttribute(CharTermAttribute.class);
     char[] tokChars = state.token.toString().toCharArray();
@@ -534,11 +536,11 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
     return sb.toString();
   }
     
-  String escape(String val) {
+  static String escape(String val) {
     return escape(val.toCharArray(), val.length());
   }
   
-  String escape(char[] val, int len) {
+  static String escape(char[] val, int len) {
     if (val == null || len == 0) {
       return "";
     }

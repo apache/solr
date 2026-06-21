@@ -32,10 +32,11 @@ public class BadComponentTest extends SolrTestCaseJ4{
       ignoreException(".*QueryElevationComponent.*");
       System.setProperty("elevate.file", "foo.xml");
       initCore("solrconfig-elevate.xml", "schema12.xml");
-      assertTrue(hasInitException("QueryElevationComponent"));
+      assertTrue(h.getCoreContainer().getCoreInitFailures().toString(), hasInitException("QueryElevationComponent"));
     } finally {
       System.clearProperty("elevate.file");
       resetExceptionIgnores();
+      deleteCore();
     }
   }
 }

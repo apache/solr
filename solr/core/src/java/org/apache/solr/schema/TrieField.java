@@ -94,6 +94,11 @@ public class TrieField extends NumericFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+
+    // MRM TODO: this logs tons
+//    CoreContainer.deprecationLog.warn(TrieField.class.getName() + " fields have been deprecated deprecation=Trie "
+//        + "fields are deprecated as of Solr 7.0, see PointFields");
+
     String p = args.remove("precisionStep");
     if (p != null) {
        precisionStepArg = Integer.parseInt(p);

@@ -16,26 +16,30 @@
  */
 package org.apache.solr.search;
 
+import net.sf.saxon.om.NodeInfo;
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.DOMUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.MapSerializable;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.DOMUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Contains the knowledge of how cache config is
@@ -77,32 +81,34 @@ public class CacheConfig implements MapSerializable{
     this.regenerator = regenerator;
   }
 
-  public static Map<String, CacheConfig> getMultipleConfigs(SolrConfig solrConfig, String configPath) {
-    NodeList nodes = (NodeList) solrConfig.evaluate(configPath, XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
-    Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
+  public static Map<String, CacheConfig> getMultipleConfigs(SolrConfig solrConfig, XPathExpression configPathExp, String configPath) throws XPathExpressionException {
+    ArrayList<NodeInfo> nodes = (ArrayList) configPathExp.evaluate(solrConfig.getTree(), XPathConstants.NODESET);
+    final int size = nodes.size();
+    if (size == 0) return new LinkedHashMap<>();
+    Map<String, CacheConfig> result = new HashMap<>(size);
+    for (int i = 0; i < size; i++) {
+      NodeInfo node = nodes.get(i);
       if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-        CacheConfig config = getConfig(solrConfig, node.getNodeName(),
-                                       DOMUtil.toMap(node.getAttributes()), configPath);
+        CacheConfig config = getConfig(solrConfig, node.getDisplayName(),
+                                       DOMUtil.toMap(node.attributes()), configPath);
         result.put(config.args.get(NAME), config);
       }
     }
-    return result;
+    return Collections.unmodifiableMap(result);
   }
 
 
   @SuppressWarnings({"unchecked"})
-  public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
-    Node node = solrConfig.getNode(xpath, false);
-    if(node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-      Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
-      if(m==null) return null;
-      List<String> parts = StrUtils.splitSmart(xpath, '/');
-      return getConfig(solrConfig,parts.get(parts.size()-1) , Collections.EMPTY_MAP,xpath);
+  public static CacheConfig getConfig(SolrConfig solrConfig, String xpath, XPathExpression xpathExpression) {
+    String path = IndexSchema.normalize(xpath, "/config/");
+    NodeInfo node = solrConfig.getNode(xpathExpression, path, false);
+    if (node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
+      Map<String,String> m = solrConfig.getOverlay().getEditableSubProperties(path);
+      if (m == null) return null;
+      List<String> parts = StrUtils.splitSmart(path, '/');
+      return getConfig(solrConfig, parts.get(parts.size() - 1), Collections.EMPTY_MAP, path);
     }
-    return getConfig(solrConfig, node.getNodeName(),DOMUtil.toMap(node.getAttributes()), xpath);
+    return getConfig(solrConfig, node.getDisplayName(), DOMUtil.toMap(node.attributes()), path);
   }
 
 
@@ -133,11 +139,11 @@ public class CacheConfig implements MapSerializable{
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
-    if(config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
+    if(config.cacheImpl == null) config.cacheImpl = "org.apache.solr.search.CaffeineCache";
     config.regenImpl = config.args.get("regenerator");
-    config.clazz = loader.findClass(config.cacheImpl, SolrCache.class);
+    config.clazz = loader.findClass(config.cacheImpl, SolrCache.class, "search.");
     if (config.regenImpl != null) {
-      config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);
+      config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class, Utils.getSolrSubPackage(CacheRegenerator.class.getPackageName()));
     }
     
     return config;

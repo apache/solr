@@ -22,12 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilterFactory;
 import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilterFactory;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.payloads.AveragePayloadFunction;
 import org.apache.lucene.queries.payloads.MaxPayloadFunction;
@@ -35,10 +35,12 @@ import org.apache.lucene.queries.payloads.MinPayloadFunction;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.queries.payloads.SumPayloadFunction;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
+
+
+import org.apache.lucene.queries.spans.SpanNearQuery;
+import org.apache.lucene.queries.spans.SpanOrQuery;
+import org.apache.lucene.queries.spans.SpanQuery;
+import org.apache.lucene.queries.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.schema.FieldType;
@@ -134,9 +136,9 @@ public class PayloadUtils {
     } else if (terms.size() == 1) {
       query = terms.get(0);
     } else if (operator != null && operator.equalsIgnoreCase("or")) {
-        query = new SpanOrQuery(terms.toArray(new SpanTermQuery[terms.size()]));
+        query = new SpanOrQuery(terms.toArray(new SpanTermQuery[0]));
     } else {
-        query = new SpanNearQuery(terms.toArray(new SpanTermQuery[terms.size()]), 0, true);
+        query = new SpanNearQuery(terms.toArray(new SpanTermQuery[0]), 0, true);
       }
     return query;
   }

@@ -298,11 +298,7 @@ class ExtendedBufferedReader extends BufferedReader  {
    * @return the current-line-number (or -1)
    */ 
   public int getLineNumber() {
-    if (lineCounter > -1) {
-      return lineCounter;
-    } else {
-      return -1;
-    }
+    return Math.max(lineCounter, -1);
   }
   @Override
   public boolean markSupported() {

@@ -30,6 +30,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -61,6 +62,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     for (String field : fields) {
       commandSearchGroups.put(field, new ArrayList<Collection<SearchGroup<BytesRef>>>(shardRequest.responses.size()));
       tempSearchGroupToShards.put(field, new HashMap<SearchGroup<BytesRef>, Set<String>>());
+
       if (!rb.searchGroupToShards.containsKey(field)) {
         rb.searchGroupToShards.put(field, new HashMap<SearchGroup<BytesRef>, Set<String>>());
       }
@@ -82,15 +84,20 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
 
         if (srsp.getException() != null) {
           Throwable t = srsp.getException();
+          Integer code = null;
           if (t instanceof SolrServerException) {
-            t = ((SolrServerException) t).getCause();
+            t = t.getCause();
+          }
+          if (t instanceof SolrException) {
+            code = ((SolrException) t).code();
+            srsp.setResponseCode(code);
           }
           nl.add("error", t.toString());
           StringWriter trace = new StringWriter();
           t.printStackTrace(new PrintWriter(trace));
           nl.add("trace", trace.toString());
         } else {
-          nl.add("numFound", (Integer) srsp.getSolrResponse().getResponse().get("totalHitCount"));
+          nl.add("numFound", srsp.getSolrResponse().getResponse().get("totalHitCount"));
         }
         if (srsp.getSolrResponse() != null) {
           nl.add("time", srsp.getSolrResponse().getElapsedTime());
@@ -107,6 +114,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
       maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
       @SuppressWarnings({"rawtypes"})
       NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");
+
       final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, withinGroupSort, srsp.getShard());
       for (Map.Entry<String, List<Collection<SearchGroup<BytesRef>>>> entry : commandSearchGroups.entrySet()) {
         String field = entry.getKey();
@@ -114,7 +122,10 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
 
         final Integer groupCount = firstPhaseCommandResult.getGroupCount();
         if (groupCount != null) {
-          Integer existingGroupCount = rb.mergedGroupCounts.get(field);
+          Integer existingGroupCount = null;
+
+          existingGroupCount = rb.mergedGroupCounts.get(field);
+
           // Assuming groups don't cross shard boundary...
           rb.mergedGroupCounts.put(field, existingGroupCount != null ? Integer.valueOf(existingGroupCount + groupCount) : groupCount);
         }

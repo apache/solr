@@ -19,6 +19,7 @@ import java.io.File;
 import java.util.SortedMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -27,7 +28,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
@@ -37,6 +37,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestLTROnSolrCloud extends TestRerankBase {
 
   private MiniSolrCloudCluster solrCluster;
@@ -51,15 +52,13 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     extraServlets = setupTestInit(solrconfig, schema, true);
     System.setProperty("enable.update.log", "true");
 
-    int numberOfShards = random().nextInt(4)+1;
-    int numberOfReplicas = random().nextInt(2)+1;
-    int maxShardsPerNode = random().nextInt(4)+1;
+    int numberOfShards = TEST_NIGHTLY ? random().nextInt(TEST_NIGHTLY ? 4 : 2)+1 : 2;
+    int numberOfReplicas = TEST_NIGHTLY ? random().nextInt(TEST_NIGHTLY ? 2 : 1)+1 : 2;
+    int maxShardsPerNode = TEST_NIGHTLY ? random().nextInt(4)+1 : 4;
 
     int numberOfNodes = (numberOfShards*numberOfReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes, maxShardsPerNode);
-
-
   }
 
 
@@ -211,7 +210,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
       if (!solrRunner.getCoreContainer().getCores().isEmpty()){
         String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
-        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
+        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName, solrCluster.getSolrClient().getHttpClient()
+            , solrCluster.getJettySolrRunners().get(0).getCoreContainer()
+            .getResourceLoader());
         break;
       }
     }
@@ -230,8 +231,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
-    solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 
 

@@ -42,7 +42,7 @@ public class EqualFunction extends ComparisonBoolFunction {
     Object objR = rhs.objectVal(doc);
     if (isNumeric(objL) && isNumeric(objR)) {
       if (isInteger(objL) && isInteger(objR)) {
-        return Long.compare(((Number)objL).longValue(), ((Number)objR).longValue()) == 0;
+        return ((Number) objL).longValue() == ((Number) objR).longValue();
       } else {
         return Double.compare(((Number)objL).doubleValue(), ((Number)objR).doubleValue()) == 0;
       }

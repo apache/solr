@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.FilterMergePolicy;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class RandomMergePolicy extends FilterMergePolicy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public RandomMergePolicy() {
-    this(LuceneTestCase.newMergePolicy());
+    this(SolrTestUtil.newMergePolicy());
   }
 
   protected RandomMergePolicy(MergePolicy inner) {

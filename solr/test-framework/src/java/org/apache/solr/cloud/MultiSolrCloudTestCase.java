@@ -16,14 +16,22 @@
  */
 package org.apache.solr.cloud;
 
-import java.util.HashMap;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.util.SolrQueuedThreadPool;
+import org.jctools.maps.NonBlockingHashMap;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.junit.AfterClass;
 
 /**
  * Base class for tests that require more than one SolrCloud
@@ -34,7 +42,11 @@ import org.junit.AfterClass;
  */
 public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
-  protected static Map<String,MiniSolrCloudCluster> clusterId2cluster = new HashMap<String,MiniSolrCloudCluster>();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected volatile Map<String,MiniSolrCloudCluster> clusterId2cluster;
+
+  private static volatile SolrQueuedThreadPool qtp;
 
   protected static abstract class DefaultClusterCreateFunction implements Function<String,MiniSolrCloudCluster> {
 
@@ -47,9 +59,9 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
     public MiniSolrCloudCluster apply(String clusterId) {
       try {
         final MiniSolrCloudCluster cluster = new SolrCloudTestCase
-            .Builder(nodesPerCluster(clusterId), createTempDir())
-            .addConfig("conf", configset("cloud-dynamic"))
-            .build();
+            .Builder(nodesPerCluster(clusterId), SolrTestUtil.createTempDir())
+            .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
+            .formatZk(true).build();
         return cluster;
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -75,9 +87,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         CollectionAdminRequest
         .createCollection(collection, "conf", numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
-        .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
-
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
+        .process(cluster.getSolrClient());
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -85,7 +95,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
   }
 
-  protected static void doSetupClusters(final String[] clusterIds,
+  protected void doSetupClusters(final String[] clusterIds,
       final Function<String,MiniSolrCloudCluster> createFunc,
       final BiConsumer<String,MiniSolrCloudCluster> initFunc) throws Exception {
 
@@ -93,16 +103,44 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
       assertFalse("duplicate clusterId "+clusterId, clusterId2cluster.containsKey(clusterId));
       MiniSolrCloudCluster cluster = createFunc.apply(clusterId);
       initFunc.accept(clusterId, cluster);
-      clusterId2cluster.put(clusterId, cluster);
+      MiniSolrCloudCluster old = clusterId2cluster.put(clusterId, cluster);
+      if (old != null) {
+        old.shutdown();
+      }
     }
   }
 
+  @BeforeClass
+  public static void beforeSolrCloudTestCase() throws Exception {
+//    qtp = getQtp();
+//    qtp.start();
+  }
+
   @AfterClass
-  public static void shutdownCluster() throws Exception {
-    for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
-      cluster.shutdown();
+  public static void afterSolrCloudTestCase() throws Exception {
+    if (qtp != null) {
+      qtp.stop();
+      qtp = null;
     }
-    clusterId2cluster.clear();
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    clusterId2cluster = new NonBlockingHashMap<>();
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    clusterId2cluster.forEach((s, miniSolrCloudCluster) -> {
+      try {
+        miniSolrCloudCluster.shutdown();
+      } catch (Exception e) {
+        log.error("", e);
+      }
+    });
+    clusterId2cluster = null;
+    super.tearDown();
   }
 
 }

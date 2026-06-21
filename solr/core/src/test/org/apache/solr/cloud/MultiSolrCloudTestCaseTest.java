@@ -17,37 +17,38 @@
 
 package org.apache.solr.cloud;
 
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
 
-  private static int numClouds;
-  private static int numCollectionsPerCloud;
+  private int numClouds;
+  private int numCollectionsPerCloud;
 
-  private static int numShards;
-  private static int numReplicas;
-  private static int maxShardsPerNode;
-  private static int nodesPerCluster;
+  private int numShards;
+  private int numReplicas;
+  private int maxShardsPerNode;
+  private int nodesPerCluster;
 
-  @BeforeClass
-  public static void setupClusters() throws Exception {
-
-    numClouds = random().nextInt(4); //  0..3
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    numClouds = random().nextInt(TEST_NIGHTLY ? 4 : 2); //  0..3
     final String[] clusterIds = new String[numClouds];
     for (int ii=0; ii<numClouds; ++ii) {
       clusterIds[ii] = "cloud"+(ii+1);
     }
 
-    numCollectionsPerCloud = random().nextInt(3); //  0..2
+    numCollectionsPerCloud = random().nextInt(TEST_NIGHTLY ? 3 : 1); //  0..2
     final String[] collections = new String[numCollectionsPerCloud];
     for (int ii=0; ii<numCollectionsPerCloud; ++ii) {
       collections[ii] = "collection"+(ii+1);
     }
 
-    numShards = 1+random().nextInt(2);
-    numReplicas = 1+random().nextInt(2);
-    maxShardsPerNode = 1+random().nextInt(2);
+    numShards = 1+random().nextInt(TEST_NIGHTLY ? 2 : 1);
+    numReplicas = 1+random().nextInt(TEST_NIGHTLY ? 2 : 1);
+    maxShardsPerNode = 1+random().nextInt(TEST_NIGHTLY ? 2 : 1);
     nodesPerCluster = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
     doSetupClusters(
@@ -70,6 +71,18 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
             }
           }
         });
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    numClouds = 0;
+    numCollectionsPerCloud = 0;
+
+    numShards = 0;
+    numReplicas = 0;
+    maxShardsPerNode =0;
+    nodesPerCluster = 0;
   }
 
   @Test

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
@@ -32,20 +33,12 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   @Override
   public boolean exists(String path) throws IOException {
     String fullPath = normalize(path);
-    synchronized (this) {
-      final CacheValue cacheValue = byPathCache.get(fullPath);
-      if (null == cacheValue) {
-        return false;
-      }
-      final Directory directory = cacheValue.directory;
-      if (null == directory) {
-        return false;
-      }
-      if (0 < directory.listAll().length) {
-        return true;
-      } 
-      return false;
-    }
+    Directory dir = byPathCache.get(fullPath);
+    if (dir == null) return false;
+    // Match the DirectoryFactory.exists() contract: directory must contain at least one file.
+    // A directory object in cache but with no files is not considered "existing".
+    String[] files = dir.listAll();
+    return files != null && files.length > 0;
   }
   
   public boolean isPersistent() {
@@ -54,14 +47,15 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   
   @Override
   public boolean isAbsolute(String path) {
-    return true;
+    // back compat
+    return new File(path).isAbsolute();
   }
   
   
-  @Override
-  public void remove(Directory dir) throws IOException {
-    // ram dir does not persist its dir anywhere
-  }
+//  @Override
+//  public void remove(Directory dir) throws IOException {
+//    // ram dir does not persist its dir anywhere
+//  }
   
   @Override
   public void remove(String path) throws IOException {

@@ -72,7 +72,7 @@ public final class EnumFieldValue implements Serializable, Comparable<EnumFieldV
     return compareIntegers(intValue, o.intValue);
   }
 
-  private boolean equalStrings(String str1, String str2) {
+  private static boolean equalStrings(String str1, String str2) {
     if ((str1 == null) && (str2 == null))
       return true;
 
@@ -85,7 +85,7 @@ public final class EnumFieldValue implements Serializable, Comparable<EnumFieldV
     return str1.equals(str2);
   }
 
-  private boolean equalsIntegers(Integer int1, Integer int2) {
+  private static boolean equalsIntegers(Integer int1, Integer int2) {
     if ((int1 == null) && (int2 == null))
       return true;
 
@@ -98,7 +98,7 @@ public final class EnumFieldValue implements Serializable, Comparable<EnumFieldV
     return int1.equals(int2);
   }
 
-  private int compareIntegers(Integer int1, Integer int2) {
+  private static int compareIntegers(Integer int1, Integer int2) {
     if ((int1 == null) && (int2 == null))
       return 0;
 

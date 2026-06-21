@@ -16,24 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.Random;
-import java.util.LinkedList;
-
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -44,18 +27,32 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ROWS;
 import static org.apache.solr.common.params.CommonParams.SORT;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 /**
  * Connects to Zookeeper to pick replicas from a specific collection to send the query to.
@@ -68,6 +65,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 public class DeepRandomStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
+  public static final Slice[] SLICES = new Slice[0];
 
   protected String zkHost;
   protected String collection;
@@ -76,7 +74,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   protected StreamComparator comp;
   private boolean trace;
   protected transient Map<String, Tuple> eofTuples;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
   protected transient List<TupleStream> solrStreams;
   protected transient LinkedList<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
@@ -98,10 +96,10 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
   public DeepRandomStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
+    StreamExpressionNamedParameter aliasExpression = StreamFactory.getNamedOperand(expression, "aliases");
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if(null == collectionName){
@@ -291,16 +289,16 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     List<Slice> slices = allCollections.stream()
         .map(collectionsMap::get)
         .filter(Objects::nonNull)
-        .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
+        .flatMap(docCol -> docCol.getActiveSlices().stream())
         .collect(Collectors.toList());
     if (!slices.isEmpty()) {
-      return slices.toArray(new Slice[slices.size()]);
+      return slices.toArray(new Slice[0]);
     }
 
     // Check collection case insensitive
     for(Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
       if(entry.getKey().equalsIgnoreCase(collectionName)) {
-        return entry.getValue().getActiveSlicesArr();
+        return entry.getValue().getActiveSlices().toArray(SLICES);
       }
     }
 
@@ -347,27 +345,19 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("DeepRandomStream"));
+    final ExecutorService service = ParWork.getRootSharedExecutor();
+    List<Future<TupleWrapper>> futures =
+        solrStreams.stream().map(ss -> service.submit(new StreamOpener((SolrStream)ss, comp))).collect(Collectors.toList());
     try {
-      List<Future<TupleWrapper>> futures = new ArrayList();
-      for (TupleStream solrStream : solrStreams) {
-        StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
-        Future<TupleWrapper> future = service.submit(so);
-        futures.add(future);
-      }
-
-      try {
-        for (Future<TupleWrapper> f : futures) {
-          TupleWrapper w = f.get();
-          if (w != null) {
-            tuples.add(w);
-          }
+      for (Future<TupleWrapper> f : futures) {
+        TupleWrapper w = f.get();
+        if (w != null) {
+          tuples.add(w);
         }
-      } catch (Exception e) {
-        throw new IOException(e);
       }
-    } finally {
-      service.shutdown();
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      throw new IOException(e);
     }
   }
 
@@ -438,6 +428,11 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       return this == o;
     }
 
+    @Override
+    public int hashCode() {
+      return Objects.hash(tuple);
+    }
+
     public Tuple getTuple() {
       return tuple;
     }
@@ -474,7 +469,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     }
   }
 
-  protected ModifiableSolrParams adjustParams(ModifiableSolrParams params) {
+  protected static ModifiableSolrParams adjustParams(ModifiableSolrParams params) {
     return params;
   }
 }

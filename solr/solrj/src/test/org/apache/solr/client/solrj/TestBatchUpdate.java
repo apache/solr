@@ -17,15 +17,15 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -36,12 +36,18 @@ import java.util.Iterator;
  * @since solr 1.4
  *
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBatchUpdate extends SolrJettyTestBase {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+  @Before
+  public void setUp() throws Exception {
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 
   static final int numdocs = 1000;  
@@ -49,7 +55,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new RequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -57,7 +63,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinary()throws Exception{
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -65,7 +71,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinaryBean()throws Exception{
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     final int[] counter = new int[1];
@@ -104,7 +110,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     String cat;
   }
        
-  private void doIt(HttpSolrClient client) throws SolrServerException, IOException {
+  private void doIt(Http2SolrClient client) throws SolrServerException, IOException {
     final int[] counter = new int[1];
     counter[0] = 0;
     client.add(new Iterator<SolrInputDocument>() {

@@ -16,7 +16,17 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+
 public class SuggesterWFSTTest extends SuggesterTest {
+
+  @BeforeClass
+  public static void beforeSuggesterWFSTTest() throws Exception {
+    useFactory(null);
+  }
+
+
   public SuggesterWFSTTest() {
     super.requestUri = "/suggest_wfst";
   }

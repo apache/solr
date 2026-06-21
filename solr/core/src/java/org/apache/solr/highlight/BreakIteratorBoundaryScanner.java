@@ -46,16 +46,16 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
     // construct BreakIterator
     String type = params.getFieldParam(fieldName, HighlightParams.BS_TYPE, "WORD").toLowerCase(Locale.ROOT);
     BreakIterator bi = null;
-    if(type.equals("character")){
+    if(type.equalsIgnoreCase("character")){
       bi = BreakIterator.getCharacterInstance(locale);
     }
-    else if(type.equals("word")){
+    else if(type.equalsIgnoreCase("word")){
       bi = BreakIterator.getWordInstance(locale);
     }
-    else if(type.equals("line")){
+    else if(type.equalsIgnoreCase("line")){
       bi = BreakIterator.getLineInstance(locale);
     }
-    else if(type.equals("sentence")){
+    else if(type.equalsIgnoreCase("sentence")){
       bi = BreakIterator.getSentenceInstance(locale);
     }
     else

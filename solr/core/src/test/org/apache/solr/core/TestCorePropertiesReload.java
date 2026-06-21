@@ -26,28 +26,36 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.Test;
 
 public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
-  private final File solrHomeDirectory = createTempDir().toFile();
+  private final File solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
 
-  public void setMeUp() throws Exception {
-    FileUtils.copyDirectory(new File(TEST_HOME()), solrHomeDirectory);
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), solrHomeDirectory);
     Properties props = new Properties();
     props.setProperty("test", "Before reload");
     writeProperties(props);
     initCore("solrconfig.xml", "schema.xml", solrHomeDirectory.getAbsolutePath());
   }
 
+  @Override
+  public void tearDown() throws Exception {
+    deleteCore();
+    super.tearDown();
+  }
+
   @Test
   public void testPropertiesReload() throws Exception {
-    setMeUp();
     SolrCore core = h.getCore();
     CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     String testProp = coreDescriptor.getCoreProperty("test", null);
     assertTrue(testProp.equals("Before reload"));
-
+    core.close();
     //Re-write the properties file
     Properties props = new Properties();
     props.setProperty("test", "After reload");
@@ -59,6 +67,7 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
     testProp = coreDescriptor.getCoreProperty("test", null);
     assertTrue(testProp.equals("After reload"));
+    core.close();
   }
 
   private void writeProperties(Properties props) throws Exception {

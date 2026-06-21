@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.update.AddUpdateCommand;
@@ -27,10 +28,10 @@ import org.apache.solr.update.RollbackUpdateCommand;
 
 public class BufferingRequestProcessor extends UpdateRequestProcessor
 {
-  public List<AddUpdateCommand> addCommands = new ArrayList<>();
-  public List<DeleteUpdateCommand> deleteCommands = new ArrayList<>();
-  public List<CommitUpdateCommand> commitCommands = new ArrayList<>();
-  public List<RollbackUpdateCommand> rollbackCommands = new ArrayList<>();
+  public List<AddUpdateCommand> addCommands = Collections.synchronizedList(new ArrayList<>());
+  public List<DeleteUpdateCommand> deleteCommands = Collections.synchronizedList(new ArrayList<>());
+  public List<CommitUpdateCommand> commitCommands = Collections.synchronizedList(new ArrayList<>());
+  public List<RollbackUpdateCommand> rollbackCommands = Collections.synchronizedList(new ArrayList<>());
   
   public BufferingRequestProcessor(UpdateRequestProcessor next) {
     super(next);
@@ -38,7 +39,7 @@ public class BufferingRequestProcessor extends UpdateRequestProcessor
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    addCommands.add( cmd );
+    addCommands.add((AddUpdateCommand) cmd.clone());
   }
 
   @Override
@@ -60,5 +61,10 @@ public class BufferingRequestProcessor extends UpdateRequestProcessor
   @Override
   public void finish() throws IOException {
     // nothing?    
+  }
+
+  @Override
+  public void doClose() {
+    super.doClose();
   }
 }

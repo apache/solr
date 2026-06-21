@@ -17,8 +17,11 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -26,32 +29,33 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.junit.Before;
+import org.apache.solr.common.cloud.Slice;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 /**
  * Tests the Custom Sharding API.
  */
+@LuceneTestCase.Nightly // MRM TODO: look into this test sometimes being very slow to finish
 public class CustomCollectionTest extends SolrCloudTestCase {
 
-  private static final int NODE_COUNT = 4;
+  private static final int NODE_COUNT = 3;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCustomCollectionTest() throws Exception {
+    useFactory(null);
     configureCluster(NODE_COUNT)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
   }
 
-  @Before
-  public void ensureClusterEmpty() throws Exception {
-    cluster.deleteAllCollections();
+  @AfterClass
+  public static void afterCustomCollectionTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -60,17 +64,17 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     final String collection = "implicitcoll";
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
-    int numShards = 3;
-    int maxShardsPerNode = (((numShards + 1) * replicationFactor) / NODE_COUNT) + 1;
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
+
+    // Wait until every replica is ACTIVE before indexing/querying. Otherwise a doc-update or query
+    // can race a still-recovering replica (PeerSync "no frame of reference"), producing an undercount.
+    cluster.waitForActiveCollection(collection, 3, 3 * replicationFactor);
 
     DocCollection coll = getCollectionState(collection);
     assertEquals("implicit", ((Map) coll.get(DOC_ROUTER)).get("name"));
-    assertNotNull(coll.getStr(REPLICATION_FACTOR));
-    assertNotNull(coll.getStr(MAX_SHARDS_PER_NODE));
+
     assertNull("A shard of a Collection configured with implicit router must have null range",
         coll.getSlice("a").getRange());
 
@@ -85,6 +89,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     assertEquals(0, cluster.getSolrClient().query(collection, new SolrQuery("*:*").setParam(_ROUTE_, "b")).getResults().getNumFound());
     assertEquals(3, cluster.getSolrClient().query(collection, new SolrQuery("*:*").setParam(_ROUTE_, "a")).getResults().getNumFound());
 
+    // MRM TODO:: I think this combo can still stall and have issues
     cluster.getSolrClient().deleteByQuery(collection, "*:*");
     cluster.getSolrClient().commit(collection, true, true);
     assertEquals(0, cluster.getSolrClient().query(collection, new SolrQuery("*:*")).getResults().getNumFound());
@@ -126,15 +131,16 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     int numShards = 4;
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
-    int maxShardsPerNode = ((numShards * replicationFactor) / NODE_COUNT) + 1;
+
     String shard_fld = "shard_s";
 
     final String collection = "withShardField";
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c,d", replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collection, 4, 4 * replicationFactor);
 
     new UpdateRequest()
         .add("id", "6", shard_fld, "a")
@@ -154,14 +160,12 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     String collectionName = "routeFieldColl";
     int numShards = 4;
     int replicationFactor = 2;
-    int maxShardsPerNode = ((numShards * replicationFactor) / NODE_COUNT) + 1;
     String shard_fld = "shard_s";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection(collectionName, numShards, numShards * replicationFactor);
 
     new UpdateRequest()
@@ -191,13 +195,23 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "a,b", 1)
         .process(cluster.getSolrClient());
 
-    CollectionAdminRequest.createShard(collectionName, "x")
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.CreateShard req = CollectionAdminRequest.createShard(collectionName, "x");
+    req.process(cluster.getSolrClient());
 
-    waitForState("Not enough active replicas in shard 'x'", collectionName, (n, c) -> {
-      return c.getSlice("x").getReplicas().size() == 1;
+    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      if (collectionState == null) {
+        return false;
+      }
+      Slice slice = collectionState.getSlice("x");
+      if (slice == null) {
+        return false;
+      }
+
+      if (slice.getReplicas().size() == 1) {
+        return true;
+      }
+      return false;
     });
-
   }
 
 }

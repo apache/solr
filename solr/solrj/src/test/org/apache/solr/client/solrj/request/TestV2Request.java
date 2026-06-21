@@ -21,30 +21,35 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly
 public class TestV2Request extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   @Before
   public void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(4)
         .withJettyConfig(jettyCfg -> jettyCfg.enableV2(true))
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+        .addConfig("config", SolrTestUtil.getFile("solrj/solr/collection1/conf").toPath())
         .configure();
   }
 
@@ -83,7 +88,7 @@ public class TestV2Request extends SolrCloudTestCase {
   @Test
 // 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testHttpSolrClient() throws Exception {
-    HttpSolrClient solrClient = new HttpSolrClient.Builder(
+    Http2SolrClient solrClient = new Http2SolrClient.Builder(
         cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
     doTest(solrClient);
     solrClient.close();
@@ -153,14 +158,13 @@ public class TestV2Request extends SolrCloudTestCase {
             "}").build());
 
     ClusterState cs = cluster.getSolrClient().getClusterStateProvider().getClusterState();
-    System.out.println("livenodes: " + cs.getLiveNodes());
 
     String[] node = new String[1];
     cs.getCollection("v2forward").forEachReplica((s, replica) -> node[0] = replica.getNodeName());
 
     //find a node that does not have a replica for this collection
     final String[] testNode = new String[1];
-    cs.getLiveNodes().forEach(s -> {
+    cluster.getSolrClient().getZkStateReader().getLiveNodes().forEach(s -> {
       if (!s.equals(node[0])) testNode[0] = s;
     });
 
@@ -168,8 +172,8 @@ public class TestV2Request extends SolrCloudTestCase {
      V2Request v2r = new V2Request.Builder("/c/v2forward/_introspect")
         .withMethod(SolrRequest.METHOD.GET).build();
 
-    try(HttpSolrClient client1 = new HttpSolrClient.Builder()
-        .withBaseSolrUrl(testServer)
+    try(Http2SolrClient client1 = new Http2SolrClient.Builder()
+        .withBaseUrl(testServer)
         .build()) {
       V2Response rsp = v2r.process(client1);
       assertEquals("0",rsp._getStr("responseHeader/status", null));

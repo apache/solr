@@ -19,6 +19,7 @@ package org.apache.solr.search.mlt;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,8 +27,13 @@ import org.junit.Test;
 public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void moreLikeThisBeforeClass() throws Exception {
+  public static void beforeSimpleMLTQParserTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterSimpleMLTQParserTest() throws Exception {
+    deleteCore();
   }
 
   @Test

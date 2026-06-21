@@ -24,4 +24,12 @@ public abstract class ShardHandler {
   public abstract ShardResponse takeCompletedOrError();
   public abstract void cancelAll();
   public abstract ShardHandlerFactory getShardHandlerFactory();
+
+  public void setFinish(Runnable runnable) {
+
+  }
+
+  public void clearPending() {
+
+  }
 }

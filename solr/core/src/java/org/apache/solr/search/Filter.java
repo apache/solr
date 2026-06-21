@@ -28,7 +28,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
@@ -112,17 +111,7 @@ public abstract class Filter extends Query {
         if (applyLazily && set.bits() != null) {
           final Bits bits = set.bits();
           final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-          final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
-            @Override
-            public boolean matches() throws IOException {
-              return bits.get(approximation.docID());
-            }
-
-            @Override
-            public float matchCost() {
-              return 10; // TODO use cost of bits.get()
-            }
-          };
+          final Filter.TwoPhaseIterator twoPhase = new Filter.TwoPhaseIterator(approximation, bits);
           return new ConstantScoreScorer(this, 0f, scoreMode, twoPhase);
         }
         final DocIdSetIterator iterator = set.iterator();
@@ -142,5 +131,24 @@ public abstract class Filter extends Query {
   @Override
   public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
+  }
+
+  private static class TwoPhaseIterator extends org.apache.lucene.search.TwoPhaseIterator {
+    private final Bits bits;
+
+    public TwoPhaseIterator(DocIdSetIterator approximation, Bits bits) {
+      super(approximation);
+      this.bits = bits;
+    }
+
+    @Override
+    public boolean matches() throws IOException {
+      return bits.get(approximation.docID());
+    }
+
+    @Override
+    public float matchCost() {
+      return 10; // TODO use cost of bits.get()
+    }
   }
 }

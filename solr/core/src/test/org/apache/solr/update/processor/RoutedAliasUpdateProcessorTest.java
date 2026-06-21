@@ -18,6 +18,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,10 +31,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -50,20 +53,20 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 @org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13696")
-@Ignore  // don't try too run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String intField = "integer_i";
 
@@ -93,7 +96,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   private boolean haveCollection(String alias, String collection) {
     // separated into separate lines to make it easier to track down an NPE that occurred once
     // 3000 runs if it shows up again...
-    CloudSolrClient solrClient = cluster.getSolrClient();
+    CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     ZkStateReader zkStateReader = solrClient.getZkStateReader();
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionAliasListMap = aliases.getCollectionAliasListMap();
@@ -103,7 +106,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   /** @see TrackingUpdateProcessorFactory */
   String getTrackUpdatesGroupName() {
-    return getSaferTestName();
+    return SolrTestUtil.getTestName();
   }
 
   void createConfigSet(String configName) throws SolrServerException, IOException, InterruptedException {
@@ -170,15 +173,15 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     Set<String> leaders = new TreeSet<>(); // sorted just to make it easier to read when debugging...
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
-      List<CoreDescriptor> coreDescriptors = jettySolrRunner.getCoreContainer().getCoreDescriptors();
+      Collection<CoreDescriptor> coreDescriptors = jettySolrRunner.getCoreContainer().getCoreDescriptors();
       for (CoreDescriptor core : coreDescriptors) {
         String nodeName = jettySolrRunner.getNodeName();
         String collectionName = core.getCollectionName();
         DocCollection collectionOrNull = clusterState.getCollectionOrNull(collectionName);
-        List<Replica> leaderReplicas = collectionOrNull.getLeaderReplicas(nodeName);
+        List<Replica> leaderReplicas = collectionOrNull.getLeaderReplicas(nodeName, cluster.getSolrClient().getZkStateReader().getLiveNodes());
         if (leaderReplicas != null) {
           for (Replica leaderReplica : leaderReplicas) {
-            leaders.add(leaderReplica.getCoreName());
+            leaders.add(leaderReplica.getName());
           }
         }
       }
@@ -187,7 +190,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   void assertRouting(int numShards, List<UpdateCommand> updateCommands) throws IOException {
-    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(cluster)) {
+    try (CloudHttp2SolrClient cloudSolrClient = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
       ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
       clusterStateProvider.connect();
       Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
@@ -211,7 +214,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       // thus might pick a jetty without a core for the collection and succeed if count = 0 when we
       // should have failed, or at least waited longer
       for (JettySolrRunner jsr : jsrs) {
-        List<CoreDescriptor> coreDescriptors = jsr.getCoreContainer().getCoreDescriptors();
+        Collection<CoreDescriptor> coreDescriptors = jsr.getCoreContainer().getCoreDescriptors();
         for (CoreDescriptor coreDescriptor : coreDescriptors) {
           String collectionName = coreDescriptor.getCollectionName();
           if (collection.equals(collectionName)) {
@@ -225,7 +228,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         try {
           Thread.sleep(500);
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          log.error("", e);
           fail(e.getMessage());
         }
       }
@@ -234,7 +237,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   public abstract String getAlias() ;
 
-  public abstract CloudSolrClient getSolrClient() ;
+  public abstract CloudHttp2SolrClient getSolrClient() ;
 
 
   @SuppressWarnings("WeakerAccess")
@@ -270,30 +273,21 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     if (random().nextBoolean()) {
       // Send in separate threads. Choose random collection & solrClient
       ExecutorService exec = null;
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        try {
-          exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-              new SolrNamedThreadFactory(getSaferTestName()));
-          List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
-          for (SolrInputDocument solrInputDocument : solrInputDocuments) {
-            String col = collections.get(random().nextInt(collections.size()));
-            futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
-          }
-          for (Future<UpdateResponse> future : futures) {
-            assertUpdateResponse(future.get());
-          }
-          // at this point there shouldn't be any tasks running
-          assertEquals(0, exec.shutdownNow().size());
-        } finally {
-          if (exec != null) {
-            exec.shutdownNow();
-          }
+      try (CloudHttp2SolrClient solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
+        exec = getTestExecutor();
+        List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
+        for (SolrInputDocument solrInputDocument : solrInputDocuments) {
+          String col = collections.get(random().nextInt(collections.size()));
+          futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
+        }
+        for (Future<UpdateResponse> future : futures) {
+          assertUpdateResponse(future.get());
         }
       }
     } else {
       // send in a batch.
       String col = collections.get(random().nextInt(collections.size()));
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
+      try (CloudHttp2SolrClient solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
         assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), commitWithin));
       }
     }
@@ -331,7 +325,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   private int queryNumDocs(String q) throws SolrServerException, IOException {
-    return (int) getSolrClient().query(getAlias(), params("q", q, "rows", "0")).getResults().getNumFound();
+    return (int) getSolrClient().query(getAlias(), SolrTestCaseJ4.params("q", q, "rows", "0")).getResults().getNumFound();
   }
 
   /** Adds the docs to Solr via {@link #getSolrClient()} with the params */

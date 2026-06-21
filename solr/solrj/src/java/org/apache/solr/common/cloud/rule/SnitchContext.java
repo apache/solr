@@ -60,7 +60,7 @@ public abstract class SnitchContext implements RemoteCallback {
     return session != null ? session.get(s) : null;
 
   }
-  public Map<String, Object> getNodeValues(String node, Collection<String> tags){
+  public static Map<String, Object> getNodeValues(String node, Collection<String> tags){
     return Collections.emptyMap();
   }
 

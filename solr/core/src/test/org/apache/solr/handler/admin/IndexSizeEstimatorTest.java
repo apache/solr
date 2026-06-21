@@ -33,8 +33,9 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -49,6 +50,7 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,24 +61,23 @@ import org.slf4j.LoggerFactory;
 public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static CloudSolrClient solrClient;
+  private static CloudHttp2SolrClient solrClient;
   private static String collection = IndexSizeEstimator.class.getSimpleName() + "_collection";
-  private static int NUM_DOCS = 2000;
+  private static int NUM_DOCS = TEST_NIGHTLY ? 2000 : 200;
   private static Set<String> fields;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     // create predictable field names
+    useFactory(null);
     System.setProperty("solr.tests.numeric.dv", "true");
     System.setProperty("solr.tests.numeric.points", "true");
     System.setProperty("solr.tests.numeric.points.dv", "true");
     configureCluster(2)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
     solrClient = cluster.getSolrClient();
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
-        .setMaxShardsPerNode(2).process(solrClient);
-    cluster.waitForActiveCollection(collection, 2, 4);
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).process(solrClient);
     SolrInputDocument lastDoc = addDocs(collection, NUM_DOCS);
     HashSet<String> docFields = new HashSet<>(lastDoc.keySet());
     docFields.add("_version_");
@@ -93,10 +94,28 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
 
   @Test
   public void testEstimator() throws Exception {
-    JettySolrRunner jetty = cluster.getRandomJetty(random());
-    String randomCoreName = jetty.getCoreContainer().getAllCoreNames().iterator().next();
-    SolrCore core = jetty.getCoreContainer().getCore(randomCoreName);
-    RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
+    // Pick a core that actually has documents. A randomly chosen core may belong to a replica
+    // whose searcher has not yet caught up (0 docs), which would yield an empty estimate.
+    SolrCore core = null;
+    RefCounted<SolrIndexSearcher> searcherRef = null;
+    outer:
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      for (String coreName : jetty.getCoreContainer().getAllCoreNames()) {
+        SolrCore candidate = jetty.getCoreContainer().getCore(coreName);
+        if (candidate == null) {
+          continue;
+        }
+        RefCounted<SolrIndexSearcher> ref = candidate.getSearcher();
+        if (ref.get().getRawReader().numDocs() > 0) {
+          core = candidate;
+          searcherRef = ref;
+          break outer;
+        }
+        ref.decref();
+        candidate.close();
+      }
+    }
+    assertNotNull("no core with documents found", core);
     try {
       SolrIndexSearcher searcher = searcherRef.get();
       // limit the max length
@@ -171,7 +190,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertEquals(0, sampledRsp.getStatus());
     for (int i : Arrays.asList(1, 2)) {
-      NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "shard" + i, "leader", "segInfos");
+      NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "s" + i, "leader", "segInfos");
       NamedList<Object> rawSize = (NamedList<Object>)segInfos.get("rawSize");
       assertNotNull("rawSize missing", rawSize);
       Map<String, Object> rawSizeMap = rawSize.asMap(10);
@@ -191,9 +210,9 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
       assertEquals(details.keySet().toString(), 6, details.size());
 
       // compare with sampled
-      NamedList<Object> sampledRawSize = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "shard" + i, "leader", "segInfos", "rawSize");
+      NamedList<Object> sampledRawSize = (NamedList<Object>) sampledRsp.getResponse().findRecursive(collection, "shards", "s" + i, "leader", "segInfos", "rawSize");
       assertNotNull("sampled rawSize missing", sampledRawSize);
-      Map<String, Object> sampledRawSizeMap = rawSize.asMap(10);
+      Map<String, Object> sampledRawSizeMap = sampledRawSize.asMap(10);
       Map<String, Object> sampledFieldsBySize = (Map<String, Object>)sampledRawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
       assertNotNull("sampled fieldsBySize missing", sampledFieldsBySize);
       fieldsBySize.forEach((k, v) -> {
@@ -226,8 +245,12 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   }
 
   private static SolrInputDocument addDocs(String collection, int n) throws Exception {
-    UpdateRequest ureq = new UpdateRequest();
     SolrInputDocument doc = null;
+    // Send in batches so a single update request does not exceed the client idle timeout
+    // when the cluster/host is busy (the full set in one request can stall a slow fan-out).
+    final int batchSize = 50;
+    UpdateRequest ureq = new UpdateRequest();
+    int inBatch = 0;
     for (int i = 0; i < n; i++) {
       doc = new SolrInputDocument();
       doc.addField("id", "id-" + i);
@@ -247,11 +270,18 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
       // points
       doc.addField("point", random().nextInt(100) + "," + random().nextInt(100));
       ureq.add(doc);
+      if (++inBatch >= batchSize) {
+        solrClient.request(ureq, collection);
+        ureq = new UpdateRequest();
+        inBatch = 0;
+      }
     }
-    solrClient.request(ureq, collection);
+    if (inBatch > 0) {
+      solrClient.request(ureq, collection);
+    }
     solrClient.commit(collection);
     // verify the number of docs
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       QueryResponse rsp = solrClient.query(collection, params("q", "*:*", "rows", "0"));
       if (rsp.getResults().getNumFound() == n) {

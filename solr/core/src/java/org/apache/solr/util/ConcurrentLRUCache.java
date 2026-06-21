@@ -15,12 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.util.Cache;
-import org.apache.solr.common.util.TimeSource;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,13 +28,19 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-//import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
-import java.lang.ref.WeakReference;
 import java.util.function.Function;
+
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.Cache;
+import org.apache.solr.common.util.TimeSource;
+import org.jctools.maps.NonBlockingHashMap;
 
 import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
 import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
@@ -63,7 +65,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
       RamUsageEstimator.primitiveSizes.get(long.class) +
       RamUsageEstimator.shallowSizeOfInstance(ConcurrentHashMap.class);
 
-  private final ConcurrentHashMap<Object, CacheEntry<K,V>> map;
+  private final Map<Object, CacheEntry<K,V>> map;
   private int upperWaterMark, lowerWaterMark;
   private final ReentrantLock markAndSweepLock = new ReentrantLock(true);
   private boolean isCleaning = false;  // not volatile... piggybacked on other volatile vars
@@ -76,7 +78,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   private final AtomicLong oldestEntryNs = new AtomicLong(0);
   private long maxIdleTimeNs;
   private final EvictionListener<K,V> evictionListener;
-  private CleanupThread cleanupThread;
+  private volatile CleanupThread cleanupThread;
   private boolean runCleanupThread;
 
   private long ramLowerWatermark, ramUpperWatermark;
@@ -94,7 +96,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     this.ramUpperWatermark = ramUpperWatermark;
 
     this.evictionListener = evictionListener;
-    this.map = new ConcurrentHashMap<>();
+    this.map = new NonBlockingHashMap<>();
     this.newThreadForCleanup = false;
 
     this.acceptableWaterMark = -1;
@@ -131,7 +133,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   }
 
   public ConcurrentLRUCache(int size, int lowerWatermark) {
-    this(size, lowerWatermark, (int) Math.floor((lowerWatermark + size) / 2),
+    this(size, lowerWatermark, (int) Math.floor((lowerWatermark + size) / 2.0f),
             (int) Math.ceil(0.75 * size), false, false, null, -1);
   }
 
@@ -551,7 +553,9 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           // the number of items we have already removed while executing
           // this loop so far.
           queue.myMaxSize = sz - lowerWaterMark - numRemoved;
-          while (queue.size() > queue.myMaxSize && queue.size() > 0) {
+          while (true) {
+            final int size = queue.size();
+            if (!(size > queue.myMaxSize && size > 0)) break;
             CacheEntry otherEntry = queue.pop();
             newOldestEntry = Math.min(otherEntry.lastAccessedCopy, newOldestEntry);
           }
@@ -791,8 +795,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
             // LongAdder
             6 * (
                 RamUsageEstimator.NUM_BYTES_ARRAY_HEADER +
-                RamUsageEstimator.primitiveSizes.get(long.class) +
-                2 * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.primitiveSizes.get(long.class))
+                RamUsageEstimator.primitiveSizes.get(long.class) + 2L * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.primitiveSizes.get(long.class))
             ) +
             // AtomicLong
             RamUsageEstimator.primitiveSizes.get(long.class);
@@ -861,7 +864,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   private static class CleanupThread extends Thread {
     private WeakReference<ConcurrentLRUCache> cache;
 
-    private boolean stop = false;
+    private volatile boolean stop = false;
 
     public CleanupThread(ConcurrentLRUCache c) {
       cache = new WeakReference<>(c);
@@ -877,7 +880,9 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           long waitTimeMs =  c.maxIdleTimeNs != Long.MAX_VALUE ? TimeUnit.MILLISECONDS.convert(c.maxIdleTimeNs, TimeUnit.NANOSECONDS) : 0L;
           try {
             this.wait(waitTimeMs);
-          } catch (InterruptedException e) {}
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+          }
         }
         if (stop) break;
         c = cache.get();
@@ -888,14 +893,14 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
 
     void wakeThread() {
       synchronized(this){
-        this.notify();
+        this.notifyAll();
       }
     }
 
     void stopThread() {
       synchronized(this){
         stop=true;
-        this.notify();
+        this.notifyAll();
       }
     }
   }

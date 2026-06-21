@@ -25,7 +25,6 @@
   <str name="managementPath">testManagementPath</str>
   <str name="sharedLib">testSharedLib</str>
   <str name="shareSchema">${shareSchema:true}</str>
-  <int name="transientCacheSize">66</int>
   <int name="replayUpdatesThreads">100</int>
   <int name="maxBooleanClauses">42</int>
 

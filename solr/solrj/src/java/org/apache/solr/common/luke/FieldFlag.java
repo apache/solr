@@ -51,7 +51,7 @@ public enum FieldFlag {
     FieldFlag result = null;
     FieldFlag [] vals = FieldFlag.values();
     for (int i = 0; i < vals.length; i++) {
-      if (vals[i].getAbbreviation() == abbrev){
+      if (vals[i].abbreviation == abbrev){
         result = vals[i];
         break;
       }

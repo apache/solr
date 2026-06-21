@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -48,8 +49,6 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
   @ShardsFixed(num = 3)
   public void test() throws Exception {
     final String group = (random().nextBoolean() ? "group_s" : "group_s_dv");
-    
-    del("*:*");
 
     index_specific(0,"id","1", "term_s", "YYYY", group, "group1", "test_i", "5",  "test_l", "10", "test_f", "2000");
     index_specific(0,"id","2", "term_s", "YYYY", group, "group1", "test_i", "50", "test_l", "100", "test_f", "200");
@@ -105,7 +104,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     query(baseParams);
 
     ignoreException("missing expand field");
-    SolrException e = expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertTrue(e.getMessage().contains("missing expand field"));
     resetExceptionIgnores();

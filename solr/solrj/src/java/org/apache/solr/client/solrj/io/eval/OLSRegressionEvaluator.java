@@ -19,15 +19,16 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 import org.apache.commons.math3.stat.regression.MultipleLinearRegression;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.ParWork;
 
 public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -76,6 +77,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
       map.put("regressionParametersStandardErrors", list(multipleLinearRegression.estimateRegressionParametersStandardErrors()));
       map.put("regressionParametersVariance", new Matrix(multipleLinearRegression.estimateRegressionParametersVariance()));
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       //Exception is thrown if the matrix is singular
     }
 
@@ -83,7 +85,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
   }
 
   @SuppressWarnings({"unchecked"})
-  private List<Number> list(double[] values) {
+  private static List<Number> list(double[] values) {
     @SuppressWarnings({"rawtypes"})
     List list = new ArrayList();
     for(double d : values) {
@@ -92,7 +94,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
     return list;
   }
 
-  protected MultipleLinearRegression regress(double[][] observations, double[] outcomes) {
+  protected static MultipleLinearRegression regress(double[][] observations, double[] outcomes) {
     OLSMultipleLinearRegression olsMultipleLinearRegression = new OLSMultipleLinearRegression();
     olsMultipleLinearRegression.newSampleData(outcomes, observations);
     return olsMultipleLinearRegression;

@@ -25,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +35,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -43,6 +46,7 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -76,8 +80,6 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
@@ -116,7 +118,7 @@ public class SolrPluginUtils {
       map.put(ShardRequest.PURPOSE_REFINE_PIVOT_FACETS, "REFINE_PIVOT_FACETS");
       map.put(ShardRequest.PURPOSE_SET_TERM_STATS, "SET_TERM_STATS");
       map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
-    purposes = Collections.unmodifiableMap(map);
+      purposes = Collections.unmodifiableMap(map);
   }
 
   private static final MapSolrParams maskUseParams = new MapSolrParams(ImmutableMap.<String, String>builder()
@@ -135,13 +137,13 @@ public class SolrPluginUtils {
    * @param invariants values which will be used instead of any request, or default values, regardless of context.
    */
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults, SolrParams appends, SolrParams invariants) {
-    setDefaults(null, req, defaults, appends, invariants);
+    setDefaults(null, req, defaults, appends, invariants, null);
   }
 
   public static void setDefaults(SolrRequestHandler handler, SolrQueryRequest req, SolrParams defaults,
-                                 SolrParams appends, SolrParams invariants) {
-    String useParams = (String) req.getContext().get(USEPARAM);
-    if(useParams != null) {
+                                 SolrParams appends, SolrParams invariants, String useParamsParam) {
+    String useParams = useParamsParam != null ? useParamsParam : (String) req.getContext().get(USEPARAM);
+    if (useParams != null) {
       RequestParams rp = req.getCore().getSolrConfig().getRequestParams();
       defaults = applyParamSet(rp, defaults, useParams, DEFAULTS);
       appends = applyParamSet(rp, appends, useParams, APPENDS);
@@ -244,8 +246,7 @@ public class SolrPluginUtils {
         // add highlight fields
 
         SolrHighlighter highlighter = HighlightComponent.getHighlighter(req.getCore());
-        for (String field: highlighter.getHighlightFields(query, req, null))
-          fieldFilter.add(field);
+        fieldFilter.addAll(Arrays.asList(SolrHighlighter.getHighlightFields(query, req, null)));
 
         // fetch unique key if one exists.
         SchemaField keyField = searcher.getSchema().getUniqueKeyField();
@@ -669,7 +670,7 @@ public class SolrPluginUtils {
     int result = optionalClauseCount;
     spec = spec.trim();
 
-    if (-1 < spec.indexOf("<")) {
+    if (-1 < spec.indexOf('<')) {
       /* we have conditional spec(s) */
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
@@ -704,7 +705,7 @@ public class SolrPluginUtils {
     }
 
     return (optionalClauseCount < result ?
-            optionalClauseCount : (result < 0 ? 0 : result));
+            optionalClauseCount : (Math.max(result, 0)));
 
   }
 
@@ -877,7 +878,7 @@ public class SolrPluginUtils {
      * string, to Alias object containing the fields to use in our
      * DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String,Alias> aliases = new HashMap<>(3);
+    protected volatile Map<String,Alias> aliases = new HashMap<>(2);
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp,defaultField);
       // don't trust that our parent class won't ever change its default
@@ -901,7 +902,11 @@ public class SolrPluginUtils {
       Alias a = new Alias();
       a.tie = tiebreaker;
       a.fields = fieldBoosts;
-      aliases.put(field, a);
+
+      HashMap<String,Alias> newAliases = new HashMap<>(aliases);
+
+      newAliases.put(field, a);
+      aliases = newAliases;
     }
 
     /**
@@ -938,6 +943,7 @@ public class SolrPluginUtils {
         try {
           return super.getFieldQuery(field, queryText, quoted, raw);
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           return null;
         }
       }
@@ -953,7 +959,7 @@ public class SolrPluginUtils {
   public static Sort getSort(SolrQueryRequest req) {
 
     String sort = req.getParams().get(CommonParams.SORT);
-    if (null == sort || sort.equals("")) {
+    if (null == sort || sort.isEmpty()) {
       return null;
     }
 
@@ -985,7 +991,7 @@ public class SolrPluginUtils {
     if (null == queries || 0 == queries.length) return null;
     List<Query> out = new ArrayList<>(queries.length);
     for (String q : queries) {
-      if (null != q && 0 != q.trim().length()) {
+      if (null != q && !StringUtils.isBlank(q)) {
         out.add(QParser.getParser(q, req).getQuery());
       }
     }
@@ -1001,7 +1007,7 @@ public class SolrPluginUtils {
     final Class<?> clazz = bean.getClass();
     for (Map.Entry<String,Object> entry : initArgs) {
       String key = entry.getKey();
-      String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
+      String setterName = "set" + Character.toUpperCase(key.charAt(0)) + key.substring(1);
       try {
         final Object val = entry.getValue();
         final Method method = findSetter(clazz, setterName, key, val.getClass(), lenient);

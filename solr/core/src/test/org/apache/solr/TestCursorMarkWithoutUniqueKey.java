@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
@@ -36,7 +37,9 @@ public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
   public void beforeSetupCore() throws Exception {
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
-    SchemaField uniqueKeyField = h.getCore().getLatestSchema().getUniqueKeyField();
+    SolrCore core = h.getCore();
+    SchemaField uniqueKeyField = core.getLatestSchema().getUniqueKeyField();
+    core.close();
     assertNull("This test requires that the schema not have a uniquekey field -- someone violated that in " + TEST_SCHEMAXML_NAME, uniqueKeyField);
   }
 
@@ -53,10 +56,8 @@ public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
 
     try {
       ignoreException("Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
-      expectThrows(RuntimeException.class,
-          "No exception when querying with a cursorMark with no uniqueKey defined.",
-          () -> assertQ(req("q", "*:*", "sort", "fld desc", "cursorMark", CURSOR_MARK_START))
-      );
+      SolrTestCaseUtil.expectThrows(RuntimeException.class, "No exception when querying with a cursorMark with no uniqueKey defined.",
+          () -> assertQ(req("q", "*:*", "sort", "fld desc", "cursorMark", CURSOR_MARK_START)));
     } finally {
       unIgnoreException("Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
     }

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.PointVectorStrategy;
 
@@ -35,6 +36,7 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    CoreContainer.deprecationLog.warn("{} is deprecated, deprecation= use LatLonPointSpatialField instead", SpatialPointVectorFieldType.class.getName());
     super.init(schema, args);
 
     String v = args.remove( "numberType" );
@@ -70,16 +72,28 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
     // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
     // to simplify the risk of back-compat break for existing users.
     final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS | UNINVERTIBLE);
+    // postReadInform runs SchemaAware.inform() callbacks in parallel (ParWork). Snapshot the fields
+    // and put the sub-fields under the shared fields-map monitor, since Object2ObjectOpenHashMap is
+    // not thread-safe under concurrent put. This is schema-load only; the per-request read map is
+    // left untouched (fast fastutil reads, no locking on the query hot path).
+    List<SchemaField> snapshot;
+    synchronized (schema.getFields()) {
+      snapshot = new ArrayList<>(schema.getFields().values());
+    }
     List<SchemaField> newFields = new ArrayList<>();
-    for( SchemaField sf : schema.getFields().values() ) {
+    for( SchemaField sf : snapshot ) {
       if( sf.getType() == this ) {
         String name = sf.getName();
         newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_X, fieldType, p, null));
         newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_Y, fieldType, p, null));
       }
     }
-    for (SchemaField newField : newFields) {
-      schema.getFields().put(newField.getName(), newField);
+    if (!newFields.isEmpty()) {
+      synchronized (schema.getFields()) {
+        for (SchemaField newField : newFields) {
+          schema.getFields().put(newField.getName(), newField);
+        }
+      }
     }
   }
 

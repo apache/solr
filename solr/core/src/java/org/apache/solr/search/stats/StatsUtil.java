@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.Term;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -79,7 +80,7 @@ public class StatsUtil {
   }
 
   public static String termsToEncodedString(Collection<?> terms) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     for (Object o : terms) {
       if (sb.length() > 0) {
         sb.append(ENTRY_SEPARATOR);
@@ -123,7 +124,7 @@ public class StatsUtil {
   }
 
   public static String fieldsToString(Collection<String> fields) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     for (String field : fields) {
       if (field.isBlank()) {
         continue;
@@ -140,21 +141,12 @@ public class StatsUtil {
    * Make a String representation of {@link CollectionStats}
    */
   public static String colStatsToString(CollectionStats colStats) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(colStats.field);
-    sb.append(',');
-    sb.append(colStats.maxDoc);
-    sb.append(',');
-    sb.append(colStats.docCount);
-    sb.append(',');
-    sb.append(colStats.sumTotalTermFreq);
-    sb.append(',');
-    sb.append(colStats.sumDocFreq);
-    return sb.toString();
+    String sb = colStats.field + ',' + colStats.maxDoc + ',' + colStats.docCount + ',' + colStats.sumTotalTermFreq + ',' + colStats.sumDocFreq;
+    return sb;
   }
   
   private static CollectionStats colStatsFromString(String data) {
-    if (data == null || data.trim().length() == 0) {
+    if (data == null || StringUtils.isBlank(data)) {
       log.warn("Invalid empty collection stats string");
       return null;
     }
@@ -178,10 +170,8 @@ public class StatsUtil {
   }
   
   public static String termToEncodedString(Term t) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(t.field()).append(':');
-    sb.append(encode(t.text()));
-    return sb.toString();
+    String sb = t.field() + ':' + encode(t.text());
+    return sb;
   }
 
   public static final char ESCAPE = '_';
@@ -240,7 +230,7 @@ public class StatsUtil {
   }
   
   public static Term termFromEncodedString(String data) {
-    if (data == null || data.trim().length() == 0) {
+    if (data == null || StringUtils.isBlank(data)) {
       log.warn("Invalid empty term value");
       return null;
     }
@@ -260,16 +250,12 @@ public class StatsUtil {
   }
   
   public static String termStatsToString(TermStats termStats, boolean encode) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(encode ? termToEncodedString(termStats.term) : termStats.term).append(',');
-    sb.append(termStats.docFreq);
-    sb.append(',');
-    sb.append(termStats.totalTermFreq);
-    return sb.toString();
+    String sb = (encode ? termToEncodedString(termStats.term) : termStats.term) + ',' + termStats.docFreq + ',' + termStats.totalTermFreq;
+    return sb;
   }
   
   private static TermStats termStatsFromString(String data) {
-    if (data == null || data.trim().length() == 0) {
+    if (data == null || StringUtils.isBlank(data)) {
       log.warn("Invalid empty term stats string");
       return null;
     }
@@ -290,7 +276,7 @@ public class StatsUtil {
   }
 
   public static Map<String,CollectionStats> colStatsMapFromString(String data) {
-    if (data == null || data.trim().length() == 0) {
+    if (data == null || StringUtils.isBlank(data)) {
       return null;
     }
     Map<String,CollectionStats> map = new HashMap<String,CollectionStats>();
@@ -308,7 +294,7 @@ public class StatsUtil {
     if (stats == null || stats.isEmpty()) {
       return "";
     }
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     for (Entry<String,CollectionStats> e : stats.entrySet()) {
       if (sb.length() > 0) {
         sb.append(ENTRY_SEPARATOR);
@@ -319,7 +305,7 @@ public class StatsUtil {
   }
   
   public static Map<String,TermStats> termStatsMapFromString(String data) {
-    if (data == null || data.trim().length() == 0) {
+    if (data == null || StringUtils.isBlank(data)) {
       return null;
     }
     Map<String,TermStats> map = new HashMap<>();
@@ -337,7 +323,7 @@ public class StatsUtil {
     if (stats == null || stats.isEmpty()) {
       return "";
     }
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(32);
     for (Entry<String,TermStats> e : stats.entrySet()) {
       if (sb.length() > 0) {
         sb.append(ENTRY_SEPARATOR);

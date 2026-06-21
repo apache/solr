@@ -18,9 +18,9 @@ package org.apache.solr.cloud.api.collections;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -38,9 +38,9 @@ import java.util.Set;
 // Collect useful operations for testing assigning properties to individual replicas
 // Could probably expand this to do something creative with getting random slices
 // and shards, but for now this will do.
-public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBase {
+public abstract class ReplicaPropertiesBase extends SolrCloudBridgeTestCase {
 
-  public static NamedList<Object> doPropertyAction(CloudSolrClient client, String... paramsIn) throws IOException, SolrServerException {
+  public static NamedList<Object> doPropertyAction(CloudHttp2SolrClient client, String... paramsIn) throws IOException, SolrServerException {
     assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int idx = 0; idx < paramsIn.length; idx += 2) {
@@ -51,7 +51,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     return client.request(request);
   }
 
-  public static void verifyPropertyNotPresent(CloudSolrClient client, String collectionName, String replicaName,
+  public static void verifyPropertyNotPresent(CloudHttp2SolrClient client, String collectionName, String replicaName,
                                 String property)
       throws KeeperException, InterruptedException {
     ClusterState clusterState = null;
@@ -67,7 +67,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
       Thread.sleep(100);
     }
     fail("Property " + property + " not set correctly for collection/replica pair: " +
-        collectionName + "/" + replicaName + ". Replica props: " + replica.getProperties().toString() +
+        collectionName + "/" + replicaName + ". Replica props: " + replica.toString() +
         ". Cluster state is " + clusterState.toString());
 
   }
@@ -76,7 +76,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
   // collection
   // shard
   // replica
-  public static void verifyPropertyVal(CloudSolrClient client, String collectionName,
+  public static void verifyPropertyVal(CloudHttp2SolrClient client, String collectionName,
                          String replicaName, String property, String val)
       throws InterruptedException, KeeperException {
     Replica replica = null;
@@ -95,24 +95,24 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
     fail("Property '" + property + "' with value " + replica.getProperty(property) +
         " not set correctly for collection/replica pair: " + collectionName + "/" + replicaName + " property map is " +
-        replica.getProperties().toString() + ".");
+        replica.toString() + ".");
 
   }
 
   // Verify that
   // 1> the property is only set once in all the replicas in a slice.
   // 2> the property is balanced evenly across all the nodes hosting collection
-  public static void verifyUniqueAcrossCollection(CloudSolrClient client, String collectionName,
+  public static void verifyUniqueAcrossCollection(CloudHttp2SolrClient client, String collectionName,
                                     String property) throws KeeperException, InterruptedException {
     verifyUnique(client, collectionName, property, true);
   }
 
-  public static void verifyUniquePropertyWithinCollection(CloudSolrClient client, String collectionName,
+  public static void verifyUniquePropertyWithinCollection(CloudHttp2SolrClient client, String collectionName,
                             String property) throws KeeperException, InterruptedException {
     verifyUnique(client, collectionName, property, false);
   }
 
-  public static void verifyUnique(CloudSolrClient client, String collectionName, String property, boolean balanced)
+  public static void verifyUnique(CloudHttp2SolrClient client, String collectionName, String property, boolean balanced)
       throws KeeperException, InterruptedException {
 
     DocCollection col = null;

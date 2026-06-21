@@ -17,7 +17,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -28,8 +27,10 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SolrRandomIndexWriter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.legacy.LegacyFloatField;
 import org.apache.solr.legacy.LegacyIntField;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -62,7 +63,7 @@ import org.junit.Test;
 public class TestOrdValues extends SolrTestCase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestOrdValues() throws Exception {
     createIndex(false);
   }
 
@@ -85,7 +86,7 @@ public class TestOrdValues extends SolrTestCase {
   // Test that queries based on reverse/ordFieldScore scores correctly
   private void doTestRank(String field, boolean inOrder) throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = LuceneTestCase.newSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -136,7 +137,7 @@ public class TestOrdValues extends SolrTestCase {
   // Test that queries based on reverse/ordFieldScore returns docs with expected score.
   private void doTestExactScore(String field, boolean inOrder) throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = LuceneTestCase.newSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -217,17 +218,17 @@ public class TestOrdValues extends SolrTestCase {
   }
 
   protected static void createIndex(boolean doMultiSegment) throws Exception {
-    if (VERBOSE) {
+    if (SolrTestCase.VERBOSE) {
       System.out.println("TEST: setUp");
     }
     // prepare a small index with just a few documents.
-    dir = newDirectory();
-    anlzr = new MockAnalyzer(random());
-    IndexWriterConfig iwc = newIndexWriterConfig(anlzr).setMergePolicy(newLogMergePolicy());
+    dir = SolrTestUtil.newDirectory();
+
+    IndexWriterConfig iwc = SolrTestUtil.newIndexWriterConfig().setMergePolicy(SolrTestUtil.newLogMergePolicy());
     if (doMultiSegment) {
       iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 7));
     }
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    SolrRandomIndexWriter iw = new SolrRandomIndexWriter(SolrTestCase.random(), dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];
@@ -253,7 +254,7 @@ public class TestOrdValues extends SolrTestCase {
     }
   }
 
-  private static void addDoc(RandomIndexWriter iw, int i) throws Exception {
+  private static void addDoc(SolrRandomIndexWriter iw, int i) throws Exception {
     Document d = new Document();
     Field f;
     int scoreAndID = i + 1;
@@ -262,13 +263,13 @@ public class TestOrdValues extends SolrTestCase {
     customType.setTokenized(false);
     customType.setOmitNorms(true);
     
-    f = newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
+    f = LuceneTestCase.newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
     d.add(f);
     d.add(new SortedDocValuesField(ID_FIELD, new BytesRef(id2String(scoreAndID))));
 
     FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
     customType2.setOmitNorms(true);
-    f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
+    f = LuceneTestCase.newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
     d.add(f);
 
     f = new LegacyIntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring

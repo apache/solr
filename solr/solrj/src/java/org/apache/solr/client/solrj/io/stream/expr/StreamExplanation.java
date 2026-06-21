@@ -39,7 +39,7 @@ public class StreamExplanation extends Explanation {
     this.children = children;
   }
   public StreamExplanation withChildren(List<Explanation> children){
-    setChildren(children);
+    this.children = children;
     return this;
   }
   public StreamExplanation withChildren(Explanation[] children){

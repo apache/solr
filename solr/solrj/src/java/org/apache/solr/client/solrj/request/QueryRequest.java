@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * 
@@ -57,7 +58,7 @@ public class QueryRequest extends SolrRequest<QueryResponse> {
     if( qt == null ) {
       qt = super.getPath();
     }
-    if( qt != null && qt.startsWith( "/" ) ) {
+    if(qt != null && !qt.isEmpty() && qt.charAt(0) == '/') {
       return qt;
     }
     return "/select";
@@ -67,8 +68,8 @@ public class QueryRequest extends SolrRequest<QueryResponse> {
   //---------------------------------------------------------------------------------
 
   @Override
-  protected QueryResponse createResponse(SolrClient client) {
-    return new QueryResponse(client);
+  protected QueryResponse createResponse(SolrClient client, NamedList rsp) {
+    return new QueryResponse(rsp, client);
   }
 
   @Override

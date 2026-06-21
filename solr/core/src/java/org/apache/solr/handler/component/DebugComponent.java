@@ -149,7 +149,7 @@ public class DebugComponent extends SearchComponent
   }
 
 
-  private void doDebugTrack(ResponseBuilder rb) {
+  private static void doDebugTrack(ResponseBuilder rb) {
     String rid = getRequestId(rb.req);
     rb.addDebug(rid, "track", CommonParams.REQUEST_ID);//to see it in the response
     rb.rsp.addToLog(CommonParams.REQUEST_ID, rid); //to see it in the logs of the landing core
@@ -158,7 +158,7 @@ public class DebugComponent extends SearchComponent
 
   public static String getRequestId(SolrQueryRequest req) {
     String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    if(rid == null || "".equals(rid)) {
+    if(rid == null || rid.isEmpty()) {
       rid = generateRid(req);
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it
@@ -233,7 +233,6 @@ public class DebugComponent extends SearchComponent
       NamedList<Object> info = rb.getDebugInfo();
       NamedList<Object> explain = new SimpleOrderedMap<>();
 
-      @SuppressWarnings({"rawtypes"})
       Map.Entry<String, Object>[]  arr =  new NamedList.NamedListEntry[rb.resultIds.size()];
       // Will be set to true if there is at least one response with PURPOSE_GET_DEBUG
       boolean hasGetDebugResponses = false;
@@ -247,14 +246,17 @@ public class DebugComponent extends SearchComponent
           }
           @SuppressWarnings({"rawtypes"})
           NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
+          if (sdebug != null) {
+            info = (NamedList) merge(sdebug, info, EXCLUDE_SET);
+            if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
+              hasGetDebugResponses = true;
+              if (rb.isDebugResults()) {
+                @SuppressWarnings({"rawtypes"}) NamedList sexplain = (NamedList) sdebug.get("explain");
 
-          info = (NamedList)merge(sdebug, info, EXCLUDE_SET);
-          if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
-            hasGetDebugResponses = true;
-            if (rb.isDebugResults()) {
-              @SuppressWarnings({"rawtypes"})
-              NamedList sexplain = (NamedList)sdebug.get("explain");
-              SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
+                if (sexplain != null) {
+                  SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
+                }
+              }
             }
           }
         }
@@ -291,7 +293,7 @@ public class DebugComponent extends SearchComponent
   }
 
 
-  private NamedList<String> getTrackResponse(ShardResponse shardResponse) {
+  private static NamedList<String> getTrackResponse(ShardResponse shardResponse) {
     NamedList<String> namedList = new SimpleOrderedMap<>();
     if (shardResponse.getException() != null) {
       namedList.add("Exception", shardResponse.getException().getMessage());
@@ -314,7 +316,7 @@ public class DebugComponent extends SearchComponent
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  protected Object merge(Object source, Object dest, Set<String> exclude) {
+  protected static Object merge(Object source, Object dest, Set<String> exclude) {
     if (source == null) return dest;
     if (dest == null) {
       if (source instanceof NamedList) {

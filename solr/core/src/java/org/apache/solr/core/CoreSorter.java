@@ -26,10 +26,12 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -83,8 +85,11 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
   public static List<CoreDescriptor> sortCores(CoreContainer coreContainer, List<CoreDescriptor> descriptors) {
     //sort the cores if it is in SolrCloud. In standalone mode the order does not matter
     if (coreContainer.isZooKeeperAware()) {
+      descriptors.sort(Comparator.comparing(o -> o.getCloudDescriptor().getCollectionName()));
+      descriptors.sort(Comparator.comparing(o -> o.getCloudDescriptor().getShardId()));
+
       return descriptors.stream()
-          .sorted(new CoreSorter().init(coreContainer, descriptors))
+          .sorted(new CoreSorter().init(coreContainer.getZkController(), descriptors))
           .collect(toList()); // new list
     }
     return descriptors;
@@ -92,9 +97,14 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
 
   private final Map<String, CountsForEachShard> shardsVsReplicaCounts = new HashMap<>();
 
-  CoreSorter init(CoreContainer cc, Collection<CoreDescriptor> coreDescriptors) {
-    String myNodeName = cc.getNodeConfig().getNodeName();
-    ClusterState state = cc.getZkController().getClusterState();
+  CoreSorter init(ZkController zkController, Collection<CoreDescriptor> coreDescriptors) {
+
+    assert zkController != null;
+    assert zkController.getCoreContainer() != null;
+    assert zkController.getCoreContainer().getNodeConfig() != null;
+    String myNodeName = zkController.getCoreContainer().getNodeConfig().getNodeName();
+    ClusterState state = zkController.getCoreContainer().getZkController().getClusterState();
+    ZkStateReader reader = zkController.getZkStateReader();
     for (CoreDescriptor coreDescriptor : coreDescriptors) {
       CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
       String coll = cloudDescriptor.getCollectionName();
@@ -105,7 +115,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
         if (replica.getNodeName().equals(myNodeName)) {
           c.myReplicas++;
         } else {
-          Set<String> liveNodes = state.getLiveNodes();
+          Set<String> liveNodes = reader.getLiveNodes();
           if (liveNodes.contains(replica.getNodeName())) {
             c.totalReplicasInLiveNodes++;
           } else {
@@ -171,7 +181,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
 
   /**Return all replicas for a given collection+slice combo
    */
-  private Collection<Replica> getReplicas(ClusterState cs, String coll, String slice) {
+  private static Collection<Replica> getReplicas(ClusterState cs, String coll, String slice) {
     DocCollection c = cs.getCollectionOrNull(coll);
     if (c == null) return emptyList();
     Slice s = c.getSlice(slice);

@@ -84,7 +84,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
   static final String STORE_KEY = "store";
 
   private final ModelStore store;
-  private ManagedFeatureStore managedFeatureStore;
+  private volatile ManagedFeatureStore managedFeatureStore;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -95,7 +95,6 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
   }
 
   public void setManagedFeatureStore(ManagedFeatureStore managedFeatureStore) {
-    log.info("INIT model store");
     this.managedFeatureStore = managedFeatureStore;
   }
 
@@ -105,7 +104,6 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   private Object managedData;
 
-  @SuppressWarnings("unchecked")
   @Override
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs,
       Object managedData) throws SolrException {

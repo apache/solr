@@ -129,7 +129,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
   private Collection<SelectorParams> exclusions 
     = new ArrayList<>();
 
-  private FieldNameSelector selector = null;
+  private volatile FieldNameSelector selector = null;
   
   protected final FieldNameSelector getSelector() {
     if (null != selector) return selector;
@@ -206,7 +206,6 @@ public abstract class FieldMutatingUpdateProcessorFactory
    * Will error if any unexpected init args are found, so subclasses should
    * remove any subclass-specific init args before calling this method.
    */
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
@@ -215,7 +214,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
     if (0 < args.size()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unexpected init param(s): '" + args.getName(0) + "'");
+          "Unexpected init param(s): '" + args.getName(0) + "'" + " args: " + args);
     }
 
   }

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -76,12 +77,12 @@ public class FetchStream extends TupleStream implements Expressible {
 
   public FetchStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
-    String collectionName = factory.getValueOperand(expression, 0);
+    String collectionName = StreamFactory.getValueOperand(expression, 0);
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter onParam = factory.getNamedOperand(expression, "on");
-    StreamExpressionNamedParameter flParam = factory.getNamedOperand(expression, "fl");
-    StreamExpressionNamedParameter batchSizeParam = factory.getNamedOperand(expression, "batchSize");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    StreamExpressionNamedParameter onParam = StreamFactory.getNamedOperand(expression, "on");
+    StreamExpressionNamedParameter flParam = StreamFactory.getNamedOperand(expression, "fl");
+    StreamExpressionNamedParameter batchSizeParam = StreamFactory.getNamedOperand(expression, "batchSize");
+    StreamExpressionNamedParameter zkHostExpression = StreamFactory.getNamedOperand(expression, "zkHost");
 
     String on = null;
     String fl = null;
@@ -134,7 +135,7 @@ public class FetchStream extends TupleStream implements Expressible {
     this.fields = fieldList.split(",");
     this.fieldList = fieldList;
 
-    if(on.indexOf("=") > -1) {
+    if(on.indexOf('=') > -1) {
       String[] leftright = on.split("=");
       leftKey = leftright[0].trim();
       rightKey = leftright[1].trim();
@@ -205,7 +206,7 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    tuples = new ArrayList().iterator();
+    tuples = Collections.emptyIterator();
     stream.open();
   }
 

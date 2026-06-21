@@ -51,11 +51,13 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     factory = new RegexpBoostProcessorFactory();
     factory.init(parameters.toNamedList());
     reProcessor = (RegexpBoostProcessor) factory.getInstance(req, resp, null);
+    core.close();
   }
   
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
     // null static members for gc
+    reProcessor.close();
     reProcessor = null;
     _parser = null;
     parameters = null;

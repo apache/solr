@@ -20,15 +20,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.IOUtils;
@@ -39,12 +38,12 @@ import org.apache.solr.prometheus.exporter.SolrClientFactory;
 
 public class SolrCloudScraper extends SolrScraper {
 
-  private final CloudSolrClient solrClient;
+  private final CloudHttp2SolrClient solrClient;
   private final SolrClientFactory solrClientFactory;
 
-  private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder().build();
+  private Cache<String,Http2SolrClient> hostClientCache = Caffeine.newBuilder().build();
 
-  public SolrCloudScraper(CloudSolrClient solrClient, Executor executor, SolrClientFactory solrClientFactory) {
+  public SolrCloudScraper(CloudHttp2SolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
     super(executor);
     this.solrClient = solrClient;
     this.solrClientFactory = solrClientFactory;
@@ -52,7 +51,7 @@ public class SolrCloudScraper extends SolrScraper {
 
   @Override
   public Map<String, MetricSamples> pingAllCores(MetricsQuery query) throws IOException {
-    Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
+    Map<String, Http2SolrClient> httpSolrClients = createHttpSolrClients();
 
     Map<String, DocCollection> collectionState = solrClient.getClusterStateProvider().getClusterState().getCollectionsMap();
 
@@ -64,12 +63,12 @@ public class SolrCloudScraper extends SolrScraper {
 
     List<String> coreNames = replicas
         .stream()
-        .map(Replica::getCoreName)
+        .map(Replica::getName)
         .collect(Collectors.toList());
 
-    Map<String, HttpSolrClient> coreToClient = replicas
+    Map<String, Http2SolrClient> coreToClient = replicas
         .stream()
-        .map(replica -> new Pair<>(replica.getCoreName(), httpSolrClients.get(replica.getBaseUrl())))
+        .map(replica -> new Pair<>(replica.getName(), httpSolrClients.get(replica.getBaseUrl())))
         .collect(Collectors.toMap(Pair::first, Pair::second));
 
     return sendRequestsInParallel(coreNames, core -> {
@@ -81,17 +80,10 @@ public class SolrCloudScraper extends SolrScraper {
     });
   }
 
-  private Map<String, HttpSolrClient> createHttpSolrClients() throws IOException {
+  private Map<String, Http2SolrClient> createHttpSolrClients() throws IOException {
     return getBaseUrls().stream()
-        .map(url -> {
-          try {
-            return hostClientCache.get(url, () -> solrClientFactory.createStandaloneSolrClient(url));
-          } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-          }
-        })
-        .collect(Collectors.toMap(HttpSolrClient::getBaseURL, Function.identity()));
-
+        .map(url -> hostClientCache.get(url, solrClientFactory::createStandaloneSolrClient))
+        .collect(Collectors.toMap(Http2SolrClient::getBaseURL, Function.identity()));
   }
 
   @Override
@@ -107,7 +99,7 @@ public class SolrCloudScraper extends SolrScraper {
 
   @Override
   public Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query) throws IOException {
-    Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
+    Map<String, Http2SolrClient> httpSolrClients = createHttpSolrClients();
 
     return sendRequestsInParallel(httpSolrClients.keySet(), (baseUrl) -> {
       try {

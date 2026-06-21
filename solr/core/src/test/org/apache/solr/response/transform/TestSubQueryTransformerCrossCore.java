@@ -16,26 +16,40 @@
  */
 package org.apache.solr.response.transform;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.io.File;
+
 public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
 
   private static SolrCore fromCore;
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestSubQueryTransformerCrossCore() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig-basic.xml","schema-docValuesJoin.xml");
+
+    File testHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(SolrTestUtil.getFile(SolrTestUtil.TEST_HOME()), testHome);
+
+    initCore("solrconfig-basic.xml","schema-docValuesJoin.xml", testHome.getAbsolutePath(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
 
     fromCore = coreContainer.create("fromCore", //FileSystems.getDefault().getPath( TEST_HOME()), ImmutableMap.of("config","solrconfig-basic.xml","schema","schema-docValuesJoin.xml"
@@ -60,11 +74,28 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
     update(fromCore, commit());
   }
 
+  @AfterClass
+  public static void afterTestSubQueryTransformerCrossCore() {
+    deleteCore();
+    IOUtils.closeQuietly(fromCore);
+    fromCore = null;
+  }
 
   public static String update(SolrCore core, String xml) throws Exception {
-    DirectSolrConnection connection = new DirectSolrConnection(core);
     SolrRequestHandler handler = core.getRequestHandler("/update");
-    return connection.request(handler, null, xml);
+    java.util.List<org.apache.solr.common.util.ContentStream> streams = new java.util.ArrayList<>(1);
+    if (xml != null && xml.length() > 0) streams.add(new ContentStreamBase.StringStream(xml));
+    SolrQueryRequest req = new SolrRequestParsers(core.getSolrConfig()).buildRequestFrom(core, null, streams);
+    try {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      core.execute(handler, req, rsp);
+      if (rsp.getException() != null) { Throwable e = rsp.getException(); if (e instanceof Exception) throw (Exception)e; throw new org.apache.solr.common.SolrException(org.apache.solr.common.SolrException.ErrorCode.UNKNOWN, e); }
+      QueryResponseWriter w = core.getQueryResponseWriter(req);
+      java.io.StringWriter out = new java.io.StringWriter();
+      w.write(out, req, rsp);
+      return out.toString();
+    } finally { req.close(); SolrRequestInfo.clearRequestInfo(); }
   }
 
   @Test
@@ -122,10 +153,5 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
                           "//result/doc/str[@name='name_s_dv'][.='mark']/.."
                           + "/result[@name='depts']/doc/str[@name='dept_id_s'][.='Marketing']"
         );
-  }
-
-  @AfterClass
-  public static void nukeAll() {
-    fromCore = null;
   }
 }

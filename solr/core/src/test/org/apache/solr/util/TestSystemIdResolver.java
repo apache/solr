@@ -22,8 +22,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
 
@@ -44,8 +45,8 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   }
   
   public void testResolving() throws Exception {
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
-    final ResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
+    final Path testHome = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
+    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"));
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
     
@@ -54,14 +55,14 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
     assertEquals("solrres://@/test.xml", SystemIdResolver.createSystemIdFromResourceName(File.separatorChar+"test.xml"));
     
     // check relative URI resolving
-    assertEquals("solrres:/test.xml", resolver.resolveRelativeURI("solrres:/base.xml", "test.xml").toASCIIString());
+    assertEquals("solrres:/test.xml", SystemIdResolver.resolveRelativeURI("solrres:/base.xml", "test.xml").toASCIIString());
     assertEquals("solrres://@/etc/test.xml",
-      resolver.resolveRelativeURI("solrres://@/usr/local/etc/base.xml", "../../../etc/test.xml").toASCIIString());
+      SystemIdResolver.resolveRelativeURI("solrres://@/usr/local/etc/base.xml", "../../../etc/test.xml").toASCIIString());
     // special case: if relative URI starts with "/" convert to an absolute solrres://@/-URI
-    assertEquals("solrres://@/a/test.xml", resolver.resolveRelativeURI("solrres:/base.xml", "/a/test.xml").toASCIIString());
+    assertEquals("solrres://@/a/test.xml", SystemIdResolver.resolveRelativeURI("solrres:/base.xml", "/a/test.xml").toASCIIString());
     // test, that resolving works if somebody uses an absolute file:-URI in a href attribute, it should be preserved
-    assertEquals(fileUri, resolver.resolveRelativeURI("solrres:/base.xml", fileUri).toASCIIString());
-    assertEquals("solrres:/base.xml", resolver.resolveRelativeURI(fileUri, "solrres:/base.xml").toASCIIString());
+    assertEquals(fileUri, SystemIdResolver.resolveRelativeURI("solrres:/base.xml", fileUri).toASCIIString());
+    assertEquals("solrres:/base.xml", SystemIdResolver.resolveRelativeURI(fileUri, "solrres:/base.xml").toASCIIString());
     
     // do some real resolves to InputStreams with real existing files
     assertEntityResolving(resolver, "solrres:/schema.xml", "solrres:/solrconfig.xml", "schema.xml");
@@ -71,36 +72,38 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
       SystemIdResolver.createSystemIdFromResourceName(testHome+"/collection1/conf/solrconfig.xml"), "schema.xml");
     
     // if somebody uses an absolute uri (e.g., file://) we should fail resolving:
-    IOException ioe = expectThrows(IOException.class, () -> {
+    IOException ioe = SolrTestCaseUtil.expectThrows(IOException.class, () -> {
       resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri);
     });
     assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
     
-    ioe = expectThrows(IOException.class, () -> {
+    ioe = SolrTestCaseUtil.expectThrows(IOException.class, () -> {
       resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", "http://lucene.apache.org/test.xml");
     });
     assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
     
     // check that we can't escape with absolute file paths:
     for (String path : Arrays.asList("/etc/passwd", "/windows/notepad.exe")) {
-      ioe = expectThrows(IOException.class, () -> {
+      try {
         resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", path);
-      });
-      assertTrue(ioe.getMessage().startsWith("Can't find resource")
-          || ioe.getMessage().contains("access denied")
-          || ioe.getMessage().contains("is outside resource loader dir"));
+        fail("Should have failed");
+      } catch (Exception e) {
+        assertTrue(e.getMessage().startsWith("Can't find resource") || e.getMessage().contains("access denied") || e.getMessage().contains("is outside resource loader dir"));
+      }
     }
+    loader.close();
   }
 
   public void testUnsafeResolving() throws Exception {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
     
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
-    final ResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
+    final Path testHome = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
+    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"));
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),
-      SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");    
+      SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");
+    loader.close();
   }
 
 }

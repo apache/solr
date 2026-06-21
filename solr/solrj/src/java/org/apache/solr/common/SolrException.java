@@ -16,15 +16,16 @@
  */
 package org.apache.solr.common;
 
-import java.io.CharArrayWriter;
+import org.apache.commons.io.output.StringBuilderWriter;
+import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.MDC;
+
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.MDC;
 
 /**
  *
@@ -172,12 +173,12 @@ public class SolrException extends RuntimeException {
   @Override
   public String toString() { return super.toString(); }
 
-  public static String toStr(Throwable e) {   
-    CharArrayWriter cw = new CharArrayWriter();
-    PrintWriter pw = new PrintWriter(cw);
+  public static String toStr(Throwable e) {
+    StringBuilderWriter sw = new StringBuilderWriter(2000 + (e.getMessage() == null ? 0 : e.getMessage().length()));
+    PrintWriter pw = new PrintWriter(sw);
     e.printStackTrace(pw);
-    pw.flush();
-    return cw.toString();
+    pw.close();
+    return sw.toString();
 
 /** This doesn't work for some reason!!!!!
     StringWriter sw = new StringWriter();
@@ -194,13 +195,13 @@ public class SolrException extends RuntimeException {
    * For test code - do not log exceptions that match any of these regular expressions.
    * A {@link java.util.concurrent.CopyOnWriteArraySet is recommended}.
    */
-  public static Set<String> ignorePatterns;
+  public static volatile Set<String> ignorePatterns;
 
   /** Returns null if this exception does not match any ignore patterns, or a message string to use if it does. */
   public static String doIgnore(Throwable t, String m) {
     Set<String> ignorePatterns = SolrException.ignorePatterns; // guard against races, albeit unlikely
     if (ignorePatterns == null || m == null) return null;
-    if (t != null && t instanceof AssertionError) return null;
+    if (t instanceof AssertionError) return null;
 
     for (String regex : ignorePatterns) {
       Pattern pattern = Pattern.compile(regex); // TODO why do we compile late; why not up-front?
@@ -224,7 +225,6 @@ public class SolrException extends RuntimeException {
     return t;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void logInfoWithMdc(Logger logger, String msg) {
     Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
     MDC.setContextMap(mdcContext);
@@ -253,6 +253,19 @@ public class SolrException extends RuntimeException {
     } finally{
       MDC.setContextMap(previousMdcContext);
     }
+  }
+
+  public Throwable getRootCause() {
+    Throwable t = this;
+    while (true) {
+      Throwable cause = t.getCause();
+      if (cause!=null) {
+        t = cause;
+      } else {
+        break;
+      }
+    }
+    return t;
   }
 
 }

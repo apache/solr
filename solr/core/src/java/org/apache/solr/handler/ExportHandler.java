@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -36,6 +37,7 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.export.ExportWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,7 @@ public class ExportHandler extends SearchHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private ModelCache modelCache = null;
-  private ConcurrentMap objectCache = new ConcurrentHashMap();
+  private ConcurrentMap objectCache = new NonBlockingHashMap();
   private SolrDefaultStreamFactory streamFactory = new ExportHandlerStreamFactory();
   private String coreName;
   private SolrClientCache solrClientCache;
@@ -104,6 +106,7 @@ public class ExportHandler extends SearchHandler {
     try {
       super.handleRequestBody(req, rsp);
     } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
       rsp.setException(e);
     }
     String wt = req.getParams().get(CommonParams.WT, JSON);

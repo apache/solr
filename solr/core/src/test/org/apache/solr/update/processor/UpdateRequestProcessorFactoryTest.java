@@ -21,10 +21,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +43,14 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.logUpdateProcOnInfo", "true");
     System.setProperty("enable.runtime.lib", "true");
     initCore("solrconfig-transformers.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterUpdateRequestProcessorFactoryTest() {
+    deleteCore();
   }
 
   public void testRequestTimeUrp(){
@@ -54,7 +63,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     UpdateRequestProcessorChain chain = core.getUpdateProcessorChain(params);
     List<UpdateRequestProcessorFactory> l = chain.getProcessors();
     assertTrue(l.get(0) instanceof TemplateUpdateProcessorFactory);
-
+    core.close();
 
   }
   
@@ -88,6 +97,8 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     
     // Make sure the NamedListArgs got through ok
     assertEquals( "{name={n8=88, n9=99}}", link.args.toString() );
+
+    core.close();
   }
 
   public void testUpdateDistribChainSkipping() throws Exception {
@@ -98,7 +109,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     // are for nought.  (see LogUpdateProcessorFactory.getInstance)
     //
     // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is evil.
-    assertTrue("Tests must be run with INFO level logging "+
+    LuceneTestCase.assumeTrue("Tests must be run with INFO level logging "+
                "otherwise LogUpdateProcessor isn't used and can't be tested.", log.isInfoEnabled());
     
     final int EXPECTED_CHAIN_LENGTH = 5;
@@ -118,8 +129,10 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
                    chain.getProcessors().size());
 
       // test a basic (non distrib) chain
-      proc = chain.createProcessor(req(), new SolrQueryResponse());
+      SolrQueryRequest req = req();
+      proc = chain.createProcessor(req, new SolrQueryResponse());
       procs = procToList(proc);
+      req.close();
 
       int expectedProcLen = EXPECTED_CHAIN_LENGTH;
       if ("distrib-chain-noop".equals(name)) { // NoOpDistributingUpdateProcessorFactory produces no processor
@@ -145,11 +158,13 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
                  ( // compare them both just because i'm going insane and the more checks the better
                    proc.next instanceof LogUpdateProcessorFactory.LogUpdateProcessor
                    && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
-
+      proc.close();
       // fetch the distributed version of this chain
-      proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "NONE"), // just some non-blank value
+      req = req(DISTRIB_UPDATE_PARAM, "NONE");
+      proc = chain.createProcessor(req, // just some non-blank value
                                    new SolrQueryResponse());
       procs = procToList(proc);
+      req.close();
       assertNotNull(name + " (distrib) chain produced null proc", proc);
       assertFalse(name + " (distrib) procs is empty", procs.isEmpty());
 
@@ -178,8 +193,9 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       }
       assertEquals(name + " (distrib) chain has wrong length: " + procs.toString(),
           expectedProcLen, procs.size());
+      proc.close();
     }
-
+    core.close();
   }
 
   /**

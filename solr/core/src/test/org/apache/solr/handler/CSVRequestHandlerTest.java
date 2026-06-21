@@ -23,6 +23,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -30,9 +31,16 @@ import org.junit.Test;
 public class CSVRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeCSVRequestHandlerTest() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     initCore("solrconfig.xml", "schema.xml");
   }
+
+  @AfterClass
+  public static void afterCSVRequestHandlerTest() throws Exception {
+    deleteCore();
+  }
+
 
   @Test
   public void testCommitWithin() throws Exception {
@@ -45,9 +53,14 @@ public class CSVRequestHandlerTest extends SolrTestCaseJ4 {
     CSVLoader loader = new CSVLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream.StringStream(csvString), p);
 
+    if (p.addCommands.size() == 0) {
+      Thread.sleep(250);
+    }
+
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(200, add.commitWithin);
 
     req.close();
+    p.close();
   }
 }

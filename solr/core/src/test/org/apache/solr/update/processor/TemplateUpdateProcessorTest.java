@@ -17,12 +17,10 @@
 
 package org.apache.solr.update.processor;
 
-import java.lang.invoke.MethodHandles;
-
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -37,21 +35,23 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
+
 public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(5)
-        .addConfig("conf1", configset("cloud-minimal"))
+    configureCluster(TEST_NIGHTLY ? 5 : 2)
+        .addConfig("conf1", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
   @After
   public void after() throws Exception {
-    cluster.deleteAllCollections();
     cluster.shutdown();
+    cluster = null;
   }
 
   @org.junit.Rule
@@ -72,8 +72,9 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("firstName", "Tom");
     cmd.solrDoc.addField("lastName", "Cruise");
-
-    new TemplateUpdateProcessorFactory().getInstance(cmd.getReq(), new SolrQueryResponse(), null).processAdd(cmd);
+    UpdateRequestProcessor proc = new TemplateUpdateProcessorFactory().getInstance(cmd.getReq(), new SolrQueryResponse(), null);
+    proc.processAdd(cmd);
+    proc.close();
     assertEquals("Tom_Cruise", cmd.solrDoc.getFieldValue("id"));
     assertEquals("Cruise_Tom", cmd.solrDoc.getFieldValue("another"));
     assertEquals("Cruise_", cmd.solrDoc.getFieldValue("missing"));
@@ -90,12 +91,12 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     add.setParams(params);
     NamedList<Object> result = cluster.getSolrClient().request(CollectionAdminRequest.createCollection("c", "conf1", 1, 1));
     Utils.toJSONString(result.asMap(4));
-    AbstractFullDistribZkTestBase.waitForCollection(cluster.getSolrClient().getZkStateReader(), "c",1);
+    cluster.waitForActiveCollection("c", 1, 1);
     cluster.getSolrClient().request(add, "c");
     QueryResponse rsp = cluster.getSolrClient().query("c",
         new ModifiableSolrParams().add("q","id:1"));
-    assertEquals( "key_1", rsp.getResults().get(0).getFieldValue("x_s"));
-
+    assertEquals(rsp.toString(), "key_1", rsp.getResults().get(0).getFieldValue("x_s"));
+    proc.close();
 
   }
 }

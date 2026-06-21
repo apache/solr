@@ -22,6 +22,8 @@ import java.io.FileOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import com.ibm.icu.text.Collator;
@@ -34,7 +36,7 @@ import com.ibm.icu.util.ULocale;
 public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestICUCollationFieldDocValues() throws Exception {
     String home = setupSolrHome();
     initCore("solrconfig.xml","schema.xml", home);
     // add some docs
@@ -52,6 +54,11 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     assertU(adoc("id", "12", "text", "\u0698\u0698"));
     assertU(commit());
   }
+
+  @AfterClass
+  public static void afterTestICUCollationFieldDocValues() throws Exception {
+    deleteCore();
+  }
   
   /**
    * Ugly: but what to do? We want to test custom sort, which reads rules in as a resource.
@@ -60,7 +67,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
    * So it's preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    File tmpFile = createTempDir().toFile();
+    File tmpFile = SolrTestUtil.createTempDir().toFile();
     
     // make data and conf dirs
     new File(tmpFile + "/collection1", "data").mkdirs();
@@ -68,8 +75,8 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     confDir.mkdirs();
     
     // copy over configuration files
-    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/schema-icucollate-dv.xml"), new File(confDir, "schema.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("analysis-extras/solr/collection1/conf/schema-icucollate-dv.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator = (RuleBasedCollator) Collator.getInstance(new ULocale("de", "DE"));

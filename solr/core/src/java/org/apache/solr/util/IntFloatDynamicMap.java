@@ -22,11 +22,13 @@ import java.util.Arrays;
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.cursors.FloatCursor;
 import com.carrotsearch.hppc.procedures.IntFloatProcedure;
+import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 import org.apache.lucene.util.ArrayUtil;
 
 public class IntFloatDynamicMap implements DynamicMap {
+  private final int maxDoc;
   private int maxSize;
-  private IntFloatHashMap hashMap;
+  private Int2FloatOpenHashMap hashMap;
   private float[] keyValues;
   private float emptyValue;
   private int threshold;
@@ -36,24 +38,26 @@ public class IntFloatDynamicMap implements DynamicMap {
    * Although the map will automatically do resizing to be able to hold key {@code >= expectedKeyMax}.
    * But putting key much larger than {@code expectedKeyMax} is discourage since it can leads to use LOT OF memory.
    */
-  public IntFloatDynamicMap(int expectedKeyMax, float emptyValue) {
+  public IntFloatDynamicMap(int maxDoc, int expectedKeyMax, float emptyValue) {
     this.threshold = threshold(expectedKeyMax);
     this.maxSize = expectedKeyMax;
+    this.maxDoc = maxDoc;
     this.emptyValue = emptyValue;
-    if (useArrayBased(expectedKeyMax)) {
+    int est = expectedKeyMax == -1 ? maxDoc >> 2 : Math.min(maxDoc, expectedKeyMax);
+    if (useArrayBased(maxDoc, est)) {
       upgradeToArray();
     } else {
-      this.hashMap = new IntFloatHashMap(mapExpectedElements(expectedKeyMax));
+      this.hashMap = new Int2FloatOpenHashMap(mapExpectedElements(est));
     }
   }
 
   private void upgradeToArray() {
-    keyValues = new float[maxSize];
+    keyValues = new float[maxDoc];
     if (emptyValue != 0.0f) {
       Arrays.fill(keyValues, emptyValue);
     }
     if (hashMap != null) {
-      hashMap.forEach((IntFloatProcedure) (key, value) -> keyValues[key] = value);
+      hashMap.int2FloatEntrySet().fastForEach(entry -> keyValues[entry.getIntKey()] = entry.getFloatValue());
       hashMap = null;
     }
   }
@@ -101,9 +105,7 @@ public class IntFloatDynamicMap implements DynamicMap {
         if (val != emptyValue) consumer.accept(val);
       }
     } else {
-      for (FloatCursor ord : hashMap.values()) {
-        consumer.accept(ord.value);
-      }
+      hashMap.int2FloatEntrySet().fastForEach(entry -> consumer.accept(entry.getFloatValue()));
     }
   }
 

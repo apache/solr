@@ -18,12 +18,15 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -36,16 +39,18 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardIndexReaderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static volatile Trap trap;
-  private final static BlockingQueue<List<Object>> lastStacktraces = new LinkedBlockingQueue<List<Object>>();
+  private final static BlockingQueue<List<Object>> lastStacktraces = new LinkedTransferQueue<>();
   private final static long startTime = ManagementFactory.getRuntimeMXBean().getStartTime();
   private static final int keepStackTraceLines = 20;
   protected static final int maxTraces = 4;
 
-  
   private static Trap setTrap(Trap troll) {
     trap = troll;  
     return troll;
@@ -150,8 +155,9 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
   }
   
   public static Trap catchCount(int boundary) {
+
     return setTrap(new Trap() {
-      
+      private Random random = new Random(); // using lucenes is tough, need a new one per thread and created in right context
       private AtomicInteger count = new AtomicInteger();
     
       @Override
@@ -159,13 +165,13 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
         return ""+count.get()+"th tick of "+boundary+" allowed";
       }
       
-      private boolean trigered;
+      private volatile boolean trigered;
 
       @Override
       protected boolean shouldExit() {
         int now = count.incrementAndGet();
         boolean trigger = now==boundary 
-            || (now>boundary && LuceneTestCase.rarely(LuceneTestCase.random()));
+            || (now>boundary && LuceneTestCase.rarely(random));
         if (trigger) {
           Exception e = new Exception("stack sniffer"); 
           e.fillInStackTrace();
@@ -196,7 +202,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
       try {
         lastStacktraces.poll(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e1) {
-        e1.printStackTrace();
+        log.error("", e1);
       }
     }
   }

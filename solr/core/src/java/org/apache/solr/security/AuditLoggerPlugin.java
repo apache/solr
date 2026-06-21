@@ -26,13 +26,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -40,12 +38,12 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.AuditEvent.EventType;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * @since 8.1.0
  * @lucene.experimental
  */
-public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfoBean {
+public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase implements Closeable, SolrInfoBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
   static final String PARAM_ASYNC = "async";
@@ -66,19 +64,19 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   private static final int DEFAULT_QUEUE_SIZE = 4096;
   private static final int DEFAULT_NUM_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
 
-  BlockingQueue<AuditEvent> queue;
-  AtomicInteger auditsInFlight = new AtomicInteger(0);
-  boolean async;
-  boolean blockAsync;
-  int blockingQueueSize;
+  volatile BlockingQueue<AuditEvent> queue;
+  final LongAdder auditsInFlight = new LongAdder();
+  volatile boolean async;
+  volatile boolean blockAsync;
+  volatile int blockingQueueSize;
 
   protected AuditEventFormatter formatter;
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private ExecutorService executorService;
-  private boolean closed;
-  private MuteRules muteRules;
 
-  protected SolrMetricsContext solrMetricsContext;
+  private volatile ExecutorService executorService;
+  private volatile boolean closed;
+  private volatile MuteRules muteRules;
+
+  protected volatile SolrMetricsContext solrMetricsContext;
   protected Meter numErrors = new Meter();
   protected Meter numLost = new Meter();
   protected Meter numLogged = new Meter();
@@ -93,6 +91,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       EventType.REJECTED.name(),
       EventType.UNAUTHORIZED.name(),
       EventType.ANONYMOUS_REJECTED.name());
+
+  private volatile Future<?> runningFuture;
 
   /**
    * Initialize the plugin from security.json.
@@ -116,9 +116,12 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     pluginConfig.remove(PARAM_QUEUE_SIZE);
     pluginConfig.remove(PARAM_NUM_THREADS);
     if (async) {
-      queue = new ArrayBlockingQueue<>(blockingQueueSize);
-      executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("audit"));
-      executorService.submit(this);
+      queue = new BlockingArrayQueue<>(blockingQueueSize);
+      // MRM TODO: take a closer look at executor usage here
+      // executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("audit"));
+      executorService = ParWork.getMyPerThreadExecutor();
+      assert runningFuture == null;
+      runningFuture = executorService.submit(this);
     }
     pluginConfig.remove("class");
     log.debug("AuditLogger initialized in {} mode with event types {}", async?"async":"syncronous", eventTypes);
@@ -175,8 +178,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       try {
         queue.put(event);
       } catch (InterruptedException e) {
-        log.warn("Interrupted while waiting to insert AuditEvent into blocking queue");
-        Thread.currentThread().interrupt();
+        ParWork.propagateInterrupt(e);
       }
     } else {
       if (!queue.offer(event)) {
@@ -190,12 +192,12 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * Pick next event from async queue and call {@link #audit(AuditEvent)}
    */
   @Override
-  public void run() {
+  public Object call() {
     assert(async);
-    while (!closed && !Thread.currentThread().isInterrupted()) {
+    while (!closed) {
       try {
         AuditEvent event = queue.poll(1000, TimeUnit.MILLISECONDS);
-        auditsInFlight.incrementAndGet();
+        auditsInFlight.increment();
         if (event == null) continue;
         if (event.getDate() != null) {
           queuedTime.update(new Date().getTime() - event.getDate().getTime(), TimeUnit.MILLISECONDS);
@@ -205,15 +207,19 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         numLogged.mark();
         totalTime.inc(timer.stop());
       } catch (InterruptedException e) {
-        log.warn("Interrupted while waiting for next audit log event");
-        Thread.currentThread().interrupt();
+        ParWork.propagateInterrupt(e);
+        return null;
       } catch (Exception ex) {
         log.error("Exception when attempting to audit log asynchronously", ex);
         numErrors.mark();
       } finally {
-        auditsInFlight.decrementAndGet();
+        auditsInFlight.decrement();
+        synchronized (this) {
+          this.notifyAll();
+        }
       }
     }
+    return null;
   }
   
   /**
@@ -252,11 +258,6 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       queuedTime = solrMetricsContext.timer("queuedTime", getCategory().toString(), scope, className);
     }
     solrMetricsContext.gauge(() -> async, true, "async", getCategory().toString(), scope, className);
-  }
-  
-  @Override
-  public String getName() {
-    return this.getClass().getName();
   }
 
   @Override
@@ -311,16 +312,17 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    */
   @Override
   public void close() throws IOException {
-    if (async && executorService != null) {
-      waitForQueueToDrain(30);
-      closed = true;
+    // breaking out of polling
+    closed = true;
+    if (executorService != null) {
+      waitForQueueToDrain(1);
+      runningFuture.cancel(true);
       log.info("Shutting down async Auditlogger background thread(s)");
-      executorService.shutdownNow();
-      try {
-        SolrInfoBean.super.close();
-      } catch (Exception e) {
-        throw new IOException("Exception closing", e);
-      }
+    }
+    try {
+      SolrInfoBean.super.close();
+    } catch (Exception e) {
+      throw new IOException("Exception closing", e);
     }
   }
 
@@ -331,14 +333,19 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   protected void waitForQueueToDrain(int timeoutSeconds) {
     if (async && executorService != null) {
       int timeSlept = 0;
-      while ((!queue.isEmpty() || auditsInFlight.get() > 0) && timeSlept < timeoutSeconds) {
+      while ((!queue.isEmpty() || auditsInFlight.sum() > 0) && timeSlept < timeoutSeconds) {
         try {
           if (log.isInfoEnabled()) {
-            log.info("Async auditlogger queue still has {} elements and {} audits in-flight, sleeping to drain...", queue.size(), auditsInFlight.get());
+            log.info("Async auditlogger queue still has {} elements and {} audits in-flight, sleeping to drain...", queue.size(), auditsInFlight.sum());
           }
-          Thread.sleep(1000);
+          synchronized (this) {
+            this.wait(250);
+          }
           timeSlept ++;
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+          ParWork.propagateInterrupt(ignored);
+          break;
+        }
       }
     }
   }
@@ -346,7 +353,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   /**
    * Set of rules for when audit logging should be muted.
    */
-  private class MuteRules {
+  private static class MuteRules {
     private List<List<MuteRule>> rules;
 
     MuteRules(Object o) {
@@ -368,7 +375,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       }
     }
 
-    private MuteRule parseRule(Object ruleObj) {
+    private static MuteRule parseRule(Object ruleObj) {
       try {
         String rule = (String) ruleObj;
         if (rule.startsWith("type:")) {

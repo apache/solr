@@ -19,18 +19,18 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import org.apache.zookeeper.CreateMode;
 
@@ -47,21 +47,19 @@ import org.slf4j.LoggerFactory;
  * burst a ZkStateReader detects the correct set.
  */
 @Slow
+@LuceneTestCase.Nightly // TODO speedup
 public class TestStressLiveNodes extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** A basic cloud client, we'll be testing the behavior of it's ZkStateReader */
-  private static CloudSolrClient CLOUD_CLIENT;
-  
-  /** The addr of the zk server used in this test */
-  private static String ZK_SERVER_ADDR;
+  private static CloudHttp2SolrClient CLOUD_CLIENT;
 
   /* how many seconds we're willing to wait for our executor tasks to finish before failing the test */
   private final static int WAIT_TIME = TEST_NIGHTLY ? 60 : 30;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     // we only need 1 node, and we don't care about any configs or collections
     // we're going to fake all the live_nodes changes we want to fake.
@@ -69,39 +67,23 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.connect(); // force connection even though we aren't sending any requests
-    
-    ZK_SERVER_ADDR = cluster.getZkServer().getZkAddress();
-    
   }
   
   @AfterClass
-  private static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
-  }
-
-  private static SolrZkClient newSolrZkClient() {
-    assertNotNull(ZK_SERVER_ADDR);
-    // WTF is CloudConfigBuilder.DEFAULT_ZK_CLIENT_TIMEOUT private?
-    return new SolrZkClient(ZK_SERVER_ADDR, 15000);
+  public static void afterClass() throws Exception {
+    shutdownCluster();
+    CLOUD_CLIENT = null;
   }
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */
   private static List<String> getTrueLiveNodesFromZk() throws Exception {
-    SolrZkClient client = newSolrZkClient();
-    try {
-      ArrayList<String> result = new ArrayList<>(client.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true));
-      Collections.sort(result);
-      return result;
-    } finally {
-      client.close();
-    }
+    ArrayList<String> result = new ArrayList<>(CLOUD_CLIENT.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true));
+    Collections.sort(result);
+    return result;
   }
 
   /** 
-   * returns the cached set of live nodes (according to the ZkStateReader in our CloudSolrClient) 
+   * returns the cached set of live nodes (according to the ZkStateReader in our CloudHttp2SolrClient) 
    * as a sorted list. 
    * This is done in a sleep+retry loop until the result matches the expectedCount, or a few iters have passed
    * (this way we aren't testing how fast the watchers complete, just that they got the correct result)
@@ -110,13 +92,13 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     ArrayList<String> result = null;
 
     for (int i = 0; i < 10; i++) {
-      result = new ArrayList<>(CLOUD_CLIENT.getZkStateReader().getClusterState().getLiveNodes());
+      result = new ArrayList<>(CLOUD_CLIENT.getZkStateReader().getLiveNodes());
       if (expectedCount != result.size()) {
         if (log.isInfoEnabled()) {
           log.info("sleeping #{} to give watchers a chance to finish: {} != {}",
               i, expectedCount, result.size());
         }
-        Thread.sleep(200);
+        Thread.sleep(10);
       } else {
         break;
       }
@@ -132,7 +114,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   public void testStress() throws Exception {
 
     // do many iters, so we have "bursts" of adding nodes that we then check
-    final int numIters = atLeast(TEST_NIGHTLY ? 1000 : 100);
+    final int numIters = SolrTestUtil.atLeast(TEST_NIGHTLY ? 67 : 35);
     for (int iter = 0; iter < numIters; iter++) {
 
       // sanity check that ZK says there is in fact 1 live node
@@ -177,18 +159,8 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
         thrashers.add(new LiveNodeTrasher("T"+iter+"_"+i, numNodesPerThrasher));
       }
       try {
-        final ExecutorService executorService = ExecutorUtil.newMDCAwareFixedThreadPool
-          (thrashers.size()+1, new SolrNamedThreadFactory("test_live_nodes_thrasher_iter"+iter));
-        
-        executorService.invokeAll(thrashers);
-        executorService.shutdown();
-        if (! executorService.awaitTermination(WAIT_TIME, TimeUnit.SECONDS)) {
-          for (LiveNodeTrasher thrasher : thrashers) {
-            thrasher.stop();
-          }
-        }
-        assertTrue("iter"+iter+": thrashers didn't finish even after explicitly stopping",
-                   executorService.awaitTermination(WAIT_TIME, TimeUnit.SECONDS));
+
+        getTestExecutor().invokeAll(thrashers);
 
         // sanity check the *real* live_nodes entries from ZK match what the thrashers added
         int totalAdded = 1; // 1 real live node when we started
@@ -220,12 +192,13 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
     private boolean running = false;;
     private int numAdded = 0;
+    private Set<String> nodePaths = new HashSet<>();
     
     /** ID should ideally be unique amongst any other instances */
     public LiveNodeTrasher(String id, int numNodesToAdd) {
       this.id = id;
       this.numNodesToAdd = numNodesToAdd;
-      this.client = newSolrZkClient();
+      this.client = zkClient();
     }
     /** returns the number of nodes actually added w/o error */
     public Integer call() {
@@ -233,6 +206,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       // NOTE: test includes 'running'
       for (int i = 0; running && i < numNodesToAdd; i++) {
         final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/thrasher-" + id + "-" + i;
+        nodePaths.add(nodePath);
         try {
           client.makePath(nodePath, CreateMode.EPHEMERAL, true);
           numAdded++;
@@ -246,7 +220,13 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       return numAdded;
     }
     public void close() {
-      client.close();
+      for (String nodePath : nodePaths) {
+        try {
+          client.delete(nodePath, -1);
+        } catch (Exception e) {
+          log.error("failed to delete: {}", nodePath, e);
+        }
+      }
     }
     public void stop() {
       running = false;

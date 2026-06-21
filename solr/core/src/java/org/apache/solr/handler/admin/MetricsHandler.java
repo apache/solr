@@ -199,7 +199,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return sb.toString();
   }
 
-  private MetricFilter parseMustMatchFilter(SolrParams params) {
+  private static MetricFilter parseMustMatchFilter(SolrParams params) {
     String[] prefixes = params.getParams(PREFIX_PARAM);
     MetricFilter prefixFilter = null;
     if (prefixes != null && prefixes.length > 0) {
@@ -229,7 +229,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return mustMatchFilter;
   }
 
-  private MetricUtils.PropertyFilter parsePropertyFilter(SolrParams params) {
+  private static MetricUtils.PropertyFilter parsePropertyFilter(SolrParams params) {
     String[] props = params.getParams(PROPERTY_PARAM);
     if (props == null || props.length == 0) {
       return MetricUtils.PropertyFilter.ALL;
@@ -307,7 +307,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return validRegistries;
   }
 
-  private List<MetricType> parseMetricTypes(SolrParams params) {
+  private static List<MetricType> parseMetricTypes(SolrParams params) {
     String[] typeStr = params.getParams(TYPE_PARAM);
     List<String> types = Collections.emptyList();
     if (typeStr != null && typeStr.length > 0)  {
@@ -357,7 +357,13 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
 
     public MetricFilter asMetricFilter() {
-      return (name, metric) -> klass == null || klass.isInstance(metric);
+      return new MetricFilter() {
+        @Override
+        public boolean matches(String name, Metric metric) {
+          if (metric == null && klass != null) return false;
+          return klass == null || klass.isInstance(metric);
+        }
+      };
     }
   }
 }

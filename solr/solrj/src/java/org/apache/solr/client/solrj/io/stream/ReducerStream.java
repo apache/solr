@@ -74,7 +74,7 @@ public class ReducerStream extends TupleStream implements Expressible {
     init(stream, convertToEqualitor(comp), op);
   }
   
-  private StreamEqualitor convertToEqualitor(StreamComparator comp){
+  private static StreamEqualitor convertToEqualitor(StreamComparator comp){
     if(comp instanceof MultipleFieldComparator){
       MultipleFieldComparator mComp = (MultipleFieldComparator)comp;
       StreamEqualitor[] eqs = new StreamEqualitor[mComp.getComps().length];
@@ -92,7 +92,7 @@ public class ReducerStream extends TupleStream implements Expressible {
   public ReducerStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    StreamExpressionNamedParameter byExpression = factory.getNamedOperand(expression, "by");
+    StreamExpressionNamedParameter byExpression = StreamFactory.getNamedOperand(expression, "by");
     List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, ReduceOperation.class);
 
     // validate expression contains only what we want.
@@ -121,7 +121,7 @@ public class ReducerStream extends TupleStream implements Expressible {
     }
 
     init(factory.constructStream(streamExpressions.get(0)),
-         factory.constructEqualitor(((StreamExpressionValue) byExpression.getParameter()).getValue(), FieldEqualitor.class),
+         StreamFactory.constructEqualitor(((StreamExpressionValue) byExpression.getParameter()).getValue(), FieldEqualitor.class),
          reduceOperation);
   }
   
@@ -154,7 +154,7 @@ public class ReducerStream extends TupleStream implements Expressible {
     
     // over
     if(eq instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("by",((Expressible)eq).toExpression(factory)));
+      expression.addParameter(new StreamExpressionNamedParameter("by", eq.toExpression(factory)));
     }
     else{
       throw new IOException("This ReducerStream contains a non-expressible comparator - it cannot be converted to an expression");

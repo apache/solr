@@ -16,7 +16,8 @@
  */
 package org.apache.solr.common.params;
 
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
+
 import java.util.Iterator;
 import java.util.Map;
 
@@ -89,23 +90,25 @@ public class MultiMapSolrParams extends SolrParams {
   /** Returns a MultiMap view of the SolrParams.  A new map will be created if newCopy==true */
   public static Map<String,String[]> asMultiMap(SolrParams params, boolean newCopy) {
     if (params instanceof MultiMapSolrParams) {
-      Map<String,String[]> map = ((MultiMapSolrParams)params).getMap();
+      Map<String,String[]> map = ((MultiMapSolrParams) params).map;
       if (newCopy) {
-        return new HashMap<>(map);
+        Map copy = new Object2ObjectArrayMap(map.size());
+        copy.putAll(map);
       }
       return map;
     } else if (params instanceof ModifiableSolrParams) {
       Map<String,String[]> map = ((ModifiableSolrParams)params).getMap();
       if (newCopy) {
-        return new HashMap<>(map);
+        Map copy = new Object2ObjectArrayMap(map.size());
+        copy.putAll(map);
       }
       return map;
     } else {
-      Map<String,String[]> map = new HashMap<>();
+      Map copy = new Object2ObjectArrayMap(32);
       for (Map.Entry<String, String[]> pair : params) {
-        map.put(pair.getKey(), pair.getValue());
+        copy.put(pair.getKey(), pair.getValue());
       }
-      return map;
+      return copy;
     }
   }
 

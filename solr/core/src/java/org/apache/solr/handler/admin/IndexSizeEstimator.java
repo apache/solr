@@ -246,7 +246,7 @@ public class IndexSizeEstimator {
   }
 
   @SuppressWarnings({"unchecked"})
-  private void convert(Map<String, Object> result) {
+  private static void convert(Map<String,Object> result) {
     for (Map.Entry<String, Object> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (value instanceof ItemPriorityQueue) {
@@ -269,7 +269,7 @@ public class IndexSizeEstimator {
   }
 
   @SuppressWarnings({"unchecked"})
-  private void estimateSummary(Map<String, Object> details, Map<String, Object> summary) {
+  private static void estimateSummary(Map<String,Object> details, Map<String,Object> summary) {
     log.info("- preparing summary...");
     details.forEach((type, perType) -> {
       ((Map<String, Object>)perType).forEach((field, perField) -> {
@@ -710,7 +710,7 @@ public class IndexSizeEstimator {
       System.exit(-2);
     }
     Directory dir = FSDirectory.open(Paths.get(path));
-    DirectoryReader reader = StandardDirectoryReader.open(dir);
+    DirectoryReader reader = DirectoryReader.open(dir);
     IndexSizeEstimator stats = new IndexSizeEstimator(reader, topN, maxLen, summary, details);
     System.out.println(Utils.toJSONString(stats.estimate()));
     System.exit(0);

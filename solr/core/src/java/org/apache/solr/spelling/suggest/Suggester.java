@@ -21,10 +21,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,6 +42,7 @@ import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
@@ -73,16 +77,16 @@ public class Suggester extends SolrSpellChecker {
    */
   public static final String STORE_DIR = "storeDir";
   
-  protected String sourceLocation;
-  protected File storeDir;
-  protected float threshold;
-  protected Dictionary dictionary;
-  protected IndexReader reader;
-  protected Lookup lookup;
-  protected String lookupImpl;
-  protected SolrCore core;
+  protected volatile String sourceLocation;
+  protected volatile File storeDir;
+  protected volatile float threshold;
+  protected volatile  Dictionary dictionary;
+  protected volatile IndexReader reader;
+  protected volatile Lookup lookup;
+  protected volatile String lookupImpl;
+  protected volatile SolrCore core;
 
-  private LookupFactory factory;
+  private volatile LookupFactory factory;
   
   @Override
   public String init(NamedList config, SolrCore core) {
@@ -131,8 +135,8 @@ public class Suggester extends SolrSpellChecker {
         storeDir.mkdirs();
       } else {
         // attempt reload of the stored lookup
-        try {
-          lookup.load(new FileInputStream(new File(storeDir, factory.storeFileName())));
+        try (InputStream is = Files.newInputStream(new File(storeDir, factory.storeFileName()).toPath())) {
+          lookup.load(is);
         } catch (IOException e) {
           log.warn("Loading stored lookup data failed", e);
         }
@@ -161,16 +165,18 @@ public class Suggester extends SolrSpellChecker {
     lookup.build(dictionary);
     if (storeDir != null) {
       File target = new File(storeDir, factory.storeFileName());
-      if(!lookup.store(new FileOutputStream(target))) {
-        if (sourceLocation == null) {
-          assert reader != null && field != null;
-          log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
+      try (OutputStream out = Files.newOutputStream(target.toPath())) {
+        if (!lookup.store(out)) {
+          if (sourceLocation == null) {
+            assert reader != null && field != null;
+            log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
+          } else {
+            log.error("Store Lookup build from sourceloaction: {} failed", sourceLocation);
+          }
         } else {
-          log.error("Store Lookup build from sourceloaction: {} failed", sourceLocation);
-        }
-      } else {
-        if (log.isInfoEnabled()) {
-          log.info("Stored suggest data to: {}", target.getAbsolutePath());
+          if (log.isInfoEnabled()) {
+            log.info("Stored suggest data to: {}", target.getAbsolutePath());
+          }
         }
       }
     }
@@ -179,17 +185,22 @@ public class Suggester extends SolrSpellChecker {
   @Override
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     log.info("reload()");
-    if (dictionary == null && storeDir != null) {
+    File store = new File(storeDir, factory.storeFileName());
+    if (dictionary == null && storeDir != null && Files.exists(store.toPath())) {
       // this may be a firstSearcher event, try loading it
-      FileInputStream is = new FileInputStream(new File(storeDir, factory.storeFileName()));
-      try {
-        if (lookup.load(is)) {
-          return;  // loaded ok
+      try (InputStream is = Files.newInputStream(store.toPath())) {
+        try {
+          if (lookup.load(is)) {
+            return;  // loaded ok
+          }
+        } finally {
+          IOUtils.closeWhileHandlingException(is);
         }
-      } finally {
-        IOUtils.closeWhileHandlingException(is);
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
+        log.info("load failed, need to build Lookup again");
       }
-      log.debug("load failed, need to build Lookup again");
+
     }
     // loading was unsuccessful - build it again
     build(core, searcher);

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -29,6 +30,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import com.ctc.wstx.sax.WstxSAXParserFactory;
+import com.ctc.wstx.stax.WstxInputFactory;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrDocument;
@@ -37,6 +40,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.codehaus.stax2.XMLStreamReader2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,28 +55,17 @@ public class XMLResponseParser extends ResponseParser
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  // reuse the factory among all parser instances so things like string caches
-  // won't be duplicated
-  static final XMLInputFactory factory;
+  public final static WstxInputFactory inputFactory = new WstxInputFactory();
+  public final static SAXParserFactory saxFactory;
   static {
-    factory = XMLInputFactory.newInstance();
-    EmptyEntityResolver.configureXMLInputFactory(factory);
+    inputFactory.setXMLReporter(xmllog);
+    inputFactory.configureForSpeed();
+    inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+    EmptyEntityResolver.configureInputFactory(inputFactory);
 
-    try {
-      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
-      // XMLInputFactory, as that implementation tries to cache and reuse the
-      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
-      // prevents this.
-      // All other known open-source stax parsers (and the bea ref impl)
-      // have thread-safe factories.
-      factory.setProperty("reuse-instance", Boolean.FALSE);
-    }
-    catch( IllegalArgumentException ex ) {
-      // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
-      log.debug( "Unable to set the 'reuse-instance' property for the input factory: {}", factory );
-    }
-    factory.setXMLReporter(xmllog);
+    saxFactory = new WstxSAXParserFactory(inputFactory);
+    saxFactory.setNamespaceAware(true);
+    EmptyEntityResolver.configureSAXParserFactory(saxFactory);
   }
 
   public XMLResponseParser() {}
@@ -90,72 +83,76 @@ public class XMLResponseParser extends ResponseParser
 
   @Override
   public NamedList<Object> processResponse(Reader in) {
-    XMLStreamReader parser = null;
+    XMLStreamReader2 parser = null;
     try {
-      parser = factory.createXMLStreamReader(in);
-    } catch (XMLStreamException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-    }
+      try {
+        parser = (XMLStreamReader2) inputFactory.createXMLStreamReader(in);
+        parser.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+      }
 
-    return processResponse(parser);
+      return processResponse(parser);
+    } finally {
+      if (parser != null) {
+        try {
+          parser.close();
+        } catch (Exception e) {
+          log.info("Exception closing xml parser {} {}", e.getClass().getName(), e.getMessage());
+        }
+      }
+    }
   }
 
   @Override
   public NamedList<Object> processResponse(InputStream in, String encoding)
   {
-     XMLStreamReader parser = null;
+    XMLStreamReader2 parser = null;
     try {
-      parser = factory.createXMLStreamReader(in, encoding);
-    } catch (XMLStreamException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-    }
+      try {
+        parser = (XMLStreamReader2) inputFactory.createXMLStreamReader(in, encoding);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+      }
 
-    return processResponse(parser);
+      return processResponse(parser);
+    } finally {
+      if (parser != null) {
+        try {
+         parser.close();
+        } catch(Exception e) {
+          log.info("Exception closing xml parser {} {}", e.getClass().getName(), e.getMessage());
+        }
+      }
+    }
   }
 
   /**
    * parse the text into a named list...
    */
-  private NamedList<Object> processResponse(XMLStreamReader parser)
-  {
+  private NamedList<Object> processResponse(XMLStreamReader parser) {
     try {
       NamedList<Object> response = null;
-      for (int event = parser.next();
-       event != XMLStreamConstants.END_DOCUMENT;
-       event = parser.next())
-      {
-        switch (event) {
-          case XMLStreamConstants.START_ELEMENT:
+      for (int event = parser.next(); event != XMLStreamConstants.END_DOCUMENT; event = parser.next()) {
+        if (event == XMLStreamConstants.START_ELEMENT) {
+          if (response != null) {
+            throw new Exception("already read the response!");
+          }
 
-            if( response != null ) {
-              throw new Exception( "already read the response!" );
-            }
-
-            // only top-level element is "response
-            String name = parser.getLocalName();
-            if( name.equals( "response" ) || name.equals( "result" ) ) {
-              response = readNamedList( parser );
-            }
-            else if( name.equals( "solr" ) ) {
-              return new SimpleOrderedMap<>();
-            }
-            else {
-              throw new Exception( "really needs to be response or result.  " +
-                  "not:"+parser.getLocalName() );
-            }
-            break;
+          // only top-level element is "response
+          String name = parser.getLocalName();
+          if (name.equals("response") || name.equals("result")) {
+            response = readNamedList(parser);
+          } else if (name.equals("solr")) {
+            return new SimpleOrderedMap<>();
+          } else {
+            throw new Exception("really needs to be response or result.  " + "not:" + parser.getLocalName());
+          }
         }
       }
       return response;
-    }
-    catch( Exception ex ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", ex );
-    }
-    finally {
-      try {
-        parser.close();
-      }
-      catch( Exception ex ){}
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", ex);
     }
   }
 
@@ -215,7 +212,7 @@ public class XMLResponseParser extends ResponseParser
       throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
     }
 
-    StringBuilder builder = new StringBuilder();
+    StringBuilder builder = new StringBuilder(32);
     NamedList<Object> nl = new SimpleOrderedMap<>();
     KnownType type = null;
     String name = null;
@@ -294,7 +291,7 @@ public class XMLResponseParser extends ResponseParser
       throw new RuntimeException( "must be 'arr', not: "+parser.getLocalName() );
     }
 
-    StringBuilder builder = new StringBuilder();
+    StringBuilder builder = new StringBuilder(32);
     KnownType type = null;
 
     List<Object> vals = new ArrayList<>();
@@ -407,7 +404,7 @@ public class XMLResponseParser extends ResponseParser
     }
 
     SolrDocument doc = new SolrDocument();
-    StringBuilder builder = new StringBuilder();
+    StringBuilder builder = new StringBuilder(32);
     KnownType type = null;
     String name = null;
 

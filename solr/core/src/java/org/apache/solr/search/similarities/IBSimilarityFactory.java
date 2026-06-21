@@ -80,7 +80,7 @@ public class IBSimilarityFactory extends SimilarityFactory {
         params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
   }
   
-  private Distribution parseDistribution(String expr) {
+  private static Distribution parseDistribution(String expr) {
     if ("LL".equals(expr)) {
       return new DistributionLL();
     } else if ("SPL".equals(expr)) {
@@ -90,7 +90,7 @@ public class IBSimilarityFactory extends SimilarityFactory {
     }
   }
   
-  private Lambda parseLambda(String expr) {
+  private static Lambda parseLambda(String expr) {
     if ("DF".equals(expr)) {
       return new LambdaDF();
     } else if ("TTF".equals(expr)) {

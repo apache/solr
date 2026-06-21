@@ -330,7 +330,7 @@ public class BBoxStrategy extends SpatialStrategy {
     // docMinY <= queryExtent.getMinY() AND docMaxY >= queryExtent.getMaxY()
     Query qMinY = this.makeNumericRangeQuery(field_minY, null, bbox.getMinY(), false, true);
     Query qMaxY = this.makeNumericRangeQuery(field_maxY, bbox.getMaxY(), null, true, false);
-    Query yConditions = this.makeQuery(BooleanClause.Occur.MUST, qMinY, qMaxY);
+    Query yConditions = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qMinY, qMaxY);
 
     // X conditions
     Query xConditions;
@@ -343,7 +343,7 @@ public class BBoxStrategy extends SpatialStrategy {
       // docMinX <= queryExtent.getMinX() AND docMaxX >= queryExtent.getMaxX()
       Query qMinX = this.makeNumericRangeQuery(field_minX, null, bbox.getMinX(), false, true);
       Query qMaxX = this.makeNumericRangeQuery(field_maxX, bbox.getMaxX(), null, true, false);
-      Query qMinMax = this.makeQuery(BooleanClause.Occur.MUST, qMinX, qMaxX);
+      Query qMinMax = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qMinX, qMaxX);
       Query qNonXDL = this.makeXDL(false, qMinMax);
 
       if (!ctx.isGeo()) {
@@ -355,7 +355,7 @@ public class BBoxStrategy extends SpatialStrategy {
         // docMinXLeft <= queryExtent.getMinX() OR docMaxXRight >= queryExtent.getMaxX()
         Query qXDLLeft = this.makeNumericRangeQuery(field_minX, null, bbox.getMinX(), false, true);
         Query qXDLRight = this.makeNumericRangeQuery(field_maxX, bbox.getMaxX(), null, true, false);
-        Query qXDLLeftRight = this.makeQuery(BooleanClause.Occur.SHOULD, qXDLLeft, qXDLRight);
+        Query qXDLLeftRight = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qXDLLeft, qXDLRight);
         Query qXDL = this.makeXDL(true, qXDLLeftRight);
 
         Query qEdgeDL = null;
@@ -366,7 +366,7 @@ public class BBoxStrategy extends SpatialStrategy {
         }
 
         // apply the non-XDL and XDL conditions
-        xConditions = this.makeQuery(BooleanClause.Occur.SHOULD, qNonXDL, qXDL, qEdgeDL);
+        xConditions = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qNonXDL, qXDL, qEdgeDL);
       }
     } else {
       // queries that cross the date line
@@ -379,7 +379,7 @@ public class BBoxStrategy extends SpatialStrategy {
       // docMinXLeft <= queryExtent.getMinX() AND docMaxXRight >= queryExtent.getMaxX()
       Query qXDLLeft = this.makeNumericRangeQuery(field_minX, null, bbox.getMinX(), false, true);
       Query qXDLRight = this.makeNumericRangeQuery(field_maxX, bbox.getMaxX(), null, true, false);
-      Query qXDLLeftRight = this.makeXDL(true, this.makeQuery(BooleanClause.Occur.MUST, qXDLLeft, qXDLRight));
+      Query qXDLLeftRight = this.makeXDL(true, BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qXDLLeft, qXDLRight));
 
       Query qWorld = makeQuery(BooleanClause.Occur.MUST,
           makeNumberTermQuery(field_minX, -180), makeNumberTermQuery(field_maxX, 180));
@@ -388,7 +388,7 @@ public class BBoxStrategy extends SpatialStrategy {
     }
 
     // both X and Y conditions must occur
-    return this.makeQuery(BooleanClause.Occur.MUST, xConditions, yConditions);
+    return BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, xConditions, yConditions);
   }
 
   /**
@@ -405,7 +405,7 @@ public class BBoxStrategy extends SpatialStrategy {
     // docMinY > queryExtent.getMaxY() OR docMaxY < queryExtent.getMinY()
     Query qMinY = this.makeNumericRangeQuery(field_minY, bbox.getMaxY(), null, false, false);
     Query qMaxY = this.makeNumericRangeQuery(field_maxY, null, bbox.getMinY(), false, false);
-    Query yConditions = this.makeQuery(BooleanClause.Occur.SHOULD, qMinY, qMaxY);
+    Query yConditions = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qMinY, qMaxY);
 
     // X conditions
     Query xConditions;
@@ -430,7 +430,7 @@ public class BBoxStrategy extends SpatialStrategy {
         bq.add(makeNumberTermQuery(field_minX, -180.0), BooleanClause.Occur.MUST_NOT);
         qMaxX = bq.build();
       }
-      Query qMinMax = this.makeQuery(BooleanClause.Occur.SHOULD, qMinX, qMaxX);
+      Query qMinMax = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qMinX, qMaxX);
       Query qNonXDL = this.makeXDL(false, qMinMax);
 
       if (!ctx.isGeo()) {
@@ -446,11 +446,11 @@ public class BBoxStrategy extends SpatialStrategy {
         // (docMinXRight > queryExtent.getMaxX()) equates to (-180.0 > queryExtent.getMaxX()) and is ignored
         Query qMinXLeft = this.makeNumericRangeQuery(field_minX, bbox.getMaxX(), null, false, false);
         Query qMaxXRight = this.makeNumericRangeQuery(field_maxX, null, bbox.getMinX(), false, false);
-        Query qLeftRight = this.makeQuery(BooleanClause.Occur.MUST, qMinXLeft, qMaxXRight);
+        Query qLeftRight = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qMinXLeft, qMaxXRight);
         Query qXDL = this.makeXDL(true, qLeftRight);
 
         // apply the non-XDL and XDL conditions
-        xConditions = this.makeQuery(BooleanClause.Occur.SHOULD, qNonXDL, qXDL);
+        xConditions = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qNonXDL, qXDL);
       }
       // queries that cross the date line
     } else {
@@ -463,9 +463,9 @@ public class BBoxStrategy extends SpatialStrategy {
       Query qMaxXLeft = this.makeNumericRangeQuery(field_maxX, null, bbox.getMinX(), false, false);
       Query qMinXRight = this.makeNumericRangeQuery(field_minX, bbox.getMaxX(), null, false, false);
       Query qMaxXRight = this.makeNumericRangeQuery(field_maxX, null, -180.0, false, false);
-      Query qLeft = this.makeQuery(BooleanClause.Occur.SHOULD, qMinXLeft, qMaxXLeft);
-      Query qRight = this.makeQuery(BooleanClause.Occur.SHOULD, qMinXRight, qMaxXRight);
-      Query qLeftRight = this.makeQuery(BooleanClause.Occur.MUST, qLeft, qRight);
+      Query qLeft = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qMinXLeft, qMaxXLeft);
+      Query qRight = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qMinXRight, qMaxXRight);
+      Query qLeftRight = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qLeft, qRight);
 
       // No need to search for documents that do not cross the date line
 
@@ -473,7 +473,7 @@ public class BBoxStrategy extends SpatialStrategy {
     }
 
     // either X or Y conditions should occur
-    return this.makeQuery(BooleanClause.Occur.SHOULD, xConditions, yConditions);
+    return BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, xConditions, yConditions);
   }
 
   /**
@@ -509,7 +509,7 @@ public class BBoxStrategy extends SpatialStrategy {
     if (ctx.isGeo()) {
       Query qIsNonXDL = this.makeXDL(false);
       Query qIsXDL = ctx.isGeo() ? this.makeXDL(true) : null;
-      qHasEnv = this.makeQuery(BooleanClause.Occur.SHOULD, qIsNonXDL, qIsXDL);
+      qHasEnv = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qIsNonXDL, qIsXDL);
     } else {
       qHasEnv = this.makeXDL(false);
     }
@@ -533,7 +533,7 @@ public class BBoxStrategy extends SpatialStrategy {
    * @param queries the query collection
    * @return the query
    */
-  BooleanQuery makeQuery(BooleanClause.Occur occur, Query... queries) {
+  static BooleanQuery makeQuery(BooleanClause.Occur occur, Query... queries) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Query query : queries) {
       if (query != null)
@@ -556,7 +556,7 @@ public class BBoxStrategy extends SpatialStrategy {
     // docMinY >= queryExtent.getMinY() AND docMaxY <= queryExtent.getMaxY()
     Query qMinY = this.makeNumericRangeQuery(field_minY, bbox.getMinY(), null, true, false);
     Query qMaxY = this.makeNumericRangeQuery(field_maxY, null, bbox.getMaxY(), false, true);
-    Query yConditions = this.makeQuery(BooleanClause.Occur.MUST, qMinY, qMaxY);
+    Query yConditions = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qMinY, qMaxY);
 
     // X conditions
     Query xConditions;
@@ -571,7 +571,7 @@ public class BBoxStrategy extends SpatialStrategy {
       // docMinX >= queryExtent.getMinX() AND docMaxX <= queryExtent.getMaxX()
       Query qMinX = this.makeNumericRangeQuery(field_minX, bbox.getMinX(), null, true, false);
       Query qMaxX = this.makeNumericRangeQuery(field_maxX, null, bbox.getMaxX(), false, true);
-      Query qMinMax = this.makeQuery(BooleanClause.Occur.MUST, qMinX, qMaxX);
+      Query qMinMax = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qMinX, qMaxX);
 
       double edge = 0;//none, otherwise opposite dateline of query
       if (bbox.getMinX() == -180.0)
@@ -595,17 +595,17 @@ public class BBoxStrategy extends SpatialStrategy {
       // docMinX >= queryExtent.getMinX() AND docMaxX <= 180.0
       Query qMinXLeft = this.makeNumericRangeQuery(field_minX, bbox.getMinX(), null, true, false);
       Query qMaxXLeft = this.makeNumericRangeQuery(field_maxX, null, 180.0, false, true);
-      Query qLeft = this.makeQuery(BooleanClause.Occur.MUST, qMinXLeft, qMaxXLeft);
+      Query qLeft = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qMinXLeft, qMaxXLeft);
 
       // the document should be within the right portion of the query
       // docMinX >= -180.0 AND docMaxX <= queryExtent.getMaxX()
       Query qMinXRight = this.makeNumericRangeQuery(field_minX, -180.0, null, true, false);
       Query qMaxXRight = this.makeNumericRangeQuery(field_maxX, null, bbox.getMaxX(), false, true);
-      Query qRight = this.makeQuery(BooleanClause.Occur.MUST, qMinXRight, qMaxXRight);
+      Query qRight = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qMinXRight, qMaxXRight);
 
       // either left or right conditions should occur,
       // apply the left and right conditions to documents that do not cross the date line
-      Query qLeftRight = this.makeQuery(BooleanClause.Occur.SHOULD, qLeft, qRight);
+      Query qLeftRight = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qLeft, qRight);
       Query qNonXDL = this.makeXDL(false, qLeftRight);
 
       // X Conditions for documents that cross the date line,
@@ -615,15 +615,15 @@ public class BBoxStrategy extends SpatialStrategy {
       // AND docMinXRight >= -180.0 AND docMaxXRight <= queryExtent.getMaxX()
       Query qXDLLeft = this.makeNumericRangeQuery(field_minX, bbox.getMinX(), null, true, false);
       Query qXDLRight = this.makeNumericRangeQuery(field_maxX, null, bbox.getMaxX(), false, true);
-      Query qXDLLeftRight = this.makeQuery(BooleanClause.Occur.MUST, qXDLLeft, qXDLRight);
+      Query qXDLLeftRight = BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, qXDLLeft, qXDLRight);
       Query qXDL = this.makeXDL(true, qXDLLeftRight);
 
       // apply the non-XDL and XDL conditions
-      xConditions = this.makeQuery(BooleanClause.Occur.SHOULD, qNonXDL, qXDL);
+      xConditions = BBoxStrategy.makeQuery(BooleanClause.Occur.SHOULD, qNonXDL, qXDL);
     }
 
     // both X and Y conditions must occur
-    return this.makeQuery(BooleanClause.Occur.MUST, xConditions, yConditions);
+    return BBoxStrategy.makeQuery(BooleanClause.Occur.MUST, xConditions, yConditions);
   }
 
   /**

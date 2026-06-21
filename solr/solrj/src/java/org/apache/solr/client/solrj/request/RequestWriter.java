@@ -16,10 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
@@ -28,6 +28,9 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
+import org.apache.solr.common.util.FastOutputStream;
+
 
 /**
  * A RequestWriter is used to write requests to Solr.
@@ -56,19 +59,7 @@ public class RequestWriter {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
-      return new ContentWriter() {
-        @Override
-        public void write(OutputStream os) throws IOException {
-          OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
-          updateRequest.writeXML(writer);
-          writer.flush();
-        }
-
-        @Override
-        public String getContentType() {
-          return ClientUtils.TEXT_XML;
-        }
-      };
+      return new MyContentWriter(updateRequest);
     }
     return req.getContentWriter(ClientUtils.TEXT_XML);
   }
@@ -84,21 +75,30 @@ public class RequestWriter {
     return req.getContentStreams();
   }
 
-  protected boolean isEmpty(UpdateRequest updateRequest) {
+  protected static boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments()) &&
             isNull(updateRequest.getDeleteByIdMap()) &&
             isNull(updateRequest.getDeleteQuery()) &&
             updateRequest.getDocIterator() == null;
   }
 
-  public String getPath(SolrRequest req) {
+  public static String getPath(SolrRequest req) {
     return req.getPath();
   }
 
-  public void write(SolrRequest request, OutputStream os) throws IOException {
+  public void write(SolrRequest request, ExpandableDirectBufferOutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
-      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
+      Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+      updateRequest.writeXML(writer);
+      writer.flush();
+    }
+  }
+
+  public void write(SolrRequest request, FastOutputStream os) throws IOException {
+    if (request instanceof UpdateRequest) {
+      UpdateRequest updateRequest = (UpdateRequest) request;
+      Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
       updateRequest.writeXML(writer);
       writer.flush();
     }
@@ -129,11 +129,31 @@ public class RequestWriter {
     }
   }
 
-  protected boolean isNull(List l) {
+  protected static boolean isNull(List l) {
     return l == null || l.isEmpty();
   }
   
-  protected boolean isNull(Map l) {
+  protected static boolean isNull(Map l) {
     return l == null || l.isEmpty();
+  }
+
+  private static class MyContentWriter implements ContentWriter {
+    private final UpdateRequest updateRequest;
+
+    public MyContentWriter(UpdateRequest updateRequest) {
+      this.updateRequest = updateRequest;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+      updateRequest.writeXML(writer);
+      writer.flush();
+    }
+
+    @Override
+    public String getContentType() {
+      return ClientUtils.TEXT_XML;
+    }
   }
 }

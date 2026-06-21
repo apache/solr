@@ -78,7 +78,7 @@ public class BackupManager {
   /**
    * @return The version of this backup implementation.
    */
-  public final String getVersion() {
+  public static String getVersion() {
     return "1.0";
   }
 
@@ -139,7 +139,7 @@ public class BackupManager {
     try (IndexInput is = repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
-      ClusterState c_state = ClusterState.load(-1, arr, Collections.emptySet());
+      ClusterState c_state = ClusterState.createFromJson(-1, arr);
       return c_state.getCollection(collectionName);
     }
   }
@@ -173,7 +173,7 @@ public class BackupManager {
   public void uploadConfigDir(URI backupLoc, String backupId, String sourceConfigName, String targetConfigName)
       throws IOException {
     URI source = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, sourceConfigName);
-    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + targetConfigName;
+    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + '/' + targetConfigName;
     uploadToZk(zkStateReader.getZkClient(), source, zkPath);
   }
 
@@ -191,7 +191,7 @@ public class BackupManager {
     repository.createDirectory(repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
-    downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
+    downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + '/' + configName, dest);
   }
 
   public void uploadCollectionProperties(URI backupLoc, String backupId, String collectionName) throws IOException {
@@ -206,7 +206,11 @@ public class BackupManager {
     try (IndexInput is = repository.openInput(sourceDir, ZkStateReader.COLLECTION_PROPS_ZKNODE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()];
       is.readBytes(arr, 0, (int) is.length());
-      zkStateReader.getZkClient().create(zkPath, arr, CreateMode.PERSISTENT, true);
+      if (zkStateReader.getZkClient().exists(zkPath)) {
+        zkStateReader.getZkClient().setData(zkPath, arr,true);
+      } else {
+        zkStateReader.getZkClient().create(zkPath, arr, CreateMode.PERSISTENT, true);
+      }
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error uploading file to zookeeper path " + source.toString() + " to " + zkPath,
           SolrZkClient.checkInterrupted(e));
@@ -219,13 +223,13 @@ public class BackupManager {
 
 
     try {
-      if (!zkStateReader.getZkClient().exists(zkPath, true)) {
+      if (!zkStateReader.getZkClient().exists(zkPath)) {
         // Nothing to back up
         return;
       }
 
       try (OutputStream os = repository.createOutput(dest)) {
-        byte[] data = zkStateReader.getZkClient().getData(zkPath, null, null, true);
+        byte[] data = zkStateReader.getZkClient().getData(zkPath, null, null);
         os.write(data);
       }
     } catch (KeeperException | InterruptedException e) {
@@ -241,15 +245,15 @@ public class BackupManager {
       }
       List<String> files = zkClient.getChildren(zkPath, null, true);
       for (String file : files) {
-        List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
+        List<String> children = zkClient.getChildren(zkPath + '/' + file, null, true);
         if (children.size() == 0) {
           log.debug("Writing file {}", file);
-          byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
+          byte[] data = zkClient.getData(zkPath + '/' + file, null, null);
           try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
             os.write(data);
           }
         } else {
-          downloadFromZK(zkClient, zkPath + "/" + file, repository.resolve(dir, file));
+          downloadFromZK(zkClient, zkPath + '/' + file, repository.resolve(dir, file));
         }
       }
     } catch (KeeperException | InterruptedException e) {
@@ -264,7 +268,7 @@ public class BackupManager {
         "Path {} is not a directory", sourceDir);
 
     for (String file : repository.listAll(sourceDir)) {
-      String zkNodePath = destZkPath + "/" + file;
+      String zkNodePath = destZkPath + '/' + file;
       URI path = repository.resolve(sourceDir, file);
       PathType t = repository.getPathType(path);
       switch (t) {
@@ -280,7 +284,7 @@ public class BackupManager {
         }
 
         case DIRECTORY: {
-          if (!file.startsWith(".")) {
+          if (!(!file.isEmpty() && file.charAt(0) == '.')) {
             uploadToZk(zkClient, path, zkNodePath);
           }
           break;

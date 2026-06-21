@@ -69,7 +69,7 @@ public class CurrencyValue implements Comparable<CurrencyValue> {
       return null;
     }
 
-    Currency currency = CurrencyField.getCurrency(code);
+    Currency currency = CurrencyFieldType.getCurrency(code);
 
     if (currency == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + code);
@@ -173,7 +173,7 @@ public class CurrencyValue implements Comparable<CurrencyValue> {
    * @return The converted CurrencyValue.
    */
   public CurrencyValue convertTo(ExchangeRateProvider exchangeRates, String targetCurrencyCode) {
-    return new CurrencyValue(convertAmount(exchangeRates, this.getCurrencyCode(), this.getAmount(), targetCurrencyCode), targetCurrencyCode);
+    return new CurrencyValue(convertAmount(exchangeRates, this.currencyCode, this.amount, targetCurrencyCode), targetCurrencyCode);
   }
 
   /**
@@ -184,26 +184,26 @@ public class CurrencyValue implements Comparable<CurrencyValue> {
     int digits = 0;
     try {
       Currency currency =
-        Currency.getInstance(this.getCurrencyCode());
+        Currency.getInstance(this.currencyCode);
       if (currency == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Invalid currency code " + this.getCurrencyCode());
+            "Invalid currency code " + this.currencyCode);
   }
       digits = currency.getDefaultFractionDigits();
 }
     catch(IllegalArgumentException exception) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Invalid currency code " + this.getCurrencyCode());
+          "Invalid currency code " + this.currencyCode);
     }
 
-    String amount = Long.toString(this.getAmount());
-    if (this.getAmount() == 0) {
+    String amount = Long.toString(this.amount);
+    if (this.amount == 0) {
       amount += "000000".substring(0,digits);
     }
     return
       amount.substring(0, amount.length() - digits)
       + "." + amount.substring(amount.length() - digits)
-      + "," +  this.getCurrencyCode();
+      + "," + this.currencyCode;
   }
 
   @Override
@@ -211,14 +211,14 @@ public class CurrencyValue implements Comparable<CurrencyValue> {
     if(o == null) {
       throw new NullPointerException("Cannot compare CurrencyValue to a null values");
     }
-    if(!getCurrencyCode().equals(o.getCurrencyCode())) {
+    if(!currencyCode.equals(o.currencyCode)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Cannot compare CurrencyValues when their currencies are not equal");
     }
-    if(o.getAmount() < getAmount()) {
+    if(o.amount < amount) {
       return 1;
     }
-    if(o.getAmount() == getAmount()) {
+    if(o.amount == amount) {
       return 0;
     }
     return -1;

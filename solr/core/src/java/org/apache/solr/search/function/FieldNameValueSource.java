@@ -46,7 +46,7 @@ public class FieldNameValueSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof FieldNameValueSource && fieldName.equals(((FieldNameValueSource)o).getFieldName());
+    return o instanceof FieldNameValueSource && fieldName.equals(((FieldNameValueSource) o).fieldName);
   }
 
   @Override

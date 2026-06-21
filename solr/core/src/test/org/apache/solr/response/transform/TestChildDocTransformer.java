@@ -16,11 +16,13 @@
  */
 package org.apache.solr.response.transform;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -29,12 +31,14 @@ import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.core.StringContains.containsString;
 
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
-
-  private static String ID_FIELD = "id";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final String ID_FIELD = "id";
   private String[] titleVals = new String[2];
 
   @BeforeClass
@@ -44,14 +48,19 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   @After
   public void cleanup() throws Exception {
-    assertU(delQ("*:*"));
-    assertU(commit());
+    clearIndex();
+    try {
+      delQ("*:*");
+    } catch (Exception e) {
+      log.warn("Error clearing index {}", e.getMessage());
+    }
+    commit();
   }
 
   @Test
   public void testParentFilter() throws Exception {
     for(int i=0; i<titleVals.length; i++) {
-      titleVals[i] = TestUtil.randomSimpleString(random(), 1, 20);
+      titleVals[i] = TestUtil.randomSimpleString(random(), 5, 20);
     }
     createIndex(titleVals);
     testParentFilterJSON();
@@ -73,7 +82,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     testChildReturnFields();
   }
 
-  private void testChildDoctransformerXML() throws Exception {
+  private static void testChildDoctransformerXML() throws Exception {
     String test1[] = new String[] {
         "//*[@numFound='1']",
         "/response/result/doc[1]/doc[1]/str[@name='id']='2'" ,
@@ -104,25 +113,22 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
 
-    SolrException e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-          "fl", "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]"));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(req("q", "*:*", "fq", "subject:\"parentDocument\" ", "fl", "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(e.getMessage(),
         containsString("Parent filter 'QueryBitSetProducer(subject:bleh)' doesn't match any parent documents"));
 
-    e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-          "fl", "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(req("q", "*:*", "fq", "subject:\"parentDocument\" ", "fl", "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(e.getMessage(),
         containsString("Parent filter 'QueryBitSetProducer(text:e)' doesn't match any parent documents"));
 
-    e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-          "fl", "id, subject,[child parentFilter=\"\"]"));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(req("q", "*:*", "fq", "subject:\"parentDocument\" ", "fl", "id, subject,[child parentFilter=\"\"]"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(e.getMessage(), containsString("Invalid Parent filter '', resolves to null"));

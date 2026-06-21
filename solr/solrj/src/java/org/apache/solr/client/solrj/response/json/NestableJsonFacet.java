@@ -18,11 +18,11 @@
 package org.apache.solr.client.solrj.response.json;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -40,10 +40,10 @@ public class NestableJsonFacet {
   private final Map<String, HeatmapJsonFacet> heatmapFacetsByName;
 
   public NestableJsonFacet(NamedList<Object> facetNL) {
-    queryFacetsByName = new HashMap<>();
-    bucketBasedFacetByName = new HashMap<>();
-    heatmapFacetsByName = new HashMap<>();
-    statsByName = new HashMap<>();
+    queryFacetsByName = new Object2ObjectLinkedOpenHashMap<>(16, 0.5f);
+    bucketBasedFacetByName = new Object2ObjectLinkedOpenHashMap<>(16, 0.5f);
+    heatmapFacetsByName = new Object2ObjectLinkedOpenHashMap<>(16, 0.5f);
+    statsByName = new Object2ObjectLinkedOpenHashMap<>(16, 0.5f);
 
     for (Map.Entry<String, Object> entry : facetNL) {
       final String key = entry.getKey();

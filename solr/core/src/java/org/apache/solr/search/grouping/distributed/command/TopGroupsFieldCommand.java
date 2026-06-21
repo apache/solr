@@ -46,6 +46,8 @@ import org.apache.solr.search.grouping.Command;
  */
 public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
+  public static final GroupDocs[] EMPTY_GROUPS = new GroupDocs[0];
+
   public static class Builder {
 
     private Query query;
@@ -165,7 +167,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void postCollect(IndexSearcher searcher) throws IOException {
     if (firstPhaseGroups.isEmpty()) {
-      topGroups = new TopGroups<>(groupSort.getSort(), withinGroupSort.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
+      topGroups = new TopGroups<>(groupSort.getSort(), withinGroupSort.getSort(), 0, 0, EMPTY_GROUPS, Float.NaN);
       return;
     }
 
@@ -182,9 +184,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public TopGroups<BytesRef> result() throws IOException {
+  @Override public TopGroups<BytesRef> result() throws IOException {
     return topGroups;
   }
 

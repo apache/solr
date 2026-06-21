@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class ResponseBuilderTest extends SolrTestCaseJ4 {
 
-  SolrQueryRequest req = req("q", "title:test");
+  SolrQueryRequest req;
   SolrQueryResponse rsp = new SolrQueryResponse();
 
   @BeforeClass
@@ -34,14 +36,27 @@ public class ResponseBuilderTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    req = req("q", "title:test");
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    req.close();
+    req = null;
+  }
+
   //This test is being added to verify responseBuilder.isDistributed() exists and is visible.
   public void testIsDistrib(){
-    ResponseBuilder responseBuilder = new ResponseBuilder(req, rsp, new ArrayList<>(0));
+    ResponseBuilder responseBuilder = new ResponseBuilder(req, rsp, new ArrayList<>(0), null);
     assertFalse(responseBuilder.isDistributed());
   }
 
   public void testDoAnalyticsAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0), null);
     assertFalse(rb.isAnalytics());
     rb.setAnalytics(true);
     assertTrue(rb.isAnalytics());
@@ -50,7 +65,7 @@ public class ResponseBuilderTest extends SolrTestCaseJ4 {
   }
 
   public void testIsOlapAnalyticsAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0), null);
     assertFalse(rb.isOlapAnalytics());
     rb.setOlapAnalytics(true);
     assertTrue(rb.isOlapAnalytics());
@@ -59,7 +74,7 @@ public class ResponseBuilderTest extends SolrTestCaseJ4 {
   }
 
   public void testAnalyticsRequestManagerAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0), null);
     assertNull(rb.getAnalyticsRequestManager());
     rb.setAnalyticsRequestManager(this);
     assertNotNull(rb.getAnalyticsRequestManager());

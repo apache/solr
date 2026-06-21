@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import org.apache.solr.common.util.NamedList;
+
 /**
  * 
  *
@@ -23,5 +25,8 @@ package org.apache.solr.client.solrj.response;
  */
 public class SolrPingResponse extends SolrResponseBase
 {
+  public SolrPingResponse(NamedList response) {
+    super(response);
+  }
   // nothing special now...
 }

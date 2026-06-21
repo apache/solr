@@ -19,11 +19,21 @@
   <fieldType name="string" class="solr.StrField"/>
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
   <!-- for versioning -->
   <field name="_version_" type="long" indexed="true" stored="true"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="id" type="string" indexed="true" stored="true"/>
+  <field name="text" type="text" indexed="true" stored="false"/>
   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" />
   <uniqueKey>id</uniqueKey>
+
+  <similarity class="${solr.similarity:solr.SchemaSimilarityFactory}"/>
 </schema>

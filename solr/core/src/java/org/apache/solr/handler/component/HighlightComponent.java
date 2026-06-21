@@ -55,6 +55,7 @@ import static java.util.stream.Collectors.toMap;
  */
 public class HighlightComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware
 {
+
   public enum HighlightMethod {
     UNIFIED("unified"),
     FAST_VECTOR("fastVector"),
@@ -81,10 +82,10 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
   public static final String COMPONENT_NAME = "highlight";
 
-  private PluginInfo info = PluginInfo.EMPTY_INFO;
+  private volatile PluginInfo info = PluginInfo.EMPTY_INFO;
 
   @Deprecated // DWS: in 7.0 lets restructure the abstractions/relationships
-  private SolrHighlighter solrConfigHighlighter;
+  private volatile SolrHighlighter solrConfigHighlighter;
 
   /**
    * @deprecated instead depend on {@link #process(ResponseBuilder)} to choose the highlighter based on
@@ -93,7 +94,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   @Deprecated
   public static SolrHighlighter getHighlighter(SolrCore core) {
     HighlightComponent hl = (HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
-    return hl==null ? null: hl.getHighlighter();
+    return hl==null ? null: hl.solrConfigHighlighter;
   }
 
   @Deprecated
@@ -109,7 +110,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    rb.doHighlights = solrConfigHighlighter.isHighlightingEnabled(params);
+    rb.doHighlights = SolrHighlighter.isHighlightingEnabled(params);
     if(rb.doHighlights){
       rb.setNeedDocList(true);
       String hlq = params.get(HighlightParams.Q);
@@ -247,7 +248,9 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
             continue;
           }
           Object hl = srsp.getSolrResponse().getResponse().get(highlightingResponseField);
-          addHighlights(objArr, hl, rb.resultIds);
+          if (rb.resultIds != null) {
+            addHighlights(objArr, hl, rb.resultIds);
+          }
         }
       }
 
@@ -281,7 +284,6 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     return hl;
   }
 
-  @SuppressWarnings({"rawtypes"})
   protected Object[] newHighlightsArray(int size) {
     return new NamedList.NamedListEntry[size];
   }
@@ -291,7 +293,9 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[])objArr;
     @SuppressWarnings({"rawtypes"})
     NamedList hl = (NamedList)obj;
-    SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(hl, resultIds, arr);
+    if (hl != null) {
+      SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(hl, resultIds, arr);
+    }
   }
 
   protected Object getAllHighlights(Object[] objArr) {

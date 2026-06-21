@@ -21,7 +21,7 @@ package org.noggit;
 
 import java.io.IOException;
 import java.io.Reader;
-
+import java.util.regex.Pattern;
 
 public class JSONParser {
 
@@ -79,7 +79,7 @@ public class JSONParser {
   /**
    * Flags to control parsing behavior
    */
-  public static final int ALLOW_COMMENTS = 1 << 0;
+  public static final int ALLOW_COMMENTS = 1;
   public static final int ALLOW_SINGLE_QUOTES = 1 << 1;
   public static final int ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER = 1 << 2;
   public static final int ALLOW_UNQUOTED_KEYS = 1 << 3;
@@ -97,6 +97,7 @@ public class JSONParser {
 
   public static final int FLAGS_STRICT = 0;
   public static final int FLAGS_DEFAULT = ALLOW_COMMENTS | ALLOW_SINGLE_QUOTES | ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER | ALLOW_UNQUOTED_KEYS | ALLOW_UNQUOTED_STRING_VALUES | ALLOW_EXTRA_COMMAS;
+  private static final Pattern COMPILE = Pattern.compile("\\s+");
 
   public static class ParseException extends RuntimeException {
     public ParseException(String msg) {
@@ -193,11 +194,11 @@ public class JSONParser {
   }
 
   // temporary output buffer
-  private final CharArr out = new CharArr(64);
+  private final CharArr out = new CharArr(32);
 
   // We need to keep some state in order to (at a minimum) know if
   // we should skip ',' or ':'.
-  private byte[] stack = new byte[16];
+  private byte[] stack = new byte[32];
   private int ptr = 0;     // pointer into the stack of parser states
   private byte state = 0;  // current parser state
 
@@ -237,7 +238,7 @@ public class JSONParser {
       gpos += end;
       start = 0;
       int num = in.read(buf, 0, buf.length);
-      end = num >= 0 ? num : 0;
+      end = Math.max(num, 0);
     }
     if (start >= end) eof = true;
   }
@@ -455,10 +456,10 @@ public class JSONParser {
   private String getContext() {
     String context = "";
     if (start >= 0) {
-      context += " AFTER='" + errEscape(Math.max(start - 60, 0), start + 1) + "'";
+      context += " AFTER='" + errEscape(Math.max(start - 60, 0), start + 1) + '\'';
     }
     if (start < end) {
-      context += " BEFORE='" + errEscape(start + 1, start + 40) + "'";
+      context += new StringBuilder().append(" BEFORE='").append(errEscape(start + 1, start + 40)).append('\'').toString();
     }
     return context;
   }
@@ -466,7 +467,7 @@ public class JSONParser {
   private String errEscape(int a, int b) {
     b = Math.min(b, end);
     if (a >= b) return "";
-    return new String(buf, a, b - a).replaceAll("\\s+", " ");
+    return COMPILE.matcher(new String(buf, a, b - a)).replaceAll(" ");
   }
 
 
@@ -1015,7 +1016,7 @@ public class JSONParser {
           ch = getChar();
           break;
         case -1:
-          if (getLevel() > 0) throw err("Premature EOF");
+          if (ptr > 0) throw err("Premature EOF");
           return EOF;
         default:
           // Handle unusual unicode whitespace like no-break space (0xA0)

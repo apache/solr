@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.JavaBinCodec;
 
@@ -32,12 +33,7 @@ import java.io.Reader;
 public class BinaryResponseParser extends ResponseParser {
   public static final String BINARY_CONTENT_TYPE = "application/octet-stream";
 
-  protected JavaBinCodec.StringCache stringCache;
 
-  public BinaryResponseParser setStringCache(JavaBinCodec.StringCache cache) {
-    this.stringCache = cache;
-    return this;
-  }
 
   @Override
   public String getWriterType() {
@@ -46,16 +42,15 @@ public class BinaryResponseParser extends ResponseParser {
 
   @Override
   public NamedList<Object> processResponse(InputStream body, String encoding) {
-    try {
-      return (NamedList<Object>) createCodec().unmarshal(body);
+    try (JavaBinCodec codec = createCodec()) {
+      return (NamedList<Object>) codec.unmarshal(FastInputStream.wrap(body));
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-
     }
   }
 
   protected JavaBinCodec createCodec() {
-    return new JavaBinCodec(null, stringCache);
+    return new JavaBinCodec();
   }
 
   @Override

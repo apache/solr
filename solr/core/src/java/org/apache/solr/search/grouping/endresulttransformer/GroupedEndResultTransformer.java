@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.ScoreDoc;
@@ -58,18 +60,20 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
     SortSpec withinGroupSortSpec = rb.getGroupingSpec().getWithinGroupSortSpec();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
-      if (TopGroups.class.isInstance(value)) {
+      if (value instanceof TopGroups) {
         @SuppressWarnings("unchecked")
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
         NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", rb.totalHitCount);
-        Integer totalGroupCount = rb.mergedGroupCounts.get(entry.getKey());
-        if (totalGroupCount != null) {
-          command.add("ngroups", totalGroupCount);
+
+        if (rb.mergedGroupCounts != null) {
+          Integer totalGroupCount = rb.mergedGroupCounts.get(entry.getKey());
+          if (totalGroupCount != null) {
+            command.add("ngroups", totalGroupCount);
+          }
         }
 
-        @SuppressWarnings({"rawtypes"})
-        List<NamedList> groups = new ArrayList<>();
+        @SuppressWarnings({"rawtypes"}) ObjectList<NamedList> groups = new ObjectArrayList<>();
         SchemaField groupField = searcher.getSchema().getField(entry.getKey());
         FieldType groupFieldType = groupField.getType();
         for (GroupDocs<BytesRef> group : topGroups.groups) {
@@ -100,7 +104,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         }
         command.add("groups", groups);
         commands.add(entry.getKey(), command);
-      } else if (QueryCommandResult.class.isInstance(value)) {
+      } else if (value instanceof QueryCommandResult) {
         QueryCommandResult queryCommandResult = (QueryCommandResult) value;
         NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", queryCommandResult.getMatches());

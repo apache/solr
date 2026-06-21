@@ -47,7 +47,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
    * Take an array of any type and generate a Set containing the toString.
    * Set is guarantee to never be null (but may be empty)
    */
-  private Set<String> arrayToSet(Object[] arr) {
+  private static Set<String> arrayToSet(Object[] arr) {
     HashSet<String> r = new HashSet<>();
     if (null == arr) return r;
     for (Object o : arr) {
@@ -108,7 +108,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     }
   }
   
-  protected NamedList<NamedList<NamedList<Object>>> getMBeanInfo(SolrQueryRequest req) {
+  protected static NamedList<NamedList<NamedList<Object>>> getMBeanInfo(SolrQueryRequest req) {
 
     NamedList<NamedList<NamedList<Object>>> cats = new NamedList<>();
     
@@ -136,7 +136,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     return cats;
   }
 
-  private void addMBean(SolrQueryRequest req, NamedList<NamedList<NamedList<Object>>> cats, Set<String> requestedKeys, String key, SolrInfoBean m) {
+  private static void addMBean(SolrQueryRequest req, NamedList<NamedList<NamedList<Object>>> cats, Set<String> requestedKeys, String key, SolrInfoBean m) {
     if ( ! ( requestedKeys.isEmpty() || requestedKeys.contains(key) ) ) return;
     NamedList<NamedList<Object>> catInfo = cats.get(m.getCategory().name());
     if ( null == catInfo ) return;
@@ -276,7 +276,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
    * The 'avgRequestsPerSecond' field will make everything look like it changed
    */
   @SuppressWarnings({"rawtypes"})
-  public NamedList normalize(NamedList input) {
+  public static NamedList normalize(NamedList input) {
     input.remove("avgRequestsPerSecond");
     for(int i=0; i<input.size(); i++) {
       Object v = input.getVal(i);

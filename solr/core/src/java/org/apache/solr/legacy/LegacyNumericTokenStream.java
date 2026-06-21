@@ -178,7 +178,7 @@ public final class LegacyNumericTokenStream extends TokenStream {
     }
 
     @Override
-    public long getRawValue() { return value  & ~((1L << shift) - 1L); }
+    public long getRawValue() { return value  & -(1L << shift); }
     @Override
     public int getValueSize() { return valueSize; }
 

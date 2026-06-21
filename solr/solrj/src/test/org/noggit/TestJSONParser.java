@@ -19,12 +19,16 @@ package org.noggit;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestJSONParser extends SolrTestCaseJ4 {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // these are to aid in debugging if an unexpected error occurs
   static int parserType;
   static int bufferSize;
@@ -32,6 +36,14 @@ public class TestJSONParser extends SolrTestCaseJ4 {
   static JSONParser lastParser;
 
   static int flags = JSONParser.FLAGS_DEFAULT;  // the default
+
+  @AfterClass
+  public static void afterTestJSONParser() {
+    parserType = 0;
+    bufferSize = 0;
+    parserInput = null;
+    lastParser = null;
+  }
 
   public static String lastParser() {
     return "parserType=" + parserType
@@ -87,8 +99,8 @@ public class TestJSONParser extends SolrTestCaseJ4 {
    }
    **/
 
-  public static byte[] events = new byte[256];
-  static {
+  public byte[] events = new byte[256];
+  {
     events['{'] = JSONParser.OBJECT_START;
     events['}'] = JSONParser.OBJECT_END;
     events['['] = JSONParser.ARRAY_START;
@@ -103,7 +115,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
   }
 
   // match parser states with the expected states
-  public static void parse(JSONParser p, String input, String expected) throws IOException {
+  public void parse(JSONParser p, String input, String expected) throws IOException {
     expected += "e";
     for (int i=0; i<expected.length(); i++) {
       int ev = p.nextEvent();
@@ -117,7 +129,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
     }
   }
 
-  public static void parse(String input, String expected) throws IOException {
+  public void parse(String input, String expected) throws IOException {
     String in = input;
     if ((flags & JSONParser.ALLOW_SINGLE_QUOTES)==0 || random().nextBoolean()) {
       in = in.replace('\'', '"');
@@ -129,7 +141,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       parse(p,in,expected);
     }
 
-    testCorruption(input, 100000);
+    testCorruption(input,  TEST_NIGHTLY ? 100000 : 100);
 
   }
 
@@ -203,8 +215,8 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       } catch (JSONParser.ParseException ex) {
         // OK
       } catch (Throwable ex) {
-        ex.printStackTrace();
-        System.out.println(lastParser());
+        log.error("", ex);
+        log.error(lastParser());
         throw new RuntimeException(ex);
       }
     }
@@ -242,23 +254,23 @@ public class TestJSONParser extends SolrTestCaseJ4 {
   public static Boolean o(boolean b) { return b; }
   public static Num n(String digits) { return new Num(digits); }
   public static Num bn(String digits) { return new BigNum(digits); }
-  public static Object t = Boolean.TRUE;
-  public static Object f = Boolean.FALSE;
-  public static Object a = new Object(){@Override
+  public Object t = Boolean.TRUE;
+  public Object f = Boolean.FALSE;
+  public Object a = new Object(){@Override
   public String toString() {return "ARRAY_START";}};
-  public static Object A = new Object(){@Override
+  public Object A = new Object(){@Override
   public String toString() {return "ARRAY_END";}};
-  public static Object m = new Object(){@Override
+  public Object m = new Object(){@Override
   public String toString() {return "OBJECT_START";}};
-  public static Object M = new Object(){@Override
+  public Object M = new Object(){@Override
   public String toString() {return "OBJECT_END";}};
-  public static Object N = new Object(){@Override
+  public Object N = new Object(){@Override
   public String toString() {return "NULL";}};
-  public static Object e = new Object(){@Override
+  public Object e = new Object(){@Override
   public String toString() {return "EOF";}};
 
   // match parser states with the expected states
-  public static void parse(JSONParser p, String input, Object[] expected) throws IOException {
+  public void parse(JSONParser p, String input, Object[] expected) throws IOException {
     for (int i=0; i<expected.length; i++) {
       int ev = p.nextEvent();
       Object exp = expected[i];
@@ -292,11 +304,11 @@ public class TestJSONParser extends SolrTestCaseJ4 {
   }
 
 
-  public static void parse(String input, Object[] expected) throws IOException {
+  public void parse(String input, Object[] expected) throws IOException {
     parse(input, (flags & JSONParser.ALLOW_SINGLE_QUOTES)==0 || random().nextBoolean(), expected);
   }
 
-  public static void parse(String input, boolean changeSingleQuote, Object[] expected) throws IOException {
+  public void parse(String input, boolean changeSingleQuote, Object[] expected) throws IOException {
     String in = input;
     if (changeSingleQuote) {
       in = in.replace('\'', '"');
@@ -505,7 +517,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
     t = "1910151821265210155" + "0";
     parse("["+t+","+"-"+t+"]", new Object[]{a,bn(t),bn("-"+t),A,e});
 
-    for (int i=0; i<1000000; i++) {
+    for (int i=0; i<(TEST_NIGHTLY ? 1000000 : 100); i++) {
       long val = random().nextLong();
       String sval = Long.toString(val);
       JSONParser parser = getParser("["+val+"]");

@@ -44,8 +44,8 @@ import org.apache.solr.common.util.NamedList;
 
 public class RegexFragmenter extends HighlightingPluginBase implements SolrFragmenter
 {
-  protected String defaultPatternRaw;
-  protected Pattern defaultPattern;
+  protected volatile String defaultPatternRaw;
+  protected volatile Pattern defaultPattern;
 
   @Override
   public void init(NamedList args) {

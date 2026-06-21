@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import org.apache.solr.common.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,13 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.util.DataInputInputStream;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.JavaBinCodec;
-
 public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStreamParser {
-  private final InputStream is;
-  final FastInputStream fis;
+  final JavaBinInputStream fis;
   private int arraySize = Integer.MAX_VALUE;
   private boolean onlyJsonTypes = false;
   int objectSize;
@@ -40,7 +36,6 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
 
   public JavabinTupleStreamParser(InputStream is, boolean onlyJsonTypes) throws IOException {
     this.onlyJsonTypes = onlyJsonTypes;
-    this.is = is;
     this.fis = initRead(is);
     if (!readTillDocs()) arraySize = 0;
   }
@@ -78,15 +73,17 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     //here after it will be a stream of maps
   }
 
-  private boolean isObjectType(DataInputInputStream dis) throws IOException {
-    tagByte = dis.readByte();
+  private boolean isObjectType(InputStream dis) throws IOException {
+    tagByte = read(dis);
     if (tagByte >>> 5 == ORDERED_MAP >>> 5 ||
         tagByte >>> 5 == NAMED_LST >>> 5) {
       objectSize = readSize(dis);
       return true;
     }
     if (tagByte == MAP) {
-      objectSize = readVInt(dis);
+      // MAP size is written as a raw 4-byte int (via daos.writeInt), not as a VInt.
+      // Must match JavaBinCodec.writeMap(Map) which uses daos.writeInt(val.size()).
+      objectSize = ((JavaBinInputStream) dis).readInt();
       return true;
     }
     if (tagByte == MAP_ENTRY_ITER) {
@@ -96,19 +93,20 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return tagByte == SOLRDOCLST;
   }
 
-  private Map readAsMap(DataInputInputStream dis) throws IOException {
+  private Map readAsMap(JavaBinInputStream dis) throws IOException {
     int sz = readSize(dis);
     Map m = new LinkedHashMap<>();
     for (int i = 0; i < sz; i++) {
-      String name = (String) readVal(dis);
+      tagByte = read(dis);
+      String name = readStr(dis, dis.readInt());
       Object val = readVal(dis);
       m.put(name, val);
     }
     return m;
   }
 
-  private Map readSolrDocumentAsMap(DataInputInputStream dis) throws IOException {
-    tagByte = dis.readByte();
+  private Map readSolrDocumentAsMap(JavaBinInputStream dis) throws IOException {
+    tagByte = read(dis);
     int size = readSize(dis);
     Map doc = new LinkedHashMap<>();
     for (int i = 0; i < size; i++) {
@@ -129,7 +127,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
   }
 
   @Override
-  protected Object readObject(DataInputInputStream dis) throws IOException {
+  protected Object readObject(JavaBinInputStream dis) throws IOException {
     if (tagByte == SOLRDOC) {
       return readSolrDocumentAsMap(dis);
     }
@@ -149,12 +147,16 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
           int i = dis.readInt();
           return (long) i;
         }
+        case VINT: {
+          int i = readVInt(dis);
+          return (long) i;
+        }
         case FLOAT: {
-          float v = dis.readFloat();
+          float v = readFloat(dis);
           return (double) v;
         }
         case BYTE: {
-          byte b = dis.readByte();
+          byte b = read(dis);
           return (long) b;
         }
         case SHORT: {
@@ -184,6 +186,6 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
 
   @Override
   public void close() throws IOException {
-    is.close();
+    IOUtils.closeQuietly(fis);
   }
 }

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import org.apache.solr.common.AlreadyClosedException;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Keep track of a reference count on a resource and close it when
@@ -43,7 +45,12 @@ public abstract class RefCounted<Type> {
   }
 
   public final RefCounted<Type> incref() {
-    refcount.incrementAndGet();
+    refcount.updateAndGet(operand -> {
+      if (operand == -1) {
+        throw new AlreadyClosedException();
+      }
+      return operand + 1;
+    });
     return this;
   }
 
@@ -52,7 +59,18 @@ public abstract class RefCounted<Type> {
   }
 
   public void decref() {
-    if (refcount.decrementAndGet() == 0) {
+    int cnt = refcount.updateAndGet(operand -> {
+      if (operand == -1) {
+        throw new AlreadyClosedException();
+      }
+      int newCnt = operand - 1;
+      if (newCnt == 0) {
+        return -1;
+      }
+      return newCnt;
+    });
+
+    if (cnt == -1) {
       close();
     }
   }

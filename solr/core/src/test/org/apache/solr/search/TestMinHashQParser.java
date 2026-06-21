@@ -24,8 +24,10 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,8 +37,13 @@ public class TestMinHashQParser extends SolrTestCaseJ4 {
    * Initializes core and does some sanity checking of schema
    */
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestMinHashQParser() throws Exception {
     initCore("solrconfig-minhash.xml", "schema-minhash.xml");
+  }
+
+  @AfterClass
+  public static void afterTestMinHashQParser() throws Exception {
+    deleteCore();
   }
 
   @After
@@ -333,15 +340,16 @@ public class TestMinHashQParser extends SolrTestCaseJ4 {
     par.add("sep", ",");
     par.add("debug", "false");
 
-    QParser qparser = h.getCore().getQueryPlugin("minhash").createParser("1, 2, 3, 4, 5, 6, 7, 8, 9, 10", SolrParams.toSolrParams(par), null, null);
-    Query query = qparser.getQuery();
+    try (SolrCore core = h.getCore()) {
+      QParser qparser = core.getQueryPlugin("minhash").createParser("1, 2, 3, 4, 5, 6, 7, 8, 9, 10", SolrParams.toSolrParams(par), null, null);
+      Query query = qparser.getQuery();
 
-    BooleanQuery bq = (BooleanQuery)query;
-    assertEquals(4, bq.clauses().size());
-    for(BooleanClause clause : bq.clauses()) {
-      assertEquals(3, ((BooleanQuery)((ConstantScoreQuery)clause.getQuery()).getQuery())  .clauses().size());
+      BooleanQuery bq = (BooleanQuery) query;
+      assertEquals(4, bq.clauses().size());
+      for (BooleanClause clause : bq.clauses()) {
+        assertEquals(3, ((BooleanQuery) ((ConstantScoreQuery) clause.getQuery()).getQuery()).clauses().size());
+      }
     }
-
   }
 
   private SolrQueryRequest createRequest(String query) {

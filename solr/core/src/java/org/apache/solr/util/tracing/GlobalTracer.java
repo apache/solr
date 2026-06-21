@@ -18,7 +18,7 @@
 package org.apache.solr.util.tracing;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.SpanContext;
@@ -28,17 +28,7 @@ import io.opentracing.propagation.Format;
 
 public class GlobalTracer {
   private static final Tracer NOOP_TRACER = NoopTracerFactory.create();
-  private static final Random RANDOM;
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random instance
-    // based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      RANDOM = new Random();
-    } else {
-      RANDOM = new Random(seed.hashCode());
-    }
-  }
+
 
   private static volatile GlobalTracer INS = new GlobalTracer(NOOP_TRACER);
 
@@ -111,7 +101,7 @@ public class GlobalTracer {
   }
 
   private boolean traced() {
-    return RANDOM.nextDouble() <= rate;
+    return ThreadLocalRandom.current().nextDouble() <= rate;
   }
 
   public void close() {

@@ -112,7 +112,7 @@ import org.slf4j.LoggerFactory;
  *       &lt;/lst&gt;
  *       &lt;str name="dest"&gt;all_prices&lt;/str&gt;
  *     &lt;/processor&gt;
- *     &lt;processor class="solr.processor.CloneFieldUpdateProcessorFactory"&gt;
+ *     &lt;processor class="solr.CloneFieldUpdateProcessorFactory"&gt;
  *       &lt;lst name="source"&gt;
  *         &lt;str name="fieldRegex"&gt;^feat(.*)s$&lt;/str&gt;
  *       &lt;/lst&gt;
@@ -136,7 +136,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <pre class="prettyprint">
  * &lt;!-- full syntax --&gt;
- * &lt;processor class="solr.processor.CloneFieldUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.CloneFieldUpdateProcessorFactory"&gt;
  *   &lt;lst name="source"&gt;
  *     &lt;str name="fieldRegex"^gt;$feat(.*)s$&lt;/str&gt;
  *   &lt;/lst&gt;
@@ -147,7 +147,7 @@ import org.slf4j.LoggerFactory;
  * &lt;/processor&gt;
  * 
  * &lt;!-- syntactic sugar syntax --&gt;
- * &lt;processor class="solr.processor.CloneFieldUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.CloneFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="pattern"&gt;^feat(.*)s$&lt;/str&gt;
  *   &lt;str name="replacement"&gt;key_feat$1&lt;/str&gt;
  * &lt;/processor&gt;
@@ -196,7 +196,6 @@ public class CloneFieldUpdateProcessorFactory
                             " inform(SolrCore) never called???");
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
@@ -226,7 +225,6 @@ public class CloneFieldUpdateProcessorFactory
    * init helper method that should only be called when we know for certain that both the 
    * "source" and "dest" init params do <em>not</em> exist.
    */
-  @SuppressWarnings("unchecked")
   private void initSimpleRegexReplacement(NamedList args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the same pattern
     // is used for the destination pattern...

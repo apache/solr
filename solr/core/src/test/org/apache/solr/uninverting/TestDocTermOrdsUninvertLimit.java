@@ -29,8 +29,11 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSLockFactory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
 public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
@@ -40,7 +43,7 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
    * With the current code, the test verifies that the old limit no longer applies.
    * New limit is 2^31, which is not very realistic to unit-test. */
   @SuppressWarnings({"ConstantConditions", "PointlessBooleanExpression"})
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testTriggerUnInvertLimit() throws IOException {
     final boolean SHOULD_TRIGGER = false; // Set this to true to use the test with the old implementation
 
@@ -50,18 +53,18 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
     final int TERMS = REF_LIMIT/DOCS;            // Each document must have this many references aka terms hit limit
 
     // disk based Directory and IWC settings to reduce risk of OOM
-    Directory dir = newFSDirectory(createTempDir("TestDocTermOrdsUninvertLimit"));
+    Directory dir = SolrTestUtil.newFSDirectory(SolrTestUtil.createTempDir("TestDocTermOrdsUninvertLimit"), FSLockFactory.getDefault());
     final IndexWriter w = new IndexWriter(dir,
-                                          new IndexWriterConfig(new MockAnalyzer(random()))
+                                          new IndexWriterConfig()
                                           .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                           .setRAMBufferSizeMB(256.0)
                                           .setMergeScheduler(new ConcurrentMergeScheduler())
-                                          .setMergePolicy(newLogMergePolicy(false, 10))
+                                          .setMergePolicy(SolrTestUtil.newLogMergePolicy(false, 10))
                                           .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
                                           .setCodec(TestUtil.getDefaultCodec()));
     
     Document doc = new Document();
-    Field field = newTextField("field", "", Field.Store.NO);
+    Field field = LuceneTestCase.newTextField("field", "", Field.Store.NO);
     doc.add(field);
 
     StringBuilder sb = new StringBuilder(TERMS*(Integer.toString(TERMS).length()+1));

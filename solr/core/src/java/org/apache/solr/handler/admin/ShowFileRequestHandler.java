@@ -177,7 +177,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
-      ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
+      ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null), adminFile);
       content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
       
       rsp.add(RawResponseWriter.CONTENT, content);
@@ -265,7 +265,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
     // This is slightly off, a valid path is something like ./schema.xml. I don't think it's worth the effort though
     // to fix it to handle all possibilities though.
-    if (fname.indexOf("..") >= 0 || fname.startsWith(".")) {
+    if (fname.indexOf("..") >= 0 || !fname.isEmpty() && fname.charAt(0) == '.') {
       if (reportError) {
         log.error("Invalid path: {}", fname);
         rsp.setException(new SolrException(SolrException.ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
@@ -298,16 +298,16 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       if (isHiddenFile(req, rsp, fname, true, hiddenFiles)) {
         return null;
       }
-      if (fname.startsWith("/")) { // Only files relative to conf are valid
+      if (!fname.isEmpty() && fname.charAt(0) == '/') { // Only files relative to conf are valid
         fname = fname.substring(1);
       }
       adminFile = confPath + "/" + fname;
     }
 
     // Make sure the file exists, is readable and is not a hidden file
-    if (!zkClient.exists(adminFile, true)) {
+    if (!zkClient.exists(adminFile)) {
       log.error("Can not find: {}", adminFile);
-      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: "
+      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find admin file: "
           + adminFile));
       return null;
     }

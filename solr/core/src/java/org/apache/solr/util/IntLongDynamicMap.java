@@ -37,11 +37,11 @@ public class IntLongDynamicMap implements DynamicMap {
    * Although the map will automatically do resizing to be able to hold key {@code >=g expectedKeyMax}.
    * But putting key much larger than {@code expectedKeyMax} is discourage since it can leads to use LOT OF memory.
    */
-  public IntLongDynamicMap(int expectedKeyMax, long emptyValue) {
+  public IntLongDynamicMap(int maxDoc, int expectedKeyMax, long emptyValue) {
     this.threshold = threshold(expectedKeyMax);
     this.maxSize = expectedKeyMax;
     this.emptyValue = emptyValue;
-    if (useArrayBased(expectedKeyMax)) {
+    if (useArrayBased(maxDoc, expectedKeyMax)) {
       upgradeToArray();
     } else {
       this.hashMap = new IntLongHashMap(mapExpectedElements(expectedKeyMax));

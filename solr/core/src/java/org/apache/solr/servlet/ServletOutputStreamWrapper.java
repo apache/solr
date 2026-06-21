@@ -32,10 +32,14 @@ import org.apache.solr.common.util.SuppressForbidden;
  */
 @SuppressForbidden(reason = "delegate methods")
 public class ServletOutputStreamWrapper extends ServletOutputStream {
-  ServletOutputStream stream;
+  final ServletOutputStream stream;
   
   public ServletOutputStreamWrapper(ServletOutputStream stream) {
     this.stream = stream;
+  }
+
+  public ServletOutputStream getStream() {
+    return stream;
   }
 
   public int hashCode() {

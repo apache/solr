@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.shingle.ShingleFilterFactory;
@@ -37,13 +38,11 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRefBuilder;
 
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -261,7 +260,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
    * Helper method (suitable for both single node &amp; distributed coordinator node) to 
    * score, sort, and format the end user response once all phrases have been populated with stats.
    */
-  private void scoreAndAddResultsToResponse(final ResponseBuilder rb, final PhrasesContextData contextData) {
+  private static void scoreAndAddResultsToResponse(final ResponseBuilder rb, final PhrasesContextData contextData) {
     assert null != contextData : "Should not be called if no phrase data to use";
     if (null == contextData) {
       // if prepare didn't give us anything to work with, then we should do nothing
@@ -497,8 +496,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       // (typically shingles)
 
       assert maxIndexedPositionLength <= maxQueryPositionLength;
-      
-      final CharsRefBuilder buffer = new CharsRefBuilder();
+
       final FieldType ft = analysisField.getType();
       final Analyzer analyzer = ft.getQueryAnalyzer();
       final List<Phrase> results = new ArrayList<>(42);
@@ -807,9 +805,9 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     public NamedList getDetails() {
       SimpleOrderedMap<Object> out = new SimpleOrderedMap<Object>();
       out.add("text", subSequence);
-      out.add("offset_start", getOffsetStart());
-      out.add("offset_end", getOffsetEnd());
-      out.add("score", getTotalScore());
+      out.add("offset_start", offset_start);
+      out.add("offset_end", offset_end);
+      out.add("score", total_score);
       out.add("field_scores", fieldScores);
       return out;
     }
@@ -955,10 +953,10 @@ public class PhrasesIdentificationComponent extends SearchComponent {
                                             final String field,
                                             final int maxIndexedPositionLength,
                                             final int maxQueryPositionLength) {
-      final long num_indexed_sub_phrases = input.getLargestIndexedSubPhrases().size();
+      final long num_indexed_sub_phrases = input.largestIndexedSubPhrases.size();
       assert 0 <= num_indexed_sub_phrases; // should be impossible
 
-      if (input.getIndividualIndexedTerms().size() < input.getPositionLength()) {
+      if (input.individualIndexedTerms.size() < input.getPositionLength()) {
         // there are "gaps" in our input, where individual words have not been indexed (stop words, 
         // or multivalue position gap) which means we are not a viable candidate for being a valid Phrase.
         return -1.0D;
@@ -994,7 +992,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       // the conj_count(input) to the max(conj_count(parent of words)) ?
       
       // for each of the longest indexed phrases, aka indexed sub-sequence of "words", we have...
-      for (Phrase words : input.getLargestIndexedSubPhrases()) {
+      for (Phrase words : input.largestIndexedSubPhrases) {
         // we're going to compute scores in range of [-1:1] to indicate the likelihood that our
         // "words" should be used as a "phrase", based on a bayesian document categorization model,
         // where the "words as a phrase" (aka: phrase) is our candidate category.
@@ -1036,14 +1034,14 @@ public class PhrasesIdentificationComponent extends SearchComponent {
         max_sub_conj_count = Math.max(words_conj_count, max_sub_conj_count);
         
         final double max_wrapper_phrase_probability = 
-          words.getIndexedSuperPhrases().stream()
+          words.indexedSuperPhrases.stream()
           .mapToDouble(p -> p.getConjunctionDocCount(field) <= 0 ?
                        // special case check -- we already know *our* conj count > 0,
                        // but we need a similar check for wrapper phrases: if <= 0, their probability is 0
                        0.0D : ((double)p.getDocFreq(field) / p.getConjunctionDocCount(field))).max().orElse(0.0D);
         
         final LongSummaryStatistics words_ttfs = 
-          words.getIndividualIndexedTerms().stream()
+          words.individualIndexedTerms.stream()
           .collect(Collectors.summarizingLong(t -> t.getTTF(field)));
         
         final double words_phrase_prob = (phrase_ttf / (double)words_ttfs.getMin());
@@ -1106,7 +1104,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
    * @lucene.internal
    */
   public static int getMaxShingleSize(Analyzer analyzer) {
-    if (!TokenizerChain.class.isInstance(analyzer)) {
+    if (!(analyzer instanceof TokenizerChain)) {
       return -1;
     }
     
@@ -1116,7 +1114,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     }
     int result = -1;
     for (TokenFilterFactory tff : factories) {
-      if (ShingleFilterFactory.class.isInstance(tff)) {
+      if (tff instanceof ShingleFilterFactory) {
         if (0 < result) {
           // more then one shingle factory in our analyzer, which is weird, so make no assumptions...
           return -1;

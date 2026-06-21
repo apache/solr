@@ -20,9 +20,11 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -35,6 +37,7 @@ import static org.apache.solr.search.CollapsingQParserPlugin.NULL_EXPAND;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+@LuceneTestCase.Nightly // slow test, thread leak?
 public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   /** Full SolrServer instance for arbitrary introspection of response data and adding fqs */
@@ -46,10 +49,10 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     = new String[] {NULL_IGNORE, NULL_COLLAPSE, NULL_EXPAND};
   
   @BeforeClass
-  public static void buildIndexAndClient() throws Exception {
+  public static void beforeTestRandomCollapseQParserPlugin() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-sorts.xml");
     
-    final int totalDocs = atLeast(500);
+    final int totalDocs = SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 50);
     for (int i = 1; i <= totalDocs; i++) {
       SolrInputDocument doc = CursorPagingTest.buildRandomDocument(i);
       // every doc will be in the same group for this (string) field
@@ -75,7 +78,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void cleanupStatics() throws Exception {
+  public static void afterTestRandomCollapseQParserPlugin() throws Exception {
     deleteCore();
     SOLR = null;
     ALL_SORT_FIELD_NAMES = ALL_COLLAPSE_FIELD_NAMES = null;
@@ -127,7 +130,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   
   public void testRandomCollpaseWithSort() throws Exception {
     
-    final int numMainQueriesPerCollapseField = atLeast(5);
+    final int numMainQueriesPerCollapseField = SolrTestUtil.atLeast(TEST_NIGHTLY ? 4 : 2);
     
     for (String collapseField : ALL_COLLAPSE_FIELD_NAMES) {
       for (int i = 0; i < numMainQueriesPerCollapseField; i++) {
@@ -140,7 +143,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         final SolrParams mainP = params("q", q, "fl", "id,"+collapseField);
 
         final String csize = random().nextBoolean() ?
-          "" : " size=" + TestUtil.nextInt(random(),1,10000);
+          "" : " size=" + TestUtil.nextInt(random(),1, TEST_NIGHTLY ? 419 : 10);
 
         final String nullPolicy = randomNullPolicy();
         final String nullPs = NULL_IGNORE.equals(nullPolicy)

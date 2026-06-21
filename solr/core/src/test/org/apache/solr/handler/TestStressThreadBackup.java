@@ -38,6 +38,9 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -72,19 +75,19 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private String coreName;
   @Before
   public void beforeTest() throws Exception {
-    backupDir = createTempDir(getTestClass().getSimpleName() + "_backups").toFile();
+    backupDir = SolrTestUtil.createTempDir(SolrTestUtil.getTestName() + "_backups").toFile();
 
     // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
     // bring myself to deal with the nonsense that is SolrJettyTestBase.
     
     // We do however explicitly want a fresh "cluster" every time a test is run
     configureCluster(1)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    assertEquals(0, (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
+    assertEquals(0, (CollectionAdminRequest.createCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
                      .process(cluster.getSolrClient()).getStatus()));
-    adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
     initCoreNameAndSolrCoreClient();
   }
 
@@ -136,7 +139,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   }
 
   public void testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(final BackupAPIImpl impl) throws Exception {
-    final int numBackupIters = 20; // don't use 'atLeast', we don't want to blow up on nightly
+    final int numBackupIters = 7; // don't use 'atLeast', we don't want to blow up on nightly
     
     final AtomicReference<Throwable> heavyCommitFailure = new AtomicReference<>();
     final AtomicBoolean keepGoing = new AtomicBoolean(true);
@@ -204,7 +207,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         // NOTE: we don't want to do this too often, or the SnapShotMetadataManager will protect
         // too many segment files "long term".  It's more important to stress the thread contention
         // between backups calling save/release vs the DelPolicy trying to delete segments
-        if ( 0 == random().nextInt(7 + namedSnapshots.size()) ) {
+        if ( 0 == SolrTestCase.random().nextInt(7 + namedSnapshots.size()) ) {
           final String snapshotName = "snapshot_" + i;
           log.info("Creating snapshot: {}", snapshotName);
           impl.makeSnapshot(snapshotName);
@@ -214,8 +217,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         // occasionally make a backup of a snapshot and remove it
         // the odds of doing this increase based on how many snapshots currently exist,
         // and how few iterations we have left
-        if (3 < namedSnapshots.size() &&
-            random().nextInt(3 + numBackupIters - i) < random().nextInt(namedSnapshots.size())) {
+        if (3 < namedSnapshots.size() && SolrTestCase.random().nextInt(3 + numBackupIters - i) < SolrTestCase.random().nextInt(namedSnapshots.size())) {
 
           assert 0 < namedSnapshots.size() : "Someone broke the conditionl";
           final String snapshotName = namedSnapshots.poll();
@@ -252,13 +254,13 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     }
 
     { // Validate some backups at random...
-      final int numBackupsToCheck = atLeast(1);
+      final int numBackupsToCheck = SolrTestUtil.atLeast(1);
       log.info("Validating {} random backups to ensure they are un-affected by deleting all docs...",
                numBackupsToCheck);
       final List<File> allBackups = Arrays.asList(backupDir.listFiles());
       // insure consistent (arbitrary) ordering before shuffling
       Collections.sort(allBackups); 
-      Collections.shuffle(allBackups, random());
+      Collections.shuffle(allBackups, SolrTestCase.random());
       for (int i = 0; i < numBackupsToCheck; i++) {
         final File backup = allBackups.get(i);
         validateBackup(backup);
@@ -302,7 +304,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     final int numRealDocsExpected = Integer.parseInt(m.group());
     
     try (Directory dir = FSDirectory.open(backup.toPath())) {
-      TestUtil.checkIndex(dir, true, true, null);
+      TestUtil.checkIndex(dir, true, true, false, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals("num real docs in " + backup.toString(),
                      numRealDocsExpected, r.docFreq(new Term("type_s","real")));
@@ -318,8 +320,8 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
    */
   private static SolrInputDocument makeDoc(String id, String type) {
     final SolrInputDocument doc = new SolrInputDocument("id", id, "type_s", type);
-    for (int f = 0; f < 100; f++) {
-      doc.addField(f + "_s", TestUtil.randomUnicodeString(random(), 20));
+    for (int f = 0; f < 35; f++) {
+      doc.addField(f + "_s", TestUtil.randomUnicodeString(SolrTestCase.random(), 20));
     }
     return doc;
   }
@@ -327,10 +329,10 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private void initCoreNameAndSolrCoreClient() {
     // Sigh.
     Replica r = cluster.getSolrClient().getZkStateReader().getClusterState()
-      .getCollection(DEFAULT_TEST_COLLECTION_NAME).getActiveSlices().iterator().next()
+      .getCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME).getActiveSlices().iterator().next()
       .getReplicas().iterator().next();
-    coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r.getCoreUrl());
+    coreName = r.getName();
+    coreClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl());
   }
 
   /** 

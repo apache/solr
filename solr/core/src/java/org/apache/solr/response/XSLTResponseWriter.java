@@ -16,6 +16,20 @@
  */
 package org.apache.solr.response;
 
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.xslt.TransformerProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import java.io.BufferedReader;
 import java.io.CharArrayReader;
 import java.io.CharArrayWriter;
@@ -24,21 +38,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
-
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.xslt.TransformerProvider;
 
 /** QueryResponseWriter which captures the output of the XMLWriter
  *  (in memory for now, not optimal performancewise), and applies an XSLT transform
@@ -49,7 +48,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
   
-  private Integer xsltCacheLifetimeSeconds = null; 
+  private volatile Integer xsltCacheLifetimeSeconds = null;
   public static final int XSLT_CACHE_DEFAULT = 60;
   private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
@@ -98,7 +97,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     final Transformer t = getTransformer(request);
     
     // capture the output of the XMLWriter
-    final CharArrayWriter w = new CharArrayWriter();
+    final CharArrayWriter w = new CharArrayWriter(256);
     XMLWriter.writeResponse(w,request,response);
     
     // and write transformed result to our writer

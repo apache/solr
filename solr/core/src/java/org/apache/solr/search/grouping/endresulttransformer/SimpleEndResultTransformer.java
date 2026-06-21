@@ -40,7 +40,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
     NamedList<Object> commands = new SimpleOrderedMap<>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
-      if (TopGroups.class.isInstance(value)) {
+      if (value instanceof TopGroups) {
         @SuppressWarnings("unchecked")
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
         NamedList<Object> command = new SimpleOrderedMap<>();

@@ -85,7 +85,7 @@ public class FieldLengthFeature extends Feature {
    *
    */
 
-  private final float decodeNorm(long norm) {
+  private static float decodeNorm(long norm) {
     return NORM_TABLE[(int) (norm & 0xFF)]; // & 0xFF maps negative bytes to
     // positive above 127
   }

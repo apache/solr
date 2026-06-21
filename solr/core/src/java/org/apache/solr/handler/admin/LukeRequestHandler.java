@@ -29,11 +29,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
@@ -61,6 +62,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
@@ -106,6 +108,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   public static final int DEFAULT_COUNT = 10;
 
   static final int HIST_ARRAY_SIZE = 33;
+  private static final Pattern COMPILE = Pattern.compile("[,\\s]+");
 
   private static enum ShowStyle {
     ALL,
@@ -150,7 +153,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       Term t = new Term( uniqueKey.getName(), v );
       docId = searcher.getFirstMatch( t );
       if( docId < 0 ) {
-        throw new SolrException( SolrException.ErrorCode.NOT_FOUND, "Can't find document: "+params.get( ID ) );
+        throw new SolrException( ErrorCode.NOT_FOUND, "Can't find document: "+params.get( ID ) );
       }
     }
 
@@ -165,7 +168,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       }
       catch( Exception ex ) {}
       if( doc == null ) {
-        throw new SolrException( SolrException.ErrorCode.NOT_FOUND, "Can't find document: "+docId );
+        throw new SolrException( ErrorCode.NOT_FOUND, "Can't find document: "+docId );
       }
 
       SimpleOrderedMap<Object> info = getDocumentFieldsInfo( doc, docId, reader, schema );
@@ -340,7 +343,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     Set<String> fields = null;
     String fl = params.get(CommonParams.FL);
     if (fl != null) {
-      fields = new TreeSet<>(Arrays.asList(fl.split( "[,\\s]+" )));
+      fields = new TreeSet<>(Arrays.asList(COMPILE.split(fl)));
     }
 
     LeafReader reader = searcher.getSlowAtomicReader();
@@ -391,6 +394,7 @@ public class LukeRequestHandler extends RequestHandlerBase
                 fieldMap.add("index", "(unstored field)");
               }
             } catch (Exception ex) {
+              ParWork.propagateInterrupt(ex);
               log.warn("error reading field: {}", fieldName);
             }
           }
@@ -733,9 +737,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       for (int idx = 0; idx < buckets.length; ++idx) {
         if (buckets[idx] != 0) _maxBucket = idx;
       }
-      for (int idx = 0; idx <= _maxBucket; ++idx) {
-        _buckets[idx] = buckets[idx];
-      }
+      if (_maxBucket + 1 >= 0) System.arraycopy(buckets, 0, _buckets, 0, _maxBucket + 1);
     }
     // TODO? should this be a list or a map?
     public NamedList<Integer> toNamedList()

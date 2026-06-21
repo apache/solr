@@ -102,13 +102,16 @@ public class LockTree {
     }
 
     boolean isBusy(LockLevel lockLevel, List<String> path) {
-      if (lockLevel.isHigherOrEqual(level)) {
-        if (busy) return true;
-        String s = path.get(level.level);
-        if (kids == null || kids.get(s) == null) return false;
-        return kids.get(s).isBusy(lockLevel, path);
-      } else {
-        return false;
+      SessionNode other = this;
+      while (true) {
+        if (lockLevel.isHigherOrEqual(other.level)) {
+          if (other.busy) return true;
+          String s = path.get(other.level.level);
+          if (other.kids == null || other.kids.get(s) == null) return false;
+          other = other.kids.get(s);
+        } else {
+          return false;
+        }
       }
     }
   }
@@ -147,19 +150,21 @@ public class LockTree {
 
 
     Lock lock(LockLevel lockLevel, List<String> path) {
-      if (myLock != null) return null;//I'm already locked. no need to go any further
-      if (lockLevel == level) {
-        //lock is supposed to be acquired at this level
-        //If I am locked or any of my children or grandchildren are locked
-        // it is not possible to acquire a lock
-        if (isLocked()) return null;
-        return myLock = new LockImpl(this);
-      } else {
-        String childName = path.get(level.level);
-        Node child = children.get(childName);
-        if (child == null)
-          children.put(childName, child = new Node(childName, LockLevel.getLevel(level.level + 1), this));
-        return child.lock(lockLevel, path);
+      Node other = this;
+      while (true) {
+        if (other.myLock != null) return null;//I'm already locked. no need to go any further
+        if (lockLevel == other.level) {
+          //lock is supposed to be acquired at this level
+          //If I am locked or any of my children or grandchildren are locked
+          // it is not possible to acquire a lock
+          if (other.isLocked()) return null;
+          return other.myLock = new LockImpl(other);
+        } else {
+          String childName = path.get(other.level.level);
+          Node child = other.children.get(childName);
+          if (child == null) other.children.put(childName, child = new Node(childName, LockLevel.getLevel(other.level.level + 1), other));
+          other = child;
+        }
       }
     }
 

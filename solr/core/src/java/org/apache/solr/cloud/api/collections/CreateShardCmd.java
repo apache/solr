@@ -16,11 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Map;
-
+import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.overseer.CollectionMutator;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -29,7 +27,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.ShardHandler;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +40,10 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,8 +54,12 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  @SuppressWarnings({"rawtypes"})
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+    return addShard(clusterState, clusterState.getCollection(message.getStr(COLLECTION_PROP)), message, results);
+  }
+
+  AddReplicaCmd.Response addShard(ClusterState clusterState, DocCollection collection, ZkNodeProps message, NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -68,9 +75,9 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     } else {
       collectionName = extCollectionName;
     }
-    DocCollection collection = clusterState.getCollection(collectionName);
 
-    int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
+    int numNrtReplicas = message
+        .getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
     int numPullReplicas = message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0));
     int numTlogReplicas = message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0));
 
@@ -78,56 +85,139 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
     }
 
-    //ZkStateReader zkStateReader = ocmh.zkStateReader;
-    ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
-    // wait for a while until we see the shard
-    //ocmh.waitForNewShard(collectionName, sliceName);
-    // wait for a while until we see the shard and update the local view of the cluster state
-    clusterState = ocmh.waitForNewShard(collectionName, sliceName);
+    // create shard
+    clusterState = new CollectionMutator(ocmh.cloudManager, ocmh.zkStateReader).createShard(clusterState, message);
+
+    log.info("After create shard {}", clusterState);
 
     String async = message.getStr(ASYNC);
-    ZkNodeProps addReplicasProps = new ZkNodeProps(
-        COLLECTION_PROP, collectionName,
-        SHARD_ID_PROP, sliceName,
-        ZkStateReader.NRT_REPLICAS, String.valueOf(numNrtReplicas),
-        ZkStateReader.TLOG_REPLICAS, String.valueOf(numTlogReplicas),
-        ZkStateReader.PULL_REPLICAS, String.valueOf(numPullReplicas),
-        OverseerCollectionMessageHandler.CREATE_NODE_SET, message.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET),
-        CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
+    ZkNodeProps addReplicasProps = new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ZkStateReader.NRT_REPLICAS,
+        String.valueOf(numNrtReplicas), ZkStateReader.TLOG_REPLICAS, String.valueOf(numTlogReplicas), ZkStateReader.PULL_REPLICAS,
+        String.valueOf(numPullReplicas), ZkStateReader.CREATE_NODE_SET, message.getStr(ZkStateReader.CREATE_NODE_SET), CommonAdminParams.WAIT_FOR_FINAL_STATE,
+        Boolean.toString(waitForFinalState));
 
-    Map<String, Object> propertyParams = new HashMap<>();
-    ocmh.addPropertyParams(message, propertyParams);
+    Map<String,Object> propertyParams = new HashMap<>();
+    OverseerCollectionMessageHandler.addPropertyParams(message, propertyParams);
     addReplicasProps = addReplicasProps.plus(propertyParams);
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
-    final NamedList addResult = new NamedList();
+
+    final String asyncId = message.getStr(ASYNC);
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
     try {
-      //ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
-      ocmh.addReplica(clusterState, addReplicasProps, addResult, () -> {
-        Object addResultFailure = addResult.get("failure");
-        if (addResultFailure != null) {
-          SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-          if (failure == null) {
-            failure = new SimpleOrderedMap();
-            results.add("failure", failure);
-          }
-          failure.addAll((NamedList) addResultFailure);
-        } else {
-          SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-          if (success == null) {
-            success = new SimpleOrderedMap();
-            results.add("success", success);
-          }
-          success.addAll((NamedList) addResult.get("success"));
-        }
-      });
-    } catch (Assign.AssignmentException e) {
-      // clean up the slice that we created
-      ZkNodeProps deleteShard = new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ASYNC, async);
-      new DeleteShardCmd(ocmh).call(clusterState, deleteShard, results);
+      OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
+
+      final NamedList addResult = new NamedList();
+      AddReplicaCmd.Response resp;
+      try {
+        //ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
+        resp = new AddReplicaCmd(ocmh).addReplica(clusterState, addReplicasProps, shardHandler, shardRequestTracker,
+            results); //ocmh.addReplica(clusterState, addReplicasProps, addResult).clusterState;
+        clusterState = resp.clusterState;
+      } catch (Assign.AssignmentException e) {
+        // clean up the slice that we created
+        // MRM TODO:
+        //      ZkNodeProps deleteShard = new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ASYNC, async);
+        //      new DeleteShardCmd(ocmh).call(clusterState, deleteShard, results);
+        throw e;
+      }
+
+      //    () -> {
+      //      Object addResultFailure = addResult.get("failure");
+      //      if (addResultFailure != null) {
+      //        SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+      //        if (failure == null) {
+      //          failure = new SimpleOrderedMap();
+      //          results.add("failure", failure);
+      //        }
+      //        failure.addAll((NamedList) addResultFailure);
+      //      } else {
+      //        SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+      //        if (success == null) {
+      //          success = new SimpleOrderedMap();
+      //          results.add("success", success);
+      //        }
+      //        success.addAll((NamedList) addResult.get("success"));
+      //      }
+      //    }
+
+      log.info("Finished create command on all shards for collection: {}", collectionName);
+      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+      response.asyncFinalRunner = new MyFinalize(collectionName, shardRequestTracker, results, shardHandler, resp, ocmh.overseer);
+
+      response.clusterState = clusterState;
+      return response;
+    } catch (Exception e) {
+      // Only cancel outstanding shard requests on failure. On success the requests are still in
+      // flight and must be collected by MyFinalize (asyncFinalRunner) via processResponses; cancelling
+      // here would race-cancel the core-create request before its response is read, leaving the new
+      // shard with a replica that never activates ("Expected shard 'x' to be active").
+      shardHandler.cancelAll();
       throw e;
     }
-
-    log.info("Finished create command on all shards for collection: {}", collectionName);
   }
 
+  private static class MyFinalize implements OverseerCollectionMessageHandler.Finalize {
+    private final OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker;
+    private final NamedList results;
+    private final ShardHandler shardHandler;
+    private final AddReplicaCmd.Response resp;
+    private final Overseer overseer;
+    private final String collection;
+
+    public MyFinalize(String collection, OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker, NamedList results, ShardHandler shardHandler, AddReplicaCmd.Response resp, Overseer overseer) {
+      this.shardRequestTracker = shardRequestTracker;
+      this.results = results;
+      this.shardHandler = shardHandler;
+      this.resp = resp;
+      this.overseer = overseer;
+      this.collection = collection;
+    }
+
+    @Override
+    public AddReplicaCmd.Response call() {
+      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+      try {
+        try {
+          shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+        } catch (KeeperException e) {
+          log.error("", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+        //  MRM TODO: - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
+        try {
+          overseer.getZkStateWriter().enqueueStructureChange(resp.clusterState.getCollection(collection));
+        } catch (Exception e) {
+          log.error("failure", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+        response.writeFuture = overseer.writePendingUpdates(collection);
+        if (resp.asyncFinalRunner != null) {
+          try {
+            resp.asyncFinalRunner.call();
+          } catch (Exception e) {
+            log.error("Exception waiting for active replicas", e);
+          }
+        }
+
+        @SuppressWarnings({"rawtypes"}) boolean failure = results.get("failure") != null && ((SimpleOrderedMap) results.get("failure")).size() > 0;
+        if (failure) {
+
+        } else {
+
+        }
+
+        //ocmh.zkStateReader.waitForActiveCollection(collectionName, 10, TimeUnit.SECONDS, shardNames.size(), finalReplicaPositions.size());
+
+        return response;
+      } finally {
+        // Cancel any leftover requests only after their responses have been collected above.
+        shardHandler.cancelAll();
+      }
+    }
+
+  }
 }

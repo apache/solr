@@ -31,11 +31,16 @@
 
   <statsCache class="${solr.statsCache:}"/>
 
+  <indexConfig>
+    <lockType>${solr.tests.lockType:single}</lockType>
+    <infoStream>${solr.tests.infostream:false}</infoStream>
+  </indexConfig>
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-    <updateLog></updateLog>
+    <updateLog enable="${enable.update.log:true}"></updateLog>
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">

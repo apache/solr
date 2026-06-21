@@ -29,12 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -52,14 +49,12 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.AllGroupsCollector;
-import org.apache.lucene.search.grouping.TermGroupFacetCollector;
-import org.apache.lucene.search.grouping.TermGroupSelector;
+import org.apache.lucene.search.grouping.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -70,6 +65,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SpatialHeatmapFacets;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
@@ -115,8 +111,8 @@ public class SimpleFacets {
   protected final SolrQueryRequest req;
   protected final ResponseBuilder rb;
 
-  protected FacetDebugInfo fdebugParent;
-  protected FacetDebugInfo fdebug;
+  protected volatile FacetDebugInfo fdebugParent;
+  protected volatile FacetDebugInfo fdebug;
 
   // per-facet values
   protected final static class ParsedParams {
@@ -167,7 +163,6 @@ public class SimpleFacets {
     this.docsOrig = docs;
     this.global = params;
     this.rb = rb;
-    this.facetExecutor = req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
   }
 
   public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
@@ -180,19 +175,19 @@ public class SimpleFacets {
     String facetValue = param;
     String key = param;
     List<String> tags = Collections.emptyList();
-    int threads = -1;
+    int threads = Math.max(3, SysStats.PROC_COUNT / 2);
 
     if (localParams == null) {
       SolrParams params = global;
       SolrParams required = new RequiredSolrParams(params);
-      return new ParsedParams(localParams, params, required, facetValue, docs, key, tags, threads);
+      return new ParsedParams(null, params, required, facetValue, docs, key, tags, threads);
     }
     
     SolrParams params = SolrParams.wrapDefaults(localParams, global);
     SolrParams required = new RequiredSolrParams(params);
 
     // remove local params unless it's a query
-    if (type != FacetParams.FACET_QUERY) { // TODO Cut over to an Enum here
+    if (!type.equals(FacetParams.FACET_QUERY)) { // TODO Cut over to an Enum here
       facetValue = localParams.get(CommonParams.VALUE);
     }
 
@@ -352,7 +347,7 @@ public class SimpleFacets {
    * @param params the request parameter object
    * @return A predicate for filtering terms or null if no filters are applicable.
    */
-  protected Predicate<BytesRef> newExcludeBytesRefFilter(String field, SolrParams params) {
+  protected static Predicate<BytesRef> newExcludeBytesRefFilter(String field, SolrParams params) {
     final String exclude = params.getFieldParam(field, FacetParams.FACET_EXCLUDETERMS);
     if (exclude == null) {
       return null;
@@ -360,12 +355,7 @@ public class SimpleFacets {
 
     final Set<String> excludeTerms = new HashSet<>(StrUtils.splitSmart(exclude, ",", true));
 
-    return new Predicate<BytesRef>() {
-      @Override
-      public boolean test(BytesRef bytesRef) {
-        return !excludeTerms.contains(bytesRef.utf8ToString());
-      }
-    };
+    return new BytesRefPredicate(excludeTerms);
   }
 
   /**
@@ -377,7 +367,7 @@ public class SimpleFacets {
    * @param params the request parameter object
    * @return A predicate for filtering terms or null if no filters are applicable.
    */
-  protected Predicate<BytesRef> newBytesRefFilter(String field, SolrParams params) {
+  protected static Predicate<BytesRef> newBytesRefFilter(String field, SolrParams params) {
     final String contains = params.getFieldParam(field, FacetParams.FACET_CONTAINS);
 
     Predicate<BytesRef> finalFilter = null;
@@ -513,24 +503,35 @@ public class SimpleFacets {
                       + FacetParams.FACET_EXCLUDETERMS + ") are not supported on numeric types");
             }
             if (ft.isPointField() && mincount <= 0) { // default is mincount=0.  See SOLR-10033 & SOLR-11174.
-              String warningMessage 
+              String warningMessage
                   = "Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.";
-              log.warn(warningMessage);
-              List<String> warnings = (List<String>)rb.rsp.getResponseHeader().get("warnings");
-              if (null == warnings) {
-                warnings = new ArrayList<>();
-                rb.rsp.getResponseHeader().add("warnings", warnings);
+              log.info(warningMessage);
+              // Surface the warning in the response header. Facet fields can be computed
+              // concurrently, so guard the get-or-create of the shared "warnings" list (and make the
+              // list itself synchronized) instead of dropping the warning entirely. rb/rsp can be null
+              // when faceting is driven from a RequestHandler (e.g. MoreLikeThis).
+              if (rb != null && rb.rsp != null) {
+                NamedList<Object> responseHeader = rb.rsp.getResponseHeader();
+                if (responseHeader != null) {
+                  synchronized (responseHeader) {
+                    @SuppressWarnings("unchecked")
+                    List<String> warnings = (List<String>) responseHeader.get("warnings");
+                    if (null == warnings) {
+                      warnings = Collections.synchronizedList(new ArrayList<>());
+                      responseHeader.add("warnings", warnings);
+                    }
+                    warnings.add(warningMessage);
+                  }
+                }
               }
-              warnings.add(warningMessage);
 
               mincount = 1;
             }
             counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);
           } else {
             PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);
-            Executor executor = threads == 0 ? directExecutor : facetExecutor;
             ps.setNumThreads(threads);
-            counts = ps.getFacetCounts(executor);
+            counts = ps.getFacetCounts(ParWork.getExecutorService("facets", threads, false));
           }
           break;
         case UIF:
@@ -588,7 +589,7 @@ public class SimpleFacets {
       }
     }
 
-    if (fdebug != null) {
+    if (fdebug != null && timer != null) {
       long timeElapsed = (long) timer.getTime();
       fdebug.setElapse(timeElapsed);
     }
@@ -640,7 +641,7 @@ public class SimpleFacets {
      /*The user did not specify any preference*/
      if (method == null) {
        /* Always use filters for booleans if not DocValues only... we know the number of values is very small. */
-       if (type instanceof BoolField && (field.indexed() == true || field.hasDocValues() == false)) {
+       if (type instanceof BoolField && (field.indexed() || !field.hasDocValues())) {
          method = FacetMethod.ENUM;
        } else if (type.getNumberType() != null && !field.multiValued()) {
         /* the per-segment approach is optimal for numeric field types since there
@@ -703,7 +704,7 @@ public class SimpleFacets {
                                              Predicate<BytesRef> termFilter) throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     String[] groupFields = groupingSpecification != null? groupingSpecification.getFields(): null;
-    final String groupField = ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
+    final String groupField = groupFields != null && ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
     if (groupField == null) {
       throw new SolrException (
           SolrException.ErrorCode.BAD_REQUEST,
@@ -720,7 +721,7 @@ public class SimpleFacets {
     searcher.search(base.getTopFilter(), fieldWrapper);
     
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
-    TermGroupFacetCollector.GroupedFacetResult result 
+    GroupFacetCollector.GroupedFacetResult result
       = collector.mergeSegmentResults(limit < 0 ? Integer.MAX_VALUE : 
                                       (offset + limit), 
                                       mincount, orderByCount);
@@ -728,9 +729,9 @@ public class SimpleFacets {
     CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
-    List<TermGroupFacetCollector.FacetEntry> scopedEntries 
+    List<GroupFacetCollector.FacetEntry> scopedEntries
       = result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
-    for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
+    for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       //:TODO:can we filter earlier than this to make it more efficient?
       if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
         continue;
@@ -751,13 +752,7 @@ public class SimpleFacets {
     if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumberType() != null) {
       // it's a single-valued numeric field: we must currently create insanity :(
       // there isn't a GroupedFacetCollector that works on numerics right now...
-      return new FilterCollector(collector) {
-        @Override
-        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-          LeafReader insane = Insanity.wrapInsanity(context.reader(), field);
-          return in.getLeafCollector(insane.getContext());
-        }
-      };
+      return new MyFilterCollector(collector, field);
     } else {
       return collector;
     }
@@ -770,8 +765,6 @@ public class SimpleFacets {
       r.run();
     }
   };
-
-  private final Executor facetExecutor;
   
   /**
    * Returns a list of value constraints and the associated facet counts 
@@ -794,15 +787,14 @@ public class SimpleFacets {
     // Passing a negative number for FACET_THREADS implies an unlimited number of threads is acceptable.
     // Also, a subtlety of directExecutor is that no matter how many times you "submit" a job, it's really
     // just a method call in that it's run by the calling thread.
-    int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 0);
-    Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
-    final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);
-    List<Future<NamedList>> futures = new ArrayList<>(facetFs.length);
+    int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 3);
+    // MRM TODO:
+     ExecutorService executor = ParWork.getExecutorService("facets", maxThreads, false);
 
     if (fdebugParent != null) {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
     }
-
+    List<Callable<NamedList>> calls = new ArrayList<>(facetFs.length);
     try {
       //Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
@@ -825,41 +817,32 @@ public class SimpleFacets {
               result.add(key, getTermCounts(facetValue, parsed));
             }
             return result;
-          } catch (SolrException se) {
+          } catch (SolrException | ExitableDirectoryReader.ExitingReaderException se) {
             throw se;
-          } 
-          catch(ExitableDirectoryReader.ExitingReaderException timeout) {
-            throw timeout;
-          }
-          catch (Exception e) {
+          } catch (Exception e) {
+            ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR,
                                     "Exception during facet.field: " + facetValue, e);
-          } finally {
-            semaphore.release();
           }
         };
 
-        RunnableFuture<NamedList> runnableFuture = new FutureTask<>(callable);
-        semaphore.acquire();//may block and/or interrupt
-        executor.execute(runnableFuture);//releases semaphore when done
-        futures.add(runnableFuture);
+        calls.add(callable);
       }//facetFs loop
+      List<Future> futures = new ArrayList<>(calls.size());
+      for (Callable<NamedList> call : calls) {
+        futures.add(executor.submit(call));
+      }
 
-      //Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
       for (Future<NamedList> future : futures) {
         res.addAll(future.get());
       }
-      assert semaphore.availablePermits() >= maxThreads;
-    } catch (InterruptedException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error while processing facet fields: InterruptedException", e);
-    } catch (ExecutionException ee) {
+    } catch (Exception ee) {
       Throwable e = ee.getCause();//unwrap
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error while processing facet fields: " + e.toString(), e);
+          "Error while processing facet fields: " + ee.toString(), ee);
     }
 
     return res;
@@ -872,8 +855,7 @@ public class SimpleFacets {
    * @param parsed contains the docset to compute term counts relative to
    * @param terms a list of term values (in the specified field) to compute the counts for
    */
-  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms)
-      throws IOException {
+  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms) {
     final String sort = parsed.params.getFieldParam(field, FacetParams.FACET_SORT, "empty");
     final SchemaField sf = searcher.getSchema().getField(field);
     final FieldType ft = sf.getType();
@@ -1228,5 +1210,33 @@ public class SimpleFacets {
 
   public ResponseBuilder getResponseBuilder() {
     return rb;
+  }
+
+  private static class BytesRefPredicate implements Predicate<BytesRef> {
+    private final Set<String> excludeTerms;
+
+    public BytesRefPredicate(Set<String> excludeTerms) {
+      this.excludeTerms = excludeTerms;
+    }
+
+    @Override
+    public boolean test(BytesRef bytesRef) {
+      return !excludeTerms.contains(bytesRef.utf8ToString());
+    }
+  }
+
+  private static class MyFilterCollector extends FilterCollector {
+    private final String field;
+
+    public MyFilterCollector(Collector collector, String field) {
+      super(collector);
+      this.field = field;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      LeafReader insane = Insanity.wrapInsanity(context.reader(), field);
+      return in.getLeafCollector(insane.getContext());
+    }
   }
 }

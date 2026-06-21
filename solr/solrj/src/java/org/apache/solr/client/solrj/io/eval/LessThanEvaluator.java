@@ -39,23 +39,26 @@ public class LessThanEvaluator extends RecursiveBooleanEvaluator implements Many
       throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
     }
     else if(fromValue instanceof Number){
-      return new NumberChecker(){
-        @Override
-        public boolean test(Object left, Object right) {
-          return (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString())) < 0;
-        }
-      };
+      return new MyNumberChecker();
     }
     else if(fromValue instanceof String){
-      return new StringChecker(){
-        @Override
-        public boolean test(Object left, Object right) {
-          return ((String)left).compareToIgnoreCase((String)right) < 0;
-        }
-      };
+      return new MyStringChecker();
     }
     
     throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) for values of type '%s'", constructingFactory.getFunctionName(getClass()), fromValue.getClass().getSimpleName()));
   }
 
+  private static class MyNumberChecker implements NumberChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      return (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString())) < 0;
+    }
+  }
+
+  private static class MyStringChecker implements StringChecker {
+    @Override
+    public boolean test(Object left, Object right) {
+      return ((String)left).compareToIgnoreCase((String)right) < 0;
+    }
+  }
 }

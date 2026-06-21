@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.MapWriter;
@@ -30,8 +31,17 @@ import org.apache.solr.common.util.NamedList;
 public class SolrResponseBase extends SolrResponse implements MapWriter
 {
   private long elapsedTime = -1;
-  private NamedList<Object> response = null;
+  private final NamedList<Object> response;
   private String requestUrl = null;
+
+//  SolrResponseBase() {
+//    this.response = null;
+//  }
+
+  public SolrResponseBase(NamedList response) {
+    Objects.nonNull(response);
+    this.response = response;
+  }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
@@ -53,11 +63,6 @@ public class SolrResponseBase extends SolrResponse implements MapWriter
   }
 
   @Override
-  public void setResponse(NamedList<Object> response) {
-    this.response = response;
-  }
-
-  @Override
   public String toString() {
     return response.toString();
   }
@@ -70,9 +75,12 @@ public class SolrResponseBase extends SolrResponse implements MapWriter
   public int getStatus() {
     NamedList header = getResponseHeader();
     if (header != null) {
-        return (Integer) header.get("status");
-    }
-    else {
+       Object obj = header.get("status");
+       if (obj == null) {
+         return 0;
+       }
+       return (Integer) obj;
+    } else {
         return 0;
     }
   }

@@ -96,7 +96,7 @@ public class DimensionalRoutedAlias extends RoutedAlias {
 
   @Override
   public String computeInitialCollectionName() {
-    StringBuilder sb = new StringBuilder(getAliasName());
+    StringBuilder sb = new StringBuilder(name);
     for (RoutedAlias dimension : dimensions) {
       // N. B. getAliasName is generally safe as a regex because it must conform to collection naming rules
       // and those rules exclude regex special characters. A malicious request might do something expensive, but
@@ -175,8 +175,8 @@ public class DimensionalRoutedAlias extends RoutedAlias {
       subPartCandidates.add(dimension.findCandidateGivenValue(cmd));
     }
 
-    StringBuilder col2Create = new StringBuilder(getAliasName());
-    StringBuilder destCol = new StringBuilder(getAliasName());
+    StringBuilder col2Create = new StringBuilder(name);
+    StringBuilder destCol = new StringBuilder(name);
     CreationType max = CreationType.NONE;
     for (CandidateCollection subCol : subPartCandidates) {
       col2Create.append(subCol.getCreationCollection());
@@ -185,14 +185,14 @@ public class DimensionalRoutedAlias extends RoutedAlias {
         max = subCol.getCreationType();
       }
     }
-    return new CandidateCollection(max,destCol.toString(),col2Create.toString());
+    return new CandidateCollection(max, destCol.toString(), col2Create.toString());
   }
 
   @Override
   protected String getHeadCollectionIfOrdered(AddUpdateCommand cmd) {
-    StringBuilder head = new StringBuilder(getAliasName());
+    StringBuilder head = new StringBuilder(name);
     for (RoutedAlias dimension : dimensions) {
-      head.append(dimension.getHeadCollectionIfOrdered(cmd).substring(getAliasName().length()));
+      head.append(dimension.getHeadCollectionIfOrdered(cmd).substring(name.length()));
     }
     return head.toString();
   }
@@ -245,7 +245,7 @@ public class DimensionalRoutedAlias extends RoutedAlias {
     }
     Set <Action> revisedResult = new LinkedHashSet<>();
     for (Action action : result) {
-      revisedResult.add(new Action(action.sourceAlias, action.actionType,getAliasName() + action.targetCollection));
+      revisedResult.add(new Action(action.sourceAlias, action.actionType, name + action.targetCollection));
     }
     return new ArrayList<>(revisedResult);
   }

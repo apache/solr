@@ -21,8 +21,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,7 +40,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Primarily a test of parsing and serialization of the CursorMark values.
@@ -50,9 +54,14 @@ import org.junit.BeforeClass;
 public class CursorMarkTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeCursorMarkTest() throws Exception {
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(CursorPagingTest.TEST_SOLRCONFIG_NAME, CursorPagingTest.TEST_SCHEMAXML_NAME);
+  }
+
+  @AfterClass
+  public static void afterCursorMarkTest() {
+    deleteCore();
   }
 
   public void testNextCursorMark() throws IOException {
@@ -80,6 +89,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     } catch (AssertionError e) {
       // NOOP: we're happy
     }
+    req.close();
   }
 
   public void testInvalidUsage() {
@@ -114,6 +124,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         assertTrue(0 < e.getMessage().indexOf("_docid_"));
       }
     }
+    req.close();
   }
 
 
@@ -162,6 +173,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
       assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
       assertTrue(e.getMessage().contains("wrong size"));
     }
+    req.close();
   }
 
   public void testRoundTripParsing() throws IOException {
@@ -172,8 +184,8 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     final Collection<String> allFieldNames = getAllFieldNames();
     final SolrQueryRequest req = req();
     final IndexSchema schema = req.getSchema();
-    final int numRandomSorts = atLeast(50);
-    final int numRandomValIters = atLeast(10);
+    final int numRandomSorts = SolrTestUtil.atLeast(50);
+    final int numRandomValIters = SolrTestUtil.atLeast(10);
     for (int i = 0; i < numRandomSorts; i++) {
       final SortSpec ss = SortSpecParsing.parseSortSpec
         (CursorPagingTest.buildRandomSort(allFieldNames), req);
@@ -198,6 +210,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         assertArrayEquals(inValues, outValues);
       }
     }
+    req.close();
   }
 
   private static Object[] buildRandomSortObjects(SortSpec ss) throws IOException {
@@ -257,6 +270,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
       }
     }
+
     return results;
   }
 
@@ -280,13 +294,14 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
    */
   private Collection<String> getAllFieldNames() {
     ArrayList<String> names = new ArrayList<>(37);
-    for (String f : h.getCore().getLatestSchema().getFields().keySet()) {
-      if (! f.equals("_version_")) {
-        names.add(f);
+    try (SolrCore core = h.getCore()) {
+      for (String f : core.getLatestSchema().getFields().keySet()) {
+        if (!f.equals("_version_")) {
+          names.add(f);
+        }
       }
+      return Collections.<String>unmodifiableCollection(names);
     }
-    return Collections.<String>unmodifiableCollection(names);
   }
-
 
 }

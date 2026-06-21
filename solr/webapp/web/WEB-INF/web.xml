@@ -15,17 +15,24 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-         version="2.5"
-         metadata-complete="true"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1"
 >
 
-  <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
+  <filter>
+     <filter-name>SolrQosFilter</filter-name>
+     <filter-class>org.apache.solr.servlet.SolrQoSFilter</filter-class>
+     <async-supported>true</async-supported>
+   </filter>
+
+   <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
   <filter>
     <filter-name>SolrRequestFilter</filter-name>
     <filter-class>org.apache.solr.servlet.SolrDispatchFilter</filter-class>
+    <async-supported>true</async-supported>
     <!--
     Exclude patterns is a list of directories that would be short circuited by the 
     SolrDispatchFilter. It includes all Admin UI related static content.
@@ -38,8 +45,17 @@
   </filter>
 
   <filter-mapping>
+    <filter-name>SolrQosFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>ASYNC</dispatcher>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <filter-mapping>
     <filter-name>SolrRequestFilter</filter-name>
     <url-pattern>/*</url-pattern>
+    <dispatcher>ASYNC</dispatcher>
+    <dispatcher>REQUEST</dispatcher>
   </filter-mapping>
 
   <servlet>
@@ -47,25 +63,11 @@
     <servlet-class>org.apache.solr.servlet.LoadAdminUiServlet</servlet-class>
   </servlet>
 
-  <servlet>
-    <servlet-name>SolrRestApi</servlet-name>
-    <servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
-    <init-param>
-      <param-name>org.restlet.application</param-name>
-      <param-value>org.apache.solr.rest.SolrSchemaRestApi</param-value>
-    </init-param>
-  </servlet>
-
   <servlet-mapping>
     <servlet-name>LoadAdminUI</servlet-name>
     <url-pattern>/index.html</url-pattern>
   </servlet-mapping>
 
-  <servlet-mapping>
-    <servlet-name>SolrRestApi</servlet-name>
-    <url-pattern>/schema/*</url-pattern>
-  </servlet-mapping>
-  
   <mime-mapping>
     <extension>.xsl</extension>
     <!-- per http://www.w3.org/TR/2006/PR-xslt20-20061121/ -->

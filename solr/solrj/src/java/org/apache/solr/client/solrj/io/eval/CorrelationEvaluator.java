@@ -40,7 +40,7 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
 
   public CorrelationEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    List<StreamExpressionNamedParameter> namedParams = StreamFactory.getNamedOperands(expression);
     if(namedParams.size() > 0) {
       if (namedParams.size() > 1) {
         throw new IOException("corr function expects only one named parameter 'type'.");

@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,9 +34,9 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -78,7 +79,7 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
+import static org.apache.lucene.analysis.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
 
 /**
  * Base class for all field types used by an index schema.
@@ -162,7 +163,7 @@ public abstract class FieldType extends FieldProperties {
 
   }
 
-  public boolean write(IteratorWriter.ItemWriter itemWriter) {
+  public static boolean write(IteratorWriter.ItemWriter itemWriter) {
     return false;
   }
 
@@ -177,6 +178,7 @@ public abstract class FieldType extends FieldProperties {
     if (schemaVersion < 1.1f) properties |= MULTIVALUED;
     if (schemaVersion > 1.1f) properties |= OMIT_TF_POSITIONS;
     if (schemaVersion < 1.3) {
+      args = new HashMap<>(args);
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
@@ -216,6 +218,9 @@ public abstract class FieldType extends FieldProperties {
 
     this.postingsFormat = initArgs.remove(POSTINGS_FORMAT);
     this.docValuesFormat = initArgs.remove(DOC_VALUES_FORMAT);
+
+    // MRM TODO: remove precisionStep so that Numeric Fields work with schemas setup for Trie Fields
+    initArgs.remove("precisionStep");
 
     if (initArgs.size() > 0) {
       throw new RuntimeException("schema fieldtype " + typeName
@@ -314,7 +319,7 @@ public abstract class FieldType extends FieldProperties {
    * @param type {@link org.apache.lucene.document.FieldType}
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(String name, String val, org.apache.lucene.index.IndexableFieldType type){
+  protected static IndexableField createField(String name, String val, org.apache.lucene.index.IndexableFieldType type){
     return new Field(name, val, type);
   }
 
@@ -463,11 +468,11 @@ public abstract class FieldType extends FieldProperties {
    * @return a Query instance to perform prefix search
    */
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    if ("".equals(termStr)) {
+    if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
     PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    query.setRewriteMethod(FieldType.getRewriteMethod(parser, sf));
     return query;
   }
   
@@ -769,7 +774,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #getSortedSetSortField
    * @see #getSortField
    */
-  protected SortField getStringSort(SchemaField field, boolean reverse) {
+  protected static SortField getStringSort(SchemaField field, boolean reverse) {
     if (field.multiValued()) {
       MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
       if (null != selector) {
@@ -792,7 +797,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #getSortedNumericSortField
    * @see #getSortField
    */
-  protected SortField getNumericSort(SchemaField field, NumberType type, boolean reverse) {
+  protected static SortField getNumericSort(SchemaField field, NumberType type, boolean reverse) {
     if (field.multiValued()) {
       MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
       if (null != selector) {
@@ -833,7 +838,8 @@ public abstract class FieldType extends FieldProperties {
       return getValueSource(field, parser);
     }
     
-    throw new SolrException(ErrorCode.BAD_REQUEST, "Selecting a single value from a multivalued field is not supported for this field: " + field.getName() + " (type: " + this.getTypeName() + ")");
+    throw new SolrException(ErrorCode.BAD_REQUEST, "Selecting a single value from a multivalued field is not supported for this field: " + field.getName() + " (type: " + this.typeName
+        + ")");
   }
   
   /**
@@ -1007,7 +1013,7 @@ public abstract class FieldType extends FieldProperties {
    * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
    * @return A suitable rewrite method for rewriting multi-term queries to primitive queries.
    */
-  public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
+  public static MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
     if (!field.indexed() && field.hasDocValues()) {
       return new DocValuesRewriteMethod();
     } else {
@@ -1073,7 +1079,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
     SimpleOrderedMap<Object> namedPropertyValues = new SimpleOrderedMap<>();
-    namedPropertyValues.add(TYPE_NAME, getTypeName());
+    namedPropertyValues.add(TYPE_NAME, typeName);
     namedPropertyValues.add(CLASS_NAME, getClassArg());
     if (showDefaults) {
       Map<String,String> fieldTypeArgs = getNonFieldPropertyArgs();
@@ -1111,17 +1117,14 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(getPropertyName(TOKENIZED), isTokenized());
       // The BINARY property is always false
       // namedPropertyValues.add(getPropertyName(BINARY), hasProperty(BINARY));
-      if (null != getPostingsFormat()) {
-        namedPropertyValues.add(POSTINGS_FORMAT, getPostingsFormat());
+      if (null != postingsFormat) {
+        namedPropertyValues.add(POSTINGS_FORMAT, postingsFormat);
       }
-      if (null != getDocValuesFormat()) {
-        namedPropertyValues.add(DOC_VALUES_FORMAT, getDocValuesFormat());
+      if (null != docValuesFormat) {
+        namedPropertyValues.add(DOC_VALUES_FORMAT, docValuesFormat);
       }
     } else { // Don't show defaults
-      Set<String> fieldProperties = new HashSet<>();
-      for (String propertyName : FieldProperties.propertyNames) {
-        fieldProperties.add(propertyName);
-      }
+      Set<String> fieldProperties = new HashSet<>(Arrays.asList(FieldProperties.propertyNames));
 
       for (Map.Entry<String, String> entry : args.entrySet()) {
         String key = entry.getKey();
@@ -1133,21 +1136,21 @@ public abstract class FieldType extends FieldProperties {
       }
     }
 
-    if (null != getSimilarityFactory()) {
-      namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
+    if (null != similarityFactory) {
+      namedPropertyValues.add(SIMILARITY, similarityFactory.getNamedPropertyValues());
     }
     
     if (this instanceof HasImplicitIndexAnalyzer) {
-      if (isExplicitQueryAnalyzer()) {
+      if (isExplicitQueryAnalyzer) {
         namedPropertyValues.add(QUERY_ANALYZER, getAnalyzerProperties(getQueryAnalyzer()));
       }
     } else {
-      if (isExplicitAnalyzer()) {
-        String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
+      if (isExplicitAnalyzer) {
+        String analyzerProperty = isExplicitQueryAnalyzer ? INDEX_ANALYZER : ANALYZER;
         namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
       }
-      if (isExplicitQueryAnalyzer()) {
-        String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
+      if (isExplicitQueryAnalyzer) {
+        String analyzerProperty = isExplicitAnalyzer ? QUERY_ANALYZER : ANALYZER;
         namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
       }
     }
@@ -1184,8 +1187,8 @@ public abstract class FieldType extends FieldProperties {
       if (0 < charFilterFactories.length) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
-          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
           factoryArgs = charFilterFactory.getOriginalArgs();
+          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>(factoryArgs.size() + 1);
           if (!factoryArgs.containsKey(TYPE_NAME)) {
             props.add(CLASS_NAME, charFilterFactory.getClassArg());
           }
@@ -1208,9 +1211,9 @@ public abstract class FieldType extends FieldProperties {
         analyzerProps.add(CHAR_FILTERS, charFilterProps);
       }
 
-      SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<>();
       TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
       factoryArgs = tokenizerFactory.getOriginalArgs();
+      SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<>(factoryArgs.size() + 1);
       if (!factoryArgs.containsKey(TYPE_NAME)) {
         tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
       }
@@ -1234,8 +1237,8 @@ public abstract class FieldType extends FieldProperties {
       if (0 < filterFactories.length) {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<>();
         for (TokenFilterFactory filterFactory : filterFactories) {
-          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
           factoryArgs = filterFactory.getOriginalArgs();
+          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>(factoryArgs.size() + 1);
           if (!factoryArgs.containsKey(TYPE_NAME)) {
             props.add(CLASS_NAME, filterFactory.getClassArg());
           }
@@ -1259,9 +1262,9 @@ public abstract class FieldType extends FieldProperties {
       }
     } else { // analyzer is not instanceof TokenizerChain
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
-      if (analyzer.getVersion() != Version.LATEST) {
-        analyzerProps.add(LUCENE_MATCH_VERSION_PARAM, analyzer.getVersion().toString());
-      }
+      // Lucene 9 removed Analyzer#getVersion(), so a raw Analyzer class cannot report the
+      // luceneMatchVersion it was configured with; it therefore does not round-trip here. This
+      // matches upstream branch_9x. (The version is still validated at add time.)
     }
     return analyzerProps;
   }

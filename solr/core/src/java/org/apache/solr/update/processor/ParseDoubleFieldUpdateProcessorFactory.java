@@ -103,8 +103,7 @@ public class ParseDoubleFieldUpdateProcessorFactory extends ParseNumericFieldUpd
         Number number = numberFormat.get().parse(stringVal, pos);
         if (pos.getIndex() != stringVal.length()) {
           if (log.isDebugEnabled()) {
-            log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
-                new Object[]{srcVal, stringVal.substring(pos.getIndex())});
+            log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'", srcVal, stringVal.substring(pos.getIndex()));
           }
           return SKIP_FIELD_VALUE_LIST_SINGLETON;
         }

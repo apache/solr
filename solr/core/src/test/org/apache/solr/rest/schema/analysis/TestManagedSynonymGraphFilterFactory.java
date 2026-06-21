@@ -17,6 +17,16 @@
 
 package org.apache.solr.rest.schema.analysis;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestUtil;
+import org.apache.solr.util.RestTestBase;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 import java.io.File;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -26,16 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
-
-import static org.apache.solr.common.util.Utils.toJSONString;
 
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
@@ -47,13 +47,10 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
    */
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
@@ -62,21 +59,14 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   }
 
   @After
-  private void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+  public void tearDown() throws Exception {
+    super.tearDown();
     if (null != tmpSolrHome) {
       FileUtils.deleteDirectory(tmpSolrHome);
     }
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
 
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test
@@ -175,9 +165,9 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     }
     // multi-term logic similar to the angry/mad logic (angry ~ origin, mad ~ synonym)
 
-    assertU(adoc(newFieldName, "I am a happy test today but yesterday I was angry", "id", "5150"));
-    assertU(adoc(newFieldName, multiTermOrigin+" is in North Germany.", "id", "040"));
-    assertU(commit());
+    restTestHarness.update(adoc(newFieldName, "I am a happy test today but yesterday I was angry", "id", "5150"));
+    restTestHarness.update(adoc(newFieldName, multiTermOrigin+" is in North Germany.", "id", "040"));
+    restTestHarness.update(commit());
 
     assertQ("/select?q=" + newFieldName + ":angry",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",

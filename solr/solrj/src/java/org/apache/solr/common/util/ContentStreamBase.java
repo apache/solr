@@ -29,15 +29,24 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.ParWork;
 
 /**
  * Three concrete implementations for ContentStream - one for File/URL/String
@@ -58,7 +67,7 @@ public abstract class ContentStreamBase implements ContentStream
   protected String name;
   protected String sourceInfo;
   protected String contentType;
-  protected Long size;
+  protected long size;
   
   //---------------------------------------------------------------------
   //---------------------------------------------------------------------
@@ -94,19 +103,21 @@ public abstract class ContentStreamBase implements ContentStream
 
   private String attemptToDetermineTypeFromFirstCharacter() {
     String type = null;
-    try (InputStream stream = getStream()) {
+    try {
+      InputStream stream = getStream();
       // Last ditch effort to determine content, if the first non-white space
       // is a '<' or '{', assume xml or json.
       int data = stream.read();
-      while (( data != -1 ) && ( ( (char)data ) == ' ' )) {
+      while ((data != -1) && (((char) data) == ' ')) {
         data = stream.read();
       }
-      if ((char)data == '<') {
+      if ((char) data == '<') {
         type = ContentType.APPLICATION_XML.getMimeType();
-      } else if ((char)data == '{') {
+      } else if ((char) data == '{') {
         type = ContentType.APPLICATION_JSON.getMimeType();
       }
     } catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
       // This code just eats, the exception and leaves
       // the contentType untouched.
     }
@@ -148,7 +159,7 @@ public abstract class ContentStreamBase implements ContentStream
     @Override
     public InputStream getStream() throws IOException {
       URLConnection conn = this.url.openConnection();
-      
+
       contentType = conn.getContentType();
       name = url.toExternalForm();
       size = conn.getContentLengthLong();
@@ -187,7 +198,7 @@ public abstract class ContentStreamBase implements ContentStream
 
     @Override
     public InputStream getStream() throws IOException {
-      InputStream is = new FileInputStream( file );
+      InputStream is = Files.newInputStream(file.toPath());
       String lowerName = name.toLowerCase(Locale.ROOT);
       if(lowerName.endsWith(".gz") || lowerName.endsWith(".gzip")) {
         is = new GZIPInputStream(is);
@@ -258,7 +269,7 @@ public abstract class ContentStreamBase implements ContentStream
       String charset = getCharsetFromContentType( contentType );
       return charset == null 
         ? new StringReader( str )
-        : new InputStreamReader( getStream(), charset );
+        : new InputStreamReader( new CloseShieldInputStream(getStream()), charset );
     }
   }
 
@@ -270,8 +281,8 @@ public abstract class ContentStreamBase implements ContentStream
   public Reader getReader() throws IOException {
     String charset = getCharsetFromContentType( getContentType() );
     return charset == null 
-      ? new InputStreamReader( getStream(), DEFAULT_CHARSET )
-      : new InputStreamReader( getStream(), charset );
+      ? new InputStreamReader( new CloseShieldInputStream(getStream()), DEFAULT_CHARSET )
+      : new InputStreamReader( new CloseShieldInputStream(getStream()), charset );
   }
 
   //------------------------------------------------------------------
@@ -314,10 +325,12 @@ public abstract class ContentStreamBase implements ContentStream
     this.sourceInfo = sourceInfo;
   }
   public static ContentStream create(RequestWriter requestWriter, SolrRequest req) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    MutableDirectBuffer expandableBuffer1 = new ExpandableArrayBuffer(4092);
+
+    ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(expandableBuffer1);
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(req);
-    contentWriter.write(baos);
-    return new ByteArrayStream(baos.toByteArray(), null,contentWriter.getContentType() );
+    contentWriter.write(out);
+    return new ByteArrayStream(expandableBuffer1.byteArray(), null, contentWriter.getContentType(), out.position() + expandableBuffer1.wrapAdjustment() );
   }
   
   /**
@@ -326,23 +339,27 @@ public abstract class ContentStreamBase implements ContentStream
   public static class ByteArrayStream extends ContentStreamBase
   {
     private final byte[] bytes;
-    public ByteArrayStream( byte[] bytes, String source ) {
-      this(bytes,source, null);
+    public ByteArrayStream(byte[] bytes, String source ) {
+      this(bytes, source, null, bytes.length);
+    }
+
+    public ByteArrayStream(byte[] bytes, String source, String contentType ) {
+      this(bytes, source, contentType, bytes.length);
     }
     
-    public ByteArrayStream( byte[] bytes, String source, String contentType ) {
+    public ByteArrayStream(byte[] bytes, String source, String contentType, int limit) {
       this.bytes = bytes;
       
       this.contentType = contentType;
       name = source;
-      size = (long) bytes.length;
+      size = limit;
       sourceInfo = source;
     }
 
 
     @Override
     public InputStream getStream() throws IOException {
-      return new ByteArrayInputStream( bytes );
+      return new ByteArrayInputStream( bytes, 0, (int) size);
     }
   }  
 }

@@ -71,6 +71,11 @@
           "description": "If true, everything related to the core, including the index, data, and conf directories, will be removed while unloading the core.",
           "default": "false"
         },
+        "removeFromZk": {
+          "type": "boolean",
+          "description": "If true, everything related to the core, while be removed via ZkController.",
+          "default": "true"
+        },
         "async": {
           "type": "string",
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously when this is defined."

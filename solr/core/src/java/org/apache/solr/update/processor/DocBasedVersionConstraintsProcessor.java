@@ -326,8 +326,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
    * @return True if acceptable, false if not.
    */
   @SuppressWarnings({"unchecked"})
-  protected boolean newUpdateComparePasses(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
-                                           @SuppressWarnings({"rawtypes"})Comparable oldUserVersion, String userVersionFieldName) {
+  protected static boolean newUpdateComparePasses(@SuppressWarnings({"rawtypes"}) Comparable newUserVersion,
+      @SuppressWarnings({"rawtypes"}) Comparable oldUserVersion, String userVersionFieldName) {
     return oldUserVersion.compareTo(newUserVersion) < 0;
   }
 
@@ -439,6 +439,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       SolrInputDocument newDoc = createTombstoneDocument(core.getLatestSchema(), cmd.getId(), versionFieldNames, deleteParamValues, this.tombstoneConfig);
 
       AddUpdateCommand newCmd = new AddUpdateCommand(cmd.getReq());
+
       newCmd.solrDoc = newDoc;
       newCmd.commitWithin = cmd.commitWithin;
       super.processAdd(newCmd);
@@ -493,7 +494,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
    * otherwise this tombstone will fail when indexing (and consequently the delete will fail). Alternatively, required fields must be populated by some
    * other means (like {@code DocBasedVersionConstraintsProcessorFactory} or similar) 
    */
-  protected SolrInputDocument createTombstoneDocument(IndexSchema schema, String id, String[] versionFieldNames, String[] deleteParamValues, NamedList<Object> tombstoneConfig) {
+  protected static SolrInputDocument createTombstoneDocument(IndexSchema schema, String id, String[] versionFieldNames, String[] deleteParamValues,
+      NamedList<Object> tombstoneConfig) {
     final SolrInputDocument newDoc = new SolrInputDocument();
     
     if (tombstoneConfig != null) {

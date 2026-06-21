@@ -77,19 +77,19 @@ public class SignatureUpdateProcessorFactory
 
   @Override
   public void inform(SolrCore core) {
-    final SchemaField field = core.getLatestSchema().getFieldOrNull(getSignatureField());
+    final SchemaField field = core.getLatestSchema().getFieldOrNull(signatureField);
     if (null == field) {
       throw new SolrException
         (ErrorCode.SERVER_ERROR,
          "Can't use signatureField which does not exist in schema: "
-         + getSignatureField());
+         + signatureField);
     }
 
-    if (getOverwriteDupes() && ( ! field.indexed() ) ) {
+    if (overwriteDupes && ( ! field.indexed() ) ) {
       throw new SolrException
         (ErrorCode.SERVER_ERROR,
          "Can't set overwriteDupes when signatureField is not indexed: "
-         + getSignatureField());
+         + signatureField);
     }
   }
 

@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -37,7 +38,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
 
   @BeforeClass
   public static void setupLoader() throws Exception {
-    solrHome = Paths.get(createTempDir().toAbsolutePath().toString());
+    solrHome = Paths.get(SolrTestUtil.createTempDir().toAbsolutePath().toString());
     loader = new SolrResourceLoader(solrHome);
   }
 
@@ -96,6 +97,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    cc.shutdown();
     cc = new CoreContainer(config);
     df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
@@ -106,11 +108,13 @@ public class DirectoryFactoryTest extends SolrTestCase {
     // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
     System.setProperty("test.solr.data.home", "/foo");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    cc.shutdown();
     cc = new CoreContainer(config);
     df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
     df.init(new NamedList());
     assertDataHome("/foo/inst_dir/data", "inst_dir", df, cc);
+    cc.shutdown();
   }
 
   private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {
@@ -119,7 +123,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
   }
 
 
-  private NodeConfig loadNodeConfig(String config) throws Exception {
+  private static NodeConfig loadNodeConfig(String config) throws Exception {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
     return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
   }

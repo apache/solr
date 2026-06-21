@@ -34,5 +34,42 @@ build/
 .gradle/
 .idea/
 
+# Eclipse/IntelliJ per-module IDE artifacts at any depth. The root-anchored /.classpath,
+# /.project, /.settings and /bin entries above only cover the repo root, so nested module
+# copies (solr/core/.classpath, solr/contrib/*/bin/main, ...) kept showing up as untracked.
+# These IDE metadata files are never tracked anywhere in the tree, so ignoring them at any
+# depth is safe.
+.classpath
+.project
+.settings/
+# Eclipse compiled-output dirs (bin/main, bin/test, bin/jmh). Targeted at the output subdirs
+# rather than a blanket bin/, so the real tracked launcher dirs (solr/bin,
+# solr/contrib/prometheus-exporter/bin) and their scripts are left alone. The **/ prefix is
+# required: a pattern with a middle slash (bin/main) is otherwise anchored to the repo root.
+**/bin/main/
+**/bin/test/
+**/bin/jmh/
+
 # Ignore the generated local settings file.
 gradle.properties
+
+# Claude Code / OMACC agent orchestration state and ad-hoc reproduction logs. These are
+# per-session local artifacts — agent/session state, HUD caches, ralph/ultrawork/autopilot
+# state, and debug repro logs — and must never be tracked. Patterns are unanchored so nested
+# copies (solr/.omacc/, solr/core/src/.../.omacc/, ...) are ignored at any depth, not just root.
+.omacc/
+.omc/
+.repro-logs/
+
+# Serena coding-agent project memories — local agent state, never tracked.
+.serena/
+# IntelliJ per-module compiled output (out/production, out/test). The repo builds with
+# gradle into build/ (already ignored); these out/ dirs are IDE-only artifacts that leaked
+# in via buildSrc/ and dev-tools/missing-doclet/. Targeted at the IDE output subdirs so a
+# hypothetical source dir literally named "out" is left alone.
+**/out/production/
+**/out/test/
+# Ad-hoc test-run / debug logs at the repo root (nightly runs, repro traces, verify dumps).
+# Source modules keep their own logs under build/; nothing legitimate is tracked as a root log.
+/*.log
+/address_fails_log.txt

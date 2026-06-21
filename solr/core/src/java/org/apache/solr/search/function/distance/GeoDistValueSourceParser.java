@@ -159,7 +159,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
   }
 
   /** make a MultiValueSource from two non MultiValueSources */
-  private VectorValueSource makeMV(List<ValueSource> sources, List<ValueSource> orig) throws SyntaxError {
+  private static VectorValueSource makeMV(List<ValueSource> sources, List<ValueSource> orig) throws SyntaxError {
     ValueSource vs1 = sources.get(0);
     ValueSource vs2 = sources.get(1);
 
@@ -169,7 +169,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     return  new VectorValueSource(sources);
   }
 
-  private MultiValueSource parsePoint(FunctionQParser fp) throws SyntaxError {
+  private static MultiValueSource parsePoint(FunctionQParser fp) throws SyntaxError {
     String ptStr = fp.getParam(SpatialParams.POINT);
     if (ptStr == null) return null;
     Point point = SpatialUtils.parsePointSolrException(ptStr, SpatialContext.GEO);
@@ -178,7 +178,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
         Arrays.<ValueSource>asList(new DoubleConstValueSource(point.getY()), new DoubleConstValueSource(point.getX())));
   }
 
-  private double[] getConstants(MultiValueSource vs) {
+  private static double[] getConstants(MultiValueSource vs) {
     if (!(vs instanceof VectorValueSource)) return null;
     List<ValueSource> sources = ((VectorValueSource)vs).getSources();
     if (sources.get(0) instanceof ConstNumberSource && sources.get(1) instanceof ConstNumberSource) {
@@ -187,7 +187,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     return null;
   }
 
-  private MultiValueSource parseSfield(FunctionQParser fp) throws SyntaxError {
+  private static MultiValueSource parseSfield(FunctionQParser fp) throws SyntaxError {
     String sfield = fp.getParam(SpatialParams.FIELD);
     if (sfield == null) return null;
     SchemaField sf = fp.getReq().getSchema().getField(sfield);

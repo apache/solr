@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,10 +43,10 @@ public class CopyOfEvaluator extends RecursiveNumericEvaluator implements ManyVa
     }
     
     List<?> sourceValues;
-    Integer length;
+    int length;
     
     if(values.length >= 1){
-      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]); 
+      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Collections.singletonList(values[0]);
       
       // default to full array
       length = sourceValues.size();

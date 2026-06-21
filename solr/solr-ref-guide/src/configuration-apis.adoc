@@ -1,5 +1,5 @@
 = Configuration APIs
-:page-children: blob-store-api, config-api, request-parameters-api, managed-resources
+:page-children: config-api, request-parameters-api, managed-resources
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -19,7 +19,6 @@
 
 Solr includes several APIs that can be used to modify settings in `solrconfig.xml`.
 
-* <<blob-store-api.adoc#blob-store-api,Blob Store API>>
 * <<config-api.adoc#config-api,Config API>>
 * <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>
 * <<managed-resources.adoc#managed-resources,Managed Resources>>

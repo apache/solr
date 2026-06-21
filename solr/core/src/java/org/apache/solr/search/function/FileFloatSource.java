@@ -38,7 +38,6 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -95,17 +94,7 @@ public class FileFloatSource extends ValueSource {
     IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
 
     final float[] arr = getCachedFloats(topLevelContext.reader());
-    return new FloatDocValues(this) {
-      @Override
-      public float floatVal(int doc) {
-        return arr[doc + off];
-      }
-
-      @Override
-      public Object objectVal(int doc) {
-        return floatVal(doc);   // TODO: keep track of missing values
-      }
-    };
+    return new FloatDocValues(arr, off);
   }
 
   @Override
@@ -372,6 +361,27 @@ public class FileFloatSource extends ValueSource {
     @Override
     public String getDescription() {
       return "Reload readerCache request handler";
+    }
+  }
+
+  private class FloatDocValues extends org.apache.lucene.queries.function.docvalues.FloatDocValues {
+    private final float[] arr;
+    private final int off;
+
+    public FloatDocValues(float[] arr, int off) {
+      super(FileFloatSource.this);
+      this.arr = arr;
+      this.off = off;
+    }
+
+    @Override
+    public float floatVal(int doc) {
+      return arr[doc + off];
+    }
+
+    @Override
+    public Object objectVal(int doc) {
+      return floatVal(doc);   // TODO: keep track of missing values
     }
   }
 }

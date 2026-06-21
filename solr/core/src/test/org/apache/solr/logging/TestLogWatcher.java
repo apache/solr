@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,14 +87,14 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
       } while (foundNewMsg == false && timeOut.hasTimedOut() == false);
 
       if (foundNewMsg == false || foundOldMessage) {
-        System.out.println("Dumping all events in failed watcher:");
+        //System.out.println("Dumping all events in failed watcher:");
         SolrDocumentList events = watcher.getHistory(-1, null);
         for (SolrDocument doc : events) {
-          System.out.println("   Event:'" + doc.toString() + "'");
+          //System.out.println("   Event:'" + doc.toString() + "'");
         }
-        System.out.println("Recorded old messages");
+        //System.out.println("Recorded old messages");
         for (String oldMsg : oldMessages) {
-          System.out.println("    " + oldMsg);
+          //System.out.println("    " + oldMsg);
         }
 
         fail("Did not find expected message state, dumped current watcher's messages above, last message added: '" + msg + "'");

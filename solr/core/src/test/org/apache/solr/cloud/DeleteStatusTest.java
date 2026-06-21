@@ -19,24 +19,31 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class DeleteStatusTest extends SolrCloudTestCase {
 
-  public static final int MAX_WAIT_TIMEOUT = 30;
+  public static final int MAX_WAIT_TIMEOUT = 15;
 
   @BeforeClass
   public static void createCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .formatZk(true).configure();
+  }
+
+  @AfterClass
+  public static void afterDeleteStatusTest() throws Exception {
+    shutdownCluster();
   }
 
   // Basically equivalent to RequestStatus.waitFor(), but doesn't delete the id from the queue
@@ -48,17 +55,17 @@ public class DeleteStatusTest extends SolrCloudTestCase {
       state = CollectionAdminRequest.requestStatus(id).process(client).getRequestStatus();
       if (state == RequestStatusState.COMPLETED)
         break;
-      assumeTrue("Error creating collection - skipping test", state != RequestStatusState.FAILED);
-      TimeUnit.SECONDS.sleep(1);
+    //  assumeTrue("Error creating collection - skipping test", state != RequestStatusState.FAILED);
+      TimeUnit.MILLISECONDS.sleep(100);
     }
-    assumeTrue("Timed out creating collection - skipping test", state == RequestStatusState.COMPLETED);
+    //assumeTrue("Timed out creating collection - skipping test", state == RequestStatusState.COMPLETED);
     return state;
   }
 
   @Test
   public void testAsyncIdsMayBeDeleted() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     final String collection = "deletestatus";
     final String asyncId = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1).processAsync(client);
@@ -79,7 +86,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   @Test
   public void testDeletingNonExistentRequests() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     CollectionAdminResponse rsp = CollectionAdminRequest.deleteAsyncId("foo").process(client);
     assertEquals("[foo] not found in stored responses", rsp.getResponse().get("status"));
@@ -89,10 +96,11 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   @Test
   public void testProcessAndWaitDeletesAsyncIds() throws IOException, SolrServerException, InterruptedException {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     RequestStatusState state = CollectionAdminRequest.createCollection("requeststatus", "conf1", 1, 1)
                                   .processAndWait("request1", client, MAX_WAIT_TIMEOUT);
+
     assertSame(RequestStatusState.COMPLETED, state);
 
     // using processAndWait deletes the requestid
@@ -104,7 +112,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   @Test
   public void testDeleteStatusFlush() throws Exception {
 
-    final CloudSolrClient client = cluster.getSolrClient();
+    final CloudHttp2SolrClient client = cluster.getSolrClient();
 
     String id1 = CollectionAdminRequest.createCollection("flush1", "conf1", 1, 1).processAsync(client);
     String id2 = CollectionAdminRequest.createCollection("flush2", "conf1", 1, 1).processAsync(client);

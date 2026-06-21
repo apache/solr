@@ -47,8 +47,8 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
   
   @Override
   public String getPassword(Metadata meta) {
-    if(getExplicitPassword() != null) {
-      return getExplicitPassword();
+    if(explicitPassword != null) {
+      return explicitPassword;
     }
     
     if(passwordMap.size() > 0)
@@ -86,7 +86,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
           line = arr[0].trim();
         if(line.length() == 0) 
           continue;
-        int sep = line.indexOf("=");
+        int sep = line.indexOf('=');
         if(sep <= 0) {
           log.warn("Wrong format of password line {}", linenum);
           continue;
@@ -114,7 +114,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
    * @param is the input stream with rules file, one line per rule on format regex=password
    */
   public void parse(InputStream is) {
-    setPasswordMap(parseRulesFile(is));
+    passwordMap = parseRulesFile(is);
   }
   
   public LinkedHashMap<Pattern,String> getPasswordMap() {

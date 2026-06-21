@@ -22,22 +22,30 @@ import java.util.Map;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  */
 // TODO: add a low-level test for this factory
+
 public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestWordDelimiterFilterFactory() throws Exception {
     initCore("solrconfig.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTestWordDelimiterFilterFactory() throws Exception {
+    deleteCore();
   }
 
   public void posTst(String v1, String v2, String s1, String s2) {
@@ -196,50 +204,47 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
   @Test
   public void testCustomTypes() throws Exception {
     String testText = "I borrowed $5,400.00 at 25% interest-rate";
-    ResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
-    Map<String,String> args = new HashMap<>();
-    args.put("luceneMatchVersion", Version.LATEST.toString());
-    args.put("generateWordParts", "1");
-    args.put("generateNumberParts", "1");
-    args.put("catenateWords", "1");
-    args.put("catenateNumbers", "1");
-    args.put("catenateAll", "0");
-    args.put("splitOnCaseChange", "1");
-    
-    /* default behavior */
-    WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory(args);
-    factoryDefault.inform(loader);
-    
-    TokenStream ts = factoryDefault.create(whitespaceMockTokenizer(testText));
-    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
-        new String[] { "I", "borrowed", "5", "540000", "400", "00", "at", "25", "interest", "interestrate", "rate" });
+    try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
+      Map<String,String> args = new HashMap<>();
+      args.put("luceneMatchVersion", Version.LATEST.toString());
+      args.put("generateWordParts", "1");
+      args.put("generateNumberParts", "1");
+      args.put("catenateWords", "1");
+      args.put("catenateNumbers", "1");
+      args.put("catenateAll", "0");
+      args.put("splitOnCaseChange", "1");
 
-    ts = factoryDefault.create(whitespaceMockTokenizer("foo\u200Dbar"));
-    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
-        new String[] { "foo", "foobar", "bar" });
+      /* default behavior */
+      WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory(args);
+      factoryDefault.inform(loader);
 
-    
-    /* custom behavior */
-    args = new HashMap<>();
-    // use a custom type mapping
-    args.put("luceneMatchVersion", Version.LATEST.toString());
-    args.put("generateWordParts", "1");
-    args.put("generateNumberParts", "1");
-    args.put("catenateWords", "1");
-    args.put("catenateNumbers", "1");
-    args.put("catenateAll", "0");
-    args.put("splitOnCaseChange", "1");
-    args.put("types", "wdftypes.txt");
-    WordDelimiterFilterFactory factoryCustom = new WordDelimiterFilterFactory(args);
-    factoryCustom.inform(loader);
-    
-    ts = factoryCustom.create(whitespaceMockTokenizer(testText));
-    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
-        new String[] { "I", "borrowed", "$5,400.00", "at", "25%", "interest", "interestrate", "rate" });
-    
-    /* test custom behavior with a char > 0x7F, because we had to make a larger byte[] */
-    ts = factoryCustom.create(whitespaceMockTokenizer("foo\u200Dbar"));
-    BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
-        new String[] { "foo\u200Dbar" });
+      TokenStream ts = factoryDefault.create(whitespaceMockTokenizer(testText));
+      BaseTokenStreamTestCase.assertTokenStreamContents(ts, new String[] {"I", "borrowed", "5", "540000", "400", "00", "at", "25", "interest", "interestrate", "rate"});
+
+      ts = factoryDefault.create(whitespaceMockTokenizer("foo\u200Dbar"));
+      BaseTokenStreamTestCase.assertTokenStreamContents(ts, new String[] {"foo", "foobar", "bar"});
+
+
+      /* custom behavior */
+      args = new HashMap<>();
+      // use a custom type mapping
+      args.put("luceneMatchVersion", Version.LATEST.toString());
+      args.put("generateWordParts", "1");
+      args.put("generateNumberParts", "1");
+      args.put("catenateWords", "1");
+      args.put("catenateNumbers", "1");
+      args.put("catenateAll", "0");
+      args.put("splitOnCaseChange", "1");
+      args.put("types", "wdftypes.txt");
+      WordDelimiterFilterFactory factoryCustom = new WordDelimiterFilterFactory(args);
+      factoryCustom.inform(loader);
+
+      ts = factoryCustom.create(whitespaceMockTokenizer(testText));
+      BaseTokenStreamTestCase.assertTokenStreamContents(ts, new String[] {"I", "borrowed", "$5,400.00", "at", "25%", "interest", "interestrate", "rate"});
+
+      /* test custom behavior with a char > 0x7F, because we had to make a larger byte[] */
+      ts = factoryCustom.create(whitespaceMockTokenizer("foo\u200Dbar"));
+      BaseTokenStreamTestCase.assertTokenStreamContents(ts, new String[] {"foo\u200Dbar"});
+    }
   }
 }

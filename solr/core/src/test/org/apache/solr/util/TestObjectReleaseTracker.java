@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.ObjectReleaseTrackerTestImpl;
 import org.junit.Test;
 
 
@@ -27,35 +28,41 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
   
   @Test
   public void testObjectReleaseTracker() {
-    ObjectReleaseTracker.track(new Object());
-    ObjectReleaseTracker.release(new Object());
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+
+    ObjectReleaseTracker objectReleaseTracker = new ObjectReleaseTrackerTestImpl();
+    objectReleaseTracker.track(new Object());
+    objectReleaseTracker.release(new Object());
+    assertNotNull(objectReleaseTracker.checkEmpty());
+    objectReleaseTracker.clear();
     Object obj = new Object();
-    ObjectReleaseTracker.track(obj);
-    ObjectReleaseTracker.release(obj);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    objectReleaseTracker.track(obj);
+    objectReleaseTracker.release(obj);
+    assertNull(objectReleaseTracker.checkEmpty());
+    objectReleaseTracker.clear();
     
     Object obj1 = new Object();
-    ObjectReleaseTracker.track(obj1);
+    objectReleaseTracker.track(obj1);
     Object obj2 = new Object();
-    ObjectReleaseTracker.track(obj2);
+    objectReleaseTracker.track(obj2);
     Object obj3 = new Object();
-    ObjectReleaseTracker.track(obj3);
+    objectReleaseTracker.track(obj3);
     
-    ObjectReleaseTracker.release(obj1);
-    ObjectReleaseTracker.release(obj2);
-    ObjectReleaseTracker.release(obj3);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    objectReleaseTracker.release(obj1);
+    objectReleaseTracker.release(obj2);
+    objectReleaseTracker.release(obj3);
+    assertNull(objectReleaseTracker.checkEmpty());
+    objectReleaseTracker.clear();
     
-    ObjectReleaseTracker.track(obj1);
-    ObjectReleaseTracker.track(obj2);
-    ObjectReleaseTracker.track(obj3);
+    objectReleaseTracker.track(obj1);
+    objectReleaseTracker.track(obj2);
+    objectReleaseTracker.track(obj3);
     
-    ObjectReleaseTracker.release(obj1);
-    ObjectReleaseTracker.release(obj2);
+    objectReleaseTracker.release(obj1);
+    objectReleaseTracker.release(obj2);
     // ObjectReleaseTracker.release(obj3);
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNotNull(objectReleaseTracker.checkEmpty());
+    objectReleaseTracker.clear();
+    assertNull(objectReleaseTracker.checkEmpty());
+    objectReleaseTracker.clear();
   }
 }

@@ -25,7 +25,11 @@ import org.apache.solr.common.util.NamedList;
  * @since solr 1.3
  */
 public class CoreAdminResponse extends SolrResponseBase
-{ 
+{
+  public CoreAdminResponse(NamedList response) {
+    super(response);
+  }
+
   @SuppressWarnings("unchecked")
   public NamedList<NamedList<Object>> getCoreStatus()
   {

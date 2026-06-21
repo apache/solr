@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,25 +29,19 @@ public class TestClusterProperties extends SolrCloudTestCase {
   private ClusterProperties props;
   
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeTestClusterProperties() throws Exception {
     configureCluster(1).configure();
+  }
+
+  @AfterClass
+  public static void afterTestClusterProperties() throws Exception {
+    shutdownCluster();
   }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     props = new ClusterProperties(zkClient());
-  }
-
-  @Test
-  public void testClusterProperties() throws Exception {
-    assertEquals("false", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false"));
-
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true").process(cluster.getSolrClient());
-    assertEquals("true", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false"));
-
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false").process(cluster.getSolrClient());
-    assertEquals("false", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"));
   }
   
   @Test

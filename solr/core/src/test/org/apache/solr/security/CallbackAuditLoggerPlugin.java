@@ -89,4 +89,15 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
     super.close();
     if (socket != null) socket.close();
   }
+
+  @Override
+  public String getName() {
+    return "CallbackAuditLoggerPlugin";
+  }
+
+  @Override
+  public boolean isCallerThreadAllowed() {
+    return true;
+  }
+
 }

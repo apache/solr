@@ -24,30 +24,33 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +99,7 @@ public class ChaosMonkey {
   /**
    * Our own Random, seeded from LuceneTestCase on init, so that we can produce a consistent sequence 
    * of random chaos regardless of if/how othe threads access the test randomness in other threads
-   * @see LuceneTestCase#random()
+   * @see SolrTestCase#random()
    */
   private final Random chaosRandom;
   
@@ -108,7 +111,7 @@ public class ChaosMonkey {
     this.zkServer = zkServer;
     this.zkStateReader = zkStateReader;
     this.collection = collection;
-    this.chaosRandom = new Random(LuceneTestCase.random().nextLong());
+    this.chaosRandom = new Random(SolrTestCase.random().nextLong());
     
     if (!MONKEY_ENABLED) {
       monkeyLog("The Monkey is Disabled and will not run");
@@ -137,8 +140,7 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("expire session for " + jetty.getLocalPort() + " !");
       causeConnectionLoss(jetty);
-      long sessionId = cores.getZkController().getZkClient()
-          .getSolrZooKeeper().getSessionId();
+      long sessionId = cores.getZkController().getZkClient().getSessionId();
       zkServer.expire(sessionId);
     }
 
@@ -170,7 +172,7 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      zkClient.getSolrZooKeeper().closeCnxn();
+      ((SolrZooKeeper)zkClient.getConnectionManager().getKeeper()).closeCnxn();
     }
   }
 
@@ -188,8 +190,7 @@ public class ChaosMonkey {
   public void stopAll(int pauseBetweenMs) throws Exception {
     Set<String> keys = shardToJetty.keySet();
     List<Thread> jettyThreads = new ArrayList<>(keys.size());
-    for (String key : keys) {
-      List<CloudJettyRunner> jetties = shardToJetty.get(key);
+    for (List<CloudJettyRunner> jetties : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jetties) {
         Thread.sleep(pauseBetweenMs);
         Thread thread = new Thread() {
@@ -197,6 +198,7 @@ public class ChaosMonkey {
             try {
               stopJetty(jetty);
             } catch (Exception e) {
+              ParWork.propagateInterrupt(e);
               throw new RuntimeException(e);
             }
           }
@@ -212,9 +214,7 @@ public class ChaosMonkey {
   }
   
   public void startAll() throws Exception {
-    Set<String> keys = shardToJetty.keySet();
-    for (String key : keys) {
-      List<CloudJettyRunner> jetties = shardToJetty.get(key);
+    for (List<CloudJettyRunner> jetties : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jetties) {
         jetty.jetty.start();
       }
@@ -364,7 +364,7 @@ public class ChaosMonkey {
       CoreContainer cc = cjetty.jetty.getCoreContainer();
       if (cc != null) {
         try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          rtIsLeader = core != null && core.getCoreDescriptor().getCloudDescriptor().isLeader();
+          rtIsLeader = core != null;
         }
       } else {
         return null;
@@ -417,9 +417,6 @@ public class ChaosMonkey {
     int numIndexersFoundInShard = 0;
     for (CloudJettyRunner cloudJetty : shardToJetty.get(sliceName)) {
       
-      // get latest cloud state
-      zkStateReader.forceUpdateCollection(collection);
-      
       DocCollection docCollection = zkStateReader.getClusterState().getCollection(collection);
       
       Slice slice = docCollection.getSlice(sliceName);
@@ -436,7 +433,7 @@ public class ChaosMonkey {
       if (cloudJetty.jetty.isRunning()
           && state == Replica.State.ACTIVE
           && (replicaType == Replica.Type.TLOG || replicaType == Replica.Type.NRT) 
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+          && zkStateReader.isNodeLive(nodeName)) {
         numIndexersFoundInShard++;
       }
     }
@@ -445,10 +442,7 @@ public class ChaosMonkey {
 
   private int checkIfKillIsLegal(String sliceName, int numActive) throws KeeperException, InterruptedException {
     for (CloudJettyRunner cloudJetty : shardToJetty.get(sliceName)) {
-      
-      // get latest cloud state
-      zkStateReader.forceUpdateCollection(collection);
-      
+
       DocCollection docCollection = zkStateReader.getClusterState().getCollection(collection);
       
       Slice slice = docCollection.getSlice(sliceName);
@@ -463,7 +457,7 @@ public class ChaosMonkey {
       
       if (cloudJetty.jetty.isRunning()
           && state == Replica.State.ACTIVE
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+          && zkStateReader.isNodeLive(nodeName)) {
         numActive++;
       }
     }
@@ -504,8 +498,8 @@ public class ChaosMonkey {
           } catch (InterruptedException e) {
             //
           } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            ParWork.propagateInterrupt(e);
+            log.error("", e);
           }
         }
         monkeyLog("finished");
@@ -537,7 +531,7 @@ public class ChaosMonkey {
 
     double runtime = runTimer.getTime()/1000.0f;
     if (runtime > NO_STOP_WARN_TIME && stops.get() == 0) {
-      LuceneTestCase.fail("The Monkey ran for over " + NO_STOP_WARN_TIME +" seconds and no jetties were stopped - this is worth investigating!");
+      Assert.fail("The Monkey ran for over " + NO_STOP_WARN_TIME + " seconds and no jetties were stopped - this is worth investigating!");
     }
   }
 
@@ -587,39 +581,28 @@ public class ChaosMonkey {
   }
 
   public static void stop(List<JettySolrRunner> jettys) throws Exception {
-    ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-        0,
-        Integer.MAX_VALUE,
-        15, TimeUnit.SECONDS,
-        new SynchronousQueue<>(),
-        new SolrNamedThreadFactory("ChaosMonkey"),
-        false);
+
     for (JettySolrRunner jetty : jettys) {
-      executor.submit(() -> {
+      ParWork.submit("ChaosMonkey", () -> {
         try {
-          jetty.stop();
+          jetty.stop().await(5, TimeUnit.SECONDS);
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           log.error("error stopping jetty", e);
           throw new RuntimeException(e);
         }
       });
     }
-    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
 
   public static void start(List<JettySolrRunner> jettys) throws Exception {
-    ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-        0,
-        Integer.MAX_VALUE,
-        15, TimeUnit.SECONDS,
-        new SynchronousQueue<>(),
-        new SolrNamedThreadFactory("ChaosMonkey"),
-        false);
+    ExecutorService executor = new ParWorkExecutor("ChaosMonkey", SysStats.PROC_COUNT);
     for (JettySolrRunner jetty : jettys) {
       executor.submit(() -> {
         try {
-          jetty.start();
+          jetty.start().await(5, TimeUnit.SECONDS);
         } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
           log.error("error starting jetty", e);
           throw new RuntimeException(e);
         }
@@ -651,23 +634,26 @@ public class ChaosMonkey {
     }
     StringBuilder builder = new StringBuilder();
     builder.append("Collection status: {");
-    for (Slice slice:docCollection.getSlices()) {
-      builder.append(slice.getName()).append(": {");
-      for (Replica replica:slice.getReplicas()) {
-        log.info("{}", replica);
-        java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
-        m.find();
-        String jettyPort = m.group(1);
-        builder.append(String.format(Locale.ROOT, "%s(%s): {state: %s, type: %s, leader: %s, Live: %s}, ", 
-            replica.getName(), jettyPort, replica.getState(), replica.getType(), (replica.get("leader")!= null), zkStateReader.getClusterState().liveNodesContain(replica.getNodeName())));
+    if (docCollection != null) {
+      for (Slice slice : docCollection.getSlices()) {
+        builder.append(slice.getName()).append(": {");
+        for (Replica replica : slice.getReplicas()) {
+          log.info("{}", replica);
+          java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
+          m.find();
+          String jettyPort = m.group(1);
+          builder.append(String
+              .format(Locale.ROOT, "%s(%s): {state: %s, type: %s, leader: %s, Live: %s}, ", replica.getName(), jettyPort, replica.getState(), replica.getType(),
+                  (replica.get("leader") != null), zkStateReader.isNodeLive(replica.getNodeName())));
+        }
+        if (slice.getReplicas().size() > 0) {
+          builder.setLength(builder.length() - 2);
+        }
+        builder.append("}, ");
       }
-      if (slice.getReplicas().size() > 0) {
+      if (docCollection.getSlices().size() > 0) {
         builder.setLength(builder.length() - 2);
       }
-      builder.append("}, ");
-    }
-    if (docCollection.getSlices().size() > 0) {
-      builder.setLength(builder.length() - 2);
     }
     builder.append("}");
     monkeyLog(builder.toString());

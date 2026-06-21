@@ -31,7 +31,6 @@ public interface LiveNodesListener {
    * Note that, due to the way Zookeeper watchers are implemented, a single call may be
    * the result of several state changes
    *
-   * @param oldLiveNodes set of live nodes before the change
    * @param newLiveNodes set of live nodes after the change
    * 
    * @return true if the listener should be removed

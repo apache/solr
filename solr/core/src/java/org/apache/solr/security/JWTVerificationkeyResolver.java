@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,9 +57,9 @@ import org.slf4j.LoggerFactory;
 public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
+  private final VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
-  private Map<String, JWTIssuerConfig> issuerConfigs = new HashMap<>();
+  private Map<String, JWTIssuerConfig> issuerConfigs = Collections.synchronizedMap(new HashMap<>());
   private final boolean requireIssuer;
 
   /**

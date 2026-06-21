@@ -16,114 +16,103 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.cloud.ActionThrottle;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 
 public class ZkCmdExecutor {
-  private long retryDelay = 1500L; // 1 second would match timeout, so 500 ms over for padding
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final SolrZkClient solrZkClient;
+
   private int retryCount;
-  private double timeouts;
   private IsClosed isClosed;
-  
-  public ZkCmdExecutor(int timeoutms) {
-    this(timeoutms, null);
+
+  public ZkCmdExecutor(SolrZkClient solrZkClient, int retryCount) {
+    this(solrZkClient, retryCount, null);
   }
-  
+
   /**
    * TODO: At this point, this should probably take a SolrZkClient in
    * its constructor.
-   * 
-   * @param timeoutms
-   *          the client timeout for the ZooKeeper clients that will be used
-   *          with this class.
+   *
+   * @param retryCount number of retries on connectionloss
    */
-  public ZkCmdExecutor(int timeoutms, IsClosed isClosed) {
-    timeouts = timeoutms / 1000.0;
-    this.retryCount = Math.round(0.5f * ((float)Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
+  public ZkCmdExecutor(SolrZkClient solrZkClient, int retryCount, IsClosed isClosed) {
+    this.retryCount = retryCount;
     this.isClosed = isClosed;
+    this.solrZkClient = solrZkClient;
   }
-  
-  public long getRetryDelay() {
-    return retryDelay;
+
+  public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation) throws KeeperException, InterruptedException {
+    return retryOperation(zkCmdExecutor, operation, true);
   }
-  
-  public void setRetryDelay(long retryDelay) {
-    this.retryDelay = retryDelay;
-  }
-  
 
   /**
    * Perform the given operation, retrying if the connection fails
    */
   @SuppressWarnings("unchecked")
-  public <T> T retryOperation(ZkOperation operation)
+  public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation, boolean retryOnSessionExp)
       throws KeeperException, InterruptedException {
     KeeperException exception = null;
-    for (int i = 0; i < retryCount; i++) {
+    int tryCnt = 0;
+    ActionThrottle retryThrottle = null;
+    while (tryCnt < zkCmdExecutor.retryCount) {
       try {
-        if (i > 0 && isClosed()) {
-          throw new AlreadyClosedException();
-        }
         return (T) operation.execute();
-      } catch (KeeperException.ConnectionLossException e) {
+      } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+        if (!retryOnSessionExp && e instanceof KeeperException.SessionExpiredException) {
+          throw e;
+        }
+        log.info("retryOperation {}", e.getMessage());
         if (exception == null) {
           exception = e;
         }
-        if (Thread.currentThread().isInterrupted()) {
-          Thread.currentThread().interrupt();
-          throw new InterruptedException();
+        if (retryThrottle == null) {
+          retryThrottle = new ActionThrottle("leader", Integer.getInteger("solr.zkCmdExecutor", 0));
         }
-        if (i != retryCount -1) {
-          retryDelay(i);
-        }
-      }
-    }
-    throw exception;
-  }
-  
-  private boolean isClosed() {
-    return isClosed != null && isClosed.isClosed();
-  }
 
-  public void ensureExists(String path, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    ensureExists(path, null, CreateMode.PERSISTENT, zkClient, 0);
-  }
-  
-  
-  public void ensureExists(String path, final byte[] data, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    ensureExists(path, data, CreateMode.PERSISTENT, zkClient, 0);
-  }
-  
-  public void ensureExists(String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    ensureExists(path, data, createMode, zkClient, 0);
-  }
-  
-  public void ensureExists(final String path, final byte[] data,
-      CreateMode createMode, final SolrZkClient zkClient, int skipPathParts) throws KeeperException, InterruptedException {
-    
-    if (zkClient.exists(path, true)) {
-      return;
+        retryThrottle.minimumWaitBetweenActions();
+        retryThrottle.markAttemptingAction();
+
+
+        zkCmdExecutor.retryDelay(tryCnt);
+
+      }
+      tryCnt++;
     }
-    try {
-      zkClient.makePath(path, data, createMode, null, true, true, skipPathParts);
-    } catch (NodeExistsException e) {
-      // it's okay if another beats us creating the node
+    if (exception == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unexpected fail, we should have tracked the exception");
     }
-    
+    // Retries exhausted: wrap the original KeeperException in SolrException so callers
+    // receive a consistent SolrException rather than a raw ZooKeeper exception.
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "Could not complete ZooKeeper operation after " + zkCmdExecutor.retryCount + " retries", exception);
   }
   
   /**
    * Performs a retry delay if this is not the first attempt
-   * 
+   *
    * @param attemptCount
    *          the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
-    Thread.sleep((attemptCount + 1) * retryDelay);
+//    if (isClosed != null && isClosed.isClosed()) {
+//     throw new AlreadyClosedException();
+//    }
+    log.info("retry, attempt={}", attemptCount);
+
+    // Use the client's session timeout as the wait bound so that a client with a short
+    // session timeout (e.g. probing an invalid address) fails fast rather than waiting
+    // the full 30 s default.  For a normal client the session timeout is >= 15 s which
+    // is still a reasonable upper bound for a reconnect wait.
+    int waitMs = solrZkClient.getZkClientTimeout();
+    solrZkClient.getConnectionManager().waitForConnected(waitMs > 0 ? waitMs : Integer.getInteger("waitForZk", 30) * 1000);
+
   }
 
 }

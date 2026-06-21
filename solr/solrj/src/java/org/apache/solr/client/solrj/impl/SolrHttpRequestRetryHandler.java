@@ -64,9 +64,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     super();
     this.retryCount = retryCount;
     this.nonRetriableClasses = new HashSet<>();
-    for (final Class<? extends IOException> clazz : clazzes) {
-      this.nonRetriableClasses.add(clazz);
-    }
+    this.nonRetriableClasses.addAll(clazzes);
   }
   
   /**
@@ -82,7 +80,6 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
    *          how many times to retry; 0 means no retries
    *          true if it's OK to retry non-idempotent requests that have been sent
    */
-  @SuppressWarnings("unchecked")
   public SolrHttpRequestRetryHandler(final int retryCount) {
     this(retryCount, Arrays.asList(InterruptedIOException.class, UnknownHostException.class,
         ConnectException.class, SSLException.class));
@@ -104,7 +101,8 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
   
   @Override
   public boolean retryRequest(final IOException exception, final int executionCount, final HttpContext context) {
-    log.debug("Retry http request {} out of {}", executionCount, this.retryCount);
+    if (log.isDebugEnabled())  log.debug("Retry http request {} out of {}", executionCount, this.retryCount);
+    log.info("Retry http request {} out of {}", executionCount, this.retryCount);
     if (executionCount > this.retryCount) {
       log.debug("Do not retry, over max retry count");
       return false;
@@ -114,6 +112,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
       if (log.isDebugEnabled()) {
         log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
       }
+      log.info("Do not retry, non retriable class {}", exception.getClass().getName());
       return false;
     }
 
@@ -121,17 +120,20 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     final HttpRequest request = clientContext.getRequest();
     
     if (requestIsAborted(request)) {
-      log.debug("Do not retry, request was aborted");
+      if (log.isDebugEnabled()) log.debug("Do not retry, request was aborted");
+      log.info("Do not retry, request was aborted");
       return false;
     }
     
     if (handleAsIdempotent(clientContext)) {
-      log.debug("Retry, request should be idempotent");
+      if (log.isDebugEnabled()) log.debug("Retry, request should be idempotent");
+      log.info("Retry, request should be idempotent");
       return true;
     }
 
-    log.debug("Do not retry, no allow rules matched");
-    return false;
+    if (log.isDebugEnabled()) log.debug("Do not retry, no allow rules matched");
+    log.info("Do retry, no disallow rules matched");
+    return true;
   }
 
   private boolean isRetriable(IOException exception) {
@@ -156,17 +158,24 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     return retryCount;
   }
   
-  protected boolean handleAsIdempotent(final HttpClientContext context) {
-    String method = context.getRequest().getRequestLine().getMethod();
-    // do not retry admin requests, even if they are GET as they are not idempotent
-    if (context.getRequest().getRequestLine().getUri().startsWith("/admin/")) {
-      log.debug("Do not retry, this is an admin request");
-      return false;
-    }
-    return method.equals(GET);
+  protected static boolean handleAsIdempotent(final HttpClientContext context) {
+    // Previously: do not retry admin requests, even if they are GET as they are not idempotent
+
+    // However, the stale connection issues you can hit are likely less problematic than retrying
+    // an admin command automatically that has failed with an IOException.
+    // Updates can also be retried because they are versioned.
+
+    return true;
+    // Previously:
+//    String method = context.getRequest().getRequestLine().getMethod();
+//    if (context.getRequest().getRequestLine().getUri().startsWith("/admin/")) {
+//      if (log.isDebugEnabled()) log.debug("admin request {}", context.getRequest());
+//      return false;
+//    }
+//    return method.equals(GET);
   }
   
-  protected boolean requestIsAborted(final HttpRequest request) {
+  protected static boolean requestIsAborted(final HttpRequest request) {
     HttpRequest req = request;
     if (request instanceof RequestWrapper) { // does not forward request to original
       req = ((RequestWrapper) request).getOriginal();

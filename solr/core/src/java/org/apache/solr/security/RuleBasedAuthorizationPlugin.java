@@ -21,6 +21,7 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, Set<String>> usersVsRoles = new HashMap<>();
+  private final Map<String, Set<String>> usersVsRoles = new ConcurrentHashMap<>();
 
   @Override
   public void init(Map<String, Object> initInfo) {

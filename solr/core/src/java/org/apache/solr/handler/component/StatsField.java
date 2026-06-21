@@ -42,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.DocValuesStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -67,7 +68,7 @@ import com.google.common.hash.Hashing;
  * @see StatsComponent
  */
 public class StatsField {
-  
+
   /**
    * An enumeration representing the sumer set of all possible stat values that can be computed.
    * Each of these enum values can be specified as a local param in a <code>stats.field</code> 
@@ -292,7 +293,7 @@ public class StatsField {
     populateStatsSets();
         
     String[] facets = params.getFieldParams(key, StatsParams.STATS_FACET);
-    this.facets = (null == facets) ? new String[0] : facets;
+    this.facets = (null == facets) ? Utils.EMPTY_STRINGS : facets;
     String tagStr = localParams.get(CommonParams.TAG);
     this.tagList = (null == tagStr)
         ? Collections.<String>emptyList()
@@ -736,7 +737,7 @@ public class StatsField {
       // Merging large SPARSE HLLs is much much slower then merging FULL HLLs with the same num docs
       //
       // TODO: add more tunning options for this.
-      return new HLL(getLog2m(), getRegwidth(), -1 /* auto explict threshold */,
+      return new HLL(log2m, regwidth, -1 /* auto explict threshold */,
                      false /* no sparse representation */, HLLType.EMPTY);
                      
     }

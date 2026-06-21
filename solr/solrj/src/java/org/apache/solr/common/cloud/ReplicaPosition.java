@@ -22,6 +22,7 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
   public final String shard;
   public final int index;
   public final Replica.Type type;
+  public String baseUrl;
   public String node;
 
   public ReplicaPosition(String shard, int replicaIdx, Replica.Type type) {
@@ -29,11 +30,12 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
     this.index = replicaIdx;
     this.type = type;
   }
-  public ReplicaPosition(String shard, int replicaIdx, Replica.Type type, String node) {
+  public ReplicaPosition(String shard, int replicaIdx, Replica.Type type, String node, String baseUrl) {
     this.shard = shard;
     this.index = replicaIdx;
     this.type = type;
     this.node = node;
+    this.baseUrl = baseUrl;
   }
 
   @Override

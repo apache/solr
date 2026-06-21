@@ -117,7 +117,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   private static final Pattern spacePattern = Pattern.compile("\\s+");
 
   @Override
-  public String init(@SuppressWarnings("unchecked") NamedList config,
+  public String init(NamedList config,
       SolrCore core) {
     String name = super.init(config, core);
     combineWords = boolParam(config, PARAM_COMBINE_WORDS);
@@ -160,14 +160,12 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     return name;
   }
   
-  private String strParam(@SuppressWarnings("unchecked") NamedList config,
-      String paramName) {
+  private static String strParam(NamedList config, String paramName) {
     Object o = config.get(paramName);
     return o == null ? null : o.toString();
   }
   
-  private boolean boolParam(@SuppressWarnings("unchecked") NamedList config,
-      String paramName) {
+  private static boolean boolParam(NamedList config, String paramName) {
     String s = strParam(config, paramName);
     if ("true".equalsIgnoreCase(s) || "on".equalsIgnoreCase(s)) {
       return true;
@@ -175,8 +173,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     return false;
   }
   
-  private int intParam(@SuppressWarnings("unchecked") NamedList config,
-      String paramName) {
+  private static int intParam(NamedList config, String paramName) {
     Object o = config.get(paramName);
     if (o == null) {
       return 0;
@@ -196,7 +193,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     int numSuggestions = options.count;
     
     StringBuilder sb = new StringBuilder();
-    Token[] tokenArr = options.tokens.toArray(new Token[options.tokens.size()]);
+    Token[] tokenArr = options.tokens.toArray(new Token[0]);
     List<Token> tokenArrWithSeparators = new ArrayList<>(options.tokens.size() + 2);
     List<Term> termArr = new ArrayList<>(options.tokens.size() + 2);
     List<ResultEntry> breakSuggestionList = new ArrayList<>();
@@ -257,7 +254,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     
     List<ResultEntry> combineSuggestionList = Collections.emptyList();
     CombineSuggestion[] combineSuggestions = wbsp.suggestWordCombinations(
-        termArr.toArray(new Term[termArr.size()]), numSuggestions, ir, options.suggestMode);
+        termArr.toArray(new Term[0]), numSuggestions, ir, options.suggestMode);
     if (combineWords) {
       combineSuggestionList = new ArrayList<>(
           combineSuggestions.length);
@@ -317,7 +314,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     }
     return result;
   }
-  private void addToResult(SpellingResult result, Token token, int tokenFrequency, String suggestion, int suggestionFrequency) {
+  private static void addToResult(SpellingResult result, Token token, int tokenFrequency, String suggestion, int suggestionFrequency) {
     if(suggestion==null) {
       result.add(token, Collections.<String>emptyList());
       result.addFrequency(token, tokenFrequency);

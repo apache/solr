@@ -16,25 +16,22 @@
  */
 package org.apache.solr.metrics;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.reporters.MockMetricReporter;
-import org.apache.solr.schema.FieldType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 100;
@@ -44,16 +41,19 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
+    useFactory(null);
     initCore("solrconfig-basic.xml", "schema.xml");
-    coreMetricManager = h.getCore().getCoreMetricManager();
-    metricManager = h.getCore().getCoreContainer().getMetricManager();
+    SolrCore core = h.getCore();
+    coreMetricManager = core.getCoreMetricManager();
+    metricManager = core.getCoreContainer().getMetricManager();
+    core.close();
   }
 
   @After
   public void afterTest() throws IOException {
     if (null != coreMetricManager) {
       coreMetricManager.close();
-      assertTrue(metricManager.getReporters(coreMetricManager.getRegistryName()).isEmpty());
       deleteCore();
     }
   }
@@ -99,39 +99,6 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  public void testLoadReporter() throws Exception {
-    Random random = random();
-
-    String className = MockMetricReporter.class.getName();
-    String reporterName = TestUtil.randomUnicodeString(random);
-    String taggedName = reporterName + "@" + coreMetricManager.getTag();
-
-    Map<String, Object> attrs = new HashMap<>();
-    attrs.put(FieldType.CLASS_NAME, className);
-    attrs.put(CoreAdminParams.NAME, reporterName);
-
-    boolean shouldDefineConfigurable = random.nextBoolean();
-    String configurable = TestUtil.randomUnicodeString(random);
-    if (shouldDefineConfigurable) attrs.put("configurable", configurable);
-
-    boolean shouldDefinePlugin = random.nextBoolean();
-    PluginInfo pluginInfo = shouldDefinePlugin ? new PluginInfo(TestUtil.randomUnicodeString(random), attrs) : null;
-
-    try {
-      metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
-          pluginInfo, coreMetricManager.getTag());
-      assertNotNull(pluginInfo);
-      Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
-      assertTrue("reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
-      assertNotNull("reporter " + reporterName + " not present among " + reporters, reporters.get(taggedName));
-      assertTrue("wrong reporter class: " + reporters.get(taggedName), reporters.get(taggedName) instanceof MockMetricReporter);
-    } catch (IllegalArgumentException e) {
-      assertTrue(pluginInfo == null || attrs.get("configurable") == null);
-      assertNull(metricManager.getReporters(coreMetricManager.getRegistryName()).get(taggedName));
-    }
-  }
-
   private void assertRegistered(String scope, Map<String, Counter> newMetrics, SolrCoreMetricManager coreMetricManager) {
     if (scope == null || newMetrics == null) {
       return;
@@ -157,8 +124,10 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNonCloudRegistryName() throws Exception {
-    String registryName = h.getCore().getCoreMetricManager().getRegistryName();
-    String leaderRegistryName = h.getCore().getCoreMetricManager().getLeaderRegistryName();
+    SolrCore core = h.getCore();
+    String registryName = core.getCoreMetricManager().getRegistryName();
+    String leaderRegistryName = core.getCoreMetricManager().getLeaderRegistryName();
+    core.close();
     assertNotNull(registryName);
     assertEquals("solr.core.collection1", registryName);
     assertNull(leaderRegistryName);

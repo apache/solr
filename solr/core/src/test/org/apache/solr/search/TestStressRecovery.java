@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
@@ -51,7 +52,6 @@ public class TestStressRecovery extends TestRTGBase {
 
   @Before
   public void beforeClass() throws Exception {
-    randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
   
@@ -71,7 +71,7 @@ public class TestStressRecovery extends TestRTGBase {
   // 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testStressRecovery() throws Exception {
-    assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
+    LuceneTestCase.assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
 
     final int commitPercent = 5 + random().nextInt(10);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
@@ -85,7 +85,7 @@ public class TestStressRecovery extends TestRTGBase {
     // query variables
     final int percentRealtimeQuery = 75;
     final int percentGetLatestVersions = random().nextInt(4);
-    final AtomicLong operations = new AtomicLong(atLeast(35));  // number of recovery loops to perform
+    final AtomicLong operations = new AtomicLong(SolrTestUtil.atLeast(35));  // number of recovery loops to perform
     int nReadThreads = 2 + random().nextInt(10);  // fewer read threads to give writers more of a chance
 
     initModel(ndocs);
@@ -130,14 +130,15 @@ public class TestStressRecovery extends TestRTGBase {
 
                   synchronized(globalLock) {
                     newCommittedModel = new HashMap<>(model);  // take a snapshot
-                    version = snapshotCount++;
+                    version = snapshotCount.incrementAndGet();
                   }
 
+                  int nextInt = rand.nextInt(100);
                   synchronized (stateChangeLock) {
                     // These commits won't take affect if we are in recovery mode,
                     // so change the version to -1 so we won't update our model.
                     if (uLog.getState() != UpdateLog.State.ACTIVE) version = -1;
-                    if (rand.nextInt(100) < softCommitPercent) {
+                    if (nextInt < softCommitPercent) {
                       verbose("softCommit start");
                       assertU(TestHarness.commit("softCommit","true"));
                       verbose("softCommit end");
@@ -151,12 +152,12 @@ public class TestStressRecovery extends TestRTGBase {
                   synchronized(globalLock) {
                     // install this model snapshot only if it's newer than the current one
                     // install this model only if we are not in recovery mode.
-                    if (version >= committedModelClock) {
+                    if (version >= committedModelClock.get()) {
                       if (VERBOSE) {
                         verbose("installing new committedModel version="+committedModelClock);
                       }
                       committedModel = newCommittedModel;
-                      committedModelClock = version;
+                      committedModelClock.set(version);
                     }
                   }
                 }
@@ -189,9 +190,6 @@ public class TestStressRecovery extends TestRTGBase {
               // These versions are not derived from the actual leader update handler hand hence this
               // test may need to change depending on how we handle version numbers.
               long version = testVersion.incrementAndGet();
-
-              // yield after getting the next version to increase the odds of updates happening out of order
-              if (rand.nextBoolean()) Thread.yield();
 
               if (oper < commitPercent + deletePercent) {
                 verbose("deleting id",id,"val=",nextVal,"version",version);

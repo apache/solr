@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
@@ -59,7 +60,7 @@ public class FacetModule extends SearchComponent {
   private final static String FACET_REFINE = "refine";
 
 
-  public FacetComponentState getFacetComponentState(ResponseBuilder rb) {
+  public static FacetComponentState getFacetComponentState(ResponseBuilder rb) {
     // TODO: put a map on ResponseBuilder?
     // rb.componentInfo.get(FacetComponentState.class);
     return (FacetComponentState) rb.req.getContext().get(FacetComponentState.class);
@@ -91,7 +92,6 @@ public class FacetModule extends SearchComponent {
     SolrParams params = rb.req.getParams();
 
     boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
-    @SuppressWarnings({"unchecked"})
     Map<String, Object> facetInfo = null;
     if (isShard) {
       String jfacet = params.get(FACET_INFO);
@@ -153,7 +153,7 @@ public class FacetModule extends SearchComponent {
   }
 
 
-  private void clearFaceting(List<ShardRequest> outgoing) {
+  private static void clearFaceting(List<ShardRequest> outgoing) {
     // turn off faceting for requests not marked as being for faceting refinements
     for (ShardRequest sreq : outgoing) {
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) continue;
@@ -229,18 +229,7 @@ public class FacetModule extends SearchComponent {
 
       // String finfoStr = JSONUtil.toJSON(finfo, -1);  // this doesn't handle formatting of Date objects the way we want
       CharArr out = new CharArr();
-      JSONWriter jsonWriter = new JSONWriter(out, -1) {
-        @Override
-        public void handleUnknownClass(Object o) {
-          // handle date formatting correctly
-          if (o instanceof Date) {
-            String s = ((Date) o).toInstant().toString();
-            writeString(s);
-            return;
-          }
-          super.handleUnknownClass(o);
-        }
-      };
+      JSONWriter jsonWriter = new FacetModuleJSONWriter(out);
       jsonWriter.write(finfo);
       String finfoStr = out.toString();
       // System.err.println("##################### REFINE=" + finfoStr);
@@ -337,7 +326,7 @@ public class FacetModule extends SearchComponent {
   // TODO: perhaps factor out some sort of root/parent facet object that doesn't depend
 // on stuff like ResponseBuilder, but contains request parameters,
 // root filter lists (for filter exclusions), etc?
-  class FacetComponentState {
+  static class FacetComponentState {
     ResponseBuilder rb;
     Map<String, Object> facetCommands;
     FacetRequest facetRequest;
@@ -398,7 +387,7 @@ public class FacetModule extends SearchComponent {
       }
 
       if (b != b) { // b is NaN so a is greater
-        return 1 * direction.getMultiplier();  // if sorting asc, make a less so NaN is at end
+        return direction.getMultiplier();  // if sorting asc, make a less so NaN is at end
       }
 
       // consider +-0 to be equal
@@ -506,6 +495,23 @@ public class FacetModule extends SearchComponent {
     @Override
     public Object getMergedResult() {
       return bucket.getMergedBucket();
+    }
+  }
+
+  private static class FacetModuleJSONWriter extends JSONWriter {
+    public FacetModuleJSONWriter(CharArr out) {
+      super(out, -1);
+    }
+
+    @Override
+    public void handleUnknownClass(Object o) {
+      // handle date formatting correctly
+      if (o instanceof Date) {
+        String s = ((Date) o).toInstant().toString();
+        writeString(s);
+        return;
+      }
+      super.handleUnknownClass(o);
     }
   }
 }

@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -25,6 +26,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +53,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static Path getSolrHome() {
-    return SolrTestCaseJ4.getFile("solrj/solr/multicore").toPath();
+    return SolrTestUtil.getFile("solrj/solr/multicore").toPath();
   }
 
-  protected void setupCoreContainer() {
-    cores = new CoreContainer(getSolrHome(), new Properties());
+  protected void setupCoreContainer() throws IOException {
+    cores = new CoreContainer(getSolrHome(), new Properties(), false);
     cores.load();
     //cores = CoreContainer.createAndLoad(getSolrHome(), new File(TEMP_DIR, "solr.xml"));
   }
@@ -65,11 +67,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
-    File dataDir1 = createTempDir().toFile();
+    File dataDir1 = SolrTestUtil.createTempDir().toFile();
     // setup datadirs
     System.setProperty( "solr.core0.data.dir", dataDir1.getCanonicalPath() );
 
-    dataDir2 = createTempDir().toFile();
+    dataDir2 = SolrTestUtil.createTempDir().toFile();
 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 
@@ -143,6 +145,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     return up;
   }
 
+  @org.junit.Test
   public void testMergeIndexesByDirName() throws Exception {
     UpdateRequest up = setupCores();
 
@@ -173,6 +176,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
         getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
   }
 
+  @org.junit.Test
   public void testMergeMultipleRequest() throws Exception {
     CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
     req.setCoreName("core0");

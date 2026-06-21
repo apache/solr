@@ -18,20 +18,19 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.filestore.ByteBuffersDirectory;
 
 /**
  * Factory to instantiate RAM-resident directory implementation.
  */
 public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
 
-  @Override
-  protected LockFactory createLockFactory(String rawLockType) throws IOException {
+  @Override public LockFactory createLockFactory(String rawLockType) {
     if (!(rawLockType == null || DirectoryFactory.LOCK_TYPE_SINGLE.equalsIgnoreCase(rawLockType.trim()))) {
       throw new SolrException(ErrorCode.FORBIDDEN,
           "RAMDirectory can only be used with the '" +
@@ -40,8 +39,13 @@ public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
     return new SingleInstanceLockFactory();
   }
 
-  @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    return new ByteBuffersDirectory(lockFactory);
+  @Override public void release(String directory) throws IOException {
+
+  }
+
+  @Override public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
+  //  return new ByteBuffersDirectory(lockFactory);
+
+    return new org.apache.lucene.store.ByteBuffersDirectory(lockFactory);
   }
 }

@@ -16,16 +16,18 @@
  */
 package org.apache.solr.client.solrj.io.comp;
 import java.io.Serializable;
+import java.util.regex.Pattern;
 
 public class HashKey implements Serializable {
 
   private static final long serialVersionUID = 1;
+  private static final Pattern COMPILE = Pattern.compile("::");
 
   private Object[] parts;
 
 
   public HashKey(String value) {
-    parts = value.split("::");
+    parts = COMPILE.split(value);
   }
 
   public HashKey(Object[] parts) {

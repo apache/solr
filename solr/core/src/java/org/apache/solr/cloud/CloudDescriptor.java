@@ -37,10 +37,7 @@ public class CloudDescriptor {
   private String collectionName;
   private String roles = null;
   private Integer numShards;
-  private String nodeName = null;
   private Map<String,String> collectionParams = new HashMap<>();
-
-  private volatile boolean isLeader = false;
   
   // set to true once a core has registered in zk
   // set to false on detecting a session expiration
@@ -64,9 +61,6 @@ public class CloudDescriptor {
     // If no collection name is specified, we default to the core name
     this.collectionName = props.getProperty(CoreDescriptor.CORE_COLLECTION, coreName);
     this.roles = props.getProperty(CoreDescriptor.CORE_ROLES, null);
-    this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
-    if (Strings.isNullOrEmpty(nodeName))
-      this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
     String replicaTypeStr = props.getProperty(CloudDescriptor.REPLICA_TYPE);
     if (Strings.isNullOrEmpty(replicaTypeStr)) {
@@ -91,14 +85,6 @@ public class CloudDescriptor {
 
   public void setLastPublished(Replica.State state) {
     lastPublished = state;
-  }
-
-  public boolean isLeader() {
-    return isLeader;
-  }
-  
-  public void setLeader(boolean isLeader) {
-    this.isLeader = isLeader;
   }
   
   public boolean hasRegistered() {
@@ -146,32 +132,20 @@ public class CloudDescriptor {
   public void setNumShards(int numShards) {
     this.numShards = numShards;
   }
-  
-  public String getCoreNodeName() {
-    return nodeName;
-  }
-
-  public void setCoreNodeName(String nodeName) {
-    this.nodeName = nodeName;
-    if(nodeName==null) cd.getPersistableStandardProperties().remove(CoreDescriptor.CORE_NODE_NAME);
-    else cd.getPersistableStandardProperties().setProperty(CoreDescriptor.CORE_NODE_NAME, nodeName);
-  }
 
   public void reload(CloudDescriptor reloadFrom) {
     if (reloadFrom == null) return;
 
-    setShardId(StringUtils.isEmpty(reloadFrom.getShardId()) ? getShardId() : reloadFrom.getShardId());
-    setCollectionName(StringUtils.isEmpty(reloadFrom.getCollectionName()) ? getCollectionName() : reloadFrom.getCollectionName());
-    setRoles(StringUtils.isEmpty(reloadFrom.getRoles()) ? getRoles() : reloadFrom.getRoles());
-    if (reloadFrom.getNumShards() != null) {
-      setNumShards(reloadFrom.getNumShards());
+    shardId = StringUtils.isEmpty(reloadFrom.shardId) ? shardId : reloadFrom.shardId;
+    collectionName = StringUtils.isEmpty(reloadFrom.collectionName) ? collectionName : reloadFrom.collectionName;
+    roles = StringUtils.isEmpty(reloadFrom.roles) ? roles : reloadFrom.roles;
+    if (reloadFrom.numShards != null) {
+      setNumShards(reloadFrom.numShards);
     }
-    setCoreNodeName(StringUtils.isEmpty(reloadFrom.getCoreNodeName()) ? getCoreNodeName() : reloadFrom.getCoreNodeName());
-    setLeader(reloadFrom.isLeader);
-    setHasRegistered(reloadFrom.hasRegistered);
-    setLastPublished(reloadFrom.getLastPublished());
+    hasRegistered = reloadFrom.hasRegistered;
+    lastPublished = reloadFrom.lastPublished;
 
-    for (Map.Entry<String, String> ent : reloadFrom.getParams().entrySet()) {
+    for (Map.Entry<String, String> ent : reloadFrom.collectionParams.entrySet()) {
       collectionParams.put(ent.getKey(), ent.getValue());
     }
   }

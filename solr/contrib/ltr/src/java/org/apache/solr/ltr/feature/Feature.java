@@ -31,6 +31,7 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
@@ -73,8 +74,7 @@ public abstract class Feature extends Query implements Accountable {
       String className, String name, Map<String,Object> params) {
     final Feature f = solrResourceLoader.newInstance(
         className,
-        Feature.class,
-        new String[0], // no sub packages
+        Feature.class, Utils.EMPTY_STRINGS, // no sub packages
         new Class[] { String.class, Map.class },
         new Object[] { name, params });
     if (params != null) {

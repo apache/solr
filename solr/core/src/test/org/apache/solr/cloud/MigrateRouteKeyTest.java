@@ -22,11 +22,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -48,13 +50,8 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
-
-    if (usually()) {
-      CollectionAdminRequest.setClusterProperty("legacyCloud", "false").process(cluster.getSolrClient());
-      log.info("Using legacyCloud=false for cluster");
-    }
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -65,7 +62,6 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     boolean ruleRemoved = false;
     long expiryTime = finishTime + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     while (System.nanoTime() < expiryTime) {
-      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collection);
       state = getCollectionState(collection);
       slice = state.getSlice(shard);
       Map<String,RoutingRule> routingRules = slice.getRoutingRules();
@@ -94,7 +90,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    BaseHttpSolrClient.RemoteSolrException remoteSolrException = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+    BaseHttpSolrClient.RemoteSolrException remoteSolrException = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
         "Expected an exception in case split.key is not specified", () -> {
           CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
               .setForwardTimeout(45)
@@ -104,6 +100,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void multipleShardMigrateTest() throws Exception  {
 
     CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -135,7 +132,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (HttpSolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
+    try (Http2SolrClient collectionClient = SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl())) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());
@@ -166,7 +163,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       waitForState("Expected to find routing rule for split key " + splitKey, "sourceCollection", (n, c) -> {
         if (c == null)
           return false;
-        Slice shard = c.getSlice("shard2");
+        Slice shard = c.getSlice("s2");
         if (shard == null)
           return false;
         if (shard.getRoutingRules() == null || shard.getRoutingRules().isEmpty())
@@ -176,19 +173,19 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
         return true;
       });
 
-      boolean ruleRemoved = waitForRuleToExpire("sourceCollection", "shard2", splitKey, finishTime);
+      boolean ruleRemoved = waitForRuleToExpire("sourceCollection", "s2", splitKey, finishTime);
       assertTrue("Routing rule was not expired", ruleRemoved);
     }
   }
 
   static class Indexer extends Thread {
     final int seconds;
-    final CloudSolrClient cloudClient;
+    final CloudHttp2SolrClient cloudClient;
     final String splitKey;
     int splitKeyCount = 0;
     final int bitSep;
 
-    public Indexer(CloudSolrClient cloudClient, String splitKey, int bitSep, int seconds) {
+    public Indexer(CloudHttp2SolrClient cloudClient, String splitKey, int bitSep, int seconds) {
       this.seconds = seconds;
       this.cloudClient = cloudClient;
       this.splitKey = splitKey;

@@ -65,11 +65,11 @@ public class TestFastInputStream extends SolrTestCase {
         buffer[i] = (char) b;
       else if ((b & 0xE0) != 0xE0) {
         buffer[i] = (char) (((b & 0x1F) << 6)
-                | (in.read() & 0x3F));
+            | (in.read() & 0x3F));
       } else
         buffer[i] = (char) (((b & 0x0F) << 12)
-                | ((in.read() & 0x3F) << 6)
-                | (in.read() & 0x3F));
+            | ((in.read() & 0x3F) << 6)
+            | (in.read() & 0x3F));
     }
   }
 

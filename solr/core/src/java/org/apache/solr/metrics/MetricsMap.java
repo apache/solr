@@ -31,8 +31,11 @@ import javax.management.openmbean.SimpleType;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 import com.codahale.metrics.Gauge;
@@ -53,16 +56,22 @@ import org.slf4j.LoggerFactory;
  */
 public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final long CACHE_TIME = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);
 
-  // set to true to use cached statistics between getMBeanInfo calls to work
-  // around over calling getStatistics on MBeanInfos when iterating over all attributes (SOLR-6586)
-  private final boolean useCachedStatsBetweenGetMBeanInfoCalls = Boolean.getBoolean("useCachedStatsBetweenGetMBeanInfoCalls");
+  private static Field[] FIELDS = SimpleType.class.getFields();
+  private final boolean allowCache;
 
   private BiConsumer<Boolean, Map<String, Object>> initializer;
-  private Map<String, String> jmxAttributes = new HashMap<>();
+  private Map<String, String> jmxAttributes = new ConcurrentHashMap<>(32);
   private volatile Map<String,Object> cachedValue;
+  private volatile long cachedValueUpdatedAt;
 
   public MetricsMap(BiConsumer<Boolean, Map<String,Object>> initializer) {
+    this(initializer, true);
+  }
+
+  public MetricsMap(BiConsumer<Boolean, Map<String,Object>> initializer, boolean allowCache) {
+    this.allowCache = allowCache;
     this.initializer = initializer;
   }
 
@@ -72,8 +81,23 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   }
 
   public Map<String,Object> getValue(boolean detailed) {
-    Map<String,Object> map = new HashMap<>();
+    return getValue(detailed, allowCache);
+  }
+
+  public Map<String,Object> getValue(boolean detailed, boolean allowCache) {
+    if (allowCache) {
+      Map<String,Object> cachedStats = this.cachedValue;
+      if (cachedStats != null && (System.nanoTime() - cachedValueUpdatedAt) < CACHE_TIME) {
+        return cachedStats;
+      }
+    }
+    Map<String,Object> map = new HashMap<>(32);
     initializer.accept(detailed, map);
+    map = Collections.unmodifiableMap(map);
+    if (allowCache) {
+      cachedValue = map;
+      cachedValueUpdatedAt = System.nanoTime();
+    }
     return map;
   }
 
@@ -89,21 +113,13 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
     if (val != null) {
       return val;
     }
-    Map<String,Object> stats = null;
-    if (useCachedStatsBetweenGetMBeanInfoCalls) {
-      Map<String,Object> cachedStats = this.cachedValue;
-      if (cachedStats != null) {
-        stats = cachedStats;
-      }
-    }
-    if (stats == null) {
-      stats = getValue(true);
-    }
+    Map<String,Object> stats = getValue(true);
+
     val = stats.get(attribute);
 
     if (val != null) {
       // It's String or one of the simple types, just return it as JMX suggests direct support for such types
-      for (String simpleTypeName : SimpleType.ALLOWED_CLASSNAMES_LIST) {
+      for (String simpleTypeName : OpenType.ALLOWED_CLASSNAMES_LIST) {
         if (val.getClass().getName().equals(simpleTypeName)) {
           return val;
         }
@@ -147,9 +163,6 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   public MBeanInfo getMBeanInfo() {
     ArrayList<MBeanAttributeInfo> attrInfoList = new ArrayList<>();
     Map<String,Object> stats = getValue(true);
-    if (useCachedStatsBetweenGetMBeanInfoCalls) {
-      cachedValue = stats;
-    }
     jmxAttributes.forEach((k, v) -> {
       attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
           null, true, false, false));
@@ -175,13 +188,13 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
         log.warn("Could not get attributes of MetricsMap: {}", this, e);
     }
     MBeanAttributeInfo[] attrInfoArr = attrInfoList
-        .toArray(new MBeanAttributeInfo[attrInfoList.size()]);
+        .toArray(new MBeanAttributeInfo[0]);
     return new MBeanInfo(getClass().getName(), "MetricsMap", attrInfoArr, null, null, null);
   }
 
-  private OpenType determineType(Class type) {
+  private static OpenType determineType(Class type) {
     try {
-      for (Field field : SimpleType.class.getFields()) {
+      for (Field field : FIELDS) {
         if (field.getType().equals(SimpleType.class)) {
           SimpleType candidate = (SimpleType) field.get(SimpleType.class);
           if (candidate.getTypeName().equals(type.getName())) {

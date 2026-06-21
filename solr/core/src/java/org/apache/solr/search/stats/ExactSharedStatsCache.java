@@ -19,10 +19,10 @@ package org.apache.solr.search.stats;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +38,11 @@ public class ExactSharedStatsCache extends ExactStatsCache {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // local stats obtained from shard servers
-  private final Map<String,Map<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
-  private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
+  private final Map<String,Map<String,TermStats>> perShardTermStats = new NonBlockingHashMap<>();
+  private final Map<String,Map<String,CollectionStats>> perShardColStats = new NonBlockingHashMap<>();
   // global stats synchronized from the master
-  private final Map<String,TermStats> currentGlobalTermStats = new ConcurrentHashMap<>();
-  private final Map<String,CollectionStats> currentGlobalColStats = new ConcurrentHashMap<>();
+  private final Map<String,TermStats> currentGlobalTermStats = new NonBlockingHashMap<>();
+  private final Map<String,CollectionStats> currentGlobalColStats = new NonBlockingHashMap<>();
 
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
