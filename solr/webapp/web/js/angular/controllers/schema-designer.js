@@ -239,7 +239,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
 
     $scope.resetSchema();
-    var params = {path: "info", configSet: $scope.currentSchema};
+    var params = {configSet: $scope.currentSchema};
     SchemaDesigner.get(params, function (data) {
       $scope.currentSchema = data.configSet;
       $("#select-schema").trigger("chosen:updated");

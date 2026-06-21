@@ -123,7 +123,7 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     assertNotNull(updateResp.field);
     assertEquals("field", updateResp.updateType);
 
-    // GET /info — round-trips a typed response that extends SchemaDesignerSettingsResponse
+    // GET /{configSet} — round-trips a typed response that extends SchemaDesignerSettingsResponse
     SchemaDesignerInfoResponse info =
         new SchemaDesignerApi.GetInfo(configSet).process(cluster.getSolrClient());
     assertEquals(configSet, info.configSet);

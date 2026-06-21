@@ -48,7 +48,7 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
 public interface SchemaDesignerApi {
 
   @GET
-  @Path("/{configSet}/info")
+  @Path("/{configSet}")
   @Operation(
       summary = "Get info about a configSet being designed.",
       tags = {"schema-designer"})

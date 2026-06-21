@@ -159,7 +159,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
 
     String configSet = "techproducts";
 
-    // GET /schema-designer/info
+    // GET /schema-designer/{configSet}
     SchemaDesignerInfoResponse infoResponse = schemaDesigner.getInfo(configSet);
     // response should just be the default values
     Map<String, Object> expSettings =
@@ -206,7 +206,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     }
 
     // get info (from the temp)
-    // GET /schema-designer/info
+    // GET /schema-designer/{configSet}
     infoResponse = schemaDesigner.getInfo(configSet);
     expSettings =
         Map.of(
