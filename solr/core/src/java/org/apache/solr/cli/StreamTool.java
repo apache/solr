@@ -268,16 +268,21 @@ public class StreamTool extends ToolBase {
           }
         };
 
-    var solrConnection = CLIUtils.getSolrConnection(cli);
-    echoIfVerbose("Connecting to Solr at " + solrConnection);
+    try {
+      var solrConnection = CLIUtils.getSolrConnection(cli);
+      echoIfVerbose("Connecting to Solr at " + solrConnection);
 
-    StreamContext streamContext = new StreamContext();
-    streamContext.setSolrClientCache(solrClientCache);
+      StreamContext streamContext = new StreamContext();
+      streamContext.setSolrClientCache(solrClientCache);
 
-    StreamFactory streamFactory = new DefaultStreamFactory();
-    streamFactory.withDefaultSolrConnection(solrConnection);
-    streamContext.setStreamFactory(streamFactory);
-    return streamContext;
+      StreamFactory streamFactory = new DefaultStreamFactory();
+      streamFactory.withDefaultSolrConnection(solrConnection);
+      streamContext.setStreamFactory(streamFactory);
+      return streamContext;
+    } catch (Exception e) {
+      org.apache.solr.common.util.IOUtils.closeQuietly(solrClientCache);
+      throw e;
+    }
   }
 
   /**
