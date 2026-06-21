@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.SchemaDesignerApi;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
-import org.apache.solr.client.api.model.SchemaDesignerCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerPublishResponse;
@@ -364,10 +364,9 @@ public class SchemaDesigner extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public SchemaDesignerCollectionsResponse listCollectionsForConfig(String configSet) {
+  public ListCollectionsResponse listCollectionsForConfig(String configSet) {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
-    SchemaDesignerCollectionsResponse response =
-        instantiateJerseyResponse(SchemaDesignerCollectionsResponse.class);
+    ListCollectionsResponse response = instantiateJerseyResponse(ListCollectionsResponse.class);
     response.collections = configSetHelper.listCollectionsForConfig(configSet);
     return response;
   }

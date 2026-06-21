@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
-import org.apache.solr.client.api.model.SchemaDesignerCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerResponse;
 import org.apache.solr.client.api.model.SchemaDesignerSchemaDiffResponse;
@@ -244,8 +244,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertNotNull(cc.getZkController().zkStateReader.getCollection(collection));
 
     // listCollectionsForConfig
-    SchemaDesignerCollectionsResponse collectionsResp =
-        schemaDesigner.listCollectionsForConfig(configSet);
+    ListCollectionsResponse collectionsResp = schemaDesigner.listCollectionsForConfig(configSet);
     List<String> collections = collectionsResp.collections;
     assertNotNull(collections);
     assertTrue(collections.contains(collection));
@@ -516,8 +515,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertNotNull(cc.getZkController().zkStateReader.getCollection(collection));
 
     // listCollectionsForConfig
-    SchemaDesignerCollectionsResponse collectionsResp2 =
-        schemaDesigner.listCollectionsForConfig(configSet);
+    ListCollectionsResponse collectionsResp2 = schemaDesigner.listCollectionsForConfig(configSet);
     List<String> collections = collectionsResp2.collections;
     assertNotNull(collections);
     assertTrue(collections.contains(collection));

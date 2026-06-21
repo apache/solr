@@ -33,8 +33,8 @@ import jakarta.ws.rs.QueryParam;
 import java.io.InputStream;
 import java.util.List;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerAddRequestBody;
-import org.apache.solr.client.api.model.SchemaDesignerCollectionsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse;
 import org.apache.solr.client.api.model.SchemaDesignerInfoResponse;
 import org.apache.solr.client.api.model.SchemaDesignerPublishResponse;
@@ -109,8 +109,8 @@ public interface SchemaDesignerApi {
   @Operation(
       summary = "List collections that use a given configSet.",
       tags = {"schema-designer"})
-  SchemaDesignerCollectionsResponse listCollectionsForConfig(
-      @PathParam("configSet") String configSet) throws Exception;
+  ListCollectionsResponse listCollectionsForConfig(@PathParam("configSet") String configSet)
+      throws Exception;
 
   @GET
   @Path("/configs")
