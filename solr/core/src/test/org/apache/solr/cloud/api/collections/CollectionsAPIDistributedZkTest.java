@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -179,9 +178,9 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     }
     solrClient.add(docs);
     solrClient.commit();
-    // verify the docs exist
-    QueryResponse rsp = solrClient.query(params(CommonParams.Q, "*:*"));
-    assertEquals("initial num docs", NUM_DOCS, rsp.getResults().getNumFound());
+    // verify the docs exist on every replica, not just whichever one a distributed query happens to
+    // hit (which can race a follower still catching up under load).
+    waitForAllReplicasDocCount(collectionName, NUM_DOCS);
 
     // index more but don't commit
     docs.clear();
@@ -241,8 +240,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
     // check for docs - reloading should have committed the new docs
     // this also verifies that searching works in read-only mode
-    rsp = solrClient.query(params(CommonParams.Q, "*:*"));
-    assertEquals("num docs after turning on read-only", NUM_DOCS * 2, rsp.getResults().getNumFound());
+    waitForAllReplicasDocCount(collectionName, NUM_DOCS * 2);
 
     // try sending updates
     try {
@@ -326,8 +324,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     }
     solrClient.add(docs);
     solrClient.commit();
-    rsp = solrClient.query(params(CommonParams.Q, "*:*"));
-    assertEquals("num docs after turning off read-only", NUM_DOCS * 3, rsp.getResults().getNumFound());
+    waitForAllReplicasDocCount(collectionName, NUM_DOCS * 3);
   }
 
   @Test

@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -485,6 +486,132 @@ public class SolrCloudTestCase extends SolrTestCase {
     try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
       return CoreAdminRequest.getCoreStatus(replica.getName(), client);
     }
+  }
+
+  /**
+   * Wait until every active replica of every shard of {@code collection} has applied
+   * {@code expectedTotal} docs, querying each replica directly with {@code distrib=false}.
+   *
+   * <p>A distributed {@code *:*} query hits only ONE replica per shard, so it cannot observe a
+   * follower that is briefly behind: under load a leader-&gt;replica forward can error, the leader
+   * pushes the follower into recovery, and for a short window that follower has fewer docs. Asserting
+   * on the distributed count right after a commit therefore races recovery and intermittently sees
+   * fewer docs (the "expected N but was &lt;N" cloud flake). Polling every replica until they converge
+   * removes that timing race while still failing loudly -- with a per-replica count and shard-term
+   * dump -- if a replica never catches up (a real divergence bug rather than a timing artifact).
+   */
+  protected static void waitForAllReplicasDocCount(String collection, int expectedTotal) throws Exception {
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    final long timeoutMs = 60000;
+    final long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+    Map<String, Http2SolrClient> clients = new HashMap<>();
+    String diag = "";
+    boolean loggedWait = false;
+    try {
+      while (true) {
+        DocCollection coll = zkStateReader.getClusterState().getCollection(collection);
+        Set<String> liveNodes = zkStateReader.getLiveNodes();
+        long total = 0;
+        boolean converged = true;
+        StringBuilder sb = new StringBuilder();
+        for (Slice slice : coll.getSlices()) {
+          long shardCount = -1;
+          for (Replica r : slice.getReplicas()) {
+            boolean active = r.isActive(liveNodes);
+            long c = -1;
+            if (active) {
+              try {
+                Http2SolrClient rc = clients.get(r.getCoreUrl());
+                if (rc == null) {
+                  rc = new Http2SolrClient.Builder(r.getCoreUrl())
+                      .withHttpClient(cluster.getSolrClient().getHttpClient()).build();
+                  clients.put(r.getCoreUrl(), rc);
+                }
+                c = rc.query(params("q", "*:*", "rows", "0", "distrib", "false")).getResults().getNumFound();
+              } catch (Exception e) {
+                c = -2; // query failed this round -> treat shard as not converged
+              }
+            }
+            sb.append(slice.getName()).append('/').append(r.getName())
+                .append(r.getRawState() == Replica.State.LEADER ? "(leader)" : "")
+                .append(active ? "" : "(" + r.getState() + ")").append('=').append(c).append(' ');
+            if (active && c >= 0) {
+              if (shardCount == -1) {
+                shardCount = c;
+              } else if (shardCount != c) {
+                converged = false; // replicas of this shard disagree
+              }
+            } else {
+              converged = false; // a replica is down or unqueryable
+            }
+          }
+          if (shardCount > 0) {
+            total += shardCount;
+          }
+        }
+        diag = sb.toString().trim();
+        if (converged && total == expectedTotal) {
+          if (loggedWait) {
+            log.info("waitForAllReplicasDocCount CONVERGED collection={} expected={} replicas=[{}]",
+                collection, expectedTotal, diag);
+          }
+          return;
+        }
+        if (System.nanoTime() > deadlineNanos) {
+          fail("Replicas failed to converge to " + expectedTotal + " docs for collection=" + collection
+              + " within " + timeoutMs + "ms. per-replica counts (distrib=false): [" + diag + "] "
+              + dumpShardTerms(collection));
+        }
+        // Log the first lag observation so a stuck run leaves a breadcrumb without spamming the
+        // common already-converged path.
+        if (!loggedWait) {
+          log.info("waitForAllReplicasDocCount WAITING collection={} expected={} total={} replicas=[{}] {}",
+              collection, expectedTotal, total, diag, dumpShardTerms(collection));
+          loggedWait = true;
+        }
+        Thread.sleep(200);
+      }
+    } finally {
+      for (Http2SolrClient c : clients.values()) {
+        try {
+          c.close();
+        } catch (Exception ignored) {
+          // best-effort close of the per-replica diagnostic clients
+        }
+      }
+    }
+  }
+
+  /** Best-effort dump of per-shard terms (highest term + each replica's term / recovering flag). */
+  private static String dumpShardTerms(String collection) {
+    StringBuilder sb = new StringBuilder("shardTerms{");
+    try {
+      DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collection);
+      for (Slice slice : coll.getSlices()) {
+        for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+          if (runner.getCoreContainer() == null) {
+            continue;
+          }
+          ZkController zk = runner.getCoreContainer().getZkController();
+          if (zk == null) {
+            continue;
+          }
+          ZkShardTerms terms = zk.getShardTermsOrNull(collection, slice.getName());
+          if (terms != null) {
+            sb.append(slice.getName()).append("[highest=").append(terms.getHighestTerm());
+            for (Replica r : slice.getReplicas()) {
+              sb.append(' ').append(r.getName()).append('=').append(terms.getTerm(r.getName()))
+                  .append(terms.isRecovering(r.getName()) ? "(recovering)" : "");
+            }
+            sb.append("] ");
+            break; // one node's view of this shard's terms is enough
+          }
+        }
+      }
+    } catch (Exception e) {
+      sb.append("error reading terms: ").append(e);
+    }
+    return sb.append('}').toString();
   }
 
   protected static NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {

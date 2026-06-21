@@ -710,6 +710,18 @@ public class RecoveryStrategy implements Runnable, Closeable {
             // exit buffering state
             replay(core);
 
+            // PeerSync.Updater applies the recovered docs with IGNORE_AUTOCOMMIT and never reopens
+            // the main searcher, and PeerSync verifies success against the *realtime* searcher
+            // (IndexFingerprint.getFingerprint uses getRealtimeSearcher()). So after a PeerSync the
+            // recovered docs are visible to RTG / fingerprint but NOT to ordinary (*:*) search until
+            // the next commit. Without autoSoftCommit (e.g. the cloud-minimal config) this replica
+            // would register ACTIVE and serve a stale search view indefinitely -- a distributed query
+            // that lands on it misses the just-recovered docs (the load-dependent "expected N but was
+            // <N" cloud flake). Open a new searcher so the recovered state is searchable before we go
+            // ACTIVE. PeerSync is NRT-only here (TLOG replicas skip it above), so this does not touch
+            // the TLOG-follower RTG path.
+            openSearcherAfterPeerSync(core);
+
             // sync success
             successfulRecovery = true;
           } else {
@@ -955,6 +967,27 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     // solrcloud_debug
     // cloudDebugLog(core, "replayed");
+  }
+
+  /**
+   * Open a new (top-level) searcher so docs recovered via PeerSync become visible to ordinary
+   * search. {@link PeerSync.Updater#applyUpdates} applies updates with IGNORE_AUTOCOMMIT and ends
+   * with only {@code proc.finish()} (no commit / openSearcher), and PeerSync verifies sync against
+   * the realtime searcher, so without this the recovered docs would be visible only to RTG until the
+   * next commit -- leaving an ACTIVE replica serving a stale {@code *:*} view. A soft commit is
+   * enough (the recovered docs are already durable in the tlog); it just reopens the searcher.
+   */
+  private void openSearcherAfterPeerSync(SolrCore core) {
+    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+      cuc.softCommit = true;
+      cuc.openSearcher = true;
+      cuc.waitSearcher = true;
+      core.getUpdateHandler().commit(cuc);
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      log.warn("Could not open a new searcher after PeerSync recovery for core={}", core.getName(), e);
+    }
   }
 
   static private void cloudDebugLog(SolrCore core, String op) {

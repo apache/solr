@@ -219,18 +219,6 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     }
   }
 
-  private void waitForDocCount(String collectionName, int expectedDocCount) throws Exception {
-    QueryResponse rsp = null;
-    for (int attempt = 0; attempt < 60; attempt++) {
-      rsp = solrClient.query(collectionName, params("q", "*:*", "rows", "0"));
-      if (rsp.getResults().getNumFound() == expectedDocCount) {
-        return;
-      }
-      Thread.sleep(250);
-    }
-    assertEquals(expectedDocCount, rsp.getResults().getNumFound());
-  }
-
   private List<SolrInputDocument> generateDocs(
       int num, int start, Function<Integer, SolrInputDocument> generator) {
     List<SolrInputDocument> docs = new ArrayList<>(num);
@@ -251,7 +239,12 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     client.commit(collectionName);
     if (expectedDocCount >= 0) {
       cluster.waitForActiveCollection(collectionName, 2, 4);
-      waitForDocCount(collectionName, expectedDocCount);
+      // Wait for EVERY replica (not just the one a distributed query happens to hit) to reach the
+      // expected count -- see SolrCloudTestCase#waitForAllReplicasDocCount. testBasicStats queries
+      // the cloud collection and compares the returned doc set / scores against the control core, so
+      // a follower that is briefly behind (a forward that errored under load + recovery in progress)
+      // would otherwise make that comparison flaky under load.
+      waitForAllReplicasDocCount(collectionName, expectedDocCount);
     }
   }
 }
