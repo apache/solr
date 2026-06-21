@@ -28,14 +28,17 @@ public class ConfigSetOptions {
 
   @CommandLine.Option(
       names = {"-n", "--conf-name"},
-      description = "Configset name in ZooKeeper.",
+      description =
+          """
+          Configset name in ZooKeeper.
+          Name of the configuration set under the "/configs" ZooKeeper node.
+
+          You can see available configuration sets in the Admin UI via the Cloud screens. Choose Cloud → Tree → configs to see them.
+
+          If a pre-existing configuration set is specified, it will be overwritten in ZooKeeper.
+
+          **Example:** `-n myconfig`
+          """,
       required = true)
   public String confName;
-
-  @CommandLine.Option(
-      names = {"-d", "--conf-dir"},
-      description = "Local directory with configs.",
-      required = true,
-      paramLabel = "DIR")
-  public String confDir;
 }

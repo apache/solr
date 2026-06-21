@@ -109,8 +109,34 @@ public class SolrCLI implements CLIO {
     }
   }
 
+  /**
+   * Truncates each option's description to its first line for interactive {@code --help} output.
+   * The remaining lines of the {@code description} array are reserved for the generated ref-guide.
+   * This customization is only installed on the interactive CLI command setup, so ref-guide
+   * generation, which runs the doc generator directly, still sees the full description.
+   */
+  @VisibleForTesting
+  static void installFirstLineOnlyHelpFactory(picocli.CommandLine cmd) {
+    cmd.setHelpFactory(
+        (spec, colorScheme) ->
+            new picocli.CommandLine.Help(spec, colorScheme) {
+              @Override
+              public picocli.CommandLine.Help.IOptionRenderer createDefaultOptionRenderer() {
+                picocli.CommandLine.Help.IOptionRenderer base = super.createDefaultOptionRenderer();
+                return (option, paramLabelRenderer, scheme) -> {
+                  picocli.CommandLine.Help.Ansi.Text[][] rows =
+                      base.render(option, paramLabelRenderer, scheme);
+                  return rows.length <= 1
+                      ? rows
+                      : new picocli.CommandLine.Help.Ansi.Text[][] {rows[0]};
+                };
+              }
+            });
+  }
+
   /** Propagates common settings to all subcommands. */
   private static void propagateCommandSettings(picocli.CommandLine cmd) {
+    installFirstLineOnlyHelpFactory(cmd);
     for (picocli.CommandLine subcommand : cmd.getSubcommands().values()) {
       subcommand.getCommandSpec().defaultValueProvider(cmd.getCommandSpec().defaultValueProvider());
       subcommand.getCommandSpec().usageMessage().width(cmd.getCommandSpec().usageMessage().width());
