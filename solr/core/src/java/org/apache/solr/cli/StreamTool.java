@@ -173,7 +173,7 @@ public class StreamTool extends ToolBase {
       }
       if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
         throw new IllegalStateException(
-            "The stdin() expression is only usable with --worker local set up.");
+            "The stdin() expression is only usable with --execution local.");
       }
     }
 
@@ -252,10 +252,7 @@ public class StreamTool extends ToolBase {
   private StreamContext createStreamContext(CommandLine cli) throws Exception {
     var jettyClientBuilder = new HttpJettySolrClient.Builder();
     String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    if (credentials != null) {
-      String[] userPass = credentials.split(":");
-      jettyClientBuilder.withBasicAuthCredentials(userPass[0], userPass[1]);
-    }
+    jettyClientBuilder.withOptionalBasicAuthCredentials(credentials);
     HttpJettySolrClient client = jettyClientBuilder.build();
 
     // subclass so we can ensure our client is closed when the cache is closed
