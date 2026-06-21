@@ -180,7 +180,7 @@ public final class CLIUtils {
    * is used, and warns those users. In the future we'll have urls ending with /api as well.
    *
    * @param solrUrl The user supplied url to Solr.
-   * @return the solrUrl in the format that Solr expects to see internally.
+   * @return a URL without any path, e.g. {@code http://localhost:8983}
    */
   public static String normalizeSolrUrl(String solrUrl) {
     return normalizeSolrUrl(solrUrl, true);
@@ -192,7 +192,7 @@ public final class CLIUtils {
    *
    * @param solrUrl The user supplied url to Solr.
    * @param logUrlFormatWarning If a warning message should be logged about the url format
-   * @return the solrUrl in the format that Solr expects to see internally.
+   * @return a URL without any path, e.g. {@code http://localhost:8983}
    */
   public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
     if (solrUrl != null) {
