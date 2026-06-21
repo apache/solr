@@ -445,6 +445,11 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     final int MAX_CONCURENT = SolrTestUtil.atLeast(10);
     ExecutorService runner = ParWork.getExecutorService("TestDocBasedVersionConstraints", MAX_CONCURENT, true);
     // runner =  ParWork.getExecutorService("TestDocBasedVersionConstraints", 1);   // to test single threaded
+    // Remember each doc's expected end state so we can verify all of them via search after a SINGLE
+    // commit at the end. Committing once per doc opened ~NUM_DOCS searchers and was the bulk of this
+    // test's runtime; it added no coverage because the per-doc realtime /get below already proves the
+    // highest version won, and the final commit+search still verifies the searchable state of every doc.
+    final List<String> expectedDocs = new ArrayList<>(NUM_DOCS);
     try {
       for (int id = 0; id < NUM_DOCS; id++) {
         final int numAdds = TestUtil.nextInt(random(), 3, MAX_CONCURENT);
@@ -467,14 +472,17 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         runner.invokeAll(tasks);
         final String expectedDoc = "{'id':'"+id+"','my_version_l':"+winnerVersion +
           ( ! winnerIsDeleted ? ",'name':'name"+id+"_"+winner+"'}" : "}");
+        expectedDocs.add(expectedDoc);
 
         assertJQ(req("qt","/get", "id",""+id, "fl","id,name,my_version_l")
                  , "=={'doc':" + expectedDoc + "}");
-        assertU(commit());
+      }
+      assertU(commit());
+      for (int id = 0; id < NUM_DOCS; id++) {
         assertJQ(req("q","id:"+id,
                      "fl","id,name,my_version_l")
                  ,"/response/numFound==1"
-                 ,"/response/docs==["+expectedDoc+"]");
+                 ,"/response/docs==["+expectedDocs.get(id)+"]");
       }
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(runner);

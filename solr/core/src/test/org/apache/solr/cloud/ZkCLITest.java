@@ -350,7 +350,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // itself does not throw for a bad address.  The SolrException("Cannot connect to ZK") is
     // thrown by ConnectionManager.waitForConnected() when an operation is attempted and
     // hasConnected is still false.  Verify that using the client (exists call) triggers that.
-    SolrZkClient badClient = new SolrZkClient("----------:33332", 10);
+    //
+    // Use 127.0.0.1:1 (a closed, privileged loopback port -> instant ECONNREFUSED) rather than an
+    // unresolvable hostname: on macOS, resolving a bogus name burns ~5s in mDNSResponder/getaddrinfo
+    // inside ZooKeeper's SendThread while the main thread blocks in the queued exists() request, which
+    // made this test a ~7s outlier. Connection-refused fails the queued op immediately, so the same
+    // SolrException is raised within the configured (tiny) client timeout instead.
+    SolrZkClient badClient = new SolrZkClient("127.0.0.1:1", 10);
     badClient.start();
     try {
       LuceneTestCase.expectThrows(SolrException.class, () -> badClient.exists("/test"));

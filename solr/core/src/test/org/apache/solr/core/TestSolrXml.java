@@ -53,13 +53,15 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   public void doBefore() throws Exception {
 
     solrHome = SolrTestUtil.createTempDir();
-    initCore("solrconfig.xml", "schema.xml");
+    // No initCore here: every test in this class only parses a solr.xml string/file via
+    // SolrXmlConfig and never touches the harness core (h)/SolrCore — so spinning up (and tearing
+    // down) a full SolrCore per test was ~0.5s of pure overhead × ~24 tests (~11s -> ~1s suite).
     solrXmlConfig = new SolrXmlConfig();
   }
 
   @After
   public void doAfter() throws Exception {
-    deleteCore();
+    // No deleteCore: doBefore() no longer initCore()s (see above).
     // testPropertySub sets these system properties to exercise property substitution and never clears them.
     // Under randomized method order they leak into testAllInfoPresent (e.g. coreRootDirectory=myCoreRoot
     // overriding the solr-50-all.xml fixture's testCoreRootDirectory), making it flaky. Clear them here.
