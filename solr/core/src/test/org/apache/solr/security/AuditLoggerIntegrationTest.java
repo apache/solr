@@ -210,15 +210,33 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   public void testMuteAdminListCollections() throws Exception {
     setupCluster(false, null, false, "\"type:UNKNOWN\"", "[ \"path:/admin\", \"param:action=LIST\" ]");
     runThreeTestAdminCommands();
-    testHarness.get().shutdownCluster();
+    // Do NOT shutdown the cluster before collecting events. Audit events fire asynchronously in
+    // HttpSolrCall.runWhenFinished (decoupled from when the request returns to the client), so shutting
+    // the cluster down immediately after the commands return raced the delivery of the last command's
+    // callback and dropped it -> waitForAuditEvents(2) then hung the full 120s and failed for ~1/3 of
+    // runs, even in isolation. Collect from the live cluster instead (as testSynchronous does); tearDown
+    // still shuts it down, and its queue-empty assertion verifies the LIST event stayed muted. Match
+    // events by action rather than arrival position, since the async hooks give no ordering guarantee
+    // (same reason searchWithException matches by resource).
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(2);
     assertEquals(2, events.size()); // sanity check
 
-    assertAuditEvent(events.get(0), COMPLETED, "/admin/collections", ADMIN, null, 200,
+    assertAuditEvent(findByAction(events, "CLUSTERSTATUS"), COMPLETED, "/admin/collections", ADMIN, null, 200,
                      "action", "CLUSTERSTATUS");
 
-    assertAuditEvent(events.get(1), COMPLETED, "/admin/collections", ADMIN, null, 200,
+    assertAuditEvent(findByAction(events, "OVERSEERSTATUS"), COMPLETED, "/admin/collections", ADMIN, null, 200,
                      "action", "OVERSEERSTATUS");
+  }
+
+  /** Find the single audit event whose {@code action} param matches, failing if none is present. */
+  private static AuditEvent findByAction(List<AuditEvent> events, String action) {
+    return events.stream()
+        .filter(e -> action.equals(e.getSolrParamAsString("action")))
+        .findFirst()
+        .orElseGet(() -> {
+          fail("no audit event found for action " + action + " in " + events);
+          return null;
+        });
   }
 
   @Test
@@ -300,8 +318,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
       // collection createion leads to AuditEvent's for the core as well...
       final List<AuditEvent> events = receiver.waitForAuditEvents(2);
-      assertAuditEvent(events.get(0), COMPLETED, "/admin/cores", ADMIN, null, 200, "action", "CREATE");
-      assertAuditEvent(events.get(1), COMPLETED, "/admin/collections", ADMIN, null, 200, "action", "CREATE");
+      // Match by resource, not arrival position: the /admin/cores sub-request and /admin/collections
+      // request audit asynchronously (HttpSolrCall.runWhenFinished) with no guaranteed delivery order.
+      assertAuditEvent(findAuditEvent(events, "/admin/cores"), COMPLETED, "/admin/cores", ADMIN, null, 200, "action", "CREATE");
+      assertAuditEvent(findAuditEvent(events, "/admin/collections"), COMPLETED, "/admin/collections", ADMIN, null, 200, "action", "CREATE");
     }
   }
 
@@ -417,13 +437,17 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   private static void assertThreeTestAdminEvents(final List<AuditEvent> events) throws Exception {
     assertEquals(3, events.size()); // sanity check
 
-    assertAuditEvent(events.get(0), COMPLETED, "/admin/collections", ADMIN, null, 200,
+    // Match by action, not arrival position: audit events fire asynchronously in
+    // HttpSolrCall.runWhenFinished (decoupled from when each request returns), so the three commands'
+    // events have no guaranteed delivery order -- asserting events.get(0)=LIST etc. flaked
+    // (e.g. "expected:<[LIST]> but was:<[CLUSTERSTATUS]>"). Same reasoning as searchWithException.
+    assertAuditEvent(findByAction(events, "LIST"), COMPLETED, "/admin/collections", ADMIN, null, 200,
                      "action", "LIST", "wt", "javabin");
-    
-    assertAuditEvent(events.get(1), COMPLETED, "/admin/collections", ADMIN, null, 200,
+
+    assertAuditEvent(findByAction(events, "CLUSTERSTATUS"), COMPLETED, "/admin/collections", ADMIN, null, 200,
                      "action", "CLUSTERSTATUS");
 
-    assertAuditEvent(events.get(2), COMPLETED, "/admin/collections", ADMIN, null, 200,
+    assertAuditEvent(findByAction(events, "OVERSEERSTATUS"), COMPLETED, "/admin/collections", ADMIN, null, 200,
                      "action", "OVERSEERSTATUS");
 
   }

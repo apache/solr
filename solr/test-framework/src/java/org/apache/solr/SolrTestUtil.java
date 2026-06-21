@@ -630,8 +630,23 @@ public class SolrTestUtil {
     return LuceneTestCase.newTextField(value, foo_bar_bar_bar_bar, no);
   }
 
-  public static IndexableField newStringField(String value, String bar, Field.Store yes) {
-    return LuceneTestCase.newStringField(value, bar, yes);
+  public static IndexableField newStringField(String name, String value, Field.Store store) {
+    IndexableField f = LuceneTestCase.newStringField(name, value, store);
+    // LuceneTestCase.newField randomizes the FieldType for coverage and (in this build) can drop a
+    // requested Store.YES, returning a non-stored field. Many callers index a value and then retrieve
+    // it with doc.get(name) and assert on it (e.g. TestFieldCacheSort's string-sort tests). When the
+    // store is dropped, retrieval returns null and those asserts fail. Because this fork's random() is
+    // non-deterministic (returns new Random() per call -- see SolrTestCase.random()), it happens for a
+    // different ~1/4 of runs/methods each time, which is exactly why it looked like a load/contention
+    // flake (e.g. 16/60 TestFieldCacheSort methods failing in one full run). Honor the caller's Store.YES
+    // deterministically here while preserving the rest of the randomized type.
+    if (store == Field.Store.YES && f.fieldType() != null && !f.fieldType().stored()) {
+      org.apache.lucene.document.FieldType ft = new org.apache.lucene.document.FieldType(f.fieldType());
+      ft.setStored(true);
+      ft.freeze();
+      return new Field(f.name(), f.stringValue(), ft);
+    }
+    return f;
   }
 
   public static int atLeast(int i) {

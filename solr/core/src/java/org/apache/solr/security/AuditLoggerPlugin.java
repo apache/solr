@@ -312,12 +312,19 @@ public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase impl
    */
   @Override
   public void close() throws IOException {
-    // breaking out of polling
-    closed = true;
     if (executorService != null) {
-      waitForQueueToDrain(1);
+      // Drain the async queue with the runner thread STILL LIVE, then break its loop. call() loops
+      // while(!closed) and is the only thing that pulls events off the queue, so the previous order
+      // (closed=true first, then waitForQueueToDrain) stopped the drainer before it could drain --
+      // pending async audit events were silently dropped on shutdown (an audit-completeness bug), and
+      // testAsyncQueueDrain flaked (~1/3) when its post-shutdown events lost that race. Drain first
+      // (bounded), THEN stop polling.
+      waitForQueueToDrain(30);
+      closed = true; // breaking out of polling
       runningFuture.cancel(true);
       log.info("Shutting down async Auditlogger background thread(s)");
+    } else {
+      closed = true; // breaking out of polling
     }
     try {
       SolrInfoBean.super.close();
@@ -332,8 +339,11 @@ public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase impl
    */
   protected void waitForQueueToDrain(int timeoutSeconds) {
     if (async && executorService != null) {
-      int timeSlept = 0;
-      while ((!queue.isEmpty() || auditsInFlight.sum() > 0) && timeSlept < timeoutSeconds) {
+      // Each wait() below is 250ms; loop 4x per second so the bound is honored in real seconds (the
+      // old code treated this counter as seconds, so the documented 30s was really ~timeout*250ms).
+      final int maxIterations = timeoutSeconds * 4;
+      int iterations = 0;
+      while ((!queue.isEmpty() || auditsInFlight.sum() > 0) && iterations < maxIterations) {
         try {
           if (log.isInfoEnabled()) {
             log.info("Async auditlogger queue still has {} elements and {} audits in-flight, sleeping to drain...", queue.size(), auditsInFlight.sum());
@@ -341,7 +351,7 @@ public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase impl
           synchronized (this) {
             this.wait(250);
           }
-          timeSlept ++;
+          iterations ++;
         } catch (InterruptedException ignored) {
           ParWork.propagateInterrupt(ignored);
           break;
