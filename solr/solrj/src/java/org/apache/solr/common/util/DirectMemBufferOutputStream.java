@@ -27,6 +27,13 @@ import java.nio.ByteOrder;
 
 /**
  * {@link OutputStream} that wraps an underlying {@link MutableDirectBuffer}.
+ *
+ * <p><b>Buffer ownership:</b> this stream wraps a memory-mapped {@link MappedResizeableBuffer}
+ * (a tlog mapping) that it does <em>not</em> own. The mapped buffer's lifecycle — map, remap, and
+ * unmap — belongs to the {@code TransactionLog} that created it; unmapping while any reader or this
+ * stream can still touch it is a JVM crash (invariant #3). {@link #close()} only quietly closes the
+ * stream's view; it must not unmap a buffer another reader/replayer may still access. Account mapped
+ * capacity under {@link BufferMetrics.Category#MMAP_TLOG} (never as heap/direct).
  */
 public class DirectMemBufferOutputStream extends OutputStream {
   private MappedResizeableBuffer buffer;

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
@@ -83,38 +84,65 @@ public interface PackageStore {
     final ByteBuffer buf;
     final MetaData meta;
     final String path;
+    /**
+     * Stream supplier for the streaming path ({@code solr.filestore.stream.enabled=true}).
+     * When non-null, {@link #getInputStream()} delegates to this supplier and
+     * {@link #getBuffer()} returns {@code null}.  This avoids whole-file heap buffering.
+     * Small metadata files always use the {@code buf} path so that {@code .array()} callers
+     * are never broken (invariant #8).
+     */
+    private final Supplier<InputStream> streamSupplier;
 
     FileEntry(ByteBuffer buf, MetaData meta, String path) {
       this.buf = buf;
       this.meta = meta;
       this.path = path;
+      this.streamSupplier = null;
+    }
+
+    /**
+     * Streaming-path constructor.  {@code buf} may be {@code null} when the file is accessed
+     * via {@code streamSupplier}.  {@code streamSupplier} must return a fresh, open
+     * {@link InputStream} each time it is called.
+     */
+    FileEntry(ByteBuffer buf, MetaData meta, String path, Supplier<InputStream> streamSupplier) {
+      this.buf = buf;
+      this.meta = meta;
+      this.path = path;
+      this.streamSupplier = streamSupplier;
     }
 
     public String getPath() {
       return path;
     }
 
-
+    /**
+     * Returns an {@link InputStream} over the file content.
+     * On the streaming path ({@code streamSupplier} non-null) this opens a fresh stream each
+     * time; callers must close it.  On the legacy path a {@link ByteBufferInputStream} wrapping
+     * the in-memory buffer is returned.  Returns {@code null} when no data source is available.
+     */
     public InputStream getInputStream() {
+      if (streamSupplier != null) return streamSupplier.get();
       if (buf != null) return new ByteBufferInputStream(buf);
       return null;
-
     }
 
     /**
-     * For very large files , only a stream would be available
-     * This method would return null;
+     * Returns the in-memory {@link ByteBuffer} for files fetched on the legacy
+     * (whole-file heap) path, or {@code null} on the streaming path.
+     *
+     * <p>Small metadata files always use this path and callers may safely call
+     * {@code .array()} on the returned buffer (invariant #8).  Do NOT call
+     * {@code .array()} on a buffer that came from a direct-buffer path.
      */
     public ByteBuffer getBuffer() {
       return buf;
-
     }
 
     public MetaData getMetaData() {
       return meta;
     }
-
-
   }
 
   enum FileType {

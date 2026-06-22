@@ -65,7 +65,6 @@ import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import net.sf.saxon.expr.sort.CodepointCollator;
-import org.agrona.MutableDirectBuffer;
 import org.apache.commons.ForkJoinParWorkRootExec;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -80,8 +79,8 @@ import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.ExpandableBuffers;
 import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
+import org.apache.solr.common.util.PooledBufferHandle;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -492,7 +491,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } else {
       HttpServletRequest servletRequest = (HttpServletRequest) _request;
       HttpServletResponse servletResponse = (HttpServletResponse) _response;
-      filter(chain, servletRequest, servletResponse, null);
+      // Synchronous/non-async path: no AsyncListener fires, so we release the response buffer
+      // handle here after filter() returns.  filter() may or may not have called
+      // QueryResponseWriterUtil.writeQueryResponse (which stashes the handle); if it did not
+      // (e.g. an early RETURN or error path that never acquired a buffer), the attribute is
+      // absent and releaseResponseBufferHandle is a no-op.
+      try {
+        filter(chain, servletRequest, servletResponse, null);
+      } finally {
+        releaseResponseBufferHandle(servletRequest);
+      }
     }
   }
 
@@ -984,7 +992,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
   }
 
-  private static class SolrAsyncListener implements AsyncListener {
+  static class SolrAsyncListener implements AsyncListener {
 
     public SolrAsyncListener() {
 
@@ -996,15 +1004,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     @Override public void onComplete(AsyncEvent event) throws IOException {
       log.debug("onComplete {}", event, event.getThrowable());
-      ServletRequest request = event.getSuppliedRequest();
-      if (request != null) {
-        MutableDirectBuffer responseBuffer = (MutableDirectBuffer) request.getAttribute("responseBuffer");
-        ExpandableBuffers.getInstance().release(responseBuffer);
-      }
+      releaseResponseBufferHandle(event.getSuppliedRequest());
     }
 
     @Override public void onTimeout(AsyncEvent event) throws IOException {
       log.warn("onTimeout {}", event);
+      // onTimeout fires before the container invokes complete(); we call complete() here which
+      // transitively fires onComplete → releaseResponseBufferHandle.  If for any reason the
+      // container also fires onComplete independently, the handle's CAS makes the second call
+      // a no-op (invariant #1).
       try {
         ((HttpServletResponse) event.getSuppliedResponse()).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       } finally {
@@ -1022,11 +1030,33 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 //      } finally {
 //        event.getAsyncContext().complete();
 //      }
-      ServletRequest request = event.getSuppliedRequest();
-      if (request != null) {
-        MutableDirectBuffer responseBuffer = (MutableDirectBuffer) request.getAttribute("responseBuffer");
-        ExpandableBuffers.getInstance().release(responseBuffer);
-      }
+      // Release here so the buffer is returned promptly on error.  The PooledBufferHandle CAS
+      // guarantees that if the container subsequently fires onComplete (the onError-then-onComplete
+      // double-fire sequence), the second close() is a harmless no-op (invariant #1).
+      releaseResponseBufferHandle(event.getSuppliedRequest());
+    }
+  }
+
+  /**
+   * Release the {@link PooledBufferHandle} stashed in the {@code "responseBuffer"} request
+   * attribute, if present.  Clears the attribute before closing so that a second invocation
+   * on the same request object is a true no-op (the handle's own CAS is the primary guard;
+   * clearing the attribute is a belt-and-suspenders defence against the attribute being read
+   * by other code after release).
+   *
+   * <p>This is the single release site for the response buffer, called from every terminal
+   * path: async {@code onComplete}, {@code onError}, and the synchronous/non-async dispatch
+   * path.  {@code onTimeout} releases transitively via {@code complete() → onComplete}.
+   */
+  static void releaseResponseBufferHandle(ServletRequest request) {
+    if (request == null) return;
+    PooledBufferHandle handle = (PooledBufferHandle) request.getAttribute("responseBuffer");
+    if (handle != null) {
+      // Clear the attribute before closing.  If another thread reaches this simultaneously
+      // (unlikely — only one terminal event fires per request in normal Jetty operation) the
+      // handle's CAS still guarantees exactly-one release; this setAttribute is belt-and-suspenders.
+      request.setAttribute("responseBuffer", null);
+      handle.close();
     }
   }
 }

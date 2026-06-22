@@ -236,9 +236,13 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
 //
 //  }
 
-  /** @return The number of bytes written to this output so far. */
+  /**
+   * @return The number of bytes written so far — the logical write position ({@link #position()}),
+   *     not the backing block's capacity. Returning capacity would over-read into uninitialized
+   *     bytes when the block is expandable.
+   */
   public long size() {
-    return currentBlock.capacity();
+    return pos;
   }
 
   @Override

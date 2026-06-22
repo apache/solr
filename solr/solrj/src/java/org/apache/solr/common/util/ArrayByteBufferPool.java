@@ -98,10 +98,17 @@ import org.slf4j.LoggerFactory;
     }
     int capacity = size < _minCapacity ? size : (bucketFor(size) + 1) * getCapacityFactor();
     ByteBufferPool.Bucket bucket = bucketFor(size, direct, null);
-    if (bucket == null) return newByteBuffer(capacity, direct);
+    if (bucket == null) return newAndRecord(capacity, direct);
     MutableDirectBuffer buffer = bucket.acquire();
-    if (buffer == null) return newByteBuffer(capacity, direct);
+    if (buffer == null) return newAndRecord(capacity, direct);
     decrementMemory(buffer);
+    return buffer;
+  }
+
+  /** Mint a fresh buffer (pool miss) and record it as a cumulative allocation in BufferMetrics. */
+  private MutableDirectBuffer newAndRecord(int capacity, boolean direct) {
+    MutableDirectBuffer buffer = newByteBuffer(capacity, direct);
+    recordAllocated(buffer);
     return buffer;
   }
 
@@ -118,10 +125,27 @@ import org.slf4j.LoggerFactory;
     boolean direct = buffer.byteBuffer() != null;
     ByteBufferPool.Bucket bucket = bucketFor(capacity, direct, this::newBucket);
     if (bucket != null) {
+      // Debug-only release-once hook. With -ea this detects re-pooling the same physical buffer
+      // (a double-release of a pool-owned buffer), records it in BufferMetrics, and trips the
+      // assertion. Without -ea the whole expression is stripped — zero cost, no behavior change.
+      assert assertReleaseOnce(bucket, buffer);
       bucket.release(buffer);
       incrementMemory(buffer);
       releaseExcessMemory(direct, this::clearOldestBucket);
     }
+  }
+
+  /**
+   * Debug-only: returns true normally; if {@code buffer} is already pooled in {@code bucket} it
+   * records a double-release in {@link BufferMetrics} and returns false to trip the calling
+   * {@code assert}. Invoked only inside an {@code assert} (i.e. only under {@code -ea}).
+   */
+  private boolean assertReleaseOnce(Bucket bucket, MutableDirectBuffer buffer) {
+    if (bucket.containsInstance(buffer)) {
+      BufferMetrics.getInstance().incrementDoubleReleaseDetected();
+      return false;
+    }
+    return true;
   }
 
   private Bucket newBucket(int key) {

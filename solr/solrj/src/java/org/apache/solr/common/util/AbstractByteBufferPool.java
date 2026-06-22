@@ -31,6 +31,10 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     private final AtomicLong _heapMemory = new AtomicLong();
     private final long _maxDirectMemory;
     private final AtomicLong _directMemory = new AtomicLong();
+    // Cumulative (monotonic) bytes ever freshly allocated on a pool miss — distinct from the
+    // retained gauges above, which track bytes currently idle in the pool. Fed into BufferMetrics.
+    private final AtomicLong _directAllocated = new AtomicLong();
+    private final AtomicLong _heapAllocated = new AtomicLong();
 
     protected AbstractByteBufferPool(int factor, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {
@@ -79,6 +83,17 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         }
     }
 
+    /**
+     * Record a genuinely-new allocation (pool miss minting a fresh buffer). Bumps the cumulative
+     * allocated counter for the buffer's category (direct vs heap). Retained accounting is handled
+     * separately by {@link #incrementMemory}/{@link #decrementMemory}.
+     */
+    protected void recordAllocated(MutableDirectBuffer buffer)
+    {
+        AtomicLong allocated = buffer.byteBuffer() != null ? _directAllocated : _heapAllocated;
+        allocated.addAndGet(buffer.capacity());
+    }
+
     @ManagedAttribute("The bytes retained by direct ByteBuffers")
     public long getDirectMemory()
     {
@@ -89,6 +104,18 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     public long getHeapMemory()
     {
         return getMemory(false);
+    }
+
+    @ManagedAttribute("Cumulative bytes freshly allocated as direct ByteBuffers (pool misses)")
+    public long getDirectAllocated()
+    {
+        return _directAllocated.get();
+    }
+
+    @ManagedAttribute("Cumulative bytes freshly allocated as heap ByteBuffers (pool misses)")
+    public long getHeapAllocated()
+    {
+        return _heapAllocated.get();
     }
 
     public long getMemory(boolean direct)

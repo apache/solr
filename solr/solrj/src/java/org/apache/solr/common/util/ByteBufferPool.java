@@ -82,6 +82,36 @@ public interface ByteBufferPool
         return new ExpandableArrayBuffer(capacity);
     }
 
+    /**
+     * <p>Acquires a single buffer wrapped in an owning {@link PooledBufferHandle} — a thin
+     * {@link AutoCloseable} that guarantees exactly-one release (invariant #1) and rejects
+     * use-after-release (invariant #2), feeding {@link BufferMetrics} along the way.</p>
+     *
+     * <p>The {@code size == -1} default-size sentinel is preserved (it flows straight through to
+     * {@link #acquire(int, boolean)}). This is opt-in/additive: do not retrofit sites that already
+     * have a single legacy release guard (one release-guard per physical buffer).</p>
+     *
+     * <p><b>Note:</b> this is single-buffer ownership and is distinct from {@link Lease} below,
+     * which is a multi-buffer accumulator. They are not interchangeable.</p>
+     *
+     * @param size the size of the buffer, or {@code -1} for the pool default
+     * @param direct whether the buffer must be direct
+     * @param tag a short diagnostic tag (may be null)
+     * @return an owning handle over exactly one acquired buffer
+     */
+    default PooledBufferHandle acquireHandle(int size, boolean direct, String tag)
+    {
+        return PooledBufferHandle.acquire(this, size, direct, tag);
+    }
+
+    /**
+     * <p>A <b>multi-buffer accumulator</b> (Jetty-derived): collects several buffers acquired from a
+     * pool and recycles the recyclable ones together via {@link #recycle()}. This is distinct from
+     * {@link PooledBufferHandle}, which owns exactly one buffer with a single idempotent release.
+     * Use {@code Lease} when you are gathering a list of buffers (e.g. gather-write); use
+     * {@link PooledBufferHandle} when one buffer needs one owner. The word "lease" refers only to
+     * this multi-buffer type.</p>
+     */
     public static class Lease
     {
         private final ByteBufferPool byteBufferPool;
@@ -230,6 +260,22 @@ public interface ByteBufferPool
         boolean isEmpty()
         {
             return _queue.isEmpty();
+        }
+
+        /**
+         * Debug-only identity scan: is this exact buffer instance already pooled in this bucket?
+         * Used by the {@code assert}-guarded release-once hook in {@link ArrayByteBufferPool}; not
+         * called on the production release path (the {@code assert} expression is stripped without
+         * {@code -ea}). O(n) over the bucket — debug use only.
+         */
+        boolean containsInstance(MutableDirectBuffer buffer)
+        {
+            for (MutableDirectBuffer queued : _queue)
+            {
+                if (queued == buffer)
+                    return true;
+            }
+            return false;
         }
 
         int size()

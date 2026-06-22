@@ -50,6 +50,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,6 +65,13 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -840,6 +848,63 @@ public class Utils {
 
       }
 
+
+      /**
+       * Returns an {@link InputStreamConsumer} that streams the response body to a temp file in
+       * {@code tempDir} without buffering the entire file in heap memory.  The SHA-512 digest is
+       * computed in-flight while streaming (no second read required).  The returned array holds
+       * {@code [tempPath, hexDigest]} — element 0 is a {@link Path}, element 1 is a {@link String}.
+       *
+       * <p>Callers MUST move or delete the temp file.  The temp file is <em>not</em> fsynced here;
+       * the caller is responsible for fsync and atomic publish (rename).
+       *
+       * <p>This method is the streaming alternative to {@link #newBytesConsumer(int)} for large
+       * file payloads that must avoid whole-file heap allocation near {@code MAX_PKG_SIZE}.
+       * Small metadata files that require {@code .array()} should still use
+       * {@link #newBytesConsumer(int)}.
+       *
+       * @param tempDir directory in which to create the temp file
+       * @return consumer that writes the stream to a temp file and returns {@code Object[]{Path, String}}
+       */
+      public static InputStreamConsumer<Object[]> newStreamingConsumer(Path tempDir) {
+        return is -> {
+          MessageDigest digest;
+          try {
+            digest = MessageDigest.getInstance("SHA-512");
+          } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-512 not available", e);
+          }
+
+          Path tmpFile = Files.createTempFile(tempDir, ".pkg-stream-", ".tmp");
+          try {
+            try (DigestInputStream dis = new DigestInputStream(new BufferedInputStream(is, 65536),
+                digest);
+                FileChannel out = FileChannel.open(tmpFile,
+                    StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+              byte[] buf = new byte[65536];
+              int n;
+              while ((n = dis.read(buf)) != -1) {
+                ByteBuffer bb = ByteBuffer.wrap(buf, 0, n);
+                while (bb.hasRemaining()) {
+                  out.write(bb);
+                }
+              }
+              out.force(true); // fsync data
+            }
+          } catch (IOException | RuntimeException e) {
+            // Clean up temp file on any error so no partial file lingers.
+            try { Files.deleteIfExists(tmpFile); } catch (IOException ignored) {}
+            throw e;
+          }
+
+          byte[] raw = digest.digest();
+          StringBuilder sb = new StringBuilder(raw.length * 2);
+          for (byte b : raw) {
+            sb.append(String.format("%02x", b & 0xff));
+          }
+          return new Object[]{tmpFile, sb.toString()};
+        };
+      }
 
       public static <T > T executeGET(Http2SolrClient client, String url, InputStreamConsumer < T > consumer) throws SolrException {
         T result = null;

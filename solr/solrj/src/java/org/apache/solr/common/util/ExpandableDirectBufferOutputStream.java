@@ -24,6 +24,13 @@ import java.util.Objects;
 
 /**
  * {@link OutputStream} that wraps an underlying expandable version of a {@link MutableDirectBuffer}.
+ *
+ * <p><b>Buffer ownership:</b> this stream is a non-owning <em>view</em> over a buffer supplied via
+ * the constructor or {@link #wrap}. It never acquires, pools, or releases the buffer; {@link #close()}
+ * is intentionally a no-op. The caller that acquired the buffer (e.g. via
+ * {@link ByteBufferPool#acquireHandle} / a {@link PooledBufferHandle}, or a legacy CAS guard) retains
+ * sole ownership and is responsible for the single release. Do not release the wrapped buffer from
+ * here (invariant #9: explicit single ownership).
  */
 public class ExpandableDirectBufferOutputStream extends OutputStream
 {

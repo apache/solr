@@ -40,6 +40,60 @@ import org.apache.lucene.util.BitUtil;
 import org.jctools.maps.NonBlockingHashMap;
 
 public final class ByteBuffersDirectory extends BaseDirectory {
+
+  // ---------------------------------------------------------------------------
+  // Thresholded allocation policy (Tier 3 — flag-gated, default = legacy heap)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * System property: minimum file size in bytes at which {@link ByteBuffersDirectory} will
+   * allocate the internal write buffer as a <em>direct</em> (off-heap) {@link java.nio.ByteBuffer}
+   * rather than a heap buffer. Files smaller than this threshold use heap allocation, preserving
+   * legacy behaviour. Must be a non-negative integer; default {@value #DEFAULT_DIRECT_THRESHOLD}.
+   *
+   * <p>Setting this to {@code Integer.MAX_VALUE} effectively forces heap-only allocation for all
+   * normal file sizes (safe default). Setting to {@code 0} makes every allocation direct.
+   *
+   * <p><b>Ownership note:</b> direct buffers allocated here are owned by the {@link FileEntry}
+   * (immutable once written) and are NOT pooled — they live until the directory entry is removed
+   * or the directory is closed. Do not pool long-lived immutable directory files; the plan
+   * explicitly forbids it (invariant #9 / §2 Worker E note).
+   */
+  public static final String DIRECT_THRESHOLD_PROP = "solr.bytebuffersdir.directThreshold";
+
+  /**
+   * System property: minimum file size in bytes at which this directory will use memory-mapping
+   * (via {@link UnsafeMMapDirectory} semantics) instead of a heap or direct buffer. Currently
+   * reserved for future use; the mmap path is not yet wired. Setting this property has no
+   * effect in this release — it is parsed and stored so operator scripts can set it now for
+   * forward compatibility.
+   *
+   * <p>Default: {@value #DEFAULT_MMAP_THRESHOLD}.
+   */
+  public static final String MMAP_THRESHOLD_PROP = "solr.bytebuffersdir.mmapThreshold";
+
+  /**
+   * Default direct threshold: {@link Integer#MAX_VALUE} — meaning all files use heap allocation
+   * by default, preserving the legacy (safe) behaviour. Override with
+   * {@value #DIRECT_THRESHOLD_PROP} to enable direct allocation for larger files.
+   */
+  public static final int DEFAULT_DIRECT_THRESHOLD = Integer.MAX_VALUE;
+
+  /**
+   * Default mmap threshold: {@link Integer#MAX_VALUE} — mmap path is not yet wired; this value
+   * is ignored at runtime in the current release.
+   */
+  public static final int DEFAULT_MMAP_THRESHOLD = Integer.MAX_VALUE;
+
+  // Read once at class-load time; tests may not be able to change them after that, so the
+  // property is documented as a startup-time knob (consistent with other Solr system properties).
+  static final int DIRECT_THRESHOLD =
+      Integer.getInteger(DIRECT_THRESHOLD_PROP, DEFAULT_DIRECT_THRESHOLD);
+  static final int MMAP_THRESHOLD =
+      Integer.getInteger(MMAP_THRESHOLD_PROP, DEFAULT_MMAP_THRESHOLD);
+
+  // ---------------------------------------------------------------------------
+
   public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_MANY_BUFFERS =
       (fileName, output) -> {
         ByteBuffersDataInput dataInput = output.toDataInput();

@@ -29,6 +29,14 @@ public class SolrHttpRequest extends HttpRequest {
 
   public void freeBuffer() {
     if (buffer != null && freed.compareAndSet(false, true)) {
+      // The AtomicBoolean guard enforces invariant #1 (release exactly once). Only the CAS
+      // winner releases. The CAS-no-op branch is intentionally silent: on EVERY healthy request
+      // freeBuffer() is invoked more than once by design — the explicit free after the exchange
+      // AND the `.onComplete(freeBuffer)` backstop (a leak-guard for the timeout-before-response
+      // case) both fire. That second call is expected and benign, so it must NOT be recorded in
+      // BufferMetrics.getDoubleReleaseDetected(), which is reserved for genuinely-unguarded
+      // double-release attempts (e.g. the pooled-buffer handle sites). Counting the backstop here
+      // would tick the corruption counter on every request.
       ExpandableBuffers.getInstance().release(buffer);
     }
   }

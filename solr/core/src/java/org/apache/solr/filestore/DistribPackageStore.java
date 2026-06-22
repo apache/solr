@@ -25,8 +25,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -63,6 +67,21 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class DistribPackageStore implements PackageStore {
   static final long MAX_PKG_SIZE = Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
+
+  /**
+   * System property that enables the streaming fetch/persist path for large package files.
+   * Default is {@code false} (legacy whole-file heap path) for first ship.
+   * Set to {@code true} only after the streaming path has been benchmark- and
+   * crash-tested (see agrona-buffer-hardening-plan.md §5 / §6).
+   *
+   * <p>When {@code true}: large file fetch uses
+   * {@link Utils#newStreamingConsumer(Path)} → temp file → fsync → atomic rename,
+   * avoiding whole-file heap buffering up to {@code MAX_PKG_SIZE}.
+   * Metadata files (small, always need {@code .array()}) always use the legacy path.
+   */
+  static final boolean STREAM_ENABLED =
+      Boolean.parseBoolean(System.getProperty("solr.filestore.stream.enabled", "false"));
+
   /**
    * This is where al the files in the package store are listed
    */
@@ -85,7 +104,7 @@ public class DistribPackageStore implements PackageStore {
     return _getRealPath(path, solrhome);
   }
 
-  private static Path _getRealPath(String path, Path solrHome) {
+  static Path _getRealPath(String path, Path solrHome) {
     if (File.separatorChar == '\\') {
       path = path.replace('/', File.separatorChar);
     }
@@ -196,7 +215,8 @@ public class DistribPackageStore implements PackageStore {
       if (url == null) throw new SolrException(BAD_REQUEST, "No such node");
       String baseUrl = url.replace("/solr", "/api");
 
-      ByteBuffer metadata = null;
+      // Metadata is always fetched into heap (small; callers use .array() — invariant #8).
+      ByteBuffer metadata;
       Map m;
       try {
         metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getTheSharedHttpClient(),
@@ -207,23 +227,56 @@ public class DistribPackageStore implements PackageStore {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       }
 
-      try {
-        ByteBuffer filedata = Utils.executeGET(coreContainer.getUpdateShardHandler().getTheSharedHttpClient(),
-            baseUrl + "/node/files" + path,
-            Utils.newBytesConsumer((int) MAX_PKG_SIZE));
-        String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
-        String expected = (String) m.get("sha512");
-        if (!sha512.equals(expected)) {
-          throw new SolrException(SERVER_ERROR, "sha512 mismatch downloading : " + path + " from node : " + fromNode);
-        }
-        persistToFile(filedata, metadata);
-        return true;
-      } catch (SolrException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
-      } catch (IOException ioe) {
-        throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
-      }
+      String expected = (String) m.get("sha512");
 
+      if (STREAM_ENABLED) {
+        // Streaming path: HTTP response → temp file + in-flight digest → fsync → atomic rename.
+        // Avoids whole-file heap allocation up to MAX_PKG_SIZE.
+        Path tempDir = getRealpath(path).getParent();
+        try {
+          if (!tempDir.toFile().exists()) {
+            tempDir.toFile().mkdirs();
+          }
+          Object[] result = Utils.executeGET(
+              coreContainer.getUpdateShardHandler().getTheSharedHttpClient(),
+              baseUrl + "/node/files" + path,
+              Utils.newStreamingConsumer(tempDir));
+          Path tmpFile = (Path) result[0];
+          String actualSha512 = (String) result[1];
+          if (!actualSha512.equals(expected)) {
+            try { Files.deleteIfExists(tmpFile); } catch (IOException ignored) {}
+            throw new SolrException(SERVER_ERROR,
+                "sha512 mismatch downloading (streaming): " + path + " from node: " + fromNode);
+          }
+          // Atomic publish: temp → final path.  On any exception tmpFile is left for GC/cleanup.
+          _persistToFileStreaming(solrhome, path, tmpFile, metadata);
+          this.metaData = metadata;
+          // fileData stays null on the streaming path; getFileData() will re-read from disk.
+          return true;
+        } catch (SolrException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data (streaming)", e);
+        } catch (IOException ioe) {
+          throw new SolrException(SERVER_ERROR, "Error persisting file (streaming)", ioe);
+        }
+      } else {
+        // Legacy path: whole-file into heap ByteBuffer, then persist via .array().
+        try {
+          ByteBuffer filedata = Utils.executeGET(coreContainer.getUpdateShardHandler().getTheSharedHttpClient(),
+              baseUrl + "/node/files" + path,
+              Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+          String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
+          if (!sha512.equals(expected)) {
+            throw new SolrException(SERVER_ERROR,
+                "sha512 mismatch downloading : " + path + " from node : " + fromNode);
+          }
+          persistToFile(filedata, metadata);
+          return true;
+        } catch (SolrException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
+        } catch (IOException ioe) {
+          throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
+        }
+      }
     }
 
     boolean fetchFromAnyNode() throws IOException {
@@ -555,7 +608,7 @@ public class DistribPackageStore implements PackageStore {
     return Paths.get(solrHome.toAbsolutePath().toString(), PackageStoreAPI.PACKAGESTORE_DIRECTORY).toAbsolutePath();
   }
 
-  private static String _getMetapath(String path) {
+  static String _getMetapath(String path) {
     int idx = path.lastIndexOf('/');
     return path.substring(0, idx + 1) + "." + path.substring(idx + 1) + ".json";
   }
@@ -587,6 +640,66 @@ public class DistribPackageStore implements PackageStore {
       fos.write(data.array(), 0, data.limit());
     }
     IOUtils.fsync(file.toPath(), false);
+  }
+
+  /**
+   * Streaming-path variant of {@link #_persistToFile}.  The package file content is
+   * already written to {@code tmpDataFile} (a temp file produced by
+   * {@link Utils#newStreamingConsumer(Path)}, already fsynced by the consumer).
+   * This method:
+   * <ol>
+   *   <li>Validates the metadata JSON (same check as the legacy path).</li>
+   *   <li>Writes and fsyncs the metadata file.</li>
+   *   <li>Atomically renames {@code tmpDataFile} to the final published path — so
+   *       no partially-written data file is ever visible.  If the rename fails the
+   *       temp file is left for the caller to clean up.</li>
+   * </ol>
+   *
+   * <p>Invariant #8 is preserved: the metadata buffer uses {@code .array()} exactly as
+   * the legacy path does; only the large data file avoids heap allocation.
+   *
+   * @param solrHome  Solr home directory
+   * @param path      logical package path (e.g. {@code /package/mypkg/v1.0/lib.jar})
+   * @param tmpDataFile  temp file containing the already-written, already-fsynced package data
+   * @param meta      metadata as a heap {@link ByteBuffer} (small; {@code .array()} is safe)
+   * @throws IOException if metadata is invalid, or file I/O fails
+   */
+  public static void _persistToFileStreaming(Path solrHome, String path,
+      Path tmpDataFile, ByteBuffer meta) throws IOException {
+    Path realpath = _getRealPath(path, solrHome);
+    File file = realpath.toFile();
+    File parent = file.getParentFile();
+    if (!parent.exists()) {
+      parent.mkdirs();
+    }
+
+    // Validate metadata (same guard as legacy path; uses .array() — safe for small metadata).
+    Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
+    if (m == null || m.isEmpty()) {
+      throw new SolrException(SERVER_ERROR, "invalid metadata, discarding: " + path);
+    }
+
+    // Write + fsync the metadata file first.
+    File metadataFile = _getRealPath(_getMetapath(path), solrHome).toFile();
+    try (FileOutputStream fos = new FileOutputStream(metadataFile)) {
+      fos.write(meta.array(), 0, meta.limit());
+    }
+    IOUtils.fsync(metadataFile.toPath(), false);
+
+    // Atomic publish: rename temp → final.  If this throws, no partial data file is visible.
+    try {
+      Files.move(tmpDataFile, realpath, StandardCopyOption.ATOMIC_MOVE,
+          StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      // ATOMIC_MOVE may not be supported cross-device; fall back to non-atomic move.
+      try {
+        Files.move(tmpDataFile, realpath, StandardCopyOption.REPLACE_EXISTING);
+      } catch (IOException e2) {
+        e2.addSuppressed(e);
+        throw e2;
+      }
+    }
+    IOUtils.fsync(realpath, false);
   }
 
   @Override

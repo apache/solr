@@ -252,7 +252,7 @@ public final class ByteBuffersDataInput extends DataInput
   public String toString() {
     return String.format(
         Locale.ROOT,
-        "%,d bytes, position: %,d%s",
+        "%,d bytes, position: %,d",
         size(),
         position());
   }

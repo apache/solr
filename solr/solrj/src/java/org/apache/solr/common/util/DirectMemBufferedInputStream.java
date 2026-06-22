@@ -6,6 +6,15 @@ import org.agrona.concurrent.MappedResizeableBuffer;
 import java.io.*;
 import java.nio.ByteOrder;
 
+/**
+ * Input stream over a memory-mapped tlog buffer.
+ *
+ * <p><b>Buffer ownership:</b> this is a non-owning reader view over a {@link MappedResizeableBuffer}
+ * owned by the {@code TransactionLog}. It must never unmap/close that buffer (invariant #3:
+ * no unmap while a reader can access it). The {@code length} field bounds reads to the logical
+ * written size, which is distinct from the mapping's capacity — keep the two separate in any
+ * accounting ({@link BufferMetrics.Category#MMAP_TLOG} capacity vs logical size).
+ */
 public class DirectMemBufferedInputStream extends JavaBinInputStream implements DataInputInputStream, DataInput {
 
     private final MappedResizeableBuffer buffer;

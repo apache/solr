@@ -27,6 +27,7 @@ import org.agrona.MutableDirectBuffer;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExpandableBuffers;
 import org.apache.solr.common.util.ExpandableDirectBufferOutputStream;
+import org.apache.solr.common.util.PooledBufferHandle;
 import org.apache.solr.request.SolrQueryRequest;
 
 import javax.servlet.http.HttpServletRequest;
@@ -49,12 +50,19 @@ public final class QueryResponseWriterUtil {
       SolrQueryResponse solrResponse, HttpServletRequest request, HttpServletResponse response, String contentType) throws IOException {
 
 
-    MutableDirectBuffer expandableBuffer1 = ExpandableBuffers.getInstance().acquire(-1, true);//ExpandableBuffers.buffer1.get();
+    // Acquire via a PooledBufferHandle so the servlet layer has exactly one idempotent
+    // owner across all completion paths (async onComplete / onError / onTimeout, the
+    // synchronous non-async path, and client-abort).  Stash the HANDLE, not the raw
+    // MutableDirectBuffer, so SolrDispatchFilter can call handle.close() once and
+    // the CAS in PooledBufferHandle guarantees exactly-one release (invariant #1).
+    PooledBufferHandle handle = PooledBufferHandle.acquire(
+        ExpandableBuffers.getInstance(), -1, true, "responseBuffer");
+    MutableDirectBuffer expandableBuffer1 = handle.buffer();
 
     ExpandableDirectBufferOutputStream outStream = new ExpandableDirectBufferOutputStream(expandableBuffer1);
 
     if (request != null) {
-      request.setAttribute("responseBuffer", expandableBuffer1);
+      request.setAttribute("responseBuffer", handle);
     }
 
     if (responseWriter instanceof BinaryQueryResponseWriter) {

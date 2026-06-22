@@ -18,8 +18,36 @@ import java.nio.channels.WritableByteChannel;
 
 public class BufferedChannel extends OutputStream implements Closeable {
 
+    /**
+     * System property controlling the minimum buffer size (in bytes) at which {@link BufferedChannel}
+     * will allocate a <em>direct</em> (off-heap) internal buffer instead of a heap buffer.
+     * Buffers smaller than this threshold use {@link ByteBuffer#allocate(int)} (heap);
+     * buffers at or above use {@link ByteBuffer#allocateDirect(int)} with a
+     * {@link BufferMetrics#recordDirectAllocated} accounting call.
+     *
+     * <p>Default: {@value #DEFAULT_DIRECT_THRESHOLD} bytes. Set to {@code Integer.MAX_VALUE}
+     * (or any very large value) to force heap-only allocation; set to {@code 0} to always
+     * allocate direct.
+     *
+     * <p>Legacy behaviour (heap for all sizes) is preserved whenever the buffer size is below
+     * the threshold, so the default is safe without any configuration.
+     */
+    public static final String DIRECT_THRESHOLD_PROP = "solr.bufferedchannel.direct.threshold";
+
+    /**
+     * Default threshold: buffers &ge; 4096 bytes use a direct ByteBuffer.
+     * Smaller buffers (typical small tlog writes) remain heap-allocated.
+     */
+    public static final int DEFAULT_DIRECT_THRESHOLD = 4096;
+
+    public static final int DIRECT_THRESHOLD =
+        Integer.getInteger(DIRECT_THRESHOLD_PROP, DEFAULT_DIRECT_THRESHOLD);
+
     private final FileChannel ch;
+    /** The internal write buffer. May be heap- or direct-backed depending on {@link #DIRECT_THRESHOLD}. */
     private final MutableDirectBuffer buff;
+    /** True when {@link #buff} wraps a direct ByteBuffer; used to skip {@link BufferUtil#free} on heap. */
+    private final boolean buffIsDirect;
 
 
     protected volatile int count;
@@ -27,32 +55,44 @@ public class BufferedChannel extends OutputStream implements Closeable {
 
 
     /**
-     * Creates a new buffered output stream to write data to the
-     * specified underlying output stream with the specified buffer
-     * size.
+     * Creates a new buffered output stream to write data to the specified underlying output stream
+     * with the specified buffer size.
      *
-     * @param   out    the underlying output stream.
-     * @param   size   the buffer size.
-     * @exception IllegalArgumentException if size &lt;= 0.
+     * <p>Allocation policy (controlled by {@value #DIRECT_THRESHOLD_PROP}):
+     * <ul>
+     *   <li>size &lt; threshold → heap {@link ByteBuffer#allocate(int)} (legacy-safe default)</li>
+     *   <li>size &ge; threshold → direct {@link ByteBuffer#allocateDirect(int)}, with a
+     *       {@link BufferMetrics#recordDirectAllocated} call to track the allocation</li>
+     * </ul>
+     *
+     * @param out  the underlying file channel
+     * @param size the buffer size in bytes
      */
     public BufferedChannel(FileChannel out, int size) {
         ch = out;
-        //buff = ExpandableBuffers.getInstance().acquire(-1, true);
-        buff = new UnsafeBuffer(ByteBuffer.allocate(size));
-
-        //buff.byteBuffer().limit(buff.byteBuffer().capacity());
+        if (size >= DIRECT_THRESHOLD) {
+            // Allocate a direct buffer and account for it in BufferMetrics.
+            ByteBuffer direct = ByteBuffer.allocateDirect(size);
+            buff = new UnsafeBuffer(direct);
+            buffIsDirect = true;
+            BufferMetrics.getInstance().recordDirectAllocated(size);
+        } else {
+            buff = new UnsafeBuffer(ByteBuffer.allocate(size));
+            buffIsDirect = false;
+        }
     }
 
     /** Flush the internal buffer */
     public void flushBuffer() throws IOException {
         if (count > 0) {
             ByteBuffer bb = buff.byteBuffer();
-         //   bb.flip();
             bb.limit(count + buff.wrapAdjustment());
             bb.position(0 + buff.wrapAdjustment());
-        //    BufferUtil.flipToFlush(bb, pos);
-            ch.write(bb);
-       //     pos = BufferUtil.flipToFill(buff.byteBuffer());
+            // FileChannel.write may write fewer bytes than requested (partial write);
+            // drain until the buffer is fully written or data is silently lost.
+            while (bb.hasRemaining()) {
+                ch.write(bb);
+            }
             bb.position(0 + buff.wrapAdjustment());
             bb.limit(bb.capacity() + buff.wrapAdjustment());
             count = 0;
@@ -88,7 +128,11 @@ public class BufferedChannel extends OutputStream implements Closeable {
             flushBuffer();
 
             if (len > buff.byteBuffer().remaining()) {
-                ch.write(ByteBuffer.wrap(b, off, len));
+                // Direct large-write path: drain fully — FileChannel.write may short-write.
+                ByteBuffer wrapped = ByteBuffer.wrap(b, off, len);
+                while (wrapped.hasRemaining()) {
+                    ch.write(wrapped);
+                }
                 return;
             }
         }
@@ -125,10 +169,19 @@ public class BufferedChannel extends OutputStream implements Closeable {
       size = start;
     }
 
+    /**
+     * Flushes any buffered bytes, closes the underlying {@link FileChannel}, and releases the
+     * internal buffer. When the buffer is direct (allocated via {@link ByteBuffer#allocateDirect}
+     * because the size met the {@value #DIRECT_THRESHOLD_PROP} threshold), the off-heap memory
+     * is freed by {@link BufferUtil#free}. Heap-backed buffers are simply abandoned to GC.
+     */
     public void close() throws IOException {
         flushBuffer();
         ch.close();
-        BufferUtil.free(buff);
+        if (buffIsDirect) {
+            BufferUtil.free(buff);
+        }
+        // heap-backed UnsafeBuffer: no explicit free needed — ByteBuffer.allocate heap is GC'd.
     }
 
     public MutableDirectBuffer buffer() {

@@ -438,6 +438,152 @@ public class TransactionLog implements Closeable {
     }
   }
 
+  // =========================================================================
+  // WRITE-PATH DESIGN NOTE — LOCK ORDER, FORMAT, AND FLOW INVARIANTS
+  //
+  // Every write method (writeLogHeader, write(AddUpdateCommand, long),
+  // writeDelete, writeDeleteByQuery, writeCommit) follows exactly the same
+  // shared flow. This note documents that flow precisely so that future
+  // readers never accidentally perturb the byte layout or the lock order
+  // (invariants #4 and #6).
+  //
+  // ── Flow (byte-exact, must not change without a migration plan) ──────────
+  //
+  //   1. Serialize the record payload into a *temporary* ExpandableDirectBufferOutputStream
+  //      backed by an ExpandableBuffers pool buffer (acquired before fosLock).
+  //      The record body is a JavaBin-encoded list:
+  //        ADD:            [ARR/3, op=ADD,            version, SolrInputDocument]
+  //        ADD (in-place): [ARR/5, op=UPDATE_INPLACE, version, prevPointer,
+  //                          prevVersion, SolrInputDocument]
+  //        DELETE:         [ARR/3, op=DELETE,          version, id_bytes]
+  //        DELETE_BY_QUERY:[ARR/3, op=DELETE_BY_QUERY, version, queryString]
+  //        COMMIT:         [ARR/3, op=COMMIT,           version, END_MESSAGE]
+  //        HEADER:         {SOLR_TLOG->1, strings->[...]}  (marshalled Map)
+  //      Field names are written INLINE (writeStr, not writeExternString
+  //      references) to keep each record self-contained (see LogCodec).
+  //
+  //   2. Acquire fosLock (ReentrantLock, fair).
+  //      All remaining steps through step 7 run under fosLock.
+  //
+  //   3. Call checkWriteHeader / writeLogHeader if this is the first record.
+  //      writeLogHeader itself uses the same reserve→ensureCapacity→putBytes→
+  //      putInt→position-advance pattern as every other record.
+  //
+  //   4. Read the current write position: pos = fos.size() (the logical end).
+  //
+  //   5. Reserve the record region [pos, pos+payloadLen+4):
+  //        fos.position(pos + payloadLen + 4)
+  //      This atomically advances the "written" cursor so that a concurrent
+  //      LogReader.next() (which checks pos >= fos.size() under fosLock) can
+  //      never observe the reserved-but-not-yet-written window as readable.
+  //
+  //   6. Grow the file and remap if needed:
+  //        raf.setLength(fos.size())         ← extends the file on disk
+  //        ensureCapacity(fos.size())        ← remaps the Agrona buffer if needed
+  //      ensureCapacity is ALWAYS called while fosLock is held (see below).
+  //
+  //   7. Copy the payload bytes into the mapped buffer:
+  //        fos.putBytes(pos, byteBuffer, payloadLen)   ← record body
+  //        fos.putInt(pos + payloadLen, payloadLen)    ← 4-byte trailing size
+  //
+  //   8. Release fosLock.
+  //
+  //   9. numRecords.increment() (LongAdder, not under fosLock — acceptable
+  //      because numRecords is only used for diagnostics; the exact moment of
+  //      visibility is not semantically important).
+  //
+  //  10. Release the ExpandableBuffers pool buffer (finally block).
+  //
+  // ── 4-byte trailing record size ──────────────────────────────────────────
+  //
+  //  Every record (including the header) ends with a 4-byte big-endian int
+  //  containing the byte length of the payload that precedes it.  Readers use
+  //  this to seek backward through the log (FSReverseReader reads the trailer
+  //  at prevPos to find the start of the preceding record).  The trailer is
+  //  NOT included in the length it records — it counts only the payload bytes.
+  //
+  // ── END_MESSAGE semantics ─────────────────────────────────────────────────
+  //
+  //  writeCommit writes the string constant END_MESSAGE ("SOLR_TLOG_END") as
+  //  the third element of the COMMIT list, then the 4-byte trailer.
+  //  endsWithCommit() reads the last END_MESSAGE.length() + 4 bytes and checks
+  //  them to decide whether the log ended cleanly.  Do NOT change the string or
+  //  its position in the COMMIT list.
+  //
+  // ── Lock order (invariant #6 — NEVER violate) ─────────────────────────────
+  //
+  //  RULE: fosLock must always be acquired BEFORE mapLock (either lock).
+  //        No thread may acquire fosLock while already holding mapLock.
+  //
+  //  Write methods hold only fosLock when writing to the buffer (via
+  //  fos.putBytes / fos.putInt, which delegate directly to the Agrona
+  //  MappedResizeableBuffer). They do NOT take mapLock for the write itself,
+  //  because the remap (ensureCapacity) is serialized by fosLock: only one
+  //  thread can remap at a time (it holds fosLock), and all other buffer writes
+  //  also hold fosLock, so there is no concurrent remap hazard at the write site.
+  //
+  //  Readers (LogReader.next(), FSReverseReader.next()) hold mapLock.readLock()
+  //  while reading from the buffer.  ensureCapacity() holds mapLock.writeLock()
+  //  for the brief resize operation, thereby excluding readers during the remap.
+  //
+  //  So the only place where both locks are held simultaneously is inside
+  //  ensureCapacity():
+  //
+  //       fosLock held (by the write method that called ensureCapacity)
+  //         └─► mapLock.writeLock() acquired inside ensureCapacity
+  //               └─► buffer.resize(newCap)
+  //             mapLock.writeLock() released
+  //
+  //  This is the ONLY valid acquisition order.  If any future code acquires
+  //  mapLock first and then tries to acquire fosLock, a deadlock will result.
+  //
+  // ── In-place-update fields ────────────────────────────────────────────────
+  //
+  //  An in-place update (cmd.isInPlaceUpdate() == true) writes a 5-element
+  //  ARR instead of the usual 3-element ADD ARR:
+  //    [0] op-code : UPDATE_INPLACE (0x08)
+  //    [1] version  : cmd.getVersion()
+  //    [2] prevPointer : the tlog pointer of the record this update depends on
+  //    [3] prevVersion  : cmd.prevVersion
+  //    [4] SolrInputDocument (partial — only the changed fields)
+  //  Readers reconstruct the full document by following prevPointer chains.
+  //  The field at index [4] (not [2] as in a normal ADD) is the document.
+  //  See UpdateLog.applyPartialUpdates() for the reconstruction logic.
+  // =========================================================================
+
+  // =========================================================================
+  // copyRecordFrom — DELIBERATELY NOT IMPLEMENTED (default remains object replay)
+  //
+  // A raw byte-for-byte TransactionLog.copyRecordFrom(source, pointer) that splices an
+  // already-serialized record from one tlog into another (avoiding deserialize→reserialize)
+  // was considered for the recovery/copy paths (copyOverOldUpdates / copyOverBufferingUpdates
+  // and the LogReplayer). It is NOT implemented because byte-exact correctness cannot be proven
+  // for the general case within this hardening pass, and the plan explicitly keeps object replay
+  // as the default. The hazards that make a blind copy unsafe:
+  //
+  //   1. globalStringList / extern-string desync. Each tlog has its OWN header globalStringList.
+  //      Even though this fork's LogCodec.writeExternString writes field names INLINE (so records
+  //      are mostly self-contained), the header and any future extern reference are per-file. A
+  //      record copied verbatim from a source tlog whose header differs can decode against the
+  //      wrong string table in the destination.
+  //   2. Version-change / reorder. Replay can renumber or skip versions (e.g. buffered-update
+  //      application, peer-sync); a raw copy preserves the source bytes and cannot apply those
+  //      version transforms.
+  //   3. Processor side effects. Object replay runs the update through the update processor chain
+  //      (dedup, doc-expansion, atomic-update resolution); a raw byte copy bypasses all of them.
+  //   4. In-place-update expansion. UPDATE_INPLACE records carry only changed fields plus a
+  //      prevPointer chain that is meaningful ONLY within the source tlog's address space. Copying
+  //      the bytes verbatim leaves prevPointer pointing at a position in the WRONG file.
+  //   5. Schema conversion. Replay can re-resolve field types against the current schema; raw bytes
+  //      freeze the source-time encoding.
+  //
+  // If copyRecordFrom is ever added, it MUST be gated behind a default-OFF flag
+  // (solr.tlog.copyRecord.enabled) and MUST refuse / fall back to object replay whenever any of the
+  // above apply (in-place updates, version changes, schema conversion, or a non-empty processor
+  // chain). Until that proof and the fallback exist, the only correct behavior is object replay,
+  // which is what UpdateLog.copyOverOldUpdates / copyOverBufferingUpdates / LogReplayer do today.
+  // =========================================================================
+
   /**
    * Ensure the memory-mapped buffer covers at least {@code requiredEnd} bytes, growing it geometrically
    * if needed. MUST be called while holding {@link #fosLock} (so only one re-map happens at a time and it
@@ -776,11 +922,20 @@ public class TransactionLog implements Closeable {
       DirectMemBufferedInputStream fis = new DirectMemBufferedInputStream(buffer, raf.length());
 
       fis.position(pos);
+      // Active-reader gauge: lookup() reads the mapped buffer just like LogReader/FSReverseReader do.
+      // The UpdateLog realtime-get, applyPartialUpdates, and RecentUpdates lookup/getDeleteByQuery
+      // paths all funnel through here, and they hold the tlog refcount (incref/decref) around the call
+      // — which is what actually gates forceClose's unmap (invariant #3). The gauge is incremented here
+      // only for the duration of the buffer read so the active-reader metric reflects every reader that
+      // can touch the mapping, not just LogReader-style readers. Balanced via try/finally so the
+      // decrement happens on every exit path, including the IOException-to-SolrException translation.
+      BufferMetrics.getInstance().incrementActiveReaders();
       mapLock.readLock().lock();
       try (LogCodec codec = new LogCodec(resolver)) {
         return codec.readVal(fis);
       } finally {
         mapLock.readLock().unlock();
+        BufferMetrics.getInstance().decrementActiveReaders();
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -890,6 +1045,25 @@ public class TransactionLog implements Closeable {
     }
   }
 
+  /**
+   * Force the tlog closed, unmapping the Agrona buffer, on the final-shutdown path.
+   *
+   * <p><b>Invariant #3 and its ONE allowed exception.</b> The general rule is: never unmap/close a
+   * mapped tlog while any reader/replayer can still touch the buffer (refcount &gt; 0), because
+   * unmapping mid-read is a native SIGSEGV in {@link DirectMemBufferedInputStream}, not a catchable
+   * Java exception. Every normal close goes through {@link #decref()} → {@link #close()}, which only
+   * unmaps once the refcount actually reaches zero, so a live reader can never be unmapped out from
+   * under it on that path.
+   *
+   * <p>{@code forceClose()} is the SINGLE, DELIBERATE exception to that rule, reserved for
+   * shutdown/abort. It first waits a bounded 5s for readers to drain (the core close aborts a stuck
+   * replayer via AlreadyClosedException, and its {@code LogReader.close()} decrefs); on the normal
+   * path the refcount drains and we never force anything. Only if a reader is still wedged after the
+   * deadline do we forcibly reset the refcount and unmap, accepting the small residual SIGSEGV risk
+   * as the lesser evil versus hanging shutdown forever on a stuck replayer. This escape hatch is
+   * intentional — do NOT remove it, and do NOT widen it to non-shutdown callers. Each forced unmap is
+   * counted via {@link BufferMetrics#incrementForcedCloseCount()} so the (rare) event is observable.
+   */
   public void forceClose() {
     if (refcount.get() > 0) {
       // Readers (e.g. a LogReplayer mid-read) hold increfs. Closing unmaps the memory-mapped
@@ -907,7 +1081,11 @@ public class TransactionLog implements Closeable {
         }
       }
       if (refcount.get() > 0) {
+        // DOCUMENTED FINAL-SHUTDOWN EXCEPTION to invariant #3: readers did not drain within the
+        // deadline. Force the unmap anyway rather than hang shutdown. This is the only sanctioned
+        // unmap-while-refcount-positive path.
         log.error("Error: Forcing close of {}", this);
+        BufferMetrics.getInstance().incrementForcedCloseCount();
         refcount.set(0);
         close();
       }
@@ -960,6 +1138,10 @@ public class TransactionLog implements Closeable {
 
     public LogReader(long startingPos) {
       incref();
+      // Dedicated active-reader gauge. NOT derived from refcount: refcount also counts the
+      // structural self-reference (starts at 1) and UpdateLog's many structural increfs, so it
+      // would over-count live readers. Increment here at the reader incref site, decrement in close().
+      BufferMetrics.getInstance().incrementActiveReaders();
       fosLock.lock();
       try {
         //fos.flushBuffer();
@@ -1039,6 +1221,7 @@ public class TransactionLog implements Closeable {
     }
 
     public void close() {
+      BufferMetrics.getInstance().decrementActiveReaders();
       decref();
     }
 
@@ -1145,6 +1328,8 @@ public class TransactionLog implements Closeable {
 
     public FSReverseReader() throws IOException {
       incref();
+      // Dedicated active-reader gauge (see LogReader): decremented in close().
+      BufferMetrics.getInstance().incrementActiveReaders();
 
       long sz;
       fosLock.lock();
@@ -1233,6 +1418,7 @@ public class TransactionLog implements Closeable {
     }
 
     public void close() {
+      BufferMetrics.getInstance().decrementActiveReaders();
       decref();
     }
 
